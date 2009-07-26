@@ -113,6 +113,11 @@ $device_search  => undef
 $ip_search      => undef
 $mac_search     => undef
 </%args>
+
+<%init>
+my @communities = @{Netdot->config->get('DEFAULT_SNMPCOMMUNITIES')};
+</%init>
+
 <div id="sectiontools" <% $hideheader %>>
 <div class="container">
     <div class="containerheadleft">
@@ -140,18 +145,28 @@ $mac_search     => undef
         <fieldset class="medium">
             <legend>Discover/Add a Device</legend>
             <form action="updatedevice.html" method="POST">
+                <p>
                 <label for="host">Name/IP:</label>
                 <input type="text" name="host" class="longtxt" value="">
+                </p>
+                <p>
                 <label for="comstr">Community:</label>
-                <input type="text" name="comstr" class="txt" value="<% (Netdot->config->get('DEFAULT_SNMPCOMMUNITIES'))->[0] %>">
+                <select name="comstr">
+%               foreach my $comm ( @communities ){
+ 	            <option name="<% $comm %>"><% $comm %></option>
+%               }
+                </select>
                 <input type="hidden" name="action" value="discover">
                 <input type="submit" name="submit" class="btn" value="discover">
+                </p>
             </form>
             <form action="device.html" method="POST">
+                <p>
                 <label for="newhost">Name:&nbsp;&nbsp;&nbsp;&nbsp;</label>
                 <input type="text" name="newhost" class="longtxt" value="">
                 <input type="hidden" name="deviceadd" value="add">
                 <input type="submit" name="submit" class="btn" value="add">
+                </p>
             </form>
         </fieldset>
         <a href="#" onClick="toggleLayer('search_device');toggleLayer('discover_device');">[search]</a>
