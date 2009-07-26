@@ -53,11 +53,11 @@ if ( $manager && $manager->can($user, "access_section", 'contacts') ){
     if( !$showheader ) {
 	$hideheader = 'style="display:none"';
     }
-    if ( ($page eq "ENTITIES" || $page eq "") && $m->request_comp->name ne "entities.html" ) {
+    if ( $page eq "ENTITIES" && $m->request_comp->name ne "entities.html" ) {
 	
 	$m->comp('entities.html', user=>$user, showheader=>$showheader);
 	
-    } elsif ( $page eq "PEOPLE" && $m->request_comp->name ne "people.html" ) {
+    }elsif ( ($page eq "PEOPLE" || $page eq "") && $m->request_comp->name ne "people.html" ) {
 	
 	$m->comp('people.html', user=>$user, showheader=>$showheader);
 	
@@ -88,8 +88,8 @@ if ( my $next = $m->fetch_next ){
 	    title        => 'Contacts',
 	    attribute    => $PAGE_ATTRIBUTE,
 	    sub_sections => [
+		{ section => 'PEOPLE',   title => 'People'  },
 		{ section => 'ENTITIES', title => 'Entities'},
-		{ section => 'PEOPLE',    title => 'People'   },
 	    ]
         };
     </%init>
