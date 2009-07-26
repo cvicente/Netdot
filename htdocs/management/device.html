@@ -1058,11 +1058,10 @@ if ( !$editips ){
 <%perl>
     my $ipeers = $o->get_bgp_peers(type=>"internal", sort=>$peersort);
     my $epeers = $o->get_bgp_peers(type=>"external", sort=>$peersort);
+    my $whois_url = Netdot->config->get('BGP_AS_WHOIS_URL');
 </%perl>
 
 %   if ( $ipeers || $epeers ){
-
-my $whois_url = Netdot->config->get('BGP_AS_WHOIS_URL');
 
 <!-- BGP Peers Table -->
 <div class="container">
@@ -1105,7 +1104,7 @@ if ( $epeers ){
 	push( @row, '<a href="view.html?table=Entity&id=' . $peer->entity->id . '">' . $peer->entity->name . '</a>' );
 	push( @row, $peer->entity->asname  );
 	my $asn = $peer->entity->asnumber;
-	if ( $whois_url && ($asn >= 64512 && $asn <= 65535) ){
+	if ( $whois_url && !($asn >= 64512 && $asn <= 65535) ){
 	    my $url = $whois_url;
 	    $url =~ s/<ASNUMBER>/$asn/;
 	    push( @row, "<a target=\"#\" href=\"$url\">$asn</a>" );
