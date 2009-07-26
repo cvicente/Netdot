@@ -1,7 +1,6 @@
 package Netdot::Model::Ipblock;
 
 use base 'Netdot::Model';
-use Netdot::Util::DNS;
 use warnings;
 use strict;
 use Math::BigInt;
@@ -51,8 +50,6 @@ BEGIN{
 
 my $IPV4 = Netdot->get_ipv4_regex();
 my $IPV6 = Netdot->get_ipv6_regex();
-
-my $dns = Netdot::Util::DNS->new();
 
 my $ip_name_plugin   = __PACKAGE__->load_ip_name_plugin();
 my $range_dns_plugin = __PACKAGE__->load_range_dns_plugin();

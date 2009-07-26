@@ -5,8 +5,6 @@ use Netdot::Util::DNS;
 use warnings;
 use strict;
 
-my $dns = Netdot::Util::DNS->new();
-
 ############################################################################
 =head2 new - Class constructor
 
@@ -32,7 +30,7 @@ sub get_name {
     my ($self, $ip) = @_;
 
     my $name;
-    unless ( $name =  $dns->resolve_ip($ip) ){
+    unless ( $name =  Netdot->dns->resolve_ip($ip) ){
 	$name = $ip->address;
     }
     return $name;    

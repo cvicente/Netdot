@@ -9,9 +9,8 @@ use HTML::Mason::ApacheHandler;
     use Data::Dumper;
     use lib "<<Make:LIB>>";
     use Netdot::UI;
-    use vars qw ( $ui $dns $cable_manager );
-    $ui            = Netdot::UI->new();
-    $dns           = Netdot::Util::DNS->new();
+    use vars qw ( $ui $cable_manager );
+    $ui = Netdot::UI->new();
 }
 # Create ApacheHandler object at startup.
 my $ah =

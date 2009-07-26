@@ -23,7 +23,6 @@ my $MAXPROCS    = Netdot->config->get('SNMP_MAX_PROCS');
 
 # Objects we need here
 my $logger      = Netdot->log->get_logger('Netdot::Model::Device');
-my $dns         = Netdot::Util::DNS->new();
 
 my %IGNOREDVLANS;
 map { $IGNOREDVLANS{$_}++ } @{ Netdot->config->get('IGNOREVLANS') };
@@ -104,7 +103,7 @@ sub search {
 		    }else{
 			# This means we have the same RR name on different zones
 			# Try to resolve the name and look up IP address
-			if ( my $ip = ($dns->resolve_name($argv{name}))[0] ){
+			if ( my $ip = (Netdot->dns->resolve_name($argv{name}))[0] ){
 			    $logger->debug(sub{"Device::search: $argv{name} resolves to $ip"});
 			    if ( my $ip = Ipblock->search(address=>$ip)->first ){
 				if ( $ip->interface && ($dev = $ip->interface->device) ){
@@ -372,7 +371,7 @@ sub assign_name {
     }else{
 	# We were given a name (not an address)
 	# Resolve to an IP address
-	if ( defined $host && ($ip = ($dns->resolve_name($host))[0]) ){
+	if ( defined $host && ($ip = (Netdot->dns->resolve_name($host))[0]) ){
 	    $logger->debug(sub{"Device::assign_name: $host resolves to $ip"});
 	}else{
 	    $logger->debug(sub{"Device::assign_name: $host does not resolve"});
@@ -383,7 +382,7 @@ sub assign_name {
     if ( $ip ){
 	# At this point, we were either passed an IP
 	# or we got it from DNS.  The idea is to obtain a FQDN
-	if ( $fqdn = $dns->resolve_ip($ip) ){
+	if ( $fqdn = Netdot->dns->resolve_ip($ip) ){
 	    $logger->debug(sub{"Device::assign_name: $ip resolves to $fqdn"});
 	    if ( my $rr = RR->search(name=>$fqdn)->first ){
 		$logger->debug(sub{"Device::assign_name: RR $fqdn already exists in DB"});
@@ -600,7 +599,7 @@ sub get_snmp_info {
     $dev{_sclass} = $sinfo->class();
 
     # Get both name and IP for better error reporting
-    my ($ip, $name)   = $dns->resolve_any($args{host});
+    my ($ip, $name)   = Netdot->dns->resolve_any($args{host});
     $dev{snmp_target} = $ip if defined $ip;
     $logger->debug("Device::get_snmp_info: SNMP target is $dev{snmp_target}");
     
@@ -3060,7 +3059,7 @@ sub _get_snmp_session {
     }
 
     # Get both name and IP for better error reporting
-    my ($ip, $name) = $dns->resolve_any($argv{host});
+    my ($ip, $name) = Netdot->dns->resolve_any($argv{host});
     $ip   ||= '?';
     $name ||= '?';
 
@@ -3185,7 +3184,7 @@ sub _get_main_ip {
     foreach my $method ( @methods ){
 	$logger->debug(sub{"Device::_get_main_ip: Trying method $method" });
 	if ( $method eq 'sysname' && $info->{sysname} ){
-	    my $resip = ($dns->resolve_name($info->{sysname}))[0];
+	    my $resip = (Netdot->dns->resolve_name($info->{sysname}))[0];
 	    if ( defined $resip && exists $allips{$resip} ){
 		$ip = $resip;
 	    }
@@ -4665,7 +4664,7 @@ sub _update_interfaces {
 	
 	# Get addresses that the main Device name resolves to
 	my @hostnameips;
-	if ( @hostnameips = $dns->resolve_name($host) ){
+	if ( @hostnameips = Netdot->dns->resolve_name($host) ){
 	    $logger->debug(sub{ sprintf("Device::info_update: %s resolves to: %s",
 					$host, (join ", ", @hostnameips))});
 	}
