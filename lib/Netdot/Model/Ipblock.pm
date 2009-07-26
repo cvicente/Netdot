@@ -2203,7 +2203,7 @@ sub get_next_free {
     my ($self, %argv) = @_;
     $self->isa_object_method('get_next_free');
 
-    $self->throw_fatal("Invalid call to this method on a non-subnet")
+    $self->throw_user("Invalid call to this method on a non-subnet")
 	unless ( $self->status->name eq 'Subnet' );
 
     $logger->debug("Getting next free address in ".$self->get_label);

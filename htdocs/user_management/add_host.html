@@ -56,7 +56,13 @@ unless ( $block ){
 # no addresses available
 unless ( $address ){
     my $ip_strategy = Netdot->config->get("IP_ALLOCATION_STRATEGY");
-    unless ( $address = $block->get_next_free(strategy=>$ip_strategy) ){
+    eval {
+	$address = $block->get_next_free(strategy=>$ip_strategy);
+    };
+    if ( my $e = $@ ){
+	$m->comp('/generic/error.mhtml', error=>"$e");	
+    }
+    unless ( $address ){
 	$m->comp('/generic/error.mhtml', error=>"Could not get an available address from ".$block->get_label);
     }
 }
