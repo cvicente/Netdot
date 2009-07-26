@@ -69,6 +69,7 @@ my $entityid = -1;
     </div>
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
         <table><tr><td>
+        <div id="search_entity" style="display:block">
         <fieldset class="medium">
             <legend>Search</legend>
             <form action="entities.html" method="POST">
@@ -80,7 +81,10 @@ my $entityid = -1;
                 </p>
             </form>
         </fieldset>
-
+        <a href="#" onClick="toggleLayer('search_entity');toggleLayer('add_entity');">[new]</a>
+        </div>
+    
+       <div id="add_entity" style="display:none">
         <script type="text/javascript">
             var rolecount=1;
             function jsaddrole(countid) {
@@ -102,7 +106,7 @@ my $entityid = -1;
             }
         </script>
 
-        <fieldset class="medium">
+       <fieldset class="medium">
             <legend>Add A New Entity</legend>
             <form action="entities.html" method="POST">
                 <p>
@@ -159,6 +163,8 @@ my $entityid = -1;
                 </p>
             </form>
         </fieldset>
+        <a href="#" onClick="toggleLayer('search_entity');toggleLayer('add_entity');">[search]</a>
+        </div>
         </td></tr></table>
     </div> <!-- close containerbody -->
   </div> <!-- close container -->
