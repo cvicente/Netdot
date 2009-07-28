@@ -534,6 +534,12 @@ sub update_ip {
 
     my $label = $self->get_label;
     
+    # Do not bother with loopbacks
+    if ( Ipblock->is_loopback($address) ){
+	$logger->debug(sub{"$label: IP $address is a loopback. Skipping."});
+	return;
+    }
+	
     my $version = ($address =~ /^($IPV4)$/) ?  4 : 6;
     my $prefix  = ($version == 4)  ? 32 : 128;
     
@@ -542,13 +548,6 @@ sub update_ip {
 	# Create a subnet if necessary
 	my ($subnetaddr, $subnetprefix) = Ipblock->get_subnet_addr(address => $address, 
 								   prefix  => $mask );
-	
-	# Do not bother with loopbacks
-	if ( Ipblock->is_loopback($subnetaddr, $subnetprefix) ){
-	    $logger->debug(sub{"$label: IP $subnetaddr/$subnetprefix is a loopback. Skipping."});
-	    return;
-	}
-	
 	if ( ($version == 4 && $subnetprefix == 31) || $subnetaddr ne $address ){
 	    my %iargs;
 	    $iargs{status} = 'Subnet' ;
@@ -600,12 +599,6 @@ sub update_ip {
 	}
     }
     
-    # Do not bother with loopbacks
-    if ( Ipblock->is_loopback($address) ){
-	$logger->debug(sub{"$label: IP $address is a loopback. Will not insert."});
-	return;
-    }
-	
     my $ipobj;
     if ( $ipobj = Ipblock->search(address=>$address)->first ){
 
