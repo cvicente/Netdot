@@ -39,6 +39,31 @@ GROUP BY site.id, site.name
 ORDER BY site.name
 });
 
+=head1 INSTANCE METHODS
+=cut
+
+############################################################################
+=head2 rooms - Get list of rooms
+   
+  Arguments:
+    None
+  Returns:
+    Array of Room objects
+  Examples:
+    my @rooms = $site->rooms;
+
+=cut
+
+sub rooms { 
+    my ($self) = @_;
+    
+    my @rooms;
+    foreach my $floor ( $self->floors ){
+	push @rooms, $floor->rooms;
+    }
+    return @rooms;
+}
+
 =head1 AUTHOR
 
 Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
