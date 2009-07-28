@@ -2098,6 +2098,10 @@ sub _obj_int2ip {
     my $dbh  = $self->db_Main;
     my $id   = $self->id;
     $address = ($dbh->selectrow_array("SELECT address FROM ipblock WHERE id = $id"))[0];
+    unless ( $address ){
+	$logger->error("Ipblock id $id has no address");
+	return;
+    }
 
     if ($self->version == 4){
 	$val = (new NetAddr::IP $address)->addr();
