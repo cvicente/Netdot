@@ -118,6 +118,10 @@ $ui->add_to_fields(table=>'Contact', edit=>$edit, fields=>['contacttype', 'notif
 % foreach my $role ( sort { $a->person->lastname cmp $b->person->lastname } $obj->contacts ){
 %     my (@headers, @data);
 %     my $person = $role->person;
+%     unless ( $person && Person->retrieve($person->id) ){
+%         $role->delete;
+%         next;
+%     }
 %     my $editct = ($edit eq 'contact' && $contact_id eq $role->id)? 1 : 0;
 
          <div class="containerbodyoutside">

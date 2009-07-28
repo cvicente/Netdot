@@ -2704,6 +2704,10 @@ sub _obj_int2ip {
 
     my $dbh  = $self->db_Main;
     my $id   = $self->id;
+    unless ( $address ){
+	$logger->error("Ipblock id $id has no address");
+	return;
+    }
 
     if ( my ($address) = ($dbh->selectrow_array("SELECT address FROM ipblock WHERE id=$id"))[0] ){
 	my $val = $self->int2ip($address, $self->version);
