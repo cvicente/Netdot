@@ -920,6 +920,7 @@ sub get_snmp_info {
 		    if ( my $mask = $hashes{'ip_netmask'}->{$ip} ){
 			$dev{interface}{$iid}{ips}{$ip}{mask} = $mask;
 		    }
+		    last;
 		}
 	    }
 	}
@@ -3657,21 +3658,40 @@ sub _get_arp_from_snmp {
     }
 
     $logger->debug(sub{"$host: Fetching ARP cache via SNMP" });
-    my $at_paddr  = $sinfo->at_paddr();
-    foreach my $key ( keys %$at_paddr ){
+    my ( $at_paddr, $at_netaddr, $at_index );
+    $at_paddr  = $sinfo->at_paddr();
+
+    # With the following checks we are trying query only one
+    # OID instead of three, which is a significant performance
+    # improvement with very large caches.
+    # The optional .1 in the middle is for cases where the old
+    # atPhysAddress is used.
+    my $use_shortcut = 1;
+    my @paddr_keys = keys %$at_paddr;
+    if ( $paddr_keys[0] =~ /^(\d+)(\.1)?\.($IPV4)$/ ){
+	my $idx = $1;
+	if ( !exists $devints{$idx} ){
+	    $use_shortcut = 0;
+	    $logger->debug(sub{"Device::_get_arp_from_snmp: $host: Not using ARP query shortcut"});
+	    $at_netaddr = $sinfo->at_netaddr();
+	    $at_index   = $sinfo->at_index();
+	}
+    }
+
+    foreach my $key ( @paddr_keys ){
 	my ($ip, $idx, $mac);
-	# Notice that the following regexp allows us to query only one
-	# OID instead of three, which is a significant performance
-	# improvement with very large caches.
-	# The optional .1 in the middle is for cases where the old
-	# atPhysAddress is used.
-	if ( $key =~ /^(\d+)(\.1)?\.($IPV4)$/ ){
-	    $idx = $1;
-	    $ip  = $3;
-	    $mac = $at_paddr->{$key};
+	$mac = $at_paddr->{$key};
+	if ( $use_shortcut ){
+	    if ( $key =~ /^(\d+)(\.1)?\.($IPV4)$/ ){
+		$idx = $1;
+		$ip  = $3;
+	    }else{
+		$logger->debug(sub{"Device::_get_arp_from_snmp: $host: Unrecognized hash key: $key" });
+		next;
+	    }
 	}else{
-	    $logger->debug(sub{"Device::_get_arp_from_snmp: $host: Unrecognized hash key: $key" });
-	    next;
+	    $idx = $at_index->{$key};
+	    $ip  = $at_netaddr->{$key};
 	}
         unless ( defined($ip) ){
 	    $logger->debug(sub{"Device::_get_arp_from_snmp: $host: IP not defined in hash key: $key" });
