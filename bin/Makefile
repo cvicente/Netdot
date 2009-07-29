@@ -10,6 +10,8 @@ FMOD    = 755
 
 FILES := $(shell ls *.pl) 
 
+DB_NETDOT_USER=(default: netdot_user)
+DB_NETDOT_PASS=(default: netdot_pass)
 
 ################################################################
 # End of tweakable section

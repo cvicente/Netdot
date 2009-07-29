@@ -24,6 +24,11 @@
     function jsrsSendqueryRA(tablename, form_field) {
         jsrsExecute( "../generic/jsrs_retrieve_all.html", jsrsParseresults, "retrieve_all", Array(tablename, form_field) );
     }
+    
+    function jsrsSendqueryRAKW(tablename, form_field, val) {
+        jsrsExecute( "../generic/jsrs_retrieve_all_bykw.html", jsrsParseresults, "retrieve_all_bykw", Array(tablename, form_field, val));
+    }
+    
 
     function jsrsResetSelection(elementID) {
         document.getElementById(elementID).options.length = 0;
@@ -40,14 +45,23 @@
 
         thelist = document.getElementById(form_elt);
         thelist.length = 0;
-
+        var bool = false;
         for(i=1; i<data.length; i++) {
             var elt = explode(data[i],"=");
             if( elt[0] != "" ) {
                 var len = thelist.length++;
                 var optionObject = new Option(unescape(elt[1]),elt[0])
+		if(unescape(elt[1]) == "Refine search."){
+		    document.getElementById("keywords").type = "text";
+		    document.getElementById("button").type = "button";
+		    bool = true;
+                }
                 thelist.options[len] = optionObject;
             }
+        }
+        if(!bool){
+            document.getElementById("keywords").type = "hidden";
+	    document.getElementById("button").type = "hidden";
         }
     }
 

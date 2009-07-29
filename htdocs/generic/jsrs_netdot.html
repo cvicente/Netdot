@@ -61,7 +61,7 @@ sub keyword_search {
     }
 
     my $response = $form_field."&";
-
+    $response .= $form_field"&";
     if ( $table eq 'Ipblock' ){
 	my @r = Ipblock->search(address=>$keywords);
 	map { $r->{$_->id} = $_ } @r;

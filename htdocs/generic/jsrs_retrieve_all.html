@@ -40,6 +40,7 @@ if ( $DEBUG ){
 sub retrieve_all {
     my ( $table, $form_field ) = @_;
     my $response = $form_field."&";
+    my $MAX   = $ui->config->get('DEFAULT_SELECTMAX');
     $response .= "0=-- Select --&";
 
     if ( $table eq 'Ipblock' ){
@@ -49,27 +50,37 @@ sub retrieve_all {
                                              WHERE    (version=4 AND prefix!=32)
                                                 OR    (version=6 AND prefix!=128) 
                                              ORDER BY address");
-
-	if ( scalar @$rows ){
-	    foreach my $row ( @$rows ){
-		my ($id, $version, $intaddr, $prefix) = @$row;
-		my $address = Ipblock->int2ip($intaddr, $version);
-		my $lbl = $address.'/'.$prefix;
-		$response .= $id."=".$ui->url_encode($lbl)."&";
-	    }
+     
+	if ( my $n = scalar @$rows ){
+            if( $n <= $MAX ){
+	        foreach my $row ( @$rows ){
+		    my ($id, $version, $intaddr, $prefix) = @$row;
+		    my $address = Ipblock->int2ip($intaddr, $version);
+		    my $lbl = $address.'/'.$prefix;
+		    $response .= $id."=".$ui->url_encode($lbl)."&";
+	        }
+            }else{
+                $response .= "0=".$ui->url_encode("More than ".$MAX." matches.")."&";
+                $response .= "1=".$ui->url_encode("Refine search."); 
+            }
 	}else{
 	    $response .= "0=".$ui->url_encode("No matches");
 	}
     }else{
-	my @r = $table->retrieve_all();
+	my @rows = $table->retrieve_all();
 
-	if ( my $n = scalar @r ){
-	    my $count = 0;
-	    my @objs = sort { $a->get_label cmp $b->get_label } @r;
-	    foreach my $o ( @objs ){
-		my $lbl = $o->get_label();
-		$response .= $o->id."=".$ui->url_encode($lbl)."&";
-	    }
+	if ( my $n = scalar @rows ){
+            if( $n <= $MAX){
+	        my $count = 0;
+	        my @objs = sort { $a->get_label cmp $b->get_label } @rows;
+	        foreach my $o ( @objs ){
+		    my $lbl = $o->get_label();
+		    $response .= $o->id."=".$ui->url_encode($lbl)."&";
+	        }
+            }else{
+                $response .= "0=".$ui->url_encode("More than ".$MAX." matches.")."&";
+                $response .= "1=".$ui->url_encode("Refine search."); 
+            }
 	}else{
 	    $response .= "0=".$ui->url_encode("No matches");
 	}
