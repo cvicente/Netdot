@@ -48,8 +48,9 @@ if ( $submit ){
 	    }
 	}
     };
-    if ( my $e = $@ ){
-	$m->comp('error.mhtml', error=>$e);
+    if ( scalar @access ){
+        my $e = "The Permission is empty.";
+        $m->comp('error.mhtml', error=>$e);
     }
 }
 
