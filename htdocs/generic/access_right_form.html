@@ -32,6 +32,10 @@ foreach my $arg ( %args ){
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
 if ( $submit ){
+    if ( !defined($access[0]) ){
+        $m->comp('error.mhtml', error=>"The Permission is null.");
+    }
+ 
     eval {
 	if ( $object_class && @object_id ){
 	    foreach my $object_id ( @object_id ){
@@ -48,8 +52,7 @@ if ( $submit ){
 	    }
 	}
     };
-    if ( scalar @access ){
-        my $e = "The Permission is empty.";
+    if ( my $e= $@ ){
         $m->comp('error.mhtml', error=>$e);
     }
 }
