@@ -128,3 +128,10 @@
     }  
 
 
+// this code converts an select element into a text box if the option for selection is "Others"
+    function otherOption(select_id, text_id){
+	if( document.getElementById(select_id).value == "Others"){
+	    document.getElementById(select_id).style.visibility = "hidden";
+	    document.getElementById(text_id).type = "text";
+        }
+    }

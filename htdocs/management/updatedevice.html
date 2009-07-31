@@ -16,6 +16,7 @@ $action
 $device          => undef
 $host            => undef
 $comstr          => undef
+$otherComstr     => undef
 $id              => undef
 $sid             => undef
 $insert          => undef
@@ -109,8 +110,14 @@ if ( $action eq "discover" ){
 	    $argv{name} = $host;
 
 	    # Give preference to the community being passed
-	    my $communities = [$comstr] if defined $comstr;
-	    
+	    my $communities; 
+            my $tmpcomm = [$comstr] if defined $comstr;
+	    if ($tmpcomm eq "Others"){
+                $communities = $tmpcomm; 
+            }else{
+                $communities = [$otherComstr];
+            }
+
 	    # Fetch SNMP info
 	    eval {
 		$info = Device->get_snmp_info(host=>$host, communities=>$communities, %argv);
