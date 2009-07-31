@@ -21,6 +21,7 @@ my $title      = $m->base_comp->attr('title')   || "Network Documentation Tool";
 my $section    = $m->base_comp->attr('section') || "Main";
 
 my $user = $ui->get_current_user($r);
+
     
 if ( my $show = $m->base_comp->attr_if_exists('showheader') ){
     $showheader = defined($showheader) ?  $showheader : $show;
@@ -39,10 +40,13 @@ print "req comp: ", $m->request_comp->name, "<br>"  if $DEBUG;
 # Set user type if needed
 if ( defined $user && !defined $user->getAttribute('USER_TYPE') ){
     eval {
-	$ui->set_user_type($r, $user);
+	    $ui->set_user_type($r, $user);
     };
     if ( my $e = $@ ){
-	$m->comp('/generic/error.mhtml', error=>$e);
+	    #we don't want to give the user too much information about the underlying database so lets clean up this message
+	    my $secure_error_msg = "Sorry but we could not retrieve your permission information"; 
+        $user->logout($r);	    
+        $m->comp('/generic/error.mhtml', error=>$secure_error_msg);
     }
 }
 </%perl>
