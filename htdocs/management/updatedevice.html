@@ -111,11 +111,10 @@ if ( $action eq "discover" ){
 
 	    # Give preference to the community being passed
 	    my $communities; 
-            my $tmpcomm = [$comstr] if defined $comstr;
-	    if ($tmpcomm eq "Others"){
-                $communities = $tmpcomm; 
+	    if ($comstr eq "Other"){
+                $communities = [$otherComstr] if defined $otherComstr;
             }else{
-                $communities = [$otherComstr];
+                $communities = [$comstr] if defined $comstr;
             }
 
 	    # Fetch SNMP info

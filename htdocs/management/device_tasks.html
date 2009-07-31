@@ -151,15 +151,16 @@ my @communities = @{Netdot->config->get('DEFAULT_SNMPCOMMUNITIES')};
                 </p>
                 <p>
                 <label for="comstr">Community:</label>
-                <select name="comstr" id="comstr" onChange="otherOption('comstr','otherComstr');">
+                <select name="comstr" id="comstr" onChange="otherOption('comstr','back','otherComstr');">
 %               foreach my $comm ( @communities ){
  	            <option name="<% $comm %>"><% $comm %></option>
 %               }
-                <option name="Others" id="Others" value="Others">Others</option>
+                <option name="Other" id="Other" value="Other">Other</option>
                 </select>
 
+                <input type="hidden" name="back" id="back" value="<" onClick="backSelectOpt('comstr','back','otherComstr');">
                 <label for="otherComstr"></label>
-                <input type="hidden" name="otherComstr" id="otherComstr" value="Others" size=17 onFocus="if( this.value == 'Others' ){this.value = '';} return true;">
+                <input type="hidden" name="otherComstr" id="otherComstr" value="Other" size=13 onFocus="if( this.value == 'Other' ){this.value = '';} return true;">
                 <input type="hidden" name="action" value="discover">
                 <input type="submit" name="submit" class="btn" value="discover">
                 </p>
