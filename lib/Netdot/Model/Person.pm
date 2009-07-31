@@ -57,7 +57,6 @@ sub get_allowed_objects {
     my ($self, %argv) = @_;
     
     my %results;
-
     my $authorization_method = Netdot->config->get('AUTHORIZATION_METHOD');
     
     if (  $authorization_method =~ /^LOCAL$/i ){
@@ -85,7 +84,10 @@ sub get_allowed_objects {
 	}
 
     }elsif ( $authorization_method =~ /^LDAP$/i ){
-	# Not yet implemented
+	    $self->throw_user("LDAP NOT SUPPORTED!");
+    }
+    elsif ($authorization_method =~ /^RADIUS$/i ){
+        $self->throw_user("RADIUS NOT SUPPORTED!");
     }
 
     return \%results;
@@ -120,7 +122,10 @@ sub get_user_type {
 	}
 	
     }elsif ( $authorization_method =~ /^LDAP$/i ){
-	# Not yet implemented
+        $self->throw_user("LDAP NOT SUPPORTED!");
+    }
+    elsif ( $authorization_method =~ /^RADIUS/i ){
+        $self->throw_user("RADIUS NOT SUPPORTED!");
     }
 }
 ##################################################################
