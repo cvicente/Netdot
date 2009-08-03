@@ -17,9 +17,30 @@
 $objects => undef
 $type    => undef
 $edit    => 0
+$sid     => undef
+$osid    => undef
+$table   => undef
 </%args>
 
 <%init>
+my $session;
+my $osession;
+my %objindex;
+my $total;
+my %orderbrief;
+my @orderbrief;
+my $i;
+
+
+
+$i=0;
+$total=0;
+$session = $ui->mk_session();
+map { $objindex{$i++} = $_ } @{ $objects };
+$table = $objects->[0]->short_class unless $table;
+%orderbrief  = $table->meta_data->get_column_order_brief();
+@orderbrief  = sort { $orderbrief{$a} <=> $orderbrief{$b} } keys %orderbrief;
+
 my (@headers, @rows);
 if ( $type ){
     unless ( $type =~ /^address|block$/ ){
@@ -90,9 +111,20 @@ if ( $type eq "address" ){
 			   cell_data=>\@row, linkpages=>['view.html', 'view.html', '']);
 
 	push( @rows, \@row );
+        $total++;
     }
 }
 
-
+$session->{object}      = $objects;
+$session->{objindex}    = \%objindex;
+$session->{table}       = $table;
+$session->{orderbrief}  = \@orderbrief;
+$session->{total}       = $total;
 </%perl>
 <& /generic/data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
+
+<div class="containerheadright">
+%   # <a href="ipblock_list.mhtml?view=csv&osid=<% $osid %>">[csv]</a>
+    <a href="#" onClick="opentextwindow('','csv','sid=<% $session->{_session_id} %>')">[csv]</a>
+</div>
+
