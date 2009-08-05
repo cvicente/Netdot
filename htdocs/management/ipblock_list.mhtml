@@ -26,7 +26,6 @@ $table   => undef
 my $session;
 my $osession;
 my %objindex;
-my $total;
 my %orderbrief;
 my @orderbrief;
 my $i;
@@ -34,7 +33,6 @@ my $i;
 
 
 $i=0;
-$total=0;
 $session = $ui->mk_session();
 map { $objindex{$i++} = $_ } @{ $objects };
 $table = $objects->[0]->short_class unless $table;
@@ -82,7 +80,6 @@ if ( $type eq "address" ){
 
 	push( @rows, \@row );
     }
-
 } elsif( $type eq "block" ) {
     @headers = ( 'Address/Prefix', 'Status', 'Utilization', 'Owner', 'Used by', 'Description' );
 
@@ -99,7 +96,6 @@ if ( $type eq "address" ){
 	    my $total = new Math::BigInt($o->num_addr);
 	    my $used1 = new Math::BigInt($o->address_usage);
 	    my $used2 = new Math::BigInt($o->subnet_usage);
-	    
 	    my $percent1 = ($used1*100/$total);
 	    my $percent2 = ($used2*100/$total);
 	    
@@ -111,20 +107,18 @@ if ( $type eq "address" ){
 			   cell_data=>\@row, linkpages=>['view.html', 'view.html', '']);
 
 	push( @rows, \@row );
-        $total++;
-    }
+     }
 }
 
 $session->{object}      = $objects;
 $session->{objindex}    = \%objindex;
 $session->{table}       = $table;
 $session->{orderbrief}  = \@orderbrief;
-$session->{total}       = $total;
+$session->{total}       = scalar @$objects;
 </%perl>
 <& /generic/data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
 
 <div class="containerheadright">
-%   # <a href="ipblock_list.mhtml?view=csv&osid=<% $osid %>">[csv]</a>
     <a href="#" onClick="opentextwindow('','csv','sid=<% $session->{_session_id} %>')">[csv]</a>
 </div>
 

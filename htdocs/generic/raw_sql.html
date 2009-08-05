@@ -54,11 +54,10 @@ if ( $action eq "DO_SQL" ){
 <%perl>
     if ( defined $result && scalar $result->{rows} ){
         my @headers = $result->{headers};
-        my @rows    = $result->{rows};
-
+        my @rows    = $result->{rows};      
 	print scalar @{$rows[0]} . " rows<br>";
 	$m->comp('data_table.mhtml', field_headers=>@headers, data=>@rows);
-
+    
     }elsif ( $sql_err ){
         print $sql_err, "<br>";
     }
