@@ -362,15 +362,15 @@ sub print_host {
     }else{
 	$logger->warn("Host $name (IP $ip) does not have a valid Contact Group!");
     }
+    print $out "########################################################################\n";
+    print $out "# host $name\n";
+    print $out "########################################################################\n";
+	
     if ( keys %levels ){
 	my $first   = 1;
 	my $fn      = $self->{NAGIOS_NOTIF_FIRST};
 	my $ln      = $self->{NAGIOS_NOTIF_LAST};
 
-	print $out "########################################################################\n";
-	print $out "# host $name\n";
-	print $out "########################################################################\n";
-	
 	foreach my $level ( sort { $a <=> $b } keys %levels ){
 	    my @contact_groups;
 	    foreach my $clid ( @cls ){
@@ -434,14 +434,16 @@ sub print_host {
 	print $out "\taddress                $ip\n";
 	print $out "\tparents                $parents\n" if ($parents);
 	print $out "\tcontact_groups         nobody\n";
+	print $out "\tactive_checks_enabled  $monitored\n";
 	print $out "}\n\n";
 	
 	if ( $self->{NAGIOS_TRAPS} ){
 	    # Define a TRAP service for every host
 	    print $out "define service{\n";
-	    print $out "\tuse                    generic-trap\n";
-	    print $out "\thost_name              $name\n";
-	    print $out "\tcontact_groups         nobody\n";
+	    print $out "\tuse                     generic-trap\n";
+	    print $out "\thost_name               $name\n";
+	    print $out "\tcontact_groups          nobody\n";
+	    print $out "\tpassive_checks_enabled  $monitored\n";
 	    print $out "}\n\n";
 	}
     }
@@ -450,6 +452,7 @@ sub print_host {
     print $out "define service{\n";
     print $out "\tuse                    generic-ping\n";
     print $out "\thost_name              $name\n";
+    print $out "\tactive_checks_enabled  $monitored\n";
     print $out "}\n\n";
 
 }
