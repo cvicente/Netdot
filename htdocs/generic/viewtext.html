@@ -2,7 +2,7 @@
 
 Display a text version of information, easy to select and copy.
 
-Formats accepted: text, csv
+Formats accepted: text, csv, csv_sp (simplied csv)
 
 </%doc>
 %
@@ -23,12 +23,14 @@ title => 'View'
 <%init>
 my $js = 0;
 my $csv = 0;
+my $csv_sp = 0;
 
 my @orderbrief;
 my $session;
 my $osession;
 my %objindex;
 my $table;
+my $page;
 
 $m->clear_buffer;
 
@@ -37,6 +39,9 @@ if ($format eq "js") {
 }
 elsif ($format eq "csv") {
     $csv = 1;
+}
+elsif ($format eq "csv_sp") {
+    $csv_sp = 1;
 }
 
 if ($csv && $osid) {
@@ -50,6 +55,15 @@ if ($csv && $sid) {
     @orderbrief = @{ $session->{orderbrief} };
     $total      = $session->{total};
 }
+if ($csv_sp && $sid) {
+    $session = $ui->get_session($sid);
+    %objindex   = %{ $session->{objindex} };
+    $table      = $session->{table};
+    @orderbrief = @{ $session->{orderbrief} };
+    $total      = $session->{total};
+    $page       = $session->{page};
+}
+
 </%init>
 
 % $m->clear_buffer;
@@ -87,7 +101,7 @@ if ($csv && $sid) {
 %                   if (int(my $fo = $o->$c) != 0 ) {
 %                       $outstring = $fo->get_label;  #$lbl
 %                   }else{
-%                   $outstring = "";
+%                       $outstring = "";
 %                   }
 %               }else{
 %                   $outstring = $o->$c;
@@ -102,6 +116,33 @@ if ($csv && $sid) {
 %       }
 %   }
 
+%   if ( $csv_sp ){
+        <b>
+%       my @outlist; 
+%       my $outstring;
+%       #headers
+%       foreach my $c ( @orderbrief ) {
+%           $outstring = $c;
+%           $outstring =~ s/,/ /g;
+%           $outstring =~ s/"/'/g; 
+%           push( @outlist, $outstring );
+%       }
+%       print join( ',' , @outlist );
+%       @outlist = ();
+        </b><br>
+%       #data
+%       foreach my $c (@$page){
+%           foreach my $cc (@$c) {
+%               $outstring = $cc;
+%               $outstring =~ s/,/ /g;
+%               $outstring =~ s/"/'/g;
+%               push(@outlist,$outstring);
+%           }
+%           print join(',',@outlist);
+%           @outlist = ();
+            <br>
+%       }
+%   }
 
 % if($js){
     <script language="javascript">

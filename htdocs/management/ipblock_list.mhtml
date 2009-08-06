@@ -23,21 +23,14 @@ $table   => undef
 </%args>
 
 <%init>
+my @text_headers;
 my $session;
 my $osession;
 my %objindex;
 my %orderbrief;
 my @orderbrief;
+my $page;
 my $i;
-
-
-
-$i=0;
-$session = $ui->mk_session();
-map { $objindex{$i++} = $_ } @{ $objects };
-$table = $objects->[0]->short_class unless $table;
-%orderbrief  = $table->meta_data->get_column_order_brief();
-@orderbrief  = sort { $orderbrief{$a} <=> $orderbrief{$b} } keys %orderbrief;
 
 my (@headers, @rows);
 if ( $type ){
@@ -54,71 +47,106 @@ if ( $type ){
 </%init>
 
 <%perl>
+
 if ( $type eq "address" ){
     if ( $edit ){
 	push @headers, '[del]';
     }
     push @headers, ( 'Address', 'Name', 'Status', 'Used by', 'Description', 'Last Seen' );
-
+    push @text_headers, ( 'Address', 'Name', 'Status', 'Used by', 'Description', 'Last Seen' ); 
     foreach my $o ( @{ $objects } ) {
 	my @row = ();
+        my @text_row = ();
+
 	if ( $edit ){	 
 	    push @row, '<input type="checkbox" name="' . "Ipblock__" . $o->id . "__delete" . '" >';
 	}
 	push( @row, '<a href="ip.html?id=' . $o->id . '">' . $o->address . '</a>' );
-
+        push( @text_row, $o->address );
 	if ( my $rraddr = ($o->arecords)[0] ){
 	    push @row, $ui->form_field(object=>$rraddr, column=>"rr", edit=>$edit, returnValOnly=>1, linkPage=>1);
+            push @text_row, $rraddr->rr->get_label;
 	} else {
 	    push( @row, "");
+            push( @text_row, "");
 	}
 
 	$ui->add_to_fields(o=>$o, edit=>$edit, fields=>['status', 'used_by', 'description'], 
 			   cell_data=>\@row, linkpages=>['', '', '']);
-
+        push( @text_row, $o->status->get_label );
+        push( @text_row, $o->used_by->get_label );
+        push( @text_row, $o->description );      
+  
 	$ui->add_to_fields(o=>$o, edit=>0, fields=>['last_seen'], cell_data=>\@row, );
+        push( @text_row, $o->last_seen );
 
 	push( @rows, \@row );
+        push( @$page, \@text_row);
     }
 } elsif( $type eq "block" ) {
+    my @text_row = ();
     @headers = ( 'Address/Prefix', 'Status', 'Utilization', 'Owner', 'Used by', 'Description' );
-
+    @text_headers = ( 'Address/Prefix', 'Status', 'Utilization(Address Usage/Subnet Usage)', 'Owner', 'Used by', 'Description' );
     foreach my $o ( @{ $objects } ) {
 	my @row = ();
+        my @text_row = ();
 	push( @row, '<a href="ip.html?id=' . $o->id . '">' . $o->get_label . '</a>' );
+        push( @text_row, $o->get_label );
 
 	push @row, $ui->form_field(object=>$o, column=>"status", edit=>$edit, returnValOnly=>1);
+        push( @text_row, $o->status->get_label );
 
 	if ( $o->status->name eq "Subnet") {
+            my $title;
+
 	    push( @row, $ui->percent_bar(percent => (($o->num_children)/($o->num_addr)*100) ) );
+            $title = int(($o->num_children)/($o->num_addr)*10)/10;
+            push( @text_row , $title."%" );
 	} elsif ($o->status->name eq "Container") {
-	    
+	    my $title1;
+            my $title2;
 	    my $total = new Math::BigInt($o->num_addr);
 	    my $used1 = new Math::BigInt($o->address_usage);
 	    my $used2 = new Math::BigInt($o->subnet_usage);
 	    my $percent1 = ($used1*100/$total);
 	    my $percent2 = ($used2*100/$total);
-	    
+	   
 	    push( @row, $ui->percent_bar2( title1=>"Address Usage: ", title2=>"Subnet Usage: ", percent1=>$percent1, percent2=>$percent2 ) );
+            $title1 = int($percent1*10)/10;
+            $title2 = int($percent2*10)/10;
+  
+            push( @text_row, $title1."%/".$title2."%" );
 	} else {
 	    push( @row, "" );
+            push( @text_row, "" );
 	}
 	$ui->add_to_fields(o=>$o, edit=>$edit, fields=>['owner', 'used_by', 'description'],
 			   cell_data=>\@row, linkpages=>['view.html', 'view.html', '']);
-
+        push( @text_row, $o->owner->get_label );
+        push( @text_row, $o->used_by->get_label );
+        push( @text_row, $o->description );
+        
 	push( @rows, \@row );
+        push( @$page, \@text_row);
      }
 }
+
+$i=0;
+$session = $ui->mk_session();
+map { $objindex{$i++} = $_ } @{ $objects };
+$table = $objects->[0]->short_class unless $table;
+@orderbrief = @text_headers;
 
 $session->{object}      = $objects;
 $session->{objindex}    = \%objindex;
 $session->{table}       = $table;
 $session->{orderbrief}  = \@orderbrief;
 $session->{total}       = scalar @$objects;
+$session->{page}        = $page;
 </%perl>
 <& /generic/data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
 
 <div class="containerheadright">
-    <a href="#" onClick="opentextwindow('','csv','sid=<% $session->{_session_id} %>')">[csv]</a>
+    <a href="#" onClick="opentextwindow('','csv_sp','sid=<% $session->{_session_id} %>')">[csv]</a>
 </div>
 

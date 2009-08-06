@@ -7,6 +7,8 @@
 <%args>
 $sql    => undef
 $action => undef
+$sid    => undef
+$table  => undef
 </%args>
 
 <%attr>
@@ -17,6 +19,13 @@ section => 'Generic'
 <%init>
 my $result;
 my $sql_err;
+
+my $session;
+my %objindex;
+my %orderbrief;
+my @orderbrief;
+my $i;
+
 if ( $action eq "DO_SQL" ){
     eval {
 	$result = Netdot::Model->raw_sql($sql);
@@ -44,9 +53,7 @@ if ( $action eq "DO_SQL" ){
  
     </div> <!-- close containerbody -->
 </div> <!-- close container -->
-
-
-
+% my @rows;
 % if ( $action eq "DO_SQL" ){
     <div class="container">
         <div class="containerhead">Query Results:</div>
@@ -54,15 +61,35 @@ if ( $action eq "DO_SQL" ){
 <%perl>
     if ( defined $result && scalar $result->{rows} ){
         my @headers = $result->{headers};
-        my @rows    = $result->{rows};      
+        @rows    = $result->{rows};      
 	print scalar @{$rows[0]} . " rows<br>";
 	$m->comp('data_table.mhtml', field_headers=>@headers, data=>@rows);
     
     }elsif ( $sql_err ){
         print $sql_err, "<br>";
     }
+
+my $object = @rows;
+$i=0;
+$session = $ui->mk_session();
+map { $objindex{$i++} = $_ } @{ $object };
+$table = $object->[0]->short_class unless $table;
+%orderbrief = $table->meta_data->get_column_order_brief();
+@orderbrief = sort { $orderbrief{$a} <=> $orderbrief{$b} } keys %orderbrief;
+
+$session->{object}     = $object;
+$session->{objindex}   = \%objindex;
+$session->{table}      = $table;
+$session->{orderbrief} = \@orderbrief;
+$session->{total}      = scalar @$object;
 </%perl>
+
+<div class="containerheadright">
+    <a href="#" onClick="opentextwindow('','csv','sid=<% $session->{_session_id} %>')">[csv]</a>
+</div>
         <br>
        </div> <!-- close containerbody -->
     </div> <!-- close container -->
 % }
+
+
