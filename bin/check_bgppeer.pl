@@ -1,8 +1,8 @@
 #!/usr/bin/perl -w
 #
-# check_ifstatus.pl - Nagios plugin 
+# check_bgppeer.pl - nagios plugin 
 #
-# Copyright (C) 2009 Carlos Vicente - University of Oregon
+# Copyright (C) 2009 Carlos Vicente
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -19,54 +19,79 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 #
+#
 # Report bugs to: cvicente(at)ns.uoregon.edu
 #
-# 07/28/2009 Version 1.0
+# 08/05/2009 Version 1.0
 #
 
 use SNMP;
 use strict;
 use Getopt::Long qw(:config no_ignore_case bundling);
+
+# whois program for Registry database queries
+my $whois      = '/usr/bin/whois';
+my $whoissrv   = 'whois.arin.net';
+my $whoisfield = "ASName";
+my $TIMEOUT    = 30;
+my %self;
+
 my %ERRORS = ('UNKNOWN'  => '-1',
               'OK'       => '0',
               'WARNING'  => '1',
               'CRITICAL' => '2');
 
-my $state;
-my %self;
-my $oper_status_oid  = '.1.3.6.1.2.1.2.2.1.8';
-my $admin_status_oid = '.1.3.6.1.2.1.2.2.1.7';
-my $descr_oid        = '.1.3.6.1.2.1.2.2.1.2';
-my $alias_oid        = '.1.3.6.1.2.1.31.1.1.1.18';
+
+my %PEERSTATE = (1 => "idle",
+		 2 => "connect",
+		 3 => "active",
+		 4 => "opensent",
+		 5 => "openconfirm",
+		 6 => "established",
+		 7 => "established"    # Deal with JUNOS < 8.0 bug
+		 );
+
+my $state = "UNKNOWN";
+my $bgpPeerState    = '1.3.6.1.2.1.15.3.1.2';
+my $bgpPeerRemoteAs = '1.3.6.1.2.1.15.3.1.9';
 
 my $usage = <<EOF;
 
- Interface status plugin for Nagios
- Status is critical if the Interface oper status is down
- but its admin status is up.  This avoids notifying for
- interfaces that have been intentionally turned off.
+  Perl BGP peer check plugin for Nagios
+  Monitors BGP session of a particular peer
 
- Copyright (C) 2009 Carlos Vicente
- $0 comes with ABSOLUTELY NO WARRANTY
- This programm is licensed under the terms of the
- GNU General Public License (check source code for details)
+  Copyright (C) 2009 Carlos Vicente
+  $0 comes with ABSOLUTELY NO WARRANTY
+  This programm is licensed under the terms of the
+  GNU General Public License\n(check source code for details)
+  exit $ERRORS{"UNKNOWN"};
 
- usage: $0  -H <hostname> -i <ifIndex> [-c <community>] [-v <1|2|3>]
+  usage: $0 -H <hostname> -a <peer_address> [-c <community>] [-v <1|2|3>]
 
     -H, --host         Hostname
-    -i, --ifindex      Interface index
+    -a, --address      BGP Peer remote address (NOT peer ID)
     -c, --comm         SNMP community (default: public)
     -v, --version      SNMP version (default: 1)
+    -w, --whois        Query WHOIS for AS name
     -d, --debug        Print debugging output
     -h, --help         Show this message
-    
+
 EOF
-    
+
+# Just in case of problems, let's not hang Nagios
+$SIG{'ALRM'} = sub {
+     print ("ERROR: No response from $self{HOSTNAME} (alarm)\n");
+     exit $ERRORS{"UNKNOWN"};
+};
+alarm($TIMEOUT);
+
+
 # handle cmdline args
 my $result = GetOptions( 
     "H|hostname=s"   => \$self{HOSTNAME},
-    "i|ifindex=s"    => \$self{IFINDEX},
+    "a|address=s"    => \$self{PEER},
     "c|comm=s"       => \$self{COMMUNITY},
+    "w|whois"        => \$self{WHOIS},
     "v|version=s"    => \$self{VERSION},
     "d|debug"        => \$self{DEBUG},
     "h|help"         => \$self{HELP},
@@ -81,7 +106,7 @@ if( $self{HELP} ) {
     print $usage;
     exit $ERRORS{'UNKNOWN'};
 }
-unless ( $self{HOSTNAME} && $self{IFINDEX} ){
+unless ( $self{HOSTNAME} && $self{PEER} ){
     print $usage;
     print "Missing required parameters\n";
     exit $ERRORS{'UNKNOWN'};
@@ -112,20 +137,44 @@ if ( $sess_err ){
     exit $ERRORS{$state};    
 }
 
-my $vars = new SNMP::VarList([$admin_status_oid,$self{IFINDEX}], [$oper_status_oid,$self{IFINDEX}], 
-			     [$descr_oid,$self{IFINDEX}], [$alias_oid,$self{IFINDEX}]);
-my ($admin_status, $oper_status, $descr, $alias) = $sess->get($vars);
+my @varlist;
+push (@varlist, [$bgpPeerState,     $self{PEER}]);
+push (@varlist, [$bgpPeerRemoteAs,  $self{PEER}]);
 
-# We only care if the interface is admin up but oper down
-if ( $admin_status == 1 && $oper_status == 2 ){
-    $state = 'CRITICAL';
-    if ( $alias =~ /NOSUCH/ ){
-	$alias = 'n/a';
-    }
-    print "$state: $descr ($alias)\n";
-}else {
+my $vars = new SNMP::VarList(@varlist);
+my ($stateval, $as) = $sess->get($vars);
+my $bgp_state;
+
+if ( $stateval ){
+    $bgp_state = $PEERSTATE{$stateval};
+}else{
+    $state = 'UNKNOWN';
+    print "$state: Peer $self{PEER} not in table\n";
+    exit $ERRORS{$state};        
+}
+
+if ( $bgp_state eq 'established' || $bgp_state eq 'idle' ) { 
     $state = 'OK';
     print "$state\n";
+}else { 
+    $state = 'CRITICAL';
+    my $asname = "n/a";
+    if ( $self{WHOIS} ){
+	&debug("Quering WHOIS server $whoissrv");
+	
+	my @output = `$whois -h $whoissrv AS$as`;
+	my ($name, $value);
+	foreach (@output) {
+	    if (/No entries found/i){
+		last;
+	    }
+	    if (/$whoisfield:/){
+		(undef, $asname) = split /\s+/, $_;
+		last;
+	    }
+	}
+    }
+    print ("$state: $as ($asname) is $bgp_state\n");
 }
 
 exit $ERRORS{$state};
