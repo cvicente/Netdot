@@ -38,15 +38,16 @@ if ( $submit ){
  
     eval {
 	if ( $object_class && @object_id ){
+        
 	    foreach my $object_id ( @object_id ){
 		foreach my $access ( @access ){
-		    my $accessright = AccessRight->find_or_create({object_class => $object_class, 
+            	    my $accessright = AccessRight->find_or_create({object_class => $object_class, 
 								   object_id    => $object_id, 
 								   access       => $access});
 		    if ( $table eq 'Person' ){
 			UserRight->find_or_create({accessright=>$accessright, person=>$id});
 		    }elsif ( $table eq 'ContactList' ){
-			GroupRight->find_or_create({accessright=>$accessright, contactlist=>$id, view=>'access_rights'});
+			GroupRight->find_or_create({accessright=>$accessright, contactlist=>$id});
 		    }
 		}
 	    }
