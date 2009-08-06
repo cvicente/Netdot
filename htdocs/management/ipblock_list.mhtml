@@ -52,10 +52,15 @@ if ( $type eq "address" ){
     if ( $edit ){
 	push @headers, '[del]';
     }
+    # @headers: header for html
     push @headers, ( 'Address', 'Name', 'Status', 'Used by', 'Description', 'Last Seen' );
+    # @text_headers: header for csv text
     push @text_headers, ( 'Address', 'Name', 'Status', 'Used by', 'Description', 'Last Seen' ); 
+
     foreach my $o ( @{ $objects } ) {
+        # @row: cell_data for html text
 	my @row = ();
+        # @text_row: cell_data for csv text
         my @text_row = ();
 
 	if ( $edit ){	 
@@ -132,6 +137,7 @@ if ( $type eq "address" ){
      }
 }
 
+# Create new session and get a new window for csv output
 $i=0;
 $session = $ui->mk_session();
 map { $objindex{$i++} = $_ } @{ $objects };
