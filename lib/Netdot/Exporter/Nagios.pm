@@ -291,7 +291,7 @@ sub generate_configs {
 	    # Add a ifstatus service check for each monitored interface
 	    foreach my $ifid ( keys %{$device_info->{$devid}->{interface}} ){
 		my $iface = $device_info->{$devid}->{interface}->{$ifid};
-		if ( $iface->{monitored} ){
+		if ( $iface->{monitored} && $iface->{admin} eq 'up' ){
 		    my %args;
 		    $args{hostname}  = $hostargs{name};
 		    $args{ifindex}   = $iface->{number};
