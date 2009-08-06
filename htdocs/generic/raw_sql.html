@@ -19,12 +19,11 @@ section => 'Generic'
 <%init>
 my $result;
 my $sql_err;
-
-my $session;
 my %objindex;
-my %orderbrief;
+my $session;
 my @orderbrief;
-my $i;
+my @headers;
+my $headers;
 
 if ( $action eq "DO_SQL" ){
     eval {
@@ -60,7 +59,7 @@ if ( $action eq "DO_SQL" ){
         <div class="containerbody">
 <%perl>
     if ( defined $result && scalar $result->{rows} ){
-        my @headers = $result->{headers};
+        @headers = $result->{headers};
         @rows    = $result->{rows};      
 	print scalar @{$rows[0]} . " rows<br>";
 	$m->comp('data_table.mhtml', field_headers=>@headers, data=>@rows);
@@ -69,23 +68,17 @@ if ( $action eq "DO_SQL" ){
         print $sql_err, "<br>";
     }
 
-my $object = @rows;
-$i=0;
+# Create new session and get a new window for csv output
 $session = $ui->mk_session();
-map { $objindex{$i++} = $_ } @{ $object };
-$table = $object->[0]->short_class unless $table;
-%orderbrief = $table->meta_data->get_column_order_brief();
-@orderbrief = sort { $orderbrief{$a} <=> $orderbrief{$b} } keys %orderbrief;
-
-$session->{object}     = $object;
-$session->{objindex}   = \%objindex;
-$session->{table}      = $table;
-$session->{orderbrief} = \@orderbrief;
-$session->{total}      = scalar @$object;
+$headers = $result->{headers};
+@orderbrief = @$headers;
+$session->{objindex}    = \%objindex;
+$session->{orderbrief}  = \@orderbrief;
+$session->{page}        = $result->{rows};
 </%perl>
 
 <div class="containerheadright">
-    <a href="#" onClick="opentextwindow('','csv','sid=<% $session->{_session_id} %>')">[csv]</a>
+    <a href="#" onClick="opentextwindow('','csv_sp','sid=<% $session->{_session_id} %>')">[csv]</a>
 </div>
         <br>
        </div> <!-- close containerbody -->
