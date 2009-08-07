@@ -49,6 +49,8 @@ my $IPV4 = Netdot->get_ipv4_regex();
 my $IPV6 = Netdot->get_ipv6_regex();
 my $MAC  = Netdot->get_mac_regex();
 
+my $manager = $ui->get_permission_manager($r);
+
 </%init>
 
 <div id="sectiontools" <% $hideheader %>>
@@ -168,22 +170,43 @@ if ( $show_block_records ){
 	    if ( $class eq 'RR' ){
 		$m->comp('/management/host.html', id=>$obj->id);
 	    }elsif ( $class eq 'Ipblock' ){
-		$m->comp('/management/ip.html', id=>$obj->id);
+		unless ( $manager && $manager->can($user, "view", $obj) ){
+		    $m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
+		}
+		# Get the RRs associated with this IP
+		if ( my @a_records = $obj->arecords() ){
+		    my @rrs = map { $_->rr } @a_records;
+		    $m->comp('/generic/show_search_results.mhtml', search=>$search, list=>\@rrs);
+		}else{
+		    $m->comp('/generic/no_search_results.html', search=>$search);
+		}
 	    }elsif ( $class eq 'PhysAddr' ){
-		$m->comp('/management/mac.html', id=>$obj->id);
+		my @rrs;
+		if ( my @dhcp_hosts = $obj->dhcp_hosts ){
+		    if ( my @ips = map { $_->ipblock } @dhcp_hosts ){
+			foreach my $ip ( @ips ){
+			    if ( $manager && $manager->can($user, "view", $ip) ){
+				# Get the RRs associated with this IP
+				if ( my @a_records = $ip->arecords() ){
+				    push @rrs, map { $_->rr } @a_records;
+				}
+			    }
+			}
+		    }
+		}
+		if ( @rrs ){
+		    $m->comp('/generic/show_search_results.mhtml', search=>$search, list=>\@rrs);
+		}else{
+		    $m->comp('/generic/no_search_results.html', search=>$search);
+		}
 	    } 
 	}else{
-	    print '<div class="container">';
-	    print '<div class="containerhead">';
-	    print "Query <em>$search</em> returned: ".scalar(@list)." matches";
-	    print "</div>";
-	    print '<div class="containerbody">';
-	    $m->comp('/generic/sortresults.mhtml', object=>\@list, withedit=>0);
-	    print "</div>\n</div>";
+	    $m->comp('/generic/show_search_results.html', search=>$search, list=>@list);
 	}
     } else {
 	$m->comp('/generic/no_search_results.html', search=>$search);
     }
 }
-
 </%perl>
+
+

@@ -163,7 +163,12 @@ sub _get_rr_subnets {
 	    $ipblocks{$ipb->parent->id} = $ipb->parent if int($ipb->parent);
 	}
 	if ( %ipblocks ){
-	    return values %ipblocks;
+	    my @ipblist = values %ipblocks;
+	    if ( $logger->is_debug() ){
+		my $list = join ', ', map { $_->get_label } @ipblist;
+		$logger->debug("Netdot::ObjectAccessRule::_get_rr_subnets: subnets for RR $rr: ".$rr->id.": $list");
+	    }
+	    return @ipblist;
 	}else{
 	    $logger->debug("Netdot::ObjectAccessRule::_get_rr_subnets: no ipblocks found for RR: ".$rr->id);
 	    return;
@@ -178,10 +183,12 @@ sub _get_rr_subnets {
 sub _deny_action_access {
     my ($action, $access) = @_;
 
-    return 0 unless ($action && $access);
+    Netdot->throw_fatal("Missing arguments")
+	unless ( $action );
 
     # This assumes actions and access rights are the same
     if ( exists $access->{$action} ){
+	$logger->debug("Netdot::ObjectAccessRule::_deny_action_access: action $action allowed for object $access");
 	return 0; # Do not deny access
     }
     $logger->debug("Netdot::ObjectAccessRule::_deny_action_access: access for $action not found.  Denying access.");
