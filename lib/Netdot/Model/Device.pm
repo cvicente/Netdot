@@ -516,7 +516,7 @@ sub insert {
 	$devtmp{name} = $argv->{name};
     }else{
 	# A string hostname was passed
-	if ( my $rr = RR->search(name=>$argv->{name}) ){
+	if ( my $rr = RR->search(name=>$argv->{name})->first ){
 	    $devtmp{name} = $rr;
 	}else{
 	    $devtmp{name} = RR->insert({name=>$argv->{name}});
