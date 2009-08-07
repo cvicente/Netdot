@@ -4,7 +4,6 @@ use base 'Netdot::Exporter';
 use warnings;
 use strict;
 use Data::Dumper;
-use Carp;
 
 my $logger = Netdot->log->get_logger('Netdot::Exporter');
 
@@ -35,30 +34,29 @@ sub new{
     my ($class, %argv) = @_;
     my $self = {};
 
-    foreach my $key ( qw /NMS_DEVICE NAGIOS_CHECKS NAGIOS_TIMEPERIODS NAGIOS_DIR NAGIOS_CFG_EXT NAGIOS_SKEL_EXT 
-                          NAGIOS_FILES NAGIOS_NOTIF_FIRST NAGIOS_NOTIF_LAST NAGIOS_NOTIF_INTERVAL 
-                          NAGIOS_GRAPH_RTT NAGIOS_RTT_RRD_DIR NAGIOS_TRAPS NAGIOS_STRIP_DOMAIN/ ){
+    foreach my $key ( qw /NMS_DEVICE NAGIOS_CHECKS NAGIOS_TIMEPERIODS NAGIOS_DIR NAGIOS_FILE NAGIOS_NOTIF_FIRST 
+                          NAGIOS_NOTIF_LAST NAGIOS_NOTIF_INTERVAL NAGIOS_TRAPS NAGIOS_STRIP_DOMAIN/ ){
 	$self->{$key} = Netdot->config->get($key);
     }
      
-    defined $self->{NMS_DEVICE} ||
-	croak "Netdot::Exporter::Nagios: NMS_DEVICE not defined";
-
-    $self->{MONITOR} = Device->search(name=>$self->{NMS_DEVICE})->first 
-	|| croak "Netdot::Exporter::Nagios: Monitoring device '" . $self->{NMS_DEVICE}. "' not found in DB";
-    
-    ref($self->{NAGIOS_FILES}) eq 'ARRAY' || 
-	croak "Netdot::Exporter::Nagios: NAGIOS_FILES not configured or invalid.";
-    
     $self->{NAGIOS_NOTIF_FIRST} ||= 4;
     $self->{NAGIOS_NOTIF_LAST}  ||= 6;
 
-    if ( $self->{NAGIOS_GRAPH_RTT} ){
-	$self->{NAGIOS_RTT_RRD_DIR} || 
-	    croak "Netdot::Exporter::Nagios: NAGIOS_RTT_RRD_DIR not configured.";
-    }
+    defined $self->{NMS_DEVICE} ||
+	$self->throw_user("Netdot::Exporter::Nagios: NMS_DEVICE not defined");
+
+    $self->{ROOT} = Device->search(name=>$self->{NMS_DEVICE})->first ||
+	$class->throw_user("Netdot::Exporter::Nagios: Monitoring device '" . $self->{NMS_DEVICE}. "' not found in DB");
+    
+    $self->{NAGIOS_FILE} || 
+	$class->throw_user("Netdot::Exporter::Nagios: NAGIOS_FILE not defined");
+    
+    # Open output file for writing
+    $self->{filename} = $self->{NAGIOS_DIR}."/".$self->{NAGIOS_FILE};
 
     bless $self, $class;
+
+    $self->{out} = $self->open_and_lock($self->{filename});
     return $self;
 }
 
@@ -77,493 +75,724 @@ sub generate_configs {
     
     my ( %hosts, %groups, %contacts, %contactlists, %services, %servicegroups );
 
-    # Put APAN's stuff in a separate file
-    if ( Netdot->config->get('NAGIOS_GRAPH_RTT') ){
-	push @{ $self->{NAGIOS_FILES} }, 'apan';
+    # Get Subnet info
+    my %subnet_info;
+    my $subnetq = $self->{_dbh}->selectall_arrayref("
+                  SELECT    ipblock.id, ipblock.description, entity.name
+                  FROM      ipblockstatus, ipblock
+                  LEFT JOIN entity ON (ipblock.used_by=entity.id)
+                  WHERE     ipblock.status=ipblockstatus.id 
+                        AND ipblockstatus.name='Subnet'
+                 ");
+    foreach my $row ( @$subnetq ){
+	my ($id, $descr, $entity) = @$row;
+	$subnet_info{$id}{entity}      = $entity if defined $entity;
+	$subnet_info{$id}{description} = $descr;
     }
 
-    my %ip2name;
-    my $device_ips = $self->get_monitored_ips();
-    
-    foreach my $row ( @$device_ips ){
-	my ($deviceid, $ipid, $address, $hostname) = @$row;
-	
-	my $ipobj  = Ipblock->retrieve($ipid)    || next;
-	my $device = Device->retrieve($deviceid) || next;
-	
-	# Determine the group name for this device
-	my $group;
-	if ( int($ipobj->parent) != 0 ){
-	    if ( int($ipobj->parent->used_by) != 0 ){
-		$group = $ipobj->parent->used_by->name;
-	    }elsif ( $ipobj->parent->description ){
-		$group = $ipobj->parent->description;
-	    }else{
-		$group = $ipobj->parent->address;
-	    }
-	}elsif ( int($device->used_by) != 0 ){
-	    $group = $device->used_by->name;
+    # Get Contact Info
+    my %contact_info;
+    my $clq = $self->{_dbh}->selectall_arrayref("
+                  SELECT    contactlist.id, contactlist.name,
+                            contact.id, contact.escalation_level, 
+                            person.firstname, person.lastname, person.email, person.emailpager,
+                            email_period.name, pager_period.name
+                  FROM      contactlist, person, contact
+                  LEFT JOIN availability email_period ON (email_period.id=contact.notify_email)
+                  LEFT JOIN availability pager_period ON (pager_period.id=contact.notify_email)
+                  WHERE     contact.contactlist=contactlist.id
+                      AND   contact.person=person.id
+                 ");
+    foreach my $row ( @$clq ){
+	my ($clid, $clname, $contid, $esc_level,
+	    $person_first, $person_last, $email, $pager, 
+	    $email_period, $pager_period) = @$row;
+	$contact_info{$clid}{name} = $clname;
+	my $contname;
+	$contname = $person_first if defined $person_first;
+	$contname .= ' '.$person_last if defined $person_last;
+	if ( $contname ){
+	    $contname =~ s/^\s*(.*)\s*$/$1/;
+	    $contname =~ s/\s+/_/g;
 	}
-	unless ( $group ){
-	    $logger->warn("Address " . $address . " in unknown network");
-	    $group = "Unknown";
+	if ( $contid ){
+	    $contact_info{$clid}{contact}{$contid}{name}         = $contname;
+	    $contact_info{$clid}{contact}{$contid}{email}        = $email;
+	    $contact_info{$clid}{contact}{$contid}{pager}        = $pager;
+	    $contact_info{$clid}{contact}{$contid}{esc_level}    = $esc_level;
+	    $contact_info{$clid}{contact}{$contid}{email_period} = $email_period;
+	    $contact_info{$clid}{contact}{$contid}{pager_period} = $pager_period;
 	}
-	
-	# Remove illegal chars for Nagios
-	$group =~ s/[\(\),]//g;  
-	$group =~ s/^\s*(.)\s*$/$1/;
-	$group =~ s/[\/\s]/_/g;  
-	$group =~ s/&/and/g;     
-	$hosts{$ipid}{ip}    = $address;
-	$hosts{$ipid}{ipobj} = $ipobj;
-	
-	# Assign most specific contactlist 
-	# Order is: interface, device and then entity
-	# 
-	my $clobj;
-	if( ($clobj = $ipobj->interface->contactlist) != 0 ){
-	    push @{ $hosts{$ipid}{contactlists} }, $clobj;
+    }
+
+     # Classify contacts by their escalation-level
+     # We'll create a contactgroup for each level
+     foreach my $clid ( keys %contact_info ){
+ 	foreach my $contid ( keys %{$contact_info{$clid}{contact}} ){
+	    my $contact = $contact_info{$clid}{contact}{$contid};
+ 	    # Skip if no availability
+ 	    next if ( (!$contact->{email_period} || $contact->{email_period} eq "Never") && 
+ 		      (!$contact->{pager_period} || $contact->{pager_period} eq "Never") );
 	    
-	    # Devices can have many contactlists
-	    # This gets me DeviceContacts objects (join table)
-	}elsif( my @dcs = $device->contacts ){
-	    foreach my $dc ( @dcs ){
-		push @{ $hosts{$ipid}{contactlists} }, $dc->contactlist;
-	    }
-	}elsif( ($clobj = $device->used_by->contactlist) != 0 ){
-	    push @{ $hosts{$ipid}{contactlists} }, $clobj;
+ 	    # Get common info and store it separately
+ 	    # to create a template
+	    my $name = $contact->{name};
+ 	    if ( !exists ($contacts{$name}) ){
+		$contacts{$name} = $contact;
+ 	    }
+
+ 	    # Then group by escalation level
+ 	    my $level = $contact->{esc_level} || 0;
+ 	    $contactlists{$clid}{level}{$level}{$contid}{name} = $name;
 	}
+     }
+
+    $self->{contactlists} = \%contactlists;
+    $self->{contacts}     = \%contacts;
+
+    # Get Service info
+    my %service_info;
+    my $serviceq = $self->{_dbh}->selectall_arrayref("
+                  SELECT    ipblock.id, service.id, service.name, 
+                            ipservice.monitored, ipservice.contactlist
+                  FROM      ipblock, ipservice, service
+                  WHERE     ipservice.ip=ipblock.id 
+                    AND     ipservice.service=service.id
+                 ");
+    foreach my $row ( @$serviceq ){
+	my ($ipid, $service_id, $service_name, $monitored, $clid) = @$row;
+	$service_info{$ipid}{$service_id}{name} = $service_name;
+	$service_info{$ipid}{$service_id}{monitored} = $monitored;
+	$service_info{$ipid}{$service_id}{contactlist} = $clid if $clid;
+    }
 	
-	foreach my $clobj ( @{ $hosts{$ipid}{contactlists} } ){
-	    my $name = $clobj->name;
-	    next unless defined $name;
-	    $contactlists{$clobj->id}{name} = join '_', split /\s+/, $name;
-	    $contactlists{$clobj->id}{obj}  = $clobj;
-	}
+    my $device_info    = $self->get_device_info();
+    my $int2device     = $self->get_int2device();
+    my $intid2ifindex  = $self->get_intid2ifindex();
+    my $device_parents = $self->get_device_parents($self->{ROOT});
+    my $iface_graph    = $self->get_interface_graph();
+    
+    ######################################################################################
+    foreach my $devid ( keys %$device_info ){
+	my %hostargs;
 	
-	$hosts{$ipid}{group} = $group;
+	# Is it within downtime period
+	my $monitored = (!$self->in_downtime($devid))? 1 : 0;
+	next unless $monitored;
 
-	if ( Netdot->config->get('NAGIOS_STRIP_DOMAIN') ){
-	    my $domain = Netdot->config->get('DEFAULT_DNSDOMAIN');
-	    $hostname =~ s/\.$domain// ;
+	# Determine name
+	my $hostname = $device_info->{$devid}->{hostname} || next;
+	$hostargs{name} = $self->strip_domain($hostname);
+
+	# Determine IP
+	$hostargs{ip} = $self->get_device_main_ip($devid);
+	unless ( $hostargs{ip} ){
+	    $logger->warn("Cannot determine IP address for $hostname. Skipping");
+	    next;
 	}
 
-	$hosts{$ipid}{name} = $hostname;
-	push @{ $groups{$group}{members} }, $hostname;
-	$ip2name{$ipid} = $hostname;
-
-	# Add services (if any)
-	foreach my $ipsrv ( $ipobj->services ){
-	    my $srvname = $ipsrv->service->name;
-	    my $srvclobj;
-	    $logger->debug("Service $srvname added to IP " . $address);
-	    push  @{ $servicegroups{$srvname}{members} }, $hostname ;
-
-	    # If service has a contactlist, use that
-	    # if not, use the associated IP's contactlists
-	    #
-	    if ( ($srvclobj = $ipsrv->contactlist) != 0 ) {
-		push @{ $services{$hostname}{$srvname}{contactlists} }, $srvclobj;
-		$contactlists{$srvclobj->id}{name} = join '_', split /\s+/, $srvclobj->name;
-		$contactlists{$srvclobj->id}{obj}  = $srvclobj;
-		$logger->debug("Contactlist ". $srvclobj->name ." assigned to service $srvname for IP " . $address);
-	    }elsif( $hosts{$ipid}{contactlists} ){
-		$services{$hostname}{$srvname}{contactlists} = $hosts{$ipid}{contactlists};
-	    }else{
-		$logger->debug("Service $srvname for IP ". $address ." has no contactlist defined\n");
-	    }
-	    # Add the SNMP community in case it's needed
-	    $services{$hostname}{$srvname}{community} = $device->community;
+  	# Determine the group name
+ 	my $group;
+	if ( my $subnet = $device_info->{$devid}->{subnet} ){
+	    $group = $subnet_info{$subnet}->{entity} || 
+		$subnet_info{$subnet}->{description};
+	}elsif ( my $entity = $device_info->{$devid}->{used_by} ){
+	    $group = $entity;
 	}
-    } #foreach ip
+ 	unless ( $group ){
+ 	    $logger->warn("Device $hostname in unknown group");
+ 	    $group = "Unknown";
+ 	}
+ 	# Remove illegal chars
+ 	$group =~ s/[\(\),]//g;  
+ 	$group =~ s/^\s*(.)\s*$/$1/;
+ 	$group =~ s/[\/\s]/_/g;  
+ 	$group =~ s/&/and/g;     
+ 	$hostargs{group} = $group;
 
-    # Now that we have everybody in, assign parent list.
-    my $dependencies = $self->get_dependencies($self->{MONITOR});
-    foreach my $ipid ( keys %hosts ){
-	next unless defined $dependencies->{$ipid};
-	if ( my @parentlist = @{$dependencies->{$ipid}} ){
-	    my @names;
-	    foreach my $parent ( @parentlist ){
-		if ( !exists $ip2name{$parent} ){
-		    $logger->warn("IP $ipid parent $parent not in monitored list." .
-				  " Skipping.");
+	# Contact Lists
+	my @clids;
+	if ( @clids = keys %{$device_info->{$devid}->{contactlist}} ){
+	    foreach my $clid ( @clids ){
+		unless ( exists $contact_info{$clid} ){
+		    $logger->warn("Device $hostname ContactList id $clid not valid (no contacts?)");
 		    next;
 		}
-		push @names, $ip2name{$parent};
+		next unless defined $contact_info{$clid}{name};
+		$contactlists{$clid}{name} = $contact_info{$clid}{name};
+		$contactlists{$clid}{name} =~ s/\s+/_/g;
+		push @{$hostargs{contactlists}}, $clid;
 	    }
-	    $hosts{$ipid}{parents} = join ',', @names;
-	}else{
-	    $hosts{$ipid}{parents} = undef;
 	}
-    }
 
-    # Classify contacts by their escalation-level
-    # We'll create a contactgroup for each level
+	# Host Parents
+	my @parent_names;
+	foreach my $d ( $self->get_monitored_ancestors($devid, $device_parents) ){
+	    my $name = $self->strip_domain($device_info->{$d}->{hostname});
+	    push @parent_names, $name;
+	}
+	if ( @parent_names && defined $parent_names[0] ){
+	    $hostargs{parents} = join ',', @parent_names;    
+	}
 
-    foreach my $clid ( keys %contactlists ){
-	my $clobj = $contactlists{$clid}{obj};
+	push @{ $groups{$group}{members} }, $hostargs{name};
+	$self->print_host(%hostargs);
 
-	foreach my $contact ( $clobj->contacts ){
+ 	# Add monitored services on the target IP
+	my $target_ip = $device_info->{$devid}->{ipid};
+	if ( defined $target_ip && exists $service_info{$target_ip} ){
+	    foreach my $servid ( keys %{$service_info{$target_ip}} ){
+		next unless ( $service_info{$target_ip}->{$servid}->{monitored} );
+		my %args;
+		$args{hostname} = $hostargs{name};
+		my $srvname = $service_info{$target_ip}->{$servid}->{name};
+		$args{srvname} = $srvname;
+
+		# Add service to servicegroup
+		push  @{ $servicegroups{$srvname}{members} }, $hostargs{name};
+
+		# Add community if SNMP managed
+		if ( $device_info->{$devid}->{snmp_managed} ){
+		    $args{community} = $device_info->{$devid}->{community};
+		}
+		
+		# If service has a contactlist, use that
+		# if not, use Device contactlists
+		my @cls;
+		if ( my $srvcl = $service_info{$target_ip}->{contactlist} ){
+		    push @cls, $srvcl;
+		}else{
+		    push @cls, @clids;
+		}
+		$args{contactlists} = \@cls if @cls;
+		$self->print_service(%args);
+	    }
+	}
+
+	# Services monitored via SNMP
+	if ( $device_info->{$devid}->{snmp_managed} ){
+
+	    # Add a bgppeer service check for each monitored BGP peering
+	    foreach my $peeraddr ( keys %{$device_info->{$devid}->{peering}} ){
+		my $peering = $device_info->{$devid}->{peering}->{$peeraddr};
+		next unless ( $peering->{monitored} );
+		my %args;
+		$args{hostname}     = $hostargs{name};
+		$args{peeraddr}     = $peeraddr;
+		$args{srvname}      = "BGPPEER";
+		$args{community}    = $device_info->{$devid}->{community};
+		$args{contactlists} = \@clids;
+		$self->print_service(%args);
+	    }
 	    
-	    # Skip if no availability
-	    next if ( ($contact->notify_email == 0 || $contact->notify_email->name eq "Never") && 
-		      ($contact->notify_pager == 0 || $contact->notify_pager->name eq "Never") );
+	    # Add a ifstatus service check for each monitored interface
+	    foreach my $ifid ( keys %{$device_info->{$devid}->{interface}} ){
+		my $iface = $device_info->{$devid}->{interface}->{$ifid};
+		if ( $iface->{monitored} && defined $iface->{admin} && $iface->{admin} eq 'up' ){
+		    my %args;
+		    $args{hostname}  = $hostargs{name};
+		    $args{ifindex}   = $iface->{number};
+		    $args{srvname}   = "IFSTATUS";
+		    $args{community} = $device_info->{$devid}->{community};
 
-	    # Get common info and store it separately
-	    # to create a template
-	    my $contactname = '';
-	    $contactname = join ' ', ($contact->person->firstname, $contact->person->lastname);
-	    $contactname =~ s/^\s*(.*)\s*$/$1/;
-	    $contactname =~ s/\s+/_/g;
-	    if ( ! exists ($contacts{$contactname}) ){
-		$contacts{$contactname}{email} = $contact->person->email;
-		$contacts{$contactname}{pager} = $contact->person->emailpager;
-	    }
-
-	    # Then group by escalation level
-	    my $level;
-	    if ( ! defined ($contact->escalation_level) ){
-		$level = 0;  # Assume it's lowest if not there.
-	    }else{
-		$level = $contact->escalation_level;
-	    }
-	    $contactlists{$clid}{level}{$level}{$contact->id}{name} = $contactname;
-	}
-
-    }
-
-
-    #######################################################################################3
-    # Start writing config files
-    #
-    foreach my $file ( @{ $self->{NAGIOS_FILES} } ){
-	# Open skeleton file for reading
-	my $skel_file = $self->{NAGIOS_DIR}."/$file.".$self->{NAGIOS_SKEL_EXT};
-	open (SKEL, "$skel_file") or die "Can't open $skel_file\n";
-	
-	# Open output file for writing
-	my $out_file = $self->{NAGIOS_DIR}."/$file.".$self->{NAGIOS_CFG_EXT};
-	my $out = $self->open_and_lock($out_file);
-	
-	while ( <SKEL> ){
-	    if (/<INSERT HOST DEFINITIONS>/){
-		
-		foreach my $ipid ( sort { $hosts{$a}{name} cmp $hosts{$b}{name} } keys %hosts ){
-		    my $name     = $hosts{$ipid}{name};
-		    my $ip       = $hosts{$ipid}{ip};
-		    my $group    = $hosts{$ipid}{group};
-		    my $parents  = $hosts{$ipid}{parents};
-		    my @cls      = @{ $hosts{$ipid}{contactlists} } if $hosts{$ipid}{contactlists};
-		    
-		    my %levels;
-		    if ( @cls ) {
-			# This will make sure we're looping through the highest level number
-			map { map { $levels{$_} = '' } keys %{ $contactlists{$_->id}{level} } } @cls;
+		    # If interface has a contactlist, use that, otherwise use Device contactlists
+		    my @cls;
+		    if ( my $intcl = $iface->{contactlist} ){
+			push @cls, $intcl;
 		    }else{
-			$logger->warn("Host $name (IP id $ipid) does not have a valid Contact Group!");
+			push @cls, @clids;
 		    }
+		    $args{contactlists} = \@cls if @cls;
 
-		    if ( keys %levels ){
-			my $first   = 1;
-			my $fn      = $self->{NAGIOS_NOTIF_FIRST};
-			my $ln      = $self->{NAGIOS_NOTIF_FIRST};
-			
-			foreach my $level ( sort keys %levels ){
-			    my @contact_groups;
-			    foreach my $cl ( @cls ){
-				# Make sure this contact list has this level defined
-				if( $contactlists{$cl->id}{level}{$level} ){
-				    push @contact_groups, "$contactlists{$cl->id}{name}" . "-level_$level";
+		    # Determine parent service for service dependency.  If neighbor interface is monitored, 
+		    # and belongs to parent make ifstatus service on that interface the parent.  
+		    # Otherwise, make the ping service of the parent host the parent.
+		    if ( my $neighbor = $iface_graph->{$ifid} ){
+			my $nd = $int2device->{$neighbor};
+			if ( $nd && $device_parents->{$devid}->{$nd} ){
+			    # Neighbor device is my parent
+			    if ( exists $device_info->{$nd} ){
+				if ( $device_info->{$nd}->{interface}->{$neighbor}->{monitored} ){
+				    if ( my $nifindex = $intid2ifindex->{$neighbor} ){
+					$args{parent_host}    = $self->strip_domain($device_info->{$nd}->{hostname});
+					$args{parent_service} = "IFSTATUS_$nifindex";
+				    }
+				}else{
+				    $args{parent_host}    = $self->strip_domain($device_info->{$nd}->{hostname});
+				    $args{parent_service} = 'PING';
 				}
-			    }
-			    my $contact_groups = join ',', @contact_groups;
-			    
-			    if ( $first ){
-				print $out "define host{\n";
-				print $out "\tuse                    generic-host\n";
-				print $out "\thost_name              $name\n";
-				print $out "\talias                  $group\n";
-				print $out "\taddress                $ip\n";
-				print $out "\tparents                $parents\n" if ($parents);
-				print $out "\tcontact_groups         $contact_groups\n";
-				print $out "}\n\n";
-				if ( $self->{NAGIOS_TRAPS} ){
-				    print $out "define service{\n";
-				    print $out "\tuse                     generic-trap\n";
-				    print $out "\thost_name               $name\n";
-				    print $out "\tcontact_groups          $contact_groups\n";
-				    print $out "}\n\n";
-				}
-				$first = 0;
 			    }else{
-				print $out "define hostescalation{\n";
-				print $out "\thost_name                $name\n";
-				print $out "\tfirst_notification       $fn\n";
-				print $out "\tlast_notification        $ln\n";
-				print $out "\tnotification_interval    ".$self->{NAGIOS_NOTIF_INTERVAL}."\n";
-				print $out "\tcontact_groups           $contact_groups\n";
-				print $out "}\n\n";
-				
-				if ( $self->{NAGIOS_TRAPS} ){
-				    print $out "define serviceescalation{\n";
-				    print $out "\thost_name                $name\n";
-				    print $out "\tservice_description      TRAP\n";
-				    print $out "\tfirst_notification       $fn\n";
-				    print $out "\tlast_notification        $ln\n";
-				    print $out "\tnotification_interval    ".$self->{NAGIOS_NOTIF_INTERVAL}."\n";
-				    print $out "\tcontact_groups           $contact_groups\n";
-				    print $out "}\n\n";
-				}
-				
-				$fn += $ln - $fn + 1;
-				$ln += $ln - $fn + 1;
-			    }
-			}   
-			
-		    }
-		    if ( !@cls || ! keys %levels ){
-			print $out "define host{\n";
-			print $out "\tuse                    generic-host\n";
-			print $out "\thost_name              $name\n";
-			print $out "\talias                  $group\n";
-			print $out "\taddress                $ip\n";
-			print $out "\tparents                $parents\n" if ($parents);
-			print $out "\tcontact_groups         nobody\n";
-			print $out "}\n\n";
-			
-			if ( $self->{NAGIOS_TRAPS} ){
-			    # Define a TRAP service for every host
-			    print $out "define service{\n";
-			    print $out "\tuse                    generic-trap\n";
-			    print $out "\thost_name              $name\n";
-			    print $out "\tcontact_groups         nobody\n";
-			    print $out "}\n\n";
-			}
-		    }
-		    
-		    if ( $self->{NAGIOS_GRAPH_RTT} ){
-			# Define RTT (Round Trip Time) as a service
-			print $out "define service{\n";
-			print $out "\thost_name              $name\n";
-			print $out "\tuse                    generic-RTT\n";
-			print $out "}\n\n";
-			
-			print $out "define serviceextinfo{\n";
-			print $out "\thost_name              $name\n";
-			print $out "\tservice_description    RTT\n";
-			print $out "\tnotes                  Round Trip Time Statistics\n";
-			print $out "\tnotes_url              /nagios/cgi-bin/apan.cgi?host=$ip&service=RTT\n";
-			print $out "\ticon_image             graph.png\n";
-			print $out "\ticon_image_alt         View RTT graphs\n";
-			print $out "}\n\n";
-			
-		    }else{
-			
-			# Nagios requires at least one service per host
-			print $out "define service{\n";
-			print $out "\tuse                    generic-ping\n";
-			print $out "\thost_name              $name\n";
-			print $out "}\n\n";
-		    }
-		    
-		}
-		
-	    }elsif (/<INSERT APAN DEFINITIONS>/){
-		
-		foreach my $ipid ( keys %hosts ){
-		    my $name = $hosts{$ipid}{name};
-		    $name =~ s/\//-/;
-		    my $ip = $hosts{$ipid}{ip};
-		    my $dir = $self->{NAGIOS_RTT_RRD_DIR};
-		    print $out "$ip;RTT;$dir/$ip-RTT.rrd;ping;RTT:LINE2;Ping round-trip time;Seconds\n"; 
-		}
-		
-	    }elsif (/<INSERT CONTACT DEFINITIONS>/){
-		# Create the contact templates (with a person's common info)
-		# A person might be a contact for several groups/events
-		
-		foreach my $name (keys %contacts){
-		    print $out "define contact{\n";
-		    print $out "\tname                            $name\n";
-		    print $out "\tuse                             generic-contact\n";
-		    print $out "\talias                           $name\n";
-		    print $out "\temail                           $contacts{$name}{email}\n" if $contacts{$name}{email};
-		    print $out "\tpager                           $contacts{$name}{pager}\n" if $contacts{$name}{pager};
-		    print $out "\tregister                        0 ; (THIS WILL BE INHERITED LATER)\n";  
-		    print $out "}\n\n";
-		    
-		}
-		
-		# Create specific contacts (notification periods vary in each case)
-		foreach my $cl ( keys %contactlists  ){
-		    my $clname = $contactlists{$cl}{name};
-		    foreach my $level ( sort {$a <=> $b} keys %{ $contactlists{$cl}{level} } ){
-			my @members;
-			foreach my $contactid ( keys %{ $contactlists{$cl}{level}{$level} } ){
-			    my $name = $contactlists{$cl}{level}{$level}{$contactid}{name};
-			    my $contact = Contact->retrieve($contactid);
-			    # One for e-mails
-			    if ( int($contact->notify_email) ){
-				if ( exists($self->{NAGIOS_TIMEPERIODS}{$contact->notify_email->name}) ){
-				    if ((my $emailperiod = $self->{NAGIOS_TIMEPERIODS}{$contact->notify_email->name}) ne 'none' ){
-					my $contactname = "$name-$clname-email-level_$level";
-					push @members, $contactname;
-					print $out "define contact{\n";
-					print $out "\tcontact_name                    $contactname\n";
-					print $out "\tuse                             $name\n";
-					print $out "\tservice_notification_period     $emailperiod\n";
-					print $out "\thost_notification_period        $emailperiod\n";
-					print $out "\tservice_notification_commands   notify-by-email\n";
-					print $out "\thost_notification_commands      host-notify-by-email\n";
-					print $out "}\n\n";
-				    }
-				}else{
-				    $logger->warn($contact->notify_email->name . " is not a defined timeperiod");
-				}
-			    }
-			    # And one for paging
-			    if ( int($contact->notify_pager) ){
-				if ( exists($self->{NAGIOS_TIMEPERIODS}{$contact->notify_pager->name}) ){
-				    if ((my $pagerperiod = $self->{NAGIOS_TIMEPERIODS}{$contact->notify_pager->name}) ne 'none' ){
-					my $contactname = "$name-$clname-pager-level_$level";
-					push @members, $contactname;
-					print $out "define contact{\n";
-					print $out "\tcontact_name                    $contactname\n";
-					print $out "\tuse                             $name\n";
-					print $out "\tservice_notification_period     $pagerperiod\n";
-					print $out "\thost_notification_period        $pagerperiod\n";
-					print $out "\tservice_notification_commands   notify-by-epager\n";
-					print $out "\thost_notification_commands      host-notify-by-epager\n";
-					print $out "}\n\n";
-				    }
-				}else{
-				    $logger->warn($contact->notify_pager->name . " is not a defined timeperiod");
+				# Look for grandparents then
+				if ( my @parents = $self->get_monitored_ancestors($nd, $device_parents) ){
+				    my $p = $parents[0]; # Just grab the first one for simplicity
+				    $args{parent_host}    = $self->strip_domain($device_info->{$p}->{hostname});
+				    $args{parent_service} = 'PING';
 				}
 			    }
 			}
-			# Create the contactgroup
-			my $members = join ',', @members;
-			
-			print $out "define contactgroup{\n";
-			print $out "\tcontactgroup_name       $clname-level_$level\n";
-			print $out "\talias                   $clname\n";
-			print $out "\tmembers                 $members\n";
-			print $out "}\n\n";
 		    }
+		    $self->print_service(%args);
 		}
-		
-	    }elsif (/<INSERT HOST GROUP DEFINITIONS>/){
-		foreach my $group ( keys %groups ){
-		    
-		    my $hostlist = join ',', @{ $groups{$group}{members} };
-		    print $out "define hostgroup{\n";
-		    print $out "\thostgroup_name      $group\n";
-		    print $out "\talias               $group\n";
-		    print $out "\tmembers             $hostlist\n";
-		    print $out "}\n\n";
-		}
-		
-	    }elsif (/<INSERT SERVICE GROUP DEFINITIONS>/){
-		foreach my $group ( keys %servicegroups ){
-		    
-		    # servicegroup members are like:
-		    # members=<host1>,<service1>,<host2>,<service2>,...,
-		    my $hostlist = join ',', map { "$_,$group" }@{ $servicegroups{$group}{members} };
-		    print $out "define servicegroup{\n";
-		    print $out "\tservicegroup_name      $group\n";
-		    print $out "\talias                  $group\n";
-		    print $out "\tmembers                $hostlist\n";
-		    print $out "}\n\n";
-		}
-		
-	    }elsif (/<INSERT SERVICE DEFINITIONS>/){
-		
-		foreach my $name ( keys %services ){
-		    foreach my $srvname ( keys %{ $services{$name} } ){
-			if ( !exists $self->{NAGIOS_CHECKS}{$srvname} ){
-			    $logger->warn("Service check for $srvname not implemented." . 
-					  " Skipping $srvname check for host $name.");
-			    next;
-			}
-			my $checkcmd = $self->{NAGIOS_CHECKS}{$srvname};
-			
-			# Add community argument for checks that use SNMP
-			if ( $checkcmd eq "check_bgp"){
-			    $checkcmd .= "!$services{$name}{$srvname}{community}";
-			}
-			my @cls = @{ $services{$name}{$srvname}{contactlists} } 
-			if $services{$name}{$srvname}{contactlists};
-			
-			my %levels;
-			if ( @cls ){
-			    # This will make sure we're looping through the highest level number
-			    map { map { $levels{$_} = '' } keys %{ $contactlists{$_->id}{level} } } @cls;
-			}else{
-			    $logger->warn("Service ". $srvname  ." on ". $name .
-					  " does not have a valid Contact Group");
-			}
-			if ( keys %levels ){
-			    my $first  = 1;
-			    my $fn     = $self->{NAGIOS_NOTIF_FIRST};
-			    my $ln     = $self->{NAGIOS_NOTIF_LAST};
-			    
-			    foreach my $level ( sort keys %levels ){
-				my @contact_groups;
-				foreach my $cl ( @cls ){
-				    # Make sure this contact list has this level defined
-				    if( $contactlists{$cl->id}{level}{$level} ){
-					push @contact_groups, "$contactlists{$cl->id}{name}" . "-level_$level";
-				    }
-				}
-				my $contact_groups = join ',', @contact_groups;
-				
-				if ( $first ){
-				    print $out "define service{\n";
-				    print $out "\tuse                  generic-service\n";
-				    print $out "\thost_name            $name\n";
-				    print $out "\tservice_description  $srvname\n";
-				    print $out "\tcontact_groups       $contact_groups\n";
-				    print $out "\tcheck_command        $checkcmd\n";
-				    print $out "}\n\n";
-				    
-				    $first = 0;
-				}else{
-				    
-				    print $out "define serviceescalation{\n";
-				    print $out "\thost_name                $name\n";
-				    print $out "\tservice_description      $srvname\n";
-				    print $out "\tfirst_notification       $fn\n";
-				    print $out "\tlast_notification        $ln\n";
-				    print $out "\tnotification_interval    ".$self->{NAGIOS_NOTIF_INTERVAL}."\n";
-				    print $out "\tcontact_groups           $contact_groups\n";
-				    print $out "}\n\n";
-				    
-				    $fn += $ln - $fn + 1;
-				    $ln += $ln - $fn + 1;
-				}
-			    }	   
-			}
-			if ( ! @cls || ! keys %levels ){
-			    
-			    print $out "define service{\n";
-			    print $out "\tuse                  generic-service\n";
-			    print $out "\thost_name            $name\n";
-			    print $out "\tservice_description  $srvname\n";
-			    print $out "\tcontact_groups       nobody\n";
-			    print $out "\tcheck_command        $checkcmd\n";
-			    print $out "}\n\n";
-			}
-		    }
-		}
-		
-	    }else{
-		print $out $_;
 	    }
 	}
-	$logger->info("Netdot::Exporter::Nagios: Configuration written to file: $out_file");
-	close(SKEL);
-	close($out);
+	
     }
+
+    $self->print_hostgroups(\%groups);
+    $self->print_servicegroups(\%servicegroups);
+    $self->print_contacts();
+
+    $logger->info("Netdot::Exporter::Nagios: Configuration written to file: ".$self->{filename});
+    close($self->{out});
+}
+
+
+#####################################################################################
+sub print_host {
+    my ($self, %argv) = @_;
+
+    my $name      = $argv{name};
+    my $ip        = $argv{ip};
+    my $group     = $argv{group};
+    my $parents   = $argv{parents};
+    my @cls       = @{ $argv{contactlists} } if $argv{contactlists};
+    my $out       = $self->{out};
+
+    my $contactlists = $self->{contactlists};
+    my %levels;
+    if ( @cls ) {
+	# This will make sure we're looping through the highest level number
+	map { map { $levels{$_} = '' } keys %{$contactlists->{$_}->{level}} } @cls;
+    }else{
+	$logger->warn("Host $name (IP $ip) does not have a valid Contact Group!");
+    }
+    print $out "########################################################################\n";
+    print $out "# host $name\n";
+    print $out "########################################################################\n";
+	
+    if ( keys %levels ){
+	my $first   = 1;
+	my $fn      = $self->{NAGIOS_NOTIF_FIRST};
+	my $ln      = $self->{NAGIOS_NOTIF_LAST};
+
+	foreach my $level ( sort { $a <=> $b } keys %levels ){
+	    my @contact_groups;
+	    foreach my $clid ( @cls ){
+		# Make sure this contact list has this level defined
+		if( $contactlists->{$clid}->{level}->{$level} ){
+		    push @contact_groups, $contactlists->{$clid}->{name} . "-level_$level";
+		}
+	    }
+	    my $contact_groups = join ',', @contact_groups;
+	    
+	    if ( $first ){
+		print $out "define host{\n";
+		print $out "\tuse                    generic-host\n";
+		print $out "\thost_name              $name\n";
+		print $out "\talias                  $group\n";
+		print $out "\taddress                $ip\n";
+		print $out "\tparents                $parents\n" if ($parents);
+		print $out "\tcontact_groups         $contact_groups\n";
+		print $out "}\n\n";
+		if ( $self->{NAGIOS_TRAPS} ){
+		    print $out "define service{\n";
+		    print $out "\tuse                     generic-trap\n";
+		    print $out "\thost_name               $name\n";
+		    print $out "\tcontact_groups          $contact_groups\n";
+		    print $out "}\n\n";
+		}
+		$first = 0;
+	    }else{
+		print $out "define hostescalation{\n";
+		print $out "\thost_name                $name\n";
+		print $out "\tfirst_notification       $fn\n";
+		print $out "\tlast_notification        $ln\n";
+		print $out "\tnotification_interval    ".$self->{NAGIOS_NOTIF_INTERVAL}."\n";
+		print $out "\tcontact_groups           $contact_groups\n";
+		print $out "}\n\n";
+		
+		if ( $self->{NAGIOS_TRAPS} ){
+		    print $out "define serviceescalation{\n";
+		    print $out "\thost_name                $name\n";
+		    print $out "\tservice_description      TRAP\n";
+		    print $out "\tfirst_notification       $fn\n";
+		    print $out "\tlast_notification        $ln\n";
+		    print $out "\tnotification_interval    ".$self->{NAGIOS_NOTIF_INTERVAL}."\n";
+		    print $out "\tcontact_groups           $contact_groups\n";
+		    print $out "}\n\n";
+		}
+		
+		$fn += $ln - $fn + 1;
+		$ln += $ln - $fn + 1;
+	    }
+	}   
+	
+    }
+    if ( !@cls || !keys %levels ){
+	print $out "define host{\n";
+	print $out "\tuse                    generic-host\n";
+	print $out "\thost_name              $name\n";
+	print $out "\talias                  $group\n";
+	print $out "\taddress                $ip\n";
+	print $out "\tparents                $parents\n" if ($parents);
+	print $out "\tcontact_groups         nobody\n";
+	print $out "}\n\n";
+	
+	if ( $self->{NAGIOS_TRAPS} ){
+	    # Define a TRAP service for every host
+	    print $out "define service{\n";
+	    print $out "\tuse                     generic-trap\n";
+	    print $out "\thost_name               $name\n";
+	    print $out "\tcontact_groups          nobody\n";
+	    print $out "}\n\n";
+	}
+    }
+    
+    # Add ping service for every host
+    print $out "define service{\n";
+    print $out "\tuse                    generic-ping\n";
+    print $out "\thost_name              $name\n";
+    print $out "}\n\n";
+
+}
+
+#####################################################################################
+sub print_service {
+    my ($self, %argv) = @_;
+    my ($hostname, $srvname) = @argv{'hostname', 'srvname'};
+
+    my $checkcmd;
+    unless ( $checkcmd = $self->{NAGIOS_CHECKS}{$srvname} ){
+	$logger->warn("Service check for $srvname not implemented." . 
+		      " Skipping $srvname check for host $hostname.");
+	return;
+    }
+
+    my @cls = @{ $argv{contactlists} } if $argv{contactlists};
+    my $out = $self->{out};
+    my $contactlists = $self->{contactlists};
+
+    
+    if ( $srvname eq "BGPPEER" || $srvname eq "IFSTATUS" ){
+	if ( my $community = $argv{community} ){
+	    $checkcmd .= "!$community";				
+	}else{
+	    $logger->warn("Service check for $srvname requires a SNMP community." .
+			  " Skipping $srvname check for host $hostname.");
+	    return;
+	}
+    }
+    if ( $srvname eq "IFSTATUS" ){
+	my $ifindex;
+	unless ( $ifindex = $argv{ifindex} ){
+	    $logger->warn("Service check for $srvname requires ifindex." . 
+			  " Skipping $srvname check for host $hostname.");
+	    return;
+	}
+	$srvname  .= "_$ifindex"; # Make the service name unique
+	$checkcmd .= "!$ifindex"; # Pass the argument to the check command
+    }
+
+    if ( $srvname eq "BGPPEER" ){
+	my $peeraddr;
+	unless ( $peeraddr = $argv{peeraddr} ){
+	    $logger->warn("Service check for $srvname requires peeraddr." . 
+			  " Skipping $srvname check for host $hostname.");
+	    return;
+	}
+	$srvname  .= "_$peeraddr"; # Make the service name unique
+	$checkcmd .= "!$peeraddr"; # Pass the argument to the check command
+    }
+    
+    my %levels;
+    if ( @cls ){
+	# This will make sure we're looping through the highest level number
+	map { map { $levels{$_} = '' } keys %{ $contactlists->{$_}->{level} } } @cls;
+    }else{
+	$logger->warn("Service ". $srvname  ." on ". $hostname .
+		      " does not have a valid Contact Group");
+    }
+    if ( keys %levels ){
+	my $first  = 1;
+	my $fn     = $self->{NAGIOS_NOTIF_FIRST};
+	my $ln     = $self->{NAGIOS_NOTIF_LAST};
+	
+	foreach my $level ( sort { $a <=> $b } keys %levels ){
+	    my @contact_groups;
+	    foreach my $clid ( @cls ){
+		# Make sure this contact list has this level defined
+		if( $contactlists->{$clid}->{level}->{$level} ){
+		    push @contact_groups, $contactlists->{$clid}->{name} . "-level_$level";
+		}
+	    }
+	    my $contact_groups = join ',', @contact_groups;
+	    
+	    if ( $first ){
+		print $out "define service{\n";
+		print $out "\tuse                   generic-service\n";
+		print $out "\thost_name             $hostname\n";
+		print $out "\tservice_description   $srvname\n";
+		print $out "\tcontact_groups        $contact_groups\n";
+		print $out "\tcheck_command         $checkcmd\n";
+		print $out "}\n\n";
+		
+		$first = 0;
+	    }else{
+		print $out "define serviceescalation{\n";
+		print $out "\thost_name                $hostname\n";
+		print $out "\tservice_description      $srvname\n";
+		print $out "\tfirst_notification       $fn\n";
+		print $out "\tlast_notification        $ln\n";
+		print $out "\tnotification_interval    ".$self->{NAGIOS_NOTIF_INTERVAL}."\n";
+		print $out "\tcontact_groups           $contact_groups\n";
+		print $out "}\n\n";
+		
+		$fn += $ln - $fn + 1;
+		$ln += $ln - $fn + 1;
+	    }
+	}	   
+    }
+    if ( ! @cls || ! keys %levels ){
+	print $out "define service{\n";
+	print $out "\tuse                  generic-service\n";
+	print $out "\thost_name            $hostname\n";
+	print $out "\tservice_description  $srvname\n";
+	print $out "\tcontact_groups       nobody\n";
+	print $out "\tcheck_command        $checkcmd\n";
+	print $out "}\n\n";
+    }
+
+    # Add service dependencies if needed
+    if ( $argv{parent_host} && $argv{parent_service} ){
+	$self->print_servicedep($hostname, $srvname, $argv{parent_host}, $argv{parent_service});
+    }
+}
+
+#####################################################################################
+sub print_contacts {
+    my($self) = @_;
+    my $out = $self->{out};
+    my $contacts     = $self->{contacts};
+    my $contactlists = $self->{contactlists};
+
+    # Create the contact templates (with a person's common info)
+    # A person might be a contact for several groups/events
+    
+    foreach my $name ( keys %$contacts ){
+	print $out "define contact{\n";
+	print $out "\tname                            $name\n";
+	print $out "\tuse                             generic-contact\n";
+	print $out "\talias                           $name\n";
+	print $out "\temail                           ".$contacts->{$name}->{email}."\n" if $contacts->{$name}->{email};
+	print $out "\tpager                           ".$contacts->{$name}->{pager}."\n" if $contacts->{$name}->{pager};
+	print $out "\tregister                        0 ; (THIS WILL BE INHERITED LATER)\n";  
+	print $out "}\n\n";
+	
+    }
+    
+    # Create specific contacts (notification periods vary in each case)
+    foreach my $clid ( keys %$contactlists  ){
+	my $clname = $contactlists->{$clid}->{name};
+	next unless $clname;
+	foreach my $level ( sort {$a <=> $b} keys %{ $contactlists->{$clid}->{level} } ){
+	    my @members;
+	    foreach my $contactid ( keys %{ $contactlists->{$clid}->{level}->{$level} } ){
+		my $name = $contactlists->{$clid}->{level}->{$level}->{$contactid}->{name};
+		my $contact = $contacts->{$name};
+		# One for e-mails
+		if ( my $period = $contact->{email_period} ){
+		    if ( exists $self->{NAGIOS_TIMEPERIODS}{$period} ){
+			if ((my $emailperiod = $self->{NAGIOS_TIMEPERIODS}{$period}) ne 'none' ){
+			    my $contactname = "$name-$clname-email-level_$level";
+			    push @members, $contactname;
+			    print $out "define contact{\n";
+			    print $out "\tcontact_name                    $contactname\n";
+			    print $out "\tuse                             $name\n";
+			    print $out "\tservice_notification_period     $emailperiod\n";
+			    print $out "\thost_notification_period        $emailperiod\n";
+			    print $out "\tservice_notification_commands   notify-by-email\n";
+			    print $out "\thost_notification_commands      host-notify-by-email\n";
+			    print $out "}\n\n";
+			}
+		    }else{
+			$logger->warn("$period is not a defined timeperiod");
+		    }
+		}
+		# And one for paging
+		if ( my $period = $contact->{pager_period} ){
+		    if ( exists($self->{NAGIOS_TIMEPERIODS}{$period}) ){
+			if ((my $pagerperiod = $self->{NAGIOS_TIMEPERIODS}{$period}) ne 'none' ){
+			    my $contactname = "$name-$clname-pager-level_$level";
+			    push @members, $contactname;
+			    print $out "define contact{\n";
+			    print $out "\tcontact_name                    $contactname\n";
+			    print $out "\tuse                             $name\n";
+			    print $out "\tservice_notification_period     $pagerperiod\n";
+			    print $out "\thost_notification_period        $pagerperiod\n";
+			    print $out "\tservice_notification_commands   notify-by-epager\n";
+			    print $out "\thost_notification_commands      host-notify-by-epager\n";
+			    print $out "}\n\n";
+			}
+		    }else{
+			$logger->warn($contact->notify_pager->name . " is not a defined timeperiod");
+		    }
+		}
+	    }
+	    # Create the contactgroup
+	    my $members = join ',', @members;
+	    
+	    print $out "define contactgroup{\n";
+	    print $out "\tcontactgroup_name       $clname-level_$level\n";
+	    print $out "\talias                   $clname\n";
+	    print $out "\tmembers                 $members\n";
+	    print $out "}\n\n";
+	}
+    }
+}
+
+
+#####################################################################################
+sub print_hostgroups{
+    my ($self, $groups) = @_;
+
+    my $out = $self->{out};
+    foreach my $group ( keys %$groups ){
+	my $hostlist = join ',', @{ $groups->{$group}->{members} };
+	print $out "define hostgroup{\n";
+	print $out "\thostgroup_name      $group\n";
+	print $out "\talias               $group\n";
+	print $out "\tmembers             $hostlist\n";
+	print $out "}\n\n";
+    }
+}
+
+#####################################################################################
+sub print_servicegroups{
+    my ($self, $groups) = @_;
+
+    my $out = $self->{out};
+    foreach my $group ( keys %$groups ){
+	# servicegroup members are like:
+	# members=<host1>,<service1>,<host2>,<service2>,...,
+	my $hostlist = join ',', map { "$_,$group" }@{ $groups->{$group}{members} };
+	print $out "define servicegroup{\n";
+	print $out "\tservicegroup_name      $group\n";
+	print $out "\talias                  $group\n";
+	print $out "\tmembers                $hostlist\n";
+	print $out "}\n\n";
+    }
+}
+
+#####################################################################################
+sub print_servicedep{
+    my ($self, $hostname, $service, $parent_hostname, $parent_service) = @_;
+
+    my $out = $self->{out};
+    print $out "define servicedependency{\n";
+    print $out "\tdependent_host_name            $hostname\n";
+    print $out "\tdependent_service_description  $service\n";
+    print $out "\thost_name                      $parent_hostname\n";
+    print $out "\tservice_description            $parent_service\n";
+    print $out "\tinherits_parent                1\n";
+    # Do not check if parent is in Critical, Warning, Unknown or Pending state
+    print $out "\texecution_failure_criteria	 c,w,u,p\n"; 
+    print $out "}\n\n";
+}
+
+############################################################################
+=head2 get_interface_graph
+
+  Arguments:
+    None
+  Returns:
+    Hash reference
+  Examples:
+
+=cut
+sub get_interface_graph {
+    my ($self) = @_;
+
+    $logger->debug("Netdot::Exporter::get_interface_graph: querying database");
+    my $graph = {};
+    my $links = $self->{_dbh}->selectall_arrayref("
+                SELECT  i1.id, i2.id 
+                FROM    interface i1, interface i2
+                WHERE   i2.neighbor = i1.id AND i1.neighbor = i2.id
+            "); 
+    foreach my $link ( @$links ) {
+	my ($fr, $to) = @$link;
+	$graph->{$fr} = $to;
+	$graph->{$to} = $fr;
+    }
+    
+    return $graph;
+}
+
+########################################################################
+=head2 get_int2device - Interface id to Device id mapping
+
+  Arguments:
+    None
+  Returns:
+    Hash reference
+  Examples:
+    
+=cut
+sub get_int2device {
+    my ($self) = @_;
+
+    my $device_info = $self->get_device_info();
+    my %map;
+    foreach my $dev ( keys %$device_info ){
+	foreach my $int ( keys %{$device_info->{$dev}->{interface}} ){
+	    $map{$int} = $dev;
+	}
+    }
+    return \%map;
+}
+
+########################################################################
+=head2 get_intid2ifindex - Interface id to ifIndex mapping
+
+  Arguments:
+    None
+  Returns:
+    Hash reference
+  Examples:
+    
+=cut
+sub get_intid2ifindex {
+    my ($self) = @_;
+
+    my $device_info = $self->get_device_info();
+    my %map;
+    foreach my $dev ( keys %$device_info ){
+	foreach my $int ( keys %{$device_info->{$dev}->{interface}} ){
+	    $map{$int} = $device_info->{$dev}->{interface}->{$int}->{number};
+	}
+    }
+    return \%map;
+}
+
+########################################################################
+=head2 strip_domain - Strip domain name from hostname if necessary
+
+  Arguments:
+    hostname string
+  Returns:
+    string
+  Examples:
+    
+=cut
+sub strip_domain {
+    my ($self, $hostname) = @_;
+
+    return unless $hostname;
+    if ( Netdot->config->get('NAGIOS_STRIP_DOMAIN') ){
+	my $domain = Netdot->config->get('DEFAULT_DNSDOMAIN');
+	$hostname =~ s/\.$domain// ;
+    }
+    return $hostname;
 }
 
 =head1 AUTHOR
@@ -572,7 +801,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2008 University of Oregon, all rights reserved.
+Copyright 2009 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

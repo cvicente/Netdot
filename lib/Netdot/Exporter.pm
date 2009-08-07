@@ -4,7 +4,7 @@ use base 'Netdot';
 use Netdot::Model;
 use warnings;
 use strict;
-use Carp;
+use Data::Dumper;
 use Fcntl qw(:DEFAULT :flock);
 
 my $logger = Netdot->log->get_logger('Netdot::Exporter');
@@ -49,9 +49,11 @@ sub new{
     
     if ( $argv{type} ) { 
 	my $subclass = $types{$argv{type}} ||
-	    croak "Netodt::Exporter::new: Unknown Exporter type: $argv{type}";
+	    $class->throw_user("Netdot::Exporter::new: Unknown Exporter type: $argv{type}");
 	eval "use $subclass;";
-	croak $@ if $@;
+	if ( my $e = $@ ){
+	    $class->throw_user($e);
+	}
 	$self = $subclass->new();
     }else {
 	bless $self, $class;
@@ -61,9 +63,159 @@ sub new{
     return $self;
 }
 
+########################################################################
+=head2 get_device_info
+
+  Arguments:
+    None
+  Returns:
+    Hash reference where key=device.id
+  Examples:
+    my $ips = Netdot::Model::Exporter->get_device_info();
+=cut
+sub get_device_info {
+    my ($self) = @_;
+    
+    return $self->_cache('device_info')	if $self->_cache('device_info');
+
+    my %device_info;
+    $logger->debug("Netdot::Exporter::get_device_info: querying database");
+    my $rows = $self->{_dbh}->selectall_arrayref("
+                SELECT    device.id, device.snmp_managed, device.community,
+                          device.down_from, device.down_until, entity.name, contactlist.id,
+                          target.id, target.address, target.version, target.parent, rr.name, zone.mname,
+                          interface.id, interface.number, interface.admin_status, interface.monitored, interface.contactlist,
+                          bgppeering.bgppeeraddr, bgppeering.monitored
+                FROM      rr, zone, device
+                LEFT JOIN ipblock target ON device.snmp_target=target.id
+                LEFT JOIN interface ON device.id=interface.device
+                LEFT JOIN entity ON device.used_by=entity.id
+                LEFT JOIN devicecontacts ON device.id=devicecontacts.device
+                LEFT JOIN contactlist ON contactlist.id=devicecontacts.contactlist
+                LEFT JOIN bgppeering ON device.id=bgppeering.device
+                WHERE     device.monitored=1
+                     AND  interface.device=device.id                  
+                     AND  device.name=rr.id 
+                     AND  rr.zone=zone.id
+         ");
+    
+    $logger->debug("Netdot::Exporter::get_device_info: building data structure");
+    foreach my $row ( @$rows ){
+	my ($devid, $devsnmp, $community, 
+	    $down_from, $down_until, $entity, $clid,
+	    $target_id, $target_addr, $target_version, $subnet, $name, $zone, 
+	    $intid, $intnumber, $intadmin, $intmon, $intcl,
+	    $peeraddr, $peermon) = @$row;
+	my $hostname = $name.'.'.$zone;
+	$device_info{$devid}{ipid}         = $target_id;
+	$device_info{$devid}{ipaddr}       = $target_addr;
+	$device_info{$devid}{ipversion}    = $target_version;
+	$device_info{$devid}{subnet}       = $subnet;
+	$device_info{$devid}{hostname}     = $hostname;
+	$device_info{$devid}{community}    = $community;
+	$device_info{$devid}{snmp_managed} = $community;
+	$device_info{$devid}{down_from}    = $down_from;
+	$device_info{$devid}{down_until}   = $down_until;
+	$device_info{$devid}{used_by}      = $entity if defined $entity;
+	$device_info{$devid}{contactlist}{$clid} = 1 if defined $clid;
+	$device_info{$devid}{peering}{$peeraddr}{monitored}  = $peermon if defined $peeraddr;
+	$device_info{$devid}{interface}{$intid}{number}      = $intnumber;
+	$device_info{$devid}{interface}{$intid}{admin}       = $intadmin;
+	$device_info{$devid}{interface}{$intid}{monitored}   = $intmon;
+	$device_info{$devid}{interface}{$intid}{contactlist} = $intcl;
+    }
+
+    return $self->_cache('device_info', \%device_info);
+}
+
+########################################################################
+=head2 get_device_main_ip 
+
+  Arguments:
+    devicd id
+  Returns:
+    IP address string
+  Examples:
+    
+=cut
+sub get_device_main_ip {
+    my ($self, $devid) = @_;
+
+    $self->throw_fatal("Missing required arguments")
+	unless $devid;
+
+    my $device_info = $self->get_device_info();
+    return unless exists $device_info->{$devid};
+
+    my $ip;
+    if ( $device_info->{$devid}->{ipaddr} && $device_info->{$devid}->{version} ){
+	$ip = Ipblock->int2ip($device_info->{$devid}->{ipaddr}, $device_info->{$devid}->{ipversion});
+    }elsif ( $ip = (Netdot->dns->resolve_name($device_info->{$devid}->{hostname}))[0] ){
+	# we're done here
+    }else{
+	# Grab the first IP we can get
+	my $device = Device->retrieve($devid);
+	if ( my $ips = $device->get_ips() ){
+	    $ip = $ips->[0]->address if $ips->[0];
+	}
+    }
+    return $ip;
+}
+
+########################################################################
+=head2 get_device_parents
+
+  Arguments:
+    Device id of NMS (root of the tree)
+  Returns:
+    Hash reference
+  Examples:
+
+=cut
+sub get_device_parents {
+    my ($self, $nms) = @_;
+
+    $self->throw_fatal("Missing required arguments")
+	unless $nms;
+
+    return $self->_shortest_path_parents($nms);
+}
+
+########################################################################
+=head2 - get_monitored_ancestors
+
+  Arguments:
+    Device id
+  Returns:
+    Array of device IDs
+  Examples:
+
+=cut
+sub get_monitored_ancestors {
+    my ($self, $devid, $device_parents) = @_;
+    
+    $self->throw_fatal("Missing required arguments")
+	unless ( $devid && $device_parents );
+
+    return unless defined $device_parents->{$devid};
+
+    my $device_info = $self->get_device_info();
+    my @ids;
+
+    foreach my $parent_id ( keys %{$device_parents->{$devid}} ){
+	if ( exists $device_info->{$parent_id} ){
+	    push @ids, $parent_id;
+	}
+    }
+    return @ids if @ids;
+    
+    foreach my $parent_id ( keys %{$device_parents->{$devid}} ){
+	return $self->get_monitored_ancestors($parent_id, $device_parents);
+    }
+}
 
 ############################################################################
-=head2 get_graph
+=head2 _get_device_graph
 
   Arguments:
     None
@@ -72,13 +224,13 @@ sub new{
   Examples:
 
 =cut
-sub get_graph {
+sub get_device_graph {
     my ($self) = @_;
 
-    return $self->_cache('graph')
-	if $self->_cache('graph');
+    return $self->_cache('device_graph')
+	if $self->_cache('device_graph');
 
-    $logger->debug("Netdot::Exporter::get_graph: querying database");
+    $logger->debug("Netdot::Exporter::get_device_graph: querying database");
     my $graph = {};
     my $links = $self->{_dbh}->selectall_arrayref("
                 SELECT  d1.id, d2.id 
@@ -92,162 +244,9 @@ sub get_graph {
 	$graph->{$to}{$fr}  = 1;
     }
     
-    return $self->_cache('graph', $graph);
+    return $self->_cache('device_graph', $graph);
 }
 
-########################################################################
-=head2 get_device_ips
-
-  Arguments:
-    None
-  Returns:
-    Array reference
-  Examples:
-
-=cut
-sub get_device_ips {
-    my ($self) = @_;
-    
-    return $self->_cache('device_ips')
-	if $self->_cache('device_ips');
-    
-    $logger->debug("Netdot::Exporter::get_monitored_ips: querying database");
-    my $device_ips = $self->{_dbh}->selectall_arrayref("
-                SELECT   device.id, ipblock.id, interface.monitored, device.monitored,
-                         device.down_from, device.down_until
-                FROM     device, interface, ipblock
-                WHERE    ipblock.interface=interface.id
-                  AND    interface.device=device.id
-                ORDER BY ipblock.address
-         ");
-    
-    return $self->_cache('device_ips', $device_ips);
-}
-########################################################################
-=head2 get_monitored_ips
-
-  Arguments:
-    None
-  Returns:
-    Array reference
-  Examples:
-
-=cut
-sub get_monitored_ips {
-    my ($self) = @_;
-
-    return $self->_cache('monitored_ips') 
-	if $self->_cache('monitored_ips');
-
-    my $device_ips = $self->get_device_ips();
-    my @results;
-    my %name2ip;
-    
-    foreach my $row ( @$device_ips ){
-	my ($deviceid, $ipid, $int_monitored, $dev_monitored, $down_from, $down_until) = @$row;
-	next unless ( $int_monitored && $dev_monitored );
-	
-	# Check downtime dates to see if this device should be excluded
-	if ( $down_from && $down_until && 
-	     $down_from ne '0000-00-00' && $down_until ne '0000-00-00' ){
-	    my $time1 = Netdot::Model->sqldate2time($down_from);
-	    my $time2 = Netdot::Model->sqldate2time($down_until);
-	    my $now = time;
-	    if ( $time1 < $now && $now < $time2 ){
-		$logger->debug("Netdot::Exporter::get_monitored_ips: Device $deviceid".
-			       " within scheduled downtime period.  Excluding.");
-		next;
-	    }
-	}
-	my $ipobj  = Ipblock->retrieve($ipid);
-	
-	my $hostname;
-	if ( my $name = $self->dns->resolve_ip($ipobj->address) ){
-	    $hostname = $name;
-	}elsif ( my @arecords = $ipobj->arecords ){
-	    $hostname = $arecords[0]->rr->get_label;
-	}else{
-	    $hostname = $ipobj->address;
-	}
-	
-	unless ( $hostname && $self->dns->resolve_name($hostname) ){
-	    $logger->warn($ipobj->address." does not resolve symmetrically.  Using IP address");
-	    $hostname = $ipobj->address;
-	}
-	if ( exists $name2ip{$hostname} ){
-	    $logger->warn($hostname." is not unique.  Using IP address");
-	    $hostname = $ipobj->address;
-	}
-	$name2ip{$hostname} = $ipobj->id;
-	
-	push @results, [$deviceid, $ipid, $ipobj->address, $hostname];
-    }
-    
-    return $self->_cache('monitored_ips', \@results);
-}
-
-########################################################################
-=head2 get_dependencies - Recursively look for valid parents
-
-    If the parent(s) don't have ip addresses or are not managed,
-    try to keep the tree connected anyways
-
- Arguments: 
-   ID of Network Management Device
- Returns:
-    Hash ref where key = Ipblock.id, value = Arrayref of parent Ipblock.id' s
-
-=cut
-sub get_dependencies{
-    my ($self, $nms) = @_;
-
-    return $self->_cache('dependencies')
-	if $self->_cache('dependencies');
-
-    defined $nms || 
-	$self->throw_fatal("Netdot::Exporter::get_dependencies: Need to pass monitoring device");
-
-    my $graph      = $self->get_graph();
-    my $device_ips = $self->get_device_ips();
-
-    my (%device2ips, %ip_monitored);
-    foreach my $row ( @$device_ips ){
-	my ($deviceid, $ipid, $int_monitored, $dev_monitored) = @$row;
-	push @{$device2ips{$deviceid}}, $ipid;
-	$ip_monitored{$ipid} = ($int_monitored && $dev_monitored) ? 1 : 0;
-    }
-
-    # For each device, the parent list consists of all neighbor devices
-    # which are in the path between this device and the monitoring system
-
-    my %parents = %{ $self->_shortest_path_parents($graph, $nms) };
-
-    # Build the IP dependency hash
-    my $ipdeps = {};
-    foreach my $device ( keys %device2ips ){
-	next if ( $device == $nms );
-	if ( !exists $parents{$device} ){
- 	    if ( $logger->is_debug() ){
- 		my $dev = Netdot::Model::Device->retrieve($device);
- 		$logger->debug("Netdot::Exporter::get_dependencies: ". $dev->get_label .": No path to NMS.  Assigning NMS as parent.");
-	    }
-	    push @{$parents{$device}}, $nms;
-	}
-	foreach my $ipid ( @{$device2ips{$device}} ){
-	    my $deps = $self->_get_ip_deps($ipid, $parents{$device}, \%parents, 
-					   \%device2ips, \%ip_monitored);
-	    $ipdeps->{$ipid} = $deps 
-		if ( defined $deps && ref($deps) eq 'HASH' );
-	}
-    }
-    # Convert hash of hashes to hash of arrayrefs
-    foreach my $ipid ( keys %$ipdeps ){
-	my @list = keys %{$ipdeps->{$ipid}};
-	$ipdeps->{$ipid} = \@list;
-    }
-
-    return $self->_cache('dependencies', $ipdeps);
-}
 
 ########################################################################
 =head2 open_and_lock - Open and lock file for writing
@@ -278,6 +277,35 @@ sub open_and_lock {
 }
 
 ########################################################################
+=head2 in_downtime - Check if device is within scheduled downtime
+
+ Arguments: 
+    device id
+ Returns:
+    1 or 0
+
+=cut
+sub in_downtime{
+    my ($self, $devid) = @_;
+    
+    my $device_info = $self->get_device_info();
+    my $dev = $device_info->{$devid} || return;
+    my ($down_from, $down_until) = ($dev->{down_from}, $dev->{down_until});
+    if ( $down_from && $down_until &&
+	 $down_from ne '0000-00-00' && $down_until ne '0000-00-00' ){
+	my $time1 = Netdot::Model->sqldate2time($down_from);
+	my $time2 = Netdot::Model->sqldate2time($down_until);
+	my $now = time;
+	if ( $time1 < $now && $now < $time2 ){
+	    $logger->debug("Netdot::Exporter::is_in_downtime: Device $devid".
+			   " within scheduled downtime period");
+	    return 1;
+	}
+    }
+    return 0;
+}
+
+########################################################################
 # Private methods
 ########################################################################
 
@@ -290,18 +318,17 @@ sub open_and_lock {
 #
 # Arguments:
 #    s          Source vertex
-#    graph      Hashref with connected devices 
-#               (key=Device ID, value=Device ID)
 # Returns:
-#    Hash ref where key = Device.id, value = Arrayref of parent Device.id's
+#    Hash ref where key = Device.id, value = Hashref where keys = parent Device.id's
 #
 sub _shortest_path_parents {
-    my ($self, $graph, $s) = @_;
+    my ($self, $s) = @_;
     
-    $self->throw_fatal("Missing required arguments")
-	unless ( $graph && $s );
+    $self->throw_fatal("Missing required arguments") unless ( $s );
 
-    $logger->debug("Netdot::Exporter::_sp_parents: Determining all shortest paths to NMS");
+    my $graph = $self->get_device_graph();
+
+    $logger->debug("Netdot::Exporter::_shortest_path_parents: Determining all shortest paths to Device id $s");
 
     my %cost;
     my %parents;
@@ -352,60 +379,8 @@ sub _shortest_path_parents {
 	    }
 	}
     }
-    # Convert hash of hashes into hash of arrayrefs
-    my %results;
-    foreach my $n ( keys %parents ){
-	my @a = keys %{$parents{$n}};
-	$results{$n} = \@a;
-    }
-    return \%results;
+    return \%parents;
 }
-
-
-########################################################################
-# Recursively look for monitored ancestors
-#
-# Arguments:
-#    ipid         Ipblock ID
-#    parents      Arrayref of Device IDs
-#    ancestors    Hashref containing all Devices and their parents 
-#                 where key=Device ID, value=Arrayref of Device IDs
-#    device2ips   Hashref with key=Device ID, value=Arrayref of Ipblock IDs
-#    ip_monitored Hashref with key=Ipblock, value=monitored flag
-#  
-#  Returns:
-#    Hashref with ip dependencies where key=Ipblock ID
-#
-sub _get_ip_deps {
-    my ($self, $ipid, $parents, $ancestors, $device2ips, $ip_monitored) = @_;
-    my %deps;
-    foreach my $parent ( @$parents ){
-	foreach my $ipid2 ( @{$device2ips->{$parent}} ){
-	    next if ( $ipid2 == $ipid );
-	    if ( $ip_monitored->{$ipid2} ){
-		$deps{$ipid2} = 1;
-	    }
-	}
-    }
-    if ( %deps ){
-	return \%deps;
-    }else{
-	if ( $logger->is_debug() ){
-	    my $ipb = Netdot::Model::Ipblock->retrieve($ipid);
-	    $logger->debug("Netdot::Exporter::_get_ip_deps: ". $ipb->get_label .
-			   ": no monitored parents found.  Looking for ancestors.");
-	}
-	my @grandparents;
-	foreach my $parent ( @$parents ){
-	    push @grandparents, @{$ancestors->{$parent}} if ( defined $ancestors->{$parent} 
-							      && ref($ancestors->{$parent}) eq "ARRAY" );
-	}
-	if ( @grandparents ){
-	    $self->_get_ip_deps($ipid, \@grandparents, $ancestors, $device2ips, $ip_monitored);
-	}
-    }
-}
-
 
 ############################################################################
 # _cache - Get or set class data cache
@@ -450,7 +425,7 @@ Peter Boothe
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2008 University of Oregon, all rights reserved.
+Copyright 2009 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
