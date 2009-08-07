@@ -79,7 +79,7 @@ sub get_device_info {
     my %device_info;
     $logger->debug("Netdot::Exporter::get_device_info: querying database");
     my $rows = $self->{_dbh}->selectall_arrayref("
-                SELECT    device.id, device.monitored, device.snmp_managed, device.community,
+                SELECT    device.id, device.snmp_managed, device.community,
                           device.down_from, device.down_until, entity.name, contactlist.id,
                           target.id, target.address, target.version, target.parent, rr.name, zone.mname,
                           interface.id, interface.number, interface.admin_status, interface.monitored, interface.contactlist,
@@ -91,14 +91,15 @@ sub get_device_info {
                 LEFT JOIN devicecontacts ON device.id=devicecontacts.device
                 LEFT JOIN contactlist ON contactlist.id=devicecontacts.contactlist
                 LEFT JOIN bgppeering ON device.id=bgppeering.device
-                WHERE     interface.device=device.id                  
+                WHERE     device.monitored=1
+                     AND  interface.device=device.id                  
                      AND  device.name=rr.id 
                      AND  rr.zone=zone.id
          ");
     
     $logger->debug("Netdot::Exporter::get_device_info: building data structure");
     foreach my $row ( @$rows ){
-	my ($devid, $devmon, $devsnmp, $community, $down_from, $down_until, $entity, $clid,
+	my ($devid, $devsnmp, $community, $down_from, $down_until, $entity, $clid,
 	    $target_id, $target_addr, $target_version, $subnet, $name, $zone, 
 	    $intid, $intnumber, $intmon, $intcl, $intadmin,
 	    $peeraddr, $peermon) = @$row;
@@ -109,16 +110,15 @@ sub get_device_info {
 	$device_info{$devid}{subnet}       = $subnet;
 	$device_info{$devid}{hostname}     = $hostname;
 	$device_info{$devid}{community}    = $community;
-	$device_info{$devid}{monitored}    = $devmon;
 	$device_info{$devid}{snmp_managed} = $community;
 	$device_info{$devid}{down_from}    = $down_from;
 	$device_info{$devid}{down_until}   = $down_until;
 	$device_info{$devid}{used_by}      = $entity if defined $entity;
 	$device_info{$devid}{contactlist}{$clid} = 1 if defined $clid;
-	$device_info{$devid}{peering}{$peeraddr}{monitored} = $peermon if defined $peeraddr;
-	$device_info{$devid}{interface}{$intid}{number}    = $intnumber;
-	$device_info{$devid}{interface}{$intid}{admin}     = $intadmin;
-	$device_info{$devid}{interface}{$intid}{monitored} = $intmon;
+	$device_info{$devid}{peering}{$peeraddr}{monitored}  = $peermon if defined $peeraddr;
+	$device_info{$devid}{interface}{$intid}{number}      = $intnumber;
+	$device_info{$devid}{interface}{$intid}{admin}       = $intadmin;
+	$device_info{$devid}{interface}{$intid}{monitored}   = $intmon;
 	$device_info{$devid}{interface}{$intid}{contactlist} = $intcl;
     }
 
@@ -137,6 +137,9 @@ sub get_device_info {
 =cut
 sub get_device_main_ip {
     my ($self, $devid) = @_;
+
+    $self->throw_fatal("Missing required arguments")
+	unless $devid;
 
     my $device_info = $self->get_device_info();
     return unless exists $device_info->{$devid};
@@ -157,7 +160,7 @@ sub get_device_main_ip {
 }
 
 ########################################################################
-=head2 _get_device_parents
+=head2 get_device_parents
 
   Arguments:
     Device id of NMS (root of the tree)
@@ -168,7 +171,44 @@ sub get_device_main_ip {
 =cut
 sub get_device_parents {
     my ($self, $nms) = @_;
+
+    $self->throw_fatal("Missing required arguments")
+	unless $nms;
+
     return $self->_shortest_path_parents($nms);
+}
+
+########################################################################
+=head2 - get_monitored_ancestors
+
+  Arguments:
+    Device id
+  Returns:
+    Array of device IDs
+  Examples:
+
+=cut
+sub get_monitored_ancestors {
+    my ($self, $devid, $device_parents) = @_;
+    
+    $self->throw_fatal("Missing required arguments")
+	unless ( $devid && $device_parents );
+
+    return unless defined $device_parents->{$devid};
+
+    my $device_info = $self->get_device_info();
+    my @ids;
+
+    foreach my $parent_id ( keys %{$device_parents->{$devid}} ){
+	if ( exists $device_info->{$parent_id} ){
+	    push @ids, $parent_id;
+	}
+    }
+    return @ids if @ids;
+    
+    foreach my $parent_id ( keys %{$device_parents->{$devid}} ){
+	return $self->get_monitored_ancestors($parent_id, $device_parents);
+    }
 }
 
 ############################################################################
@@ -382,7 +422,7 @@ Peter Boothe
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2008 University of Oregon, all rights reserved.
+Copyright 2009 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

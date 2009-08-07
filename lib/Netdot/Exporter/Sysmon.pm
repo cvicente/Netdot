@@ -71,9 +71,8 @@ sub generate_configs {
 
     foreach my $devid ( keys %$device_info ){
 
-	# Is it supposed to be monitored?
-	my $monitored = ($device_info->{$devid}->{monitored} && 
-				!$self->in_downtime($devid))? 1 : 0;
+	# Is it within downtime period?
+	my $monitored = (!$self->in_downtime($devid))? 1 : 0;
 	next unless $monitored;
 
 	my $hostname = $device_info->{$devid}->{hostname} || next;
@@ -95,12 +94,11 @@ sub generate_configs {
 	    $hosts{$devid}{ip} = $ip;
 	}
 
-	foreach my $parent_id ( keys %{$device_parents->{$devid}} ){
-	    if ( $device_info->{$parent_id}->{monitored} ){
-		my $hostname = $device_info->{$parent_id}->{hostname};
-		$hostname = $self->strip_domain($hostname);
-		push @{$hosts{$devid}{parents}}, $hostname;
-	    }
+	
+	foreach my $parent_id ( $self->get_monitored_ancestors($devid, $device_parents) ){
+	    my $hostname = $device_info->{$parent_id}->{hostname};
+	    $hostname = $self->strip_domain($hostname);
+	    push @{$hosts{$devid}{parents}}, $hostname;
 	}
     }
 

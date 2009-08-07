@@ -172,9 +172,14 @@ sub generate_configs {
     my $device_parents = $self->get_device_parents($self->{ROOT});
     my $iface_graph    = $self->get_interface_graph();
     
+    ######################################################################################
     foreach my $devid ( keys %$device_info ){
 	my %hostargs;
 	
+	# Is it within downtime period
+	my $monitored = (!$self->in_downtime($devid))? 1 : 0;
+	next unless $monitored;
+
 	# Determine name
 	my $hostname = $device_info->{$devid}->{hostname} || next;
 	$hostargs{name} = $self->strip_domain($hostname);
@@ -185,14 +190,6 @@ sub generate_configs {
 	    $logger->warn("Cannot determine IP address for $hostname. Skipping");
 	    next;
 	}
-
-	# Is it supposed to be monitored?
-	# We'll keep the host definition even if the device is not
-	# monitored to preserve the dependency chain
-	# This flag will disable active_checks
-	my $monitored = ($device_info->{$devid}->{monitored} && 
-				!$self->in_downtime($devid))? 1 : 0;
-	$hostargs{monitored} = $monitored;
 
   	# Determine the group name
  	my $group;
@@ -229,21 +226,21 @@ sub generate_configs {
 	}
 
 	# Host Parents
-	if ( defined $device_parents->{$devid} ){
-	    my @parent_names;
-	    foreach my $parent_id ( keys %{$device_parents->{$devid}} ){
-		push @parent_names, $self->strip_domain($device_info->{$parent_id}->{hostname})
-		    if ( exists $device_info->{$parent_id}->{hostname} );
-	    }
-	    $hostargs{parents} = join ',', @parent_names;
+	my @parent_names;
+	foreach my $d ( $self->get_monitored_ancestors($devid, $device_parents) ){
+	    my $name = $self->strip_domain($device_info->{$d}->{hostname});
+	    push @parent_names, $name;
 	}
-	
+	if ( @parent_names && defined $parent_names[0] ){
+	    $hostargs{parents} = join ',', @parent_names;    
+	}
+
 	push @{ $groups{$group}{members} }, $hostargs{name};
 	$self->print_host(%hostargs);
 
  	# Add monitored services on the target IP
 	my $target_ip = $device_info->{$devid}->{ipid};
-	if ( $monitored && defined $target_ip && exists $service_info{$target_ip} ){
+	if ( defined $target_ip && exists $service_info{$target_ip} ){
 	    foreach my $servid ( keys %{$service_info{$target_ip}} ){
 		next unless ( $service_info{$target_ip}->{$servid}->{monitored} );
 		my %args;
@@ -273,7 +270,7 @@ sub generate_configs {
 	}
 
 	# Services monitored via SNMP
-	if ( $monitored && $device_info->{$devid}->{snmp_managed} ){
+	if ( $device_info->{$devid}->{snmp_managed} ){
 
 	    # Add a bgppeer service check for each monitored BGP peering
 	    foreach my $peeraddr ( keys %{$device_info->{$devid}->{peering}} ){
@@ -314,15 +311,23 @@ sub generate_configs {
 			my $nd = $int2device->{$neighbor};
 			if ( $device_parents->{$devid}->{$nd} ){
 			    # Neighbor device is my parent
-			    if ( $device_info->{$nd}->{monitored} && 
-				 $device_info->{$nd}->{interface}->{$neighbor}->{monitored} ){
-				if ( my $nifindex = $intid2ifindex->{$neighbor} ){
+			    if ( exists $device_info->{$nd} ){
+				if ( $device_info->{$nd}->{interface}->{$neighbor}->{monitored} ){
+				    if ( my $nifindex = $intid2ifindex->{$neighbor} ){
+					$args{parent_host}    = $self->strip_domain($device_info->{$nd}->{hostname});
+					$args{parent_service} = "IFSTATUS_$nifindex";
+				    }
+				}else{
 				    $args{parent_host}    = $self->strip_domain($device_info->{$nd}->{hostname});
-				    $args{parent_service} = "IFSTATUS_$nifindex";
+				    $args{parent_service} = 'PING';
 				}
 			    }else{
-				$args{parent_host}    = $self->strip_domain($device_info->{$nd}->{hostname});
-				$args{parent_service} = 'PING';
+				# Look for grandparents then
+				if ( my @parents = $self->get_monitored_ancestors($nd, $device_parents) ){
+				    my $p = $parents[0]; # Just grab the first one for simplicity
+				    $args{parent_host}    = $self->strip_domain($device_info->{$p}->{hostname});
+				    $args{parent_service} = 'PING';
+				}
 			    }
 			}
 		    }
@@ -350,7 +355,6 @@ sub print_host {
     my $ip        = $argv{ip};
     my $group     = $argv{group};
     my $parents   = $argv{parents};
-    my $monitored = $argv{monitored};
     my @cls       = @{ $argv{contactlists} } if $argv{contactlists};
     my $out       = $self->{out};
 
@@ -389,14 +393,12 @@ sub print_host {
 		print $out "\taddress                $ip\n";
 		print $out "\tparents                $parents\n" if ($parents);
 		print $out "\tcontact_groups         $contact_groups\n";
-		print $out "\tactive_checks_enabled  $monitored\n";
 		print $out "}\n\n";
 		if ( $self->{NAGIOS_TRAPS} ){
 		    print $out "define service{\n";
 		    print $out "\tuse                     generic-trap\n";
 		    print $out "\thost_name               $name\n";
 		    print $out "\tcontact_groups          $contact_groups\n";
-		    print $out "\tpassive_checks_enabled  $monitored\n";
 		    print $out "}\n\n";
 		}
 		$first = 0;
@@ -434,7 +436,6 @@ sub print_host {
 	print $out "\taddress                $ip\n";
 	print $out "\tparents                $parents\n" if ($parents);
 	print $out "\tcontact_groups         nobody\n";
-	print $out "\tactive_checks_enabled  $monitored\n";
 	print $out "}\n\n";
 	
 	if ( $self->{NAGIOS_TRAPS} ){
@@ -443,7 +444,6 @@ sub print_host {
 	    print $out "\tuse                     generic-trap\n";
 	    print $out "\thost_name               $name\n";
 	    print $out "\tcontact_groups          nobody\n";
-	    print $out "\tpassive_checks_enabled  $monitored\n";
 	    print $out "}\n\n";
 	}
     }
@@ -452,7 +452,6 @@ sub print_host {
     print $out "define service{\n";
     print $out "\tuse                    generic-ping\n";
     print $out "\thost_name              $name\n";
-    print $out "\tactive_checks_enabled  $monitored\n";
     print $out "}\n\n";
 
 }
