@@ -288,7 +288,7 @@ sub generate_configs {
 	    # Add a ifstatus service check for each monitored interface
 	    foreach my $ifid ( keys %{$device_info->{$devid}->{interface}} ){
 		my $iface = $device_info->{$devid}->{interface}->{$ifid};
-		if ( $iface->{monitored} && $iface->{admin} eq 'up' ){
+		if ( $iface->{monitored} && defined $iface->{admin} && $iface->{admin} eq 'up' ){
 		    my %args;
 		    $args{hostname}  = $hostargs{name};
 		    $args{ifindex}   = $iface->{number};
@@ -309,7 +309,7 @@ sub generate_configs {
 		    # Otherwise, make the ping service of the parent host the parent.
 		    if ( my $neighbor = $iface_graph->{$ifid} ){
 			my $nd = $int2device->{$neighbor};
-			if ( $device_parents->{$devid}->{$nd} ){
+			if ( $nd && $device_parents->{$devid}->{$nd} ){
 			    # Neighbor device is my parent
 			    if ( exists $device_info->{$nd} ){
 				if ( $device_info->{$nd}->{interface}->{$neighbor}->{monitored} ){
@@ -534,7 +534,6 @@ sub print_service {
 		print $out "\tservice_description   $srvname\n";
 		print $out "\tcontact_groups        $contact_groups\n";
 		print $out "\tcheck_command         $checkcmd\n";
-		print $out "\tactive_checks_enabled 1\n";
 		print $out "}\n\n";
 		
 		$first = 0;

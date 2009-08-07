@@ -99,9 +99,10 @@ sub get_device_info {
     
     $logger->debug("Netdot::Exporter::get_device_info: building data structure");
     foreach my $row ( @$rows ){
-	my ($devid, $devsnmp, $community, $down_from, $down_until, $entity, $clid,
+	my ($devid, $devsnmp, $community, 
+	    $down_from, $down_until, $entity, $clid,
 	    $target_id, $target_addr, $target_version, $subnet, $name, $zone, 
-	    $intid, $intnumber, $intmon, $intcl, $intadmin,
+	    $intid, $intnumber, $intadmin, $intmon, $intcl,
 	    $peeraddr, $peermon) = @$row;
 	my $hostname = $name.'.'.$zone;
 	$device_info{$devid}{ipid}         = $target_id;
