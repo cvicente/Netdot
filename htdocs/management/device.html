@@ -972,8 +972,8 @@ if ( !$editips ){
 		  my $ac = "";
 		  $ac .= '<select name="' . "Ipblock__" . "NEW" . "__interface" . '" >';
 		  $ac .= '<option value="0">Select Interface</option>';
-		  foreach my $int ( sort { $a->number <=> $b->number } $o->interfaces ){
-		      $ac .= '<option value="' . $int->id . '">' . $int->name . '</option>';
+		  foreach my $int ( sort { $a->get_label cmp $b->get_label } $o->interfaces ){
+		      $ac .= '<option value="' . $int->id . '">' . $int->get_label . '</option>';
 		  }
 		  $ac .= '</select>';
 		  $ac;
