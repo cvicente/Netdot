@@ -85,9 +85,10 @@ if ( $id ){
     }   
 }
 if ( $o ){
-
     # Check if user can view this object
-    unless ( $manager && $manager->can($user, "view", $o) ){
+    #we don't want average users seeing this page, its only for admins and operators.
+    #users have a special limited page user_device.html
+    unless ( $manager && $manager->can($user, "access_section", $o) ){
 	$m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
     }
 

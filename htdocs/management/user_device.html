@@ -1,0 +1,412 @@
+<%doc>
+
+-- Device Worksheet --
+
+Interface for viewing/updating a particular Device 
+and all its relevant info in one page
+
+Special component for users that want to edit device information.  Only allows them to edit very specific information
+
+</%doc>
+%
+<%attr>
+title        => 'Device' 
+section      => 'Management(user)'
+</%attr>
+%
+%
+%#######################################################################
+%#
+%# Args section
+%#
+%# Note that user_device.html is copied from device.html and there may be some old unused variables I have yet to clean
+%# up, so if you see something that isn't doing anything, feel free to delete it -- Parker 
+%#######################################################################
+<%args>
+$user       => $ui->get_current_user($r)
+$id         => undef
+$search     => undef
+$editgen    => undef
+$editloc    => undef
+$editcomments => undef
+$editmgmt   => undef
+$editips    => undef
+$addips     => undef
+$editints   => undef
+$editdevbgp => undef
+$editbgp    => undef
+$ipsort     => "address"
+$ifsort     => "number"
+$peersort   => "ip"
+$showvlan   => "all"
+$intadd     => undef
+$intaddnum  => undef
+$overwrite_if_descr => undef
+$submit     => undef
+$deviceadd  => undef
+$newhost    => undef
+$newip      => undef
+$topodepth  => 1
+$topovlans  => 0
+$toponames  => 0
+$topodirection  => 'left_right'
+</%args>
+%
+%
+%
+%#######################################################################
+%#
+%# INIT section
+%#
+%#######################################################################
+%
+<%init>
+my $DEBUG      = 0;
+my %cssitem    = ( 0 => "formtablec1", 1 => "formtablec2" );
+my $maxselect  = 100;
+my $o          = undef;
+my $ci         = 0;
+my $name;
+my %ifvlans;
+my %vlans;
+my $fqdn;
+my (@arp_caches, @fwt);
+my @modules;
+my %ifacecolors = ( 
+    manual  => "cccccc",
+    removed => "ff8e8e",
+    );
+
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+
+my $manager = $ui->get_permission_manager($r);
+
+if ( $id ){
+    unless ($o = Device->retrieve($id)){
+	$m->comp('/generic/error.mhtml', error=>"Could not retrieve Device with id $id");
+    }   
+}
+if ( $o ){
+
+    # Check if user can view this object
+    unless ( $manager && $manager->can($user, "view", $o) ){
+	$m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
+    }
+
+    if( $intadd ){
+	eval { $o->add_interfaces($intaddnum) };
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);	
+	}
+	
+    }elsif( defined $overwrite_if_descr ){
+	eval { $o->set_overwrite_if_descr($overwrite_if_descr); };
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);	
+	}
+    }
+    
+}
+
+if( $deviceadd && $newhost ){
+    if ( Device->search(name=>$newhost) ){
+	# It's already there
+	print "<p><b>Device $newhost already exists in DB</b>";   
+	$m->abort;
+    }else{
+	# Minimal info to create device manually
+	eval {
+	    $o = Device->insert({name=>$newhost, snmp_managed=>0, canautoupdate=>0});
+	};
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);	
+	}
+    }
+}elsif( $submit ){
+    # insert/update
+    eval {
+	my %ret = $ui->form_to_db(%ARGS);
+	print 'form_to_db returned: <pre>', Dumper(%ret), '</pre><br>' if $DEBUG;    
+    };
+    if ( my $e = $@ ){
+	$m->comp('/generic/error.mhtml', error=>$e);
+    }
+}
+
+if ( $o && $o->name ){
+    $name = (defined $o->name->name) ? $o->name->name : "Name N/A!";
+    $fqdn = $name . "." . $o->name->zone->name;
+
+}elsif ( ! $search ){
+    $m->comp('/generic/error.mhtml', error=>"Device undefined or no name set");
+}
+
+
+# Build a hash of Interface Vlans
+foreach my $if ( $o->interfaces ){
+    if ( my @ifv = $if->vlans ){
+        foreach my $ifv ( @ifv ){
+	        my $vid = $ifv->vlan->vid;
+	        $ifvlans{$if}{$vid} = "";
+	        $vlans{$vid} = $ifv->vlan->id;
+        }
+    }
+}
+
+
+my $refresh_url = "user_device.html?id=$id";
+
+</%init>
+
+<div id="sectiondetail">
+
+
+%#######################################################################
+%#
+%# Device view section
+%#
+%#######################################################################
+% my (@headers, @rows, @row, @rowstyles);
+<!-- Header Table -->
+<div class="containeroutside">
+  <div class="containerheadleftoutside">
+  Device: <b><% $fqdn %></b>&nbsp;
+  </div><!-- close containerheadleftoutside -->
+
+ <div class="containerheadrightoutside">
+    <a href="<% $refresh_url %>">[refresh]</a>
+
+%    if ( $manager && $manager->can($user, "delete", $o) ){
+	<a href="delete.html?table=Device&id=<% $id %>"> [delete]</a>
+%    }
+ </div> <!-- close containerheadrightoutside -->
+
+ <div class="containerbodyoutside">
+
+
+
+<script language="javascript">
+<!--
+/* 
+ * Show only interfaces belonging to selected VLAN
+ * 
+*/
+function showVlan(){
+    var name = document.showvlans.showvlan.value;
+    window.location = "user_device.html?id=<% $id %>&showvlan="+name;
+}
+
+-->
+</script>
+
+<%perl>
+   my $ifs = $o->interfaces_by($ifsort); 
+    #
+    # Store values in a hash first.  Thay way we can quicly verify if 
+    # at least one of the interfaces has that field set to some value 
+    # and decide whether to add that column or not
+    # 
+    my %intinfo;
+    foreach my $if ( @$ifs ){ 
+	foreach my $field ( qw/jack room_char jack_char description neighbor/ ){
+	    if ( defined ($if->$field) ){
+		if ( ref($if->$field) ){
+		    # If field is foreign object, make sure it's not an empty reference
+		    $intinfo{$field}{$if->id} = $if->$field if int($if->$field);
+		}else{
+		    $intinfo{$field}{$if->id} = $if->$field;
+		}
+	    }
+	}
+    } 
+    ### Headers
+
+    my @closet_jacks;
+    (@headers, @rows) = ();
+    
+    #the average user will never be deleting anything, so this dosn't need to appear
+    if ( $editints ){
+    #  push @headers, '[del]';
+    }
+
+
+    push @headers, '<a href="user_device.html?id=' . $id .'&ifsort=number">Number</a>';
+    push @headers, '<a href="user_device.html?id=' . $id .'&ifsort=name">Name</a>';
+    
+    #the average user should not be able to edit the following information, so we only need this header 
+    #if they're not editing
+    if ( ! $editints ){
+
+      push @headers, '<a href="user_device.html?id=' . $id . '&ifsort=speed">Speed</a>';
+      push @headers, '<a href="user_device.html?id=' . $id .'&ifsort=vlan">VLAN</a>';
+      push @headers, '<a href="user_device.html?id=' . $id .'&ifsort=monitored">Mon?</a>';
+      push @headers, '<a href="user_device.html?id=' . $id .'&ifsort=snmp">SNMP?</a>';
+    }
+    
+    if ( exists $intinfo{jack} || $editints ){
+        push @headers, '<a href="user_device.html?id=' . $id .'&ifsort=jack">Jack(cable)</a>';
+        @closet_jacks = $o->closet->horizontalcables if ( int($o->closet) != 0 );
+    }
+    if ( exists $intinfo{room_char} || $editints ){
+        push @headers, 'Room';
+    }
+    if ( exists $intinfo{jack_char} || $editints ){
+        push @headers, 'Jack';
+    }
+    if ( exists $intinfo{description} || $editints ){
+        push @headers, '<a href="user_device.html?id=' . $id .'&ifsort=descr">Descr.</a>';
+    }
+    if (exists $intinfo{neighbor} && !$editints ){
+	    push @headers, 'Neighbor';
+    }
+
+    ### Actual data
+    foreach my $if ( @$ifs ){
+      next if ( !exists $ifvlans{$if}{$showvlan} && $showvlan ne "all" );
+      
+      my (@row) = ();	
+      
+      if ( $editints ){	 
+	  #  push @row, '<input type="checkbox" name="' . "Interface__" . $if->id . "__delete" . '" >';
+      }
+
+      #the user should never be able to edit the number or name
+    
+      push @row, $ui->form_field(object=>$if, column=>"number", htmlExtra=>"style=\"width: 5em;\"", 
+	  			  linkPage=>"interface.html", returnValOnly=>1);
+
+      push @row, $ui->form_field(object=>$if, column=>"name", htmlExtra=>"style=\"width: 10em;\"", 
+	  			  linkPage=>"interface.html", returnValOnly=>1);
+      
+      if ( !$editints ){
+    
+
+
+
+        push @row, $if->speed_pretty;
+        push @row, 
+  	       &{sub{
+		  my $ac = "";
+		  if ( exists $ifvlans{$if} ){
+		    my @links;
+		    foreach my $v ( keys %{$ifvlans{$if}} ){
+		      push @links, sprintf("<a href=\"view.html?table=Vlan&id=%s\">%s</a>", $vlans{$v}, $v );
+		    }
+		    if ( scalar(@links) <= 3 ){
+			$ac .= join ', ', @links;
+		    }else{
+			$ac .= '>3';
+		    }
+		  }
+		  $ac;
+		}};
+     }
+     if(!$editints){
+        #the user should also not be able to edit information about monitoring or snmp managed
+        push @row, $ui->form_field(object=>$if, column=>"monitored", edit=>$editints, returnValOnly=>1);
+        push @row, $ui->form_field(object=>$if, column=>"snmp_managed", edit=>$editints, returnValOnly=>1);
+     } 
+      if ( exists $intinfo{jack} || $editints ){
+	  if ( @closet_jacks ){
+	      push @row, $ui->form_field(object=>$if, table=>"Interface", column=>"jack", defaults=>\@closet_jacks, 
+					  linkPage=>"view.html", edit=>$editints, returnValOnly=>1);
+	  }else{
+	      push @row, $ui->form_field(object=>$if, table=>"Interface", column=>"jack", linkPage=>1, 
+					  edit=>$editints, returnValOnly=>1);
+	  }
+      }
+      if ( exists $intinfo{room_char} || $editints ){
+          push @row, $ui->form_field(object=>$if, column=>"room_char", edit=>$editints, htmlExtra =>"style=\"width: 4em;\"", 
+				      returnValOnly=>1);
+      }
+      if ( exists $intinfo{jack_char} || $editints ){
+          push @row, $ui->form_field(object=>$if, column=>"jack_char", edit=>$editints, htmlExtra =>"style=\"width: 7em;\"", 
+				      returnValOnly=>1);
+      }
+      if ( exists $intinfo{description} || $editints ){
+          push @row, $ui->form_field(object=>$if, column=>"description", edit=>$editints, returnValOnly=>1);
+      }
+      
+      my $ac = "";
+      if ( exists $intinfo{neighbor}{$if->id} && !$editints){
+	  $ac = $ui->form_field(object=>$if, column=>"neighbor", edit=>$editints, linkPage=>1, returnValOnly=>1);
+	  $ac .= "<br>";
+      }
+
+      push @row, $ac;
+      
+      push @rows, \@row;
+      my $doc_status = $if->doc_status;
+      if (  exists $ifacecolors{$doc_status} ){
+	  push @rowstyles, "background-color: #$ifacecolors{$doc_status};"; 
+      }else{
+	  push @rowstyles, "";
+      } 
+      
+    } #foreach
+    
+</%perl>
+
+<!-- Interface Table -->
+<div class="container">
+    <div class="containerheadleft">
+        Interfaces
+    </div>
+    <div class="containerheadright">
+
+%   if ( $editints ){	 
+        <form name="netdotform" action="user_device.html" method="POST">
+	    <input type="hidden" name="id" value="<% $id %>">
+	    <input type="hidden" name="ifsort" value="<% $ifsort %>">
+	    <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+	    <input type="submit" name="submit" value="save">
+%   }else{
+
+        <form name="showvlans">
+	VLAN view: <select name="showvlan" onChange="showVlan();">
+%       if ( $showvlan eq 'all' ){
+            <option value="all" SELECTED>all</option>
+%       }else{
+            <option value="all">all</option>
+%       }
+%       foreach my $vid ( sort { $a <=> $b } keys %vlans ){
+%           if ( $showvlan eq $vid ){
+                <option value="<% $vid %>" SELECTED><% $vid %></option>     
+%           }else{
+                <option value="<% $vid %>"><% $vid %></option>     
+%           }
+%       }
+        </select>
+        </form> 
+        Legend: 
+%	foreach my $status ( keys %ifacecolors ){
+	    <span style="background-color: #<% $ifacecolors{$status} %>;"><% $status %></span>
+%       }
+	&nbsp;&nbsp;
+%       if ( $manager && $manager->can($user, "edit", $o) ){
+            <a href="user_device.html?id=<% $id %>&ifsort=<% $ifsort %>&editints=1">[edit]</a>
+%       }
+%  }
+
+    </div>
+    <div class="containerbody">
+        <& /generic/data_table.mhtml, field_headers=>\@headers, data=>\@rows, rowstyle=>\@rowstyles &>
+    </div>
+    <div class="containerheadright">
+%	  if ( $editints ){	 
+            <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+            <input type="submit" name="submit" value="save">
+%	  }
+    </div>
+</div>
+
+%   if ($editints){
+       </form>
+%   }
+
+<!-- End Interfaces Section -->
+
+
+  </div> <!-- close containerbodyoutside --> 
+ </div> <!-- close containeroutside -->
+</div> <!-- close sectiondetail -->
