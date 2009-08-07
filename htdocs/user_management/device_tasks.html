@@ -37,7 +37,7 @@ my $DEBUG = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 $show_tasks = $show_tasks || $user->getAttribute("SHOW_TASKS");
 if ( $show_tasks eq "" ) {
-    $user->setAttribute($r, "SHOW_TASKS", "show");
+    $user->setAttribute($r, "SHOW_TASKS", "show"); 
     $show_tasks = "show";
 }
 *print_showtaskslink = $m->comp('SELF:.sub_print_showtaskslink'); 
@@ -90,6 +90,6 @@ if ( exists $ao->{Device} ){
 </div> <!-- close sectiontools -->
 
 % if ( $show_device ){
-%    $m->comp('../management/device.html', id=>$show_device, user=>$user );    
+%    $m->comp('../management/user_device.html', id=>$show_device, user=>$user );
 % }
 
