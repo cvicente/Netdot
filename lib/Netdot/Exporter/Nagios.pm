@@ -634,7 +634,7 @@ sub print_contacts {
 			    print $out "}\n\n";
 			}
 		    }else{
-			$logger->warn($contact->notify_pager->name . " is not a defined timeperiod");
+			$logger->warn("$period is not a defined timeperiod");
 		    }
 		}
 	    }
