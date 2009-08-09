@@ -335,6 +335,30 @@ sub update {
 }
 
 ##################################################################
+=head2 delete - Override delete method
+
+    Removes any matching CNAMEs
+
+  Arguments:
+    None
+  Returns:
+    See parent class
+  Examples:
+    $rr->delete();
+
+=cut
+sub delete {
+    my $self = shift;
+    $self->isa_object_method('delete');
+    my $class = ref($self);
+    my @cnames = RRCNAME->search(cname=>$self->get_label);
+    foreach my $cname ( @cnames ){
+	$cname->name->delete();
+    }
+    return $self->SUPER::delete();
+}
+
+##################################################################
 =head2 get_label - Override get_label method
 
     Returns the full Resource Record name
