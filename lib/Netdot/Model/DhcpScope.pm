@@ -419,7 +419,7 @@ sub _validate_args {
 	    $self->throw_user("DhcpScope::_validate_args: $fields{name}: a global scope cannot exist within another scope");
 	}
 	if ( $type eq 'host' && !($ctype eq 'global' || $ctype eq 'group') ){
-	    $self->throw_user("DhcpScope::_validate_args: $fields{name}: a host scope can only exist within a global or group scope");
+	    $self->throw_user("DhcpScope::_validate_args: $fields{name}: a host scope can only exist within a global or group scope (was: $ctype)");
 	}
 	if ( $type eq 'group' && $ctype ne 'global' ){
 	    $self->throw_user("DhcpScope::_validate_args: $fields{name}: a group scope can only exist within a global scope");

@@ -508,10 +508,11 @@ sub add_host {
 		my $physaddr = PhysAddr->find_or_create({address=>$argv{ethernet}});
 		
 		# Create host scope
-		my $container;
-		unless ( $container = ($argv{block}->dhcp_scopes)[0] ){
+		my ($subnet, $global);
+		unless ( $subnet = ($argv{block}->dhcp_scopes)[0] ){
 		    $class->throw_user("Subnet ".$argv{block}->get_label." not dhcp-enabled (no Subnet scope found).");
 		}
+		$global = $subnet->container;
 		my $host;
 		if ( $host = DhcpScope->search(name=>$argv{address})->first ){
 		    $class->throw_user("A DHCP scope for host $argv{address} already exists!");
@@ -520,7 +521,7 @@ sub add_host {
 					       type      => 'host',
 					       ipblock   => $rraddr->ipblock,
 					       physaddr  => $physaddr,
-					       container => $container});
+					       container => $global});
 		}
 	    }
 	    
