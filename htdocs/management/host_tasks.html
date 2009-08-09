@@ -201,10 +201,10 @@ if ( $action eq "search" && $submit ){
 #######################################################################################
 
 } elsif ( $action eq "new" ) {
-    if (!(defined $add_host_block && $add_host_block!=0)) {
+    if ( !defined $add_host_block || $add_host_block == 0 ) {
 	$m->comp('/generic/error.mhtml', error=>"You need to specify a subnet");
     }
-    if (!(defined $hostname)) {
+    if ( !(defined $hostname) ) {
 	$m->comp('/generic/error.mhtml', error=>"You need to specify a hostname");
     }
     my $block = Ipblock->retrieve($add_host_block);
