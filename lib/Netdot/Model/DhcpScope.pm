@@ -416,28 +416,28 @@ sub _validate_args {
 	    unless defined $ctype;
 
 	if ( $type eq 'global' ){
-	    $self->throw_user("DhcpScope::_validate_args: $fields{name}: a global scope cannot exist within another scope");
+	    $self->throw_user("$fields{name}: a global scope cannot exist within another scope");
 	}
 	if ( $type eq 'host' && !($ctype eq 'global' || $ctype eq 'group') ){
-	    $self->throw_user("DhcpScope::_validate_args: $fields{name}: a host scope can only exist within a global or group scope (was: $ctype)");
+	    $self->throw_user("$fields{name}: a host scope can only exist within a global or group scope");
 	}
 	if ( $type eq 'group' && $ctype ne 'global' ){
-	    $self->throw_user("DhcpScope::_validate_args: $fields{name}: a group scope can only exist within a global scope");
+	    $self->throw_user("$fields{name}: a group scope can only exist within a global scope");
 	}
 	if ( $type eq 'subnet' && !($ctype eq 'global' || $ctype eq 'shared-network') ){
-	    $self->throw_user("DhcpScope::_validate_args: $fields{name}: a subnet scope can only exist within a global or shared-network scope");
+	    $self->throw_user("$fields{name}: a subnet scope can only exist within a global or shared-network scope");
 	}
 	if ( $type eq 'shared-network' && $ctype ne 'global' ){
-	    $self->throw_user("DhcpScope::_validate_args: $fields{name}: a shared-network scope can only exist within a global scope");
+	    $self->throw_user("$fields{name}: a shared-network scope can only exist within a global scope");
 	}
 	if ( $type eq 'pool' && !($ctype eq 'subnet' || $ctype eq 'shared-network') ){
-	    $self->throw_user("DhcpScope::_validate_args: $fields{name}: a pool scope can only exist within a subnet or shared-network scope");
+	    $self->throw_user("$fields{name}: a pool scope can only exist within a subnet or shared-network scope");
 	}
 	if ( ($type eq 'class' || $type eq 'subclass') && $ctype ne 'global' ){
-	    $self->throw_user("DhcpScope::_validate_args: $fields{name}: a class or subclass scope can only exist within a global scope");
+	    $self->throw_user("$fields{name}: a class or subclass scope can only exist within a global scope");
 	}
     }elsif ( $type ne 'global' && $type ne 'template' ){
-	$self->throw_user("DhcpScope::_validate_args: $fields{name}: A container scope is required except for global and template scopes");
+	$self->throw_user("$fields{name}: A container scope is required except for global and template scopes");
     }
 
     1;
