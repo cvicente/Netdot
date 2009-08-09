@@ -493,10 +493,6 @@ sub add_host {
 		$txtdata =  "CON: ".$argv{contact_name};
 		$txtdata .= " (".$argv{contact_email}.")" if $argv{contact_email}; 
 		$txtdata .= ", ".$argv{contact_phone} if $argv{contact_phone}; 
-		if ( $argv{room_id} || $argv{room_number} ){
-		    my $room = ($argv{room_id})? Room->retrieve($argv{room_id})->get_label : $argv{room_number};
-		    $txtdata .= " ".$room;
-		}
 		RR->insert({rr      => $rr, 
 			    type    =>'TXT',
 			    txtdata => $txtdata,
