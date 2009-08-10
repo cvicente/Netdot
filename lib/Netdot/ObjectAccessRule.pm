@@ -186,6 +186,11 @@ sub _deny_action_access {
     Netdot->throw_fatal("Missing arguments")
 	unless ( $action );
 
+    if ( exists $access->{none} ){
+	$logger->debug("Netdot::ObjectAccessRule::_deny_action_access: access was explicitly denied for this object");
+	return 1;
+    }
+
     # This assumes actions and access rights are the same
     if ( exists $access->{$action} ){
 	$logger->debug("Netdot::ObjectAccessRule::_deny_action_access: action $action allowed for object $access");

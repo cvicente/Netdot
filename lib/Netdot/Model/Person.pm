@@ -62,32 +62,46 @@ sub get_allowed_objects {
     if (  $authorization_method =~ /^LOCAL$/i ){
 	my $id  = $self->id;
 	my $dbh = $self->db_Main();
+	
+	# Get access rights from contactlists this person belongs to
 	my $gq  = "SELECT  accessright.object_class, accessright.object_id, accessright.access
                    FROM    contact, contactlist, accessright, groupright
                    WHERE   contact.person=$id
                        AND contact.contactlist=contactlist.id
                        AND groupright.contactlist=contactlist.id
                        AND groupright.accessright=accessright.id";
-	
 	my $gqr = $dbh->selectall_arrayref($gq);
 	
+	# Get access rights from person
 	my $uq = "SELECT    accessright.object_class, accessright.object_id, accessright.access
                   FROM      accessright, userright 
                   WHERE     userright.person=$id 
                      AND    userright.accessright=accessright.id";
-	
 	my $uqr = $dbh->selectall_arrayref($uq);
-	
-	foreach my $row ( @$gqr, @$uqr ){
+
+	# Assign rights from contact lists
+	foreach my $row ( @$gqr ){
 	    my ($oclass, $oid, $access) = @$row;
-	    $results{$oclass}{$oid}{$access} = 1;
+	    if ( $access ne 'none' ){
+		$results{$oclass}{$oid}{$access} = 1;
+	    }
+	}
+
+	# Assign person rights 
+	foreach my $row ( @$uqr ){
+	    my ($oclass, $oid, $access) = @$row;
+	    # This line overrides group rights for particular object
+	    delete $results{$oclass}{$oid} if exists $results{$oclass}{$oid};
+	    if ( $access ne 'none' ){
+		$results{$oclass}{$oid}{$access} = 1;
+	    }
 	}
 
     }elsif ( $authorization_method =~ /^LDAP$/i ){
-	    $self->throw_user("LDAP NOT SUPPORTED!");
+	    $self->throw_user("LDAP authorization not supported yet!");
     }
     elsif ($authorization_method =~ /^RADIUS$/i ){
-        $self->throw_user("RADIUS NOT SUPPORTED!");
+        $self->throw_user("RADIUS authorization not supported yet!");
     }
 
     return \%results;

@@ -33,22 +33,22 @@ print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
 if ( $submit ){
     if ( !defined($access[0]) ){
-        $m->comp('error.mhtml', error=>"The Permission is null.");
+        $m->comp('error.mhtml', error=>"The Permission list is null.");
+    }
+    if ( !defined($object_id[0]) ){
+        $m->comp('error.mhtml', error=>"The Object list is null.");
     }
  
     eval {
-	if ( $object_class && @object_id ){
-        
-	    foreach my $object_id ( @object_id ){
-		foreach my $access ( @access ){
-            	    my $accessright = AccessRight->find_or_create({object_class => $object_class, 
-								   object_id    => $object_id, 
-								   access       => $access});
-		    if ( $table eq 'Person' ){
-			UserRight->find_or_create({accessright=>$accessright, person=>$id});
-		    }elsif ( $table eq 'ContactList' ){
-			GroupRight->find_or_create({accessright=>$accessright, contactlist=>$id});
-		    }
+	foreach my $object_id ( @object_id ){
+	    foreach my $access ( @access ){
+		my $accessright = AccessRight->find_or_create({object_class => $object_class, 
+							       object_id    => $object_id, 
+							       access       => $access});
+		if ( $table eq 'Person' ){
+		    UserRight->find_or_create({accessright=>$accessright, person=>$id});
+		}elsif ( $table eq 'ContactList' ){
+		    GroupRight->find_or_create({accessright=>$accessright, contactlist=>$id});
 		}
 	    }
 	}
@@ -139,7 +139,7 @@ if ( $submit ){
 	 &{sub{
 	      my $out;
 	      $out .= "<select name=\"access\" MULTIPLE>";
-	      foreach my $perm ( qw(view edit delete) ){
+	      foreach my $perm ( qw(view edit delete none) ){
 	 	 $out .= "<option name=\"\">$perm</option>";
 	      }
 	      $out .= "</select>";
