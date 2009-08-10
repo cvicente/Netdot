@@ -116,16 +116,18 @@ my $vars = new SNMP::VarList([$admin_status_oid,$self{IFINDEX}], [$oper_status_o
 			     [$descr_oid,$self{IFINDEX}], [$alias_oid,$self{IFINDEX}]);
 my ($admin_status, $oper_status, $descr, $alias) = $sess->get($vars);
 
+if ( $alias =~ /NOSUCH/ ){
+    $alias = 'n/a';
+}
+$descr .= " ($alias)";
+
 # We only care if the interface is admin up but oper down
 if ( $admin_status == 1 && $oper_status == 2 ){
     $state = 'CRITICAL';
-    if ( $alias =~ /NOSUCH/ ){
-	$alias = 'n/a';
-    }
-    print "$state: $descr ($alias)\n";
+    print "$state: $descr\n";
 }else {
     $state = 'OK';
-    print "$state\n";
+    print "$state $descr\n";
 }
 
 exit $ERRORS{$state};
