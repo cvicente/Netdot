@@ -124,7 +124,7 @@ sub denies(){
 	    }else{
 		if ( my @ipbs = &_get_rr_subnets($rr) ){
 		    foreach my $ipb ( @ipbs ){
-			next if $ipb == 0;
+			next if scalar($ipb) == 0;
 			return 1 if ( &_deny_action_access($action, $access->{'Ipblock'}->{$ipb->id}) );
 		    }
 		    return 0;
