@@ -18,6 +18,7 @@ $delete       => undef
 $fwt_limit    => Netdot->config->get('SHOW_LAST_N_FTE') || 10
 $arp_limit    => Netdot->config->get('SHOW_LAST_N_ARP') || 10
 $edit_attr    => undef
+$user         => $ui->get_current_user($r)
 </%args>
 %
 %
@@ -29,6 +30,13 @@ my (@interfaces, @devices);
 my $edge_port;
 my ($fwt, $arp);
 print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+
+# Check if user can access this section
+my $manager = $ui->get_permission_manager($r);
+unless ( $manager && $manager->can($user, "access_section", 'mac.html') ){
+    $m->comp('/generic/error.mhtml', error=>"You don't have permission to access this page");
+}
+
 </%init>
 
 <%doc>

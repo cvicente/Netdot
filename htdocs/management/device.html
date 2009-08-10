@@ -77,7 +77,13 @@ my %ifacecolors = (
 
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
+# Check if user can access this section
+# We don't want average users seeing this page, its only for admins and operators.
+# Users have a special limited page user_device.html
 my $manager = $ui->get_permission_manager($r);
+unless ( $manager && $manager->can($user, "access_section", 'device.html') ){
+    $m->comp('/generic/error.mhtml', error=>"You don't have permission to access this page");
+}
 
 if ( $id ){
     unless ($o = Device->retrieve($id)){
@@ -85,13 +91,6 @@ if ( $id ){
     }   
 }
 if ( $o ){
-    # Check if user can view this object
-    #we don't want average users seeing this page, its only for admins and operators.
-    #users have a special limited page user_device.html
-    unless ( $manager && $manager->can($user, "access_section", $o) ){
-	$m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
-    }
-
     if( $intadd ){
 	eval { $o->add_interfaces($intaddnum) };
 	if ( my $e = $@ ){

@@ -20,13 +20,15 @@ $view => undef
 my $DEBUG = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
-my $obj = Interface->retrieve($id);
 
-# Check if user can view this object
+# Check if user can access this page
+# We don't want average users seeing this page, its only for admins and operators.
 my $manager = $ui->get_permission_manager($r);
-unless ( $manager && $manager->can($user, "view", $obj) ){
-    $m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
+unless ( $manager && $manager->can($user, "access_section", 'interface.html') ){
+    $m->comp('/generic/error.mhtml', error=>"You don't have permission to access this page");
 }
+
+my $obj = Interface->retrieve($id);
 
 my $dbh = Netdot::Model->db_Main();
 my $fdb_tstamps;
@@ -39,9 +41,9 @@ my %linksfrom = Interface->meta_data->get_links_from;
 <div class="container">
     <div class="containerheadleftoutside"><strong>Interface</strong></div>
     <div class="containerheadrightoutside">
-          <a href="edit.html?table=Interface">[new]</a>
+            <a href="edit.html?table=Interface">[new]</a>
+            <a href="delete.html?table=Interface&id=<% $id %>">[delete]</a>
           <a href="edit.html?table=Interface&id=<% $id %>">[edit]</a>
-          <a href="delete.html?table=Interface&id=<% $id %>">[delete]</a>
           <a href="#" onClick="opentextwindow(jspopoutstring,'js','');">[text]</a>
     </div>
     <div class="containerbodyoutside">
