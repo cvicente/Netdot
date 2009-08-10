@@ -19,37 +19,16 @@ section      => 'Management'
 %#
 %# Args section
 %#
-%# Note that user_device.html is copied from device.html and there may be some old unused variables I have yet to clean
-%# up, so if you see something that isn't doing anything, feel free to delete it -- Parker 
 %#######################################################################
 <%args>
 $user       => $ui->get_current_user($r)
 $id         => undef
 $search     => undef
-$editgen    => undef
-$editloc    => undef
-$editcomments => undef
-$editmgmt   => undef
-$editips    => undef
-$addips     => undef
 $editints   => undef
-$editdevbgp => undef
-$editbgp    => undef
 $ipsort     => "address"
 $ifsort     => "number"
-$peersort   => "ip"
 $showvlan   => "all"
-$intadd     => undef
-$intaddnum  => undef
-$overwrite_if_descr => undef
 $submit     => undef
-$deviceadd  => undef
-$newhost    => undef
-$newip      => undef
-$topodepth  => 1
-$topovlans  => 0
-$toponames  => 0
-$topodirection  => 'left_right'
 </%args>
 %
 %
@@ -92,37 +71,9 @@ if ( $o ){
     unless ( $manager && $manager->can($user, "view", $o) ){
 	$m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
     }
-
-    if( $intadd ){
-	eval { $o->add_interfaces($intaddnum) };
-	if ( my $e = $@ ){
-	    $m->comp('/generic/error.mhtml', error=>$e);	
-	}
-	
-    }elsif( defined $overwrite_if_descr ){
-	eval { $o->set_overwrite_if_descr($overwrite_if_descr); };
-	if ( my $e = $@ ){
-	    $m->comp('/generic/error.mhtml', error=>$e);	
-	}
-    }
-    
 }
 
-if( $deviceadd && $newhost ){
-    if ( Device->search(name=>$newhost) ){
-	# It's already there
-	print "<p><b>Device $newhost already exists in DB</b>";   
-	$m->abort;
-    }else{
-	# Minimal info to create device manually
-	eval {
-	    $o = Device->insert({name=>$newhost, snmp_managed=>0, canautoupdate=>0});
-	};
-	if ( my $e = $@ ){
-	    $m->comp('/generic/error.mhtml', error=>$e);	
-	}
-    }
-}elsif( $submit ){
+if( $submit ){
     # insert/update
     eval {
 	my %ret = $ui->form_to_db(%ARGS);
@@ -273,10 +224,10 @@ function showVlan(){
       #the user should never be able to edit the number or name
     
       push @row, $ui->form_field(object=>$if, column=>"number", htmlExtra=>"style=\"width: 5em;\"", 
-	  			  linkPage=>"interface.html", returnValOnly=>1);
+	  			  linkPage=>0, returnValOnly=>1);
 
       push @row, $ui->form_field(object=>$if, column=>"name", htmlExtra=>"style=\"width: 10em;\"", 
-	  			  linkPage=>"interface.html", returnValOnly=>1);
+	  			  linkPage=>0, returnValOnly=>1);
       
       if ( !$editints ){
     
@@ -288,12 +239,12 @@ function showVlan(){
   	       &{sub{
 		  my $ac = "";
 		  if ( exists $ifvlans{$if} ){
-		    my @links;
+		    my @list;
 		    foreach my $v ( keys %{$ifvlans{$if}} ){
-		      push @links, sprintf("<a href=\"view.html?table=Vlan&id=%s\">%s</a>", $vlans{$v}, $v );
+		      push @list, $v;
 		    }
-		    if ( scalar(@links) <= 3 ){
-			$ac .= join ', ', @links;
+		    if ( scalar(@list) <= 3 ){
+			$ac .= join ', ', @list;
 		    }else{
 			$ac .= '>3';
 		    }
@@ -309,9 +260,9 @@ function showVlan(){
       if ( exists $intinfo{jack} || $editints ){
 	  if ( @closet_jacks ){
 	      push @row, $ui->form_field(object=>$if, table=>"Interface", column=>"jack", defaults=>\@closet_jacks, 
-					  linkPage=>"view.html", edit=>$editints, returnValOnly=>1);
+					  linkPage=>0, edit=>$editints, returnValOnly=>1);
 	  }else{
-	      push @row, $ui->form_field(object=>$if, table=>"Interface", column=>"jack", linkPage=>1, 
+	      push @row, $ui->form_field(object=>$if, table=>"Interface", column=>"jack", linkPage=>0, 
 					  edit=>$editints, returnValOnly=>1);
 	  }
       }
@@ -329,7 +280,7 @@ function showVlan(){
       
       my $ac = "";
       if ( exists $intinfo{neighbor}{$if->id} && !$editints){
-	  $ac = $ui->form_field(object=>$if, column=>"neighbor", edit=>$editints, linkPage=>1, returnValOnly=>1);
+	  $ac = $ui->form_field(object=>$if, column=>"neighbor", edit=>$editints, linkPage=>0, returnValOnly=>1);
 	  $ac .= "<br>";
       }
 
