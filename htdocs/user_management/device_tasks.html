@@ -17,10 +17,13 @@ title => 'Device Tasks for End Users'
 %#
 %#######################################################################
 <%args>
+$editints       => undef
+$id             => undef
 $user           => undef
 $submit         => undef
 $show_device    => undef
 $show_tasks     => undef
+$ifsort         => "number"
 $showheader     => 1
 </%args>
 %
@@ -88,8 +91,13 @@ if ( exists $ao->{Device} ){
     </div> <!-- close containerbody -->
   </div> <!-- close container -->
 </div> <!-- close sectiontools -->
-
-% if ( $show_device ){
-%    $m->comp('../management/user_device.html', id=>$show_device, user=>$user );
-% }
-
+<%perl>
+if ( $show_device || $id ){
+    if($id){
+        $m->comp('user_device.html', id=>$id, ifsort=>$ifsort, editints=>$editints );
+    }
+    else{
+        $m->comp('user_device.html', id=>$show_device, ifsort=>$ifsort );
+    }
+}
+</%perl>
