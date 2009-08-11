@@ -138,11 +138,11 @@ if ( $table ){
 	    if ( my $e = $@ ){
 		$m->comp('error.mhtml', error=>$e);
 	    }
-	    $m->comp($page, table=>$table, id=>$id);
+	    $m->comp($page, table=>$table, id=>$id, dowindow=>$dowindow );
 	    
 	}else{
 	    $m->comp('.show_form', table=>$table, id=>$id, 
-		     showheader=>$showheader, select_id=>$select_id, selected=>$selected);
+		     showheader=>$showheader, select_id=>$select_id, selected=>$selected, dowindow=>$dowindow );
 	}
     }else{
 	if ( $submit eq "Insert" ){
@@ -155,15 +155,14 @@ if ( $table ){
 	    }
 	    if ( $dowindow ){
 		$m->comp('.show_inserted', table=>$table, id=>$new->id,
-			 showheader=>$showheader, select_id=>$select_id, selected=>$selected);
+			 showheader=>$showheader, select_id=>$select_id, selected=>$selected, dowindow=>$dowindow );
 	    }else{
-		$m->comp($page, table=>$table, id=>$new->id);
+		$m->comp($page, table=>$table, id=>$new->id, dowindow=>$dowindow );
 	    }
 
 	}else{
 	    $m->comp('.show_form', table=>$table, 
-		     showheader=>$showheader, select_id=>$select_id, selected=>$selected,
-		     dowindow=>$dowindow, args=>\%args);
+		     showheader=>$showheader, select_id=>$select_id, selected=>$selected, dowindow=>$dowindow, args=>\%args);
 	}
     }
     
@@ -201,14 +200,18 @@ $id         => undef
 $select_id  => undef
 $selected   => undef
 $showheader => undef
-$dowindow   => 0
+$dowindow   => undef
 %args       => undef
 </%args>
 
 <%init>
-$dowindow = @_;
+
+if ( !defined($dowindow) ){
+     $dowindow = 0;
+}
 my $title = "$table " . $ui->table_descr_link($table, "[?]");
 </%init>
+
 
 %if ( ! $showheader ){
 %	$m->clear_buffer;
@@ -276,6 +279,7 @@ $id
 $select_id  => undef
 $selected   => undef
 $showheader => undef
+$dowindow   => undef
 </%args>
 <%init>
 use URI::Escape;
@@ -285,7 +289,6 @@ $obj = $table->retrieve($id);
 $lbl = $obj->get_label;
 
 </%init>
-
 % my $onload_action = uri_escape("addandclose()");
 
 %if ( ! $showheader ){
