@@ -26,7 +26,7 @@ $object      => undef
 $sort        => undef
 $page        => undef
 $withedit    => 0
-$per_page    => 50
+$per_page    => undef
 $offset      => 0
 $total       => undef
 $sid         => undef
@@ -50,6 +50,10 @@ my $numcols;
 my $IPV4 = Netdot->get_ipv4_regex();
 my $caller_path;
 
+if ( !defined($per_page) ){
+    $per_page = $ui->config->get('DEFAULT_PERPAGE');
+} 
+
 print "<pre>", Dumper(%ARGS), "</pre>" if $DEBUG;
 
 if ( $return_args ){
@@ -62,7 +66,6 @@ if ( $osid ){
     print "<pre> Session $osid contains:", Dumper($osession), "</pre>" if $DEBUG;
     $object = $osession->{object};
 }
-
 #########################################################
 #
 # This happens on first call
@@ -350,10 +353,10 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
       Results: [<% $offset+1 %>-<% $last_item %>] of <% $total %> 
 %     my $prev_offset = $offset - $per_page; 
 %     if ( $sid && $prev_offset >= 0 ){
-          <a href="../generic/list.html?sid=<% $sid %>&offset=<% $prev_offset %>">[<<] </a>
+          <a href="../generic/list.html?sid=<% $sid %>&offset=<% $prev_offset %>&per_page=<% $per_page %>">[<<] </a>
 %     }
 %     unless ( $last_item == $total ){
-          <a href="../generic/list.html?sid=<% $session->{_session_id} %>&offset=<% $last_item %>">[>>] </a>
+          <a href="../generic/list.html?sid=<% $session->{_session_id} %>&offset=<% $last_item %>&per_page=<% $per_page %>">[>>] </a>
 %     }
 % }
 
