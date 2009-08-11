@@ -42,7 +42,6 @@ if ( $submit ){
     if(! $object_class){
         $m->comp('error.mhtml', error=>"No object class was selected, please select an object class");
     }
-
     eval {
 	if ( $object_class && $object_id[0] ){
 
@@ -138,7 +137,7 @@ if ( $submit ){
             my $out;
             $out .= "<select name=\"object_id\" id=\"object_id\" MULTIPLE></select><br>";
             $out .= "<input type=\"hidden\" name=\"keywords\" id=\"keywords\" value=\"Keywords\" onFocus=\"if (this.value == 'Keywords') {this.value = '';} return true;\">";
-            $out .= "<input type=\"hidden\" name=\"button\" id=\"button\" value=\"Search\" onClick=\"jsrsSendqueryRAKW(document.getElementById('object_class').value, 'object_id', document.getElementById('keywords').value);\" onKeyPressed=>";
+            $out .= "<input type=\"hidden\" name=\"button\" id=\"button\" value=\"Search\" onClick=\"jsrsSendqueryRAKW(document.getElementById('object_class').value, 'object_id', document.getElementById('keywords').value);\" >";
 
          }};
 
@@ -147,7 +146,7 @@ if ( $submit ){
 	 &{sub{
 	      my $out;
 	      $out .= "<select name=\"access\" MULTIPLE>";
-	      foreach my $perm ( qw(view edit delete) ){
+	      foreach my $perm ( qw(view edit delete none) ){
 	 	 $out .= "<option name=\"\">$perm</option>";
 	      }
 	      $out .= "</select>";
