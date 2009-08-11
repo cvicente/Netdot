@@ -19,10 +19,12 @@ $fwt_limit    => Netdot->config->get('SHOW_LAST_N_FTE') || 10
 $arp_limit    => Netdot->config->get('SHOW_LAST_N_ARP') || 10
 $edit_attr    => undef
 $user         => $ui->get_current_user($r)
+$dowindow     => undef
 </%args>
 %
 %
 <%init>
+$dowindow = @_;
 my $DEBUG = 0;
 my $o;
 my @list;
@@ -57,7 +59,7 @@ unless ( $manager && $manager->can($user, "access_section", 'mac.html') ){
           </div>
           <div class="containerbody">
 %         if ( scalar(@list) > 1 ){
-              <& /generic/sortresults.mhtml, object => \@list, dowindow => 1 &>
+              <& /generic/sortresults.mhtml, object => \@list, dowindow => $dowindow &>
 %         }elsif ( @list ){
 %             $o = $list[0];
 %         }else{

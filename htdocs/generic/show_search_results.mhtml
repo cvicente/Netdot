@@ -6,16 +6,21 @@
 
 
 <%args>
-$list   => undef
-$search => undef
+$list     => undef
+$search   => undef
+$dowindow => undef
 </%args>
+
+<%init>
+$dowindow = @_;
+</%init>
 
 <div class="container">
   <div class="containerheadleft">
     <% scalar(@$list) %> results for <i><% $search %></i>
   </div><div class="containerheadright">&nbsp;</div>
   <div class="containerbody">
-      <& /generic/sortresults.mhtml, object=>$list, withedit=>1, dowindow=>1 &>
+      <& /generic/sortresults.mhtml, object=>$list, withedit=>1, dowindow=>$dowindow &>
   </div>
 </div>
 
