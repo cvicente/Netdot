@@ -156,6 +156,8 @@ if ( $view eq 'csv' ){
 
 %     if ( $withedit ) {
          <form name="host_list_form" method="POST" >
+         <input type="hidden" name="table" value="">
+
 %	 if ( $caller_path ){
 	     <input type="hidden" name="return_url" value="<% $caller_path %>">
 %        }
@@ -246,7 +248,7 @@ if ( $view eq 'csv' ){
 
 % if ( $withedit ){
       <p>
-      <input type="button" name="Edit" value="Edit" onClick="document.host_list_form.action='edit-multiple.html';document.host_list_form.submit();">
+      <input type="button" name="Edit" value="Edit" onClick="editSubmit()">
       <input type="button" name="Delete" value="Delete" onClick="document.host_list_form.action='delete.html';document.host_list_form.submit();">
       <input type="button" name="Cancel" value="Cancel" onClick="history.go(-1)">
       </form>
@@ -262,6 +264,16 @@ if ( $view eq 'csv' ){
 % }
 
   </div>
+
+<script language="JavaScript">
+    function editSubmit(){
+        document.host_list_form.action="edit-multiple.html";
+
+        //edit-multiple.html needs to know which table you want to edit
+        document.host_list_form.table.value="RR"; 
+        document.host_list_form.submit();
+    }   
+</script>
 
 % } #end html format
 
