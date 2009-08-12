@@ -39,7 +39,7 @@
         var data = explode(returnstring, "&");
         var form_elt;
         var thelist;
-
+        
         // assume that form_elt will be the first variable in the return string.
         form_elt = data[0];
 
@@ -51,7 +51,7 @@
             if( elt[0] != "" ) {
                 var len = thelist.length++;
                 var optionObject = new Option(unescape(elt[1]),elt[0])
-		if(unescape(elt[0]) =~ /.*Refine search.*/){
+		if(unescape(elt[1]) == "Refine search."){
 		    document.getElementById("keywords").type = "text";
 		    document.getElementById("button").type = "button";
 		    bool = true;
