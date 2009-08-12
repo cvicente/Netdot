@@ -30,7 +30,7 @@ edit-multiple.html
 </%doc>
 
 <%args>
-$table
+$table         => undef
 @tablefields   => undef
 $submit        => 'Edit'
 $selectall     => undef
@@ -39,17 +39,23 @@ $sid           => undef
 </%args>
 
 <%init>
+
+if(! $table){
+    $m->comp('/generic/error.mhtml', error=>"No database table provided to edit!");
+}
+
 my $DEBUG = 0;
 print "<pre>", Dumper(%ARGS), "</pre>" if $DEBUG;
 my $session;
 my @columns  = $table->meta_data->get_columns;
 my %objs;
+
 </%init>
 
 <%perl>
 
 if ( $submit eq 'Edit' ) {
-    
+
     if ( $selectall && $selectall_ids ){
 	@{$objs{$table}} = map { $table->retrieve($_) } split ',', $selectall_ids;
     }else{
