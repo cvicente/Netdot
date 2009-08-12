@@ -152,6 +152,21 @@ if ( $_action ){
 </form>
 <!-- End Circuit Table -->
 
+<!-- Display list of interfaces -->
+%     my @interfaces = $o->interfaces;
+      <div class="container">
+        <div class="containerheadleft">Interfaces</div>
+%       if ( $edit eq 'interfaces' ){
+	  <div class="containerheadright">&nbsp;</div>
+%       }else{
+	  <div class="containerheadright">
+	      <a href="circuit.html?id=<% $id %>&edit=interfaces">[edit]</a>
+              <a href="edit.html?table=Interface&circuit=<% $id %>">[add]</a>
+	  </div>
+%       }
+        <& /generic/sortresults.mhtml, object=>\@interfaces, withedit=>($edit eq 'interfaces')? 1 : 0  &>
+      </div>
+
 <!-- Begin Cable Strand Sequence Table -->
     <form name="sequence_form" action="circuit.html" method="POST">
     <input type="hidden" name="_action" value="UPDATE_SEQUENCES">

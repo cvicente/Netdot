@@ -784,27 +784,6 @@ $meta = {
         tag => 'Date Tested',
         type => 'date'
       },
-      dlci => {
-        default => '',
-        description => 'Data Link Connection Identifier',
-        length => '64',
-        nullable => 1,
-        tag => 'DLCI',
-        type => 'varchar'
-      },
-      farend => {
-        default => '',
-        description => 'The remote (far) interface where this circuit terminates',
-        length => '',
-        linksto => {
-          cascade => 'Delete',
-          method => 'farcircuits',
-          table => 'Interface'
-        },
-        nullable => 0,
-        tag => 'Far Interface',
-        type => 'integer'
-      },
       id => {
         default => '',
         description => '',
@@ -836,19 +815,6 @@ $meta = {
         nullable => 1,
         tag => 'Loss',
         type => 'varchar'
-      },
-      nearend => {
-        default => '',
-        description => 'The local (near) interface where this circuit connects',
-        length => '',
-        linksto => {
-          cascade => 'Delete',
-          method => 'nearcircuits',
-          table => 'Interface'
-        },
-        nullable => 0,
-        tag => 'Near Interface',
-        type => 'integer'
       },
       speed => {
         default => '',
@@ -902,12 +868,6 @@ $meta = {
     has_history => 1,
     index => [
       [
-        'nearend'
-      ],
-      [
-        'farend'
-      ],
-      [
         'linkid'
       ]
     ],
@@ -927,11 +887,8 @@ $meta = {
         'cid',
         'linkid',
         'status',
-        'nearend',
-        'farend',
         'type',
         'speed',
-        'dlci',
         'installdate',
         'datetested',
         'loss',
@@ -941,8 +898,6 @@ $meta = {
       brief => [
         'cid',
         'linkid',
-        'nearend',
-        'farend',
         'type',
         'vendor',
         'status'
@@ -3869,6 +3824,19 @@ $meta = {
         tag => 'BPDU Guard?',
         type => 'bool'
       },
+      circuit => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'interfaces',
+          table => 'Circuit'
+        },
+        nullable => 0,
+        tag => 'Circuit',
+        type => 'integer'
+      },
       contactlist => {
         default => '',
         description => '',
@@ -3902,6 +3870,14 @@ $meta = {
         nullable => 0,
         tag => 'Device',
         type => 'integer'
+      },
+      dlci => {
+        default => '',
+        description => 'Data Link Connection Identifier',
+        length => '64',
+        nullable => 1,
+        tag => 'DLCI',
+        type => 'varchar'
       },
       doc_status => {
         default => '',
@@ -4158,7 +4134,7 @@ $meta = {
     },
     description => 'An interface associated with a device',
     has_history => 1,
-    index => [ ['description'], ['stp_id'], ['physaddr'], ['jack'], ['neighbor'], ['oper_duplex'], ['oper_status'], ['speed'] ],
+    index => [ ['description'], ['stp_id'], ['physaddr'], ['jack'], ['neighbor'], ['oper_duplex'], ['oper_status'], ['speed'], ['circuit'] ],
     isjoin => '0',
     label => [
       'name',
@@ -4175,6 +4151,8 @@ $meta = {
         'jack',
         'jack_char',
         'room_char',
+        'circuit',
+        'dlci',
         'description',
         'overwrite_descr',
         'type',

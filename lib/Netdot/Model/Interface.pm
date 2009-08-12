@@ -132,18 +132,6 @@ sub delete {
     my $self = shift;
     $self->isa_object_method('delete');
     
-    ##################################################
-    # Alert about attached circuits
-    #
-    my @circuits;
-    map { push @circuits, $_ } $self->nearcircuits;
-    map { push @circuits, $_ } $self->farcircuits;
-    
-    if ( scalar @circuits ){
-	$logger->warn( sprintf("The following circuits are now missing one or more endpoints: %s", 
-			       (join ', ', map { $_->cid } @circuits) ) );
-    }
-
     foreach my $neighbor ( $self->neighbors ){
 	$neighbor->SUPER::update({neighbor=>0, neighbor_fixed=>0, neighbor_missed=>0});
     }

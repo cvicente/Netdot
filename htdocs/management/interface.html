@@ -63,14 +63,12 @@ my %linksfrom = Interface->meta_data->get_links_from;
 		  <a href="interface.html?id=<% $obj %>&view=all">[all]</a>
 %             }
 %             foreach my $i ( sort keys %linksfrom ){
-%               next if ( $i =~ 'circuits' );
 %               if ( $view eq $i ){
                    [<% $i %>]
 %               }else{
                    <a href="interface.html?id=<% $obj %>&view=<% $i %>">[<% $i %>]</a>
 %               }   
 %             }
-              <a href="interface.html?id=<% $obj %>&view=circuits">[circuits]</a>
               <a href="interface.html?id=<% $obj %>&view=history">[history]</a>
 	   </div>
 	</div>
@@ -90,19 +88,6 @@ my %linksfrom = Interface->meta_data->get_links_from;
       </div>
 % }
 
-%##############################################################################################
-% if( $view eq 'all' || $view eq 'circuits' ){
-%     my @nearcirc = $obj->nearcircuits();
-%     my @farcirc  = $obj->farcircuits();
-%     my @circuits = (@nearcirc, @farcirc);
-%     if ( @circuits ){
-          <div class="containerhead">Circuits</div>
-	      <div class="container">
-	          <& /generic/sortresults.mhtml, object => \@circuits &>
-              </div>
-          </div>
-%     }
-% }
 
 %##############################################################################################
 <%perl>

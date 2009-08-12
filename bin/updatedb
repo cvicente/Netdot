@@ -283,7 +283,22 @@ foreach my $t (keys %timeStampChangeNull) {
     push (@statements, "ALTER TABLE `$t` MODIFY `$timeStampChangeNull{$t}` timestamp DEFAULT '1970-01-01 00:00:01'");
 }
 
-foreach my $st (@statements) {
+my @circuit_change = (
+    "ALTER TABLE `interface` ADD COLUMN `circuit` integer NOT NULL",
+    "ALTER TABLE `interface` ADD INDEX Interface10 (`circuit`)",
+    "ALTER TABLE `interface` ADD COLUMN `dlci` varchar(64)",
+    "ALTER TABLE `interface_history` ADD COLUMN `circuit` integer NOT NULL",
+    "UPDATE interface,circuit SET interface.circuit=circuit.id, interface.dlci=circuit.dlci 
+     WHERE circuit.farend=interface.id OR circuit.nearend=interface.id",
+    "ALTER TABLE `circuit` DROP COLUMN `dlci`",
+    "ALTER TABLE `circuit` DROP COLUMN `farend`",
+    "ALTER TABLE `circuit` DROP COLUMN `nearend`",
+    "ALTER TABLE `circuit_history` DROP COLUMN `dlci`",
+    "ALTER TABLE `circuit_history` DROP COLUMN `farend`",
+    "ALTER TABLE `circuit_history` DROP COLUMN `nearend`",
+    );
+
+foreach my $st ( @statements @circuit_change ) {
     &debug($st);
     my $sth = $dbh->prepare($st);
     eval {

@@ -88,11 +88,10 @@ sub build_configs{
 	    print FILE $prefix, ": Type: ", $c->type->name, "\n" if ($c->type);
 	    print FILE $prefix, ": Speed: ", $c->speed, "\n" if ($c->speed);
 	    print FILE $prefix, ": Provider: ", $c->vendor->name, "\n" if ($c->vendor);
-	    print FILE $prefix, ": DLCI: ", $c->dlci, "\n" if ($c->dlci);
-	    print FILE $prefix, ": Near Interface: ", $c->nearend->name, ",", $c->nearend->device->name->name, "\n" 
-	        if ($c->nearend && $c->nearend->device && $c->nearend->device->name);
-	    print FILE $prefix, ": Far Interface: ", $c->farend->name, ",", $c->farend->device->name->name, "\n" 
-	        if ($c->farend && $c->farend->device && $c->farend->device->name);
+	    forach my $int ( $c->interfaces ){
+		print FILE $prefix, ": Interface: ", $int->get_label, "\n";
+		print FILE $prefix, ": DLCI: ", $int->dlci, "\n" if ($int->dlci);
+	    }
 	    if ( $c->linkid ){
 		print FILE $prefix, ": Entity: ", $c->linkid->entity->name, "\n" if ($c->linkid->entity);
 		if ( (my $n = $c->linkid->nearend) != 0){
