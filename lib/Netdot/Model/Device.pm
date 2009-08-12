@@ -2402,6 +2402,29 @@ sub get_neighbors {
 }
 
 ############################################################################
+=head2 get_circuits - Get all Interface circuits
+
+  Arguments:
+    None
+  Returns:
+    Array of circuit objects
+  Examples:
+    my @circuits = $device->get_circuits();
+=cut
+sub get_circuits {
+    my ($self) = @_;
+    $self->isa_object_method('get_circuits');
+
+    my @res;
+    foreach my $int ( $self->interfaces ){
+	my $c = $int->circuit();
+	push @res, $c unless ( int($c) == 0 );
+    }
+    return @res if @res;
+    return;
+}
+
+############################################################################
 =head2 remove_neighbors - Remove neighbors from all interfaces
    
   Arguments:
