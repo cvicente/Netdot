@@ -26,6 +26,7 @@ $show_tasks      => undef
 $showheader      => 1
 $task            => 'search'
 $dowindow        => undef
+$view            => 'search'
 </%args>
 %
 %
@@ -59,12 +60,17 @@ my $live_info;
         Tasks
     </div>
     <div class="containerheadright">
+%   if ( $view eq 'search' ){ 
+	<a href="index.html?page=ADDRESS&view=new">[new]</a>
+%   }elsif ( $view eq 'new' ){
+        <a href="index.html?page=ADDRESS&view=search">[search]</a>
+%   }
 %       print_showtaskslink($show_tasks);
      </div>
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
 
     <table><tr><td>
-    <div id="search_ip" style="display:block">
+%   if ( $view eq 'search' ){
         <fieldset class="large">
             <legend>Search</legend>
             <form action="address_tasks.html" method="POST">
@@ -89,10 +95,7 @@ my $live_info;
                 </p>
             </form>
         </fieldset>
-       <a href="#" onClick="toggleLayer('search_ip');toggleLayer('new_ip');">[new]</a>
-     </div>				     
-
-    <div id="new_ip" style="display:none">
+%   }elsif ( $view eq 'new' ){				     
         <fieldset class="large">
             <legend>Add IP Block</legend>
             <form action="ip.html" method="POST">
@@ -142,8 +145,7 @@ my $live_info;
                 </p>
             </form>
         </fieldset>
-        <a href="#" onClick="toggleLayer('search_ip');toggleLayer('new_ip');">[search]</a>
-	</div>
+%   }
         </td></tr></table>
     </div> <!-- close containerbody -->
   </div> <!-- close container -->

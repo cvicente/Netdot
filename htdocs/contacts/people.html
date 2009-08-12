@@ -22,7 +22,7 @@ $submit           => undef
 $show_tasks       => undef
 $showheader       => 1
 $_action          => undef
-
+$view             => 'search'
 </%args>
 %
 %
@@ -55,11 +55,16 @@ my $personid = -1;
         Tasks
     </div>
     <div class="containerheadright">
+%   if ( $view eq 'search' ){ 
+	<a href="index.html?page=PEOPLE&view=new">[new]</a>
+%   }elsif ( $view eq 'new' ){
+        <a href="index.html?page=PEOPLE&view=search">[search]</a>
+%   }
 %       print_showtaskslink($show_tasks);
     </div>
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
         <table><tr><td>
-        <div id="search_person" style="display:block">
+%   if ( $view eq 'search' ){
         <fieldset class="medium">
             <legend>Search</legend>
             <form action="people.html" method="POST">
@@ -71,10 +76,7 @@ my $personid = -1;
                 </p>
             </form>
         </fieldset>
-        <a href="#" onClick="toggleLayer('search_person');toggleLayer('add_person');">[new]</a>
-        </div>
-
-        <div id="add_person" style="display:none">
+%    }elsif ( $view eq 'new' ){
         <fieldset class="medium">
             <legend>Add a New Person</legend>
             <form action="people.html" method="POST">
@@ -113,8 +115,7 @@ my $personid = -1;
                 </p>
             </form>
         </fieldset>
-        <a href="#" onClick="toggleLayer('search_person');toggleLayer('add_person');">[search]</a>
-        </div>
+%     }
         </td></tr></table>
     </div> <!-- close containerbody -->
   </div> <!-- close container -->

@@ -22,6 +22,7 @@ $user             => undef
 $submit           => undef
 $show_tasks       => undef
 $showheader       => 1
+$view             => 'search'
 </%args>
 %
 %
@@ -53,15 +54,20 @@ my @list;
         Tasks
     </div>
     <div class="containerheadright">
+%   if ( $view eq 'search' ){
+        <a href="index.html?page=VLANS&view=new">[new]</a>
+%   }elsif ( $view eq 'new' ){
+        <a href="index.html?page=VLANS&view=search">[search]</a>
+%   }    
 %       print_showtaskslink($show_tasks);
     </div>
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
         <table><tr><td>
  
-       <div id="search_vlan" style="display:block">
-       <fieldset class="medium">
-            <legend>Search</legend>
-            <form action="vlan_tasks.html" method="POST">
+%    if ( $view eq 'search' ){
+        <fieldset class="medium">
+             <legend>Search</legend>
+             <form action="vlan_tasks.html" method="POST">
                 <p>
                 <label for="Find">Vlan:</label>
                 <input type="text" name="search_vlan" class="txt" value="<% $search_vlan %>"> 
@@ -75,11 +81,8 @@ my @list;
                 <input name="submit" value="Find" class="btn" type="submit">
                 </p>
             </form>
-        </fieldset>
-        <a href="#" onClick="toggleLayer('search_vlan');toggleLayer('add_vlan_group');">[new]</a>
-        </div>
-
-        <div id="add_vlan_group" style="display:none">
+         </fieldset>
+%    }elsif ( $view eq 'new' ){
         <fieldset class="medium">
             <legend>Add Vlan Group</legend>
             <form action="vlan.html" method="POST">
@@ -96,15 +99,12 @@ my @list;
                 </p>
             </form>
         </fieldset>
-        <a href="#" onClick="toggleLayer('search_vlan');toggleLayer('add_vlan_group');">[search]</a>
-        </div>
+%     }
 
         </td></tr></table>
     </div> <!-- close containerbody -->
   </div> <!-- close container -->
 </div> <!-- close sectiontools -->
-
-
 
 
 <%perl>
@@ -150,5 +150,4 @@ if ( $submit ){
 %     }else{
 %         $m->comp('/generic/no_search_results.html', search=>$search);
 %     }
-
 % }

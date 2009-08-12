@@ -23,6 +23,7 @@ $zone_name      => undef
 $submit         => undef
 $show_tasks     => undef
 $showheader     => 1
+$view           => 'search'
 </%args>
 %
 %
@@ -55,12 +56,17 @@ my @all_zones = Zone->retrieve_all();
         DNS Zone Tasks
     </div>
     <div class="containerheadright">
+%   if ( $view eq 'search' ){
+        <a href="index.html?page=ZONES&view=new">[new]</a>
+%   }elsif ( $view eq "new" ){
+        <a href="index.html?page=ZONES&view=search">[search]</a>
+%   }
 %       print_showtaskslink($show_tasks);
     </div>
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
         <table><tr><td>
 
-        <div id="search_zone" style="display:block">
+%    if ( $view eq 'search' ){
         <fieldset class="medium">
             <legend>Find</legend>
             <form name="zone_select_form" action="zone_tasks.html" method="POST">
@@ -85,10 +91,7 @@ my @all_zones = Zone->retrieve_all();
                 <input name="submit" value="Find" class="btn" type="submit">
             </form>
         </fieldset>
-        <a href="#" onClick="toggleLayer('search_zone');toggleLayer('add_zone');">[new]</a>
-        </div>
-
-        <div id="add_zone" style="display:none">
+%    }elsif ( $view eq 'new' ){
         <fieldset class="medium">
             <legend>Add New Zone</legend>
             <form name="zone_add_form" action="zone_tasks.html" method="POST">
@@ -98,8 +101,7 @@ my @all_zones = Zone->retrieve_all();
                 <input name="submit" value="Add" class="btn" type="submit">
             </form>
         </fieldset>
-        <a href="#" onClick="toggleLayer('search_zone');toggleLayer('add_zone');">[search]</a>
-       </div>
+%    } 
 
         </td></tr></table>
     </div> <!-- close containerbody -->

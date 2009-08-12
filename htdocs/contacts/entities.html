@@ -21,6 +21,7 @@ $user             => undef
 $submit           => undef
 $show_tasks       => undef
 $showheader       => 1
+$view_entity      => 'search'
 $_action          => undef
 
 #add a new entity
@@ -65,11 +66,16 @@ my $entityid = -1;
         Tasks
     </div>
     <div class="containerheadright">
+%   if ( $view_entity eq 'search' ){ 
+	<a href="index.html?page=ENTITIES&view_entity=new">[new]</a>
+%   }elsif ( $view_entity eq 'new' ){
+        <a href="index.html?page=ENTITIES&view_entity=search">[search]</a>
+%   }
 %       print_showtaskslink($show_tasks);
     </div>
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
         <table><tr><td>
-        <div id="search_entity" style="display:block">
+%   if ( $view_entity eq 'search' ){
         <fieldset class="medium">
             <legend>Search</legend>
             <form action="entities.html" method="POST">
@@ -81,10 +87,7 @@ my $entityid = -1;
                 </p>
             </form>
         </fieldset>
-        <a href="#" onClick="toggleLayer('search_entity');toggleLayer('add_entity');">[new]</a>
-        </div>
-    
-       <div id="add_entity" style="display:none">
+%   }elsif ( $view_entity eq 'new' ){
         <script type="text/javascript">
             var rolecount=1;
             function jsaddrole(countid) {
@@ -163,8 +166,7 @@ my $entityid = -1;
                 </p>
             </form>
         </fieldset>
-        <a href="#" onClick="toggleLayer('search_entity');toggleLayer('add_entity');">[search]</a>
-        </div>
+%   }
         </td></tr></table>
     </div> <!-- close containerbody -->
   </div> <!-- close container -->

@@ -36,8 +36,7 @@ if ( $manager && $manager->can($user, "access_section", 'contacts') ){
     if (exists($caller_args->{page})){
 	$user->setAttribute($r, "$PAGE_ATTRIBUTE", $caller_args->{page});
     }
-    $page = $user->getAttribute("$PAGE_ATTRIBUTE");
-    
+    $page = $user->getAttribute("$PAGE_ATTRIBUTE");  
     
     if (exists($caller_args->{tasks})){
 	$user->setAttribute($r, "SHOW_TASKS", $caller_args->{tasks});
@@ -53,14 +52,11 @@ if ( $manager && $manager->can($user, "access_section", 'contacts') ){
     if( !$showheader ) {
 	$hideheader = 'style="display:none"';
     }
-    if ( $page eq "ENTITIES" && $m->request_comp->name ne "entities.html" ) {
-	
-	$m->comp('entities.html', user=>$user, showheader=>$showheader);
-	
+
+    if ( $page eq "ENTITIES" && $m->request_comp->name ne "entities.html" ) {	
+	$m->comp('entities.html', %ARGS);
     }elsif ( ($page eq "PEOPLE" || $page eq "") && $m->request_comp->name ne "people.html" ) {
-	
-	$m->comp('people.html', user=>$user, showheader=>$showheader);
-	
+	$m->comp('people.html', %ARGS);
     }
 }
 </%init>

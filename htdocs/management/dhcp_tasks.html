@@ -25,6 +25,7 @@ $scope_container => undef
 $submit          => undef
 $show_tasks      => undef
 $showheader      => 1
+$view            => 'search'
 </%args>
 %
 %
@@ -59,12 +60,17 @@ my @containers = DhcpScope->get_containers();
         DHCP Tasks
     </div>
     <div class="containerheadright">
+%   if ( $view eq 'search' ){ 
+	<a href="index.html?page=DHCP&view=new">[new]</a>
+%   }elsif ( $view eq 'new' ){
+        <a href="index.html?page=DHCP&view=search">[search]</a>
+%   }
 %       print_showtaskslink($show_tasks);
     </div>
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
         <table><tr><td>
 
-        <div id="search_scope" style="display:block">
+%   if ( $view eq 'search' ){
         <fieldset class="medium">
             <legend>Find</legend>
 
@@ -89,10 +95,7 @@ my @containers = DhcpScope->get_containers();
                 <input name="submit" value="Find" class="btn" type="submit">
             </form>
         </fieldset>
-        <a href="#" onClick="toggleLayer('search_scope');toggleLayer('add_scope');">[new]</a>
-        </div>
-
-        <div id="add_scope" style="display:none">
+%    }elsif ( $view eq 'new' ){
         <fieldset class="medium">
             <legend>Add New Scope</legend>
             <form name="scope_add_form" action="dhcp_tasks.html" method="POST">
@@ -123,8 +126,7 @@ my @containers = DhcpScope->get_containers();
                 </p>
             </form>
         </fieldset>
-        <a href="#" onClick="toggleLayer('search_scope');toggleLayer('add_scope');">[search]</a>
-        </div>
+%   }
 
         </td></tr></table>
     </div> <!-- close containerbody -->
