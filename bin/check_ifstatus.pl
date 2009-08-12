@@ -32,7 +32,7 @@ my %ERRORS = ('UNKNOWN'  => '-1',
               'WARNING'  => '1',
               'CRITICAL' => '2');
 
-my $state;
+my $state = 'UNKNOWN';
 my %self;
 my $oper_status_oid  = '.1.3.6.1.2.1.2.2.1.8';
 my $admin_status_oid = '.1.3.6.1.2.1.2.2.1.7';
@@ -116,6 +116,19 @@ my $vars = new SNMP::VarList([$admin_status_oid,$self{IFINDEX}], [$oper_status_o
 			     [$descr_oid,$self{IFINDEX}], [$alias_oid,$self{IFINDEX}]);
 my ($admin_status, $oper_status, $descr, $alias) = $sess->get($vars);
 
+if ( !(defined $admin_status) || !(defined $oper_status) ){
+    $state = 'UNKNOWN';
+    print "$state: Missing data\n";
+    exit $ERRORS{$state};    
+}
+if ( ($admin_status != 1 && $admin_status != 2) || 
+     ($oper_status  != 1 && $oper_status  != 2) ){
+    $state = 'UNKNOWN';
+    print "$state: Invalid data\n";
+    debug ("admin_status: $admin_status, oper_status: $oper_status");
+    exit $ERRORS{$state};    
+}
+
 if ( $alias =~ /NOSUCH/ ){
     $alias = 'n/a';
 }
@@ -125,11 +138,16 @@ $descr .= " ($alias)";
 if ( $admin_status == 1 && $oper_status == 2 ){
     $state = 'CRITICAL';
     print "$state: $descr\n";
-}else {
+}elsif ( ($admin_status == 1 && $oper_status == 1) ||
+	 ($admin_status == 2 && $oper_status == 2) ) {
     $state = 'OK';
     print "$state $descr\n";
+}else{
+    $state = 'UNKNOWN';
+    print "$state: Invalid data\n";
+    debug ("admin_status: $admin_status, oper_status: $oper_status");
+    exit $ERRORS{$state};    
 }
-
 exit $ERRORS{$state};
 
 sub debug{
