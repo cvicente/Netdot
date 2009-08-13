@@ -80,21 +80,37 @@ sub get_allowed_objects {
 	my $uqr = $dbh->selectall_arrayref($uq);
 
 	# Assign rights from contact lists
+	my %group_rights;
 	foreach my $row ( @$gqr ){
 	    my ($oclass, $oid, $access) = @$row;
-	    if ( $access ne 'none' ){
-		$results{$oclass}{$oid}{$access} = 1;
-	    }
+	    $group_rights{$oclass}{$oid}{$access} = 1;
 	}
 
 	# Assign person rights 
+	my %person_rights;
 	foreach my $row ( @$uqr ){
 	    my ($oclass, $oid, $access) = @$row;
-	    # This line overrides group rights for particular object
-	    delete $results{$oclass}{$oid} if exists $results{$oclass}{$oid};
-	    if ( $access ne 'none' ){
-		$results{$oclass}{$oid}{$access} = 1;
+	    $person_rights{$oclass}{$oid}{$access} = 1;
+	}
+
+	# Person rights on an object override group rights
+	foreach my $oclass ( keys %group_rights ){
+	    foreach my $oid ( keys %{$group_rights{$oclass}} ){
+		$results{$oclass}{$oid} = $group_rights{$oclass}{$oid};
 	    }
+	}
+	foreach my $oclass ( keys %person_rights ){
+	    foreach my $oid ( keys %{$person_rights{$oclass}} ){
+		$results{$oclass}{$oid} = $person_rights{$oclass}{$oid};
+	    }
+	}
+
+	# Remove all rights on objects where 'none' is found
+	foreach my $oclass ( keys %results ){
+	    foreach my $oid ( keys %{$results{$oclass}} ){
+		delete $results{$oclass}{$oid} if exists $results{$oclass}{$oid}{'none'};
+	    }
+	    delete $results{$oclass} unless keys %{$results{$oclass}};
 	}
 
     }elsif ( $authorization_method =~ /^LDAP$/i ){
