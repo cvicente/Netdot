@@ -17,6 +17,7 @@ $vlan         => undef
 $delete       => undef
 $fwt_limit    => Netdot->config->get('SHOW_LAST_N_FTE') || 10
 $arp_limit    => Netdot->config->get('SHOW_LAST_N_ARP') || 10
+$dowindow     => undef
 </%args>
 %
 %
@@ -48,7 +49,7 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
           </div>
           <div class="containerbody">
 %         if ( scalar(@list) > 1 ){
-              <& /generic/sortresults.mhtml, object => \@list  &>
+              <& /generic/sortresults.mhtml, object => \@list, dowindow => $dowindow &>
 %         }elsif ( @list ){
 %             $o = $list[0];
 %         }else{
