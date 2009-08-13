@@ -29,7 +29,7 @@ my $obj = Zone->retrieve($id);
 # Check if user can view this object
 my $manager = $ui->get_permission_manager($r);
 unless ( $manager && $manager->can($user, "view", $obj) ){
-    $m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
+    $m->comp('/generic/error.mhtml', error=>"You don't have permission to view zone ".$obj->name);
 }
 
 if ( $submit ){
@@ -125,6 +125,9 @@ if ( $submit ){
 
 % }
 
+% # Check if user can access this section
+% if ( $manager && $manager->can($user, "access_section", 'zone.html:subnets') ){
+
 <!-- Display list of SubnetZone relationships -->
 %###########################################################################
 %     my @sz = $obj->subnets;
@@ -140,6 +143,7 @@ if ( $submit ){
 %       }
         <& /generic/sortresults.mhtml, object=>\@sz, withedit=>($edit eq 'ipblocks')? 1 : 0  &>
       </div>
+% }
 
 <!-- Display view menu -->
    <div class="container">
@@ -164,19 +168,7 @@ if ( $submit ){
 <!-- Display list of records -->
 <%perl>
 if ( $view eq 'records' || $edit eq 'records' ){
-    my $records;
-    if ( $manager && $manager->can($user, "access_section", 'zone.html:view_all_records') ){
-	$records = $obj->get_hosts();
-    }else{
-	my $ao = $ui->get_allowed_objects($r, $user);
-	if ( exists $ao->{Ipblock} ){
-	    my @r;
-	    foreach my $id ( keys %{$ao->{Ipblock}} ){
-		push @r, @{ $obj->get_hosts($id) };
-	    }
-	    $records = \@r;
-	}
-    }
+    my $records = $obj->get_hosts();
     print '<div class="containerbody">';
     $m->comp('/management/hostlist.mhtml', records=>$records, withedit=>($edit eq 'records')? 1 : 0, return_args=>"?id=$id");
     print '</div>';

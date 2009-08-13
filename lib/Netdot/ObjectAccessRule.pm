@@ -51,17 +51,14 @@ sub denies(){
 	}
 	if ( exists $access->{$otype} && exists $access->{$otype}->{$oid} ){
 	    if ( $otype eq 'Zone' ){
-		# Users cannot edit or delete Zones
+		# Users cannot delete Zones
 		# These persmissions will only apply to records in the zone
-		if ( $user_type eq 'User' && ($action eq 'edit' || $action eq 'delete') ){
+		if ( $user_type eq 'User' && $action eq 'delete' ){
 		    return 1;
-		}else{
-		    return &_deny_action_access($action, $access->{$otype}->{$oid});
 		}
-	    
-	    }else{
-		return &_deny_action_access($action, $access->{$otype}->{$oid});
 	    }
+	    return &_deny_action_access($action, $access->{$otype}->{$oid});
+
 	}elsif ( $otype eq 'Interface' ){
 	    # Grant access to any interface of an allowed device
 	    my $dev = $object->device;
@@ -101,13 +98,20 @@ sub denies(){
 	}elsif ( $otype =~ /^RR/ ){
 	    # Grant access to any RR  only if the records are associated with an IP 
 	    # in an allowed IP block
-	    my $rr;
+	    my ($rr, $zone);
 	    if ( $otype eq 'RR' ){
 		$rr   = $object;
 	    }elsif ( $otype eq 'RRCNAME' || $otype eq 'RRSRV' ){
 		$rr   = $object->name;
+		
 	    }else{
 		$rr   = $object->rr;
+	    }
+	    $zone = $rr->zone;
+
+	    # If user has rights on the zone, they have the same rights over records
+	    if ( exists $access->{'Zone'}->{$zone->id} ){
+		return &_deny_action_access($action, $access->{'Zone'}->{$zone->id});
 	    }
 	    
 	    if ( $otype eq 'RRCNAME' ){

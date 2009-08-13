@@ -62,14 +62,24 @@ my $MAC  = Netdot->get_mac_regex();
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
 
 <%perl>
-my @ipblocks;
+my (@ipblocks, @zones);
 my $ao = $ui->get_allowed_objects($r, $user);
+print '<pre>', Dumper($ao), '<pre>' if $DEBUG;
 if ( exists $ao->{Ipblock} ){
     foreach my $id ( keys %{$ao->{Ipblock}} ){
 	if ( my $ip = Ipblock->retrieve($id) ){
 	    push @ipblocks, $ip;
 	}else{
 	    delete $ao->{Ipblock}->{$id};
+	}
+    }
+}
+if ( exists $ao->{Zone} ){
+    foreach my $id ( keys %{$ao->{Zone}} ){
+	if ( my $zone = Zone->retrieve($id) ){
+	    push @zones, $zone;
+	}else{
+	    delete $ao->{Zone}->{$id};
 	}
     }
 }
@@ -88,26 +98,23 @@ if ( exists $ao->{Ipblock} ){
         </form>
     </fieldset>
 
-    <fieldset class="small">
-        <legend>Browse Records</legend>
 % if ( @ipblocks ){
-        <form name="zone_form" action="hostinfo_tasks.html" method="POST">
-        <select name="show_block_records" onChange="document.zone_form.submit();">
+    <fieldset class="small">
+        <legend>Browse records in</legend>
+        <form name="subnet_form" action="hostinfo_tasks.html" method="POST">
+        <select name="show_block_records" onChange="document.subnet_form.submit();">
             <option value="0">- Select Block -</option>
 %       foreach my $o ( sort { $a->address_numeric <=> $b->address_numeric } @ipblocks ){
             <option value="<% $o %>"><% $o->get_label %></option>
 %       }
         </select>
         </form>
-% }else{
-     No IP blocks available for this user.
+    </fieldset>
 % }
 
-    </fieldset>
-
+% if ( @ipblocks ){
     <fieldset class="small">
         <legend>Add new host in</legend>
-% if ( @ipblocks ){
         <form name="add_host_form" action="add_host.html" method="POST">
         <select name="add_host_block" onChange="document.add_host_form.submit();">
             <option value="0">- Select Block -</option>
@@ -116,10 +123,22 @@ if ( exists $ao->{Ipblock} ){
 %       }
         </select>
         </form>
-% }else{
-     No IP blocks available for this user.
-% }
     </fieldset>
+% }
+
+% if ( @zones ){
+    <fieldset class="small">
+        <legend>My Zones</legend>
+        <form name="zone_form" action="zone.html" method="POST">
+        <select name="id" onChange="document.zone_form.submit();">
+            <option value="0">- Select Zone -</option>
+%       foreach my $o ( sort { $a->name cmp $b->name } @zones ){
+            <option value="<% $o %>"><% $o->get_label %></option>
+%       }
+        </select>
+        </form>
+    </fieldset>
+% }
 
 
   </td>

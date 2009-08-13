@@ -47,7 +47,6 @@ if ( $submit ){
 
 	    foreach my $object_id ( @object_id ){
 		foreach my $access ( @access ){
-                    print "inserting $object_class, $object_id, $access";
             	    my $accessright = AccessRight->find_or_create({object_class => $object_class, 
 								   object_id    => $object_id, 
 								   access       => $access});
@@ -119,7 +118,7 @@ if ( $submit ){
          }
 
 	 push @field_headers, 'Object Class:';
-	 my @classes = qw(ContactList Device Ipblock);
+	 my @classes = qw(ContactList Device Ipblock Zone);
 	 push @cell_data, 
 	 &{sub{
 	     my $out;
@@ -135,7 +134,7 @@ if ( $submit ){
          push @cell_data,
          &{sub{
             my $out;
-            $out .= "<select name=\"object_id\" id=\"object_id\" MULTIPLE></select><br>";
+            $out .= "<select name=\"object_id\" id=\"object_id\" MULTIPLE><option value=\"0\">Select Class</option></select><br>";
             $out .= "<input type=\"hidden\" name=\"keywords\" id=\"keywords\" value=\"Keywords\" onFocus=\"if (this.value == 'Keywords') {this.value = '';} return true;\">";
             $out .= "<input type=\"hidden\" name=\"button\" id=\"button\" value=\"Search\" onClick=\"jsrsSendqueryRAKW(document.getElementById('object_class').value, 'object_id', document.getElementById('keywords').value);\" >";
 

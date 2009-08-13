@@ -617,16 +617,16 @@ sub import_records {
 =cut
 sub get_hosts {
     my ($self, $ipblock) = @_;
-    $self->isa_object_method('get_hosts_in_ipblock');
+    $self->isa_object_method('get_hosts');
 
     my $id = $self->id;
     my $q = "SELECT          rr.id, rr.name, 
                              ip.id, ip.address, ip.version, 
                              physaddr.id, physaddr.address
              FROM            zone, rr
-             LEFT OUTER JOIN (ipblock ip, ipblock subnet, rraddr) 
-                          ON (rr.id=rraddr.rr AND ip.id=rraddr.ipblock 
-                              AND ip.parent=subnet.id)
+             LEFT OUTER JOIN (ipblock ip, rraddr) 
+                          ON (rr.id=rraddr.rr AND ip.id=rraddr.ipblock)
+             LEFT OUTER JOIN (ipblock subnet) ON ip.parent=subnet.id
              LEFT OUTER JOIN (physaddr, dhcpscope) 
                           ON (dhcpscope.ipblock=ip.id 
                               AND dhcpscope.physaddr=physaddr.id)
