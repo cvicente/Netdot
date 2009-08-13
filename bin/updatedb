@@ -283,7 +283,7 @@ foreach my $t (keys %timeStampChangeNull) {
     push (@statements, "ALTER TABLE `$t` MODIFY `$timeStampChangeNull{$t}` timestamp DEFAULT '1970-01-01 00:00:01'");
 }
 
-my @circuit_change = (
+push @statements, (
     "ALTER TABLE `interface` ADD COLUMN `circuit` integer NOT NULL",
     "ALTER TABLE `interface` ADD INDEX Interface10 (`circuit`)",
     "ALTER TABLE `interface` ADD COLUMN `dlci` varchar(64)",
@@ -298,7 +298,7 @@ my @circuit_change = (
     "ALTER TABLE `circuit_history` DROP COLUMN `nearend`",
     );
 
-foreach my $st ( @statements @circuit_change ) {
+foreach my $st ( @statements ) {
     &debug($st);
     my $sth = $dbh->prepare($st);
     eval {
