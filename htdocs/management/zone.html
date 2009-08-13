@@ -25,6 +25,9 @@ my $DEBUG = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
 my $obj = Zone->retrieve($id);
+unless ( $obj ){
+    $m->comp('/generic/error.mhtml', error=>"Cannot retrieve zone id $id");
+}
 
 # Check if user can view this object
 my $manager = $ui->get_permission_manager($r);
