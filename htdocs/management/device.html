@@ -322,7 +322,7 @@ $ui->add_to_fields(o=>$o, edit=>$editgen,
 
 my $os_used = pop @cell_data;
 my $latest_os = $o->product->latest_os;
-if ( $latest_os && ($os_used ne $latest_os) ){
+if ( !$editgen && $latest_os && ($os_used ne $latest_os) ){
     push (@cell_data, $os_used . " <span style=\"color:red;\">(Recommended OS: " . $latest_os . ")</span>");
 }else{
     push (@cell_data, $os_used);
