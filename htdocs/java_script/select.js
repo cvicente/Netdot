@@ -1,7 +1,7 @@
 // functions for new jsrs method
 
     function jsrsSendquery(tablename, form_field, val ) {
-	// alert( "tablename: "+tablename+"; form_field: "+form_field+" val: "+val );
+        // alert( "tablename: "+tablename+"; form_field: "+form_field+" val: "+val );
         // got rid of form_field.name because of 'name' conflict with js; now form_field is a string, and we use form_field directly as opposed to form_field.name. The 3 other jsrsSendquery{TB|RM|BB} below methods are unchanged/unaffected.
         jsrsExecute( "../generic/jsrs_netdot.html", jsrsParseresults, "keyword_search", Array(tablename, form_field, val) );
     }
@@ -35,7 +35,7 @@
     }
 
     function jsrsParseresults( returnstring ) {
-        //alert(returnstring);
+        alert(returnstring);
         var data = explode(returnstring, "&");
         var form_elt;
         var thelist;
@@ -52,9 +52,11 @@
                 var len = thelist.length++;
                 var optionObject = new Option(unescape(elt[1]),elt[0])
 		if(unescape(elt[1]) == "Refine search."){
-		    document.getElementById("keywords").type = "text";
-		    document.getElementById("button").type = "button";
-		    bool = true;
+		    if(document.getElementById("keywords")){
+		        document.getElementById("keywords").type = "text";
+		        document.getElementById("button").type = "button";
+		        bool = true;
+                    }
                 }
                 thelist.options[len] = optionObject;
             }

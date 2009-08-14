@@ -5,6 +5,8 @@ via asynnchronous javascript calls.
 
 It supports wildcards, regex expressions or partial matching. Such as:
 * ab+ matches abc and abcc.
+Notice that * indicates there are zero or more of the preceding element, such as ab*c matches "ac","abc","abbc", and so on,
+while, .* indicates there are zero or more of any elements, such as ab*c matches abdc, abedc...
   
 When debugging, turn DEBUG flag on and execute directly from browser:
  
@@ -62,7 +64,7 @@ sub keyword_search {
     my $tmprsp;
     my $MAX   = $ui->config->get('DEFAULT_SELECTMAX');
     my $count = 0;
-    
+   
     # Added this select tag so that the user is able to select
     # something which will trigger updating of related select
     # lists.  This is important because if there is only one result then the
@@ -71,7 +73,7 @@ sub keyword_search {
     # attribute of the selects in question.
     
     $response .= "0=-- Select -- &";
-   
+    
     if ( $table eq 'Ipblock' ){
 	my $dbh = Netdot::Model->db_Main();
 	my $rows = $dbh->selectall_arrayref("SELECT   id,version,address,prefix 
