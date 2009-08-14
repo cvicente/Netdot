@@ -186,7 +186,7 @@ if ( $FWT ){
 	
 	foreach my $table ( qw (fwtable fwtableentry) ){
 	    $logger->debug("Freeing deleted space in $table");
-	    optomize_table($dbh, $table, $logger);
+	    optimize_table($dbh, $table, $logger);
 	}
     }
 }
@@ -213,7 +213,7 @@ if ( $ARP ){
 	
 	foreach my $table ( qw (arpcache arpcacheentry) ){
 	    $logger->debug("Freeing deleted space in $table");
-	    optomize_table($dbh, $table, $logger);
+	    optimize_table($dbh, $table, $logger);
 	}
     }
 }
@@ -225,7 +225,7 @@ foreach my $table ( keys %rows_deleted ){
 			      $rows_deleted{$table}, $table));
 	# now optimize the table to free up the space from the deleted records
 	$logger->debug("Freeing deleted space in $table");
-	optomize_table($dbh, $table, $logger);
+	optimize_table($dbh, $table, $logger);
     }
 }
 $logger->info(sprintf("$0 total runtime: %s\n", Netdot->sec2dhms(time-$start)));
@@ -237,7 +237,7 @@ $logger->info(sprintf("$0 total runtime: %s\n", Netdot->sec2dhms(time-$start)));
 ###########################################################################################
 
 #postgresql and mysql have different commands for cleaning up their tables after a large amount of deletes
-sub optomize_table{
+sub optimize_table{
     my ($dbh, $table, $logger) = @_;
 
     my $database_type = Netdot->config->get('DB_TYPE');
@@ -248,9 +248,9 @@ sub optomize_table{
     elsif($database_type eq 'Pg'){
         $dbh->do("VACUUM $table");    
     }
-    #otherwise we don't know how to optomize the table :(
+    #otherwise we don't know how to optimize the table :(
     else{
-        $logger->warn("didn't recognize the database we're using, so we could not optomize the table, database is  $database_type, it must be either 'mysql' or 'Pg'");
+        $logger->warn("didn't recognize the database we're using, so we could not optimize the table, database is  $database_type, it must be either 'mysql' or 'Pg'");
     }    
 
     return;
@@ -341,7 +341,7 @@ sub rotate_table{
     }
 
     if($db_type eq 'Pg'){ #since we just deleted every from from table during the copy, we need to clean up a bit
-        optomize_table($dbh, $table, $logger);
+        optimize_table($dbh, $table, $logger);
     }
 
     &dbdisconnect($dbh);
