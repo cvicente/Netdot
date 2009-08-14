@@ -66,7 +66,15 @@ sub generate_configs {
 	}
     }
     foreach my $s ( @gscopes ){
-	$s->print_to_file();
+	if ( $s->audit_records() || $argv{force} ){
+	    $s->print_to_file();
+
+	    # Flush audit records
+	    map { $_->delete } $s->audit_records;
+	}else{
+	    $logger->debug("Exporter::DHCPD::generate_configs: ".$s->name.": No pending changes.  Use -f to force.");
+	}
+
     }
 }
 

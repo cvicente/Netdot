@@ -85,63 +85,108 @@ BEGIN {
     }
 
     ###########################################################
-    # Keep audit trail of DNS changes.  The contents of the 
-    # zoneaudit table are flushed each time a new zonefile is
-    # generated.  This avoids unnecessarily generating zone
-    # files and logs details
+    # Keep audit trail of DNS/DHCP changes.  The contents of the 
+    # hostaudit table are flushed each time a new  zonefile 
+    # or dhcp config is generated.  
+    # This avoids unnecessary work, and also logs record changes
     ###########################################################
-    __PACKAGE__->add_trigger( after_update => \&_zone_audit );
-    __PACKAGE__->add_trigger( after_create => \&_zone_audit );
+    __PACKAGE__->add_trigger( after_update  => \&_host_audit_update );
+    __PACKAGE__->add_trigger( after_create  => \&_host_audit_insert );
+    __PACKAGE__->add_trigger( before_delete => \&_host_audit_delete );
         
-    sub _zone_audit {
+    sub _host_audit_update {
 	my ($self, %args) = @_;
-	if ( $self->table =~ /^rr/ || $self->table eq 'zone' ){
-	    my $changed_columns = $args{discard_columns};
-	    $logger->debug("Netdot::Model::_zone_audit: _zone_audit: ".$self->table);
-	    if ( defined $changed_columns && scalar(@$changed_columns) ){
-		my $zone;
-		my $user = $ENV{REMOTE_USER} || "unknown";
-		if ( $self->table eq 'zone' ){
-		    $zone = $self;   
-		}elsif ( $self->table eq 'rr' ){
-		    $zone = $self->zone;
-		}elsif ( $self->table eq 'rrcname' || $self->table eq 'rrsrv' ){
-		    if ( defined $self->name && $self->name != 0 ){
-			$zone = $self->name->zone;
-		    }else{
-			$logger->error("Netdot::Model::_zone_audit: $table id ".$self->id." has invalid name");
-			return;
-		    }
-		}else{
-		    if ( defined $self->rr && $self->rr != 0 ){
-			$zone = $self->rr->zone;
-		    }else{
-			$logger->error("Netdot::Model::_zone_audit: $table id ".$self->id." has invalid rr");
-			return;
-		    }
-		}
-		my $fields = join ',', @$changed_columns;
-		my @values = map { $self->$_ } @$changed_columns;
-		$values    = join ',', map { "'$_'" } @values;
-		my %data = (zone        => $zone,
-			    tstamp      => $self->timestamp,
-			    record_type => $self->table,
-			    user        => $user,
-			    fields      => $fields,
-			    vals        => $values,
-		    );
-		eval {
-		    ZoneAudit->insert(\%data);
-		};
-		if ( my $e = $@ ){
-		    $logger->error("Netdot::Model::_zone_audit: Could not insert ZoneAudit record about $table id ".$self->id.": $e");
-		}else{
-		    $logger->info("Netdot::Model::_zone_audit: zone: ".$zone->name.", user: $user, fields: ($fields), values: ($values)");
-		}
+	return unless ( $self->table =~ /^rr/ || $self->table eq 'zone' ||
+			$self->table eq 'dhcpscope' || $self->table eq 'dhcpattr');
+	$args{operation} = 'update';
+	my $changed_columns = $args{discard_columns};
+	if ( defined $changed_columns && scalar(@$changed_columns) ){
+	    $args{fields} = join ',', @$changed_columns;
+	    my @values = map { $self->$_ } @$changed_columns;
+	    $args{values} = join ',', map { "'$_'" } @values;
+	    return $self->_host_audit(%args);
+	}
+    }
+    sub _host_audit_insert {
+	my ($self, %args) = @_;
+	return unless ( $self->table =~ /^rr/ || $self->table eq 'zone' ||
+			$self->table eq 'dhcpscope' || $self->table eq 'dhcpattr');
+	$args{operation} = 'insert';
+	$args{fields} = join ',', $self->columns;
+	my @values = map { $self->$_ } $self->columns;
+	$args{values} = join ',', map { "'$_'" } @values;
+	return $self->_host_audit(%args);
+    }
+    sub _host_audit_delete {
+	my ($self, %args) = @_;
+	return unless ( $self->table =~ /^rr/ || $self->table eq 'zone' ||
+			$self->table eq 'dhcpscope' || $self->table eq 'dhcpattr');
+	$args{operation} = 'delete';
+	return $self->_host_audit(%args);
+    }
+    sub _host_audit {
+	my ($self, %args) = @_;
+	my $table = $self->table;
+	my ($zone, $scope);
+	my $user = $ENV{REMOTE_USER} || "unknown";
+	if ( $table eq 'zone' ){
+	    $zone = $self;   
+	}elsif ( $table eq 'rr' ){
+	    $zone = $self->zone;
+	}elsif ( $table eq 'rrcname' || $table eq 'rrsrv' ){
+	    if ( defined $self->name && $self->name != 0 ){
+		$zone = $self->name->zone;
+	    }else{
+		$logger->error("Netdot::Model::_host_audit: $table id ".$self->id." has invalid name");
+		return;
 	    }
+	}elsif ( $table =~ /^rr/ ){
+	    if ( defined $self->rr && $self->rr != 0 ){
+		$zone = $self->rr->zone;
+	    }else{
+		$logger->error("Netdot::Model::_host_audit: $table id ".$self->id." has invalid rr");
+		return;
+	    }
+	}elsif ( $table eq 'dhcpscope' ){
+	    $scope = $self->get_global();   
+	}elsif ( $table eq 'dhcpattr' ){
+	    $scope = $self->scope->get_global();
+	}else{
+	    $self->throw_fatal("Netdot::Model::_host_audit: Invalid table: $table");
+	}
+	my $id = $self->id;
+	my %data = (tstamp      => $self->timestamp,
+		    record_type => $table,
+		    user        => $user,
+		    operation   => $args{operation},
+	    );
+	$data{fields} = $args{fields} if $args{fields};
+	$data{vals}   = $args{values} if $args{values};
+	my $name; # Name of the zone or global scope
+	if ( $zone ){
+	    $data{zone} = $zone;
+	    $name       = $zone->name;
+	}elsif ( $scope ){
+	    $data{scope} = $scope;
+	    $name        = $scope->name;
+	}else{
+	    $self->throw_fatal("Netdot::Model::_host_audit: Could not determine audit object for table: $table");
+	}
+	
+	eval {
+	    HostAudit->insert(\%data);
+	};
+	if ( my $e = $@ ){
+	    $logger->error("Netdot::Model::_host_audit: Could not insert HostAudit record about $table id ".$self->id.": $e");
+	    return;
+	}else{
+	    my $msg = "Netdot::Model::_host_audit: table: $table, id: $id, within: $name, user: $user, operation: $args{operation}";
+	    $msg .= " fields: ($args{fields}), values: ($args{values})" if (defined $args{fields} && defined $args{values});
+	    $logger->info($msg);
 	}
 	1;
     }
+
 
     ###########################################################
     # This sub avoids errors like:

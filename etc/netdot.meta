@@ -7736,8 +7736,8 @@ $meta = {
       ]
     }
   },
-  ZoneAudit => {
-    table_db_name => 'zoneaudit',
+  HostAudit => {
+    table_db_name => 'hostaudit',
     columns => {
       id => {
         default => '',
@@ -7745,6 +7745,19 @@ $meta = {
         length => '',
         nullable => 0,
         tag => undef,
+        type => 'integer'
+      },
+      scope => {
+        default => '',
+        description => 'DHCP scope where change happened',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'audit_records',
+          table => 'DhcpScope'
+        },
+        nullable => 0,
+        tag => 'DHCP Scope',
         type => 'integer'
       },
       zone => {
@@ -7784,6 +7797,14 @@ $meta = {
         tag => 'Record Type',
         type => 'varchar'
       },
+      operation => {
+        default => '',
+        description => 'DB Operation (insert, update, delete)',
+        length => '255',
+        nullable => 1,
+        tag => 'Operation',
+        type => 'varchar'
+      },
       fields => {
         default => '',
         description => 'Fields changed',
@@ -7803,7 +7824,7 @@ $meta = {
     },
     description => 'Zone Record changes',
     has_history => 0,
-    index => [ ['zone'], ['user'], ['record_type'] ],
+    index => [ ['zone'], ['scope'], ['user'], ['record_type'] ],
     isjoin => '0',
     label => [
       'zone',
@@ -7812,17 +7833,19 @@ $meta = {
     unique => [ [ ] ],
     views => {
       all => [
-        'zone',
         'tstamp',
         'user',
+        'zone',
+        'scope',
         'record_type',
+        'operation',
         'fields',
         'vals',
       ],
       brief => [
-        'zone',
         'tstamp',
         'user',
+        'operation',
         'record_type',
       ]
     }

@@ -219,8 +219,8 @@ sub print_to_file{
     close($fh);
 
     my $end = time;
-    $logger->info(sprintf("DHCPD Scope %s exported in %s", 
-			  $self->name, $class->sec2dhms($end-$start) ));
+    $logger->info(sprintf("DHCPD Scope %s exported to %s, in %s", 
+			  $self->name, $path, $class->sec2dhms($end-$start) ));
 }
 
 
@@ -281,6 +281,29 @@ sub import_hosts{
     }
 }
 
+############################################################################
+=head2 get_global - Return the global scope where this scope belongs
+    
+  Args: 
+    None
+  Returns: 
+    DhcpScope object
+  Examples:
+    $dhcp_scope->get_global();
+=cut
+sub get_global {
+    my ($self, %argv) = @_;
+    $self->isa_object_method('get_global');
+    
+    # This does not guarantee that the result is of type "global"
+    # but it's fast
+    if ( int($self->container) == 0 ){
+	return $self;
+    }
+    # Go recursive
+    my $container = $self->container;
+    return $container->get_global();
+}
 
 ############################################################################
 # Private methods
@@ -389,30 +412,33 @@ sub _validate_args {
 	$fields{$field} = $argv->{$field} if exists $argv->{$field};
     }
 
-    $self->throw_user("DhcpScope::_validate_args: A scope name is required")
+    $self->throw_user("A scope name is required")
 	unless ( defined $fields{name} && $fields{name} ne "" );
 
-    $self->throw_user("DhcpScope::_validate_args: type not defined")
-	unless defined $fields{type};
+    $self->throw_user("$fields{name}: A scope type is required")
+	unless $fields{type};
 
     if ( defined $fields{physaddr} && $fields{physaddr} != 0 && $fields{type}->name ne 'host' ){
-	$self->throw_user("DhcpScope::_validate_args: $fields{name}: Cannot assign physical address ($fields{physaddr}) to a non-host scope");
+	$self->throw_user("$fields{name}: Cannot assign physical address ($fields{physaddr}) to a non-host scope");
     }
     if ( defined $fields{ipblock} && $fields{ipblock} != 0 ){
 	if ( ($fields{ipblock}->status->name eq 'Subnet') && $fields{type}->name ne 'subnet' ){
-	    $self->throw_user("DhcpScope::_validate_args: $fields{name}: Cannot assign a subnet to a non-subnet scope");
+	    $self->throw_user("$fields{name}: Cannot assign a subnet to a non-subnet scope");
 	}elsif ( ($fields{ipblock}->status->name eq 'Static') && $fields{type}->name ne 'host'  ){
-	    $self->throw_user("DhcpScope::_validate_args: $fields{name}: Cannot assign an IP address to a non-host scope");
+	    $self->throw_user("$fields{name}: Cannot assign an IP address to a non-host scope");
+	}
+    }
+    if ( $fields{type}->name eq 'host'){
+	if ( !$fields{physaddr} || !$fields{ipblock} ){
+	    $self->throw_user("$fields{name}: a host scope requires IP and Ethernet");
 	}
     }
 
     my $type = $fields{type}->name;
-    $self->throw_user("DhcpScope::_validate_args: type not defined")
-	unless defined $type;
 
     if ( $fields{container} != 0 ){
 	my $ctype = $fields{container}->type->name;
-	$self->throw_user("DhcpScope::_validate_args: container type not defined")
+	$self->throw_user("$fields{name}: container scope type not defined")
 	    unless defined $ctype;
 
 	if ( $type eq 'global' ){
@@ -483,11 +509,13 @@ sub _print {
 				     $data->{$id}->{attrs}->{$b}->{name} }
 			  keys %{$data->{$id}->{attrs}} ){
 	if ( $attr_id eq 'hardware ethernet' ){
-	    my $addr = $data->{$id}->{attrs}->{$attr_id}->{value};
-	    print $fh $indent."$attr_id ".PhysAddr->colon_address($addr).";\n";
+	    if ( my $addr = $data->{$id}->{attrs}->{$attr_id}->{value} ){
+		print $fh $indent."$attr_id ".PhysAddr->colon_address($addr).";\n";
+	    }
 	}elsif ( $attr_id eq 'fixed-address' ){
-	    my $addr = $data->{$id}->{attrs}->{$attr_id}->{value};
-	    print $fh $indent."$attr_id $addr;\n";
+	    if ( my $addr = $data->{$id}->{attrs}->{$attr_id}->{value} ){
+		print $fh $indent."$attr_id $addr;\n";
+	    }
 	}else{
 	    my $name   = $data->{$id}->{attrs}->{$attr_id}->{name};
 	    my $code   = $data->{$id}->{attrs}->{$attr_id}->{code};

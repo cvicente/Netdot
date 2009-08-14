@@ -195,17 +195,20 @@ my @statements = (
        PRIMARY KEY (`id`)
      ) ENGINE=InnoDB;",
     "INSERT INTO DhcpScopeType (name) VALUES ('template')",
-    "CREATE TABLE `zoneaudit` (
+    "CREATE TABLE `hostaudit` (
        `fields` varchar(255),
        `id` integer NOT NULL auto_increment,
+       `operation` varchar(255),
        `record_type` varchar(255),
        `tstamp` timestamp NOT NULL DEFAULT '1970-01-01 00:00:01',
        `user` varchar(255),
        `vals` varchar(255),
        `zone` integer NOT NULL,
-       INDEX ZoneAudit2 (`zone`),
-       INDEX ZoneAudit3 (`user`),
-       INDEX ZoneAudit4 (`record_type`),
+       `scope` integer NOT NULL,
+       INDEX HostAudit2 (`zone`),
+       INDEX HostAudit3 (`scope`),
+       INDEX HostAudit4 (`user`),
+       INDEX HostAudit5 (`record_type`),
        PRIMARY KEY (`id`)
      ) ENGINE=InnoDB;",
      "CREATE TABLE `sitesubnet` (

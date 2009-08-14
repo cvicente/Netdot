@@ -93,7 +93,7 @@ sub generate_configs {
 	    map { $_->delete } $zone->audit_records;
 
 	}else{
-	    $logger->debug($zone->name.": No pending changes.  Use -f to force.");
+	    $logger->debug("Exporter::BIND::generate_configs: ".$zone->name.": No pending changes.  Use -f to force.");
 	}
     }
 }
