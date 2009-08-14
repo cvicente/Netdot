@@ -136,23 +136,17 @@ if ( $type eq "address" ){
      }
 }
 
-# Create new session and get a new window for csv output
+# Create new session and get a new window for csv2 output
 $i=0;
 $session = $ui->mk_session();
-map { $objindex{$i++} = $_ } @{ $objects };
-$table = $objects->[0]->short_class unless $table;
-@orderbrief = @text_headers;
 
-$session->{object}      = $objects;
-$session->{objindex}    = \%objindex;
-$session->{table}       = $table;
+@orderbrief = @text_headers;
 $session->{orderbrief}  = \@orderbrief;
-$session->{total}       = scalar @$objects;
 $session->{page}        = $page;
 </%perl>
 <& /generic/data_table.mhtml, field_headers=>\@headers, data=>\@rows &>
 
 <div class="containerheadright">
-    <a href="#" onClick="opentextwindow('','csv_sp','sid=<% $session->{_session_id} %>')">[csv]</a>
+    <a href="#" onClick="opentextwindow('','csv2','sid=<% $session->{_session_id} %>')">[csv]</a>
 </div>
 

@@ -2,7 +2,7 @@
 
 Display a text version of information, easy to select and copy.
 
-Formats accepted: text, csv, csv_sp (simplied csv)
+Formats accepted: text, csv, csv2 
 
 </%doc>
 %
@@ -23,7 +23,7 @@ title => 'View'
 <%init>
 my $js = 0;
 my $csv = 0;
-my $csv_sp = 0;
+my $csv2 = 0;
 
 my @orderbrief;
 my $session;
@@ -31,6 +31,7 @@ my $osession;
 my %objindex;
 my $table;
 my $page;
+my $content;
 
 $m->clear_buffer;
 
@@ -40,8 +41,8 @@ if ($format eq "js") {
 elsif ($format eq "csv") {
     $csv = 1;
 }
-elsif ($format eq "csv_sp") {
-    $csv_sp = 1;
+elsif ($format eq "csv2") {
+    $csv2 = 1;
 }
 
 if ($csv && $osid) {
@@ -55,13 +56,13 @@ if ($csv && $sid) {
     @orderbrief = @{ $session->{orderbrief} };
     $total      = $session->{total};
 }
-if ($csv_sp && $sid) {
+if ($csv2 && $sid) {
     $session = $ui->get_session($sid);
-    %objindex   = %{ $session->{objindex} };
-    $table      = $session->{table};
+#    %objindex   = %{ $session->{objindex} };
+#    $table      = $session->{table};
     @orderbrief = @{ $session->{orderbrief} };
-    $total      = $session->{total};
-    $page       = $session->{page};
+#    $total      = $session->{total};
+    $page      = $session->{page};
 }
 
 </%init>
@@ -116,8 +117,9 @@ if ($csv_sp && $sid) {
 %       }
 %   }
 
-%   #simpled csv format: use @orderbrief for headers and $page for cell_data without table or objindex  
-%   if ( $csv_sp ){
+%   #csv2 format: pass @orderbrief for headers and $page for cell_data 
+%   #without using other variables, such as $table, $objindex, $total.
+%   if ( $csv2 ){
         <b>
 %       my @outlist; 
 %       my $outstring;
