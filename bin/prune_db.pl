@@ -4,12 +4,14 @@
 # prune_db.pl
 #
 
-use lib "<<Make:LIB>>";
+use lib "/usr/local/netdot/lib";
 use Netdot::Model;
+use Netdot::Config;
 use DBUTIL;
 use Getopt::Long qw(:config no_ignore_case bundling);
 use Log::Log4perl::Level;
 use strict;
+
 
 my ($HISTORY, $FWT, $ARP, $MACS, $IPS);
 my $_DEBUG      = 0;
@@ -91,6 +93,8 @@ $logger->level($DEBUG) if ( $_DEBUG );
 # Get DB handle 
 my $dbh = Netdot::Model::db_Main();
 
+
+
 # date NUM_DAYS ago
 my $epochdate = time-($NUM_DAYS*24*60*60);
 my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime $epochdate;
@@ -163,11 +167,11 @@ if ( $IPS ){
 }
 if ( $FWT ){
     if ( $ROTATE ){
-	if ( Netdot->config->get('DB_TYPE') eq 'mysql' ){
+	if ( Netdot->config->get('DB_TYPE') eq 'mysql' or Netdot->config->get('DB_TYPE') eq 'Pg' ){
 	    &rotate_table('fwtable');
 	    &rotate_table('fwtableentry');
 	}else{
-	    die "Rotate function only implemented in mysql for now";
+	    die "Rotate function only implemented in mysql and postgreSQL for now";
 	}
     }else{
 	###########################################################################################
@@ -182,17 +186,17 @@ if ( $FWT ){
 	
 	foreach my $table ( qw (fwtable fwtableentry) ){
 	    $logger->debug("Freeing deleted space in $table");
-	    $dbh->do("OPTIMIZE TABLE $table");
+	    optomize_table($dbh, $table, $logger);
 	}
     }
 }
 if ( $ARP ){
     if ( $ROTATE ){
-	if ( Netdot->config->get('DB_TYPE') eq 'mysql' ){
+	if ( Netdot->config->get('DB_TYPE') eq 'mysql' or Netdot->config->get('DB_TYPE') eq 'Pg' ){
 	    &rotate_table('arpcache');
 	    &rotate_table('arpcacheentry');
 	}else{
-	    die "Rotate function only implemented in mysql for now";
+	    die "Rotate function only implemented in mysql and postgreSQL for now";
 	}
     }else{
 	###########################################################################################
@@ -209,7 +213,7 @@ if ( $ARP ){
 	
 	foreach my $table ( qw (arpcache arpcacheentry) ){
 	    $logger->debug("Freeing deleted space in $table");
-	    $dbh->do("OPTIMIZE TABLE $table");
+	    optomize_table($dbh, $table, $logger);
 	}
     }
 }
@@ -221,7 +225,7 @@ foreach my $table ( keys %rows_deleted ){
 			      $rows_deleted{$table}, $table));
 	# now optimize the table to free up the space from the deleted records
 	$logger->debug("Freeing deleted space in $table");
-	$dbh->do("OPTIMIZE TABLE $table");
+	optomize_table($dbh, $table, $logger);
     }
 }
 $logger->info(sprintf("$0 total runtime: %s\n", Netdot->sec2dhms(time-$start)));
@@ -232,42 +236,119 @@ $logger->info(sprintf("$0 total runtime: %s\n", Netdot->sec2dhms(time-$start)));
 # Subroutines
 ###########################################################################################
 
+#postgresql and mysql have different commands for cleaning up their tables after a large amount of deletes
+sub optomize_table{
+    my ($dbh, $table, $logger) = @_;
+
+    my $database_type = Netdot->config->get('DB_TYPE');
+
+    if($database_type eq 'mysql'){
+        $dbh->do("OPTIMIZE TABLE $table");    
+    }
+    elsif($database_type eq 'Pg'){
+        $dbh->do("VACUUM $table");    
+    }
+    #otherwise we don't know how to optomize the table :(
+    else{
+        $logger->warn("didn't recognize the database we're using, so we could not optomize the table, database is  $database_type, it must be either 'mysql' or 'Pg'");
+    }    
+
+    return;
+}
+
 sub rotate_table{
     my $table = shift;
     
     # We need DBA privileges here
-    my $dbh = &dbconnect(Netdot->config->get('DB_TYPE'), 
-			 Netdot->config->get('DB_HOST'), 
-			 Netdot->config->get('DB_PORT'), 
-			 Netdot->config->get('DB_DBA') , 
-			 Netdot->config->get('DB_DBA_PASSWORD'), 
-			 Netdot->config->get('DB_DATABASE'))
-	|| die "Cannot connect to database as root";
-    
-    my $timestamp = time;
-    my $q = $dbh->selectall_arrayref("SHOW CREATE TABLE $table");
-    my $create_query = $q->[0]->[1];
-    $create_query =~ s/CREATE TABLE `(.*)`/CREATE TABLE `$1\_tmp`/;
-    $dbh->do($create_query);
-    $dbh->do("RENAME TABLE $table TO $table\_$timestamp");
-    $dbh->do("RENAME TABLE $1\_tmp TO $table");
-    $logger->info("Table $table rotated successfully");
-
-    $logger->debug("Droping $table backups older than $NUM_DAYS days");
-    my $tables_q = $dbh->selectall_arrayref("SHOW TABLES");
-    foreach my $row ( @$tables_q ){
-	my $tablename = $row->[0];
-	if ( $tablename =~ /$table\_(\d+)/ ){
-	    my $tstamp = $1;
-	    if ( $tstamp < $epochdate ){
-		$logger->debug("Droping $table\_$tstamp");
-		$dbh->do("DROP TABLE $table\_$tstamp");
-	    }
-	}
+    my $db_type = Netdot->config->get('DB_TYPE');
+    my $db_host = Netdot->config->get('DB_HOST');
+    my $db_port = Netdot->config->get('DB_PORT');
+    my $db_user = Netdot->config->get('DB_DBA');
+    my $db_pass = Netdot->config->get('DB_DBA_PASSWORD');
+    my $db_db   = Netdot->config->get('DB_DATABASE');
+ 
+    if($db_type ne 'mysql' and $db_type ne 'Pg'){
+        die("didn't recognize the database we're using ($db_type), could not rotate table $table");
     }
+
+    my $dbh = &dbconnect($db_type, $db_host, $db_port, $db_user, $db_pass, $db_db) 
+	        || die ("Cannot connect to database as root");
+ 
+    
+    $dbh->{AutoCommit} = 0; #make sure autocommit is off so we use transactions
+    $dbh->{RaiseError} = 1; #make sure we hear about any problems
+
+
+    my $timestamp = time;
+
+    if($db_type eq 'mysql'){
+        eval{
+            my $q = $dbh->selectall_arrayref("SHOW CREATE TABLE $table");
+            my $create_query = $q->[0]->[1];
+            $create_query =~ s/CREATE TABLE `(.*)`/CREATE TABLE `$1\_tmp`/;
+            $dbh->do($create_query);
+            $dbh->do("RENAME TABLE $table TO $table\_$timestamp");
+            $dbh->do("RENAME TABLE $1\_tmp TO $table");
+        }
+    }
+
+    else{ #postgre
+        #the procedure for rotating tables is a bit different for postgres, since it doesn't 
+        #recognize the SHOW command.  We instead use the CREATE TABLE AS function of postgres
+        #to create an exact copy of the origional table, then we'll drop all the records from the origional
+        #$dbh = DBI->connect("DBI:Pg:dbname=$db_db; host=$db_host", "$db_user", "$db_pass");
+   
+        my $new_table_name = $table."_".$timestamp;
+
+        eval{
+            $dbh->do("CREATE TABLE $new_table_name AS SELECT * FROM $table");
+            $dbh->do("DELETE FROM $table");
+        }
+    }
+
+    if($@){
+        my $kill_msg = "Error rotating table $table with database: $db_type, $db_host, $db_db, changes not commited";
+        $dbh->rollback;
+        $logger->fatal($kill_msg.$@);
+        die($kill_msg.$@);       
+    }
+    
+    $dbh->commit;
+
+    $logger->info("Table $table rotated successfully");
+    
+    $dbh->{AutoCommit} = 1; #we can turn back on autocommit since the rest of the transactions are basically atomic
+    
+    $logger->debug("Droping $table backups older than $NUM_DAYS days");    
+    my $tables_q;
+    
+    if($db_type eq 'mysql'){
+        $tables_q = $dbh->selectall_arrayref("SHOW TABLES");
+    }
+    else{ #postgre
+        $tables_q = $dbh->selectall_arrayref("SELECT tablename FROM pg_tables");
+    }
+
+    foreach my $row ( @$tables_q ){
+        my $tablename = $row->[0];
+        if ( $tablename =~ /$table\_(\d+)/ ){
+            my $tstamp = $1;
+            if ( $tstamp < $epochdate ){
+	            $logger->debug("Droping $table\_$tstamp");
+	            $dbh->do("DROP TABLE $table\_$tstamp");
+            }
+        }
+    }
+
+    if($db_type eq 'Pg'){ #since we just deleted every from from table during the copy, we need to clean up a bit
+        optomize_table($dbh, $table, $logger);
+    }
+
     &dbdisconnect($dbh);
+
     return 1;
 }
+
 
 =head1 AUTHOR
 
@@ -291,4 +372,3 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software Foundation,
 Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-=cut
