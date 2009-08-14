@@ -102,7 +102,7 @@ my @list;
                 <select name="add_host_block">
                 <option value="0">- Select Block -</option>
 %           my @subnets = Ipblock->search(status=>"Subnet");
-%           foreach my $o ( sort { $a->get_label cmp $b->get_label } @subnets ){
+%           foreach my $o ( sort { $a->address_numeric cmp $b->address_numeric } @subnets ){
                 <option value="<% $o %>"><% $o->get_label %></option>
 %           }
                 </select>
