@@ -72,7 +72,6 @@ if ( $submit ){
 	}
 	undef $rr;
 	$action = 'deleted';
-
     }elsif ($rr || $id || $ipblock || $action eq 'new') {
 	# insert/update
 	eval {
@@ -88,16 +87,22 @@ if ( $submit ){
 		    }
 		}
 	    }
-	    
+
 	    my %ret = $ui->form_to_db(%ARGS);
 	    print 'form_to_db returned: <pre>', Dumper(%ret), '</pre><br>' if $DEBUG;    
-	    
+
 	    if (exists $ret{RR}) {
 		my $newid = (keys %{$ret{RR}{id}})[0];
 		if ($ret{RR}{id}{$newid}{action} eq 'INSERTED') {
-		    $id = $newid unless defined $id;
-		    $rr = $newid unless defined $rr;
-		    my $newrr = RR->retrieve($newid);
+            if(! $id){
+                $id = $newid;
+            }
+            if(! $rr){
+                $rr = $newid;            
+            }
+
+		    my $newrr = RR->retrieve($id);
+
 		    $rrs{$newrr->id} = $newrr;
 		    if (defined $ipblock) {
 			RRADDR->insert({rr=>$newid, ipblock=>$ipblock});
@@ -106,8 +111,18 @@ if ( $submit ){
 	    }
 	};
 	if ( my $e = $@ ){
-	    $m->comp('/generic/error.mhtml', error=>$e);
-	} else {
+        if($e =~ /Error while inserting RRCNAME: Some values are duplicated./){
+            #Doing a search with RR->search(name=>$name) wasn't working (it was returning an iterator), so 
+            #I'm just displaying the name provided by the user
+            my $name = $ARGS{'RR__NEW__name'};
+
+            $e = "Alias ". $name . " already exists in the database.";  
+        }
+
+	    $m->comp('/generic/error.mhtml', error=>"$e");
+
+	} 
+    else {
 	    $submit = 0;
 	    $action = "";
 	}
