@@ -197,7 +197,6 @@ sub _deny_action_access {
 
     # This assumes actions and access rights are the same
     if ( exists $access->{$action} ){
-	$logger->debug("Netdot::ObjectAccessRule::_deny_action_access: action $action allowed for object $access");
 	return 0; # Do not deny access
     }
     $logger->debug("Netdot::ObjectAccessRule::_deny_action_access: access for $action not found.  Denying access.");
