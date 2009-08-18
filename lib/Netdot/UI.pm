@@ -941,7 +941,7 @@ sub text_field($@){
     or False if failure    
   Examples:
 
-    $ui->text_field(object=>$pic->binfile, table=>"BinFile", column=>"filename", edit=>$editPictures);
+    $ui->date_field(object=>$rr, table=>"RR", column=>"expiration", edit=>$edit);
 
 =cut
 

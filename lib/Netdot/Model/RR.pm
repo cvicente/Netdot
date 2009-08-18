@@ -114,6 +114,7 @@ sub search_like {
     zone        Zone object, id or name. If not defined, will assume 
                 'DEFAULT_DNSDOMAIN' from config file
                 If defined, will create if necessary.
+    expiration  Expiration date
     type        <A|AAAA|TXT|HINFO|CNAME|NS|MX|NAPTR|SRV|PTR|LOC> 
                 Create records for these types 
                 (need to pass their specific arguments)
@@ -167,6 +168,7 @@ sub insert {
 		     zone        => $zone->id,
 		     active      => defined($argv->{active})? $argv->{active} : 1,
 		     auto_update => $auto_update,
+		     expiration  => $argv->{expiration},
 	    );
 
 	$class->_validate_args(\%state);
@@ -420,14 +422,15 @@ sub as_text {
 }
 
 ##################################################################
-=head2 add_host
-
-    Adds a host
+=head2 add_host - Add hostname and several other things
+    
+    Combine 
 
   Arguments:
     Hash with following keys:
     address
     hostname
+    expiration
     aliases (array)
     zone
     block
@@ -458,6 +461,7 @@ sub add_host {
 				     ipblock    => $argv{address}, 
 				     name       => $argv{hostname}, 
 				     zone       => $argv{zone},
+				     expiration => $argv{expiration},
 				     update_ptr => 1,
 				    });
 	    

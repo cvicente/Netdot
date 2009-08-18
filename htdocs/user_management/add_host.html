@@ -20,6 +20,7 @@ $user          => $ui->get_current_user($r)
 $zone_id       => undef
 $hostname      => undef
 $aliases       => undef
+$expiration    => undef
 $cpu           => undef
 $os            => undef
 $site_id       => undef
@@ -132,7 +133,7 @@ if ( $submit ){
 	}
     }
     
-    foreach my $key qw(hostname cpu os site_name site_id room_number room_id person contact_name contact_email contact_phone ethernet) {
+    foreach my $key qw(hostname expiration cpu os site_name site_id room_number room_id person contact_name contact_email contact_phone ethernet) {
 	$args{$key} = $ARGS{$key};
     }
     $args{zone}    = $zone;
@@ -165,6 +166,7 @@ if ( $submit ){
     <div class="containerbody" id="tasks">
 
     <form name="add_host_form" action="add_host.html" method="POST">
+    <script language="javascript" src="../java_script/datechooser.js"></script>
     <input type="hidden" name="add_host_block" value="<% $add_host_block %>">
     <input type="hidden" name="address" value="<% $address %>">
     <table><tr><td>
@@ -210,8 +212,12 @@ if ( $submit ){
         <input type="text" name="ethernet" class="ethertxt" value=""> <% $ui->help_link('../user_help/hosts.html#Ethernet') %>
         </p>
         <p>
-        <label for="name">Aliases</label>
+        <label for="aliases">Aliases</label>
         <input type="text" name="aliases" class="longtxt" value=""> <% $ui->help_link('../user_help/hosts.html#Cnames') %>
+        </p>
+        <p>
+        <label for="expiration">Expiration Date</label>
+%	 $ui->date_field(table=>"RR", column=>"expiration", edit=>1, shortFieldName=>1);
         </p>
     </fieldset>
 
