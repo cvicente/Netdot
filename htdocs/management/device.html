@@ -90,7 +90,7 @@ if ( $id ){
 	$m->comp('/generic/error.mhtml', error=>"Could not retrieve Device with id $id");
     }   
 }
-if ( $o ){
+if ( $o ){  
     if( $intadd ){
 	eval { $o->add_interfaces($intaddnum) };
 	if ( my $e = $@ ){
@@ -218,6 +218,12 @@ my $refresh_url = "device.html?id=$id&view=$view";
 %       } else {
           <li><a href="device.html?id=<% $id %>&view=BGP">BGP Peers</a></li>
 %       }
+%     }
+%     if($view eq "Circuit"){
+        <li><span>Circuit</span></li>
+%     }
+%     else{
+        <li><a href="device.html?id=<% $id %>&view=Circuit">Circuits</a></li>
 %     }
 %     if ( $o->stp_enabled ){
 %       if( $view eq "STP" ) {
@@ -1328,7 +1334,38 @@ if ( $ipeers ){
 %
 %
 <!-- End History Section -->
+%#######################################################################
+%#
+%# Circuit
+%#
+%#######################################################################
 
+%if ($view eq "Circuit" || $view eq "All"){
+%   my $device_cable = Device->retrieve($id);
+%   my @circuits = $device_cable->get_circuits;
+%   my @non_null_circuits;
+%   foreach(@circuits){
+%       if($_->id != 0){
+%           push(@non_null_circuits, $_);
+%       }
+%   }
+
+
+
+<div class="container">
+    <div class="containerhead">
+        Cable
+    </div>
+    <div class="containerbody">
+%      if(@non_null_circuits){ #do we have any circuits for this device?
+            <& /generic/sortresults.mhtml, object => \@non_null_circuits , view => "row" &>
+%      }
+%      else{
+            No circuits for device
+%      }
+    </div>
+</div>
+%}
   </div> <!-- close containerbodyoutside --> 
  </div> <!-- close containeroutside -->
 </div> <!-- close sectiondetail -->
