@@ -179,12 +179,12 @@ if ( $submit ){
 	$search = $search_other;
 	$search =~ s/^\s+(.*)\s+$/$1/g;
 	@list = Ipblock->keyword_search($search);
-    }elsif( $search_live ) {
+    }elsif( $search_live ){
 	eval { $live_info = Device->search_address_live(ip=>$search_live) };
 	if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>$e);
 	}
-    }else{
+    }elsif( $submit eq "Search" ){
 	$m->comp('/generic/no_search_criteria.html');
     }   
 }

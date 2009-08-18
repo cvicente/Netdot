@@ -131,7 +131,7 @@ if ( $submit ){
         map { $idx{$_->id} = $_ } VlanGroup->search_like(description => $search);
 	@list = values %idx;
     
-    }else {
+    }elsif ( $submit eq "Search" || $submit eq "Find" ) {
 	$m->comp('/generic/no_search_criteria.html');
     }
 }
