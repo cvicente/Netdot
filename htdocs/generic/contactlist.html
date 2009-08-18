@@ -20,6 +20,7 @@ $contact_id => undef
 $person_id  => undef
 $role_id    => undef
 $personstatus => undef
+$newname    => undef
 </%args>
 %
 %
@@ -48,8 +49,7 @@ if ( $_action ){
 	}
 
     }elsif ( $_action eq 'new_contact' ){
-	
-	my (%pargs, %cargs);
+        my (%pargs, %cargs);
 	foreach my $arg ( keys %ARGS ){
 	    if ( $personstatus eq 'new' && $arg =~ /^Person__/ ){
 		$pargs{$arg} = $ARGS{$arg};
@@ -111,6 +111,19 @@ if ( $_action ){
 	};
 	if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>$e);
+	}
+    }elsif ( $_action eq 'edit_name' ){
+        eval {
+            my %pargs;
+            my $tmp = sprintf("ContactList__%s__name", $id);
+            $pargs{ $tmp } = $newname;
+           # $m->comp('/generic/error.mhtml', error=>"$id+$newname");
+            %ret = $ui->form_to_db(%pargs);
+            
+	    print 'form_to_db returned: <pre>', Dumper(%ret), '</pre><br>' if $DEBUG;    
+	};
+	if ( my $e = $@ ){
+            $m->comp('/generic/error.mhtml', error=>$e);
 	}
     }
 }

@@ -27,7 +27,7 @@ my $manager = $ui->get_permission_manager($r);
 </%init>
 
 
-% if ( $edit eq 'contact' or $edit eq 'newcontact' ) {
+% if ( $edit eq 'contact' or $edit eq 'newcontact' or $edit eq 'editname') {
     <form name="netdotform" action="contactlist.html" method="POST">
         <input type="hidden" name="id" value="<% $id %>">
 % }
@@ -43,6 +43,7 @@ my $manager = $ui->get_permission_manager($r);
 %         }
 %         if ( $manager && $manager->can($user, "edit", $obj) ){
               <a href="contactlist.html?id=<% $id %>&edit=newcontact">[new contact]</a>
+              <a href="contactlist.html?id=<% $id %>&edit=editname">[edit name]</a>
 %         }
 %         if ( $manager && $manager->can($user, "delete", $obj) ){
               <a href="delete.html?table=ContactList&id=<% $id %>">[delete]</a>
@@ -113,6 +114,28 @@ $ui->add_to_fields(table=>'Contact', edit=>$edit, fields=>['contacttype', 'notif
            </form>
 %     }
 
+% }
+
+% if ( $edit eq 'editname'){
+        <div class="containerbodyoutside">
+          <div class="container">
+            <div class="containerheadleft">Edit contactlist name</div>
+             <div class="containerheadright">&nbsp;</div>
+                <div class=containerbody" style="display:block">
+              
+                <p>
+                <label for="Find">Enter new name:</label>
+                 <input type="text" name="newname" class="txt" value="<% $obj->get_label %>"> 
+                 <input type="hidden" name="_action" value="edit_name">
+                 <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+                 <input type="submit" name="submit" class="btn" value="save">
+                 </p>
+               
+               </div>
+            </div>
+          </div>
+        </div>
+      </form>
 % }
 
 % foreach my $role ( sort { $a->person->lastname cmp $b->person->lastname } $obj->contacts ){
