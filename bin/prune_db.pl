@@ -13,7 +13,7 @@ use Log::Log4perl::Level;
 use strict;
 
 
-my ($HISTORY, $FWT, $ARP, $MACS, $IPS);
+my ($HISTORY, $FWT, $ARP, $MACS, $IPS, $RR);
 my $_DEBUG      = 0;
 my $HELP        = 0;
 my $VERBOSE     = 0;
@@ -31,6 +31,7 @@ my $usage = <<EOF;
     -A, --arp                      ARP caches
     -M, --macs                     MAC addresses
     -I, --ips                      IP addresses
+    -R, --rr                       DNS Resource Records
     -d, --num_days                 Number of days worth of items to keep (default: $NUM_DAYS);
     -n, --num_history              Number of history items to keep for each record (default: $NUM_HISTORY);
     -r, --rotate                   Rotate forwarding tables and ARP caches (rather than delete records) 
@@ -64,6 +65,7 @@ my $result = GetOptions(
     "A|arp"           => \$ARP,
     "M|macs"          => \$MACS,
     "I|ips"           => \$IPS,
+    "R|rr"            => \$RR,
     "d|num_days=i"    => \$NUM_DAYS,,
     "n|num_history=i" => \$NUM_HISTORY,
     "r|rotate"        => \$ROTATE,
@@ -76,7 +78,7 @@ if ( $HELP ) {
     exit;
 }
 
-if ( !$result || !($HISTORY || $FWT || $ARP || $MACS || $IPS) ){
+if ( !$result || !($HISTORY || $FWT || $ARP || $MACS || $IPS || $RR) ){
     print $usage;
     die "Error: Problem with cmdline args\n";
 }
@@ -91,9 +93,8 @@ $logger->add_appender($logscr);
 $logger->level($DEBUG) if ( $_DEBUG );
 
 # Get DB handle 
+my $db_type = Netdot->config->get('DB_TYPE');
 my $dbh = Netdot::Model::db_Main();
-
-
 
 # date NUM_DAYS ago
 my $epochdate = time-($NUM_DAYS*24*60*60);
@@ -165,6 +166,22 @@ if ( $IPS ){
 	$ip->delete;
     }
 }
+
+if($RR){
+    if($db_type eq 'mysql'){
+        $dbh->do("DELETE FROM rr WHERE expiration < CURDATE()");
+    }
+    elsif($db_type eq 'Pg'){
+        $dbh->do("DELETE FROM rr WHERE expiration < current_date");
+    }
+    else{
+        my $err = "Could not delete DNS Resource Records, database $db_type not supported";
+        $logger->fatal($err);
+        print $err;
+        exit(1);  
+    }
+}
+
 if ( $FWT ){
     if ( $ROTATE ){
 	if ( Netdot->config->get('DB_TYPE') eq 'mysql' or Netdot->config->get('DB_TYPE') eq 'Pg' ){
@@ -260,7 +277,7 @@ sub rotate_table{
     my $table = shift;
     
     # We need DBA privileges here
-    my $db_type = Netdot->config->get('DB_TYPE');
+   
     my $db_host = Netdot->config->get('DB_HOST');
     my $db_port = Netdot->config->get('DB_PORT');
     my $db_user = Netdot->config->get('DB_DBA');
@@ -340,7 +357,7 @@ sub rotate_table{
         }
     }
 
-    if($db_type eq 'Pg'){ #since we just deleted every from from table during the copy, we need to clean up a bit
+    if($db_type eq 'Pg'){ #since we just deleted every record from table during the copy, we need to clean up a bit
         optimize_table($dbh, $table, $logger);
     }
 
