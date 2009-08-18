@@ -169,10 +169,10 @@ if ( $IPS ){
 
 if($RR){
     if($db_type eq 'mysql'){
-        $dbh->do("DELETE FROM rr WHERE expiration < CURDATE()");
+        $dbh->do("DELETE FROM rr WHERE expiration < CURDATE() AND expiration <> '0000-00-00'");
     }
     elsif($db_type eq 'Pg'){
-        $dbh->do("DELETE FROM rr WHERE expiration < current_date");
+        $dbh->do("DELETE FROM rr WHERE expiration < current_date AND expiration <> '1970-01-01'");
     }
     else{
         my $err = "Could not delete DNS Resource Records, database $db_type not supported";
