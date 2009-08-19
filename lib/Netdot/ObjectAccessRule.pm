@@ -96,24 +96,33 @@ sub denies(){
 		}
 	    }
 	}elsif ( $otype =~ /^RR/ ){
-	    # Grant access to any RR  only if the records are associated with an IP 
-	    # in an allowed IP block
 	    my ($rr, $zone);
 	    if ( $otype eq 'RR' ){
-		$rr   = $object;
+		$rr = $object;
 	    }elsif ( $otype eq 'RRCNAME' || $otype eq 'RRSRV' ){
-		$rr   = $object->name;
-		
+		$rr = $object->name;
 	    }else{
-		$rr   = $object->rr;
+		$rr = $object->rr;
 	    }
 	    $zone = $rr->zone;
+
+	    # Users cannot edit RRs for Device IPs
+	    foreach my $arecord ( $rr->arecords ){
+		my $ip = $arecord->ipblock;
+		if ( int($ip->interface) != 0 ){
+		    $logger->debug("Netdot::ObjectAccessRule::_denies: ".$rr->get_label." linked to Device interface. Denying access.");
+		    return 1;
+		}
+	    }
 
 	    # If user has rights on the zone, they have the same rights over records
 	    if ( exists $access->{'Zone'}->{$zone->id} ){
 		return &_deny_action_access($action, $access->{'Zone'}->{$zone->id});
 	    }
 	    
+	    # At this point, user does not have access to the whole zone.
+	    # Grant access to any RR only if the records are associated with an IP 
+	    # in an allowed IP block
 	    if ( $otype eq 'RRCNAME' ){
 		# Search for the record that the CNAME points to
 		if ( my $crr = RR->search(name=>$object->cname)->first ){
