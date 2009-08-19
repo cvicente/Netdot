@@ -2202,34 +2202,46 @@ sub get_host_addrs {
 sub get_next_free {
     my ($self, %argv) = @_;
     $self->isa_object_method('get_next_free');
-
+    my $class = ref($self);
     $self->throw_user("Invalid call to this method on a non-subnet")
 	unless ( $self->status->name eq 'Subnet' );
 
     $logger->debug("Getting next free address in ".$self->get_label);
 
+    my $dbh  = $self->db_Main();
+    my $id   = $self->id;
+    my $rows = $dbh->selectall_arrayref("
+               SELECT   ipblock.address, ipblock.version, ipblockstatus.name
+               FROM     ipblock, ipblockstatus
+               WHERE    ipblock.status=ipblockstatus.id
+                 AND    ipblock.parent=$id
+               ");
+
     my %used;
-    foreach my $ip ( $self->children ){
-	$used{$ip->address} = $ip;
+    foreach my $row ( @$rows ){
+	my ($numeric, $version, $status) = @$row;
+	next unless ( $numeric && $version && $status );
+	my $address = $class->int2ip($numeric, $version);
+	$used{$address} = $status;
     }
+    
     my $strategy = $argv{strategy} || 'first';
 
-    my @host_addrs;
+    my @host_addrs = @{$self->get_host_addrs};
     if ( $strategy eq 'first'){
-	@host_addrs = @{$self->get_host_addrs};
+	# do nothing
     }elsif  ( $strategy eq 'last' ){
-	@host_addrs = reverse @{$self->get_host_addrs};
+	@host_addrs = reverse @host_addrs;
     }else{
 	$self->throw_fatal("Ipblock::get_next_free: Invalid strategy: $strategy");
     }
 
-    foreach my $h ( @host_addrs ){
-	if ( exists $used{$h} || $h eq $self->address ||
- 	     $h eq $self->_netaddr->broadcast ){
-	    next;
-	}else{
-	    return $h;
-	}
+    foreach my $addr ( @host_addrs ){
+	# Ignore subnet and broadcast addresses
+	next if ( $addr eq $self->address || $addr eq $self->_netaddr->broadcast );
+	# Ignore anything that exists, unless it's marked as available
+	next if (exists $used{$addr} && $used{$addr} ne 'Available');
+	return $addr;	     
     }
 }
 

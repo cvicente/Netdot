@@ -12,9 +12,9 @@ $ipblock        => undef
 $action         => undef
 $zone           => undef
 $submit         => undef
-$delete_ip      => undef
 $add_ptr        => undef
 $add_alias      => undef
+$add_dhcp       => undef
 </%args>
 
 <%init>
@@ -29,8 +29,12 @@ my $manager = $ui->get_permission_manager($r);
 
 if ($id) {
     $rr = RR->retrieve($id);
+    $m->comp('/generic/error.mhtml', error=>"Could not retrieve RR id $id")
+	unless $id;
 }elsif ($rr && !ref $rr) {
     $rr = RR->retrieve($rr);
+    $m->comp('/generic/error.mhtml', error=>"Could not retrieve RR id $rr")
+	unless $rr;
     $id = $rr->id;
 }
 
@@ -65,11 +69,6 @@ if ( $submit ){
 	$deleted_label = $rr->get_label();
 	delete $rrs{$rr->id};
 	$rr->delete();
-	if ( @ips && $delete_ip ){
-	    foreach my $ip ( @ips ){
-		$ip->delete();
-	    }
-	}
 	undef $rr;
 	$action = 'deleted';
     }elsif ($rr || $id || $ipblock || $action eq 'new') {
@@ -144,11 +143,6 @@ if ( $rr && $action eq 'delete' ){
     print '<p>';
     print '<strong>Are you sure you want to delete the records below?</strong>';
     print '<p>';
-    if ( $rr->arecords ){
-	print '<p>';
-	print 'Delete associated IP(s) too <input type="checkbox" name="delete_ip" CHECKED>';
-    }
-    print '<p>';
     print '<input type="hidden" name="id" value="'.$rr.'">';
     print '<input type="hidden" name="action" value="delete_confirm" >';
     print '<input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> ';
@@ -183,7 +177,7 @@ print '<div class="containerbody"><br>';
 
 
 my %comphash = (field_headers=>\@field_headers, data=>\@cell_data, 
-		width=>"1", headercolwidth=>"15%", datacolwidth=>"85%");
+		headercolwidth=>"15%", datacolwidth=>"85%");
 
 if ($action eq 'new') {
     print '<div class="container" style="width:80%;margin-left:20px">';
@@ -268,9 +262,9 @@ foreach my $o ( values %rrs ) {
 	print '<input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">';
 	print '<input type="submit" name="submit" value="save" >';
     } else {
-	print '<a href="host.html?rr='.$o.'">[refresh]</a>&nbsp;';
+	print '<a href="host.html?id='.$o.'">[refresh]</a>&nbsp;';
 	if ( $manager && $manager->can($user, "edit", $o) ){
-	    print '<a href="host.html?rr='.$o.'&action=edit">[edit]</a>&nbsp;';
+	    print '<a href="host.html?id='.$o.'&action=edit">[edit]</a>&nbsp;';
 	}
 	if ( $manager && $manager->can($user, "delete", $o) ){
 	    print '<a href="host.html?id='.$o.'&action=delete">[delete]</a>';
@@ -278,36 +272,35 @@ foreach my $o ( values %rrs ) {
     }
     print '</div>';
 
-    $ui->add_to_fields(edit=>$edit, o=>$o, fields=>['name', 'zone', 'expiration'],
+    $ui->add_to_fields(edit=>$edit, o=>$o, fields=>['name', 'zone', 'expiration', 'active'],
 		       field_headers=>\@field_headers, cell_data=>\@cell_data,
 		       linkpages=>['', 'zone.html', '']);
-    $m->comp('/generic/attribute_table.mhtml', %comphash);
+    $m->comp('/generic/attribute_table.mhtml', %comphash, width=>2);
     (@field_headers, @cell_data) = ((),());
 
     
     my @arecs = $o->arecords();
-
+    my @ips;
     #####################################################################################################
     #RRADDR
     if ( !$o->cnames ){
 	print '<div class="container" style="margin-left:10px">';
-	print '<div class="containerheadleft"><b>Address(es)</b></div>';
+	print '<div class="containerheadleft"><b>Address (A/AAA)</b></div>';
 	print '<div class="containerheadright">';
 
-	#new rraddr
-	if (!RRCNAME->search(name=>$o->id)) {
+	if ( $manager && $manager->can($user, "access_section", 'host.html:add_rraddr') ){
 	    push( @field_headers, ("IP", "TTL") );
 	    push( @cell_data, "<input name='RRADDR__NEW__ipblock' value='' type='text'>" );
 	    push( @cell_data, "<input name='RRADDR__NEW__ttl' value='' type='text'>" );
-	    my $newrraddr = $m->scomp('/generic/attribute_table.mhtml', %comphash);
+	    my $newrraddr = $m->scomp('/generic/attribute_table.mhtml', %comphash, width=>2);
 	    (@field_headers, @cell_data) = ((),());
 	    $newrraddr =~ s/\n//g;
 	    $newrraddr =~ s/<script.*?<\/script>//g;
 	    $newrraddr =~ s/'/\\'/g;
 	    print '<script type="text/javascript" language="javascript">uricomponents[\'rraddr_'.$o.'_content\']=encodeURIComponent(\''.$newrraddr.'\');</script>';
 	    print '<div id="rraddr_'.$o.'"><a href="#" onClick="dynamicAdd(\'rraddr\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
-	} else {
-	    print "&nbsp;";
+	}else{
+	    print '&nbsp;';
 	}
 	print '</div>';  #close containerheadright
 
@@ -320,55 +313,15 @@ foreach my $o ( values %rrs ) {
 		$arecord->delete;
 		next;
 	    }
+	    push @ips, $ipblock;
 
 	    push( @field_headers, "IP");
-	    if ($edit) {
-		push( @cell_data, "<input name='RRADDR__".$arecord."__ipblock' value='".$ipblock->address."' type='text'>" );
-	    } else {
-		push( @cell_data, "<a href='ip.html?id=".$ipblock."'>".$ipblock->address."</a>");
-	    }
+	    push( @cell_data, "<a href='ip.html?id=".$ipblock."'>".$ipblock->address."</a>");
 	    $ui->add_to_fields(o=>$arecord, edit=>$edit, fields=>['ttl'],
 			       field_headers=>\@field_headers, cell_data=>\@cell_data,
 			       linkpages=>['']);
 
-	    if ( $edit ){
-		push @field_headers, 'Delete';
-		push @cell_data, '<input type="checkbox" name="RRADDR__'.$arecord.'__DELETE">';
-	    }
-	    
-	    ################################################################
-	    # DHCP host scope
-	    # Do not show ethernet field unless the subnet has DHCP enabled
-	    if ( ($ipblock->parent != 0) && $ipblock->parent->dhcp_scopes ) {
-		my $gscope = $ipblock->parent->dhcp_scopes->first->container;
-		
-		push @field_headers, 'Ethernet: ';
-		if ( my $scope  = $ipblock->dhcp_scopes->first ){
-		    my $phys = $scope->physaddr();
-		    if ( $phys == 0 ){
-			# This scope should not exist then
-			$scope->delete();
-		    }else{
-			if ( $edit ){
-			    push( @cell_data, '<input name="DhcpScope__'.$scope.'__physaddr" value="'.$phys->address.'" type="text">' );
-			}else{
-			    push( @cell_data, '<a href="mac.html?id='.$phys.'">'.$phys->address.'</a>' );
-			}
-		    }
-		}else{
-		    if ( $edit ){
-			print '<input name="DhcpScope__NEW__container" value="'.$gscope.'" type="hidden">';
-			print '<input name="DhcpScope__NEW__type" value="host" type="hidden">';
-			print '<input name="DhcpScope__NEW__name" value="'.$ipblock->address.'" type="hidden">';
-			print '<input name="DhcpScope__NEW__ipblock" value="'.$ipblock.'" type="hidden">';
-			push( @cell_data, '<input name="DhcpScope__NEW__physaddr" value="" type="text">' );
-		    }else{
-			push( @cell_data, '&nbsp;' );
-		    }
-		}
-		
-	    }
-	    $m->comp('/generic/attribute_table.mhtml', %comphash);
+	    $m->comp('/generic/attribute_table.mhtml', %comphash, width=>2);
 	    (@field_headers, @cell_data) = ((),());
 		
 	}
@@ -376,6 +329,68 @@ foreach my $o ( values %rrs ) {
 	print '<div id="rraddr_div_'.$o.'"></div>';
 	print '</div></div>';
 
+
+	################################################################
+	# DHCP host scopes
+	# Do not show ethernet field unless the subnet has DHCP enabled
+
+	foreach my $ipblock ( @ips ){
+	    my $gscope; # global scope
+	    if ( ($ipblock->parent != 0) && $ipblock->parent->dhcp_scopes ) {
+		# Subnet is in DHCP
+		$gscope = $ipblock->parent->dhcp_scopes->first->container;
+	    }else{
+		next;
+	    }
+	    print '<div class="container" style="margin-left:10px">';
+	    print '<div class="containerheadleft"><b>DHCP for '.$ipblock->address.'</b></div>';
+	    print '<div class="containerheadright">';
+
+	    my $scope;
+	    if ( ($scope = $ipblock->dhcp_scopes->first) && ($scope->physaddr() != 0) ){
+		print '&nbsp;';
+	    }else{
+		if ( $add_dhcp ){
+		    print '<input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">';
+		    print '<input type="submit" name="submit" value="save" >';
+		}else{
+		    # Let user add a scope
+		    print '<a href="host.html?id='.$id.'&add_dhcp='.$ipblock.'">[add]</a>';
+		}
+	    }
+ 	    print '</div>';
+	    print '<div class="containerbody">';
+
+	    if ( $scope ){
+		# Show the MAC address
+		my $phys = $scope->physaddr();
+		push @field_headers, ('Ethernet: ');
+		if ( $edit ){
+		    push( @cell_data, '<input name="DhcpScope__'.$scope.'__physaddr" value="'.$phys->address.'" type="text">' );
+		    push @field_headers, 'Delete';
+		    push @cell_data, '<input type="checkbox" name="DhcpScope__'.$scope.'__DELETE">';
+		}else{
+		    push( @cell_data, '<a href="mac.html?id='.$phys.'">'.$phys->address.'</a>' );
+		}
+	    
+		$m->comp('/generic/attribute_table.mhtml', %comphash, width=>2);
+		(@field_headers, @cell_data) = ((),());
+
+	    }else{
+		if ( $add_dhcp == $ipblock->id ){
+		    # User wants to add a scope with this ip
+		    push @field_headers, ('Ethernet: ');
+		    print '<input name="DhcpScope__NEW__container" value="'.$gscope.'" type="hidden">';
+		    print '<input name="DhcpScope__NEW__type" value="host" type="hidden">';
+		    print '<input name="DhcpScope__NEW__name" value="'.$ipblock->address.'" type="hidden">';
+		    print '<input name="DhcpScope__NEW__ipblock" value="'.$ipblock.'" type="hidden">';
+		    push( @cell_data, '<input name="DhcpScope__NEW__physaddr" value="" type="text">' );
+		    $m->comp('/generic/attribute_table.mhtml', %comphash, width=>2);
+		    (@field_headers, @cell_data) = ((),());
+		}
+	    }
+	    print '</div></div>';
+	}
 
 	#####################################################################################################
 	#RRHINFO
@@ -395,7 +410,7 @@ foreach my $o ( values %rrs ) {
 			       defaults =>$defaults,
 			       linkpages=>['view.html','view.html','']);
 	    
-	    my $newhinfo = $m->scomp('/generic/attribute_table.mhtml', %comphash);
+	    my $newhinfo = $m->scomp('/generic/attribute_table.mhtml', %comphash, width=>2);
 	    (@field_headers, @cell_data) = ((),());
 	    
 	    $newhinfo =~ s/\n//g;
@@ -417,7 +432,7 @@ foreach my $o ( values %rrs ) {
 				   defaults =>$defaults,
 				   linkpages=>['view.html','view.html',''], with_delete=>1		
 		    );
-		$m->comp('/generic/attribute_table.mhtml', %comphash);
+		$m->comp('/generic/attribute_table.mhtml', %comphash, width=>2);
 		(@field_headers, @cell_data) = ((),());
 	    }
 	}
@@ -435,7 +450,7 @@ foreach my $o ( values %rrs ) {
 	$ui->add_to_fields(table=>'RRTXT', edit=>1, fields=>['txtdata', 'ttl'],
 			   field_headers=>\@field_headers, cell_data=>\@cell_data,
 			   linkpages=>['view.html','']);
-	my $newtxt = $m->scomp('/generic/attribute_table.mhtml', %comphash);
+	my $newtxt = $m->scomp('/generic/attribute_table.mhtml', %comphash, width=>2);
 	(@field_headers, @cell_data) = ((),());
 	$newtxt =~ s/\n//g;
 	$newtxt =~ s/<script.*?<\/script>//g;
@@ -451,7 +466,7 @@ foreach my $o ( values %rrs ) {
 		$ui->add_to_fields(o=>$txt, edit=>$edit, fields=>['txtdata', 'ttl'],
 				   field_headers=>\@field_headers, cell_data=>\@cell_data,
 				   linkpages=>['view.html',''], with_delete=>1);
-		$m->comp('/generic/attribute_table.mhtml', %comphash);
+		$m->comp('/generic/attribute_table.mhtml', %comphash, width=>2);
 		(@field_headers, @cell_data) = ((),());
 	    }
 	}
@@ -480,7 +495,7 @@ foreach my $o ( values %rrs ) {
 	    print '<input name="RR__NEW__cname" value="'.$o->get_label.'" type="hidden">';
 	    push( @cell_data, '<input name="RR__NEW__name" value="" type="text">' );
 	    push( @cell_data, '<input name="RR__NEW__ttl" value="" type="text">' );
-	    $m->comp('/generic/attribute_table.mhtml', %comphash);
+	    $m->comp('/generic/attribute_table.mhtml', %comphash, width=>2);
 	    (@field_headers, @cell_data) = ((),());
 	}
 
@@ -491,7 +506,7 @@ foreach my $o ( values %rrs ) {
 		$ui->add_to_fields(o=>$cname, edit=>$edit, fields=>['name', 'ttl'],
 				   field_headers=>\@field_headers, cell_data=>\@cell_data,
 				   linkpages=>['host.html',''], with_delete=>1);
-		$m->comp('/generic/attribute_table.mhtml', %comphash);
+		$m->comp('/generic/attribute_table.mhtml', %comphash, width=>2);
 		(@field_headers, @cell_data) = ((),());
 	    }
 	}

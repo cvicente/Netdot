@@ -40,7 +40,7 @@ sub insert {
 	unless ( $argv->{ipblock} && $argv->{rr} );
 
     $argv->{ipblock} = $class->_convert_ipblock($argv->{ipblock});
-    
+
     my $update_ptr = 1; # On by default
     if ( defined $argv->{update_ptr} && $argv->{update_ptr} == 0 ){
 	$update_ptr = 0;
@@ -53,6 +53,9 @@ sub insert {
     
     # Create/update PTR record for this IP
     $rraddr->_update_rrptr() if $update_ptr;
+
+    # Make sure the IP is marked as Static
+    $argv->{ipblock}->update({status=>'Static'});
 
     return $rraddr;
     

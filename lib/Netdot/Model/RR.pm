@@ -339,7 +339,10 @@ sub update {
 ##################################################################
 =head2 delete - Override delete method
 
-    Removes any matching CNAMEs
+    * Removes any matching CNAMEs
+    * For IPs in A/AAAA records:
+      * Removes associated DHCP scopes
+      * Sets status to 'Available'
 
   Arguments:
     None
@@ -357,6 +360,20 @@ sub delete {
     foreach my $cname ( @cnames ){
 	$cname->name->delete();
     }
+    # Notice we don't delete the IPs because this would also remove 
+    # other stuff associated with them.  
+    # We just change their status and remove any dhcp scopes.
+    my @ips = map { $_->ipblock } $self->arecords();
+    if ( @ips ){
+	foreach my $ip ( @ips ){
+	    map { $_->delete } $ip->dhcp_scopes;
+	    if ( int($ip->interface) == 0 ){
+		# It's not part of a Device
+		$ip->update({status=>"Available"});
+	    }
+	}
+    }
+
     return $self->SUPER::delete();
 }
 

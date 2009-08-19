@@ -118,8 +118,11 @@ for( my $i=0; $i<(($net->num()+1)/$cols); $i++ ) {
 		# link to detail page for containers
 		$divclass = "ipaddr_container";
 
-	    }elsif( $status{$net->numeric} eq "Discovered" ) {
+	    } elsif( $status{$net->numeric} eq "Discovered" ) {
 		$divclass = "ipaddr_discovered";
+
+	    } elsif( $status{$net->numeric} eq "Available" ) {
+		$divclass = "ipaddr_available";
 	    }
 
 	    $ipaddr = '<a href="ip.html?id='.$iplinks{$net->numeric}.'" class="ipaddr">'.$ipaddr.'</a>';
