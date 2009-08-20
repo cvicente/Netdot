@@ -149,6 +149,7 @@ if ( $_action eq "SEARCH" && $submit ){
 		map { $resultidx{$_->id} = $_ } Person->search_like(firstname  => $keyword);
 		map { $resultidx{$_->id} = $_ } Person->search_like(lastname   => $keyword);
 		map { $resultidx{$_->id} = $_ } Person->search_like(aliases    => $keyword);
+                map { $resultidx{$_->id} = $_ } Person->search_like(username   => $keyword);
 		$firstpass = 0;
 	    } else {
 		for my $r (keys %resultidx) {
@@ -158,6 +159,7 @@ if ( $_action eq "SEARCH" && $submit ){
 		map { $idx2{$_->id} = $_ } Person->search_like(firstname  => $keyword);
 		map { $idx2{$_->id} = $_ } Person->search_like(lastname   => $keyword);
 		map { $idx2{$_->id} = $_ } Person->search_like(aliases    => $keyword);
+                map { $idx2{$_->id} = $_ } Person->search_like(username   => $keyword);
 		for my $key (keys %idx1) {
 		    if (exists $idx2{$key}) {
 			$resultidx{$key} = $idx1{$key};
