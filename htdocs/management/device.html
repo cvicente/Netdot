@@ -95,8 +95,7 @@ if ( $o ){
 	eval { $o->add_interfaces($intaddnum) };
 	if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>$e);	
-	}
-	
+	}	
     }elsif( defined $overwrite_if_descr ){
 	eval { $o->set_overwrite_if_descr($overwrite_if_descr); };
 	if ( my $e = $@ ){
@@ -158,7 +157,6 @@ my $refresh_url = "device.html?id=$id&view=$view";
 
 <div id="sectiondetail">
 
-
 %#######################################################################
 %#
 %# Device view section
@@ -178,7 +176,12 @@ my $refresh_url = "device.html?id=$id&view=$view";
 	<a href="updatedevice.html?device=<% $id %>&action=discover">[snmp-update]</a>
 %    }
 %    if ( $manager && $manager->can($user, "delete", $o) ){
-	<a href="delete.html?table=Device&id=<% $id %>"> [delete]</a>
+%       my $default_inventory = Netdot->config->get("INVENTORY_WARNING");
+%       my $warning;
+%       if( $default_inventory && $o->inventorynumber != "" ){
+%           $warning="This device is under inventory and other actions should be taken to make sure it gets removed from inventory.";
+%       }     
+        <a href="delete.html?table=Device&id=<% $id %>&warning=<% $warning %>">[delete]</a>
 %    }
  </div> <!-- close containerheadrightoutside -->
 

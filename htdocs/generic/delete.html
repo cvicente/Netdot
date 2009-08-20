@@ -11,6 +11,7 @@ $sid           => undef
 $selectall     => undef
 $selectall_ids => undef
 $return_url    => undef
+$warning       => undef
 </%args>
 
 <%init>
@@ -63,8 +64,15 @@ my $manager = $ui->get_permission_manager($r);
    }
    $session->{objects} = \@objs;
 </%perl>
-    </ul>
+    </ul> 
+%  if ( !($warning eq "") ){
+    <nobr>
+    <p>
+    <strong>Hints : </strong>
+     <% $warning %></p>
+    </nobr>
     <br>
+%} 
     <form method="POST" action="delete.html">
     <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
     <input type="hidden" name="return_url" value="<% $return_url %>">
