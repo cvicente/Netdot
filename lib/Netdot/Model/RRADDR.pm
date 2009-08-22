@@ -105,6 +105,7 @@ sub update {
     associated with it needs to be deleted too, unless it has
     more adddress records associated with it.
     - Also, delete any RRPTR(s) with corresponding ptrdname
+    - Sets ipblock status to 'Available' if needed
 
   Arguments:
     None
@@ -118,6 +119,8 @@ sub update {
 sub delete {
     my $self = shift;
     $self->isa_object_method('delete');
+
+    my $ipblock = $self->ipblock;
     my $rr = $self->rr;
     my $rr_name = $rr->get_label;
     $self->SUPER::delete();
@@ -125,6 +128,11 @@ sub delete {
     foreach my $ptr ( RRPTR->search(ptrdname=>$rr_name) ){
 	$ptr->rr->delete();
     }
+    if ( int($ipblock->interface) == 0 && 
+	 !$ipblock->arecords ){
+	$ipblock->update({status=>"Available"});
+    }
+
     return 1;
 }
 
