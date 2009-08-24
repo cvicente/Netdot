@@ -302,7 +302,7 @@ sub insert {
     Hashref with key/value pairs, plus:
        update_ptr - (flag)
   Returns:
-    Number of rows updated or -1
+    See Netdot::Model::update
   Examples:
     $rr->update(\%args)
 
