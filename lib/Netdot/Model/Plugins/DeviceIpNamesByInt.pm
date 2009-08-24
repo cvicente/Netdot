@@ -9,7 +9,7 @@ use strict;
 my %ABBR = ('Ethernet'           => 'e-',
 	    'FastEthernet'       => 'fe-',
 	    'GigabitEthernet'    => 'ge-',
-	    'TenGigabitEthernet' => 'tge-',
+	    'TenGigabitEthernet' => 'xe-',
 	    'Serial'             => 'ser-',
 	    'Tunnel'             => 'tun-',
 	    'POS'                => 'pos-',
