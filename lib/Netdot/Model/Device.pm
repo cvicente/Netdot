@@ -1173,7 +1173,7 @@ sub snmp_update_from_file {
     
   Arguments:
     Hash containing the following keys:
-    name          Host name (required)
+    name          Host name or ip address (required)
     session       SNMP Session (optional)
     communities   Arrayref of SNMP communities
     version       SNMP version
@@ -1205,11 +1205,62 @@ sub discover {
     my $info  = $argv{info}    || 0;
     my $sinfo = $argv{session} || 0;
     my $dev;
+    my $ip;
+
+    #lets check to make sure we didn't get an ip address.   
+    #not entirly sure this will work on IPV6 addresses, so I'm leaving that out for now 
+    use Socket;    
+    if($argv{name} =~ /^$IPV4$/){        
+	    $ip = $name;
+        $name = gethostbyaddr((inet_aton($name)), AF_INET);    
+    }
+    else{
+        #this seems a bit round-about, but to get the fully qualified host name, we can get the ip from the 
+        #name provided, then turn that back into a hostname.  That way "carlos-sw1" becomes "carlos-sw1.uoregon.edu"
+        my $p = gethostbyname($name);
+        if($p){
+            $ip = inet_ntoa($p);
+            $name = gethostbyaddr(inet_aton($ip), AF_INET);
+        }
+        else{
+            $class->throw_fatal("Cannot resolve ".$argv{name}." please enter a valid hostname or ip address");
+        } 
+    }
+
+    #Now we have a fully qualified hostname in $name, and an ip adress in $ip
+    #we will search zone with the fully qualified host name, and see what zone it returns
+    my $zone_hash = Zone->search(name=>$name)->first;
+    my $zone_name = $zone_hash->{name};
+    my $zone_id = $zone_hash->{id};
+
+    #we need to check and make sure there isn't a device in 
+    #the database with the same phyiscal address and/or serial number 
+    my $initial_snmp_results = Device->get_snmp_info(host=>$name);
+    $sinfo = Device->_get_snmp_session(host=>$name);
+    my ($snmp_serial_number, $phys_addr_obj, $SN_exists);
+    if($initial_snmp_results){
+        $snmp_serial_number = $initial_snmp_results->{serialnumber};
+        $phys_addr_obj = PhysAddr->search(address=>($initial_snmp_results->{physaddr}))->first;
+    }
     
-    if ( $dev = Device->search(name=>$name)->first ){
-	$logger->debug(sub{"Device::discover: Device $name already exists in DB"});
-    }else{
-	$logger->debug(sub{"Device::discover: Device $name does not yet exist"});
+    if ($dev = Device->search(name=>$name)->first){
+        $logger->debug(sub{"Device::discover: Device $name already exists in DB"});
+    }
+
+    elsif($snmp_serial_number && Device->search(serialnumber=>$snmp_serial_number)->first){
+        $dev = Device->search(serialnumber=>$snmp_serial_number)->first;
+        $logger->debug(sub{"Device::discover: Device already exists in db with serial number $snmp_serial_number"});
+        $SN_exists = 1;
+    }
+
+    elsif($phys_addr_obj && Device->search(physaddr=>($phys_addr_obj->id))->first){
+        $dev = Device->search(physaddr=>$phys_addr_obj->id)->first;
+        $logger->debug(sub{"Device::discover: Device already exists in db with physical address ".$phys_addr_obj->address});
+        $SN_exists = 1; #using this to indicate this device exists with another name in the DB
+    }
+
+    else{
+    	$logger->debug(sub{"Device::discover: Device $name does not yet exist"});
 	unless ( $info ){
 	    unless ( $sinfo ){
 		
@@ -1271,7 +1322,40 @@ sub discover {
 	$devtmp{name} = $newname;
 	$dev = $class->insert(\%devtmp);
     }
-    
+
+    if($SN_exists){
+        #We can update the resource record now, since the device has likely moved
+        #first get the rr record associated with the devices name
+         
+        my $rr_entry = RR->search(id=>$dev->{name})->first;
+        
+
+        #since $name contains the fully quallified host name, we chop off everything after the first "."
+        #to get the new name for the rr entry
+        my $new_rr_name = substr($name, 0, index($name, "."));
+
+        #since we can't have duplicate entries, we need to check and see if the name/zone combo already exists 
+        #in the rr table, if it does, we'll just set the device's RR to it
+        my $existing_rr_entry = RR->search(name=>$new_rr_name, zone=>$zone_id)->first;
+
+        if(!$argv{pretend}){
+            #we already have an existing rr entry with the right name and zone, set dev to that rr name
+            if($existing_rr_entry && !$argv{pretend}){
+                $dev->update({name=>$existing_rr_entry->{id}})
+            }
+            #update the current rr entry with a new name and zone id.
+            else{
+                if($rr_entry->update({name=>$new_rr_name, zone=>$zone_id}) == -1){
+                    $class-throw_fatal("Could not update resource record name to $new_rr_name");
+                }
+                if($rr_entry->update({zone=>$zone_id}) == -1){
+                    $class-throw_fatal("Could not update rr zone to $zone_id");                
+                }
+            }
+        }
+        $logger->info("Device hostname changed to $new_rr_name in zone $zone_id ($zone_name)");
+    }   
+
     # Get relevant snmp_update args
     my %uargs;
     foreach my $field ( qw(communities timeout retries add_subnets subs_inherit 
@@ -2651,10 +2735,12 @@ Returns:    Sorted arrayref of interface objects
 =cut
 
 sub ints_by_jack {
-    my ( $self, $o ) = @_;
-    $self->isa_object_method('ints_by_jack');
+    my ( $self ) = @_;
 
-    my @ifs = $o->interfaces();
+    $self->isa_object_method('ints_by_jack');
+    
+    my @ifs = $self->interfaces();
+
     my @tmp = map { [ ($_->jack) ? $_->jack->jackid : 0, $_] } @ifs;
     @ifs = map { $_->[1] } sort { $a->[0] cmp $b->[0] } @tmp;
 
@@ -2904,7 +2990,7 @@ sub get_bgp_peers {
     True if successful
   Example:
     $device->set_overwrite_if_descr(1);
-
+$logger->info
 =cut
 sub set_overwrite_if_descr {
     my ($self, $value) = @_;
