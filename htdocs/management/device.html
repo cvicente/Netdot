@@ -411,15 +411,6 @@ push( @cell_data, &{sub{
 		       makeLink=>1, linkPage=>"view.html", htmlExtra=>$room_js, returnAsVar=>1)
     }} );
 
-my $closetlink = $ui->col_descr_link('Device', 'closet', 'Closet:');  
-push( @field_headers, " or $closetlink",  );
-push( @cell_data, &{sub{
-    my $closet_js = sprintf("onChange=\"setNull(document.netdotform.Device__%d__room);\"", $id);
-    $ui->select_lookup(object=>$o, column=>"closet", lookup=>"Closet", 
-		       edit=>$editloc, where=>{site=>($o ? $o->site : "")}, 
-		       makeLink=>1, linkPage=>"../cable_plant/closet.html", htmlExtra=>$closet_js, returnAsVar=>1)
-    }} );
-
 {
 my @fields = ('rack');
 $ui->add_to_fields(o=>$o, edit=>$editloc, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);

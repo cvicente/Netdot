@@ -1065,19 +1065,6 @@ $meta = {
         tag => 'Dimensions (")',
         type => 'varchar'
       },
-      floor => {
-        default => '',
-        description => '',
-        length => '',
-        linksto => {
-          cascade => 'Delete',
-          method => 'closets',
-          table => 'Floor'
-        },
-        nullable => 0,
-        tag => 'Floor',
-        type => 'integer'
-      },
       ground_buss => {
         default => '',
         description => '',
@@ -1118,13 +1105,18 @@ $meta = {
         tag => 'Name',
         type => 'varchar'
       },
-      number => {
+      room => {
         default => '',
-        description => 'Equivalent to a Room Number',
-        length => '32',
+        description => 'The Room number for a closet(Closet is encoded as part of Room)',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'closets',
+          table => 'Room'
+        },
         nullable => 0,
-        tag => 'Number',
-        type => 'varchar'
+        tag => 'Room',
+        type => 'integer'
       },
       outlets => {
         default => '',
@@ -1216,9 +1208,6 @@ $meta = {
       [
         'number'
       ],
-      [
-        'floor'
-      ]
     ],
     isjoin => '0',
     label => [ 'name', 'number', 'site' ],
@@ -1229,7 +1218,6 @@ $meta = {
         'name',
         'number',
         'site',
-        'floor',
         'dimensions',
         'racks',
         'outlets',
@@ -1253,7 +1241,6 @@ $meta = {
         'name',
         'number',
         'site',
-        'floor'
       ]
     }
   },

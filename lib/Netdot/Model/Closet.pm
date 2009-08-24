@@ -70,13 +70,13 @@ sub _validate {
 	$argv->{site}   = $self->site   unless ( defined $argv->{site}  );
 	$argv->{floor}  = $self->floor  unless ( defined $argv->{floor} );
 	$argv->{name}   = $self->name   unless ( defined $argv->{name} );
-	$argv->{number} = $self->number unless ( defined $argv->{number} );
+	$argv->{room} = $self->room unless ( defined $argv->{room} );
     }
 
     $self->throw_user("A Closet name is required")
 	unless ( $argv->{name} );
-    $self->throw_user("A Closet number is required")
-	unless ( $argv->{number} );
+    $self->throw_user("A Room/Closet number is required")
+	unless ( $argv->{room} );
 
     if ( $argv->{floor} ){
 	my $floor = Floor->retrieve(int($argv->{floor}));
