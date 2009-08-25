@@ -1190,21 +1190,17 @@ $meta = {
         'name'
       ],
       [
-        'site'
-      ],
-      [
-        'number'
+        'room'
       ],
     ],
     isjoin => '0',
-    label => [ 'name', 'number', 'site' ],
+    label => [ 'name', 'room' ],
     primary_key => 'id',
     unique => [],
     views => {
       all => [
         'name',
-        'number',
-        'site',
+        'room',
         'dimensions',
         'racks',
         'outlets',
@@ -1226,8 +1222,7 @@ $meta = {
       ],
       brief => [
         'name',
-        'number',
-        'site',
+        'room',
       ]
     }
   },
@@ -3917,6 +3912,14 @@ $meta = {
         tag => undef,
         type => 'integer'
       },
+      ignore_ip => {
+        default => '',
+        description => 'Ignore IP address information. Netdot will not insert IP addresses or subnets based on information fro this interface.',
+        length => '',
+        nullable => 0,
+        tag => 'Ingore IP?',
+        type => 'bool'
+      },
       info => {
         default => '',
         description => 'Comments',
@@ -4147,6 +4150,7 @@ $meta = {
 	'bpdu_guard_enabled',
 	'loop_guard_enabled',
 	'root_guard_enabled',
+	'ignore_ip',
         'dp_remote_id',
         'dp_remote_ip',
         'dp_remote_port',

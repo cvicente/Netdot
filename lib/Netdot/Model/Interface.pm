@@ -450,7 +450,11 @@ sub snmp_update {
 				ipv6_changed => $ipv6_changed,
 		    );
 		$iargs{vlan} = $vlan if $vlan;
-		$self->update_ip(%iargs);
+		if ( $self->ignore_ip ){
+		    $logger->debug(sub{sprintf("%s: Ignoring IP information", $label)});
+		}else{
+		    $self->update_ip(%iargs);
+		}
 	    }
 	}
     } 
