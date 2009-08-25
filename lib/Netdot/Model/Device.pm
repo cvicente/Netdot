@@ -1207,80 +1207,50 @@ sub discover {
     my $dev;
     my $ip;
 
-    #lets check to make sure we didn't get an ip address.   
-
-    my $dns = Netdot::Util::DNS->new();
-
-    if($argv{name} =~ /^$IPV4$/){        
-	    $ip = $name;
-        $name = $dns->resolve_any($ip);
-    }
-    else{
-        #this seems a bit round-about, but to get the fully qualified host name, we can get the ip from the 
-        #name provided, then turn that back into a hostname.  That way "switch-1" becomes "switch-1.urcompany.com"
-        $ip = ($dns->resolve_name($name))[0];
-        if($ip){
-            $name = $dns->resolve_any($ip);
-        }
-        else{
-            $class->throw_fatal("Cannot resolve ".$argv{name}." please enter a valid hostname or ip address");
-        }
-    }
-
-    #Now we have a fully qualified hostname in $name, and an ip adress in $ip
-    #we will search zone with the fully qualified host name, and see what zone it returns
-    my $zone_hash = Zone->search(name=>$name)->first;
-    my $zone_name = $zone_hash->name;
-    my $zone_id = $zone_hash->id;
-
     #we need to check and make sure there isn't a device in 
     #the database with the same phyiscal address and/or serial number 
-    unless($info){
-        $info = Device->get_snmp_info(host=>$name);
+    unless ( $info ){
+	unless ( $sinfo ){
+	    $sinfo = $class->_get_snmp_session(host        => $name,
+					       communities => $argv{communities},
+					       version     => $argv{version},
+					       timeout     => $argv{timeout},
+					       retries     => $argv{retries},
+		);
+	}
+	$info = $class->_exec_timeout($name, 
+				      sub{ return $class->get_snmp_info(session   => $sinfo,
+									bgp_peers => $argv{bgp_peers},
+					       ) });
     }
 
-    $sinfo = Device->_get_snmp_session(host=>$name);
-
-    my ($snmp_serial_number, $phys_addr_obj, $device_exists);
-
-    if($info){
-        $snmp_serial_number = $info->{serialnumber};
-        $phys_addr_obj = PhysAddr->search(address=>($info->{physaddr}))->first;
-    }
+    my $device_exists;
+    my $snmp_serial_number = $info->{serialnumber};
+    my $sysobjectid        = $info->{sysobjectid};
+    my $phys_addr_obj      = PhysAddr->search(address=>($info->{physaddr}))->first;
     
     if ($dev = Device->search(name=>$name)->first){
         $logger->debug(sub{"Device::discover: Device $name already exists in DB"});
     }
 
-    elsif($snmp_serial_number && Device->search(serialnumber=>$snmp_serial_number)->first){
-        $dev = Device->search(serialnumber=>$snmp_serial_number)->first;
-        $logger->debug(sub{"Device::discover: Device already exists in db with serial number $snmp_serial_number"});
+    elsif($snmp_serial_number && $sysobjectid){
+	my %search_args = (serialnumber=>$snmp_serial_number);
+	if ( my $product = Product->search(sysobjectid=>$sysobjectid)->first ){
+	    $search_args{product} = $product;
+	}
+	$dev = Device->search(%search_args)->first;
+        $logger->info(sub{"Device::discover: Device already exists in db with serial number $snmp_serial_number"});
         $device_exists = 1;
     }
 
     elsif($phys_addr_obj && Device->search(physaddr=>($phys_addr_obj->id))->first){
         $dev = Device->search(physaddr=>$phys_addr_obj->id)->first;
-        $logger->debug(sub{"Device::discover: Device already exists in db with physical address ".$phys_addr_obj->address});
+        $logger->info(sub{"Device::discover: Device already exists in db with physical address ".$phys_addr_obj->address});
         $device_exists = 1; #using this to indicate this device exists with another name in the DB
     }
 
     else{
     	$logger->debug(sub{"Device::discover: Device $name does not yet exist"});
-	unless ( $info ){
-	    unless ( $sinfo ){
-		
-		$sinfo = $class->_get_snmp_session(host        => $name,
-						   communities => $argv{communities},
-						   version     => $argv{version},
-						   timeout     => $argv{timeout},
-						   retries     => $argv{retries},
-		    );
-	    }
-	    $info = $class->_exec_timeout($name, 
-					  sub{ return $class->get_snmp_info(session   => $sinfo,
-									    bgp_peers => $argv{bgp_peers},
-						   ) });
-	}
 	# Set some values in the new Device based on the SNMP info obtained
 	my $main_ip = $class->_get_main_ip($info);
 	my $host    = $main_ip || $name;
@@ -1330,30 +1300,12 @@ sub discover {
 
     if($device_exists){
         #We can update the resource record now, since the device has likely moved
-        #first get the rr record associated with the devices name
-         
-        my $rr_entry = $dev->name;
-        
-        #since $name contains the fully quallified host name, we chop off everything after the first "."
-        #to get the new name for the rr entry
-        my $new_rr_name = substr($name, 0, index($name, "."));
-
-        #since we can't have duplicate entries, we need to check and see if the name/zone combo already exists 
-        #in the rr table, if it does, we'll just set the device's RR to it
-        my $existing_rr_entry = RR->search(name=>$new_rr_name, zone=>$zone_id)->first;
-
+        my $old_rr = $dev->name;
+	my $new_rr = $class->assign_name(host=>$argv{name});
         if(!$argv{pretend}){
-            #we already have an existing rr entry with the right name and zone, set dev to that rr name
-            if($existing_rr_entry && !$argv{pretend}){
-                $dev->update({name=>$existing_rr_entry->{id}})
-            }
-            #update the current rr entry with a new name and zone id.
-            else{
-                $rr_entry->update({name=>$new_rr_name, zone=>$zone_id});
-                $rr_entry->update({zone=>$zone_id});
-            }
+	    $dev->update({name=>$new_rr})
         }
-        $logger->info("$new_rr_name.$zone_name Device hostname changed to $new_rr_name in zone $zone_id ($zone_name)");
+        $logger->info("Device::discover: ".$old_rr->get_label.": hostname updated to ".$dev->get_label);
     }   
 
     # Get relevant snmp_update args
