@@ -13,13 +13,14 @@ section => 'Management'
 $id
 $user => $ui->get_current_user($r)
 $view => undef
+$edit => undef
 </%args>
 %
 %
 <%init>
 my $DEBUG = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
-
+my $table = 'Interface';
 
 # Check if user can access this page
 # We don't want average users seeing this page, its only for admins and operators.
@@ -63,6 +64,7 @@ my %linksfrom = Interface->meta_data->get_links_from;
 		  <a href="interface.html?id=<% $obj %>&view=all">[all]</a>
 %             }
 %             foreach my $i ( sort keys %linksfrom ){
+%               next if $i eq 'neighbors';
 %               if ( $view eq $i ){
                    [<% $i %>]
 %               }else{
@@ -75,76 +77,116 @@ my %linksfrom = Interface->meta_data->get_links_from;
       </div>
 <!-- End Display has_many possibilities-->
 
-
 <!-- Display has_many objects -->
 
-%##############################################################################################
-% if( ($view eq 'all' || $view eq 'vlans') && (my @ivlans = $obj->vlans) ){
-%     my @vlans = map { $_->vlan } @ivlans;
-      <div class="containerhead">VLANs</div>
-	  <div class="container">
-	      <& /generic/sortresults.mhtml, object => \@vlans &>
-          </div>
-      </div>
-% }
-
-
-%##############################################################################################
+%foreach my $i ( keys %linksfrom ){
+%    if ( ($view eq 'all' || $view eq $i ) ){
+%	# Special cases
+%       next if $i eq 'neighbors';
+%	if( $i eq 'vlans' && (my @ivlans = $obj->vlans) ){
+%           my @vlans = map { $_->vlan } @ivlans;
+            <div class="containerhead">VLANs</div>
+	        <div class="container">
+	           <& /generic/sortresults.mhtml, object => \@vlans &>
+                </div>
+            </div>
+%        }elsif( $i eq 'fwt_entries' ){
 <%perl>
-if( $view eq 'all' || $view eq 'fwt_entries' ){
-    my $sth1 = $dbh->prepare("SELECT   ft.tstamp 
-                              FROM     interface i, fwtable ft, fwtableentry fte 
-                              WHERE    fte.interface=i.id 
-                                 AND   fte.fwtable=ft.id 
-                                 AND   i.id=?
-                              GROUP BY ft.tstamp
-                              ORDER BY ft.tstamp DESC");
-$sth1->execute($id);
-$fdb_tstamps = $sth1->fetchall_arrayref();
-my $fdb_count = scalar(@$fdb_tstamps);
-my @headers = ("Timestamp");
-my @rows;
+            my $sth1 = $dbh->prepare("SELECT   ft.tstamp 
+                                      FROM     interface i, fwtable ft, fwtableentry fte 
+                                      WHERE    fte.interface=i.id 
+                                         AND   fte.fwtable=ft.id 
+                                         AND   i.id=?
+                                      GROUP BY ft.tstamp
+                                      ORDER BY ft.tstamp DESC");
 </%perl>
+%            $sth1->execute($id);
+%            $fdb_tstamps = $sth1->fetchall_arrayref();
+%            my $fdb_count = scalar(@$fdb_tstamps);
+%            my @headers = ("Timestamp");
+%            my @rows;
+%            if ( $fdb_count ){
+                <div class="containerhead">FWT entries</div>
+%               foreach my $row (@$fdb_tstamps){
+%	            my ($tstamp) = @$row;
+%                   push @rows, ["<a href=\"i_fdb.html?id=$id&tstamp=$tstamp\">$tstamp</a>"];
+%               }
+%               $m->comp('/generic/data_table.mhtml', field_headers=>\@headers, data=>\@rows);
+                </div>
+%            }
 
-%  if ( $fdb_count ){
-    <div class="containerhead">FWT entries</div>
-%    foreach my $row (@$fdb_tstamps){
-%	my ($tstamp) = @$row;
-%       push @rows, ["<a href=\"i_fdb.html?id=$id&tstamp=$tstamp\">$tstamp</a>"];
-%    }
-%    $m->comp('/generic/data_table.mhtml', field_headers=>\@headers, data=>\@rows);
-    </div>
-%  }
-% }
-%##############################################################################################
+%        }elsif( $i eq 'arp_entries' ){
 <%perl>
-if( $view eq 'all' || $view eq 'arp_entries' ){
-    my $sth2 = $dbh->prepare("SELECT   arp.tstamp 
-                              FROM     interface i, arpcache arp, arpcacheentry arpe
-                              WHERE    arpe.interface=i.id 
-                                 AND   arpe.arpcache=arp.id 
-                                 AND   i.id=?
-                              GROUP BY arp.tstamp
-                              ORDER BY arp.tstamp DESC");
-$sth2->execute($id);
-my $arp_tstamps = $sth2->fetchall_arrayref();
-my $arp_count = scalar(@$arp_tstamps);
-my @headers = ("Timestamp");
-my @rows = ();
+             my $sth2 = $dbh->prepare("SELECT   arp.tstamp 
+                                        FROM     interface i, arpcache arp, arpcacheentry arpe
+                                        WHERE    arpe.interface=i.id 
+                                           AND   arpe.arpcache=arp.id 
+                                           AND   i.id=?
+                                        GROUP BY arp.tstamp
+                                        ORDER BY arp.tstamp DESC");
 </%perl>
+%             $sth2->execute($id);
+%             my $arp_tstamps = $sth2->fetchall_arrayref();
+%             my $arp_count = scalar(@$arp_tstamps);
+%             my @headers = ("Timestamp");
+%             my @rows = ();
+%             if ( $arp_count ){
+                  <div class="containerhead">ARP entries</div>
+%                 foreach my $row (@$arp_tstamps){
+%	              my ($tstamp) = @$row;
+%                     push @rows, ["<a href=\"i_arp.html?id=$id&tstamp=$tstamp\">$tstamp</a>"];
+%                 }
+%                 $m->comp('/generic/data_table.mhtml', field_headers=>\@headers, data=>\@rows);
+                  </div>
+%              }
 
-%  if ( $arp_count ){
-    <div class="containerhead">ARP entries</div>
-%    foreach my $row (@$arp_tstamps){
-%	my ($tstamp) = @$row;
-%       push @rows, ["<a href=\"i_arp.html?id=$id&tstamp=$tstamp\">$tstamp</a>"];
-%    }
-%    $m->comp('/generic/data_table.mhtml', field_headers=>\@headers, data=>\@rows);
-    </div>
-%  }
-% }
-</div>
+%        }else{
+%	    # Table that points to us
+%	    my $j = (keys %{ $linksfrom{$i} })[0];
+%	    
+%	    # Column in the other table that points to this table
+%	    my $ffield = $linksfrom{$i}{$j};
+%	    
+%	    # Determine if the has_many method returns ordered data from the db
+%	    my $ffattrs = $j->meta_data->get_column($ffield)->links_to_attrs();
+%	    my $ffield_order = $ffattrs->{order_by} if ( defined $ffattrs && exists $ffattrs->{order_by} );
+%	    
+%	    my @robjs = $obj->$i;
+%	    my $dtbl  = $j;
+%	    my $ctbl  = $j; 
+%	
+%	    my %args = ( table=>$dtbl, object=>\@robjs );	
+%	    my $num = scalar(@robjs);
+%	    my $title = $i;
+%	    $title .= " ($num)" if $num;	     
+            <div class="container">
+                <div class="containerheadleft"><% $title %></div>
+	    <div class="containerheadright">
+%           if ( $edit eq $i ){	    
+                &nbsp;
+%           }else{
+%	        if ( $num ){
+                    <a href="view.html?table=<% $table %>&id=<% $id %>&view=<% $view %>&edit=<% $i %>">[edit]</a>
+%	        }
+	        <a href="edit.html?table=<% $ctbl %>&<% $ffield %>=<% $obj %>">[add]</a>
+%           }
+	    </div>
 
+%	    if ( $edit eq $i ){
+%               $args{withedit} = 1;
+%	    }else{
+%           # If data came ordered from the db, tell sortresults not to bother sorting
+%              $args{sort} = 0 if ( $ffield_order );
+%           }
+%	    if ( $num ) {
+%               $args{return_args} = "?table=$table&id=$id&view=$view";
+%               $m->comp('/generic/sortresults.mhtml', %args);
+%           }
+            </div>
+%        } #else
+
+%    } # if view
+%}# foreach
 
 <!-- End Display has_many objects -->
 
