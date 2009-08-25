@@ -1217,7 +1217,7 @@ sub discover {
     }
     else{
         #this seems a bit round-about, but to get the fully qualified host name, we can get the ip from the 
-        #name provided, then turn that back into a hostname.  That way "carlos-sw1" becomes "carlos-sw1.uoregon.edu"
+        #name provided, then turn that back into a hostname.  That way "switch-1" becomes "switch-1.urcompany.com"
         $ip = ($dns->resolve_name($name))[0];
         if($ip){
             $name = $dns->resolve_any($ip);
@@ -1235,9 +1235,12 @@ sub discover {
 
     #we need to check and make sure there isn't a device in 
     #the database with the same phyiscal address and/or serial number 
-    $info = Device->get_snmp_info(host=>$name);
+    unless($info){
+        $info = Device->get_snmp_info(host=>$name);
+    }
 
     $sinfo = Device->_get_snmp_session(host=>$name);
+
     my ($snmp_serial_number, $phys_addr_obj, $device_exists);
 
     if($info){
@@ -1350,7 +1353,7 @@ sub discover {
                 $rr_entry->update({zone=>$zone_id});
             }
         }
-        $logger->info("Device hostname changed to $new_rr_name in zone $zone_id ($zone_name)");
+        $logger->info("$new_rr_name.$zone_name Device hostname changed to $new_rr_name in zone $zone_id ($zone_name)");
     }   
 
     # Get relevant snmp_update args
