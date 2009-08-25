@@ -50,6 +50,7 @@ my $default_owner;
 my $default_cl;
 my $logger;
 my $logstr;
+my $dev_exists_notice = 0;
 
 print "ARGS contains: <pre>", Dumper(%ARGS), "</pre>" if $DEBUG;
 
@@ -71,41 +72,67 @@ if( $sid ) {
 }
 
 if ( $action eq "discover" ){
+
+    if($host){
+        #we need this later to check if the device already exists in the db, with a different name
+        #the device may not be reachable via snmp, and if that is the case, keep going.
+        eval{
+            $info = Device->get_snmp_info(host=>$host);
+        };      
+    }
+    
     if ( $device ){
-	# We got a device id, so we're most likely updating
-	my $o = Device->retrieve($device);
-	unless ( $o ){
-	    $m->comp('/generic/error.mhtml', error=>"Could not retrieve Device id: $device");
-	}
-	$argv{device} = $device;
-	$host = $o->fqdn;
+	    # We got a device id, so we're most likely updating
+	    my $o = Device->retrieve($device);
+	    unless ( $o ){
+	        $m->comp('/generic/error.mhtml', error=>"Could not retrieve Device id: $device");
+	    }
+	    $argv{device} = $device;
+	    $host = $o->fqdn;
 
-	# Fetch SNMP info
-	eval {
-	    $info = $o->get_snmp_info();
-	};
-	if ( my $e = $@ ){
-	    $m->comp('/generic/error.mhtml', error=>$e);
-	}
-
-    }elsif ( $host ){
-	$host =~ s/\s*//g;
-	# We're not aware of an existing device yet
-	# Make sure we don't have a device by this name already
-	
-	if ( my $o = Device->search(name=>$host)->first ){
-
-	    $argv{device} = $o->id;
-	    
 	    # Fetch SNMP info
 	    eval {
-		$info = $o->get_snmp_info();
+	        $info = $o->get_snmp_info();
 	    };
-	    if ( my $e = $@ ){
-		$m->comp('/generic/error.mhtml', error=>$e);
+
+        if ( my $e = $@ ){
+            $m->comp('/generic/error.mhtml', error=>$e);
 	    }
 
-	}else{
+    }
+    elsif ( $host ){
+	    $host =~ s/\s*//g;
+
+	    # We're not aware of an existing device yet
+	    # Make sure we don't have a device by this name already
+	    if ( my $o = Device->search(name=>$host)->first ){
+	        $argv{device} = $o->id;
+
+	        # Fetch SNMP info
+
+	        eval {
+		        $info = $o->get_snmp_info();
+	        };
+
+	        if ( my $e = $@ ){
+		        $m->comp('/generic/error.mhtml', error=>$e);
+	        }
+
+        }
+
+        #make sure we don't have any devices with this SN already
+        elsif($info->{serialnumber} && Device->search(serialnumber=>$info->{serialnumber})->first){
+
+            $o = Device->search(serialnumber=>$info->{serialnumber})->first;
+            $dev_exists_notice = "Device SN ". $o->serialnumber. " exists on the network, but its name has changed";
+
+            $argv{device} = $o->id;
+            $argv{name} = $host;
+
+            #$rr_entry->name = $host;
+    }
+    
+    else{
 	    # Looks like we have to create a new device
 	    $argv{name} = $host;
 
@@ -185,9 +212,11 @@ if ( $action eq "discover" ){
     # is not being used (wasting memory) except when this component is called.
     # We look it up before creating it in case this process ended abruptly earlier.
     $logger = Netdot->log->get_logger('Netdot::Model::Device');
+    
     if ( $logstr = Log::Log4perl::appender_by_name('updatedevice.html') ){
-	Log::Log4perl->eradicate_appender('updatedevice.html');
+	    Log::Log4perl->eradicate_appender('updatedevice.html');
     }
+
     $logstr = Netdot::Util::Log->new_appender('String', name=>'updatedevice.html');
     $logger->add_appender($logstr);
     
@@ -195,35 +224,48 @@ if ( $action eq "discover" ){
     print "argv contains: <pre>",  Dumper(%argv), "</pre>" if $DEBUG;
     
     if ( exists $argv{device} ){
-	unless ( $o = Device->retrieve($argv{device}) ){
-	    $m->comp('/generic/error.mhtml', error=>"Could not retrieve Device id: $device");
-	}
 
-	my %uargs = (info=>$argv{info}, do_info=>1);
-	$uargs{pretend} = 1 if $pretend;
-	eval {
-	    $o->snmp_update(%uargs);
-	};
-	if ( my $e = $@ ){
-	    $m->comp('/generic/error.mhtml', error=>$e);
-	}
-    }else{
-	$argv{owner}        = $owner          ||  0;
-	$argv{used_by}      = $used_by        ||  0;
-	$argv{site}         = $site           ||  0;
-	$argv{contacts}     = $contacts       ||  "";
-	$argv{add_subnets}  = $add_subnets;
-	$argv{subs_inherit} = $subs_inherit;
-	eval {
-	    $o = Device->discover(%argv);
-	};
-	if ( my $e = $@ ){
-	    $m->comp('/generic/error.mhtml', error=>$e);
-	}
+	    unless ( $o = Device->retrieve($argv{device}) ){
+	        $m->comp('/generic/error.mhtml', error=>"Could not retrieve Device id: $device");
+	    }
+
+	    my %uargs = (info=>$argv{info}, do_info=>1);
+
+        unless($uargs{name} = $argv{name}){
+            $uargs{name} = $o->name->name;
+        }
+        $uargs{pretend} = 1 if $pretend;
+
+	    eval {
+            #we use discover here because it will correct the RR for us (if it needs correcting), 
+            #if the device has moved it calls snmp_update anyway, so its
+            #really not that different than before.
+	        $o = Device->discover(%uargs); 
+	    };
+
+	    if ( my $e = $@ ){
+	        $m->comp('/generic/error.mhtml', error=>$e);
+	    }
+    }
+    else{
+	    $argv{owner}        = $owner          ||  0;
+	    $argv{used_by}      = $used_by        ||  0;
+	    $argv{site}         = $site           ||  0;
+	    $argv{contacts}     = $contacts       ||  "";
+	    $argv{add_subnets}  = $add_subnets;
+	    $argv{subs_inherit} = $subs_inherit;
+	    eval {
+	        $o = Device->discover(%argv);
+	    };
+	    if ( my $e = $@ ){
+	        $m->comp('/generic/error.mhtml', error=>$e);
+	    }
     }
     $fqdn = $o->fqdn;
 
-}else{
+}#endif update
+
+else{
     $m->comp('/generic/error.mhtml', error => "Unknown action: $action");
 }
 
@@ -245,7 +287,12 @@ if ( $action eq "discover" ){
 
 %   my @allcls = ContactList->retrieve_all; 
 
+%if($dev_exists_notice){
+    <& /generic/attribute_table.mhtml, field_headers=>["Notice:", "Description" ], data=>[$dev_exists_notice, $info->{sysdescription}] &>
+%}
+%else{
     <& /generic/attribute_table.mhtml, field_headers=>["Description"], data=>[ $info->{sysdescription} ] &>
+%}
     <form name="netdotform" action="updatedevice.html" method="POST">
     <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
     <input type="hidden" name="host" value="<% $host %>">
