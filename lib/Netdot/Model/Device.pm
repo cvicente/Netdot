@@ -1208,39 +1208,41 @@ sub discover {
     my $ip;
 
     #lets check to make sure we didn't get an ip address.   
-    #not entirly sure this will work on IPV6 addresses, so I'm leaving that out for now 
-    use Socket;    
+
+    my $dns = Netdot::Util::DNS->new();
+
     if($argv{name} =~ /^$IPV4$/){        
 	    $ip = $name;
-        $name = gethostbyaddr((inet_aton($name)), AF_INET);    
+        $name = $dns->resolve_any($ip);
     }
     else{
         #this seems a bit round-about, but to get the fully qualified host name, we can get the ip from the 
         #name provided, then turn that back into a hostname.  That way "carlos-sw1" becomes "carlos-sw1.uoregon.edu"
-        my $p = gethostbyname($name);
-        if($p){
-            $ip = inet_ntoa($p);
-            $name = gethostbyaddr(inet_aton($ip), AF_INET);
+        $ip = ($dns->resolve_name($name))[0];
+        if($ip){
+            $name = $dns->resolve_any($ip);
         }
         else{
             $class->throw_fatal("Cannot resolve ".$argv{name}." please enter a valid hostname or ip address");
-        } 
+        }
     }
 
     #Now we have a fully qualified hostname in $name, and an ip adress in $ip
     #we will search zone with the fully qualified host name, and see what zone it returns
     my $zone_hash = Zone->search(name=>$name)->first;
-    my $zone_name = $zone_hash->{name};
-    my $zone_id = $zone_hash->{id};
+    my $zone_name = $zone_hash->name;
+    my $zone_id = $zone_hash->id;
 
     #we need to check and make sure there isn't a device in 
     #the database with the same phyiscal address and/or serial number 
-    my $initial_snmp_results = Device->get_snmp_info(host=>$name);
+    $info = Device->get_snmp_info(host=>$name);
+
     $sinfo = Device->_get_snmp_session(host=>$name);
-    my ($snmp_serial_number, $phys_addr_obj, $SN_exists);
-    if($initial_snmp_results){
-        $snmp_serial_number = $initial_snmp_results->{serialnumber};
-        $phys_addr_obj = PhysAddr->search(address=>($initial_snmp_results->{physaddr}))->first;
+    my ($snmp_serial_number, $phys_addr_obj, $device_exists);
+
+    if($info){
+        $snmp_serial_number = $info->{serialnumber};
+        $phys_addr_obj = PhysAddr->search(address=>($info->{physaddr}))->first;
     }
     
     if ($dev = Device->search(name=>$name)->first){
@@ -1250,13 +1252,13 @@ sub discover {
     elsif($snmp_serial_number && Device->search(serialnumber=>$snmp_serial_number)->first){
         $dev = Device->search(serialnumber=>$snmp_serial_number)->first;
         $logger->debug(sub{"Device::discover: Device already exists in db with serial number $snmp_serial_number"});
-        $SN_exists = 1;
+        $device_exists = 1;
     }
 
     elsif($phys_addr_obj && Device->search(physaddr=>($phys_addr_obj->id))->first){
         $dev = Device->search(physaddr=>$phys_addr_obj->id)->first;
         $logger->debug(sub{"Device::discover: Device already exists in db with physical address ".$phys_addr_obj->address});
-        $SN_exists = 1; #using this to indicate this device exists with another name in the DB
+        $device_exists = 1; #using this to indicate this device exists with another name in the DB
     }
 
     else{
@@ -1323,13 +1325,12 @@ sub discover {
 	$dev = $class->insert(\%devtmp);
     }
 
-    if($SN_exists){
+    if($device_exists){
         #We can update the resource record now, since the device has likely moved
         #first get the rr record associated with the devices name
          
-        my $rr_entry = RR->search(id=>$dev->{name})->first;
+        my $rr_entry = $dev->name;
         
-
         #since $name contains the fully quallified host name, we chop off everything after the first "."
         #to get the new name for the rr entry
         my $new_rr_name = substr($name, 0, index($name, "."));
@@ -1345,12 +1346,8 @@ sub discover {
             }
             #update the current rr entry with a new name and zone id.
             else{
-                if($rr_entry->update({name=>$new_rr_name, zone=>$zone_id}) == -1){
-                    $class-throw_fatal("Could not update resource record name to $new_rr_name");
-                }
-                if($rr_entry->update({zone=>$zone_id}) == -1){
-                    $class-throw_fatal("Could not update rr zone to $zone_id");                
-                }
+                $rr_entry->update({name=>$new_rr_name, zone=>$zone_id});
+                $rr_entry->update({zone=>$zone_id});
             }
         }
         $logger->info("Device hostname changed to $new_rr_name in zone $zone_id ($zone_name)");
