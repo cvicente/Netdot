@@ -73,87 +73,81 @@ if( $sid ) {
 
 if ( $action eq "discover" ){
 
-    if($host){
-        #we need this later to check if the device already exists in the db, with a different name
-        #the device may not be reachable via snmp, and if that is the case, keep going.
-        eval{
-            $info = Device->get_snmp_info(host=>$host);
-        };      
-    }
-    
     if ( $device ){
-	    # We got a device id, so we're most likely updating
-	    my $o = Device->retrieve($device);
-	    unless ( $o ){
-	        $m->comp('/generic/error.mhtml', error=>"Could not retrieve Device id: $device");
-	    }
-	    $argv{device} = $device;
-	    $host = $o->fqdn;
-
-	    # Fetch SNMP info
-	    eval {
-	        $info = $o->get_snmp_info();
-	    };
-
-        if ( my $e = $@ ){
-            $m->comp('/generic/error.mhtml', error=>$e);
-	    }
-
+	# We got a device id, so we're most likely updating
+	my $o = Device->retrieve($device);
+	unless ( $o ){
+	    $m->comp('/generic/error.mhtml', error=>"Could not retrieve Device id: $device");
+	}
+	$argv{device} = $device;
+	$host = $o->fqdn;
+	
+	# Fetch SNMP info
+	eval {
+	    $info = $o->get_snmp_info();
+	};
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);
+	}
+	
     }
     elsif ( $host ){
-	    $host =~ s/\s*//g;
-
-	    # We're not aware of an existing device yet
-	    # Make sure we don't have a device by this name already
-	    if ( my $o = Device->search(name=>$host)->first ){
-	        $argv{device} = $o->id;
-
-	        # Fetch SNMP info
-
-	        eval {
-		        $info = $o->get_snmp_info();
-	        };
-
-	        if ( my $e = $@ ){
-		        $m->comp('/generic/error.mhtml', error=>$e);
-	        }
-
-        }
-
-        #make sure we don't have any devices with this SN already
-        elsif($info->{serialnumber} && Device->search(serialnumber=>$info->{serialnumber})->first){
-
-            $o = Device->search(serialnumber=>$info->{serialnumber})->first;
-            $dev_exists_notice = "Device SN ". $o->serialnumber. " exists on the network, but its name has changed";
-
-            $argv{device} = $o->id;
-            $argv{name} = $host;
-
-            #$rr_entry->name = $host;
-    }
+	$host =~ s/\s*//g;
+	
+	# Give preference to the community being passed
+	my $communities; 
+	if ($comstr eq "Other"){
+	    $communities = [$otherComstr] if defined $otherComstr;
+	}else{
+	    $communities = [$comstr] if defined $comstr;
+	}
+	
+	# Fetch SNMP info
+	eval {
+	    $info = Device->get_snmp_info(host=>$host, communities=>$communities, %argv);
+	};
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);
+	}
+	print "info contains: <pre>", Dumper(%$info), "</pre>" if $DEBUG;
+	
+	# Make sure we don't have a device by this name already
+	if ( my $o = Device->search(name=>$host)->first ){
+	    $argv{device} = $o->id;
+	}
+	
+	# Make sure we don't have any devices with this SN already
+	elsif( !$o && $info->{serialnumber} ){
+	    my %search_args = (serialnumber=>$info->{serialnumber});
+	    if ( $info->{sysobjectid} && 
+		 (my $product = Product->search(sysobjectid=>$info->{sysobjectid})->first) ){
+		$search_args{product} = $product;
+	    }
+	    if ( $o = Device->search(%search_args)->first ){
+		$dev_exists_notice = "Device SN ". $o->serialnumber.
+		    " exists in the DB, but its name has changed";
+		$argv{device} = $o->id;
+		$argv{name}   = $host;
+	    }
+	}
+	
+	# Make sure we don't have any devices with this PhysAddr already
+	elsif( !$o && $info->{physaddr} ){
+	    if ( my $physaddr = PhysAddr->search(address=>$info->{physaddr})->first ){
+		if ( $o = Device->search(physaddr=>$physaddr)->first ){
+		    $logger->info(sub{"Device::discover: Device already exists in DB with physical address ".$physaddr->address});
+		    $dev_exists_notice = "Device with physical address ". $physaddr->address. 
+			" exists in the DB, but its name has changed";
+		    $argv{device} = $o->id;
+		    $argv{name}   = $host;
+		}
+	    }
+	}
     
-    else{
+	else{
 	    # Looks like we have to create a new device
 	    $argv{name} = $host;
-
-	    # Give preference to the community being passed
-	    my $communities; 
-	    if ($comstr eq "Other"){
-                $communities = [$otherComstr] if defined $otherComstr;
-            }else{
-                $communities = [$comstr] if defined $comstr;
-            }
-
-	    # Fetch SNMP info
-	    eval {
-		$info = Device->get_snmp_info(host=>$host, communities=>$communities, %argv);
-	    };
-	    if ( my $e = $@ ){
-		$m->comp('/generic/error.mhtml', error=>$e);
-	    }
-
-	    print "info contains: <pre>", Dumper(%$info), "</pre>" if $DEBUG;
-
+	    
 	    # Try to guess the user entity based on the subnet
 	    # Note that we're using the first IP address found
 	    # So it might not be totally accurate, especially for

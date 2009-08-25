@@ -1224,29 +1224,31 @@ sub discover {
 					       ) });
     }
 
-    my $device_exists;
-    my $snmp_serial_number = $info->{serialnumber};
-    my $sysobjectid        = $info->{sysobjectid};
-    my $phys_addr_obj      = PhysAddr->search(address=>($info->{physaddr}))->first;
+    my $device_changed_name;
     
-    if ($dev = Device->search(name=>$name)->first){
+    if ( $dev = Device->search(name=>$name)->first ){
         $logger->debug(sub{"Device::discover: Device $name already exists in DB"});
     }
 
-    elsif($snmp_serial_number && $sysobjectid){
-	my %search_args = (serialnumber=>$snmp_serial_number);
-	if ( my $product = Product->search(sysobjectid=>$sysobjectid)->first ){
+    elsif( !$dev && $info->{serial_number} ){
+	my %search_args = (serialnumber=>$info->{serial_number});
+	if ( $info->{sysobjectid} && 
+	     (my $product = Product->search(sysobjectid=>$info->{sysobjectid})->first) ){
 	    $search_args{product} = $product;
 	}
-	$dev = Device->search(%search_args)->first;
-        $logger->info(sub{"Device::discover: Device already exists in db with serial number $snmp_serial_number"});
-        $device_exists = 1;
+	if ( $dev = Device->search(%search_args)->first ){
+	    $logger->info(sub{"Device::discover: Device already exists in db with serial number ".$info->{serial_number}});
+	    $device_changed_name = 1;
+	}
     }
 
-    elsif($phys_addr_obj && Device->search(physaddr=>($phys_addr_obj->id))->first){
-        $dev = Device->search(physaddr=>$phys_addr_obj->id)->first;
-        $logger->info(sub{"Device::discover: Device already exists in db with physical address ".$phys_addr_obj->address});
-        $device_exists = 1; #using this to indicate this device exists with another name in the DB
+    elsif( !$dev && $info->{physaddr} ){
+	if ( my $physaddr = PhysAddr->search(address=>($info->{physaddr}))->first ){
+	    if ( $dev = Device->search(physaddr=>$physaddr)->first ){
+		$logger->info(sub{"Device::discover: Device already exists in db with physical address ".$physaddr->address});
+		$device_changed_name = 1; #using this to indicate this device exists with another name in the DB
+	    }
+	}
     }
 
     else{
@@ -1298,7 +1300,7 @@ sub discover {
 	$dev = $class->insert(\%devtmp);
     }
 
-    if($device_exists){
+    if( $device_changed_name ){
         #We can update the resource record now, since the device has likely moved
         my $old_rr = $dev->name;
 	my $new_rr = $class->assign_name(host=>$argv{name});
