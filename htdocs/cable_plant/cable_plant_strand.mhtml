@@ -56,7 +56,7 @@ my (@field_headers, @cell_data, @headers, @rows);
 
 	    if ($edit eq "cableinfo") {
 		# we need to grab all backbones for start and end sites of this strand.
-		my ($start_site, $end_site) = ($backbone->start_closet->floor->site, $backbone->end_closet->floor->site);
+		my ($start_site, $end_site) = ($backbone->start_closet->room->floor->site, $backbone->end_closet->room->floor->site);
 		foreach my $closet (($start_site->closets, $end_site->closets)) {
 		    map { push (@backbones, $_) } (BackboneCable->search(start_closet=>$closet),
 						   BackboneCable->search(end_closet=>$closet));

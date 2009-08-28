@@ -51,6 +51,7 @@ my @statements = (
     "ALTER TABLE `circuit_history` ADD COLUMN `datetested` date",
     "ALTER TABLE `circuit_history` ADD COLUMN `loss` varchar(32)",
     "ALTER TABLE `circuit_history` MODIFY `modifier` varchar(255)",
+    "ALTER TABLE `closet` MODIFY `name` varchar(64)", 
     "ALTER TABLE `contact_history` MODIFY `modifier` varchar(255)",
     "ALTER TABLE `device` DROP COLUMN `person`",
     "ALTER TABLE `device_history` DROP COLUMN `person`",
@@ -302,21 +303,61 @@ push @statements, (
     "ALTER TABLE `circuit_history` DROP COLUMN `dlci`",
     "ALTER TABLE `circuit_history` DROP COLUMN `farend`",
     "ALTER TABLE `circuit_history` DROP COLUMN `nearend`",
-    );
+    "SELECT * FROM closet ORDER BY id"
+   );
 
-my @closetlist=Closet->retrieve_all;
-foreach my $closet ( @closetlist ) {
-    if( !(my $room = Room->search(name=>$closet->number, floor=>$closet->floor)) ){
-        push @statements, (
-            "INSERT INTO room (floor, name) VALUES ('$closet->floor', '$closet->number')",
-            "UPDATE closet c SET c.room = '$room->id' WHERE c.number = '$room->name' AND c.floor = '$room->floor'");   
-    }
+my $cstm = "SELECT * FROM closet ORDER BY id";
+my $rstm = "SELECT * FROM room ORDER BY id";
+
+my $closet_handler = $dbh->prepare($cstm) or die $dbh->errstr;
+$closet_handler->execute() or die $dbh->errstr;
+
+my $room_handler = $dbh->prepare($cstm) or die $dbh->errstr;
+$room_handler->execute() or die $dbh->errstr;
+
+my $cref;
+eval {
+    $cref = $closet_handler->fetchall_hashref('id');
+};
+if ( my $e= $@ ){
+    die $dbh->errstr;
 }
 
-push @statements, (
-    "ALTER TABLE `closet` CHANGE `number` `room` integer NOT NULL", 
-    "ALTER TABLE 'closet' DROP COLUMN 'floor'",
-    "ALTER TABLE 'closet' DROP COLUMN 'site'");
+my $rref;
+eval {
+    $rref = $room_handler->fetchall_hashref('id');
+};
+if ( my $e= $@ ){
+    die $dbh->errstr;
+}  
+
+foreach my $ci ( keys(%{$cref}) ){
+    print "Number:$cref->{$ci}->{number}+Floor:$cref->{$ci}->{floor}\n";
+    my $bool = 0;
+    my $ri;
+    foreach $ri ( keys(%{$rref}) ){
+        print "Name:$rref->{$ri}->{name}+Floor:$rref->{$ri}->{floor}\n";
+        if ( ($cref->{$ci}->{number} eq $rref->{$ri}->{name}) && ($cref->{$ci}->{floor} eq $rref->{$ri}->{floor}) ) {
+                $bool = 1;
+                last;
+        }
+    } 
+    if (!$bool){
+        my $sth2 =  $dbh->prepare("INSERT INTO room (name, floor) VALUES ($cref->{$ci}->{number}, $cref->{$ci}->{floor});");
+        $sth2->execute() or die $dbh->errstr;
+        $cref->{$ci}->{number} = $rref->{$ri}->{id};
+        $sth2->finish();
+    }	
+}
+
+$closet_handler->finish();
+$room_handler->finish();
+
+push (@statements,
+      "ALTER TABLE `closet` CHANGE `number` `room` integer NOT NULL",
+      "ALTER TABLE `closet` DROP COLUMN `floor`",
+      "ALTER TABLE `closet` DROP COLUMN `site`"
+     );
 
 foreach my $st ( @statements ) {
     &debug($st);

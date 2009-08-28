@@ -23,7 +23,6 @@ section => 'Plant'
 <%init>
 my $DEBUG          = 0;
 my $o              = undef;
-my $site           = undef;
 my $editCloset     = 0;
 my $editPictures   = 0;
 my $editBackbones  = 0;
@@ -33,7 +32,6 @@ if ( defined $id && $id ne "NEW" ){
     $o = Closet->retrieve($id);
     $m->comp('/generic/error.mhtml', error=>"Cannot retrieve Closet id $id") 
 	unless $o;
-    $site = $o->floor->site || $o->site;
 }
 
 $editCloset     = 1 if ($id eq "NEW" || $edit eq "closetinfo");
@@ -82,10 +80,8 @@ if ( defined($ARGS{_action}) && $ARGS{_action} eq "ADD_PICTURE" && defined($ARGS
     # Do this to 'flush' the values associated with the object
     # before redisplaying
     $o    = undef;
-    $site = undef;
     if ( $id && $id ne "NEW" ){
         $o = Closet->retrieve($id);
-        $site = $o->floor->site || $o->site;
     }
 }
 
@@ -95,15 +91,6 @@ if ( defined($ARGS{_action}) && $ARGS{_action} eq "ADD_PICTURE" && defined($ARGS
 </%perl>
 
 <div id="sectiondetail">
-
-% if ( $site ) {
-<!-- Header Table -->
-<div class="containeroutside">
-    <div class="containerheadoutside">
-        Closet for Site: <a href="cable_plant.html?id=<% $site->id %>&page_type=CLOSETS"><% $site->name %></a>&nbsp;&nbsp;&nbsp;
-    </div>
-    <div class="containerbodyoutside">
-% }
 
 <!-- Closet Table -->
 <div class="container">
@@ -351,7 +338,7 @@ if ($editBackbones) {
             </%perl>
             </SELECT> &nbsp;
 %           $ui->select_lookup(object=>$bb, table=>"BackboneCable", column=>"start_closet", 
-%                             lookup=>"Closet", where=>{site=>($bb ? $bb->start_closet->site : "")}, 
+%                             lookup=>"Closet", where=>{site=>($bb ? $bb->start_closet->room->floor->site : "")}, 
 %                             edit=>$editBackbones);
 %       }
     </&>
@@ -379,7 +366,7 @@ if ($editBackbones) {
             </%perl>
             </SELECT> &nbsp;
 %           $ui->select_lookup(object=>$bb, table=>"BackboneCable", column=>"end_closet", 
-%                             lookup=>"Closet", where=>{site=>($bb ? $bb->end_closet->site : "")},
+%                             lookup=>"Closet", where=>{site=>($bb ? $bb->end_closet->room->floor->site : "")},
 %                             edit=>$editBackbones);
 %       }
     </&>

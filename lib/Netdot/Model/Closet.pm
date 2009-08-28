@@ -67,8 +67,6 @@ sub update {
 sub _validate {
     my ($self, $argv) = @_;
     if ( ref($self) ){
-	$argv->{site}   = $self->site   unless ( defined $argv->{site}  );
-	$argv->{floor}  = $self->floor  unless ( defined $argv->{floor} );
 	$argv->{name}   = $self->name   unless ( defined $argv->{name} );
 	$argv->{room} = $self->room unless ( defined $argv->{room} );
     }
@@ -78,13 +76,6 @@ sub _validate {
     $self->throw_user("A Room/Closet number is required")
 	unless ( $argv->{room} );
 
-    if ( $argv->{floor} ){
-	my $floor = Floor->retrieve(int($argv->{floor}));
-	$argv->{site} = $floor->site if ( defined $floor && defined $floor->site );
-    }else{
-	$self->throw_user("A Closet Site is required")
-	    unless ( $argv->{site} );
-    }
     return 1;
 }
 
