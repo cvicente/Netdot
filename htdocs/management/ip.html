@@ -24,7 +24,7 @@ $range_status      => undef
 $range_used_by     => undef
 $range_description => undef
 $range_parent      => undef
-$range_gen_ptr     => undef
+$range_gen_dns     => undef
 $range_fw_zone     => undef
 $range_rev_zone    => undef
 $block_owner       => undef
@@ -238,7 +238,7 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 					used_by     => $range_used_by,
 					description => $range_description,
 					parent      => $range_parent,
-					gen_dns     => $range_gen_ptr,
+					gen_dns     => $range_gen_dns,
 					fzone       => $range_fw_zone,
 					rzone       => $range_rev_zone,
 		    );
@@ -836,8 +836,8 @@ if ( $edit ){
     push @fields, 'Description:';
     push @data, '<input type="text" class="longtxt" name="range_description">';
 
-    push @fields, 'Auto-generate PTR records:';
-    push @data, '<input type="checkbox" name="range_gen_ptr" checked="checked">';
+    push @fields, 'Auto-generate DNS records:';
+    push @data, '<input type="checkbox" name="range_gen_dns" checked="checked">';
 
     my $fwzone   = $o->forward_zone();
     my $revzone  = $o->reverse_zone();

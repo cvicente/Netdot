@@ -54,9 +54,6 @@ sub insert {
     # Create/update PTR record for this IP
     $rraddr->_update_rrptr() if $update_ptr;
 
-    # Make sure the IP is marked as Static
-    $argv->{ipblock}->update({status=>'Static'});
-
     return $rraddr;
     
 }
