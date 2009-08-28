@@ -1077,14 +1077,6 @@ if ($o->status->name eq "Subnet") {
     push( @cell_data, ($ui->percent_bar(percent=>$percent))
         .'<div class="small">'.$available_text.'</div>' );
 
-################
-# DHCP
-
-      if ( !$edit && !($o->dhcp_scopes) ){
-	  push( @field_headers, "DHCP:" );
-	  push( @cell_data, "<a href=\"ip.html?id=$id&edit=enable_dhcp\">[enable]</a>");
-      }
-
 } elsif( $o->status->name eq "Container" ) {
       my $total = new Math::BigInt($o->num_addr);
 
@@ -1152,14 +1144,17 @@ if ($o->status->name eq "Subnet") {
 %################################################################
 %# DHCP Scopes
 %################################################################
-% if ( my @scopes = $o->dhcp_scopes ){
     <div class="container">
-      <div class="containerhead">DHCP Scopes</div>
+      <div class="containerheadleft">DHCP Scope</div>
+%   if ( my @scopes = $o->dhcp_scopes ){
+      <div class="containerheadright">&nbsp;</div>
       <div class="containerbody">
          <& /generic/sortresults.mhtml, object=>\@scopes &>
       </div>
+%   }else{
+      <div class="containerheadright"><a href="ip.html?id=<% $id %>&edit=enable_dhcp">[enable]</a></div>
+%   }
     </div>
-% }
 
 %################################################################
 %# Sites
