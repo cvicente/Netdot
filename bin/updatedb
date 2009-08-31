@@ -51,7 +51,7 @@ my @statements = (
     "ALTER TABLE `circuit_history` ADD COLUMN `datetested` date",
     "ALTER TABLE `circuit_history` ADD COLUMN `loss` varchar(32)",
     "ALTER TABLE `circuit_history` MODIFY `modifier` varchar(255)",
-    "ALTER TABLE `closet` MODIFY `name` varchar(64)", 
+    "ALTER TABLE `closet` MODIFY `name` varchar(32)", 
     "ALTER TABLE `contact_history` MODIFY `modifier` varchar(255)",
     "ALTER TABLE `device` DROP COLUMN `person`",
     "ALTER TABLE `device_history` DROP COLUMN `person`",
@@ -302,41 +302,24 @@ push @statements, (
     "ALTER TABLE `circuit` DROP COLUMN `nearend`",
     "ALTER TABLE `circuit_history` DROP COLUMN `dlci`",
     "ALTER TABLE `circuit_history` DROP COLUMN `farend`",
-    "ALTER TABLE `circuit_history` DROP COLUMN `nearend`",
-    "SELECT * FROM closet ORDER BY id"
+    "ALTER TABLE `circuit_history` DROP COLUMN `nearend`"
    );
 
-my $cstm = "SELECT * FROM closet ORDER BY id";
-my $rstm = "SELECT * FROM room ORDER BY id";
-
-my $closet_handler = $dbh->prepare($cstm) or die $dbh->errstr;
+###################################################################################
+# Update to change the number field in closet into a foreign key pointing to room #
+my $closet_handler = $dbh->prepare("SELECT * FROM closet ORDER BY id") or die $dbh->errstr;
 $closet_handler->execute() or die $dbh->errstr;
 
-my $room_handler = $dbh->prepare($cstm) or die $dbh->errstr;
+my $room_handler = $dbh->prepare("SELECT * FROM room ORDER BY id") or die $dbh->errstr;
 $room_handler->execute() or die $dbh->errstr;
 
-my $cref;
-eval {
-    $cref = $closet_handler->fetchall_hashref('id');
-};
-if ( my $e= $@ ){
-    die $dbh->errstr;
-}
-
-my $rref;
-eval {
-    $rref = $room_handler->fetchall_hashref('id');
-};
-if ( my $e= $@ ){
-    die $dbh->errstr;
-}  
+my $cref = $closet_handler->fetchall_hashref('id') or die $dbh->errstr;
+my $rref = $room_handler->fetchall_hashref('id') or die $dbh->errstr;
 
 foreach my $ci ( keys(%{$cref}) ){
-    print "Number:$cref->{$ci}->{number}+Floor:$cref->{$ci}->{floor}\n";
     my $bool = 0;
     my $ri;
     foreach $ri ( keys(%{$rref}) ){
-        print "Name:$rref->{$ri}->{name}+Floor:$rref->{$ri}->{floor}\n";
         if ( ($cref->{$ci}->{number} eq $rref->{$ri}->{name}) && ($cref->{$ci}->{floor} eq $rref->{$ri}->{floor}) ) {
                 $bool = 1;
                 last;
@@ -357,6 +340,26 @@ push (@statements,
       "ALTER TABLE `closet` CHANGE `number` `room` integer NOT NULL",
       "ALTER TABLE `closet` DROP COLUMN `floor`",
       "ALTER TABLE `closet` DROP COLUMN `site`"
+     );
+
+###################################################################################
+# Update device room field                                                        #
+my $devh = $dbh->prepare("SELECT * FROM device ORDER BY id") or die $dbh->errstr;
+$devh->execute() or die $dbh->errstr;
+my $devref = $devh->fetchall_hashref('id') or die $dbh->errstr;
+
+foreach my $devi ( keys(%{$devref}) ){
+    if ( $devref->{$devi}->{closet} ){
+         foreach my $ci (keys(%{$cref}) ){
+             if ( $cref->{$ci}->{id} == $devref->{$devi}->{closet} ) {
+                 $devref->{$devi}->{room} = $cref->{$ci}->{number};
+             }
+         }
+    }
+}
+
+push (@statements,
+      "ALTER TABLE `device` DROP COLUMN `closet`"
      );
 
 foreach my $st ( @statements ) {
