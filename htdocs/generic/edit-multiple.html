@@ -43,8 +43,13 @@ $sid           => undef
 if(! $table){
     $m->comp('/generic/error.mhtml', error=>"No database table provided to edit!");
 }
-
-my $DEBUG = 0;
+my @select_all;
+if($selectall_ids){
+    print "wooooo";
+    @select_all = qw[ $selectall_ids ];
+}
+print "@select_all"." WHOOO";
+my $DEBUG = 1;
 print "<pre>", Dumper(%ARGS), "</pre>" if $DEBUG;
 my $session;
 my @columns  = $table->meta_data->get_columns;

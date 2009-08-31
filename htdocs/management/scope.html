@@ -12,6 +12,8 @@ $edit             => undef
 $submit           => undef
 $bulk_import_data => undef
 $import_overwrite => undef
+@scope_type_box   => () #used for narrowing down types of scopes you're intrested in in contained_scopes
+$scope_text_filter => undef #used to filter scope types based on a keyword.
 </%args>
 
 <%attr>
@@ -24,6 +26,21 @@ my $DEBUG = 0;
 my($obj, $prevobj );
 my %ftables;
 
+my %explanation_hash = ( 
+    'templates' => 'When using a template, the scope will inherit all attributes of the template',
+    'contained_scopes' => 'Scopes that inherit attributes from this scope.');
+
+#@exclude is used to exclude certian fields from forms based on scope type.  
+#i.e Enable fallover only needs to be displayed if this is a global scope
+my @exclude = (); 
+
+#@alias is used to specific different names for fields depending on some circumstance
+#for example, we want to display "subnet" if we're a subnet scope, and "ip address" if we're a host scope
+#never match anything
+my @alias = ("");
+
+#we add one entry to both of these lists because perl was complaining when passing these lists into 
+#the form.mhtml component even when that entry was a "" or " "... so "nothing" should never match anything
 
 unless ( $obj = $table->retrieve($id) ){
    $m->comp('error.mhtml', error => "Nonexistent record: $id");
@@ -35,13 +52,36 @@ unless ( $manager && $manager->can($user, "view", $obj) ){
 }
 
 my $labelstr  = $obj->get_label;
+my $type = $obj->type->name;
 my %linksfrom = $table->meta_data->get_links_from;
 my %order     = $table->meta_data->get_column_order;
+
+
+unless($type eq 'global'){
+    push(@exclude, "enable_failover");
+    push(@exclude, "failover_peer");
+    push(@exclude, "export_file");
+}
+unless($type eq 'host'){
+    push(@exclude, "physaddr");
+}
+
+#due to the implementation, aliases use the 
+#short formatted names if that option is on (it is here)
+if($type eq 'subnet'){
+    push(@alias, "IP block:Subnet");
+}
+if($type eq 'host'){
+    push(@alias, "IP block:IP Address");
+}
+
 
 if ( $DEBUG ){
     print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>';
     print '%linksfrom is  <pre>', Dumper(%linksfrom), '</pre><br>';
     print '%order is  <pre>', Dumper(%order), '</pre><br>';
+    print '$type is '."$type <br>";
+    print '@exclude is '."@exclude";
 }
 
 if ( $submit ){
@@ -63,7 +103,6 @@ if ( $submit ){
 	}
     }
 }
-
 </%init>
 
 <div id="sectiondetail">
@@ -84,15 +123,15 @@ if ( $submit ){
         <a href="#" onClick="opentextwindow(jspopoutstring,'js','');">[text]</a>
     </div>
     <div class="containerbodyoutside">
-        <& /generic/form.mhtml, table=>$table, id=>$id, edit=>0 &>
+        <& "/generic/form.mhtml", table=>$table, id=>$id, edit=>0, exclude=>\@exclude, alias=>\@alias  &>
     </div>
 </div>
 <!-- End Display main object values -->
-
+%print $type;
 <!-- Display has_many possibilities-->
 %  my $has_history_table = 1 if ( $table->meta_data->get_history_table_name() );
 %  if ( ! $table->meta_data->is_history() && ( keys %linksfrom ) ){
-      <div class="container">
+  <div class="container">
 	<div class="containerhead">View</div>
 	   <div class="containerbody">
 %	      if ( $view eq "all" ){
@@ -101,6 +140,8 @@ if ( $submit ){
 		  <a href="scope.html?id=<% $obj %>&view=all">[all]</a>
 %             }
 %             foreach my $i ( sort keys %linksfrom ){
+%               next if($i eq 'derived_scopes' && $type ne 'template');
+%               next if($i eq 'contained_scopes' && ($type eq 'host' || $type eq 'subnet' || $type eq 'template'));
 %               if ( $view eq $i ){
                    [<% $i %>]
 %               }else{
@@ -110,59 +151,128 @@ if ( $submit ){
               <a href="scope.html?id=<% $obj %>&view=bulk_import">[bulk import]</a>
 	   </div>
 	</div>
-      </div>
+  </div>
 %  }
 <!-- End Display has_many possibilities-->
 
 <!-- Display has_many objects -->
 <%perl>
 foreach my $i ( keys %linksfrom ){
+    next if ($i eq "derived_scopes" && $type ne "template");
+    next if($i eq 'contained_scopes' && ($type eq 'host' || $type eq 'subnet' || $type eq 'template'));
     if ( ($view eq 'all' || $view eq $i ) ){
-    # Table that points to us
-    my $j = (keys %{ $linksfrom{$i} })[0];
+        
+        # Table that points to us
+        my $j = (keys %{ $linksfrom{$i} })[0];
+        
+        # Column in the other table that points to this table
+        my $ffield = $linksfrom{$i}{$j};
+        
+        # Determine if the has_many method returns ordered data from the db
+        my $ffattrs = $j->meta_data->get_column($ffield)->links_to_attrs();
+        my $ffield_order = $ffattrs->{order_by} if ( defined $ffattrs && exists $ffattrs->{order_by} );
+        
+        my @robjs;
+        if($i ne 'contained_scopes' || $scope_text_filter || @scope_type_box){     
+            @robjs = $obj->$i;
+        }
+        else{
+           @robjs = (); #no need to preform this expensvie query if the user hasn't selected filters
+        } 
+            
+        my $dtbl  = $j;
+        my $ctbl  = $j; 
+        my %args;
+       
 
-    # Column in the other table that points to this table
-    my $ffield = $linksfrom{$i}{$j};
-    
-    # Determine if the has_many method returns ordered data from the db
-    my $ffattrs = $j->meta_data->get_column($ffield)->links_to_attrs();
-    my $ffield_order = $ffattrs->{order_by} if ( defined $ffattrs && exists $ffattrs->{order_by} );
-    
-    my @robjs = $obj->$i;
-    my $dtbl  = $j;
-    my $ctbl  = $j; 
+        #since the amount of returned values in contained_scopes is sometimes big, 
+        #lets filter down our result list here.  Performance is better and the results
+        #are more readable, but might need to figure out how to move this filtering to db
+        if($i eq 'contained_scopes' && ($scope_text_filter || @scope_type_box)){
+            my @tmp_row_objects;   
+            foreach $r (@robjs){
+                if (!@scope_type_box || grep{$_ eq $r->type->name} @scope_type_box){
+                    if(!$scope_text_filter || $r->name =~ /$scope_text_filter/){
+                        push(@tmp_row_objects, $r);
+                    }
+                }
+            }
+            @robjs = @tmp_row_objects;    
+        }
 
-    my $num = scalar(@robjs);
+        my $num = scalar(@robjs);
+
 </%perl>
 
-      <div class="container">
-%     my $title = $i;
-%     $title .= " ($num)" if $num;	     
-          <div class="containerheadleft"><% $title %></div>
-	  <div class="containerheadright">
-%         if ( $edit eq $i ){	    
+%       my @all_zones = DhcpScopeType->retrieve_all();  
+        <div class="container">
+%       my $title = $i;
+%       $title .= " ($num)" if $num;	 
+%       $title .= "&nbsp;&nbsp;&nbsp;".$explanation_hash{$i};
+            <div class="containerheadleft"><% $title %></div>
+	    <div class="containerheadright">
+%       if ( $edit eq $i ){	    
               &nbsp;
-%         }else{
-%	      if ( $num ){
+%       }
+%       else{
+%           if($i eq "templates"){ #we have a special edit page for templates.
+%	            if ( $num ){
+%                   my @temps = DhcpScopeUse->search(scope=>$obj);
+%                   my $space_seperated_list = "";
+%                   for my $s (@temps){
+%                       $space_seperated_list.=$s." "
+%                    }
+%                         
+                    <a href="template_edit.html?id=<% $id %>&selectall_ids=<% $space_seperated_list %>">[edit]</a>
+%	            }
+                <a href="template_edit.html?id=<% $obj %>">[add]</a>
+%           }
+%           else{ #for everything BUT templates:
+%	            if ( $num ){
                   <a href="view.html?table=<% $table %>&id=<% $id %>&view=<% $view %>&edit=<% $i %>">[edit]</a>
-%	      }
-	      <a href="edit.html?table=<% $ctbl %>&<% $ffield %>=<% $obj %>">[add]</a>
-%         }
-	  </div>
-%         my %args = ( table=>$dtbl, object=>\@robjs );
-%	  if ( $edit eq $i ){
-%             $args{withedit} = 1;
-%	  }else{
-%         # If data came ordered from the db, tell sortresults not to bother sorting
-%             $args{sort} = 0 if ( $ffield_order );
-%         }
-%	  if ( $num ) {
-%             $args{return_args} = "?id=$id&view=$view";
-%             $m->comp('/generic/sortresults.mhtml', %args);
-%         }
-     </div>
-%    }
+%	            }
+               <a href="edit.html?table=<% $ctbl %>&<% $ffield %>=<% $obj %>">[add]</a>
+%           }
+%       }
+	    </div>
+
+%       if($i eq 'contained_scopes'){
+%           #present a form to the user allowing them to only display certian types of scopes           
+            <form name = "scope_options" action="scope.html" method="POST" >
+                <table><tr>                 
+                <td>Select Scope type(s)
+                 <select name = "scope_type_box">
+
+%                    foreach my $zone (@all_zones){                   
+                         <option value="<% $zone->name %>"><% $zone->name %></option>
+%                    }
+                       
+                 </select></td></tr>
+            <tr><td>keyword:  <input type="text" name="scope_text_filter"></input></td></tr>
+            <tr><td><input type="submit" /></td></tr>
+            <input type="hidden" name="id" value="<% $id %>" />
+            <input type="hidden" name="view" value="<% $view %>">
+            </form>
+            </table>
+%       }
+%      
+%        %args = ( table=>$dtbl, object=>\@robjs );
+%	     if ( $edit eq $i ){
+%            $args{withedit} = 1;
+%	     }
+%        else{
+%            # If data came ordered from the db, tell sortresults not to bother sorting
+%            $args{sort} = 0 if ( $ffield_order );
+%        }
+%	     if ($num){
+%            $args{return_args} = "?id=$id&view=$view";
+%            $m->comp('/generic/sortresults.mhtml', %args);
+%        }
+%    
+    </div>
+%   }
 %}
+
 <!-- End Display has_many objects -->
 
 <!-- Display bulk import -->

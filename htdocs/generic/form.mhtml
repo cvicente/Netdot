@@ -15,9 +15,22 @@ $allow_create      => 1
 $edit              => 1
 $adv_search        => 0      #  toggle radio buttons so we have true/false/unset options
 $short_field_names => 1      #  Tell form.mhtml whether to use include table names in field names
+$exclude           => undef     # (OPTIONAL) gives us the ability to exclude certian keywords from the table.
+
+$alias             => undef     #  (OPTIONAL) gives us the ability to provide alternative names for fields.  
+                             #  If short_field_names is set to 1 THEN USE THE MODIFIED FIELD NAMES 
+                             #  i.e @alias = ('IP Block:Subnet');                                   
+                                  
 </%args>
 
 <%init>
+my (@exclude, @alias);
+if($exclude){
+    @exclude = @$exclude;
+}
+if($alias){
+    @alias = @$alias;
+}
 
 my $maxselect = $ui->config->get('DEFAULT_SELECTMAX');
 my $DEBUG     = 0;
@@ -42,6 +55,7 @@ my %order   = $table->meta_data->get_column_order();
 my %linksto = $table->meta_data->get_links_to();
 
 </%init>
+
 <script language="javascript" src="<% $js_prefix %>/datechooser.js"></script>
 <%perl>
 
@@ -56,47 +70,68 @@ if( $id ) {
 
 foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
     next if ( $c eq 'id' );
+    next if (grep{$_ eq $c} @exclude); #if the current keyword is in the exclude array, don't display it
 
     if ( $table =~ /Picture/ ){
-	if ( $edit ){
-	    if ( $c eq 'filename' ){
-		# Add a fake 'upload' field before filename
-		push (@headers, 'Upload:');
-		push (@data, '<input type="file" name="upload" value="">');
-		next unless $obj;  # Do not show filename field unless the object exists
+	    if ( $edit ){
+	        if ( $c eq 'filename' ){
+		        # Add a fake 'upload' field before filename
+		        push (@headers, 'Upload:');
+		        push (@data, '<input type="file" name="upload" value="">');
+		        next unless $obj;  # Do not show filename field unless the object exists
+	        }
+	        next if ( $c =~ /^filesize|filetype|bindata$/ );  # These are not editable
 	    }
-	    next if ( $c =~ /^filesize|filetype|bindata$/ );  # These are not editable
-	}
     }
-
     my %field;
+    
     if ( $obj ) {
-	if ( my $ftable = $linksto{$c} ){
-	    my $linkPage = $ui->table_view_page($ftable) || 'view.html';
-	    %field = $ui->form_field(object=>$obj, column=>$c, edit=>$edit, shortFieldName=>$short_field_names, linkPage=>$linkPage, adv_search=>$adv_search);
-	}else{
-	    # Do not create link if column is local
-	    %field = $ui->form_field(object=>$obj, column=>$c, edit=>$edit, shortFieldName=>$short_field_names, linkPage=>0, adv_search=>$adv_search);
-	}
+	    if ( my $ftable = $linksto{$c} ){
+	        my $linkPage = $ui->table_view_page($ftable) || 'view.html';
+	        %field = $ui->form_field(object=>$obj, column=>$c, edit=>$edit, shortFieldName=>$short_field_names, linkPage=>$linkPage, adv_search=>$adv_search);
+	    }
+        else{
+	        # Do not create link if column is local
+	        %field = $ui->form_field(object=>$obj, column=>$c, edit=>$edit, shortFieldName=>$short_field_names, linkPage=>0, adv_search=>$adv_search);
+	    }
 
-    } elsif( exists( $session{$c} ) ) {
-	my @defaults = ($linksto{$c}->retrieve($session{$c}));
-	%field = $ui->form_field(table=>$table, column=>$c, 
-				 defaults=>\@defaults, default=>$session{$c}, 
-				 edit=>$edit, shortFieldName=>$short_field_names, adv_search=>$adv_search);
-    } else {
-	%field = $ui->form_field(table=>$table, column=>$c, 
-				 edit=>$edit, shortFieldName=>$short_field_names, adv_search=>$adv_search);
+    } 
+    elsif( exists( $session{$c} ) ) {
+	    my @defaults = ($linksto{$c}->retrieve($session{$c}));
+	    %field = $ui->form_field(table=>$table, column=>$c, 
+             defaults=>\@defaults, default=>$session{$c}, 
+             edit=>$edit, shortFieldName=>$short_field_names, adv_search=>$adv_search);
+    } 
+    else {
+	    %field = $ui->form_field(table=>$table, column=>$c, 
+	        edit=>$edit, shortFieldName=>$short_field_names, adv_search=>$adv_search);
     }
+
+    #This is kind of ugly, but modifying UI.pm would be an extensive undertaking, 
+    #and since this is a rarely used feature I figured we could just search for the dispalyed
+    #text in $field{"label"} and change it to its alias.
+    foreach my $alias (@alias){
+        next if($alias eq ""); #this is used as a null so perl won't throw an error when i pass in a null list of aliases
+        my $b = substr($alias, 0, index($alias, ":")); #gets everything before the :
+        my $a = substr($alias, index($alias, ":")+1, length($alias)); #gets everything after the :
+        #the text we're intrested in is in the form "...>IP block</a> (for example), so we will search for this precisely
+        if($field{"label"} =~ /\>$b\<\/a\>/){
+            $field{"label"} =~ s/\>$b\<\/a\>/\>$a\<\/a\>/;
+        }
+    }
+
     push(@headers, $field{'label'});
     push(@data,    $field{'value'});
     
+
     #special case for comments, because it needs more space
     if($field{'label'} =~ m/Comments<\/a>:$/) {
-	push(@comments_header, pop @headers);
-	push(@comments_data,   pop @data);
+	    push(@comments_header, pop @headers);
+	    push(@comments_data,   pop @data);
     }
 
+
+   
 } # foreach
 
 </%perl>

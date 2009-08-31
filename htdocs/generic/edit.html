@@ -43,8 +43,9 @@ $dowindow    => undef
 </%args>
 
 <%init>
+print "submit state is $submit<br/>";
 my %args;
-my $DEBUG = 0;
+my $DEBUG = 1;
 my %reserved = (submit     => '',
 		commit     => '',
 		table      => '',
@@ -66,8 +67,8 @@ foreach my $j ( keys %ARGS ) {
     ################################################
     # in case apache makes the value an array, set to last value
     if( ref( $ARGS{$j} ) eq "ARRAY" ) {
-	my @t = @{ $ARGS{$j} };
-	$ARGS{$j} = $t[$#t];
+	    my @t = @{ $ARGS{$j} };
+	    $ARGS{$j} = $t[$#t];
     }
     next if( $j !~ /\w+/ );
 
@@ -100,72 +101,75 @@ if( $DEBUG ) {
 # Start the actual work
 #
 if ( $table ){
-
     my $page = $ui->table_view_page($table);
 
     # Special cases
     if ( $table =~ /Picture/ ){
-	if ( $args{upload} ){
-	    eval {
-		use Apache2::Upload;
-		my $bindata;
-		my $upload      = $r->upload("upload");
-		my $upload_fh   = $upload->fh;
-		my $size        = $upload->slurp($bindata);
-		$args{bindata}  = $bindata;
-		$args{filename} = $args{filename} || $upload->filename;
-		delete $args{upload};
-		delete $args{filetype} unless $args{filetype};
-	    };
-	    if ( my $e = $@ ){
-		$m->comp('error.mhtml', error=>$e);
+	    if ( $args{upload} ){
+	        eval {
+		    use Apache2::Upload;
+		    my $bindata;
+		    my $upload      = $r->upload("upload");
+		    my $upload_fh   = $upload->fh;
+		    my $size        = $upload->slurp($bindata);
+		    $args{bindata}  = $bindata;
+		    $args{filename} = $args{filename} || $upload->filename;
+		    delete $args{upload};
+		    delete $args{filetype} unless $args{filetype};
+	        };
+	        if ( my $e = $@ ){
+		    $m->comp('error.mhtml', error=>$e);
+	        }
 	    }
-	}
-	delete $args{upload}; # It's a fake column
+	    delete $args{upload}; # It's a fake column
     }
 
     if ( $id ){
-	my $obj = $table->retrieve($id);
-
-	unless ( $manager && $manager->can($user, "edit", $obj) ){
-	    $m->comp('/generic/error.mhtml', error=>"You don't have permission to edit this object");
-	}
-
-	if ( $submit eq "Update" ){
-	    eval{
-		$obj->update(\%args);
-	    };
-	    if ( my $e = $@ ){
-		$m->comp('error.mhtml', error=>$e);
-	    }
-	    $m->comp($page, table=>$table, id=>$id, dowindow=>$dowindow );
-        }else{
-	    $m->comp('.show_form', table=>$table, id=>$id, 
-		     showheader=>$showheader, select_id=>$select_id, selected=>$selected, dowindow=>$dowindow );
-	}
-    }else{
-	if ( $submit eq "Insert" ){
-	    my $new;
-	    eval{
-		$new = $table->insert(\%args);
-	    };
-	    if ( my $e = $@ ){
-		$m->comp('error.mhtml', error=>$e);
-	    }
-	    if ( $dowindow ){
-		$m->comp('.show_inserted', table=>$table, id=>$new->id,
-			 showheader=>$showheader, select_id=>$select_id, selected=>$selected, dowindow=>$dowindow );
-	    }else{
-		$m->comp($page, table=>$table, id=>$new->id, dowindow=>$dowindow );
+	    my $obj = $table->retrieve($id);
+	    unless ( $manager && $manager->can($user, "edit", $obj) ){
+	        $m->comp('/generic/error.mhtml', error=>"You don't have permission to edit this object");
 	    }
 
-	}else{
-	    $m->comp('.show_form', table=>$table, 
-		     showheader=>$showheader, select_id=>$select_id, selected=>$selected, dowindow=>$dowindow, args=>\%args);
-	}
+	    if ( $submit eq "Update" ){
+	        eval{
+		        $obj->update(\%args);
+	        };
+	        if ( my $e = $@ ){
+		        $m->comp('error.mhtml', error=>$e);
+	        }
+	        $m->comp($page, table=>$table, id=>$id, dowindow=>$dowindow );
+        }
+        else{
+            $m->comp('.show_form', table=>$table, id=>$id, 
+                 showheader=>$showheader, select_id=>$select_id, selected=>$selected, dowindow=>$dowindow );
+        }
+    }
+    else{
+	    if ( $submit eq "Insert" ){
+	        my $new;
+	        eval{
+		        $new = $table->insert(\%args);
+	        };
+	        if ( my $e = $@ ){
+		        $m->comp('error.mhtml', error=>$e);
+	        }
+	        if ( $dowindow ){
+		        $m->comp('.show_inserted', table=>$table, id=>$new->id,
+			        showheader=>$showheader, select_id=>$select_id, selected=>$selected, dowindow=>$dowindow );
+	        }
+            else{
+		        $m->comp($page, table=>$table, id=>$new->id, dowindow=>$dowindow );
+	        }
+
+	    }
+        else{
+	        $m->comp('.show_form', table=>$table, 
+		         showheader=>$showheader, select_id=>$select_id, selected=>$selected, dowindow=>$dowindow, args=>\%args);
+	    }
     }
     
-}else{
+}
+else{
     $m->comp('table.mhtml', width=>2, link=>"edit.html", title => "Please select an object to create:");
 }
 
@@ -181,9 +185,10 @@ if ( $table ){
 <%def .show_form>
 <%perl>
     if ( $ARGS{table} eq 'UserRight' || $ARGS{table} eq 'GroupRight'){
-	$m->comp('access_right_form.html', %ARGS);
-    }else{
-	$m->comp('.show_generic_form', %ARGS);
+	    $m->comp('access_right_form.html', %ARGS);
+    }
+    else{
+    	$m->comp('.show_generic_form', %ARGS);
     }
 </%perl>
 </%def>
@@ -193,6 +198,7 @@ if ( $table ){
 % ########################################################
 
 <%def .show_generic_form>
+
 <%args>
 $table
 $id         => undef
@@ -240,8 +246,15 @@ my $title = "$table " . $ui->table_descr_link($table, "[?]");
 %         $m->comp('form.mhtml', table=>$table, id=>$id, dowindow=>$dowindow);
       <br>
       <input name="submit" type="submit" value="Update">
-%     }else{
-%         $m->comp('form.mhtml', table=>$table, session=>\%args, dowindow=>$dowindow);
+%     }
+%
+%
+%     else{
+%       foreach my $key (keys %args){
+%           print "$key, " . $args{key} . " <br/>";        
+%       }
+%
+%       $m->comp('form.mhtml', table=>$table, session=>\%args, dowindow=>$dowindow);
       <br>
       <input name="submit" type="submit" value="Insert">
 %     }

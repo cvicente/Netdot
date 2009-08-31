@@ -1,0 +1,236 @@
+<%doc>
+    Special edit component intended to edit scope templates.  
+</%doc>
+
+<%attr>
+title   => 'Template Edit' 
+section => 'Management'
+</%attr>
+
+<%args>
+$id  
+$scope_use_obj => undef
+$user        => $ui->get_current_user($r)
+$submit      => undef
+$cancel      => undef
+$showheader  => 1
+$select_id   => undef
+$selectall_ids => undef;
+$selected    => undef
+$dowindow    => undef
+</%args>
+
+<%init>
+
+my @select_all;
+my $new_select_ids;
+my @delete_array;
+if($selectall_ids){
+    @select_all = split(" ", $selectall_ids);
+}
+
+my $DEBUG = 0;
+my $scope_obj;
+my $manager = $ui->get_permission_manager($r);
+my $page = $ui->table_view_page("DhcpScopeUse");
+
+if($DEBUG){
+    foreach my $i (keys %ARGS){
+        print "$i $ARGS{$i}<br/>";
+    }
+}
+
+$scope_obj = DhcpScope->retrieve($id);
+unless ( $manager && $manager->can($user, "edit", $scope_obj) ){
+    $m->comp('/generic/error.mhtml', error=>"You don't have permission to edit this object");
+}
+
+if($submit){
+    if ($submit eq "Update"){ #there is a prexisting entry for this 
+        my %update_args;
+        for my $t (@select_all){
+            my $temp_key = "$t".'template_select';
+            chomp($temp_key);
+        
+            #why this ugly hack?  I tried building the hash key with $temp_key and using it directly to 
+            #access the information I wanted, but it NEVER WOULD... They look exactly the same when you output the info
+            #but there must be some crucial difference since $ARGS{$temp_key} would always be null, so this is an ugly
+            #work around :/
+            foreach my $i (keys %ARGS){
+                if($i == $temp_key){
+                    $update_args{$i} = $ARGS{$i};
+                }            
+            }
+        }
+        
+        eval{
+            for my $t (keys %update_args){
+                my $o = DhcpScopeUse->retrieve($t);                
+                $o->update({template=> $update_args{$t}});   
+            }   
+        };
+        if ( my $e = $@ ){
+            $m->comp('/generic/error.mhtml', error=>$e);
+        }
+       
+        #lets remove all the items we're supposed to delete
+        #$ARGS{"delete"} can either contain a string with the DhcpScopeUse object id
+        #we want to delete (if the user has selected a single item to delete)
+        #or it can be an arrayref full of them.  We try to use it 
+        #as an arrayref, but if this fails we treat it like a string
+
+        ;
+        eval{
+            @delete_array = @{$ARGS{"delete"}};
+        };
+        if($@){
+            push(@delete_array, $ARGS{"delete"});
+        }
+
+        foreach my $d (@delete_array){
+            my $o = DhcpScopeUse->retrieve($d);
+            if($o){
+                $o->delete();
+
+                #remove element from select_all array
+                for(my $i; $i < scalar @select_all; $i++){
+                    if($select_all[$i] == $d){
+                        splice(@select_all, $i, 1);
+                        last;
+                    }
+                }
+            }
+        }
+
+        foreach (@select_all){
+            $new_select_ids.= "$_ ";
+        }
+
+        
+    }
+    else{ #if this wasn't set, we must have been inserting.
+        my $new;
+        eval{
+            $new = DhcpScopeUse->insert({scope=>$scope_obj, template=>$ARGS{"template_select"}});       
+        };
+        if ( my $e = $@ ){
+            $m->comp('error.mhtml', error=>$e);
+        }
+
+    }
+}
+else{
+  $new_select_ids = $selectall_ids;  
+}
+</%init>
+
+<html>
+  <head>
+      <link rel="stylesheet" href="<% $r->dir_config('NetdotPath') %>css/style.css" type="text/css">
+  </head>      
+% my $js_prefix = $r->dir_config('NetdotPath') . "java_script";
+% for my $script qw( dynamic_list select jsrsClient ) {
+  <script language="JavaScript" src="<% $js_prefix %>/<% $script %>.js"></script>
+% }
+  <body class="bodytag">
+
+%if($submit){
+    <div class="container">
+        <div class="containerhead">
+            Results
+        </div>
+        <div class="containerbody">
+
+%       if(@delete_array && !@select_all){
+            Values updated sucessfully, all templates removed
+%       }
+%       elsif(@select_all){
+            Values updated successfully, <br/> 
+            Template(s) for <% $scope_obj->name %>:
+
+            <ul>
+%           foreach my $t (@select_all){
+%               if(my $sobj = DhcpScopeUse->retrieve($t)){
+%                   my $name = DhcpScope->search(id=>DhcpScopeUse->retrieve($t)->template)->first;
+                    <li><% $name->name %></li>
+%               }
+%           }
+            </ul>
+
+%       }
+%       else{
+            Value inserted sucessfully:<br/>
+%           if(my $name = DhcpScope->retrieve($ARGS{"template_select"})){
+                <ul><li> <% $name->name %> </li></ul>                  
+%           }
+%       }
+    
+        </div>
+    </div>
+%}
+
+<div class="container">
+    <div class="containerhead">
+        Template Edit
+    </div>
+    <div class="containerbody">
+
+%   my %scope_name_hash = $ui->form_field(object=>$scope_obj, column=>"name", edit=>0, returnAsVar=>1);
+
+%   my @template_objs = DhcpScope->search(type=>9); #templates have a type of 9 
+
+<table border=0>
+<tr>
+<td>
+%   print "$scope_name_hash{'label'}   $scope_name_hash{'value'} ";
+</td>
+<td>
+<table border = 0>
+%   if(@select_all){ #if we need to make multiple pull down boxes:       
+      <form name="template_edit" action="template_edit.html?id=<% $id %>&selectall_ids=<% $new_select_ids %>" method="POST" enctype="multipart/form-data">
+        <tr><td>Templates</td></tr>
+
+%       foreach my $o (@select_all){
+%           #we need this to provide the current template as the default
+%           my $cur_template = DhcpScopeUse->retrieve($o)->template; 
+            
+            <tr><td>
+            <select name = "<% $o %>template_select ">
+%               foreach my $t (@template_objs){
+%                   if($t == $cur_template){
+                        <option value="<% $t->id %>" selected="yes"> <% $t->name %> </option>
+                        
+%                   }
+%                   else{
+                        <option value="<% $t->id %>"> <% $t->name %> </option>
+%                   }
+%               }
+            </select>
+            <input type="checkbox" name="delete" value="<% $o %>" /> delete
+            </td></tr>
+%       }
+        <tr><td>
+        <input name="submit" type="submit" value="Update">
+
+        </td></tr>
+        </form>
+        </table></table>
+%    }
+%    else{ #we're inserting a new template...
+          <form name="template_edit" action="template_edit.html?id=<% $id %>" method="POST" enctype="multipart/form-data">
+            Template:
+            <tr><td>
+            <select name = "template_select">
+                <option value="-1">--SELECT TEMPLATE--</option>
+%               foreach my $t (@template_objs){
+                    <option value="<% $t->id %>"> <% $t->name %> </option>
+%              }
+        </select></td></tr>
+        <tr><td><input name="submit" type="submit" value="Insert"></td></tr>
+      </form> </table></table>
+%   }    
+    </div>
+</div>
+</body>
+</html>
+
