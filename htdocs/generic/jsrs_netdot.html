@@ -78,8 +78,6 @@ sub keyword_search {
 	my $dbh = Netdot::Model->db_Main();
 	my $rows = $dbh->selectall_arrayref("SELECT   id,version,address,prefix 
                                              FROM     ipblock
-                                             WHERE    (version=4 AND prefix!=32)
-                                                OR    (version=6 AND prefix!=128) 
                                              ORDER BY address");
      
 	if ( my $n = scalar @$rows ){
