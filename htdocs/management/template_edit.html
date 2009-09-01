@@ -23,7 +23,7 @@ $dowindow    => undef
 <%init>
 if(!$id){
     return; #ugly hack so that when autohandler is calling all the pages in procession, this page dosnt get loaded
-            #after we hit the [back] 
+            #after we hit the [back] link
 }
 my @select_all;
 my $new_select_ids;
@@ -179,8 +179,12 @@ else{
     <div class="containerbody">
 
 %   my %scope_name_hash = $ui->form_field(object=>$scope_obj, column=>"name", edit=>0, returnAsVar=>1);
+%   my $template_num = DhcpScopeType->search(name=>"template")->first;
+%    if(! $template_num){
+%        $m->comp('/generic/error.mhtml', error=>"Could not retrieve templates");
+%    }
 
-%   my @template_objs = DhcpScope->search(type=>(DhcpScopeType->search(name=>"template")));
+%   my @template_objs = DhcpScope->search(type=> $template_num);
 %   @template_objs = sort {$a->name cmp $b->name} @template_objs;
 
 <table border=0>
