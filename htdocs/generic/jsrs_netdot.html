@@ -81,13 +81,35 @@ sub keyword_search {
                                              ORDER BY address");
      
 	if ( my $n = scalar @$rows ){
+            # search for particular value
             foreach my $row ( @$rows ){
 		my ($id, $version, $intaddr, $prefix) = @$row;
                 my $address = Ipblock->int2ip($intaddr, $version);
-                my $lbl = $address.'/'.$prefix;
-                if ( $lbl =~ /.*$val.*/ ){
-                    $tmprsp .= $id."=".$ui->url_encode($lbl)."&"; 
+                my $lbl;
+                if ( $val =~ /.*\/.*/ ){
+                    $lbl = $address.'/'.$prefix;
+                }else{
+                    $lbl = $address;
+                }
+                if ( $lbl eq $val ){
+                    if ( $lbl =~ /.*\/.*/ ){
+                        $tmprsp .= $id."=".$ui->url_encode($lbl)."&";
+                    }else{
+                        $tmprsp .= $id."=".$ui->url_encode($lbl.'/'.$prefix)."&";
+                    } 
                     $count++;
+                }
+            }
+            # Assume user provides regular expression
+            if ( !$count ){
+                foreach my $row ( @$rows ){
+		    my ($id, $version, $intaddr, $prefix) = @$row;
+                    my $address = Ipblock->int2ip($intaddr, $version);
+                    my $lbl = $address.'/'.$prefix;
+                    if ( $lbl =~ /.*$val.*/ ){
+                        $tmprsp .= $id."=".$ui->url_encode($lbl)."&"; 
+                        $count++;
+                    }
                 }
             }
         }
@@ -100,15 +122,25 @@ sub keyword_search {
         }else{
 	   @rows = $table->retrieve_all();
 	}
-        if ( my $n = scalar @rows ){
-              
+        if ( my $n = scalar @rows ){ 
 	    my @objs = sort { $a->get_label cmp $b->get_label } @rows;
+            # Search for particular value
 	    foreach my $o ( @objs ){
 		my $lbl = $o->get_label();
-                if ( $lbl =~ /.*$val.*/){
+                if ( $lbl eq $val ){
 	            $tmprsp .= $o->id."=".$ui->url_encode($lbl)."&"; 
                     $count++;
 	        }
+            }
+            # Assume user provides regular expression
+            if ( !$count ){
+                foreach my $o ( @objs ){
+		    my $lbl = $o->get_label();
+                    if ( $lbl =~ /.*$val.*/ ){
+	                $tmprsp .= $o->id."=".$ui->url_encode($lbl)."&"; 
+                        $count++;
+	            }
+                }
             }
          }
     }
