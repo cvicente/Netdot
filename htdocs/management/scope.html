@@ -127,7 +127,6 @@ if ( $submit ){
     </div>
 </div>
 <!-- End Display main object values -->
-%print $type;
 <!-- Display has_many possibilities-->
 %  my $has_history_table = 1 if ( $table->meta_data->get_history_table_name() );
 %  if ( ! $table->meta_data->is_history() && ( keys %linksfrom ) ){
@@ -173,7 +172,7 @@ foreach my $i ( keys %linksfrom ){
         my $ffield_order = $ffattrs->{order_by} if ( defined $ffattrs && exists $ffattrs->{order_by} );
         
         my @robjs;
-        if($i ne 'contained_scopes' || $scope_text_filter || @scope_type_box){     
+        if($i ne 'contained_scopes' || $scope_text_filter || @scope_type_box){
             @robjs = $obj->$i;
         }
         else{
@@ -197,7 +196,8 @@ foreach my $i ( keys %linksfrom ){
                     }
                 }
             }
-            @robjs = @tmp_row_objects;    
+            
+            @robjs = sort {$a->name cmp $b->name} @tmp_row_objects;    
         }
 
         my $num = scalar(@robjs);

@@ -8,7 +8,7 @@ section => 'Management'
 </%attr>
 
 <%args>
-$id  
+$id            => undef
 $scope_use_obj => undef
 $user        => $ui->get_current_user($r)
 $submit      => undef
@@ -21,7 +21,10 @@ $dowindow    => undef
 </%args>
 
 <%init>
-
+if(!$id){
+    return; #ugly hack so that when autohandler is calling all the pages in procession, this page dosnt get loaded
+            #after we hit the [back] link....
+}
 my @select_all;
 my $new_select_ids;
 my @delete_array;
@@ -128,10 +131,7 @@ else{
   <head>
       <link rel="stylesheet" href="<% $r->dir_config('NetdotPath') %>css/style.css" type="text/css">
   </head>      
-% my $js_prefix = $r->dir_config('NetdotPath') . "java_script";
-% for my $script qw( dynamic_list select jsrsClient ) {
-  <script language="JavaScript" src="<% $js_prefix %>/<% $script %>.js"></script>
-% }
+
   <body class="bodytag">
 
 %if($submit){
@@ -156,7 +156,6 @@ else{
 %               }
 %           }
             </ul>
-
 %       }
 %       else{
             Value inserted sucessfully:<br/>
@@ -172,12 +171,17 @@ else{
 <div class="container">
     <div class="containerhead">
         Template Edit
+
+    </div>
+    <div class="containerheadright">
+        <a href="?page=DHCP&scope_id=<% $id %>">[back]</a>
     </div>
     <div class="containerbody">
 
 %   my %scope_name_hash = $ui->form_field(object=>$scope_obj, column=>"name", edit=>0, returnAsVar=>1);
 
 %   my @template_objs = DhcpScope->search(type=>9); #templates have a type of 9 
+%   @template_objs = sort {$a->name cmp $b->name} @template_objs;
 
 <table border=0>
 <tr>
@@ -192,7 +196,7 @@ else{
 
 %       foreach my $o (@select_all){
 %           #we need this to provide the current template as the default
-%           my $cur_template = DhcpScopeUse->retrieve($o)->template; 
+%           my $cur_template = DhcpScopeUse->retrieve($o)->template;
             
             <tr><td>
             <select name = "<% $o %>template_select ">
