@@ -113,9 +113,13 @@ BEGIN {
 			$self->table eq 'dhcpscope' || $self->table eq 'dhcpattr');
 	$args{operation} = 'insert';
 	$args{fields} = join ',', $self->columns;
-	my @values = map { $self->$_ } $self->columns;
-	$args{values} = join ',', map { "'$_'" } @values;
-	return $self->_host_audit(%args);
+	foreach my $col ( $self->columns ){
+	    if ( defined $self->$col ){ 
+		push @values, $self->$col;
+	    } 
+	}
+        $args{values} = join ',', map { "'$_'" } @values if @values;
+   	return $self->_host_audit(%args);
     }
     sub _host_audit_delete {
 	my ($self, %args) = @_;
