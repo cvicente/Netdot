@@ -14,6 +14,7 @@ $bulk_import_data => undef
 $import_overwrite => undef
 @scope_type_box   => () #used for narrowing down types of scopes you're intrested in in contained_scopes
 $scope_text_filter => undef #used to filter scope types based on a keyword.
+$show_audit_record => undef
 </%args>
 
 <%attr>
@@ -141,6 +142,7 @@ if ( $submit ){
 %             foreach my $i ( sort keys %linksfrom ){
 %               next if($i eq 'derived_scopes' && $type ne 'template');
 %               next if($i eq 'contained_scopes' && ($type eq 'host' || $type eq 'subnet' || $type eq 'template'));
+%               next if($i eq 'audit_records' && $type ne 'global');
 %               if ( $view eq $i ){
                    [<% $i %>]
 %               }else{
@@ -159,6 +161,8 @@ if ( $submit ){
 foreach my $i ( keys %linksfrom ){
     next if ($i eq "derived_scopes" && $type ne "template");
     next if($i eq 'contained_scopes' && ($type eq 'host' || $type eq 'subnet' || $type eq 'template'));
+    next if($i eq 'audit_records' && $type ne 'global');
+
     if ( ($view eq 'all' || $view eq $i ) ){
         
         # Table that points to us
@@ -166,7 +170,6 @@ foreach my $i ( keys %linksfrom ){
         
         # Column in the other table that points to this table
         my $ffield = $linksfrom{$i}{$j};
-        
         # Determine if the has_many method returns ordered data from the db
         my $ffattrs = $j->meta_data->get_column($ffield)->links_to_attrs();
         my $ffield_order = $ffattrs->{order_by} if ( defined $ffattrs && exists $ffattrs->{order_by} );
@@ -236,6 +239,8 @@ foreach my $i ( keys %linksfrom ){
 %       }
 	    </div>
 
+
+
 %       if($i eq 'contained_scopes'){
 %           #present a form to the user allowing them to only display certian types of scopes           
             <form name = "scope_options" action="scope.html" method="POST" >
@@ -255,21 +260,31 @@ foreach my $i ( keys %linksfrom ){
             </form>
             </table>
 %       }
-%      
-%        %args = ( table=>$dtbl, object=>\@robjs );
-%	     if ( $edit eq $i ){
-%            $args{withedit} = 1;
-%	     }
-%        else{
-%            # If data came ordered from the db, tell sortresults not to bother sorting
-%            $args{sort} = 0 if ( $ffield_order );
-%        }
-%	     if ($num){
-%            $args{return_args} = "?id=$id&view=$view";
-%            $m->comp('/generic/sortresults.mhtml', %args);
-%        }
+
+%       if($i eq 'audit_records' && ! $show_audit_record){
+            <form name="show_audit" action="scope.html" method="POST">
+                <input type= "hidden" name = "show_audit_record" value="1" />
+                <input type="hidden" name="id" value="<% $id %>" />
+                <input type="hidden" name="view" value="<% $view %>">
+                <input type= "submit" value= "show audit records" />
+            </form>
+%       }
+%       else{
+%           %args = ( table=>$dtbl, object=>\@robjs );
+%	        if ( $edit eq $i ){
+%               $args{withedit} = 1;
+%	        }
+%           else{
+%               # If data came ordered from the db, tell sortresults not to bother sorting
+%               $args{sort} = 0 if ( $ffield_order );
+%           }
+%	        if ($num){
+%               $args{return_args} = "?id=$id&view=$view";
+%               $m->comp('/generic/sortresults.mhtml', %args);
+%           }
 %    
     </div>
+%       }
 %   }
 %}
 
