@@ -436,7 +436,7 @@ sub _validate_args {
 
     my $type = $fields{type}->name;
 
-    if ( $fields{container} != 0 ){
+    if ( exists $fields{container} && $fields{container} != 0 ){
 	my $ctype = $fields{container}->type->name;
 	$self->throw_user("$fields{name}: container scope type not defined")
 	    unless defined $ctype;
