@@ -7,14 +7,13 @@ Specific page for DhcpScope objects
 <%args>
 $id
 $user             => $ui->get_current_user($r)
-$view             => 'all'
+$view             => undef
 $edit             => undef
 $submit           => undef
 $bulk_import_data => undef
 $import_overwrite => undef
 @scope_type_box   => () #used for narrowing down types of scopes you're intrested in in contained_scopes
 $scope_text_filter => undef #used to filter scope types based on a keyword.
-$show_audit_record => undef
 </%args>
 
 <%attr>
@@ -261,31 +260,21 @@ foreach my $i ( keys %linksfrom ){
             </table>
 %       }
 
-%       if($i eq 'audit_records' && ! $show_audit_record){
-            <form name="show_audit" action="scope.html" method="POST">
-                <input type= "hidden" name = "show_audit_record" value="1" />
-                <input type="hidden" name="id" value="<% $id %>" />
-                <input type="hidden" name="view" value="<% $view %>">
-                <input type= "submit" value= "show audit records" />
-            </form>
-%       }
+%       %args = ( table=>$dtbl, object=>\@robjs );
+%       if ( $edit eq $i ){
+%           $args{withedit} = 1;
+%	}
 %       else{
-%           %args = ( table=>$dtbl, object=>\@robjs );
-%	        if ( $edit eq $i ){
-%               $args{withedit} = 1;
-%	        }
-%           else{
-%               # If data came ordered from the db, tell sortresults not to bother sorting
-%               $args{sort} = 0 if ( $ffield_order );
-%           }
-%	        if ($num){
-%               $args{return_args} = "?id=$id&view=$view";
-%               $m->comp('/generic/sortresults.mhtml', %args);
-%           }
+%       # If data came ordered from the db, tell sortresults not to bother sorting
+%           $args{sort} = 0 if ( $ffield_order );
+%       }
+%	if ($num){
+%           $args{return_args} = "?id=$id&view=$view";
+%           $m->comp('/generic/sortresults.mhtml', %args);
+%       }
 %    
     </div>
-%       }
-%   }
+%  }
 %}
 
 <!-- End Display has_many objects -->
