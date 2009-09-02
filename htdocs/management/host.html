@@ -492,6 +492,41 @@ foreach my $o ( values %rrs ) {
 	print '</div></div>';
 
 	#####################################################################################################
+	#RRMX
+	print '<div class="container" style="margin-left:10px">';
+	print '<div class="containerheadleft"><b>Mail Exchangers (MX)</b></div>';
+	print '<div class="containerheadright">';
+	
+	#new rrmx
+	$ui->add_to_fields(table=>'RRMX', edit=>1, fields=>['preference', 'exchange', 'ttl'],
+			   field_headers=>\@field_headers, cell_data=>\@cell_data,
+			   linkpages=>['', 'view.html','']);
+	my $newmx = $m->scomp('/generic/attribute_table.mhtml', %comphash);
+	(@field_headers, @cell_data) = ((),());
+	$newmx =~ s/\n//g;
+	$newmx =~ s/<script.*?<\/script>//g;
+	$newmx =~ s/'/\\'/g;
+	print '<script type="text/javascript" language="javascript">uricomponents[\'rrmx_'.$o.'_content\']=encodeURIComponent(\''.$newmx.'\');</script>';
+	print '<div id="rrmx_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrmx\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+	print '</div>';  #close containerheadright
+	
+	#display/edit
+	print '<div class="containerbody">';
+	if (my @mxs = sort { $a->preference <=> $b->preference } $o->mx_records()) {
+	    foreach my $mx (@mxs) {
+		$ui->add_to_fields(o=>$mx, edit=>$edit, fields=>['preference', 'exchange', 'ttl'],
+				   field_headers=>\@field_headers, cell_data=>\@cell_data,
+				   linkpages=>['','view.html',''], with_delete=>1);
+		$m->comp('/generic/attribute_table.mhtml', %comphash, width=>2);
+		(@field_headers, @cell_data) = ((),());
+	    }
+	}
+	
+	print '<div id="rrmx_div_'.$o.'"></div>';
+	print '</div></div>';
+	
+    
+	#####################################################################################################
 	#RRCNAME for somewhere pointing to $o
 	print '<div class="container" style="margin-left:10px">';
 	print '<div class="containerheadleft"><b>Aliases of '.$o->get_label.' (CNAME)</b></div>';
@@ -584,10 +619,14 @@ foreach my $o ( values %rrs ) {
 
     #####################################################################################################
     # Restrict access to the following records
+    # Unpriviledged users can only work on these records if they have permissions on the whole zone
     #####################################################################################################
 
-    if ( !$o->cnames && ($manager && $manager->can($user, "access_section", 'host.html:extra_records')) ){
-    
+    if ( !$o->cnames && ($manager && 
+			 ($manager->can($user, "edit", $o->zone) || 
+			  $manager->can($user, "access_section", 'host.html:extra_records')) 
+	 )){
+	
     #####################################################################################################
     #RRPTR
     foreach my $arecord ( @arecs ) {
@@ -655,41 +694,6 @@ foreach my $o ( values %rrs ) {
 	print '</div></div>';
     }
 
-    #####################################################################################################
-    #RRMX
-    print '<div class="container" style="margin-left:10px">';
-    print '<div class="containerheadleft"><b>Mail Exchangers (MX)</b></div>';
-    print '<div class="containerheadright">';
-
-    #new rrmx
-    $ui->add_to_fields(table=>'RRMX', edit=>1, fields=>['exchange', 'preference', 'ttl'],
-		       field_headers=>\@field_headers, cell_data=>\@cell_data,
-		       linkpages=>['view.html','view.html','']);
-    my $newmx = $m->scomp('/generic/attribute_table.mhtml', %comphash);
-    (@field_headers, @cell_data) = ((),());
-    $newmx =~ s/\n//g;
-    $newmx =~ s/<script.*?<\/script>//g;
-    $newmx =~ s/'/\\'/g;
-    print '<script type="text/javascript" language="javascript">uricomponents[\'rrmx_'.$o.'_content\']=encodeURIComponent(\''.$newmx.'\');</script>';
-    print '<div id="rrmx_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrmx\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
-    print '</div>';  #close containerheadright
-
-    #display/edit
-    print '<div class="containerbody">';
-    if (my @mxs = $o->mx_records()) {
-	foreach my $mx (@mxs) {
-	    $ui->add_to_fields(o=>$mx, edit=>$edit, fields=>['exchange', 'preference', 'ttl'],
-			       field_headers=>\@field_headers, cell_data=>\@cell_data,
-			       linkpages=>['view.html','view.html','']);
-	    $m->comp('/generic/attribute_table.mhtml', %comphash);
-	    (@field_headers, @cell_data) = ((),());
-	}
-    }
-
-    print '<div id="rrmx_div_'.$o.'"></div>';
-    print '</div></div>';
-
-    
     #####################################################################################################
     #RRNS
     print '<div class="container" style="margin-left:10px">';
