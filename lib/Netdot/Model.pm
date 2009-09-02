@@ -112,12 +112,14 @@ BEGIN {
 	return unless ( $self->table =~ /^rr/ || $self->table eq 'zone' ||
 			$self->table eq 'dhcpscope' || $self->table eq 'dhcpattr');
 	$args{operation} = 'insert';
-	$args{fields} = join ',', $self->columns;
+	my (@fields, @values);
 	foreach my $col ( $self->columns ){
 	    if ( defined $self->$col ){ 
+		push @fields, $col;
 		push @values, $self->$col;
 	    } 
 	}
+	$args{fields} = join ',', @fields;
         $args{values} = join ',', map { "'$_'" } @values if @values;
    	return $self->_host_audit(%args);
     }
