@@ -3,11 +3,6 @@
 Performs searches whose return values are used to fill in objects in HTML pages
 via asynnchronous javascript calls.
 
-It supports wildcards, regex expressions or partial matching. Such as:
-* ab+ matches abc and abcc.
-Notice that * indicates there are zero or more of the preceding element, such as ab*c matches "ac","abc","abbc", and so on,
-while, .* indicates there are zero or more of any elements, such as ab.*c matches abdc, abedc...
-  
 When debugging, turn DEBUG flag on and execute directly from browser:
  
 * Searching a single field:
@@ -29,20 +24,12 @@ inherit => undef
 my $DEBUG = 0;
 </%shared>
 
-<%args>
-$table      => undef
-$form_field => 'form_field'
-$val        => undef
-$field      => undef
-</%args>
-
 <%perl>
 if ( $DEBUG ){
     use Data::Dumper;
     print "<pre> ", Dumper(%ARGS), "</pre><br>";
-    if ( $table ){
-	print &keyword_search($table, $form_field, $val, $field);
-    }
+    print &keyword_search($ARGS{table}, $ARGS{form_field}, 
+			  $ARGS{keywords}, $ARGS{field});
 }else{
     # Do not use 'require' here.  
     # We need to make sure the file is read *each time*
@@ -50,113 +37,92 @@ if ( $DEBUG ){
     jsrsDispatch("keyword_search");
 }
 
-
 # Arguments:
 # - table:      Table to search.
 # - form_field: Name of the form field to add the results into
-# - val:   keywords to search for
+# - keywords:   keywords to search for
 # - field:      Name of the field for which we\'re searching foreign values
 #               if undefined, search will be performed recursively on the 
-#               "label" fields of the table, as defined in metadata Arguments:
+#               "label" fields of the table, as defined in metadata
 sub keyword_search {
-    my ( $table, $form_field , $val, $field) = @_;
-    my $response = $form_field."&";
-    my $tmprsp;
+    my ( $table, $form_field, $keywords, $field ) = @_;
+    my $r;
+    my @terms;
     my $MAX   = $ui->config->get('DEFAULT_SELECTMAX');
-    my $count = 0;
-   
-    # Added this select tag so that the user is able to select
-    # something which will trigger updating of related select
-    # lists.  This is important because if there is only one result then the
-    # user can't trigger a change event, which is needed to trigger the
-    # select update code specified via the onChange event handler
-    # attribute of the selects in question.
-    
-    $response .= "0=-- Select -- &";
-    
+
+    if ( $keywords =~ /\w+/ ){
+	if ( $keywords =~ s/^\s*(.*)\s*$/$1/ ){
+	    @terms = split /\s+/, $keywords;
+	}else{
+	    $terms[0] = $keywords;
+	}
+    }else{
+	return;
+    }
+
+    my $response = $form_field."&";
     if ( $table eq 'Ipblock' ){
-	my $dbh = Netdot::Model->db_Main();
-	my $rows = $dbh->selectall_arrayref("SELECT   id,version,address,prefix 
-                                             FROM     ipblock
-                                             ORDER BY address");
-     
-	if ( my $n = scalar @$rows ){
-            # search for particular value
-            foreach my $row ( @$rows ){
-		my ($id, $version, $intaddr, $prefix) = @$row;
-                my $address = Ipblock->int2ip($intaddr, $version);
-                my $lbl;
-                if ( $val =~ /.*\/.*/ ){
-                    $lbl = $address.'/'.$prefix;
-                }else{
-                    $lbl = $address;
-                }
-                if ( $lbl eq $val ){
-                    if ( $lbl =~ /.*\/.*/ ){
-                        $tmprsp .= $id."=".$ui->url_encode($lbl)."&";
-                    }else{
-                        $tmprsp .= $id."=".$ui->url_encode($lbl.'/'.$prefix)."&";
-                    } 
-                    $count++;
-                }
+	my @r = Ipblock->search(address=>$keywords);
+	map { $r->{$_->id} = $_ } @r;
+        if ( !(scalar (keys %$r)) ){
+            @r = Ipblock->search_like(address=>$keywords);
+	    map { $r->{$_->id} = $_ } @r;     
+        }
+    }else{
+	if ( $field ){
+	    my @r = $table->search($field=>$terms[0]);
+	    map { $r->{$_->id} = $_ } @r;
+            if ( !(scalar (keys %$r)) ){
+                @r = $table->search_like($field=>$terms[0]);
+                map { $r->{$_->id} = $_ } @r;
             }
-            # Assume user provides regular expression
-            if ( !$count ){
-                foreach my $row ( @$rows ){
-		    my ($id, $version, $intaddr, $prefix) = @$row;
-                    my $address = Ipblock->int2ip($intaddr, $version);
-                    my $lbl = $address.'/'.$prefix;
-                    if ( $lbl =~ /.*$val.*/ ){
-                        $tmprsp .= $id."=".$ui->url_encode($lbl)."&"; 
-                        $count++;
-                    }
-                }
+	}else{
+            my @r = $table->search(name=>$terms[0]);
+            map { $r->{$_->id} = $_ } @r;
+            if ( !(scalar (keys %$r)) ){
+                @r = $table->search_like(name=>$terms[0]);
+                map { $r->{$_->id} = $_ } @r;
+            }
+            if ( !(scalar (keys %$r)) ){
+                $r = $ui->select_query(table => $table, terms => \@terms);
+            }
+	}
+    }
+    
+
+    if (my $n = scalar (keys %$r) ){
+        my $count = 0;
+
+        if ($n >= $MAX){
+            $response .= "0=".$ui->url_encode("More than ".$MAX." matches.  Refine search")."&";
+        }else{
+            my @objs = map { $r->{$_} } keys %$r;
+	    if ( $table eq 'Interface' ){
+	        # Always order interfaces by ifIndex
+	        @objs = sort { $a->number <=> $b->number } @objs;
+	    }else{
+	        @objs = sort { $a->get_label cmp $b->get_label } @objs;
+	    }
+            # Added this select tag so that the user is able to select
+            # something which will trigger updating of related select
+            # lists.  This is important because if there is only one result then the
+            # user can't trigger a change event, which is needed to trigger the
+            # select update code specified via the onChange event handler
+            # attribute of the selects in question.
+            $response .= "0=-- Select --&";
+
+            foreach my $o ( @objs ){
+                my $lbl = $o->get_label();
+                $response .= $o->id."=".$ui->url_encode($lbl)."&";
+                last if ($count++) == $MAX;
             }
         }
     }else{
-        my @rows;
-        if( $field ){
-           my $dbh = Netdot::Model->db_Main();
-           my $dbquery = "SELECT ".$field." FROM ".$table;
-           @rows = $dbh->selectall_arrayref($dbquery);         
-        }else{
-	   @rows = $table->retrieve_all();
-	}
-        if ( my $n = scalar @rows ){ 
-	    my @objs = sort { $a->get_label cmp $b->get_label } @rows;
-            # Search for particular value
-	    foreach my $o ( @objs ){
-		my $lbl = $o->get_label();
-                if ( $lbl eq $val ){
-	            $tmprsp .= $o->id."=".$ui->url_encode($lbl)."&"; 
-                    $count++;
-	        }
-            }
-            # Assume user provides regular expression
-            if ( !$count ){
-                foreach my $o ( @objs ){
-		    my $lbl = $o->get_label();
-                    if ( $lbl =~ /.*$val.*/ ){
-	                $tmprsp .= $o->id."=".$ui->url_encode($lbl)."&"; 
-                        $count++;
-	            }
-                }
-            }
-         }
+        $response .= "0=".$ui->url_encode("No matches");
     }
     
-    if ( $count > $MAX ){
-        $response .= "0=".$ui->url_encode("More than ".$MAX." matches.")."&";
-        $response .= "0=".$ui->url_encode("Refine search."); 
-    }elsif( $count == 0 ){
-        $response .= "0=".$ui->url_encode("No matches");
-    }else{
-        $response .= $tmprsp;
-    }
-
     return $response;    
 }
-
 
 </%perl>
 
