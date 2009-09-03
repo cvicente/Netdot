@@ -696,38 +696,39 @@ foreach my $o ( values %rrs ) {
 
     #####################################################################################################
     #RRNS
-    print '<div class="container" style="margin-left:10px">';
-    print '<div class="containerheadleft"><b>Name Servers (NS)</b></div>';
-    print '<div class="containerheadright">';
+    if ( !$o->arecords ){
+	print '<div class="container" style="margin-left:10px">';
+	print '<div class="containerheadleft"><b>Name Servers (NS)</b></div>';
+	print '<div class="containerheadright">';
 
-    #new rrns
-    $ui->add_to_fields(table=>'RRNS', edit=>1, fields=>['nsdname', 'ttl'],
-		       field_headers=>\@field_headers, cell_data=>\@cell_data,
-		       linkpages=>['view.html','']);
-    my $newns = $m->scomp('/generic/attribute_table.mhtml', %comphash);
-    (@field_headers, @cell_data) = ((),());
-    $newns =~ s/\n//g;
-    $newns =~ s/<script.*?<\/script>//g;
-    $newns =~ s/'/\\'/g;
-    print '<script type="text/javascript" language="javascript">uricomponents[\'rrns_'.$o.'_content\']=encodeURIComponent(\''.$newns.'\');</script>';
-    print '<div id="rrns_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrns\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
-    print '</div>';  #close containerheadright
+	#new rrns
+	$ui->add_to_fields(table=>'RRNS', edit=>1, fields=>['nsdname', 'ttl'],
+			   field_headers=>\@field_headers, cell_data=>\@cell_data,
+			   linkpages=>['view.html','']);
+	my $newns = $m->scomp('/generic/attribute_table.mhtml', %comphash);
+	(@field_headers, @cell_data) = ((),());
+	$newns =~ s/\n//g;
+	$newns =~ s/<script.*?<\/script>//g;
+	$newns =~ s/'/\\'/g;
+	print '<script type="text/javascript" language="javascript">uricomponents[\'rrns_'.$o.'_content\']=encodeURIComponent(\''.$newns.'\');</script>';
+	print '<div id="rrns_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrns\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+	print '</div>';  #close containerheadright
 
-    #display/edit
-    print '<div class="containerbody">';
-    if (my @nss = $o->ns_records()) {
-	foreach my $ns (@nss) {
-	    $ui->add_to_fields(o=>$ns, edit=>$edit, fields=>['nsdname', 'ttl'],
-			       field_headers=>\@field_headers, cell_data=>\@cell_data,
-			       linkpages=>['view.html',''], with_delete=>1);
-	    $m->comp('/generic/attribute_table.mhtml', %comphash);
-	    (@field_headers, @cell_data) = ((),());
+	#display/edit
+	print '<div class="containerbody">';
+	if (my @nss = $o->ns_records()) {
+	    foreach my $ns (@nss) {
+		$ui->add_to_fields(o=>$ns, edit=>$edit, fields=>['nsdname', 'ttl'],
+				   field_headers=>\@field_headers, cell_data=>\@cell_data,
+				   linkpages=>['view.html',''], with_delete=>1);
+		$m->comp('/generic/attribute_table.mhtml', %comphash);
+		(@field_headers, @cell_data) = ((),());
+	    }
 	}
+
+	print '<div id="rrns_div_'.$o.'"></div>';
+	print '</div></div>';
     }
-
-    print '<div id="rrns_div_'.$o.'"></div>';
-    print '</div></div>';
-
     
     #####################################################################################################
     #RRNAPTR
