@@ -17,8 +17,7 @@ Netdot::UI groups common methods and variables related to Netdot's user interfac
   print $ui->text_area(object=>$o, column=>"info", edit=>1, htmlExtra=>"cols=60");
 
 =cut
-
-use lib "/usr/local/netdot/lib";
+use lib "<<Make:LIB>>";
 use base qw( Netdot );
 use Netdot::Model;
 use Apache::Session::File;
