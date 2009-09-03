@@ -17,7 +17,6 @@ Netdot::UI groups common methods and variables related to Netdot's user interfac
   print $ui->text_area(object=>$o, column=>"info", edit=>1, htmlExtra=>"cols=60");
 
 =cut
-
 use lib "<<Make:LIB>>";
 use base qw( Netdot );
 use Netdot::Model;
@@ -318,10 +317,10 @@ sub form_field {
         $value = $self->select_lookup(object=>$o, table=>$table, column=>$column, htmlExtra=>$args{htmlExtra}, 
 				      lookup=>$f_table, edit=>$args{edit}, linkPage=>$args{linkPage}, default=>$args{default},
 				      defaults=>$args{defaults}, returnAsVar=>1, shortFieldName=>$args{shortFieldName});
-
+    }
     ################################################
     ## column is a local field
-    } else {
+    else {
         my $type = $mcol->sql_type;
 
 	if ( $type =~ /^varchar|timestamp|integer|numeric|bigint$/ ){
@@ -1486,6 +1485,9 @@ sub build_ip_tree_graph {
     foreach my $n ( @$list ){
 	my $ip = Ipblock->retrieve($n->data);
 	
+	# Make sure we don't have a null reference
+	next unless($ip);
+
 	# Make sure we don't include end addresses in the tree
 	next if $ip->is_address;
 	
