@@ -1550,8 +1550,9 @@ sub build_ip_tree_graph {
 	my $ip = Ipblock->retrieve($n->data);
 	
 	# Make sure we don't have a null reference
-    next unless($ip);
-    # Make sure we don't include end addresses in the tree
+	next unless($ip);
+
+	# Make sure we don't include end addresses in the tree
 	next if $ip->is_address;
 	
 	my @lbls;
