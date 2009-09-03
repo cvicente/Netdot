@@ -241,22 +241,20 @@ foreach my $i ( keys %linksfrom ){
 
 
 %       if($i eq 'contained_scopes'){
-%           #present a form to the user allowing them to only display certian types of scopes           
-            <form name = "scope_options" action="scope.html" method="POST" >
-                <table><tr>                 
-                <td>Select Scope type(s)
-                 <select name = "scope_type_box">
-
+%           # present a form to the user allowing them to only display certian types of scopes
+              <p>
+              <form name = "scope_options" action="scope.html" method="POST" >
+              Select Scope type(s)
+              <select name = "scope_type_box">
 %                    foreach my $zone (@all_zones){                   
                          <option value="<% $zone->name %>"><% $zone->name %></option>
 %                    }
-                       
-                 </select></td></tr>
-            <tr><td>keyword:  <input type="text" name="scope_text_filter"></input></td></tr>
-            <tr><td><input type="submit" /></td></tr>
-            <input type="hidden" name="id" value="<% $id %>" />
-            <input type="hidden" name="view" value="<% $view %>">
-            </form>
+               </select>
+            keyword:  <input type="text" name="scope_text_filter"></input></td></tr>
+            <input type="submit" /></td></tr>
+              <input type="hidden" name="id" value="<% $id %>" />
+              <input type="hidden" name="view" value="<% $view %>">
+              </form>
             </table>
 %       }
 
