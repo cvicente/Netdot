@@ -1439,7 +1439,7 @@ sub build_backbone_graph {
     foreach my $bb ( BackboneCable->retrieve_all() ){
 	# Get end closets and end sites
 	my @eclosets     = ($bb->start_closet, $bb->end_closet);
-	my @esites       = ($bb->start_closet->site, $bb->end_closet->site);
+	my @esites       = ($bb->start_closet->room->floor->site, $bb->end_closet->room->floor->site);
 	my @strands      = $bb->strands;
 	my $num_strands  = scalar @strands;
 	my $st           = StrandStatus->search(name=>'In Use')->first;

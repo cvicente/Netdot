@@ -39,15 +39,15 @@ my ($start_site_id, $end_site_id) = (0, 0);
 if ( $id && $id ne "NEW" ) {
     $o = BackboneCable->retrieve($id);
     
-    if ( $o->start_closet->floor && $o->start_closet->floor->site ){
-	$start_site = $o->start_closet->floor->site;
-    }elsif( $o->start_closet->site ){
-	$start_site = $o->start_closet->site;
+    if ( $o->start_closet->room->floor && $o->start_closet->room->floor->site ){
+	$start_site = $o->start_closet->room->floor->site;
+    }elsif( $o->start_closet->room->floor->site ){
+	$start_site = $o->start_closet->room->floor->site;
     }
-    if ( $o->end_closet->floor && $o->end_closet->floor->site ){
-	$end_site = $o->end_closet->floor->site;
-    }elsif( $o->end_closet->site ){
-	$end_site = $o->end_closet->site;
+    if ( $o->end_closet->room->floor && $o->end_closet->room->floor->site ){
+	$end_site = $o->end_closet->room->floor->site;
+    }elsif( $o->end_closet->room->floor->site ){
+	$end_site = $o->end_closet->room->floor->site;
     }
     $start_site_id = $start_site->id if ($start_site);
     $end_site_id = $end_site->id if ($end_site);
@@ -87,15 +87,15 @@ if (defined($_action) && ($_action eq "UPDATE" || $_action eq "STRAND_UPDATE")) 
     $o = undef;
     if ($id && $id ne "NEW") {
         $o = BackboneCable->retrieve($id);
-	if ( $o->start_closet->floor && $o->start_closet->floor->site ){
-	    $start_site = $o->start_closet->floor->site;
-	}elsif( $o->start_closet->site ){
-	    $start_site = $o->start_closet->site;
+	if ( $o->start_closet->room->floor && $o->start_closet->room->floor->site ){
+	    $start_site = $o->start_closet->room->floor->site;
+	}elsif( $o->start_closet->room->floor->site ){
+	    $start_site = $o->start_closet->room->floor->site;
 	}
-	if ( $o->end_closet->floor && $o->end_closet->floor->site ){
-	    $end_site = $o->end_closet->floor->site;
-	}elsif( $o->end_closet->site ){
-	    $end_site = $o->end_closet->site;
+	if ( $o->end_closet->room->floor && $o->end_closet->room->floor->site ){
+	    $end_site = $o->end_closet->room->floor->site;
+	}elsif( $o->end_closet->room->floor->site ){
+	    $end_site = $o->end_closet->room->floor->site;
 	}
         $start_site_id = $start_site->id if ($start_site);
         $end_site_id = $end_site->id if ($end_site);

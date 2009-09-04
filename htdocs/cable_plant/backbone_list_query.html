@@ -68,15 +68,15 @@ sub backbone_search {
     # and now go through all of our backbones and add sites to our list.
     foreach my $backbone ( @backbones ){
 	my ($start_site, $end_site);
-	if ( $backbone->start_closet->floor && $backbone->start_closet->floor->site ){
-	    $start_site = $backbone->start_closet->floor->site;
-	}elsif( $backbone->start_closet->site ){
-	    $start_site = $backbone->start_closet->site;
+	if ( $backbone->start_closet->room->floor && $backbone->start_closet->room->floor->site ){
+	    $start_site = $backbone->start_closet->room->floor->site;
+	}elsif( $backbone->start_closet->room->floor->site ){
+	    $start_site = $backbone->start_closet->room->floor->site;
 	}
-	if ( $backbone->end_closet->floor && $backbone->end_closet->floor->site ){
-	    $end_site = $backbone->end_closet->floor->site;
-	}elsif( $backbone->end_closet->site ){
-	    $end_site = $backbone->end_closet->site;
+	if ( $backbone->end_closet->room->floor && $backbone->end_closet->room->floor->site ){
+	    $end_site = $backbone->end_closet->room->floor->site;
+	}elsif( $backbone->end_closet->room->floor->site ){
+	    $end_site = $backbone->end_closet->room->floor->site;
 	}
 	
 	if ($start_site->id != $site_id &&

@@ -24,17 +24,17 @@ See Netdot::Model::Site
 
 __PACKAGE__->set_sql(with_backbones => qq{
 SELECT   site.id 
-FROM     site, closet, backbonecable 
+FROM     site, closet, room, floor, backbonecable
 WHERE    (backbonecable.start_closet=closet.id OR backbonecable.end_closet=closet.id) 
-  AND    closet.site=site.id 
+  AND    ((closet.room=room.id AND room.floor=floor.id) AND floor.site=site.id) 
 GROUP BY site.id, site.name    
 ORDER BY site.name
 });
 
 __PACKAGE__->set_sql(with_closets => qq{
 SELECT   site.id 
-FROM     site, closet
-WHERE    closet.site=site.id 
+FROM     site, closet, room, floor
+WHERE    (closet.room=room.id AND room.floor=floor.id) AND floor.site=site.id 
 GROUP BY site.id, site.name    
 ORDER BY site.name
 });

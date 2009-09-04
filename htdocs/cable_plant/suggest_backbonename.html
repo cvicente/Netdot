@@ -20,17 +20,17 @@ my ($start_closet, $end_closet, $start_site, $end_site);
 $start_closet = Closet->retrieve($start);
 $end_closet = Closet->retrieve($end);
 
-if ( $start_closet->floor && $start_closet->floor->site ){
-    $start_site = $start_closet->floor->site;
-}elsif ( $start_closet->site ){
-    $start_site = $start_closet->site;    
+if ( $start_closet->floor && $start_closet->room->floor->site ){
+    $start_site = $start_closet->room->floor->site;
+}elsif ( $start_closet->room->floor->site ){
+    $start_site = $start_closet->room->floor->site;    
 }else{
     $m->comp('error.mhtml', error=>"Could not determine start Site");
 }
-if ( $end_closet->floor && $end_closet->floor->site ){
-    $end_site = $end_closet->floor->site;
-}elsif ( $end_closet->site ){
-    $end_site = $end_closet->site;    
+if ( $end_closet->room->floor && $end_closet->room->floor->site ){
+    $end_site = $end_closet->room->floor->site;
+}elsif ( $end_closet->room->floor->site ){
+    $end_site = $end_closet->room->floor->site;    
 }else{
     $m->comp('error.mhtml', error=>"Could not determine end Site");
 }

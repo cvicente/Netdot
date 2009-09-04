@@ -306,7 +306,7 @@ push @statements, (
    );
 
 ###################################################################################
-# Update to change the number field in closet into a foreign key pointing to room #
+#     Change the number field in closet into a foreign key pointing to room       #
 my $closet_handler = $dbh->prepare("SELECT * FROM closet ORDER BY id") or die $dbh->errstr;
 $closet_handler->execute() or die $dbh->errstr;
 
@@ -326,10 +326,9 @@ foreach my $ci ( keys(%{$cref}) ){
         }
     } 
     if (!$bool){
-        my $sth2 =  $dbh->prepare("INSERT INTO room (name, floor) VALUES ($cref->{$ci}->{number}, $cref->{$ci}->{floor});");
-        $sth2->execute() or die $dbh->errstr;
-        $cref->{$ci}->{number} = $rref->{$ri}->{id};
-        $sth2->finish();
+        push (@statements, 
+              "INSERT INTO room (name, floor) VALUES ('$cref->{$ci}->{number}', '$cref->{$ci}->{floor}')"
+             );
     }	
 }
 
@@ -337,28 +336,13 @@ $closet_handler->finish();
 $room_handler->finish();
 
 push (@statements,
-      "ALTER TABLE `closet` CHANGE `number` `room` integer NOT NULL",
+      "UPDATE closet, room SET closet.number = room.id 
+       WHERE closet.number = room.name AND closet.floor = room.floor",
       "ALTER TABLE `closet` DROP COLUMN `floor`",
-      "ALTER TABLE `closet` DROP COLUMN `site`"
-     );
-
-###################################################################################
-# Update device room field                                                        #
-my $devh = $dbh->prepare("SELECT * FROM device ORDER BY id") or die $dbh->errstr;
-$devh->execute() or die $dbh->errstr;
-my $devref = $devh->fetchall_hashref('id') or die $dbh->errstr;
-
-foreach my $devi ( keys(%{$devref}) ){
-    if ( $devref->{$devi}->{closet} ){
-         foreach my $ci (keys(%{$cref}) ){
-             if ( $cref->{$ci}->{id} == $devref->{$devi}->{closet} ) {
-                 $devref->{$devi}->{room} = $cref->{$ci}->{number};
-             }
-         }
-    }
-}
-
-push (@statements,
+      "ALTER TABLE `closet` DROP COLUMN `site`",
+      "ALTER TABLE `closet` CHANGE `number` `room` integer NOT NULL",
+      "UPDATE device, closet SET device.room = closet.room
+       WHERE device.closet = closet.id",
       "ALTER TABLE `device` DROP COLUMN `closet`"
      );
 

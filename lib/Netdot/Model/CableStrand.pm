@@ -56,18 +56,22 @@ sub find_sequences{
                                                  AND cable = ?");
 	
 	my $site_st1 = $dbh->prepare_cached("SELECT COUNT(*) 
-                                             FROM   cablestrand, backbonecable, closet
+                                             FROM   cablestrand, backbonecable, closet, room, floor
                                              WHERE  cablestrand.id = ?   
                                                 AND cablestrand.cable = backbonecable.id 
                                                 AND backbonecable.end_closet = closet.id 
-                                                AND closet.site = ?");
+                                                AND closet.room = room.id 
+                                                AND room.floor = floor.id
+                                                AND floor.site = ?");
 
 	my $site_st2 = $dbh->prepare_cached("SELECT COUNT(*) 
-                                             FROM   cablestrand, backbonecable, closet
+                                             FROM   cablestrand, backbonecable, closet, room, floor
                                              WHERE  cablestrand.id = ? 
                                                 AND cablestrand.cable = backbonecable.id 
                                                 AND backbonecable.start_closet = closet.id 
-                                                AND closet.site = ?");
+                                                AND closet.room = room.id
+                                                AND room.floor = floor.id
+                                                AND floor.site = ?");
 	
 	my $i = 0;
 	$bb_st->execute();

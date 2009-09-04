@@ -125,9 +125,9 @@ my (@field_headers, @cell_data, @headers, @rows);
 		} elsif ($cable_sort eq "strand_count") {
 		    @sorted_cables = sort { scalar($a->strands) <=> scalar($b->strands) } @cables;
 		} elsif ($cable_sort eq "start_building") {
-		    @sorted_cables = sort { $a->start_closet->site->name cmp $b->start_closet->site->name } @cables;
+		    @sorted_cables = sort { $a->start_closet->room->floor->site->name cmp $b->start_closet->room->floor->site->name } @cables;
 		} elsif ($cable_sort eq "end_building") {
-		    @sorted_cables = sort { $a->end_closet->site->name cmp $b->end_closet->site->name } @cables;
+		    @sorted_cables = sort { $a->end_closet->room->floor->site->name cmp $b->end_closet->room->floor->site->name } @cables;
 		} else {
 		    $m->comp("error.mhtml", "Unknown value for cable_sort: \"$cable_sort\"");
 		}
@@ -178,7 +178,7 @@ my (@field_headers, @cell_data, @headers, @rows);
 			  }} );
 		    push( @row, $ui->form_field(object=>$cable, column=>"type", edit=>($edit eq "cableinfo"), returnValOnly=>1) );
 		    if ($edit ne "cableinfo") {
-			push( @row, '<a href="view.html?table=Site&id=' . $cable->start_closet->site->id . '">' . $cable->start_closet->site->name . '</a>' );
+			push( @row, '<a href="view.html?table=Site&id=' . $cable->start_closet->room->floor->site->id . '">' . $cable->start_closet->room->floor->site->name . '</a>' );
 		    }
 		    push( @row, 
 			  &{sub{
