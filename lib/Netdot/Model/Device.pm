@@ -463,7 +463,7 @@ sub insert {
 
     # Assign defaults
     # These will be overridden by the given arguments
-    my %devtmp = (closet           => 0,
+    my %devtmp = (
 		  community        => 'public',
 		  customer_managed => 0,
 		  collect_arp      => 0,
