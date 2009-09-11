@@ -74,9 +74,9 @@ print "closets is <pre>", Dumper(@closets), "</pre><br>" if $DEBUG;
 	    $cable_sort = "name" if (!defined($cable_sort) || $cable_sort eq "");
 	    my @sorted_closets;
 	    if ($cable_sort eq "name" || $cable_sort eq "room") {
-		@sorted_closets = sort { $a->$cable_sort cmp $b->$cable_sort } @closets;
+		@sorted_closets = sort { $a->room->$cable_sort cmp $b->room->$cable_sort } @closets;
 	    } elsif ($cable_sort eq "floor") {
-		@sorted_closets = sort { $a->floor->level cmp $b->floor->level } @closets;
+		@sorted_closets = sort { $a->room->floor->level cmp $b->room->floor->level } @closets;
 	    } else {
 		$m->comp("error.mhtml", "Unknown value for cable_sort: \"$cable_sort\"");
 	    }
@@ -88,11 +88,10 @@ print "closets is <pre>", Dumper(@closets), "</pre><br>" if $DEBUG;
 
 	    push( @headers, '<a href="cable_plant.html?id=' . $id . '&cable_sort=name&page_type=' . $page_type . '">Name</a>' );
 	    push( @headers, '<a href="cable_plant.html?id=' . $id . '&cable_sort=room&page_type=' . $page_type . '">Room</a>' );
-	    push( @headers, '<a href="cable_plant.html?id=' . $id . '&cable_sort=floor&page_type=' . $page_type . '">Floor</a>' );
-
+            push( @headers, '<a href="cable_plant.html?id=' . $id . '&cable_sort=floor&page_type=' . $page_type. '">Floor</a>');
 
 	    foreach my $closet (@sorted_closets) {
-		my $site = $closet->floor->site || $closet->site;
+		my $site = $closet->room->floor->site;
 
 		my @row = ();
 		push( @row, 
@@ -106,9 +105,8 @@ print "closets is <pre>", Dumper(@closets), "</pre><br>" if $DEBUG;
 			  }
 			  $ac;
 		      }} );
-		push( @row, $ui->form_field(object=>$closet, column=>"room", edit=>($edit eq "cableinfo"), linkPage=>1, returnValOnly=>1) );
-		push( @row, $ui->form_field(object=>$closet, column=>"floor", edit=>($edit eq "cableinfo"), 
-						 linkPage=>1, returnValOnly=>1) );
+		push( @row, $ui->form_field(object=>$closet->room, column=>"name", edit=>($edit eq "cableinfo"), linkPage=>1, returnValOnly=>1) );
+                push( @row, $ui->form_field(object=>$closet->room->floor, column=>"level", edit=>($edit eq "cableinfo"), linkPage=>1, returnValOnly=>1) );
 		push( @rows, \@row );
 	    }
 	    </%perl>
