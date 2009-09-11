@@ -70,26 +70,24 @@ sub backbone_search {
 	my ($start_site, $end_site);
 	if ( $backbone->start_closet->room->floor && $backbone->start_closet->room->floor->site ){
 	    $start_site = $backbone->start_closet->room->floor->site;
-	}elsif( $backbone->start_closet->room->floor->site ){
-	    $start_site = $backbone->start_closet->room->floor->site;
-	}
+        }
 	if ( $backbone->end_closet->room->floor && $backbone->end_closet->room->floor->site ){
 	    $end_site = $backbone->end_closet->room->floor->site;
-	}elsif( $backbone->end_closet->room->floor->site ){
-	    $end_site = $backbone->end_closet->room->floor->site;
 	}
 	
-	if ($start_site->id != $site_id &&
-	    !exists($stored{$start_site})) {
-	    push(@results, $start_site);
-	    $stored{$start_site} = 1;
-	}
+        if ( $start_site && $end_site ){
+	    if ($start_site->id != $site_id &&
+	        !exists($stored{$start_site})) {
+	        push(@results, $start_site);
+	        $stored{$start_site} = 1;
+	    } 
 	
-	if ($end_site->id != $site_id &&
-	    !exists($stored{$end_site})) {
-	    push(@results, $end_site);
-	    $stored{$end_site} = 1;
-	}
+	    if ($end_site->id != $site_id &&
+	        !exists($stored{$end_site})) {
+	        push(@results, $end_site);
+	        $stored{$end_site} = 1;
+	    }
+        }
     }
     
 # printf("var listdata = new Array();\n");

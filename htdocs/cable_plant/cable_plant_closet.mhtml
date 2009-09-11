@@ -91,7 +91,7 @@ print "closets is <pre>", Dumper(@closets), "</pre><br>" if $DEBUG;
             push( @headers, '<a href="cable_plant.html?id=' . $id . '&cable_sort=floor&page_type=' . $page_type. '">Floor</a>');
 
 	    foreach my $closet (@sorted_closets) {
-		my $site = $closet->room->floor->site;
+		my $site = $closet->room->floor->site if ($closet->room->floor->site);
 
 		my @row = ();
 		push( @row, 

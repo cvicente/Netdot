@@ -22,15 +22,11 @@ $end_closet = Closet->retrieve($end);
 
 if ( $start_closet->room->floor && $start_closet->room->floor->site ){
     $start_site = $start_closet->room->floor->site;
-}elsif ( $start_closet->room->floor->site ){
-    $start_site = $start_closet->room->floor->site;    
 }else{
     $m->comp('error.mhtml', error=>"Could not determine start Site");
 }
 if ( $end_closet->room->floor && $end_closet->room->floor->site ){
     $end_site = $end_closet->room->floor->site;
-}elsif ( $end_closet->room->floor->site ){
-    $end_site = $end_closet->room->floor->site;    
 }else{
     $m->comp('error.mhtml', error=>"Could not determine end Site");
 }

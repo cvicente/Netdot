@@ -159,8 +159,8 @@ my (@field_headers, @cell_data, @headers, @rows);
 
 		foreach my $cable (@sorted_cables) {
 
-		    my $start_site = $cable->start_closet->room->floor->site;
-		    my $end_site = $cable->end_closet->room->floor->site;
+		    my $start_site = $cable->start_closet->room->floor->site if ($cable->start_closet->room->floor);
+		    my $end_site = $cable->end_closet->room->floor->site if ($cable->end_closet->room->floor);
 		    my $start_site_id = $start_site->id if ($start_site);
 		    my $end_site_id = $end_site->id if ($end_site);
 
@@ -191,7 +191,7 @@ my (@field_headers, @cell_data, @headers, @rows);
 			      $ac;
 			  }} );
 		    if ($edit ne "cableinfo") {
-			push( @row, '<a href="view.html?table=Site&id=' . $cable->end_closet->site->id . '">' . $cable->end_closet->site->name . '</a>' );
+			push( @row, '<a href="view.html?table=Site&id=' . $cable->end_closet->room->floor->site->id . '">' . $cable->end_closet->room->floor->site->name . '</a>' );
 		    }
 		    push( @row, 
 			  &{sub{

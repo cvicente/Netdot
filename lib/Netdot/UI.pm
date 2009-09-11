@@ -1448,7 +1448,7 @@ sub build_backbone_graph {
 
 	# Create a node for each site
 	foreach my $site ( @esites ){
-	    if ( !$seen{$site->id} ){
+	    if ( $site && !$seen{$site->id} ){
 
 		# Create an array of closets to display per Site
 		# First element is the Site name

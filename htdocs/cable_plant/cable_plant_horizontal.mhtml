@@ -81,7 +81,7 @@ my (@field_headers, @cell_data, @headers, @rows);
 	      push( @headers, '<a href="cable_plant.html?id=' . $id . '&cable_sort=room&page_type=' . $page_type . '">Room</a>' );
 
 	      foreach my $cable (@sorted_cables) {
-		  my $site = $cable->closet->room->floor->site;
+		  my $site = $cable->closet->room->floor->site if ($cable->closet->room->floor);
 		  my @row = ();
 		  push( @row, 
 			&{sub{
