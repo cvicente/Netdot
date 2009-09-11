@@ -1454,7 +1454,7 @@ sub build_backbone_graph {
 		# First element is the Site name
 		my @sclosets = ($site->get_label);
 		map { push @sclosets, $_->name } sort { $a->name cmp $b->name } $site->closets;
-
+                                         
 		for ( my $i=0; $i < scalar(@sclosets); $i++ ){
 		    $site_closets{$site->id}{$sclosets[$i]} = $i;
 		}
@@ -1463,7 +1463,6 @@ sub build_backbone_graph {
 		    name   => $site->get_label,
 		    label  => \@sclosets,
 		    shape  => "record",
-		    URL    => "view.html?table=Site&id=".$site->id,
 		    );
 		$seen{$site->id} = 1;
 	    }
@@ -1476,10 +1475,11 @@ sub build_backbone_graph {
 	    $g->add_edge($esites[0]->get_label => $esites[1]->get_label,
 			 label     => $bb->name." (".$used_strands."/".$num_strands.")",
 			 fontsize  => '10',
-			 URL       => "../cable_plant/cable_backbone.html?id=".$bb->id,
-			 from_port => $site_closets{$esites[0]->id}{$eclosets[0]->name},
-			 to_port   => $site_closets{$esites[1]->id}{$eclosets[1]->name},
-			 color     => 'black',
+                         arrowhead => 'normal',
+                         arrowtail => 'none',
+                         from_port => $site_closets{$esites[0]->id}{$eclosets[0]->name},
+                         to_port   => $site_closets{$esites[1]->id}{$eclosets[1]->name},
+			 color     => 'black'
 		);
 	}
     }

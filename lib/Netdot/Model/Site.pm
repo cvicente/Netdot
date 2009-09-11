@@ -64,6 +64,30 @@ sub rooms {
     return @rooms;
 }
 
+#############################################################################
+=head2 closets - Get list of closets
+  
+  Arguments:
+    None
+  Returns:
+    Array of Room objects
+  Examples:
+    my @closets = $site->closets;
+
+=cut
+
+sub closets {
+    my ($site) = @_;
+    my @rclosets;
+    my @closets = Closet->retrieve_all();
+    foreach my $closet ( @closets ){
+        if( $closet->room->floor->site == $site->id ){
+            push @rclosets, $closet;
+        }
+    }
+    return @rclosets;
+}
+
 =head1 AUTHOR
 
 Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
