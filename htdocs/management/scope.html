@@ -5,7 +5,7 @@ Specific page for DhcpScope objects
 </%doc>
 
 <%args>
-$id
+$id               => undef
 $user             => $ui->get_current_user($r)
 $view             => undef
 $edit             => undef
@@ -25,6 +25,10 @@ my $table = 'DhcpScope';
 my $DEBUG = 0;
 my($obj, $prevobj );
 my %ftables;
+
+if(! $id){
+    return;
+}
 
 my %explanation_hash = ( 
     'templates' => 'When using a template, the scope will inherit all attributes of the template',
