@@ -234,6 +234,31 @@ if ( defined($ARGS{_action}) && $ARGS{_action} eq "ADD_PICTURE" && defined($ARGS
 <!-- End Closet Picture Table -->
 
 
+<!-- Begin Device List-->
+% if ($o && $o->room && $o->room->floor && $o->room->floor->site){
+<div class="container">
+    <div class="containerheadleft">
+        Device List
+    </div>
+
+    <div class="containerheadright">
+        <a href= "../management/device_tasks.html?view=new">[new]</a>
+    </div>
+
+    <div class="containerbody">
+%       my $site = $o->room->floor->site->id;
+%       my $room = $o->room->id;
+%       my @device_list = Device->search(site=>$site, room=>$room);
+%       foreach my $i (@device_list){
+%           print "<a href=\"../management/device.html?table=Device&id=$i\">".$i->fqdn()."</a><br/>";
+%       }
+    </div>
+</div>
+% }
+<!-- End Device List-->
+
+
+
 % if (defined($o)) {
 <!-- 2-column layout table -->
 <table>
