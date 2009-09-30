@@ -1997,16 +1997,20 @@ sub update {
   Arguments:
     Hash with the following keys
     peer - Hashref containing Peer SNMP info:
-    address
-    asname
-    asnumber
-    orgname
-    bgppeerid
+      address
+      asname
+      asnumber
+      orgname
+      bgppeerid
     oldpeerings - Hash ref containing old peering objects
   Returns:
     BGPPeering object or undef if error
   Example:
-    
+    foreach my $peer ( keys %{$info->{bgppeer}} ){
+	$self->update_bgp_peering(peer        => $info->{bgppeer}->{$peer},
+				  oldpeerings => \%oldpeerings);
+    }
+
 =cut
 
 sub update_bgp_peering {
@@ -2030,7 +2034,6 @@ sub update_bgp_peering {
 	#
 	my $entityname = $peer->{orgname} || $peer->{asname};
 	$entityname .= " ($peer->{asnumber})";
-	my $type = (EntityType->search(name => "Peer"))[0] || 0;
 	my %etmp = ( name     => $entityname,
 		     asname   => $peer->{asname},
 		     asnumber => $peer->{asnumber},
@@ -2053,8 +2056,9 @@ sub update_bgp_peering {
 	    $entity = Entity->insert( \%etmp );
 	    $logger->info(sprintf("%s: Created Peer Entity %s.", $host, $entityname));
 	}
-
+	
 	# Make sure Entity has role "peer"
+	my $type     = (EntityType->search(name => "Peer"))[0] || 0;
 	my %eroletmp = ( entity => $entity, type => $type );
 	my $erole;
 	if ( $erole = EntityRole->search(%eroletmp)->first ){
@@ -2065,7 +2069,7 @@ sub update_bgp_peering {
 	    $logger->info(sprintf("%s: Added 'Peer' role to Entity %s", 
 				  $host, $entityname ));
 	}
-
+	
     }else{
 	$logger->warn( sprintf("%s: Missing peer info. Cannot associate peering %s with an entity", 
 			       $host, $peer->{address}) );
@@ -2102,7 +2106,8 @@ sub update_bgp_peering {
 	# Peering Doesn't exist.  Create.
 	#
 	$p = BGPPeering->insert(\%pstate);
-	$logger->info(sprintf("%s: Inserted new Peering with: %s. ", $host, $entity->name));
+	my $peer_label = $entity ? $entity->name : $peer->address;
+	$logger->info(sprintf("%s: Inserted new Peering with: %s. ", $host, $peer_label));
     }
     return $p;
 }
