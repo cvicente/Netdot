@@ -52,7 +52,7 @@ sub find_or_create {
 
     my ($name, $description, $sysobjectid, $type, $manufacturer, $hostname) 
 	= @argv{"name", "description", "sysobjectid", "type", "manufacturer", "hostname"};
-    
+ 
     $class->throw_fatal("Model::Product::find_or_create: Missing required arguments")
 	unless defined( $sysobjectid || $name );
     
@@ -80,9 +80,32 @@ sub find_or_create {
 		$logger->info(sprintf("Product::find_or_create: Manufacturer OID matches %s", 
 				      $ent->name));
 	    }
-	}elsif ( $manufacturer ){
-	    $ent = Entity->search(name=>$manufacturer)->first; 
 	}
+	if ( $manufacturer && !$ent ){
+	    if($ent = Entity->search(name=>$manufacturer)->first){
+                #Ok, there is an entity with the same name, does it have the same oid?
+                if(! ($ent = Entity->search(name=>$manufacturer, oid=>$oid)->first)){
+                    #eek, it sure dosn't, we'll need to add another entry with the same manufacturer name!
+                    my $count = 1;
+                    #this technique will take a long time if there are a lot of products with the same name in the db
+                    #but that should very rarely happen.
+                    while($ent = Entity->search(name=>$manufacturer."[$count]")){
+                         if($count < 5){
+                             $count+=1;
+                         }
+                         #enough counting already lets get this overwith!
+                         else{
+                             $count = int(rand(1000000))
+			 }
+                    }
+                    #we have exited the loop, which means count contains a value that, when combined with the manufacturer's
+                    #name, does not exist in the database
+                    $manufacturer .= "[$count]";
+                    $ent = 0; #set ent to 0 so the next if statement can execute                
+                }
+	    }
+        }
+
 	if ( !$ent ){
 	    my $entname = $manufacturer || $oid;
 	    $ent = Entity->insert({name=>$entname, oid=>$oid});
