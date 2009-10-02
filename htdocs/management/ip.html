@@ -48,7 +48,7 @@ $arp_limit         => 10
 <%init>
 use integer;
 
-my $DEBUG = 0;
+my $DEBUG = 1;
 my $o;
 my $ci = 0;
 my $title;
@@ -129,7 +129,7 @@ function setCheckbox(formname, name, val) {
 if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
     
     @list = Ipblock->get_roots($rootversion);
-    
+
 </%perl>
        <div class="container">
           <div class="containerheadleft">Root Blocks: (<% scalar(@list) %>)</div>
@@ -1202,7 +1202,7 @@ if ($o->status->name eq "Subnet") {
 %     if( $o->status->name eq "Subnet" ) {  
        <div class="container">  
           <div class="containerheadleft"> 
-             Choose an Address  
+             Choose an Address 
           </div>  
           <div class="containerheadright">
             Legend:
@@ -1219,7 +1219,7 @@ if ($o->status->name eq "Subnet") {
           </div>  
        </div>  
 %     }  
-%     if( $o->status->name eq "Container" ) {  
+%     if( $o->status->name eq "Container") {  
        <div class="container">  
           <div class="containerheadleft"> 
              Usage for <% $o->get_label %>  
@@ -1269,6 +1269,7 @@ if ($o->status->name eq "Subnet") {
 %   if (scalar( @children = $o->children )){  
        <div class="container">
 %      if ( $edit_children ){
+
 	     <form name="edit_children" id="edit_children" action="ip.html" method="POST">
 %      }
           <div class="containerheadleft">
@@ -1282,7 +1283,7 @@ if ($o->status->name eq "Subnet") {
 			 <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
 			 <input type="submit" name="submit" value="save">
 %		 }else{
-%		     print '<a href="ip.html?id='.$id.'&edit_children=1">[edit]</a>&nbsp;';
+%		     print '<a href="ip.html?id='.$id.'&edit_children=1&view_format=list">[edit]</a>&nbsp;';
 %		     print '<a href="ip.html?id='.$id.'&view_format=block">[Block View]</a>';
 %                    if ( $o->status->name eq 'Container' ){
                          <a href="ip.html?id=<% $id %>&view_format=tree">[Tree View]</a>
