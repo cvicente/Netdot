@@ -49,10 +49,20 @@ my %objindex;
 my $numcols;
 my $IPV4 = Netdot->get_ipv4_regex();
 my $caller_path;
+my $user = $ui->get_current_user($r);
 
+my $user_per_page = $user->getAttribute("USER_PERPAGE");
 if ( !defined($per_page) ){
     $per_page = $ui->config->get('DEFAULT_PERPAGE');
-} 
+    
+    #per user per_page preference takes precedence over global pref
+    if ( $user_per_page =~ /\d+/ && ($per_page != $user_per_page) ) {
+	$per_page = $user_per_page;
+    }
+} else {
+    #set the new one
+    $user->setAttribute($r, "USER_PERPAGE", $per_page);
+}
 
 print "<pre>", Dumper(%ARGS), "</pre>" if $DEBUG;
 
