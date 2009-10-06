@@ -1439,6 +1439,11 @@ sub build_backbone_graph {
     foreach my $bb ( BackboneCable->retrieve_all() ){
 	# Get end closets and end sites
 	my @eclosets     = ($bb->start_closet, $bb->end_closet);
+	unless ( @eclosets &&
+		 $bb->start_closet->room && $bb->start_closet->room->floor && 
+		 $bb->end_closet->room && $bb->end_closet->room->floor ){
+	    next;
+	}
 	my @esites       = ($bb->start_closet->room->floor->site, $bb->end_closet->room->floor->site);
 	my @strands      = $bb->strands;
 	my $num_strands  = scalar @strands;

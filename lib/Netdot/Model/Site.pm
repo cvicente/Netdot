@@ -70,22 +70,21 @@ sub rooms {
   Arguments:
     None
   Returns:
-    Array of Room objects
+    Array of Closet objects
   Examples:
     my @closets = $site->closets;
 
 =cut
 
 sub closets {
-    my ($site) = @_;
-    my @rclosets;
-    my @closets = Closet->retrieve_all();
-    foreach my $closet ( @closets ){
-        if( $closet->room->floor->site == $site->id ){
-            push @rclosets, $closet;
-        }
+    my ($self) = @_;
+    my @closets;
+    foreach my $room ( $self->rooms ){
+	if ( $room->closets ){
+	    push @closets, $room->closets;
+	}
     }
-    return @rclosets;
+    return @closets;
 }
 
 =head1 AUTHOR
