@@ -206,21 +206,21 @@ sub insert {
 
     }elsif ( $argv->{type} eq 'TXT' ){
 	$class->throw_user("Missing required argument: txtdata")
-	    unless defined $argv->{txtdata};
+	    unless $argv->{txtdata};
 	my %args = (rr=>$rr, txtdata=>$argv->{txtdata});
 	$args{ttl} = $argv->{ttl} if defined $argv->{ttl};
 	return RRTXT->insert(\%args);
     
     }elsif ( $argv->{type} eq 'HINFO' ){
 	$class->throw_user("Missing required arguments: cpu and/or os")
-	    unless ( defined $argv->{cpu} && defined $argv->{os} );
+	    unless ( $argv->{cpu} && $argv->{os} );
 	my %args = (rr=>$rr, cpu=>$argv->{cpu}, os=>$argv->{os});
 	$args{ttl} = $argv->{ttl} if defined $argv->{ttl};
 	return RRHINFO->insert(\%args);
     
     }elsif ( $argv->{type} eq 'MX' ){
 	$class->throw_user("Missing required argument: exchange")
-	    unless defined $argv->{exchange};
+	    unless $argv->{exchange};
 	my %args = (rr=>$rr, exchange=>$argv->{exchange});
 	$args{preference} = $argv->{preference} || 0;
 	$args{ttl} = $argv->{ttl} if defined $argv->{ttl};
@@ -228,17 +228,26 @@ sub insert {
 	
     }elsif ( $argv->{type} eq 'CNAME' ){
 	$class->throw_user("Missing required argument: cname")
-	    unless defined $argv->{cname};
+	    unless $argv->{cname};
 	my %args = (name=>$rr, cname=>$argv->{cname});
 	$args{ttl} = $argv->{ttl} if defined $argv->{ttl};
 	return RRCNAME->insert(\%args);
 
     }elsif ( $argv->{type} eq 'NS' ){
 	$class->throw_user("Missing required argument: nsdname")
-	    unless defined $argv->{nsdname};
+	    unless $argv->{nsdname};
 	my %args = (rr=>$rr, nsdname=>$argv->{nsdname});
 	$args{ttl} = $argv->{ttl} if defined $argv->{ttl};
 	return RRNS->insert(\%args);
+
+    }elsif ( $argv->{type} eq 'DS' ){
+	$class->throw_user('Missing required arguments')
+	    unless ( $argv->{rr} && $argv->{key_tag} && $argv->{algorithm} && 
+		     $argv->{digest_type} && $argv->{digest} );
+	my %args = (rr=>$argv->{rr}, key_tag=>$argv->{key_tag}, algorithm=>$argv->{algorithm}, 
+		     digest_type=>$argv->{digest_type}, digest=>$argv->{digest} );
+	$args{ttl} = $argv->{ttl} if defined $argv->{ttl};
+	return RRDS->insert(\%args);
 
     }elsif ( $argv->{type} eq 'PTR' ){
 	$class->throw_user("Missing required arguments: ptrdname, ipblock")

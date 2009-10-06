@@ -307,7 +307,7 @@ sub insert {
 	}elsif ( $e =~ /out of range/i ){
 	    $msg .= "Some values are out of valid range.";
 	}
-	$class->throw_user("$msg\n\nFull error: $e\n");
+	$class->throw_user("$msg");
     }
 
     $logger->debug( sub { sprintf("Model::insert: Inserted new record %i in table: %s", 

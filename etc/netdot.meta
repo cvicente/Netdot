@@ -5438,7 +5438,7 @@ $meta = {
         type => 'integer'
       }
     },
-    description => 'DNS Resource Record',
+    description => 'DNS Resource Record. Also known as the "owner", this object in Netdot groups all the records with the same name.',
     has_history => 0,
     index => [ ['name'], ['expiration'] ],
     isjoin => '0',
@@ -5591,6 +5591,105 @@ $meta = {
       brief => [
         'name',
         'cname'
+      ]
+    }
+  },
+  RRDS => {
+    table_db_name => 'rrds',
+    columns => {
+      algorithm => {
+        default => '',
+        description => 'The Algorithm field lists the algorithm number of the DNSKEY RR referred to by the DS record. The algorithm number used by the DS RR is identical to the algorithm number used by RRSIG and DNSKEY RRs.',
+        length => '',
+        nullable => 0,
+        tag => 'Algorithm',
+        type => 'integer'
+      },
+      digest => {
+        default => 'The digest is calculated by concatenating the canonical form of the fully qualified owner name of the DNSKEY RR with the DNSKEY RDATA, and then applying the digest algorithm.',
+        description => 'Digest',
+        length => '255',
+        nullable => 0,
+        tag => 'Digest',
+        type => 'varchar'
+      },
+      digest_type => {
+        default => '',
+        description => 'The DS RR refers to a DNSKEY RR by including a digest of that DNSKEY RR.  The Digest Type field identifies the algorithm used to construct the digest.',
+        length => '',
+        nullable => 0,
+        tag => 'Digest Type',
+        type => 'integer'
+      },
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      key_tag => {
+        default => '',
+        description => 'The Key Tag field lists the key tag of the DNSKEY RR referred to by the DS record, in network byte order.',
+        length => '',
+        nullable => 0,
+        tag => 'Key Tag',
+        type => 'integer'
+      },
+      rr => {
+        default => '',
+        description => '',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'ds_records',
+          table => 'RR'
+        },
+        nullable => 0,
+        tag => 'Resource Record',
+        type => 'integer'
+      },
+      ttl => {
+      default => '',
+      description => 'Record TTL',
+      length => '32',
+      nullable => 1,
+      tag => 'TTL',
+      type => 'varchar'
+      }
+  },
+    description => 'The DS Resource Record refers to a DNSKEY RR and is used in the DNS DNSKEY authentication process.  A DS RR refers to a DNSKEY RR by storing the key tag, algorithm number, and a digest of the DNSKEY RR.',
+    has_history => 0,
+    index => [ ['key_tag'] ],
+    isjoin => '0',
+    label => [
+      'rr',
+      'key_tag',
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'rr',
+        'key_tag'
+      ]
+    ],
+    views => {
+      all => [
+        'rr',
+        'ttl',
+        'key_tag',
+        'algorithm',
+        'digest_type',
+        'digest',
+      ],
+      brief => [
+        'rr',
+        'ttl',
+        'key_tag',
+        'algorithm',
+        'digest_type',
+        'digest',
       ]
     }
   },

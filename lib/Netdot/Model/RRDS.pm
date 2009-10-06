@@ -1,4 +1,4 @@
-package Netdot::Model::RRNS;
+package Netdot::Model::RRDS;
 
 use base 'Netdot::Model';
 use warnings;
@@ -6,7 +6,7 @@ use strict;
 
 my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
 
-=head1 Netdot::Model::RRNS - DNS NS record Class
+=head1 Netdot::Model::RRDS - DNS NS record Class
 
 =head1 SYNOPSIS
 
@@ -14,7 +14,7 @@ my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
 =head1 CLASS METHODS
 =cut
 ############################################################################
-=head2 insert - Insert new RRNS object
+=head2 insert - Insert new RRDS object
 
     We override the base method to:
     - Check if owner is an alias
@@ -22,20 +22,18 @@ my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
   Arguments:
     See schema
   Returns:
-    RRNS object
+    RRDS object
   Example:
-    my $record = RRNS->insert(\%args)
+    my $record = RRDS->insert(\%args)
 
 =cut
 sub insert {
     my($class, $argv) = @_;
     $class->isa_class_method('insert');
 
-    $class->throw_fatal('Missing required arguments: rr')
-	unless ( $argv->{rr} );
-
-    $class->throw_user("Missing required argument: nsdname")
-	unless $argv->{nsdname};
+    $class->throw_fatal('Missing required arguments')
+	unless ( $argv->{rr} && $argv->{key_tag} && $argv->{algorithm} && 
+	$argv->{digest_type} && $argv->{digest} );
 
     my $rr = (ref $argv->{rr})? $argv->{rr} : RR->retrieve($argv->{rr});
     $class->throw_fatal("Invalid rr argument") unless $rr;
@@ -44,7 +42,7 @@ sub insert {
     foreach my $i ( keys %linksfrom ){
 	next if ( $i eq 'ns_records' || $i eq 'ds_records' );
 	if ( $rr->$i ){
-	    $class->throw_user("NS records can only coexist with other NS or DS records for the same owner");
+	    $class->throw_user("DS records can only coexist with other DS or NS records for the same owner");
 	}
     }
 
@@ -88,11 +86,13 @@ sub _net_dns {
     my $ttl = (defined $self->ttl && $self->ttl =~ /\d+/)? $self->ttl : $self->name->zone->default_ttl;
 
     my $ndo = Net::DNS::RR->new(
-	name    => $self->rr->get_label,
-	ttl     => $ttl,
-	class   => 'IN',
-	type    => 'NS',
-	nsdname => $self->nsdname . '.',
+	name      => $self->rr->get_label,
+	type      => "DS",
+	keytag    => $self->key_tag,
+	algorithm => $self->algorithm,
+	digtype   => $self->digest_type,
+	ttl       => $self->ttl,
+	class     => 'IN',
 	);
     
     return $ndo;

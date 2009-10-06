@@ -43,6 +43,7 @@ my @DEPS = (
     'Text::ParseWords',
     'Carp::Assert',
     'Digest::SHA',
+    'Net::DNS::ZoneFile::Fast 1.12',
     );
 
 if ( $action eq 'test' ){

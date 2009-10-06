@@ -3,7 +3,8 @@ package Netdot::Model::Zone;
 use base 'Netdot::Model';
 use warnings;
 use strict;
-use Netdot::Util::ZoneFile;
+use Net::DNS::ZoneFile::Fast;
+
 
 my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
 
@@ -248,14 +249,15 @@ sub get_all_records {
     my $id = $self->id;
     my $q = "SELECT   rr.name, zone.name, ipblock.version, ipblock.address, rrtxt.txtdata, rrhinfo.cpu, rrhinfo.os,
                       rrptr.ptrdname, rrns.nsdname, rrmx.preference, rrmx.exchange, rrcname.cname, rrloc.id, 
-                      rrsrv.id, rrnaptr.id, rr.active,
-                      rraddr.ttl, rrtxt.ttl, rrhinfo.ttl, rrns.ttl, rrmx.ttl, rrcname.ttl, rrptr.ttl
+                      rrsrv.id, rrnaptr.id, rrds.algorithm, rrds.key_tag, rrds.digest_type, rrds.digest, rr.active,
+                      rraddr.ttl, rrtxt.ttl, rrhinfo.ttl, rrns.ttl, rrds.ttl, rrmx.ttl, rrcname.ttl, rrptr.ttl
              FROM     zone, rr
                       LEFT OUTER JOIN (ipblock, rraddr) ON (rr.id=rraddr.rr AND ipblock.id=rraddr.ipblock)
                       LEFT OUTER JOIN rrptr   ON rr.id=rrptr.rr
                       LEFT OUTER JOIN rrtxt   ON rr.id=rrtxt.rr
                       LEFT OUTER JOIN rrhinfo ON rr.id=rrhinfo.rr
                       LEFT OUTER JOIN rrns    ON rr.id=rrns.rr
+                      LEFT OUTER JOIN rrds    ON rr.id=rrds.rr
                       LEFT OUTER JOIN rrmx    ON rr.id=rrmx.rr
                       LEFT OUTER JOIN rrcname ON rr.id=rrcname.name
                       LEFT OUTER JOIN rrnaptr ON rr.id=rrnaptr.rr
@@ -267,8 +269,9 @@ sub get_all_records {
     my %rec;
     foreach my $r ( @$results ){
 	my ( $name, $zone, $ipversion, $ip, $txtdata, $cpu, $os, 
-	     $ptrdname, $nsdname, $mxpref, $exchange, $cname, $rrlocid, $rrsrvid, $rrnaptrid, $active,
-             $rraddrttl, $rrtxtttl, $rrhinfottl, $rrnsttl, $rrmxttl, $rrcnamettl, $rrptrttl ) = @$r;
+	     $ptrdname, $nsdname, $mxpref, $exchange, $cname, $rrlocid, $rrsrvid, $rrnaptrid, 
+	     $dsalgorithm, $dskeytag, $dsdigesttype, $dsdigest, $active,
+             $rraddrttl, $rrtxtttl, $rrhinfottl, $rrnsttl, $rrdsttl, $rrmxttl, $rrcnamettl, $rrptrttl ) = @$r;
 
 	next unless $active;
 
@@ -285,14 +288,17 @@ sub get_all_records {
 	    }
 	}
 	$rec{$name}{NS}{"$nsdname."}           = $rrnsttl    if ($nsdname);
+	$rec{$name}{DS}{"$dskeytag $dsalgorithm $dsdigesttype $dsdigest."}           
+                                               = $rrdsttl    if ($dskeytag && $dsalgorithm && 
+								 $dsdigesttype && $dsdigest);
 	$rec{$name}{MX}{"$mxpref $exchange."}  = $rrmxttl    if (defined($mxpref) && $exchange);
 	$rec{$name}{CNAME}{"$cname."}          = $rrcnamettl if ($cname);
 	$rec{$name}{PTR}{"$ptrdname."}         = $rrptrttl   if ($ptrdname);
 	$rec{$name}{TXT}{"\"$txtdata\""}       = $rrtxtttl   if ($txtdata);
 	$rec{$name}{HINFO}{"\"$cpu\" \"$os\""} = $rrhinfottl if ($cpu && $os);
-	$rec{$name}{LOC}{id}   = $rrlocid   if ($rrlocid);
-	$rec{$name}{SRV}{id}   = $rrsrvid   if ($rrsrvid);
-	$rec{$name}{NAPTR}{id} = $rrnaptrid if ($rrnaptrid);
+	$rec{$name}{LOC}{id}                   = $rrlocid    if ($rrlocid);
+	$rec{$name}{SRV}{id}                   = $rrsrvid    if ($rrsrvid);
+	$rec{$name}{NAPTR}{id}                 = $rrnaptrid  if ($rrnaptrid);
     }
 
     return \%rec;
@@ -316,15 +322,15 @@ sub get_record_count {
     my $id = $self->id;
     
     my $q1 = "SELECT COUNT(DISTINCT rrtxt.id), 
-             COUNT(DISTINCT rrhinfo.id), COUNT(DISTINCT rrptr.id), 
-             COUNT(DISTINCT rrns.id), COUNT(DISTINCT rrmx.id), 
-             COUNT(DISTINCT rrcname.id), COUNT(DISTINCT rrloc.id), 
-             COUNT(DISTINCT rrsrv.id), COUNT(DISTINCT rrnaptr.id)
+             COUNT(DISTINCT rrhinfo.id), COUNT(DISTINCT rrptr.id), COUNT(DISTINCT rrns.id), 
+             COUNT(DISTINCT rrds.id), COUNT(DISTINCT rrmx.id),  COUNT(DISTINCT rrcname.id), 
+             COUNT(DISTINCT rrloc.id), COUNT(DISTINCT rrsrv.id), COUNT(DISTINCT rrnaptr.id)
              FROM     zone z, rr rr
                       LEFT OUTER JOIN rrptr   ON rr.id=rrptr.rr
                       LEFT OUTER JOIN rrtxt   ON rr.id=rrtxt.rr
                       LEFT OUTER JOIN rrhinfo ON rr.id=rrhinfo.rr
                       LEFT OUTER JOIN rrns    ON rr.id=rrns.rr
+                      LEFT OUTER JOIN rrds    ON rr.id=rrds.rr
                       LEFT OUTER JOIN rrmx    ON rr.id=rrmx.rr
                       LEFT OUTER JOIN rrcname ON rr.id=rrcname.name
                       LEFT OUTER JOIN rrnaptr ON rr.id=rrnaptr.rr
@@ -349,7 +355,7 @@ sub get_record_count {
     my $r2  = $dbh->selectall_arrayref($q2);
     my $r3  = $dbh->selectall_arrayref($q3);
     my %count;
-    ($count{txt}, $count{hinfo}, $count{ptr}, $count{ns}, $count{mx}, 
+    ($count{txt}, $count{hinfo}, $count{ptr}, $count{ns}, $count{ds}, $count{mx}, 
      $count{cname}, $count{loc}, $count{srv}, $count{rrnaptr}) = @{$r1->[0]};
 
     ($count{a})    = @{$r2->[0]};
@@ -381,10 +387,10 @@ sub import_records {
     }
     
     my $domain = $self->name;
-    my ($rrs, $default_ttl);
+    my $rrs;
 
     if ( $argv{text } ){
-	($rrs, $default_ttl) = Netdot::Util::ZoneFile::parse(text=>$argv{text}, origin=>$domain);
+	$rrs = Net::DNS::ZoneFile::Fast::parse(text=>$argv{text}, origin=>$domain);
     }else{
 	$self->throw_fatal("rrs parameter must be arrayref")
 	    unless ( ref($argv{rrs}) eq 'ARRAY' );
@@ -491,6 +497,13 @@ sub import_records {
 		$logger->debug("$domain: Inserting RRNS $name, ".$rr->nsdname);
 		$args{ttl} = $ttl;
 		$rrns = RRNS->insert(\%args);
+	    }
+	}elsif ( $rr->type eq 'DS' ){
+	    my $rrds;
+	    if ( !($rrds = RRDS->search(rr=>$nrr, key_tag=>$rr->keytag)->first) ){
+		$logger->debug("$domain: Inserting RRDS $name, ".$rr->keytag);
+		$rrds = RRDS->insert(rr=>$nrr, ttl=>$ttl, algorithm=>$rr->algorithm, key_tag=>$rr->keytag, 
+				     digest_type=>$rr->digtype, digest=>$rr->digest);
 	    }
 	}elsif ( $rr->type eq 'CNAME' ){
 	    my $rrcname;

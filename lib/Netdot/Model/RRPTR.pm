@@ -33,7 +33,7 @@ sub insert {
     $class->isa_class_method('insert');
 
     $class->throw_fatal("Missing required arguments")
-	unless ( defined $argv->{ptrdname} && defined $argv->{ipblock} );
+	unless ( $argv->{ptrdname} && $argv->{ipblock} );
     
     my $ipb  = ref($argv->{ipblock})? $argv->{ipblock} : Ipblock->retrieve($argv->{ipblock});
 
@@ -51,6 +51,15 @@ sub insert {
 	$argv->{rr} = $rr;
     }
     
+    my $rr = (ref $argv->{rr})? $argv->{rr} : RR->retrieve($argv->{rr});
+    $class->throw_fatal("Invalid rr argument") unless $rr;
+    my %linksfrom = RR->meta_data->get_links_from;
+    foreach my $i ( keys %linksfrom ){
+	if ( $rr->$i ){
+	    $class->throw_user("Cannot add PTR records when other records exist");
+	}
+    }
+
     delete $argv->{zone};
     return $class->SUPER::insert($argv);
     

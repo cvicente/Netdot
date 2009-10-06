@@ -154,6 +154,18 @@ my @statements = (
       UNIQUE INDEX groupright1 (`contactlist`, `accessright`),
       PRIMARY KEY (`id`)
      ) ENGINE=InnoDB;",
+     "CREATE TABLE `rrds` (
+       `algorithm` integer NOT NULL,
+       `digest` varchar(255),
+       `digest_type` integer NOT NULL,
+       `id` integer NOT NULL auto_increment,
+       `key_tag` integer NOT NULL,
+       `rr` integer NOT NULL,
+       `ttl` varchar(32),
+       UNIQUE INDEX rrds1 (`rr`, `key_tag`),
+       INDEX RRDS2 (`key_tag`),
+       PRIMARY KEY (`id`)
+     ) ENGINE=InnoDB;",
     "CREATE TABLE `rrloc` (
        `altitude` integer NOT NULL,
        `horiz_pre` varchar(32),

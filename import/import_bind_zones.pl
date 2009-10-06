@@ -4,7 +4,7 @@
 #
 use lib "<<Make:LIB>>";
 use Netdot::Model;
-use Netdot::Util::ZoneFile;
+use Net::DNS::ZoneFile::Fast;
 use Getopt::Long qw(:config no_ignore_case bundling);
 use BIND::Config::Parser;
 use strict;
@@ -144,7 +144,7 @@ sub import_zone {
     (-e $file && -f $file) || die "File $file does not exist or is not a regular file\n";
     print "Importing zone file: $file\n";
 
-    my ($rrs, $default_ttl) = Netdot::Util::ZoneFile::parse(file=>"$file",origin=>$domain);
+    my $rrs = Net::DNS::ZoneFile::Fast::parse(file=>"$file",origin=>$domain);
 
     my $nzone;
 
@@ -173,12 +173,11 @@ sub import_zone {
 		    retry       => $rr->retry,
 		    expire      => $rr->expire,
 		    minimum     => $rr->minimum,
-		    default_ttl => $default_ttl,
 						     });
 	    }
 	    last;
 	}
     }
-
+    
     $nzone->import_records(rrs=>$rrs, overwrite=>$self{wipe});
 }

@@ -21,7 +21,8 @@ RRADDR represent either A or AAAA records.
 =head2 insert - Insert new RRADDR object
 
     We override the base method to:
-     - Create or update the corresponding RRPTR object
+    - Check if name is an alias
+    - Create or update the corresponding RRPTR object
     
   Arguments:
     Hashref with key/value pairs, plus:
@@ -38,6 +39,16 @@ sub insert {
 
     $class->throw_fatal('Missing required arguments')
 	unless ( $argv->{ipblock} && $argv->{rr} );
+
+    # Avoid the "CNAME and other records" error condition
+    my $rr = (ref $argv->{rr})? $argv->{rr} : RR->retrieve($argv->{rr});
+    $class->throw_fatal("Invalid rr argument") unless $rr;
+    if ( $rr->cnames ){
+	$class->throw_user("Cannot add any other record to an alias");
+    }
+    if ( $rr->ptr_records ){
+	$class->throw_user("Cannot add any other record when PTR records exist");
+    }
 
     $argv->{ipblock} = $class->_convert_ipblock($argv->{ipblock});
 
@@ -57,6 +68,7 @@ sub insert {
     return $rraddr;
     
 }
+
 =head1 INSTANCE METHODS
 =cut
 

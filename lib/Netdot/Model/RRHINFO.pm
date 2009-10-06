@@ -14,6 +14,49 @@ my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
 =head1 CLASS METHODS
 =cut
 
+############################################################################
+=head2 insert - Insert new RRHINFO object
+
+    We override the base method to:
+    - Check if owner is an alias
+    - Check if owner has any other HINFO records
+
+  Arguments:
+    See schema
+  Returns:
+    RRHINFO object
+  Example:
+    my $record = RRHINFO->insert(\%args)
+
+=cut
+sub insert {
+    my($class, $argv) = @_;
+    $class->isa_class_method('insert');
+
+    $class->throw_fatal('Missing required arguments: rr')
+	unless ( $argv->{rr} );
+
+    $class->throw_user("Missing required arguments: cpu and/or os")
+	unless ( $argv->{cpu} && $argv->{os} );
+
+    # Avoid the "CNAME and other records" error condition
+    my $rr = (ref $argv->{rr})? $argv->{rr} : RR->retrieve($argv->{rr});
+    $class->throw_fatal("Invalid rr argument") unless $rr;
+    if ( $rr->cnames ){
+	$class->throw_user("Cannot add any other record to an alias");
+    }
+    if ( $rr->ptr_records ){
+	$class->throw_user("Cannot add any other record when PTR records exist");
+    }
+    # Only one HINFO
+    if ( $rr->hinfo_records ){
+	$class->throw_user("Cannot add more than one HINFO record");
+    }
+
+    return $class->SUPER::insert($argv);
+    
+}
+
 =head1 INSTANCE METHODS
 =cut
 ##################################################################

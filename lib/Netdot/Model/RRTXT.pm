@@ -14,6 +14,44 @@ my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
 =head1 CLASS METHODS
 =cut
 
+############################################################################
+=head2 insert - Insert new RRTXT object
+
+    We override the base method to:
+    - Check if owner is an alias
+
+  Arguments:
+    See schema
+  Returns:
+    RRTXT object
+  Example:
+    my $record = RRTXT->insert(\%args)
+
+=cut
+sub insert {
+    my($class, $argv) = @_;
+    $class->isa_class_method('insert');
+
+    $class->throw_fatal('Missing required arguments: rr')
+	unless ( $argv->{rr} );
+
+    $class->throw_user("Missing required argument: txtdata")
+	unless ( $argv->{txtdata} );
+
+    # Avoid the "CNAME and other records" error condition
+    my $rr = (ref $argv->{name})? $argv->{rr} : RR->retrieve($argv->{rr});
+    $class->throw_fatal("Invalid rr argument") unless $rr;
+    if ( $rr->cnames ){
+	$class->throw_user("Cannot add any other record to an alias");
+    }
+    if ( $rr->ptr_records ){
+	$class->throw_user("Cannot add any other record when PTR records exist");
+    }
+
+    return $class->SUPER::insert($argv);
+    
+}
+
 =head1 INSTANCE METHODS
 =cut
 ##################################################################

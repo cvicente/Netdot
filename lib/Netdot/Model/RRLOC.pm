@@ -14,6 +14,51 @@ my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
 =head1 CLASS METHODS
 =cut
 
+############################################################################
+=head2 insert - Insert new RRLOC object
+
+    We override the base method to:
+    - Check if owner is an alias
+    - Check if owner has any other LOC records
+
+  Arguments:
+    See schema
+  Returns:
+    RRHINFO object
+  Example:
+    my $record = RRLOC->insert(\%args)
+
+=cut
+sub insert {
+    my($class, $argv) = @_;
+    $class->isa_class_method('insert');
+
+    $class->throw_fatal('Missing required arguments: rr')
+	unless ( $argv->{rr} );
+
+    foreach my $field ( qw/size horiz_pre vert_pre latitude longitude altitude/ ){
+	$class->throw_user("Missing required argument: $field")
+	    unless (defined $argv->{$field});
+    }	
+
+    # Avoid the "CNAME and other records" error condition
+    my $rr = (ref $argv->{rr})? $argv->{rr} : RR->retrieve($argv->{rr});
+    $class->throw_fatal("Invalid rr argument") unless $rr;
+    if ( $rr->cnames ){
+	$class->throw_user("Cannot add any other record to an alias");
+    }
+    if ( $rr->ptr_records ){
+	$class->throw_user("Cannot add any other record when PTR records exist");
+    }
+    # Only one LOC per owner
+    if ( $rr->loc_records ){
+	$class->throw_user("Cannot add more than one LOC record");
+    }
+
+    return $class->SUPER::insert($argv);
+    
+}
+
 =head1 INSTANCE METHODS
 =cut
 ##################################################################
