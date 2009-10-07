@@ -140,14 +140,14 @@ BEGIN {
 	}elsif ( $table eq 'rr' ){
 	    $zone = $self->zone;
 	}elsif ( $table eq 'rrcname' || $table eq 'rrsrv' ){
-	    if ( defined $self->name && $self->name != 0 ){
+	    if ( defined $self->name && int($self->name) != 0 ){
 		$zone = $self->name->zone;
 	    }else{
 		$logger->error("Netdot::Model::_host_audit: $table id ".$self->id." has invalid name");
 		return;
 	    }
 	}elsif ( $table =~ /^rr/ ){
-	    if ( defined $self->rr && $self->rr != 0 ){
+	    if ( defined $self->rr && int($self->rr) != 0 ){
 		$zone = $self->rr->zone;
 	    }else{
 		$logger->error("Netdot::Model::_host_audit: $table id ".$self->id." has invalid rr");
@@ -170,6 +170,9 @@ BEGIN {
 	$data{vals}   = $args{values} if $args{values};
 	my $name; # Name of the zone or global scope
 	if ( $zone ){
+	    unless ( ref($zone) ){
+		$zone = Zone->retrieve($zone);
+	    }
 	    $data{zone} = $zone;
 	    $name       = $zone->name;
 	}elsif ( $scope ){
