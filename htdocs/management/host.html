@@ -325,7 +325,7 @@ foreach my $o ( values %rrs ) {
 	print '<div class="containerbody">';
 	foreach my $arecord (@arecs) {
 	    my $ipblock = $arecord->ipblock;
-	    if ( $ipblock == 0 ){
+	    if ( int($ipblock) == 0 ){
 		# This record should not exist then
 		$arecord->delete;
 		next;
@@ -630,7 +630,7 @@ foreach my $o ( values %rrs ) {
     #####################################################################################################
     #RRPTR
     foreach my $arecord ( @arecs ) {
-	next if $arecord->ipblock == 0;
+	next if int($arecord->ipblock) == 0;
 	my $ipblock = $arecord->ipblock;
 
 	# We can assume there is only one per IP
