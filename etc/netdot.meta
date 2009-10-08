@@ -5534,7 +5534,7 @@ $meta = {
   RRCNAME => {
     table_db_name => 'rrcname',
     columns => {
-      name => {
+      rr => {
         default => '',
         description => 'Alias Name',
         length => '',
@@ -5581,15 +5581,15 @@ $meta = {
       'cname'
     ],
     primary_key => 'id',
-    unique => [ [ 'name' ] ],
+    unique => [ [ 'rr' ] ],
     views => {
       all => [
-        'name',
+        'rr',
         'cname',
         'ttl'
       ],
       brief => [
-        'name',
+        'rr',
         'cname'
       ]
     }
@@ -6233,7 +6233,7 @@ $meta = {
         tag => undef,
         type => 'integer'
       },
-      name => {
+      rr => {
         default => '',
         description => 'The domain this SRV record refers to.',
         length => '',
@@ -6292,14 +6292,14 @@ $meta = {
     index => [ ['target'] ],
     isjoin => '0',
     label => [
-      'name',
+      'rr',
       'target',
     ],
     primary_key => 'id',
-    unique => [ ['name', 'port', 'target'] ],
+    unique => [ ['rr', 'port', 'target'] ],
     views => {
       all => [
-        'name',
+        'rr',
         'ttl',
         'priority',
         'weight',
@@ -6307,7 +6307,7 @@ $meta = {
         'target'
       ],
       brief => [
-        'name',
+        'rr',
         'priority',
         'weight',
         'port',

@@ -180,121 +180,51 @@ sub insert {
 	}
     }
     
-    my %args;
-    if ( defined $argv->{ttl} ){
-	if ( $argv->{ttl} =~ /^(?:\d+[WDHMS]?)+$/i ){
-	    $args{ttl} = $argv->{ttl};
-	}else{
-	    $logger->warn("Invalid TTL: ".$argv->{ttl});
-	}
-    }
+    # Pass our arguments to the more specific record type
+    my %args = %$argv;
+    $args{rr} = $rr;
+
+    # Remove arguments specific to RR
+    delete $args{type};
+    delete $args{name};
+    delete $args{zone};
+    delete $args{expiration};
 
     if ( $argv->{type} eq 'A' || $argv->{type} eq 'AAAA' ){
-	$class->throw_user("Missing required argument: ipblock")
-	    unless defined $argv->{ipblock};
-	# We handle both an ipblock object and a plain address string
-	my $ipb;
-	if ( ref($argv->{ipblock}) ){
-	    $ipb = $argv->{ipblock};
-	}elsif ( !($ipb = Netdot::Model::Ipblock->search(address=>$argv->{ipblock})->first) ){
-	    $ipb = Netdot::Model::Ipblock->insert({ address => $argv->{ipblock},
-						    status  => 'Static' });
-	}
-	%args = (rr=>$rr, ipblock=>$ipb);
-	$args{update_ptr} = 1 if $argv->{update_ptr};
 	return RRADDR->insert(\%args);
 
-    }elsif ( $argv->{type} eq 'TXT' ){
-	$class->throw_user("Missing required argument: txtdata")
-	    unless $argv->{txtdata};
-	my %args = (rr=>$rr, txtdata=>$argv->{txtdata});
-	$args{ttl} = $argv->{ttl} if defined $argv->{ttl};
-	return RRTXT->insert(\%args);
-    
-    }elsif ( $argv->{type} eq 'HINFO' ){
-	$class->throw_user("Missing required arguments: cpu and/or os")
-	    unless ( $argv->{cpu} && $argv->{os} );
-	my %args = (rr=>$rr, cpu=>$argv->{cpu}, os=>$argv->{os});
-	$args{ttl} = $argv->{ttl} if defined $argv->{ttl};
-	return RRHINFO->insert(\%args);
-    
-    }elsif ( $argv->{type} eq 'MX' ){
-	$class->throw_user("Missing required argument: exchange")
-	    unless $argv->{exchange};
-	my %args = (rr=>$rr, exchange=>$argv->{exchange});
-	$args{preference} = $argv->{preference} || 0;
-	$args{ttl} = $argv->{ttl} if defined $argv->{ttl};
-	return RRMX->insert(\%args);
-	
     }elsif ( $argv->{type} eq 'CNAME' ){
-	$class->throw_user("Missing required argument: cname")
-	    unless $argv->{cname};
-	my %args = (name=>$rr, cname=>$argv->{cname});
-	$args{ttl} = $argv->{ttl} if defined $argv->{ttl};
 	return RRCNAME->insert(\%args);
 
-    }elsif ( $argv->{type} eq 'NS' ){
-	$class->throw_user("Missing required argument: nsdname")
-	    unless $argv->{nsdname};
-	my %args = (rr=>$rr, nsdname=>$argv->{nsdname});
-	$args{ttl} = $argv->{ttl} if defined $argv->{ttl};
-	return RRNS->insert(\%args);
-
     }elsif ( $argv->{type} eq 'DS' ){
-	$class->throw_user('Missing required arguments')
-	    unless ( $argv->{rr} && $argv->{key_tag} && $argv->{algorithm} && 
-		     $argv->{digest_type} && $argv->{digest} );
-	my %args = (rr=>$argv->{rr}, key_tag=>$argv->{key_tag}, algorithm=>$argv->{algorithm}, 
-		     digest_type=>$argv->{digest_type}, digest=>$argv->{digest} );
-	$args{ttl} = $argv->{ttl} if defined $argv->{ttl};
 	return RRDS->insert(\%args);
 
-    }elsif ( $argv->{type} eq 'PTR' ){
-	$class->throw_user("Missing required arguments: ptrdname, ipblock")
-	    unless ( defined $argv->{ptrdname} && defined $argv->{ipblock} );
-	my $ipb;
-	if ( ref($argv->{ipblock}) || $argv->{ipblock} !~ /\D/ ){
-	    $ipb = $argv->{ipblock};
-	}elsif ( !($ipb = Netdot::Model::Ipblock->search(address=>$argv->{ipblock})->first) ){
-	    $ipb = Netdot::Model::Ipblock->insert({ address => $argv->{ipblock},
-						    status  => 'Static' });
-	}
-	my %args = (rr=>$rr, ipblock=>$ipb, ptrdname=>$argv->{ptrdname});
-	$args{ttl} = $argv->{ttl} if defined $argv->{ttl};
-	return RRPTR->insert(\%args);
-
+    }elsif ( $argv->{type} eq 'HINFO' ){
+	return RRHINFO->insert(\%args);
+    
     }elsif ( $argv->{type} eq 'LOC' ){
-	my %args = (rr=>$rr); 
-	foreach my $field ( qw/size horiz_pre vert_pre latitude longitude altitude/ ){
-	    $class->throw_user("Missing required argument: $field")
-		unless (defined $argv->{$field});
-	    $args{$field} = $argv->{$field};
-	}
-	$args{ttl} = $argv->{ttl} if defined $argv->{ttl};
 	return RRLOC->insert(\%args);    
 
+    }elsif ( $argv->{type} eq 'MX' ){
+	return RRMX->insert(\%args);
+	
     }elsif ( $argv->{type} eq 'NAPTR' ){
-	my %args = (rr=>$rr); 
-	foreach my $field ( qw/order_field preference flags services regexpr replacement/ ){
-	    $class->throw_user("Missing required argument: $field")
-		unless (defined $argv->{$field});
-	    $args{$field} = $argv->{$field};
-	}
-	$args{ttl} = $argv->{ttl} if defined $argv->{ttl};
 	return RRNAPTR->insert(\%args);    
 
+    }elsif ( $argv->{type} eq 'NS' ){
+	return RRNS->insert(\%args);
+
+    }elsif ( $argv->{type} eq 'PTR' ){
+	return RRPTR->insert(\%args);
+
     }elsif ( $argv->{type} eq 'SRV' ){
-	my %args = (name=>$rr); 
-	foreach my $field ( qw/port priority target weight/ ){
-	    $class->throw_user("Missing required argument: $field")
-		unless (defined $argv->{$field});
-	    $args{$field} = $argv->{$field};
-	}
-	$args{ttl} = $argv->{ttl} if defined $argv->{ttl};
 	return RRSRV->insert(\%args);    
 
+    }elsif ( $argv->{type} eq 'TXT' ){
+	return RRTXT->insert(\%args);
+    
     }else{
-	$class->throw_user("Unrecognized type: $argv->{type}");
+	$class->throw_user("Unrecognized type: ".$argv->{type});
     }
 
 }
@@ -364,7 +294,7 @@ sub delete {
     my $class = ref($self);
     my @cnames = RRCNAME->search(cname=>$self->get_label);
     foreach my $cname ( @cnames ){
-	$cname->name->delete();
+	$cname->rr->delete();
     }
     return $self->SUPER::delete();
 }

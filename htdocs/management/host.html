@@ -81,7 +81,6 @@ if ( $submit ){
     }elsif ($rr || $id || $ipblock || $action eq 'new') {
 	# insert/update
 	eval {
-	    
 	    my $user_type = $user->getAttribute('USER_TYPE');
 	    # For unprivileged users, we apply restrictions
 	    # on RR names
@@ -93,21 +92,24 @@ if ( $submit ){
 		    }
 		}
 	    }
-
+	    
 	    my %ret = $ui->form_to_db(%ARGS);
 	    print 'form_to_db returned: <pre>', Dumper(%ret), '</pre><br>' if $DEBUG;    
-
-	    if (exists $ret{RR}) {
+	    
+	    if ( exists $ret{RR} ) {
 		my $newid = (keys %{$ret{RR}{id}})[0];
-		if ($ret{RR}{id}{$newid}{action} eq 'INSERTED') {
-            if(! $id){
-                $id = $newid;
-            }
-            if(! $rr){
-                $rr = $newid;            
-            }
+		defined $newid || die "Could not get record ID";
 
+		if ( $ret{RR}{id}{$newid}{action} eq 'INSERTED' ){
+		    if(! $id){
+			$id = $newid;
+		    }
+		    if(! $rr){
+			$rr = $newid;            
+		    }
+		    
 		    my $newrr = RR->retrieve($id);
+		    defined $newrr || die "Could not retrieve RR id $id";
 
 		    $rrs{$newrr->id} = $newrr;
 		    if (defined $ipblock) {
@@ -117,18 +119,17 @@ if ( $submit ){
 	    }
 	};
 	if ( my $e = $@ ){
-        if($e =~ /Error while inserting RRCNAME: Some values are duplicated./){
-            #Doing a search with RR->search(name=>$name) wasn't working (it was returning an iterator), so 
-            #I'm just displaying the name provided by the user
-            my $name = $ARGS{'RR__NEW__name'};
-
-            $e = "Alias ". $name . " already exists in the database.";  
-        }
-
+	    if($e =~ /Error while inserting RRCNAME: Some values are duplicated./){
+		#Doing a search with RR->search(name=>$name) wasn't working (it was returning an iterator), so 
+		#I'm just displaying the name provided by the user
+		my $name = $ARGS{'RR__NEW__name'};
+		
+		$e = "Alias ". $name . " already exists in the database.";  
+	    }
 	    $m->comp('/generic/error.mhtml', error=>"$e");
-
+	    
 	} 
-    else {
+	else {
 	    $submit = 0;
 	    $action = "";
 	}
@@ -555,7 +556,7 @@ foreach my $o ( values %rrs ) {
 	print '<div class="containerbody">';
 	if (my @cnames = RRCNAME->search(cname=>$o->get_label)) {
 	    foreach my $cname (@cnames) {
-		$ui->add_to_fields(o=>$cname, edit=>$edit, fields=>['name', 'ttl'],
+		$ui->add_to_fields(o=>$cname, edit=>$edit, fields=>['rr', 'ttl'],
 				   field_headers=>\@field_headers, cell_data=>\@cell_data,
 				   linkpages=>['host.html',''], with_delete=>1);
 		$m->comp('/generic/attribute_table.mhtml', %comphash, width=>2);
@@ -590,7 +591,7 @@ foreach my $o ( values %rrs ) {
 	    $newcname =~ s/<script.*?<\/script>//g;
 	    $newcname =~ s/'/\\'/g;
 	    print '<script type="text/javascript" language="javascript">uricomponents[\'rrcname_'.$o.'_content\']=encodeURIComponent(\''.$newcname.'\');</script>';
-	    print '<div id="rrcname_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrcname\', \''.$o.'\', 1, \'name\')">[add]</a></div>';
+	    print '<div id="rrcname_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrcname\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
 
 	}else{
 	    print '&nbsp';
@@ -915,7 +916,7 @@ foreach my $o ( values %rrs ) {
 	$newsrv =~ s/<script.*?<\/script>//g;
 	$newsrv =~ s/'/\\'/g;
 	print '<script type="text/javascript" language="javascript">uricomponents[\'rrsrv_'.$o.'_content\']=encodeURIComponent(\''.$newsrv.'\');</script>';
-	print '<div id="rrsrv_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrsrv\', \''.$o.'\', 1, \'name\')">[add]</a></div>';
+	print '<div id="rrsrv_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrsrv\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
 	print '</div>';  #close containerheadright
 
 	#display/edit
@@ -923,8 +924,7 @@ foreach my $o ( values %rrs ) {
 	if (my @srvs = $o->srv_records()) {
 	    foreach my $srv (@srvs) {
 		$ui->add_to_fields(o=>$srv, edit=>$edit, fields=>['priority', 'weight', 'port', 'target', 'ttl'],
-				   field_headers=>\@field_headers, cell_data=>\@cell_data,
-				   linkpages=>['view.html','view.html','view.html','view.html',''], with_delete=>1);
+				   field_headers=>\@field_headers, cell_data=>\@cell_data, with_delete=>1);
 		$m->comp('/generic/attribute_table.mhtml', %comphash);
 		(@field_headers, @cell_data) = ((),());
 	    }

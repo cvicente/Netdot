@@ -12,6 +12,7 @@ use Carp;
 use RRDs;
 use Data::Dumper;
 
+# Some useful patterns used througout
 my $IPV4 = '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}';
 my $IPV4CIDR = '^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(?:\/\d{1,2})?$';
 my $HD   = '[0-9A-Fa-f]{1,4}'; # Hexadecimal digits, 2 bytes
@@ -36,7 +37,7 @@ Netdot - Network Documentation Tool
 
 =head1 VERSION
 
-Version 0.8
+Version 0.9
 
 =cut
 
@@ -104,6 +105,44 @@ sub get_ipv4_regex { return $IPV4 }
 sub get_ipv6_regex { return $IPV6 }
 
 sub get_mac_regex { return $MAC }
+
+######################################################################
+=head2 ttl_from_text - Convert string DNS record TTL into integer value
+	
+  Arguments: 
+    DNS record TTL string
+  Returns:
+    integer
+  Example:
+    $ttl = Netdot->ttl_from_text($ttl_string)
+=cut
+sub ttl_from_text {
+    my ($self, $t) = @_;
+    
+    my $MAXIMUM_TTL = 0x7fffffff;
+    my $res = 0;
+    if ( $t =~ /^\d+$/ ){
+	$res = $t;
+    }elsif ( $t =~ /^(?:\d+[WDHMS])+$/i ){
+	my %ttl;
+	$ttl{W} ||= 0;
+	$ttl{D} ||= 0;
+	$ttl{H} ||= 0;
+	$ttl{M} ||= 0;
+	$ttl{S} ||= 0;
+	while ($t =~ /(\d+)([WDHMS])/gi) {
+	    $ttl{uc($2)} += $1;
+	}
+	$res = $ttl{S} + 60*($ttl{M} + 60*($ttl{H} + 24*($ttl{D} + 7*$ttl{W})));
+    }else{
+	$self->throw_user("Bad TTL format: '$t'");
+    }
+    
+    if ($res < 0 || $res > $MAXIMUM_TTL) {
+	$self->throw_user("Bad TTL value: $res.  TTL must be within 0 and $MAXIMUM_TTL");
+    }
+    return $res;
+}
 
 ######################################################################
 =head2 sec2dhms - Translate seconds into days, minutes, hours, seconds

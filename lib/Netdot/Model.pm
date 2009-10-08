@@ -43,161 +43,6 @@ BEGIN {
 
 
     ###########################################################
-    # Copy stored object in corresponding history table 
-    #  - After updating
-    #  - After creating
-    # This must be defined here (before loading the classes).  
-    ###########################################################
-    __PACKAGE__->add_trigger( after_update => \&_historize );
-    __PACKAGE__->add_trigger( after_create => \&_historize );
-
-    sub _historize {
-	my ($self, %args) = @_;
-	
-	my $changed_columns = $args{discard_columns};
-	if ( defined $changed_columns && 
-	     scalar(@$changed_columns) == 1  && 
-	     $changed_columns->[0] eq 'last_updated' ){
-	    return;
-	}
-	my $table    = $self->table;
-	my $h_table  = $self->meta_data->get_history_table_name();
-	return unless $h_table;  # this object does not have a history table
-	my $dbh      = $self->db_Main();
-	my $col_list = join ",", $self->columns;
-	my $id       = $self->id;
-	my @vals = $dbh->selectrow_array("SELECT $col_list FROM $table WHERE id = $id");
-	my %current_data;
-	my $i = 0;
-	map { $current_data{$_} = $vals[$i++] } $self->columns;
-	delete $current_data{id}; # Our id is different
-	my $oid = $table."_id"; # fk pointing to the real object's id
-	$current_data{$oid}     = $self->id;
-	$current_data{modified} = $self->timestamp;
-	$current_data{modifier} = $ENV{REMOTE_USER} || "unknown";
-	eval {
-	    $h_table->SUPER::insert(\%current_data);
-	};
-	if ( my $e = $@ ){
-	    $logger->error("Could not insert history record for $table id ".$self->id.": $e");
-	}
-	1;
-    }
-
-    ###########################################################
-    # Keep audit trail of DNS/DHCP changes.  The contents of the 
-    # hostaudit table are flushed each time a new  zonefile 
-    # or dhcp config is generated.  
-    # This avoids unnecessary work, and also logs record changes
-    ###########################################################
-    __PACKAGE__->add_trigger( after_update  => \&_host_audit_update );
-    __PACKAGE__->add_trigger( after_create  => \&_host_audit_insert );
-    __PACKAGE__->add_trigger( before_delete => \&_host_audit_delete );
-        
-    sub _host_audit_update {
-	my ($self, %args) = @_;
-	return unless ( $self->table =~ /^rr/ || $self->table eq 'zone' ||
-			$self->table eq 'dhcpscope' || $self->table eq 'dhcpattr');
-	$args{operation} = 'update';
-	my $changed_columns = $args{discard_columns};
-	if ( defined $changed_columns && scalar(@$changed_columns) ){
-	    $args{fields} = join ',', @$changed_columns;
-	    my @values = map { $self->$_ } @$changed_columns;
-	    $args{values} = join ',', map { "'$_'" } @values;
-	    return $self->_host_audit(%args);
-	}
-    }
-    sub _host_audit_insert {
-	my ($self, %args) = @_;
-	return unless ( $self->table =~ /^rr/ || $self->table eq 'zone' ||
-			$self->table eq 'dhcpscope' || $self->table eq 'dhcpattr');
-	$args{operation} = 'insert';
-	my (@fields, @values);
-	foreach my $col ( $self->columns ){
-	    if ( defined $self->$col ){ 
-		push @fields, $col;
-		push @values, $self->$col;
-	    } 
-	}
-	$args{fields} = join ',', @fields;
-        $args{values} = join ',', map { "'$_'" } @values if @values;
-   	return $self->_host_audit(%args);
-    }
-    sub _host_audit_delete {
-	my ($self, %args) = @_;
-	return unless ( $self->table =~ /^rr/ || $self->table eq 'zone' ||
-			$self->table eq 'dhcpscope' || $self->table eq 'dhcpattr');
-	$args{operation} = 'delete';
-	return $self->_host_audit(%args);
-    }
-    sub _host_audit {
-	my ($self, %args) = @_;
-	my $table = $self->table;
-	my ($zone, $scope);
-	my $user = $ENV{REMOTE_USER} || "unknown";
-	if ( $table eq 'zone' ){
-	    $zone = $self;   
-	}elsif ( $table eq 'rr' ){
-	    $zone = $self->zone;
-	}elsif ( $table eq 'rrcname' || $table eq 'rrsrv' ){
-	    if ( defined $self->name && int($self->name) != 0 ){
-		$zone = $self->name->zone;
-	    }else{
-		$logger->error("Netdot::Model::_host_audit: $table id ".$self->id." has invalid name");
-		return;
-	    }
-	}elsif ( $table =~ /^rr/ ){
-	    if ( defined $self->rr && int($self->rr) != 0 ){
-		$zone = $self->rr->zone;
-	    }else{
-		$logger->error("Netdot::Model::_host_audit: $table id ".$self->id." has invalid rr");
-		return;
-	    }
-	}elsif ( $table eq 'dhcpscope' ){
-	    $scope = $self->get_global();   
-	}elsif ( $table eq 'dhcpattr' ){
-	    $scope = $self->scope->get_global();
-	}else{
-	    $self->throw_fatal("Netdot::Model::_host_audit: Invalid table: $table");
-	}
-	my $id = $self->id;
-	my %data = (tstamp      => $self->timestamp,
-		    record_type => $table,
-		    user        => $user,
-		    operation   => $args{operation},
-	    );
-	$data{fields} = $args{fields} if $args{fields};
-	$data{vals}   = $args{values} if $args{values};
-	my $name; # Name of the zone or global scope
-	if ( $zone ){
-	    unless ( ref($zone) ){
-		$zone = Zone->retrieve($zone);
-	    }
-	    $data{zone} = $zone;
-	    $name       = $zone->name;
-	}elsif ( $scope ){
-	    $data{scope} = $scope;
-	    $name        = $scope->name;
-	}else{
-	    $self->throw_fatal("Netdot::Model::_host_audit: Could not determine audit object for table: $table");
-	}
-	
-	eval {
-	    HostAudit->insert(\%data);
-	};
-	if ( my $e = $@ ){
-	    $logger->error("Netdot::Model::_host_audit: Could not insert HostAudit record about $table id ".$self->id.": $e");
-	    return;
-	}else{
-	    my $msg = "Netdot::Model::_host_audit: table: $table, id: $id, within: $name, user: $user, operation: $args{operation}";
-	    $msg .= " fields: ($args{fields}), values: ($args{values})" if (defined $args{fields} && defined $args{values});
-	    $logger->info($msg);
-	}
-	1;
-    }
-
-
-    ###########################################################
     # This sub avoids errors like:
     # "Deep recursion on subroutine "Class::DBI::_flesh""
     # when executing under mod_perl
@@ -268,6 +113,154 @@ BEGIN {
     eval "package CiscoFW; use base 'Netdot::Model::Device::CiscoFW'";
     
 }
+
+###########################################################
+# Copy stored object in corresponding history table 
+#  - After updating
+#  - After creating
+# This must be defined here (before loading the classes).  
+###########################################################
+__PACKAGE__->add_trigger( after_update => \&_historize );
+__PACKAGE__->add_trigger( after_create => \&_historize );
+
+sub _historize {
+    my ($self, %args) = @_;
+    
+    my $changed_columns = $args{discard_columns};
+    if ( defined $changed_columns && 
+	 scalar(@$changed_columns) == 1  && 
+	 $changed_columns->[0] eq 'last_updated' ){
+	return;
+    }
+    my $table    = $self->table;
+    my $h_table  = $self->meta_data->get_history_table_name();
+    return unless $h_table;  # this object does not have a history table
+    my $dbh      = $self->db_Main();
+    my $col_list = join ",", $self->columns;
+    my $id       = $self->id;
+    my @vals = $dbh->selectrow_array("SELECT $col_list FROM $table WHERE id = $id");
+    my %current_data;
+    my $i = 0;
+    map { $current_data{$_} = $vals[$i++] } $self->columns;
+    delete $current_data{id}; # Our id is different
+    my $oid = $table."_id"; # fk pointing to the real object's id
+    $current_data{$oid}     = $self->id;
+    $current_data{modified} = $self->timestamp;
+    $current_data{modifier} = $ENV{REMOTE_USER} || "unknown";
+    eval {
+	$h_table->SUPER::insert(\%current_data);
+    };
+    if ( my $e = $@ ){
+	$logger->error("Could not insert history record for $table id ".$self->id.": $e");
+    }
+    1;
+}
+
+###########################################################
+# Keep audit trail of DNS/DHCP changes.  The contents of the 
+# hostaudit table are flushed each time a new  zonefile 
+# or dhcp config is generated.  
+# This avoids unnecessary work, and also logs record changes
+###########################################################
+__PACKAGE__->add_trigger( after_update  => \&_host_audit_update );
+__PACKAGE__->add_trigger( after_create  => \&_host_audit_insert );
+__PACKAGE__->add_trigger( before_delete => \&_host_audit_delete );
+
+sub _host_audit_update {
+    my ($self, %args) = @_;
+    return unless ( $self->table =~ /^rr/ || $self->table eq 'zone' ||
+		    $self->table eq 'dhcpscope' || $self->table eq 'dhcpattr');
+    $args{operation} = 'update';
+    my $changed_columns = $args{discard_columns};
+    if ( defined $changed_columns && scalar(@$changed_columns) ){
+	$args{fields} = join ',', @$changed_columns;
+	my @values = map { $self->$_ } @$changed_columns;
+	$args{values} = join ',', map { "'$_'" } @values;
+	return $self->_host_audit(%args);
+    }
+}
+sub _host_audit_insert {
+    my ($self, %args) = @_;
+    return unless ( $self->table =~ /^rr/ || $self->table eq 'zone' ||
+		    $self->table eq 'dhcpscope' || $self->table eq 'dhcpattr');
+    $args{operation} = 'insert';
+    my (@fields, @values);
+    foreach my $col ( $self->columns ){
+	if ( defined $self->$col ){ 
+	    push @fields, $col;
+	    push @values, $self->$col;
+	} 
+    }
+    $args{fields} = join ',', @fields;
+    $args{values} = join ',', map { "'$_'" } @values if @values;
+    return $self->_host_audit(%args);
+}
+sub _host_audit_delete {
+    my ($self, %args) = @_;
+    return unless ( $self->table =~ /^rr/ || $self->table eq 'zone' ||
+		    $self->table eq 'dhcpscope' || $self->table eq 'dhcpattr');
+    $args{operation} = 'delete';
+    return $self->_host_audit(%args);
+}
+sub _host_audit {
+    my ($self, %args) = @_;
+    my $table = $self->table;
+    my ($zone, $scope);
+    my $user = $ENV{REMOTE_USER} || "unknown";
+    if ( $table eq 'zone' ){
+	$zone = $self;   
+    }elsif ( $table eq 'rr' ){
+	$zone = $self->zone;
+    }elsif ( $table =~ /^rr/ ){
+	if ( defined $self->rr && int($self->rr) != 0 ){
+	    $zone = $self->rr->zone;
+	}else{
+	    $logger->error("Netdot::Model::_host_audit: $table id ".$self->id." has invalid rr");
+	    return;
+	}
+    }elsif ( $table eq 'dhcpscope' ){
+	$scope = $self->get_global();   
+    }elsif ( $table eq 'dhcpattr' ){
+	$scope = $self->scope->get_global();
+    }else{
+	$self->throw_fatal("Netdot::Model::_host_audit: Invalid table: $table");
+    }
+    my $id = $self->id;
+    my %data = (tstamp      => $self->timestamp,
+		record_type => $table,
+		user        => $user,
+		operation   => $args{operation},
+	);
+    $data{fields} = $args{fields} if $args{fields};
+    $data{vals}   = $args{values} if $args{values};
+    my $name; # Name of the zone or global scope
+    if ( $zone ){
+	unless ( ref($zone) ){
+	    $zone = Zone->retrieve($zone);
+	}
+	$data{zone} = $zone;
+	$name       = $zone->name;
+    }elsif ( $scope ){
+	$data{scope} = $scope;
+	$name        = $scope->name;
+    }else{
+	$self->throw_fatal("Netdot::Model::_host_audit: Could not determine audit object for table: $table");
+    }
+    
+    eval {
+	HostAudit->insert(\%data);
+    };
+    if ( my $e = $@ ){
+	$logger->error("Netdot::Model::_host_audit: Could not insert HostAudit record about $table id ".$self->id.": $e");
+	return;
+    }else{
+	my $msg = "Netdot::Model::_host_audit: table: $table, id: $id, within: $name, user: $user, operation: $args{operation}";
+	$msg .= " fields: ($args{fields}), values: ($args{values})" if (defined $args{fields} && defined $args{values});
+	$logger->info($msg);
+    }
+    1;
+}
+
 
 =head1 CLASS METHODS
 =cut

@@ -5,7 +5,6 @@ use warnings;
 use strict;
 use Net::DNS::ZoneFile::Fast;
 
-
 my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
 
 # Some regular expressions
@@ -259,9 +258,9 @@ sub get_all_records {
                       LEFT OUTER JOIN rrns    ON rr.id=rrns.rr
                       LEFT OUTER JOIN rrds    ON rr.id=rrds.rr
                       LEFT OUTER JOIN rrmx    ON rr.id=rrmx.rr
-                      LEFT OUTER JOIN rrcname ON rr.id=rrcname.name
+                      LEFT OUTER JOIN rrcname ON rr.id=rrcname.rr
                       LEFT OUTER JOIN rrnaptr ON rr.id=rrnaptr.rr
-                      LEFT OUTER JOIN rrsrv   ON rr.id=rrsrv.name
+                      LEFT OUTER JOIN rrsrv   ON rr.id=rrsrv.rr
                       LEFT OUTER JOIN rrloc   ON rr.id=rrloc.rr
              WHERE    rr.zone=zone.id AND zone.id=$id";
 
@@ -332,9 +331,9 @@ sub get_record_count {
                       LEFT OUTER JOIN rrns    ON rr.id=rrns.rr
                       LEFT OUTER JOIN rrds    ON rr.id=rrds.rr
                       LEFT OUTER JOIN rrmx    ON rr.id=rrmx.rr
-                      LEFT OUTER JOIN rrcname ON rr.id=rrcname.name
+                      LEFT OUTER JOIN rrcname ON rr.id=rrcname.rr
                       LEFT OUTER JOIN rrnaptr ON rr.id=rrnaptr.rr
-                      LEFT OUTER JOIN rrsrv   ON rr.id=rrsrv.name
+                      LEFT OUTER JOIN rrsrv   ON rr.id=rrsrv.rr
                       LEFT OUTER JOIN rrloc   ON rr.id=rrloc.rr
              WHERE    rr.zone=z.id AND z.id=$id";
 
@@ -507,7 +506,7 @@ sub import_records {
 	    }
 	}elsif ( $rr->type eq 'CNAME' ){
 	    my $rrcname;
-	    my %args = (name=>$nrr, cname=>$rr->cname);
+	    my %args = (rr=>$nrr, cname=>$rr->cname);
 	    if ( $argv{overwrite} || !($rrcname = RRCNAME->search(%args)->first) ){
 		$args{ttl} = $ttl;
 		$logger->debug("$domain: Inserting RRCNAME $name, ".$rr->cname.", ttl: $ttl");
@@ -575,7 +574,7 @@ sub import_records {
 	    }
 	}elsif ( $rr->type eq 'SRV' ){
 	    my $rrsrv;
-	    my %args = (name=>$nrr);
+	    my %args = (rr=>$nrr);
 	    if ( $argv{overwrite} || !($rrsrv = RRSRV->search(%args)->first) ){
 		$args{priority} = $rr->priority;
 		$args{weight}   = $rr->weight;

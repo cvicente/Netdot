@@ -18,10 +18,13 @@ my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
 =head2 insert - Insert new RRCNAME object
 
     We override the base method to:
-    - Check if owner is an alias
+    - Validate TTL
+    - Check for conflicting record types
 
   Arguments:
-    See schema
+    rr
+    cname
+    ttl
   Returns:
     RRCNAME object
   Example:
@@ -32,14 +35,18 @@ sub insert {
     my($class, $argv) = @_;
     $class->isa_class_method('insert');
 
-    $class->throw_fatal('Missing required arguments: name')
-	unless ( $argv->{name} );
+    $class->throw_fatal('Missing required arguments: rr')
+	unless ( $argv->{rr} );
 
     $class->throw_user("Missing required argument: cname")
 	unless $argv->{cname};
 
-    my $rr = (ref $argv->{name})? $argv->{name} : RR->retrieve($argv->{name});
-    $class->throw_fatal("Invalid name argument") unless $rr;
+    my $rr = (ref $argv->{rr})? $argv->{rr} : RR->retrieve($argv->{rr});
+    $class->throw_fatal("Invalid rr argument") unless $rr;
+
+    # TTL needs to be set and converted into integer
+    $argv->{ttl} = (defined($argv->{ttl}) && length($argv->{ttl}))? $argv->{ttl} : $rr->zone->default_ttl;
+    $argv->{ttl} = $class->ttl_from_text($argv->{ttl});
 
     my %linksfrom = RR->meta_data->get_links_from;
     foreach my $i ( keys %linksfrom ){
@@ -54,6 +61,31 @@ sub insert {
 
 =head1 INSTANCE METHODS
 =cut
+############################################################################
+=head2 update
+
+    We override the base method to:
+     - Validate TTL
+    
+  Arguments:
+    Hash with field/value pairs
+  Returns:
+    Number of rows updated or -1
+  Example:
+    $record->update(\%args)
+
+=cut
+sub update {
+    my($self, $argv) = @_;
+    $self->isa_object_method('update');
+
+    if ( defined $argv->{ttl} ){
+	$argv->{ttl} = $self->ttl_from_text($argv->{ttl});
+    }
+    
+    return $self->SUPER::update($argv);
+}
+
 ##################################################################
 =head2 as_text
 
@@ -94,7 +126,7 @@ sub as_text {
 sub delete {
     my $self = shift;
     $self->isa_object_method('delete');
-    my $rr = $self->name;
+    my $rr = $self->rr;
     $self->SUPER::delete();
     $rr->delete();
 
@@ -110,12 +142,9 @@ sub delete {
 sub _net_dns {
     my $self = shift;
 
-    # If TTL is not set, use Zone's default
-    my $ttl = (defined $self->ttl && $self->ttl =~ /\d+/)? $self->ttl : $self->name->zone->default_ttl;
-
     my $ndo = Net::DNS::RR->new(
-	name    => $self->name->get_label,
-	ttl     => $ttl,
+	name    => $self->rr->get_label,
+	ttl     => $self->ttl,
 	class   => 'IN',
 	type    => 'CNAME',
 	cname   => $self->cname,

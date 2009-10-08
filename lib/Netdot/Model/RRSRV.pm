@@ -18,7 +18,9 @@ my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
 =head2 insert - Insert new RRSRV object
 
     We override the base method to:
-    - Check if owner is an alias
+    - Check for conflicting record types
+    - Validate TTL
+    
 
   Arguments:
     See schema
@@ -32,15 +34,21 @@ sub insert {
     my($class, $argv) = @_;
     $class->isa_class_method('insert');
 
-    $class->throw_fatal('Missing required arguments: name')
-	unless ( $argv->{name} );
+    $class->throw_fatal('Missing required arguments: rr')
+	unless ( $argv->{rr} );
 
     foreach my $field ( qw/port priority target weight/ ){
 	$class->throw_user("Missing required argument: $field")
 	    unless (defined $argv->{$field});
     }
 
-    my $rr = (ref $argv->{name})? $argv->{name} : RR->retrieve($argv->{name});
+    my $rr = (ref $argv->{rr})? $argv->{rr} : RR->retrieve($argv->{rr});
+    $class->throw_fatal("Invalid rr argument") unless $rr;
+
+    # TTL needs to be set and converted into integer
+    $argv->{ttl} = (defined($argv->{ttl}) && length($argv->{ttl}))? $argv->{ttl} : $rr->zone->default_ttl;
+    $argv->{ttl} = $class->ttl_from_text($argv->{ttl});
+
 
     # Make sure name is valid
     unless ( $rr->name =~ /^_\w+\._\w+/ ){
@@ -48,12 +56,14 @@ sub insert {
     }
 
     # Avoid the "CNAME and other records" error condition
-    $class->throw_fatal("Invalid rr argument") unless $rr;
     if ( $rr->cnames ){
 	$class->throw_user("Cannot add any other record to an alias");
     }
     if ( $rr->ptr_records ){
-	$class->throw_user("Cannot add any other record when PTR records exist");
+	$class->throw_user($rr->name.": Cannot add SRV records when PTR records exist");
+    }
+    if ( $rr->naptr_records ){
+	$class->throw_user($rr->name.": Cannot add SRV records when NAPTR records exist");
     }
 
     return $class->SUPER::insert($argv);
@@ -62,6 +72,31 @@ sub insert {
 
 =head1 INSTANCE METHODS
 =cut
+############################################################################
+=head2 update
+
+    We override the base method to:
+     - Validate TTL
+    
+  Arguments:
+    Hash with field/value pairs
+  Returns:
+    Number of rows updated or -1
+  Example:
+    $record->update(\%args)
+
+=cut
+sub update {
+    my($self, $argv) = @_;
+    $self->isa_object_method('update');
+
+    if ( defined $argv->{ttl} ){
+	$argv->{ttl} = $self->ttl_from_text($argv->{ttl});
+    }
+    
+    return $self->SUPER::update($argv);
+}
+
 ##################################################################
 =head2 as_text
 
@@ -92,12 +127,9 @@ sub as_text {
 sub _net_dns {
     my $self = shift;
 
-    # If TTL is not set, use Zone's default
-    my $ttl = (defined $self->ttl && $self->ttl =~ /\d+/)? $self->ttl : $self->name->zone->default_ttl;
-
     my $ndo = Net::DNS::RR->new(
-	name        => $self->name->get_label,
-	ttl         => $ttl,
+	name        => $self->rr->get_label,
+	ttl         => $self->ttl,
 	class       => 'IN',
 	type        => 'SRV',
 	priority    => $self->priority,

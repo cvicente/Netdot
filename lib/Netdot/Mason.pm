@@ -1,5 +1,3 @@
-#!/usr/bin/perl -w
-
 package Netdot::Mason;
 use strict;
 use HTML::Mason::ApacheHandler;

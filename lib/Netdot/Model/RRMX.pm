@@ -6,6 +6,8 @@ use strict;
 
 my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
 
+my $MAX_PREFERENCE = 2**16 - 1;
+
 =head1 Netdot::Model::RRMX - DNS MX record Class
 
 =head1 SYNOPSIS
@@ -18,7 +20,9 @@ my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
 =head2 insert - Insert new RRMX object
 
     We override the base method to:
-    - Check if owner is an alias
+     - Validate TTL
+     - Check for conflicting record types
+     - Validate preference
 
   Arguments:
     See schema
@@ -35,17 +39,36 @@ sub insert {
     $class->throw_fatal('Missing required arguments: rr')
 	unless ( $argv->{rr} );
 
+    $class->throw_user("Missing required argument: preference")
+	unless defined $argv->{preference};
+
+    $class->throw_user("Invalid preference value: ".$argv->{preference})
+	if ( $argv->{preference} < 0 || $argv->{preference} > $MAX_PREFERENCE );
+
     $class->throw_user("Missing required argument: exchange")
 	unless $argv->{exchange};
 
-    # Avoid the "CNAME and other records" error condition
     my $rr = (ref $argv->{rr})? $argv->{rr} : RR->retrieve($argv->{rr});
     $class->throw_fatal("Invalid rr argument") unless $rr;
+
+    # TTL needs to be set and converted into integer
+    $argv->{ttl} = (defined($argv->{ttl}) && length($argv->{ttl}))? $argv->{ttl} : $rr->zone->default_ttl;
+    $argv->{ttl} = $class->ttl_from_text($argv->{ttl});
+
+    # Avoid the "CNAME and other records" error condition
     if ( $rr->cnames ){
-	$class->throw_user("Cannot add any other record to an alias");
+	$class->throw_user($rr->name.": Cannot add any other record to an alias");
     }
     if ( $rr->ptr_records ){
-	$class->throw_user("Cannot add any other record when PTR records exist");
+	$class->throw_user($rr->name.": Cannot add LOC records when PTR records exist");
+    }
+
+    if ( $rr->naptr_records ){
+	$class->throw_user($rr->name.": Cannot add LOC records when NAPTR records exist");
+    }
+
+    if ( $rr->srv_records ){
+	$class->throw_user($rr->name.": Cannot add LOC records when SRV records exist");
     }
 
     return $class->SUPER::insert($argv);
@@ -54,6 +77,36 @@ sub insert {
 
 =head1 INSTANCE METHODS
 =cut
+############################################################################
+=head2 update
+
+    We override the base method to:
+     - Validate TTL
+     - Validate preference
+    
+  Arguments:
+    Hash with field/value pairs
+  Returns:
+    Number of rows updated or -1
+  Example:
+    $record->update(\%args)
+
+=cut
+sub update {
+    my($self, $argv) = @_;
+    $self->isa_object_method('update');
+
+    if ( defined $argv->{ttl} ){
+	$argv->{ttl} = $self->ttl_from_text($argv->{ttl});
+    }
+    if ( defined $argv->{preference} ){
+	$self->throw_user("Invalid preference value: ".$argv->{preference})
+	    if ( $argv->{preference} < 0 || $argv->{preference} > $MAX_PREFERENCE );
+    }
+
+    return $self->SUPER::update($argv);
+}
+
 ##################################################################
 =head2 as_text
 
@@ -84,12 +137,9 @@ sub as_text {
 sub _net_dns {
     my $self = shift;
 
-    # If TTL is not set, use Zone's default
-    my $ttl = (defined $self->ttl && $self->ttl =~ /\d+/)? $self->ttl : $self->name->zone->default_ttl;
-
     my $ndo = Net::DNS::RR->new(
 	name       => $self->rr->get_label,
-	ttl        => $ttl,
+	ttl        => $self->ttl,
 	class      => 'IN',
 	type       => 'MX',
 	preference => $self->preference,

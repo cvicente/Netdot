@@ -6,7 +6,7 @@ use strict;
 
 my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
 
-=head1 Netdot::Model::RRADDR - DNS Adress Class
+=head1 Netdot::Model::RRADDR - DNS Address Class
 
 RRADDR represent either A or AAAA records.
 
@@ -21,7 +21,8 @@ RRADDR represent either A or AAAA records.
 =head2 insert - Insert new RRADDR object
 
     We override the base method to:
-    - Check if name is an alias
+    - Validate TTL
+    - Check for conflicting record types
     - Create or update the corresponding RRPTR object
     
   Arguments:
@@ -36,35 +37,44 @@ RRADDR represent either A or AAAA records.
 sub insert {
     my($class, $argv) = @_;
     $class->isa_class_method('insert');
-
+    
     $class->throw_fatal('Missing required arguments')
 	unless ( $argv->{ipblock} && $argv->{rr} );
 
-    # Avoid the "CNAME and other records" error condition
     my $rr = (ref $argv->{rr})? $argv->{rr} : RR->retrieve($argv->{rr});
     $class->throw_fatal("Invalid rr argument") unless $rr;
+
+    # TTL needs to be set and converted into integer
+    $argv->{ttl} = (defined($argv->{ttl}) && length($argv->{ttl}))? $argv->{ttl} : $rr->zone->default_ttl;
+    $argv->{ttl} = $class->ttl_from_text($argv->{ttl});
+    
+    # Avoid the "CNAME and other records" error condition
     if ( $rr->cnames ){
-	$class->throw_user("Cannot add any other record to an alias");
+	$class->throw_user($rr->name.": Cannot add any other record to an alias");
     }
     if ( $rr->ptr_records ){
-	$class->throw_user("Cannot add any other record when PTR records exist");
+	$class->throw_user($rr->name.": Cannot add A/AAAA records when PTR records exist");
     }
-
+    if ( $rr->naptr_records ){
+	$class->throw_user($rr->name.": Cannot add A/AAAA records when NAPTR records exist");
+    }
+    if ( $rr->srv_records ){
+	$class->throw_user($rr->name.": Cannot add A/AAAA records when SRV records exist");
+    }
+    
     $argv->{ipblock} = $class->_convert_ipblock($argv->{ipblock});
-
+    
     my $update_ptr = 1; # On by default
     if ( defined $argv->{update_ptr} && $argv->{update_ptr} == 0 ){
 	$update_ptr = 0;
     }
     delete $argv->{update_ptr};
- 
+    
     my $rraddr = $class->SUPER::insert($argv);
-
-    my $ipb =  $rraddr->ipblock;
     
     # Create/update PTR record for this IP
     $rraddr->_update_rrptr() if $update_ptr;
-
+    
     return $rraddr;
     
 }
@@ -76,6 +86,7 @@ sub insert {
 =head2 update
 
     We override the base method to:
+     - Validate TTL
      - Create or update the corresponding RRPTR object
     
   Arguments:
@@ -92,6 +103,10 @@ sub update {
     $self->isa_object_method('update');
     $argv->{ipblock} = $self->_convert_ipblock($argv->{ipblock})
 	if defined $argv->{ipblock};
+    
+    if ( defined $argv->{ttl} ){
+	$argv->{ttl} = $self->ttl_from_text($argv->{ttl});
+    }
     
     my $update_ptr = 1; # On by default
     if ( defined $argv->{update_ptr} && $argv->{update_ptr} == 0 ){
@@ -208,13 +223,10 @@ sub _update_rrptr {
 sub _net_dns {
     my $self = shift;
     my $type = ($self->ipblock->version == 4)? 'A' : 'AAAA';
-
-    # If TTL is not set, use Zone's default
-    my $ttl = (defined $self->ttl && $self->ttl =~ /\d+/)? $self->ttl : $self->name->zone->default_ttl;
-
+    
     my $ndo = Net::DNS::RR->new(
 	name    => $self->rr->get_label,
-	ttl     => $ttl,
+	ttl     => $self->ttl,
 	class   => 'IN',
 	type    => $type,
 	address => $self->ipblock->address,

@@ -18,8 +18,10 @@ my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
 =head2 insert
 
     Override the base method to:
+      - Validate TTL
       - If not given, figure out the name of the record, using the 
         zone and the IP address
+      - Check for conflicting record types
     
   Arguments:
     None
@@ -53,10 +55,15 @@ sub insert {
     
     my $rr = (ref $argv->{rr})? $argv->{rr} : RR->retrieve($argv->{rr});
     $class->throw_fatal("Invalid rr argument") unless $rr;
+
+    # TTL needs to be set and converted into integer
+    $argv->{ttl} = (defined($argv->{ttl}) && length($argv->{ttl}))? $argv->{ttl} : $rr->zone->default_ttl;
+    $argv->{ttl} = $class->ttl_from_text($argv->{ttl});
+
     my %linksfrom = RR->meta_data->get_links_from;
     foreach my $i ( keys %linksfrom ){
 	if ( $rr->$i ){
-	    $class->throw_user("Cannot add PTR records when other records exist");
+	    $class->throw_user($rr->name.": Cannot add PTR records when other records exist");
 	}
     }
 
@@ -105,6 +112,32 @@ sub get_name {
 =head1 INSTANCE METHODS
 =cut
 
+############################################################################
+=head2 update
+
+    We override the base method to:
+     - Validate TTL
+    
+  Arguments:
+    Hash with field/value pairs
+  Returns:
+    Number of rows updated or -1
+  Example:
+    $record->update(\%args)
+
+=cut
+sub update {
+    my($self, $argv) = @_;
+    $self->isa_object_method('update');
+
+    if ( defined $argv->{ttl} ){
+	$argv->{ttl} = $self->ttl_from_text($argv->{ttl});
+    }
+    
+    return $self->SUPER::update($argv);
+}
+
+
 ##################################################################
 =head2 as_text
 
@@ -135,12 +168,9 @@ sub as_text {
 sub _net_dns {
     my $self = shift;
 
-    # If TTL is not set, use Zone's default
-    my $ttl = (defined $self->ttl && $self->ttl =~ /\d+/)? $self->ttl : $self->name->zone->default_ttl;
-
     my $ndo = Net::DNS::RR->new(
 	name     => $self->rr->get_label,
-	ttl      => $ttl,
+	ttl      => $self->ttl,
 	class    => 'IN',
 	type     => 'PTR',
 	ptrdname => $self->ptrdname,

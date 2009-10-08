@@ -99,8 +99,6 @@ sub denies(){
 	    my ($rr, $zone);
 	    if ( $otype eq 'RR' ){
 		$rr = $object;
-	    }elsif ( $otype eq 'RRCNAME' || $otype eq 'RRSRV' ){
-		$rr = $object->name;
 	    }else{
 		$rr = $object->rr;
 	    }

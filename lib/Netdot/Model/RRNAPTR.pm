@@ -6,6 +6,9 @@ use strict;
 
 my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
 
+my $MAX_ORDER      = 2**16 - 1;
+my $MAX_PREFERENCE = $MAX_ORDER;
+
 =head1 Netdot::Model::RRNAPTR - DNS NAPTR record Class
 
 =head1 SYNOPSIS
@@ -18,7 +21,8 @@ my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
 =head2 insert - Insert new RRNAPTR object
 
     We override the base method to:
-    - Check if owner is an alias
+    - Validate fields
+    - Check for conflicts with other record types
 
   Arguments:
     See schema
@@ -40,9 +44,23 @@ sub insert {
 	    unless (defined $argv->{$field});
     }
 
-    # Avoid the "CNAME and other records" error condition
+    $class->throw_user("Invalid order value: ".$argv->{order_field})
+	if ( $argv->{order_field} < 0 || $argv->{order_field} > $MAX_ORDER );
+
+    $class->throw_user("Invalid preference value: ".$argv->{preference})
+	if ( $argv->{preference} < 0 || $argv->{preference} > $MAX_PREFERENCE );
+
+    $class->throw_user("Invalid services string: ".$argv->{services})
+	if ( !($argv->{services} =~ /^e2u\+/i) );
+    
     my $rr = (ref $argv->{rr})? $argv->{rr} : RR->retrieve($argv->{rr});
     $class->throw_fatal("Invalid rr argument") unless $rr;
+
+    # TTL needs to be set and converted into integer
+    $argv->{ttl} = (defined($argv->{ttl}) && length($argv->{ttl}))? $argv->{ttl} : $rr->zone->default_ttl;
+    $argv->{ttl} = $class->ttl_from_text($argv->{ttl});
+
+    # Avoid the "CNAME and other records" error condition
     if ( $rr->cnames ){
 	$class->throw_user("Cannot add any other record to an alias");
     }
@@ -56,6 +74,43 @@ sub insert {
 
 =head1 INSTANCE METHODS
 =cut
+############################################################################
+=head2 update
+
+    We override the base method to:
+     - Validate TTL and other values
+    
+  Arguments:
+    Hash with field/value pairs
+  Returns:
+    Number of rows updated or -1
+  Example:
+    $record->update(\%args)
+
+=cut
+sub update {
+    my($self, $argv) = @_;
+    $self->isa_object_method('update');
+
+    if ( defined $argv->{ttl} ){
+	$argv->{ttl} = $self->ttl_from_text($argv->{ttl});
+    }
+    if ( defined $argv->{order_field} ){
+	$self->throw_user("Invalid order value: ".$argv->{order_field})
+	    if ( $argv->{order_field} < 0 || $argv->{order_field} > $MAX_ORDER );
+    }
+    if ( defined $argv->{preference} ){
+	$self->throw_user("Invalid preference value: ".$argv->{preference})
+	    if ( $argv->{preference} < 0 || $argv->{preference} > $MAX_PREFERENCE );
+    }
+    if ( defined $argv->{service} ){
+	$self->throw_user("Invalid service string: ".$argv->{service})
+	    if ( !($argv->{service} =~ /^e2u\+/i) );
+    }
+
+    return $self->SUPER::update($argv);
+}
+
 ##################################################################
 =head2 as_text
 
@@ -86,12 +141,9 @@ sub as_text {
 sub _net_dns {
     my $self = shift;
 
-    # If TTL is not set, use Zone's default
-    my $ttl = (defined $self->ttl && $self->ttl =~ /\d+/)? $self->ttl : $self->name->zone->default_ttl;
-
     my $ndo = Net::DNS::RR->new(
 	name        => $self->rr->get_label,
-	ttl         => $ttl,
+	ttl         => $self->ttl,
 	class       => 'IN',
 	type        => 'NAPTR',
 	order       => $self->order_field,
