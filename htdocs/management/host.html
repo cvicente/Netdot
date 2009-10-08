@@ -294,6 +294,11 @@ foreach my $o ( values %rrs ) {
 		       field_headers=>\@field_headers, cell_data=>\@cell_data,
 		       linkpages=>['', 'zone.html', '']);
 
+    if ( my $device = ($o->devices)[0] ){
+	push @field_headers, 'Device:';
+	push @cell_data, '<a href="device.html?id='.$device.'">'.$device->get_label.'</a>';
+    }
+
 
     $m->comp('/generic/attribute_table.mhtml', %comphash, width=>2);
     (@field_headers, @cell_data) = ((),());
@@ -339,11 +344,6 @@ foreach my $o ( values %rrs ) {
 	    $ui->add_to_fields(o=>$arecord, edit=>$edit, fields=>['ttl'],
 			       field_headers=>\@field_headers, cell_data=>\@cell_data,
 			       linkpages=>['']);
-
-	    if ( my $device = ($o->devices)[0] ){
-		push @field_headers, 'Device:';
-		push @cell_data, '<a href="device.html?id='.$device.'">'.$device->get_label.'</a>';
-	    }
 
 	    $m->comp('/generic/attribute_table.mhtml', %comphash, width=>2);
 	    (@field_headers, @cell_data) = ((),());
