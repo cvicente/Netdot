@@ -260,7 +260,7 @@ sub keyword_search {
   Arguments:
     version - 4 or 6 (defaults to all)
   Returns: 
-    Array of Ipblock IDs
+    Array of Ipblock objects
   Examples:
     my @unused = Ipblock->get_unused_subnets(version=>4);
 =cut
@@ -269,7 +269,7 @@ sub get_unused_subnets {
     my ($class, %args) = @_;
     $class->isa_class_method('get_unused_subnets');
     my @ids;
-    my $query = "SELECT    subnet.id, address.id 
+    my $query = "SELECT     subnet.id, address.id 
                  FROM       ipblockstatus, ipblock subnet
                  LEFT JOIN  ipblock address ON (address.parent=subnet.id)
                  WHERE      subnet.status=ipblockstatus.id 
