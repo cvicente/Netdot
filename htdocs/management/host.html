@@ -173,7 +173,7 @@ print '<div class="container">';
 
 my (@field_headers, @cell_data);
 
-print '<div class="containerheadleft"><b>Host</b></div>';
+print '<div class="containerheadleft"><b>DNS Records</b></div>';
 print '<div class="containerheadright">';
 if ($action eq 'new') {
     if ($ipblock) {
@@ -293,10 +293,11 @@ foreach my $o ( values %rrs ) {
     $ui->add_to_fields(edit=>$edit, o=>$o, fields=>['name', 'zone', 'expiration', 'active'],
 		       field_headers=>\@field_headers, cell_data=>\@cell_data,
 		       linkpages=>['', 'zone.html', '']);
+
+
     $m->comp('/generic/attribute_table.mhtml', %comphash, width=>2);
     (@field_headers, @cell_data) = ((),());
 
-    
     my @arecs = $o->arecords();
     my @ips;
     #####################################################################################################
@@ -338,6 +339,11 @@ foreach my $o ( values %rrs ) {
 	    $ui->add_to_fields(o=>$arecord, edit=>$edit, fields=>['ttl'],
 			       field_headers=>\@field_headers, cell_data=>\@cell_data,
 			       linkpages=>['']);
+
+	    if ( my $device = ($o->devices)[0] ){
+		push @field_headers, 'Device:';
+		push @cell_data, '<a href="device.html?id='.$device.'">'.$device->get_label.'</a>';
+	    }
 
 	    $m->comp('/generic/attribute_table.mhtml', %comphash, width=>2);
 	    (@field_headers, @cell_data) = ((),());
@@ -936,6 +942,7 @@ foreach my $o ( values %rrs ) {
 
     } # close restrict if
     print '</div>'; #close container
+    
 }
 
 print '</div>'; #close outer containerbody
