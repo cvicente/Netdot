@@ -90,9 +90,23 @@ sub search_like {
     if ( (exists $argv{name}) && ($argv{name} =~ /\./)  && !exists $argv{zone} ){
 	if ( my $zone = (Zone->search(name=>$argv{name}))[0] ){
 	    my $name = $zone->name;
-	    $argv{name} =~ s/\.$name//;
-	    $argv{zone} = $zone->id;
-	    return $class->SUPER::search_like(%argv);
+	    if ($argv{name} eq $name) {
+		$name =~ s/^.*?\.//;
+		my $alt_name = $name;
+		if ( my $alt_zone = (Zone->search(name=>$alt_name))[0] ) {
+		    $alt_name = $alt_zone->name;
+		    $argv{name} =~ s/\.$alt_name//;
+		    $argv{zone} = $alt_zone->id;
+		    return $class->SUPER::search_like(%argv);
+		} else {
+		    #alternative zone not found, search normally
+		    return $class->SUPER::search_like(%argv);
+		}
+	    } else {
+		$argv{name} =~ s/\.$name//;
+		$argv{zone} = $zone->id;
+		return $class->SUPER::search_like(%argv);
+	    }
 	}else{
 	    # Zone not found, just do normal search
 	    return $class->SUPER::search_like(%argv);
