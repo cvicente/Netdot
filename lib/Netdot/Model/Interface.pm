@@ -67,21 +67,14 @@ sub find_duplex_mismatches {
     my $dbh = $class->db_Main();
     my $mismatches = $dbh->selectall_arrayref("SELECT  i.id, r.id
                                                FROM    interface i, interface r
-                                               WHERE   i.neighbor=r.id  
+                                               WHERE   i.id<=r.id
+                                                 AND   i.neighbor=r.id  
                                                  AND   i.oper_status='up'
                                                  AND   r.oper_status='up'
                                                  AND   i.oper_duplex!=r.oper_duplex");
 
-    # SQL returns pairs in both orders. Until I figure out how 
-    # to get SQL to return unique pairs...
     if ( $mismatches ){
-	my (%seen, @pairs);
-	foreach my $pair ( @$mismatches ){
-	    next if ( exists $seen{$pair->[0]} || exists $seen{$pair->[1]} );
-	    push @pairs, $pair;
-	    $seen{$pair->[0]}++;
-	    $seen{$pair->[1]}++;
-	}
+	my @pairs = @$mismatches;
 	#
 	# Ignore devices that incorrectly report their settings
 	my @results;
