@@ -119,7 +119,7 @@ sub _get_arp_from_cli {
 	    $s->begin_privileged($privileged);
 	}
 	$s->cmd('termi pager 0');
-	@output = $s->cmd('show arp');
+	@output = $s->cmd(string=>'show arp', timeout=>$timeout);
 	$s->cmd('termi pager 36');
 	
 	if ( $privileged ){
@@ -140,11 +140,11 @@ sub _get_arp_from_cli {
 
     my ($iname, $ip, $mac, $intid);
     foreach my $line ( @output ) {
-	if ( $line =~ /^\s+(\w+)\s(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s(\w{4}\.\w{4}\.\w{4}).*$/ ) {
+	if ( $line =~ /^\s+(\S+)\s(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s(\w{4}\.\w{4}\.\w{4}).*$/ ) {
 	    $iname = $1;
 	    $ip    = $2;
 	    $mac   = $3;
-	}elsif ( $line =~ /^\s+(\w+)\s([\w\._-]+)\s(\w{4}\.\w{4}\.\w{4}).*$/ ){
+	}elsif ( $line =~ /^\s+(\S+)\s([\w\._-]+)\s(\w{4}\.\w{4}\.\w{4}).*$/ ){
 	    # The 'dns domain-lookup outside' option causes outside-facing entries to be reported as hostnames
 	    $iname       = $1;
 	    my $hostname = $2;
