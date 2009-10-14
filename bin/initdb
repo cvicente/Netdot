@@ -240,9 +240,8 @@ sub insert_oui{
     my $oui_file = "oui.txt";
     unless ( -r $oui_file ){
         print "  $oui_file not found! Using default file in package.\n";
+	$oui_file = "oui.txt.default";
     }
-    # Use the local copy (probably outdated)
-    $oui_file = "oui.txt.default";
     unless ( -r $oui_file ){
         print "  $oui_file not found!\n";
         die "Please run ''make oui'' to download oui.txt.\n";
@@ -256,9 +255,9 @@ sub insert_oui{
     open (OUI, "<:encoding(iso-8859-1)","$oui_file") or die "Can't open $oui_file: $!\n";
     while (my $line = <OUI>){
         chomp $line;
-        if ($line =~ /^(.{2}-.{2}-.{2})\s+\(hex\)\s+(.*)\s*$/i){
-            $oui{$1}=$2;
-        } 
+        if ($line =~ /^([0-9A-F]{6})\s+\(base 16\)\s+(.*)\s*$/i){
+            $oui{$1} = $2;
+        }
     }
     close (OUI);
 
@@ -267,7 +266,6 @@ sub insert_oui{
     foreach my $oui ( keys %oui ){
         my $vendor = $oui{$oui};
 	$vendor =~ s/\'/''/g;
-        $oui =~ s/-//g;
         $oui = uc($oui);
         print "$oui : $vendor\n" if $config{DEBUG};
 	push @data, "INSERT INTO oui (oui, vendor) VALUES ('$oui', '$vendor');";
