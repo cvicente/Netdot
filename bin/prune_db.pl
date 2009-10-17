@@ -1,10 +1,10 @@
-#!/usr/bin/perl -w
+#!<<Make:PERL>>
 
 ###############################################################
 # prune_db.pl
 #
 
-use lib "/usr/local/netdot/lib";
+use lib "<<Make:LIB>>";
 use Netdot::Model;
 use Netdot::Config;
 use DBUTIL;
@@ -312,7 +312,7 @@ sub rotate_table{
     else{ #postgre
         #the procedure for rotating tables is a bit different for postgres, since it doesn't 
         #recognize the SHOW command.  We instead use the CREATE TABLE AS function of postgres
-        #to create an exact copy of the origional table, then we'll drop all the records from the origional
+        #to create an exact copy of the original table, then we'll drop all the records from the origional
         #$dbh = DBI->connect("DBI:Pg:dbname=$db_db; host=$db_host", "$db_user", "$db_pass");
    
         my $new_table_name = $table."_".$timestamp;
@@ -342,7 +342,7 @@ sub rotate_table{
     if($db_type eq 'mysql'){
         $tables_q = $dbh->selectall_arrayref("SHOW TABLES");
     }
-    else{ #postgre
+    else{ #postgres
         $tables_q = $dbh->selectall_arrayref("SELECT tablename FROM pg_tables");
     }
 

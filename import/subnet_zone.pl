@@ -19,7 +19,7 @@ while (<FILE>){
     if ( !($ipb = Ipblock->search(address=>$ipblock)->first) ){
 	die "Ipblock $ipblock not found";
     }
-    if ( !($z = Zone->search(name=>$zone)->first) ){
+    if ( !($z = (Zone->search(name=>$zone))[0]) ){
 	die "Zone $zone not found";
     }
     my %args = (zone=>$z, subnet=>$ipb);
