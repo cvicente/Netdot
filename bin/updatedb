@@ -248,6 +248,38 @@ my @statements = (
        UNIQUE INDEX physaddrattrname1 (`name`),
        PRIMARY KEY (`id`)
     ) ENGINE=InnoDB;",
+    "CREATE TABLE `deviceattr` (
+       `device` integer NOT NULL,
+       `id` integer NOT NULL auto_increment,
+       `name` integer NOT NULL,
+       `value` varchar(255) NOT NULL,
+       UNIQUE INDEX deviceattr1 (`name`, `device`),
+       INDEX DeviceAttr2 (`device`),
+       PRIMARY KEY (`id`)
+     ) ENGINE=InnoDB;",
+    "CREATE TABLE `deviceattrname` (
+       `id` integer NOT NULL auto_increment,
+       `info` blob,
+       `name` varchar(128) NOT NULL,
+       UNIQUE INDEX deviceattrname1 (`name`),
+       PRIMARY KEY (`id`)
+     ) ENGINE=InnoDB;",
+    "CREATE TABLE `ipblockattr` (
+       `id` integer NOT NULL auto_increment,
+       `ipblock` integer NOT NULL,
+       `name` integer NOT NULL,
+       `value` varchar(255) NOT NULL,
+       UNIQUE INDEX ipblockattr1 (`name`, `ipblock`),
+       INDEX IpblockAttr2 (`ipblock`),
+       PRIMARY KEY (`id`)
+     ) ENGINE=InnoDB;",
+    "CREATE TABLE `ipblockattrname` (
+       `id` integer NOT NULL auto_increment,
+       `info` blob,
+       `name` varchar(128) NOT NULL,
+       UNIQUE INDEX ipblockattrname1 (`name`),
+       PRIMARY KEY (`id`)
+     ) ENGINE=InnoDB;",
     "INSERT INTO dhcpscopetype (name) VALUES ('template');",
     "INSERT INTO usertype (name, info) VALUES ('Admin', 'An Admin user has full access to Netdot');",
     "INSERT INTO usertype (name, info) VALUES ('Operator', 'Operators have the same view as Admins, but have read-only access');",

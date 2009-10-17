@@ -2178,6 +2178,131 @@ $meta = {
       brief => ['name', 'product', 'site', 'serialnumber', 'inventorynumber', 'snmp_target' ]
     }
   },
+  DeviceAttr => {
+    table_db_name => 'deviceattr',
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      name => {
+        default => '',
+        description => 'Name of this attribute',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'attributes',
+          table => 'DeviceAttrName'
+        },
+        nullable => 0,
+        tag => 'Name',
+        type => 'integer'
+      },
+      device => {
+        default => '',
+        description => 'Device to which this attribute is assigned',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'attributes',
+          table => 'Device'
+        },
+        nullable => 0,
+        tag => 'Device',
+        type => 'integer'
+      },
+      value => {
+        default => '',
+        description => 'Value for this attribute',
+        length => '255',
+        nullable => 0,
+        tag => 'Value',
+        type => 'varchar'
+      }
+    },
+    description => 'A Device Attribute',
+    has_history => 0,
+    index => [
+      [
+        'device'
+      ],
+    ],
+    isjoin => '0',
+    label => [
+      'name',
+      'value',
+      'device',
+    ],
+    primary_key => 'id',
+    unique => [ ['name', 'device'] ],
+    views => {
+      all => [
+        'name',
+        'value',
+        'device'
+      ],
+      brief => [
+        'name',
+        'value',
+        'device'
+      ]
+    }
+  },
+  DeviceAttrName => {
+    table_db_name => 'deviceattrname',
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      info => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'blob'
+      },
+      name => {
+        default => '',
+        description => '',
+        length => '128',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      }
+    },
+    description => 'A Device Attributes Name',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'info'
+      ],
+      brief => [
+        'name'
+      ]
+    }
+  },
   DeviceModule => {
     table_db_name => 'devicemodule',
     columns => {
@@ -4579,6 +4704,131 @@ $meta = {
         'status',
         'used_by',
         'description',
+      ]
+    }
+  },
+  IpblockAttr => {
+    table_db_name => 'ipblockattr',
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      name => {
+        default => '',
+        description => 'Name of this attribute',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'attributes',
+          table => 'IpblockAttrName'
+        },
+        nullable => 0,
+        tag => 'Name',
+        type => 'integer'
+      },
+      ipblock => {
+        default => '',
+        description => 'Ipblock to which this attribute is assigned',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'attributes',
+          table => 'Ipblock'
+        },
+        nullable => 0,
+        tag => 'Ipblock',
+        type => 'integer'
+      },
+      value => {
+        default => '',
+        description => 'Value for this attribute',
+        length => '255',
+        nullable => 0,
+        tag => 'Value',
+        type => 'varchar'
+      }
+    },
+    description => 'An Ipblock Attribute',
+    has_history => 0,
+    index => [
+      [
+        'ipblock'
+      ],
+    ],
+    isjoin => '0',
+    label => [
+      'name',
+      'value',
+      'ipblock',
+    ],
+    primary_key => 'id',
+    unique => [ ['name', 'ipblock'] ],
+    views => {
+      all => [
+        'name',
+        'value',
+        'ipblock'
+      ],
+      brief => [
+        'name',
+        'value',
+        'ipblock'
+      ]
+    }
+  },
+  IpblockAttrName => {
+    table_db_name => 'ipblockattrname',
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      info => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'blob'
+      },
+      name => {
+        default => '',
+        description => '',
+        length => '128',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      }
+    },
+    description => 'An Ipblock Attributes Name',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'name'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'name'
+      ]
+    ],
+    views => {
+      all => [
+        'name',
+        'info'
+      ],
+      brief => [
+        'name'
       ]
     }
   },

@@ -27,6 +27,7 @@ $editgen    => undef
 $editloc    => undef
 $editcomments => undef
 $editmgmt   => undef
+$editattr   => undef
 $editips    => undef
 $addips     => undef
 $editints   => undef
@@ -532,6 +533,22 @@ print $tmp{value};
 %   if ( $editgen || $editloc || $editcomments || $editmgmt ) {
       </form>
 %   }
+
+
+
+<!-- Display Custom Attributes -->
+% my @attributes = $o->attributes;
+  <div class="container">
+    <div class="containerheadleft"><strong>Custom Attributes</strong></div>
+    <div class="containerheadright">
+        <a href="device.html?id=<% $o %>&editattr=1">[edit]</a>
+        <a href="edit.html?table=DeviceAttr&device=<% $o %>">[add]</a>
+    </div>
+    <div class="containerbody">
+        <& /generic/sortresults.mhtml, object=>\@attributes, withedit=>$editattr, return_args=>"?id=$id" &>
+    </div>
+  </div>
+<!-- End Display Custom Attributes -->
 
 % } 
 <!-- End Basics Section -->
