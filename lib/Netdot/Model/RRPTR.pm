@@ -63,6 +63,7 @@ sub insert {
     my %linksfrom = RR->meta_data->get_links_from;
     foreach my $i ( keys %linksfrom ){
 	if ( $rr->$i ){
+	    next if ( $i eq 'ptr_records' );
 	    $class->throw_user($rr->name.": Cannot add PTR records when other records exist");
 	}
     }
