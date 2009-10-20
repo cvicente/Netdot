@@ -92,8 +92,10 @@ sub update {
     my($self, $argv) = @_;
     $self->isa_object_method('update');
 
-    if ( defined $argv->{ttl} ){
+    if ( defined $argv->{ttl} && length($argv->{ttl}) ){
 	$argv->{ttl} = $self->ttl_from_text($argv->{ttl});
+    }else{
+	delete $argv->{ttl};
     }
     if ( defined $argv->{order_field} ){
 	$self->throw_user("Invalid order value: ".$argv->{order_field})

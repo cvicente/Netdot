@@ -104,8 +104,10 @@ sub update {
     $argv->{ipblock} = $self->_convert_ipblock($argv->{ipblock})
 	if defined $argv->{ipblock};
     
-    if ( defined $argv->{ttl} ){
+    if ( defined $argv->{ttl} && length($argv->{ttl}) ){
 	$argv->{ttl} = $self->ttl_from_text($argv->{ttl});
+    }else{
+	delete $argv->{ttl};
     }
     
     my $update_ptr = 1; # On by default

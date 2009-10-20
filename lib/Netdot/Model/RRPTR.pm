@@ -63,8 +63,8 @@ sub insert {
     my %linksfrom = RR->meta_data->get_links_from;
     foreach my $i ( keys %linksfrom ){
 	if ( $rr->$i ){
-	    next if ( $i eq 'ptr_records' );
-	    $class->throw_user($rr->name.": Cannot add PTR records when other records exist");
+	    next if ( $i eq 'ptr_records' || $i eq 'txt_records' || $i eq 'loc_records' );
+	    $class->throw_user($rr->name.": Cannot add PTR records when other conflicting types exist.");
 	}
     }
 
@@ -131,8 +131,10 @@ sub update {
     my($self, $argv) = @_;
     $self->isa_object_method('update');
 
-    if ( defined $argv->{ttl} ){
+    if ( defined $argv->{ttl} && length($argv->{ttl}) ){
 	$argv->{ttl} = $self->ttl_from_text($argv->{ttl});
+    }else{
+	delete $argv->{ttl};
     }
     
     return $self->SUPER::update($argv);
