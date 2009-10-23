@@ -36,6 +36,7 @@ $parent            => undef
 $length            => undef
 $edit              => undef
 $edit_children     => undef
+$editattr          => undef
 $submit            => undef
 $rootversion       => 4 
 $view_format       => 'block'
@@ -1193,6 +1194,25 @@ if ($o->status->name eq "Subnet") {
        <& /generic/sortresults.mhtml, object=>\@sz, withedit=>($edit eq 'edit_zones')? 1 : 0 &>
     </div>
   </div>
+
+
+%################################################################
+%# Custom Attributes
+%################################################################
+<!-- Display Custom Attributes -->
+% my @attributes = $o->attributes;
+  <div class="container">
+    <div class="containerheadleft"><strong>Custom Attributes</strong></div>
+    <div class="containerheadright">
+        <a href="ip.html?id=<% $o %>&editattr=1">[edit]</a>
+        <a href="edit.html?table=IpblockAttr&ipblock=<% $o %>">[add]</a>
+    </div>
+    <div class="containerbody">
+        <& /generic/sortresults.mhtml, object=>\@attributes, withedit=>$editattr, return_args=>"?id=$id" &>
+    </div>
+  </div>
+<!-- End Display Custom Attributes -->
+
 
 
 %################################################################
