@@ -19,13 +19,15 @@ Netdot::Model::DhcpAttr - DHCP Attribute Class
 ############################################################################
 =head2 search
 
+    We override the base method to:
+    - Accept name as string
 
- Argsuments: 
-
+  Arguments: 
+    Hash of key/value pairs
   Returns: 
-
+    Array of objects or iterator
   Examples:
-
+    DhcpAttr->search(%args);
 =cut
 
 sub search {
@@ -48,13 +50,15 @@ sub search {
 ############################################################################
 =head2 insert - Insert new Scope
 
+    We override the base method to:
+    - Accept name as string
 
- Argsuments: 
-
+  Arguments: 
+    Hashref of key/value pairs
   Returns: 
-
+    New DhcpAttr object
   Examples:
-
+    DhcpAttr->insert(\%args)
 =cut
 
 sub insert {
@@ -63,18 +67,76 @@ sub insert {
     $class->throw_fatal('DhcpAttr::insert: Missing required parameters')
 	unless ( defined $argv->{name} && defined $argv->{value} );
  
-    my $name;
-    if (!($name = DhcpAttrName->search(name=>$argv->{name})->first)){
-	$name = DhcpAttrName->insert({name=>$argv->{name}});
-    }
-    $argv->{name} = $name->id;
+    $class->_objectify_args($argv);
+
     return $class->SUPER::insert($argv);
 }
 
 =head1 INSTANCE METHODS
 =cut
 
-    
+############################################################################
+=head2 update
+
+    We override the base method to:
+    - Accept name as string
+
+  Arguments: 
+    Hashref of key/value pairs
+  Returns: 
+    Same as Class::DBI
+  Examples:
+    $attr->update(\%args)
+=cut
+
+sub update {
+    my ($self, $argv) = @_;
+    $self->isa_object_method('update');
+
+    $self->_objectify_args($argv);
+
+    return $self->SUPER::update($argv);
+}
+
+
+############################################################################
+# Private methods
+############################################################################
+
+############################################################################
+=head2 _objectify_args
+
+    Convert following arguments into objects:
+    - name
+   
+  Args: 
+    hashref
+  Returns: 
+    True
+  Examples:
+    $class->_objectify_args($argv);
+
+=cut
+sub _objectify_args {
+    my ($self, $argv) = @_;
+
+    my $name;
+    if ( $argv->{name} && !ref($argv->{name}) ){
+	# Argument exists and it's not an object
+	if ( $argv->{name} =~ /\D+/ ){
+	    # Argument is a non-digit
+	    $name = DhcpAttrName->search(name=>$argv->{name})->first;
+	    $self->throw_user("DhcpAttr::objectify_args: Unknown Attribute Name: ".$argv->{name})
+		unless $name;
+	    $argv->{name} = $name;
+	}elsif ( $name = DhcpAttrName->retrieve($argv->{name}) ){
+	    # Argument was an integer and we found an object 
+	    $argv->{name} = $name;
+	}else{
+	    $self->throw_user("Invalid name argument ".$argv->{name});
+	}
+    }
+}    
 =head1 AUTHOR
 
 Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>

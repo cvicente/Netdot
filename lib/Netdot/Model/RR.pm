@@ -494,8 +494,7 @@ sub add_host {
 		if ( $host = DhcpScope->search(name=>$argv{address})->first ){
 		    $class->throw_user("A DHCP scope for host $argv{address} already exists!");
 		}else{
-		    $host = DhcpScope->insert({name      => $argv{address},
-					       type      => 'host',
+		    $host = DhcpScope->insert({type      => 'host',
 					       ipblock   => $rraddr->ipblock,
 					       physaddr  => $physaddr,
 					       container => $global});

@@ -72,34 +72,42 @@ sub insert {
     my ($class, $argv) = @_;
     $class->isa_class_method('insert');
     $class->throw_fatal('DhcpScope::insert: Missing required parameters')
-	unless ( defined $argv->{name} && defined $argv->{type} );
+	unless ( defined $argv->{type} );
 
     $class->_objectify_args($argv);
+    $class->_assign_name($argv) unless $argv->{name};
     $class->_validate_args($argv);
 
     my $attributes = delete $argv->{attributes} if defined $argv->{attributes};
 
-    my $scope = $class->SUPER::insert($argv);
+    my $scope;
+    if ( $scope = $class->search(name=>$argv->{name})->first ){
+	$logger->info("DhcpScope::insert: ".$argv->{name}." already exists!");
+	$scope->SUPER::update($argv);
+    }else{
+	$scope = $class->SUPER::insert($argv);
+    }
 
     if ( $scope->type->name eq 'subnet' ){
+	# Add standard attributes
+	$attributes->{'option broadcast-address'} = $argv->{ipblock}->_netaddr->broadcast->addr();
+	$attributes->{'option subnet-mask'}       = $argv->{ipblock}->_netaddr->mask;
+	if ( my $zone = $argv->{ipblock}->forward_zone ){
+	    # Add the domain-name attribute
+	    $attributes->{'option domain-name'} = $zone->name;
+	}
+    
 	if ( int($scope->container) && $scope->container->enable_failover ){
 	    my $failover_peer = $scope->container->failover_peer || 'dhcp-peer';
-	    $scope->update({enable_failover=>1, failover_peer=>'failover-peer'});
+	    $scope->SUPER::update({enable_failover=>1, failover_peer=> $failover_peer});
 	}
     }
     
-    if ( $attributes ){
-	while ( my($key, $val) = each %$attributes ){
-	    my $attr;
-	    if ( !($attr = DhcpAttr->search(name=>$key, value=>$val, scope=>$scope->id)->first) ){
-		$logger->debug("DhcpScope::insert: ".$scope->get_label.": Inserting DhcpAttr $key: $val");
-		DhcpAttr->find_or_create({name=>$key, value=>$val, scope=>$scope->id});
-	    }
-	}
-    }
+    $scope->_update_attributes($attributes) if $attributes;
 
     return $scope;
 }
+
 
 ############################################################################
 =head2 get_containers
@@ -155,6 +163,7 @@ sub get_containers {
     Override parent method to:
     - Objectify some arguments
     - Validate arguments
+    - Deal with attributes
 
   Args: 
     Hashref
@@ -167,9 +176,26 @@ sub update{
     my ($self, $argv) = @_;
 
     $self->_objectify_args($argv);
+    $self->_assign_name($argv) unless $argv->{name};
     $self->_validate_args($argv);
 
-    return $self->SUPER::update($argv);
+    my $attributes = delete $argv->{attributes} if defined $argv->{attributes};
+
+    if ( $self->type->name eq 'subnet' ){
+	# Add standard attributes
+	$attributes->{'option broadcast-address'} = $argv->{ipblock}->_netaddr->broadcast->addr();
+	$attributes->{'option subnet-mask'}       = $argv->{ipblock}->_netaddr->mask;	
+	if ( my $zone = $argv->{ipblock}->forward_zone ){
+	    # Add the domain-name attribute
+	    $attributes->{'option domain-name'} = $zone->name;
+	}
+    }
+
+    my @res = $self->SUPER::update($argv);
+
+    $self->_update_attributes($attributes) if $attributes;
+
+    return @res;
 }
 
 ############################################################################
@@ -272,7 +298,6 @@ sub import_hosts{
 	    } 
 	}
     	DhcpScope->insert({
-	    name      => $ip,
 	    type      => 'host',
 	    ipblock   => $ip,
 	    physaddr  => $mac,
@@ -295,14 +320,22 @@ sub get_global {
     my ($self, %argv) = @_;
     $self->isa_object_method('get_global');
     
+    my $container = $self->container;
+
     # This does not guarantee that the result is of type "global"
     # but it's fast
-    if ( int($self->container) == 0 ){
+    if ( int($container) == 0 ){
 	return $self;
+    }elsif ( ref($container) ){
+	# Go recursive
+	return $container->get_global();
+    }elsif ( $container = DhcpScope->retrieve($container) ){
+	# Why is this happening?
+	$logger->debug("DhcpScope::get_global: Scope ".$self->get_label. " had to objectify container: ".$container);
+	return $container->get_global();
+    }else{
+	$self->throw_fatal("DhcpScope::get_global: Scope ".$self->get_label. " has invalid container: ".$container);
     }
-    # Go recursive
-    my $container = $self->container;
-    return $container->get_global();
 }
 
 ############################################################################
@@ -331,7 +364,7 @@ sub _objectify_args {
     if ( $argv->{type} && !ref($argv->{type}) ){
 	if ( $argv->{type} =~ /\D+/ ){
 	    my $type = DhcpScopeType->search(name=>$argv->{type})->first;
-	    $self->throw_user("DhcpScope::objectify_args: Unknown type: $argv->{type}")
+	    $self->throw_user("DhcpScope::objectify_args: Unknown type: ".$argv->{type})
 		unless $type;
 	    $argv->{type} = $type;
 	}elsif ( my $type = DhcpScopeType->retrieve($argv->{type}) ){
@@ -668,6 +701,59 @@ sub _get_all_data {
     return \%data;
 }
 
+############################################################################
+# Assign scope name based on type and other values
+sub _assign_name {
+    my ($self, $argv) = @_;
+
+    unless ( $argv->{type} ){
+	if ( ref($self) ){
+	    $argv->{type} = $self->type;
+	}else{
+	    $self->throw_fatal("DhcpScope::_assign_name: Missing required argument: type")
+	}
+    }
+
+    my $name;
+    if ( $argv->{type}->name eq 'host' ){
+	$self->throw_fatal("DhcpScope::_assign_name: Missing ipblock object")
+	    unless $argv->{ipblock};
+	$name = $argv->{ipblock}->address;
+    }elsif ( $argv->{type}->name eq 'subnet' ){
+	$self->throw_fatal("DhcpScope::_assign_name: Missing ipblock object")
+	    unless $argv->{ipblock};
+	$name = $argv->{ipblock}->address." netmask ".$argv->{ipblock}->_netaddr->mask;
+    }elsif ( $argv->{type}->name eq 'shared-network' ){
+	$self->throw_fatal("DhcpScope::_assign_name: Missing subnet list")
+	    unless $argv->{subnets};
+	my $subnets = delete $argv->{subnets};
+	$name = join('_', (map { $_->address } sort { $a->address_numeric <=> $b->address_numeric } @$subnets));
+    }else{
+	$self->throw_fatal("DhcpScope::_assign_name: Don't know how to assign name for type: ".
+			   $argv->{type}->name);
+    }
+    $argv->{name} = $name;
+}
+
+############################################################################
+# Insert or update attributes
+sub _update_attributes {
+    my ($self, $attributes) = @_;
+    while ( my($key, $val) = each %$attributes ){
+	my $attr;
+	my %args = (name=>$key, scope=>$self->id);
+	if ( $attr = DhcpAttr->search(%args)->first ){
+	    $logger->debug("DhcpScope::_update_attributes: ".$self->get_label.": Updating DhcpAttr $key: $val");
+	    $args{value} = $val;
+	    $attr->update(\%args);
+	}else{
+	    $logger->debug("DhcpScope::_update_attributes: ".$self->get_label.": Inserting DhcpAttr $key: $val");
+	    $args{value} = $val;
+	    DhcpAttr->insert(\%args);
+	}
+    }
+    1;
+}
 
 =head1 AUTHOR
 

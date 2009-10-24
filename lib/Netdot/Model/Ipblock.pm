@@ -1279,7 +1279,8 @@ sub update {
     # Update DHCP scope if needed
     if ( $self->dhcp_scopes ){
 	if ( $self->address ne $bak{address} || $self->prefix ne $bak{prefix} ){
-	    $self->_update_dhcp_scope();
+	    my $scope = ($self->dhcp_scopes)[0];
+	    $scope->update({ipblock=>$self});
 	}
     }
 	
@@ -1969,7 +1970,6 @@ sub enable_dhcp{
     $self->throw_fatal("Ipblock::enable_dhcp: Invalid call to this method on a non-subnet")
 	if ( $self->status->name ne 'Subnet' );
     
-    my $container = $argv{container};
     my $scope;
 
     if ( $argv{shared_nets} ){
@@ -1978,39 +1978,42 @@ sub enable_dhcp{
 	$self->throw_fatal("Ipblock::enable_dhcp: Argument shared_nets must be hashref")
 	    unless ( ref($argv{shared_nets}) eq 'HASH' );
 
-	my @shared_subnets;
-	my $name = 'net_' . $self->address;
+	my %shared_subnets;
 	foreach my $id ( keys %{$argv{shared_nets}} ){
-	    next if $id == $self->id;
 	    my $s = Ipblock->retrieve($id);
 	    $self->throw_user("Ipblock::enable_dhcp: Shared network ".$s->get_label." is not a Subnet")
 		unless $s->status->name eq 'Subnet';
-	    $name .= '_'.$s->address;
-	    push @shared_subnets, $s;
+	    $shared_subnets{$id} = $s;
 	}
+	# Add this subnet in case it wasn't passed in the list
+	$shared_subnets{$self->id} = $self;
+	my @shared_subnets = values %shared_subnets;
 
 	# Create the shared-network scope
 	my $sn_scope;
-	if ( !($sn_scope = DhcpScope->search(name=>$name)->first) ){
-	    $sn_scope = DhcpScope->insert({name      => $name, 
-					   type      => 'shared-network', 
-					   container => $container});
-	}
+	$sn_scope = DhcpScope->insert({type      => 'shared-network',
+				       subnets   => \@shared_subnets,
+				       container => $argv{container}});
 	$scope = $sn_scope;
 	
-	# Insert this subnet's scope
-	$self->_insert_dhcp_scope(container=>$sn_scope, attributes=>$argv{attributes});
-
-	# Insert a subnet scope for each other subnet
+	# Insert a subnet scope for each member subnet
 	foreach my $s ( @shared_subnets ){
-	    my %args = (container=>$sn_scope);
-	    if ( my $attrs = $argv{shared_nets}->{$s->id} ){
+	    my %args = (container => $sn_scope,
+			type      =>'subnet', 
+			ipblock   => $s);
+	    if ( $s->id == $self->id ){
+		$args{attributes} = $argv{attributes};
+	    }elsif ( my $attrs = $argv{shared_nets}->{$s->id} ){
 		$args{attributes} = $attrs;
 	    }
-	    $s->_insert_dhcp_scope(%args);
+	    $scope = DhcpScope->insert(\%args);
 	}
     }else{
-	$scope = $self->_insert_dhcp_scope(%argv);
+	my %args = (container => $argv{container},
+		    type      =>'subnet', 
+		    ipblock   => $self);
+	$args{attributes} = $argv{attributes};
+	$scope = DhcpScope->insert(\%args);
     }
     
     return $scope;
@@ -2250,75 +2253,6 @@ sub get_next_free {
 # Private Methods
 #
 ##################################################################
-
-##################################################################
-#     Create a subnet dhcp scope and assign given attributes
-#
-#   Arguments: 
-#     Hash containing the following key/value pairs:
-#       container       - Container (probably global) Scope
-#       attributes      - Optional.  Hashref with dhcp attributes.
-#   Returns:   
-#     Scope object
-#   Examples:
-#     $subnet->_insert_dhcp_scope(%options);
-#
-sub _insert_dhcp_scope {
-    my ($self, %argv) = @_;
-    $self->isa_object_method('insert_dhcp_scope');
-    
-    $self->throw_user("Missing required arguments: container")
-	unless (defined $argv{container});
-
-    $self->throw_fatal("Ipblock::_insert_dhcp_scope: Invalid call to this method on a non-subnet")
-	if ( $self->status->name ne 'Subnet' );
-    
-    my $container = $argv{container};
-    my $scope;
-    my $scope_name = $self->address." netmask ".$self->_netaddr->mask;
-    if ( !($scope = DhcpScope->search(name=>$scope_name)->first) ){
-	$logger->debug("Ipblock::_insert_dhcp_scope: ".$self->get_label.": Inserting DhcpScope: $scope_name");
-	my %args = (name      => $scope_name, 
-		    type      =>'subnet', 
-		    ipblock   => $self,
-		    container => $container);
-	$args{attributes} = $argv{attributes} if ( $argv{attributes} );
-	$scope = DhcpScope->insert(\%args);
-    }else{
-	$logger->info("Ipblock::_insert_dhcp_scope: Scope $scope_name already exists!");
-	# Check if it is assigned to this subnet
-	unless ( $scope->ipblock != 0 && $scope->ipblock->id == $self->id ){
-	    $scope->update({ipblock=>$self});
-	}
-    }
-    return $scope;
-}
-
-##################################################################
-#
-#
-#   Arguments: 
-#     None
-#   Returns:   
-#     Scope object
-#   Examples:
-#     $subnet->_update_dhcp_scope();
-#
-sub _update_dhcp_scope {
-    my ($self, %argv) = @_;
-    $self->isa_object_method('update_dhcp_scope');
-    
-    if ( my $scope = ($self->dhcp_scopes)[0] ){
-	# There should not be more than one anyways
-	if ( $self->is_address ){
-	    $scope->update({name=>$self->address});
-	}elsif ( $self->status->name eq 'Subnet' ){
-	    my $scope_name = $self->address." netmask ".$self->_netaddr->mask;
-	    $scope->update({name=>$scope_name});
-	}
-	return $scope;
-    }
-}
 
 
 ##################################################################

@@ -73,12 +73,10 @@ foreach my $type ( split ',', $self{types} ){
 	$exporter->generate_configs(%args);
 
     }elsif ( $type eq 'DHCPD' ){
-	if ( $self{scopes} ){
-	    my @scopes = split ',', $self{scopes};
-	    $exporter->generate_configs(scopes=>\@scopes);
-	}else{
-	    $exporter->generate_configs();
-	}
+	my %args;
+	$args{scopes} = [split ',', $self{scopes}] if $self{scopes};
+	$args{force} = $self{force} if $self{force};
+	$exporter->generate_configs(%args);
     }else{
 	$exporter->generate_configs();
     }
