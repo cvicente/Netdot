@@ -173,7 +173,9 @@ sub generate_configs {
     my $iface_graph    = $self->get_interface_graph();
     
     ######################################################################################
-    foreach my $devid ( keys %$device_info ){
+    foreach my $devid ( sort { $device_info->{$a}->{hostname} 
+			       cmp $device_info->{$b}->{hostname} 
+			   } keys %$device_info ){
 	my %hostargs;
 	
 	# Is it within downtime period
