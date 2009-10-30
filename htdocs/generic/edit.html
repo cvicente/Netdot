@@ -184,7 +184,15 @@ else{
 <%def .show_form>
 <%perl>
     if ( $ARGS{table} eq 'UserRight' || $ARGS{table} eq 'GroupRight'){
+	# need to re-retrieve $user for some reason,
+	# probably because it is a separate component
+	my $user = $ui->get_current_user($r);
+	my $user_type = $user->getAttribute('USER_TYPE');
+	if ( $user_type eq "Admin" ) {
 	    $m->comp('access_right_form.html', %ARGS);
+	} else {
+	    $m->comp('/generic/error.mhtml', error=>"You don't have permission to manage users!");
+	}
     }
     else{
     	$m->comp('.show_generic_form', %ARGS);
