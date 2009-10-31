@@ -89,7 +89,7 @@ sub denies(){
 	    if ( exists $access->{'Ipblock'} && 
 		 exists $access->{'Ipblock'}->{$parent->id} ){
 		if ( $action eq 'delete' ){
-		    # Allow user to delete children blocks if the have 'edit' access to the parent
+		    # Allow user to delete children blocks if they have 'edit' access to the parent
 		    return &_deny_action_access('edit', $access->{'Ipblock'}->{$parent->id});
 		}else{
 		    return &_deny_action_access($action, $access->{'Ipblock'}->{$parent->id});
@@ -103,15 +103,21 @@ sub denies(){
 		$rr = $object->rr;
 	    }
 	    $zone = $rr->zone;
-
-	    # Users cannot edit RRs for Device IPs
-	    foreach my $arecord ( $rr->arecords ){
-		my $ip = $arecord->ipblock;
-		if ( int($ip->interface) != 0 ){
-		    $logger->debug("Netdot::ObjectAccessRule::_denies: ".$rr->get_label." linked to Device interface. Denying access.");
-		    return 1;
-		}
+	    
+	    # If the RR has a Device pointing to it,
+	    # then the user can operate on the RR with the same permissions as Device
+	    if ( my $dev = ($rr->devices)[0] ) {
+		return &_deny_action_access($action, $access->{'Device'}->{$dev->id});
 	    }
+	    
+	    # Users cannot edit RRs for Device IPs
+# 	    foreach my $arecord ( $rr->arecords ){
+# 		my $ip = $arecord->ipblock;
+# 		if ( int($ip->interface) != 0 ){
+# 		    $logger->debug("Netdot::ObjectAccessRule::_denies: ".$rr->get_label." linked to Device interface. Denying access.");
+# 		    return 1;
+# 		}
+# 	    }
 
 	    # If user has rights on the zone, they have the same rights over records
 	    if ( exists $access->{'Zone'}->{$zone->id} ){
