@@ -5,7 +5,9 @@ use warnings;
 use strict;
 use SNMP::Info;
 use Netdot::Util::DNS;
+use Netdot::Topology;
 use Parallel::ForkManager;
+use Data::Dumper;
 
 # Timeout seconds for SNMP queries 
 # (different from SNMP connections)
@@ -1207,7 +1209,6 @@ sub discover {
     my $sinfo = $argv{session} || 0;
     my $dev;
     my $ip;
-
     #we need to check and make sure there isn't a device in 
     #the database with the same phyiscal address and/or serial number 
     unless ( $info ){
@@ -2151,7 +2152,6 @@ sub snmp_update {
     unless ( $argv{do_info} || $argv{do_fwt} || $argv{do_arp} ){
 	$argv{do_info} = 1;
     }
-
     my $atomic = defined $argv{atomic} ? $argv{atomic} : $self->config->get('ATOMIC_DEVICE_UPDATES');
 
     my $host = $self->fqdn;
@@ -2247,7 +2247,14 @@ sub info_update {
     
     my $class = ref $self;
     my $start = time;
-
+    my $dbh = $class->db_Main;
+    my $sql = "SELECT id, dp_remote_id, dp_remote_ip, dp_remote_port, dp_remote_type FROM interface WHERE device = $self";
+    my $before_stmt = $dbh->prepare($sql);
+    my $after_stmt = $dbh->prepare($sql);
+    #running this sql query so we can compare the interfaces on this device before the update, with the interfaces
+    #after the update, so we'll know which links to update in the topography graph
+    $before_stmt->execute();
+    
     # Show full name in output
     my $host = $self->fqdn;
 
@@ -2372,6 +2379,46 @@ sub info_update {
 	    $self->throw_fatal("Model::Device::info_update: Unable to set AutoCommit on");
 	}
     }
+
+
+    #now that the updates have been done, lets take the "after" shot
+    $after_stmt->execute();
+
+    my @interfaces_to_check = ();
+    #lets build two hashes to store before and after information in, the key of the hash will be the interface
+    #id, the value will be a concatanation of all the data
+    my %before_hash;
+    my %after_hash;
+    while(my @row = $before_stmt->fetchrow_array()){
+        $before_hash{$row[0]} = "".$row[1].$row[2].$row[3].$row[4];
+    }
+    while(my @row = $after_stmt->fetchrow_array()){
+        $after_hash{$row[0]} = "".$row[1].$row[2].$row[3].$row[4];
+    }
+
+    #we will have to loop through each hash, since before_hash might have some keys that after_hash doesn't, and visa versa
+    #these checking operations should be very efficient however
+    foreach(keys %before_hash){
+        if($before_hash{$_} ne $after_hash{$_}){
+            push(@interfaces_to_check, $_);
+        }
+    }
+    foreach(keys %after_hash){
+        if($before_hash{$_} ne $after_hash{$_}){
+            push(@interfaces_to_check, $_);
+        }
+    }
+    #now we'll put our findings in a hash to pass to Topology->discover.  We want to exclude all protocols except dp
+    #print "So we're going to look at @interfaces_to_check <br/>";
+    my %topo_argv = ();
+    if((scalar @interfaces_to_check) > 0 && (! $argv{pretend} )){
+    	$topo_argv{'interfaces'} = (\@interfaces_to_check);
+    	$topo_argv{'exclude_stp'} = 1;
+    	$topo_argv{'exclude_fdb'} = 1;
+    	$topo_argv{'exclude_p2p'} = 1;
+    	Netdot::Topology->discover(%topo_argv);
+    }	
+
 
     return $self;
 }
