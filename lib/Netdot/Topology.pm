@@ -4,6 +4,7 @@ use base 'Netdot';
 use Netdot::Model;
 use warnings;
 use strict;
+use Data::Dumper;
 
 my $logger = Netdot->log->get_logger('Netdot::Topology');
 my $MAC    = Netdot->get_mac_regex();
@@ -27,7 +28,11 @@ Netdot Device Topology Class
 =head2 discover - Discover Topology
 
   Arguments:
-    None
+    exclude_dp - optional, set to true to exclude DP
+    exclude_stp - optional, set to true to exclude STP
+    exclude_fdb - optional, set to true to exclude FDB
+    exclude_p2p - optional, set to true to exclude P2P
+    interfaces - optional, interfaces to preform topology update on
   Returns:
     True
   Examples:
@@ -39,39 +44,50 @@ sub discover {
     $class->isa_class_method('discover');
 
     my %SOURCES;
-    $SOURCES{DP}  = 1 if $class->config->get('TOPO_USE_DP');
-    $SOURCES{STP} = 1 if $class->config->get('TOPO_USE_STP');
-    $SOURCES{FDB} = 1 if $class->config->get('TOPO_USE_FDB');
-    $SOURCES{P2P} = 1 if $class->config->get('TOPO_USE_P2P');
+    $SOURCES{DP}  = 1 if $class->config->get('TOPO_USE_DP') && (! $argv{'exclude_dp'});
+    $SOURCES{STP} = 1 if $class->config->get('TOPO_USE_STP') && (! $argv{'exclude_stp'});
+    $SOURCES{FDB} = 1 if $class->config->get('TOPO_USE_FDB') && (! $argv{'exclude_fdb'}); 
+    $SOURCES{P2P} = 1 if $class->config->get('TOPO_USE_P2P') && (! $argv{'exclude_p2p'});
     my $MINSCORE  = $class->config->get('TOPO_MIN_SCORE');
     my $srcs = join ', ', keys %SOURCES;
     
     $logger->info(sprintf("Discovering Network Topology using sources: %s. Min score: %s", 
 			  $srcs, $MINSCORE));
-
+    
     my $start = time;
     my $stp_links = $class->get_stp_links() if ( $SOURCES{STP} );
     my $fdb_links = $class->get_fdb_links() if ( $SOURCES{FDB} );
-    my $dp_links  = $class->get_dp_links()  if ( $SOURCES{DP}  );
+    
+    #get_dp_links uses the optional argument 'devices' since its called when 
+    #we do updatedevices.pl -I. 
+    my $dp_links  = $class->get_dp_links(%argv)  if ( $SOURCES{DP}  );
+    
     my $p2p_links = $class->get_p2p_links() if ( $SOURCES{P2P} );
 
     $logger->debug(sprintf("Netdot::Topology: All links determined in %s", 
 			   $class->sec2dhms(time - $start)));
 
-    # Get all existing links
+    my $sql_query_modifier;
+    if($argv{'interfaces'}){ #limit the interfaces to the ones passed in 
+    
+        my @i = @{ $argv{'interfaces'} };
+        $sql_query_modifier .= " AND ";
+        $sql_query_modifier .= return_sql_filter(@i);
+    }
+    # Get all existing links, or if there is anything in $sql_query_modifier, only the links specified
     my %old_links;
     my $dbh = Netdot::Model->db_Main;
-    foreach my $row (@{$dbh->selectall_arrayref("SELECT id, neighbor FROM interface WHERE neighbor != 0")}) {
+    foreach my $row (@{$dbh->selectall_arrayref("SELECT id, neighbor FROM interface WHERE neighbor != 0".$sql_query_modifier)}) {
 	my ($id, $neighbor) = @$row;
 	$old_links{$id} = $neighbor;
     }
     
     my %args;
     $args{old_links} = \%old_links;
-    $args{dp}        = $dp_links  if $dp_links;
-    $args{stp}       = $stp_links if $stp_links;
-    $args{fdb}       = $fdb_links if $fdb_links;
-    $args{p2p}       = $p2p_links if $p2p_links;
+    $args{dp}        = $dp_links  if $dp_links && (! $argv{'exclude_dp'});;
+    $args{stp}       = $stp_links if $stp_links && (! $argv{'exclude_stp'});
+    $args{fdb}       = $fdb_links if $fdb_links && (! $argv{'exclude_fdb'});
+    $args{p2p}       = $p2p_links if $p2p_links && (! $argv{'exclude_p2p'});
     my ($addcount, $remcount) = $class->update_links(%args);
     my $end = time;
     $logger->info(sprintf("Topology discovery done in %s. Links added: %d, removed: %d", 
@@ -319,7 +335,7 @@ sub update_links {
 =head2 get_dp_links - Get links between devices based on Discovery Protocol (CDP/LLDP) Info 
 
   Arguments:  
-    None
+    interfaces - Optional interfaces to get dp links from
   Returns:    
     Hashref with link info
   Example:
@@ -329,17 +345,26 @@ sub update_links {
 sub get_dp_links {
     my ($class, %argv) = @_;
     $class->isa_class_method('get_dp_links');
-
+ 
+    #if the optional argument device is present, we have to modify our sql query to 
+    #only select interface objects where the device id is present
+    my $sql_query_modifier = ""; #will be null and won't affect the statement if %argv{'device'} is null
+    if($argv{'interfaces'}){
+	$sql_query_modifier = " AND ";
+        my @interfaces = @{ $argv{'interfaces'} };
+	$sql_query_modifier .= return_sql_filter(@interfaces);
+    }
     my $excluded_blocks = $class->config->get('EXCLUDE_UNKNOWN_DP_DEVS_FROM_BLOCKS') || {};
 
     my $start = time;
     # Using raw database access because Class::DBI was too slow here
     my $dbh = Netdot::Model->db_Main;
     my $results;
-    my $sth = $dbh->prepare("SELECT device, id, dp_remote_ip, dp_remote_id, dp_remote_port 
-                             FROM interface 
-                             WHERE (dp_remote_ip IS NOT NULL OR dp_remote_id IS NOT NULL) 
-                               AND dp_remote_port IS NOT NULL");
+
+    my $sql = "SELECT device, id, dp_remote_ip, dp_remote_id, dp_remote_port FROM interface WHERE (dp_remote_ip IS NOT NULL OR dp_remote_id IS NOT NULL) AND dp_remote_port IS NOT NULL AND (dp_remote_ip != \"\" OR dp_remote_id != \"\") AND dp_remote_port != \"\"".$sql_query_modifier;
+
+    my $sth = $dbh->prepare($sql);
+
     $sth->execute;
     $results = $sth->fetchall_arrayref;
 
@@ -351,8 +376,8 @@ sub get_dp_links {
 
     foreach my $row ( @$results ){
         my ($did, $iid, $r_ip, $r_id, $r_port) = @$row;
-	# In theory this is not needed, but I've seen some funny results from that query
-	next unless ( ($r_ip || $r_id) && $r_port );
+	#the old version of the above query returned empty strings, now this should never be needed
+	next unless ( ($r_ip || $r_id) && $r_port ); 
 
         next if (exists $links{$iid});
 
@@ -1095,6 +1120,20 @@ sub _cmp_des_p {
 	return 1;
     }
     return 0;
+}
+
+#takes a list of interface ids and builds the sql needed to limit a query on interface to only use those interfaces
+sub return_sql_filter{
+    my @interfaces = @_;
+    my $sql_query_modifier = "(";
+        for(my $i = 0; $i < (scalar @interfaces); $i++){
+            $sql_query_modifier .= "id = ".$interfaces[$i];
+                if($i != (scalar @interfaces)-1){
+                    $sql_query_modifier .= " OR ";
+                }
+        }
+    $sql_query_modifier .= ")";
+    return $sql_query_modifier;
 }
 
 =head1 AUTHORS
