@@ -3,7 +3,7 @@
 --
 -- November 1997, Cliff L. Sojourner
 --
--- Copyright (c) 1998, 2002 by cisco Systems, Inc.
+-- Copyright (c) 1998-2003, 2005, 2006 by cisco Systems, Inc.
 -- All rights reserved.
 -- *****************************************************************
 --
@@ -25,11 +25,13 @@ IMPORTS
         FROM SNMPv2-TC
     entPhysicalIndex
         FROM ENTITY-MIB
+    EntPhysicalIndexOrZero
+        FROM CISCO-TC
     ciscoMgmt
         FROM CISCO-SMI;
 
 ciscoEntitySensorMIB MODULE-IDENTITY
-        LAST-UPDATED "200509080000Z"
+        LAST-UPDATED "200711120000Z"
         ORGANIZATION "Cisco Systems, Inc."
         CONTACT-INFO
          "Postal: Cisco Systems, Inc.
@@ -44,6 +46,16 @@ ciscoEntitySensorMIB MODULE-IDENTITY
             "The CISCO-ENTITY-SENSOR-MIB is used to monitor 
             the values of sensors in the Entity-MIB (RFC 2037) 
             entPhysicalTable."
+            
+        REVISION       "200711120000Z"
+        DESCRIPTION
+            "Added entitySensorNotifCtrlGlobalGroup."
+                
+        REVISION       "200601010000Z"
+        DESCRIPTION
+            "Add new object entSensorMeasuredEntity to
+             entSensorValueTable."
+
         REVISION       "200509080000Z"
         DESCRIPTION
             "Change the module descriptor name from entitySensorMIB
@@ -301,6 +313,9 @@ entSensorValues
 
 entSensorThresholds
     OBJECT IDENTIFIER ::= { entitySensorMIBObjects 2 }
+    
+entSensorGlobalObjects
+    OBJECT IDENTIFIER ::= { entitySensorMIBObjects 3 }
 
 --
 -- entSensorValueTable 
@@ -333,7 +348,8 @@ EntSensorValueEntry ::= SEQUENCE {
     entSensorValue           SensorValue,
     entSensorStatus          SensorStatus,
     entSensorValueTimeStamp  TimeStamp,
-    entSensorValueUpdateRate SensorValueUpdateRate
+    entSensorValueUpdateRate SensorValueUpdateRate,
+    entSensorMeasuredEntity  EntPhysicalIndexOrZero
     }
 
 entSensorType OBJECT-TYPE
@@ -422,6 +438,26 @@ entSensorValueUpdateRate  OBJECT-TYPE
         "This variable indicates the rate that the agent
         updates entSensorValue."
     ::= { entSensorValueEntry 7 }
+
+entSensorMeasuredEntity OBJECT-TYPE
+    SYNTAX        EntPhysicalIndexOrZero
+    MAX-ACCESS    read-only
+    STATUS        current
+    DESCRIPTION
+        "This object identifies the physical entity for which the
+        sensor is taking measurements.  For example, for a sensor
+        measuring the voltage output of a power-supply, this object
+        would be the entPhysicalIndex of that power-supply; for a sensor
+        measuring the temperature inside one chassis of a multi-chassis
+        system, this object would be the enPhysicalIndex of that
+        chassis.
+
+        This object has a value of zero when the physical entity
+        for which the sensor is taking measurements can not be
+        represented by any one row in the entPhysicalTable, or that
+        there is no such physical entity."
+   ::= { entSensorValueEntry 8 }
+
 
 --
 -- entSensorThresholdTable 
@@ -556,17 +592,36 @@ entSensorThresholdNotificationEnable OBJECT-TYPE
         "This variable controls generation of 
         entSensorThresholdNotification for this threshold.
 
-        When this variable is true(1), generation of 
-        entSensorThresholdNotification is enabled.  When this
-        variable is false(2), generation of 
-        entSensorThresholdNotification is disabled.
-
-        This variable only controls generation of 
-        entSensorThresholdNotification.
-        "
+        When this variable is 'true', generation of 
+        entSensorThresholdNotification is enabled for this
+        threshold. When this variable is 'false', 
+        generation of entSensorThresholdNotification is
+        disabled for this threshold.
+        "      
     ::= { entSensorThresholdEntry 6 }
 
+--
+-- Entity Sensor Global Objects
+--
 
+ entSensorThreshNotifGlobalEnable  OBJECT-TYPE
+     SYNTAX        TruthValue
+     MAX-ACCESS    read-write
+     STATUS        current
+     DESCRIPTION
+         "This variable enables the generation of
+          entSensorThresholdNotification globally
+          on the device. If this object value is
+          'false', then no entSensorThresholdNotification
+          will be generated on this device. If this object
+          value is 'true', then whether a 
+          entSensorThresholdNotification for a threshold will
+          be generated or not depends on the instance value of
+          entSensorThresholdNotificationEnable for that
+          threshold.
+         "         
+     ::= { entSensorGlobalObjects 1}
+     
 --
 -- notifications
 --
@@ -621,7 +676,7 @@ entitySensorMIBComplianceV01 MODULE-COMPLIANCE
 
 
 entitySensorMIBComplianceV02 MODULE-COMPLIANCE
-    STATUS  current
+    STATUS  deprecated
     DESCRIPTION
         "An Entity-MIB implementation that lists 
         sensors in its entPhysicalTable must implement
@@ -656,6 +711,98 @@ entitySensorMIBComplianceV02 MODULE-COMPLIANCE
         " Write access is not required."
 
     ::= { entitySensorMIBCompliances 2 }
+
+entitySensorMIBComplianceV03 MODULE-COMPLIANCE
+    STATUS  deprecated
+    DESCRIPTION
+        "An Entity-MIB implementation that lists 
+        sensors in its entPhysicalTable must implement
+        this group."
+    MODULE  -- this module
+    MANDATORY-GROUPS { 
+        entitySensorThresholdGroup
+    }
+    GROUP entitySensorValueGroup
+    DESCRIPTION
+        "This group is mandatory for the systems which don't
+         support IETF version of ENTITY-SENSOR-MIB."
+
+    GROUP entitySensorThresholdNotificationGroup
+    DESCRIPTION
+        "This group is mandatory for the systems which support
+         entitySensorValueGroup group."
+ 
+    GROUP entitySensorValueGroupSup1
+    DESCRIPTION
+        "This group is mandatory for the systems which support
+         the correlation between sensor and its measured
+         physical entity."
+ 
+    OBJECT entSensorThresholdSeverity
+    MIN-ACCESS  read-only
+    DESCRIPTION
+        " Write access is not required."
+ 
+    OBJECT  entSensorThresholdRelation
+    MIN-ACCESS  read-only
+    DESCRIPTION
+        " Write access is not required."
+ 
+    OBJECT  entSensorThresholdValue
+    MIN-ACCESS  read-only
+    DESCRIPTION
+        " Write access is not required."
+
+    ::= { entitySensorMIBCompliances 3 }
+    
+entitySensorMIBComplianceV04 MODULE-COMPLIANCE
+    STATUS  current
+    DESCRIPTION
+        "An Entity-MIB implementation that lists 
+        sensors in its entPhysicalTable must implement
+        this group."
+    MODULE  -- this module
+    MANDATORY-GROUPS { 
+        entitySensorThresholdGroup
+    }
+    GROUP entitySensorValueGroup
+    DESCRIPTION
+        "This group is mandatory for the systems which don't
+         support IETF version of ENTITY-SENSOR-MIB."
+
+    GROUP entitySensorThresholdNotificationGroup
+    DESCRIPTION
+        "This group is mandatory for the systems which support
+         entitySensorValueGroup group."
+ 
+    GROUP entitySensorValueGroupSup1
+    DESCRIPTION
+        "This group is mandatory for the systems which support
+         the correlation between sensor and its measured
+         physical entity."
+ 
+    OBJECT entSensorThresholdSeverity
+    MIN-ACCESS  read-only
+    DESCRIPTION
+        " Write access is not required."
+ 
+    OBJECT  entSensorThresholdRelation
+    MIN-ACCESS  read-only
+    DESCRIPTION
+        " Write access is not required."
+ 
+    OBJECT  entSensorThresholdValue
+    MIN-ACCESS  read-only
+    DESCRIPTION
+        " Write access is not required."
+    
+    GROUP entitySensorNotifCtrlGlobalGroup
+    DESCRIPTION
+        "This group is mandatory for the platforms which support
+         global notification control on 
+         entSensorThresholdNotification."
+    
+    ::= { entitySensorMIBCompliances 4 }
 
 --
 -- units of conformance
@@ -703,5 +850,25 @@ entitySensorThresholdNotificationGroup NOTIFICATION-GROUP
        monitoring sensor threshold activity."
    ::= { entitySensorMIBGroups 3 } 
 
+entitySensorValueGroupSup1 OBJECT-GROUP
+    OBJECTS {
+        entSensorMeasuredEntity
+    }
+    STATUS  current
+    DESCRIPTION
+        "The collection of objects which are used to describe and track 
+        the measured entities of ENTITY-MIB entPhysicalTable."
+    ::= { entitySensorMIBGroups 4 }
+
+entitySensorNotifCtrlGlobalGroup OBJECT-GROUP
+     OBJECTS {
+         entSensorThreshNotifGlobalEnable
+     }
+     STATUS   current
+     DESCRIPTION
+         "The collection of objects which provide the global
+          notification control on entSensorThresholdNotification."
+     ::= { entitySensorMIBGroups 5 }
+  
 
 END

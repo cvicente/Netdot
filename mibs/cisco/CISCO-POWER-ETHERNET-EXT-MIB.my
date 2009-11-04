@@ -3,7 +3,8 @@
 --   
 -- March 2004, Seth Wang
 --   
--- Copyright (c) 2004, 2007 - 2006 by Cisco Systems Inc.
+-- Copyright (c) 2004-2008 by Cisco Systems Inc.
+--   
 -- All rights reserved.
 -- ****************************************************************
 
@@ -22,16 +23,16 @@ IMPORTS
     pethPsePortEntry,
     pethMainPseGroupIndex
         FROM POWER-ETHERNET-MIB
-    ciscoMgmt
-        FROM CISCO-SMI
+    SnmpAdminString
+        FROM SNMP-FRAMEWORK-MIB
     EntPhysicalIndexOrZero
         FROM CISCO-TC
-    SnmpAdminString
-        FROM SNMP-FRAMEWORK-MIB;
+    ciscoMgmt
+        FROM CISCO-SMI;
 
 
 ciscoPowerEthernetExtMIB MODULE-IDENTITY
-    LAST-UPDATED    "200612190000Z"
+    LAST-UPDATED    "200702020000Z"
     ORGANIZATION    "Cisco Systems, Inc."
     CONTACT-INFO
             "Cisco Systems
@@ -63,12 +64,13 @@ ciscoPowerEthernetExtMIB MODULE-IDENTITY
             supply from Power Sourcing Equipment. They are, for
             example, IP telephones and wireless access points
             or bridges."
-    REVISION        "200612190000Z"
+    REVISION        "200702020000Z"
     DESCRIPTION
         "Added cpeExtPsePortEntPhyIndex,
         cpeExtPsePortPolicingCapable and 
         cpeExtPsePortPolicingEnable to cpeExtPsePortTable.
-        Added cpeExtPdStatsTotalDevices and cpeExtPdStatsTable."
+        Added cpeExtPdStatsTotalDevices and cpeExtPdStatsTable.
+        Added enumerated value disable(5) to cpeExtPsePortEnable."
     REVISION        "200506100000Z"
     DESCRIPTION
         "Added 'limit' to cpeExtPsePortEnable, 'overdraw' to
@@ -132,8 +134,8 @@ cpeExtPsePortEntry OBJECT-TYPE
     ::= { cpeExtPsePortTable 1 }
 
 CpeExtPsePortEntry ::= SEQUENCE {
-        cpeExtPsePortEnable           INTEGER ,
-        cpeExtPsePortDiscoverMode     INTEGER ,
+        cpeExtPsePortEnable           INTEGER,
+        cpeExtPsePortDiscoverMode     INTEGER,
         cpeExtPsePortDeviceDetected   TruthValue,
         cpeExtPsePortIeeePd           TruthValue,
         cpeExtPsePortAdditionalStatus BITS,
@@ -144,14 +146,15 @@ CpeExtPsePortEntry ::= SEQUENCE {
         cpeExtPsePortMaxPwrDrawn      Unsigned32,
         cpeExtPsePortEntPhyIndex      EntPhysicalIndexOrZero,
         cpeExtPsePortPolicingCapable  TruthValue,
-        cpeExtPsePortPolicingEnable   INTEGER 
+        cpeExtPsePortPolicingEnable   INTEGER
 }
 
 cpeExtPsePortEnable OBJECT-TYPE
     SYNTAX          INTEGER  {
                         auto(1),
                         static(2),
-                        limit(3)
+                        limit(3),
+                        disable(4)
                     }
     MAX-ACCESS      read-write
     STATUS          current
@@ -160,9 +163,8 @@ cpeExtPsePortEnable OBJECT-TYPE
         object from RFC3621. It allows the user to be more specific
         when enabling the PSE functions. The states, 'auto', 'static'
         and 'limit' correspond to a value of 'true' for the
-        pethPsePortAdminEnable object. However, if the value of
-        pethPsePortAdminEnable is 'false', then the value of this
-        object is irrelevant.
+        pethPsePortAdminEnable object. The state 'disable' corresponds
+        to a value of 'false' for the pethPsePortAdminEnable object.
 
         Setting this value to 'auto' enables Powered Device discovery
         on the interface and the amount of power allocated depends on
@@ -184,14 +186,18 @@ cpeExtPsePortEnable OBJECT-TYPE
         If pethPsePortAdminEnable was 'false' prior to this set
         operation, then it will become 'true'.
 
-        When setting the pethPsePortAdminEnable object to 'true'
-        this object will adopt the value of 'auto'.
+        Setting this value to 'disable' disables the PSE functions.
+        The pethPsePortAdminEnable object will adopt the value of
+        'false' if it was 'true' prior to this set operation. When
+        setting the pethPsePortAdminEnable object to 'false' this
+        object cpeExtPsePortEnable will adopt the value of 'disable'.
 
         If cpeExtPsePortPolicingCapable of the PSE port, or
-        cpeExtMainPsePwrMonitorCapable of the PSE port's 
-        main group, has the value of 'false', this object 
-        can only be set to 'auto' or 'static'; Otherwise, 
-        this object can be set to 'auto', 'static' or 'limit'." 
+        cpeExtMainPsePwrMonitorCapable of the PSE port's
+        main group, has the value of 'false', this object
+        can only be set to 'auto', 'static' or 'disable'.
+        Otherwise, this object can be set to 'auto', 'static',
+        'limit' or 'disable'." 
     ::= { cpeExtPsePortEntry 1 }
 
 cpeExtPsePortDiscoverMode OBJECT-TYPE
@@ -490,7 +496,7 @@ cpeExtPdStatsEntry OBJECT-TYPE
     ::= { cpeExtPdStatsTable 1 }
 
 CpeExtPdStatsEntry ::= SEQUENCE {
-        cpeExtPdStatsClass       INTEGER ,
+        cpeExtPdStatsClass       INTEGER,
         cpeExtPdStatsDeviceCount Unsigned32
 }
 
@@ -744,4 +750,7 @@ cpeExtPseGrpPwrGroup OBJECT-GROUP
     ::= { cpeExtMIBGroups 9 }
 
 END
+
+
+
 

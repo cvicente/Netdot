@@ -1,11 +1,9 @@
-
-	
 -- *****************************************************************   
 -- CISCO-ITP-GSP-MIB: Itp Signalling Point 
 --                       
 -- August 2002,  John Linton, Shekhar Acharya
 --
--- Copyright (c) 2002-2003, 2005 by Cisco Systems, Inc.
+-- Copyright (c) 2002-2003, 2005, 2008 by Cisco Systems, Inc.
 -- All rights reserved.
 -- *****************************************************************
 
@@ -50,7 +48,8 @@ IMPORTS
         CItpTcPointCode,
         CItpTcPointCodeType,
         CItpTcQos,
-        CItpTcRouteTableName  
+        CItpTcRouteTableName,
+        CItpTcServiceIndicator
              FROM CISCO-ITP-TC-MIB
 
         MODULE-COMPLIANCE,
@@ -62,7 +61,7 @@ IMPORTS
              FROM CISCO-SMI;        
 
 ciscoGspMIB MODULE-IDENTITY
-        LAST-UPDATED    "200510210000Z"
+        LAST-UPDATED    "200805070000Z"
         ORGANIZATION    "Cisco Systems, Inc."
         CONTACT-INFO
                 "       Cisco Systems, Inc
@@ -122,6 +121,7 @@ ciscoGspMIB MODULE-IDENTITY
           SCTP  - Stream Transmission Protocol(RFC 2960)
           SIB   - Status Indicator Busy
           SLT   - Signalling Link Test
+          SLTA  - Signalling Link Test Acknowledgement
           SP    - Signalling Point
           SS7   -  System  No. 7 (SS7) Network
           SUERM - Signal Unit Error Rate Monitor 
@@ -137,11 +137,39 @@ ciscoGspMIB MODULE-IDENTITY
           TTC   - The Japanese Telecommunications Technology 
                   Committee"
           
+        REVISION        "200805070000Z"
+        DESCRIPTION
+                "Added the following objects into CgspLinkTableEntry
+                for additional Q752 related reporting. 
+                cgspLinkQ752T1E12,
+                cgspLinkQ752T1E12Errors,
+                cgspLinkQ752T2E11,
+                cgspLinkQ752T2E17,
+                cgspLinkQ752T2E19.
+                Added linkRestored(34) and linkTestFailure(35) reason code to the
+                cgspLinkReason object.
+             
+                Added the following textual convention:
+                CgspDisplayInstanceUserPart.
+
+                Added a new table cgspInstUPUTable with following objects:
+                cgspMtp3SI, cgspInstSIUPUReceived, cgspInstSIUPUTransmitted,
+                cgspInstUserPartDisplay.
+
+                Added the following objects:
+                cgspNotificationsInfo, cgspUPUNotifWindowTime.
+
+                Added following new notifications:
+                ciscoGspUPUReceived, ciscoGspUPUTransmitted.
+
+                Added the following cgspNotificationsInfo objects:
+                cgspUPUIntervalDuration, cgspIntervalUPUs."
+
         REVISION        "200510210000Z"
         DESCRIPTION
-                "Added new set of enums (from timerMtp2T01 to 
-                 timerMtp2T07) to TC CgspTimerNumbers for 
-                 MTP2 timers specified in ITU Q.703." 
+                "Added new set of enums (from timerMtp2T01 to
+                 timerMtp2T07) to TC CgspTimerNumbers for
+                 MTP2 timers specified in ITU Q.703."
 
         REVISION        "200502240000Z"
         DESCRIPTION
@@ -154,7 +182,7 @@ ciscoGspMIB MODULE-IDENTITY
                 "Additional reason codes to the cgspLinkReason object
                  and updated CgspSS7Variant textual convention to 
                  support NTT and TTC Japanese variants.  Also, update
-                 REFERENCE clauses to indicate support for appropiate
+                 REFERENCE clauses to indicate support for appropriate
                  ANSI standard."
                 
         REVISION        "200303030000Z"
@@ -175,6 +203,8 @@ cgspPointCode           OBJECT IDENTIFIER ::= { ciscoGspMIBObjects 4 }
 cgspLinkset             OBJECT IDENTIFIER ::= { ciscoGspMIBObjects 5 }
 cgspLink                OBJECT IDENTIFIER ::= { ciscoGspMIBObjects 6 }
 cgspNotificationsEnable OBJECT IDENTIFIER ::= { ciscoGspMIBObjects 7 }
+cgspNotificationsInfo   OBJECT IDENTIFIER ::= { ciscoGspMIBObjects 8 }
+
 
 -- **************************************************************
 -- *                                                            *
@@ -246,7 +276,7 @@ CgspLinkTestResults ::= TEXTUAL-CONVENTION
                             pattern. This may be caused by variant
                             mismatched or incorrect definitions
                             on physical link.
-           'nonAdjacent'   :Received an signalling link test message
+           'nonAdjacent'   :Received a signalling link test message
                             from an non-adjacent node.
            'failed'        :Unable to run test or no response was 
                             received within the specified interval."
@@ -310,7 +340,7 @@ CgspLinkCapacity ::= TEXTUAL-CONVENTION
 CgspProfileName ::= TEXTUAL-CONVENTION
         STATUS          current
         DESCRIPTION
-            "The configured name associated with an Signalling
+            "The configured name associated with a Signalling
              Point Profile.
                  
              An octet string specified by an administrator that must
@@ -413,13 +443,13 @@ CgspTimerNumbers ::= TEXTUAL-CONVENTION
                        -- Procedure B
      timerMtp3T34(34), -- Suspension timer for link oscillation -  
                        -- Procedure B
-     timerLinkTest(35), -- Signalling Link test acknowledgement timer
+     timerLinkTest(35), -- Signalling Link Test Acknowledgement timer
      timerLinkMessag1(36), -- Interval timer for sending test messages
      timerLinkActRetry(37), -- Link activation retry timer.
      timerMtp2T01(38), -- Link alignment ready timer
      timerMtp2T02(39), -- Link not aligned timer
      timerMtp2T03(40), -- Link aligned timer
-     timerMtp2T04N(41), -- Link proving normal timer 
+     timerMtp2T04N(41), -- Link proving normal timer
      timerMtp2T04E(42), -- Link proving emergency timer
      timerMtp2T05(43), -- Sending SIB timer
      timerMtp2T06(44), -- Remote congestion timer
@@ -506,6 +536,16 @@ CgspSS7Variant ::= TEXTUAL-CONVENTION
             ttc(5)
         }
         
+CgspDisplayInstanceUserPart ::= TEXTUAL-CONVENTION
+        STATUS          current
+        DESCRIPTION
+            "The instance name and user part information
+             formatted for display. If instance name is not
+             configured, the default local point code in
+             ASCII string format will be provided as instance
+             name."
+        SYNTAX OCTET STRING ( SIZE ( 0..40 ) )
+
 --  *************************************************************
 --  *                                                           *
 --  * GSP - Scalar                                              *
@@ -609,7 +649,27 @@ cgspEventSequenceNumber           OBJECT-TYPE
     REFERENCE
          " GR-82-CORE 6.6.1 Event Report Content R6-33"
     ::= { cgspScalars  6 }
-    
+
+cgspUPUNotifWindowTime           OBJECT-TYPE
+    SYNTAX                       Integer32 (60..86400)
+    UNITS                        "seconds"
+    MAX-ACCESS                   read-write
+    STATUS                       current
+    DESCRIPTION
+        "This object specifies the time interval used to monitor
+         the ciscoGspUPUReceived and ciscoGspUPUTransmitted
+         notifications for specific user part and signalling point
+         instance.  The first occurrence of ciscoGspUPUReceived and
+         ciscoGspUPUTransmitted notifications are sent and the
+         further occurrences of notifications in this interval
+         are suppressed. 
+
+         At the end of this interval, a notification is sent with
+         total number of UPU MSUs transmitted or received during
+         this interval."
+    DEFVAL { 900 }
+    ::= { cgspScalars  7 }
+
 --  *************************************************************
 --  *                                                           *
 --  * Profile Table                                             *
@@ -1029,6 +1089,91 @@ cgspInstTimerRowStatus            OBJECT-TYPE
 
 --  *************************************************************
 --  *                                                           *
+--  * Instance UPU Table                                        *
+--  *                                                           *
+--  *************************************************************
+cgspInstUPUTable               OBJECT-TYPE
+    SYNTAX                     SEQUENCE OF CgspInstUPUTableEntry
+    MAX-ACCESS                 not-accessible
+    STATUS                     current
+    DESCRIPTION
+           "The Instance UPU table contains information about the
+            number of UPU MSUs transmitted and received for the 
+            specific user part(represented by service indicator) 
+            and signalling point instance. The user part is 
+            primarily represented with the possible service 
+            indicator.  This table provides the granularity of 
+            information required by Q752 table 5.6 and 5.7."
+    ::= { cgspInstance  3 }
+
+cgspInstUPUTableEntry          OBJECT-TYPE
+    SYNTAX                     CgspInstUPUTableEntry
+    MAX-ACCESS                 not-accessible
+    STATUS                     current
+    DESCRIPTION
+           "Each table entry represent the UPU MSU statistics
+            for a specific user part and signalling point
+            instance."
+    INDEX   {
+              cgspInstNetwork,  -- shared index
+              cgspMtp3SI
+            }
+    ::= { cgspInstUPUTable 1 }
+
+CgspInstUPUTableEntry ::= SEQUENCE {
+    cgspMtp3SI                 CItpTcServiceIndicator,
+    cgspInstSIUPUReceived      Counter32,
+    cgspInstSIUPUTransmitted   Counter32,
+    cgspInstUserPartDisplay    CgspDisplayInstanceUserPart
+}
+
+cgspMtp3SI                        OBJECT-TYPE
+    SYNTAX                        CItpTcServiceIndicator
+    MAX-ACCESS                    not-accessible
+    STATUS                        current
+    DESCRIPTION
+           "The service indicator."
+    ::= { cgspInstUPUTableEntry  1 }
+
+cgspInstSIUPUReceived             OBJECT-TYPE
+    SYNTAX                        Counter32
+    UNITS                         "MSUs"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+           "The number of UPU MSUs that were received for the 
+            associated user part(service indicator) and    
+            and signalling point instance Q752/5.7."
+    REFERENCE
+           "ANSI GR-82-CORE 6.4.2 System Total Measurements Item 33 
+            measurements received from remote Signalling point."
+    ::= { cgspInstUPUTableEntry  2 }
+ 
+cgspInstSIUPUTransmitted          OBJECT-TYPE
+    SYNTAX                        Counter32
+    UNITS                         "MSUs"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+           "The number of UPU MSUs that were transmitted for the
+            associated user part(service indicator) and
+            and signalling point instance."
+    REFERENCE
+           "ANSI GR-82-CORE 6.4.2 System Total Measurements Item 33."
+    ::= { cgspInstUPUTableEntry  3 }
+
+cgspInstUserPartDisplay           OBJECT-TYPE
+    SYNTAX                        CgspDisplayInstanceUserPart
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "The associated instance name and user part information
+             formatted for display."
+    ::= { cgspInstUPUTableEntry  4 }
+
+
+--  *************************************************************
+--  *                                                           *
 --  * Point Code Table                                          *
 --  *                                                           *
 --  *************************************************************
@@ -1395,7 +1540,6 @@ cgspLinksetRowStatus              OBJECT-TYPE
           following the RowStatus textual convention."
     ::= { cgspLinksetTableEntry 21 }
       
-
 --  *************************************************************
 --  *                                                           *
 --  * Linkset Timer Table                                       *
@@ -1580,7 +1724,12 @@ CgspLinkTableEntry  ::= SEQUENCE {
     cgspLinkL2BytesSent              Counter32,
     cgspLinkTestResult               CgspLinkTestResults,
     cgspLinkRowStatus                RowStatus,
-    cgspLinkSctpAssociationId        Unsigned32
+    cgspLinkSctpAssociationId        Unsigned32,
+    cgspLinkQ752T1E12                Counter32,
+    cgspLinkQ752T1E12Errors          Counter32,
+    cgspLinkQ752T2E11                Counter32,
+    cgspLinkQ752T2E17                Counter32,
+    cgspLinkQ752T2E19                Counter32
 }
 
 cgspLinkSlc                       OBJECT-TYPE
@@ -1661,7 +1810,9 @@ cgspLinkReason                    OBJECT-TYPE
                                        localBlocked(30),
                                        localUnBlocked(31),
                                        remoteBlocked(32),
-                                       remoteUnblocked(33) 
+                                       remoteUnblocked(33),
+                                       linkRestored(34),
+                                       linkTestFailure(35)
                                   }
     MAX-ACCESS                    read-only
     STATUS                        current
@@ -1705,7 +1856,9 @@ cgspLinkReason                    OBJECT-TYPE
            'localBlocked'   : Local Processor outage.
            'localUnBlocked' : Local Processor recovery. 
            'remoteBlocked'  : Remote Processor outage.    
-           'remoteUnblocked': Remote Processor recovery."
+           'remoteUnblocked': Remote Processor recovery.
+           'linkRestored'   : Link restored.
+           'linkTestFailure': Signalling Link Test failure.'"
     ::= { cgspLinkTableEntry  4  }
       
 cgspLinkType                      OBJECT-TYPE
@@ -2180,7 +2333,7 @@ cgspLinkQ752T3E10L3              OBJECT-TYPE
 
 cgspLinkQ752T3E11L1              OBJECT-TYPE
     SYNTAX                       Counter32
-    UNITS                        "bytes"
+    UNITS                        "occurrences"
     MAX-ACCESS                   read-only
     STATUS                       current
     DESCRIPTION
@@ -2193,7 +2346,7 @@ cgspLinkQ752T3E11L1              OBJECT-TYPE
     
 cgspLinkQ752T3E11L2              OBJECT-TYPE
     SYNTAX                       Counter32
-    UNITS                        "bytes"
+    UNITS                        "occurrences"
     MAX-ACCESS                   read-only
     STATUS                       current
     DESCRIPTION
@@ -2206,7 +2359,7 @@ cgspLinkQ752T3E11L2              OBJECT-TYPE
 
 cgspLinkQ752T3E11L3              OBJECT-TYPE
     SYNTAX                       Counter32
-    UNITS                        "bytes"
+    UNITS                        "occurrences"
     MAX-ACCESS                   read-only
     STATUS                       current
     DESCRIPTION
@@ -2422,7 +2575,7 @@ cgspLinkTsrcState                OBJECT-TYPE
     DESCRIPTION
            "Signalling traffic management routing control state:
               'undefined' - link is an undefined state
-              'idle'      - traffic mangement is idle
+              'idle'      - traffic management is idle
               'wait5'     - traffic management is active and 
                             in the sending status phase"
     REFERENCE
@@ -2776,6 +2929,57 @@ cgspLinkSctpAssociationId         OBJECT-TYPE
             identifiers to be larger than 65,535."
     ::= { cgspLinkTableEntry  90 }
       
+cgspLinkQ752T1E12                 OBJECT-TYPE
+    SYNTAX                        Counter32
+    UNITS                         "occurrences"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+         "Count of 'Signalling Link Restoration' events Q752/1.12."
+    ::= { cgspLinkTableEntry 91 }
+
+cgspLinkQ752T1E12Errors           OBJECT-TYPE
+    SYNTAX                        Counter32
+    UNITS                         "occurrences"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+         "Count of 'Signalling Link Restoration' error events related
+          to Q752/1.12. i.e., the number of times the link restoration
+          was attempted and the link was not recovered."
+    ::= { cgspLinkTableEntry 92 }
+
+cgspLinkQ752T2E11                 OBJECT-TYPE
+     SYNTAX                       Counter32
+     UNITS                        "occurrences"
+     MAX-ACCESS                   read-only
+     STATUS                       current
+     DESCRIPTION
+          "Count of 'remote processor recovery' events Q752/2.11. 
+           The standard only requires that events are issued."
+    ::= { cgspLinkTableEntry 93 }
+
+cgspLinkQ752T2E17                 OBJECT-TYPE
+     SYNTAX                       Counter32
+     UNITS                        "occurrences"
+     MAX-ACCESS                   read-only
+     STATUS                       current
+     DESCRIPTION
+           "Count of local uninhibition Q752/2.17. The standard only 
+            requires that events are issued."
+    ::= { cgspLinkTableEntry 94 }
+
+cgspLinkQ752T2E19                 OBJECT-TYPE
+     SYNTAX                       Counter32
+     UNITS                        "occurrences"
+     MAX-ACCESS                   read-only
+     STATUS                       current
+     DESCRIPTION
+           "Count of remote uninhibition Q752/2.19. The standard only 
+            requires that events are issued."
+    ::= { cgspLinkTableEntry 95 }
+
+
 --  *************************************************************
 --  *                                                           *
 --  * Link Timer Table                                          *
@@ -3103,7 +3307,50 @@ cgspIsolationNotifEnabled         OBJECT-TYPE
      DEFVAL { false }
      ::= { cgspNotificationsEnable  5 }
 
+cgspUPUNotifEnabled               OBJECT-TYPE
+     SYNTAX                       TruthValue
+     MAX-ACCESS                   read-write
+     STATUS                       current
+     DESCRIPTION
+         "A control to enable or disable both ciscoGspUPUReceived
+          and ciscoGspUPUTransmitted notifications as follows:
+        'true'  Indicates that the ciscoGspUPUReceived and
+                ciscoGspUPUTransmitted notification generation
+                is enabled.
+        'false' Indicates that ciscoGspUPUReceived and
+                ciscoGspUPUTransmitted notification generation
+                is disabled."
+     DEFVAL { false }
+     ::= { cgspNotificationsEnable  6 }
      
+-- *************************************************************
+-- *                                                           *
+-- * Notifications Information                                 *
+-- *                                                           *
+-- *************************************************************
+
+cgspUPUIntervalDuration     OBJECT-TYPE
+     SYNTAX                 Unsigned32
+     UNITS                  "seconds"
+     MAX-ACCESS             read-only
+     STATUS                 current
+     DESCRIPTION
+         "Duration elapsed since the start of the cgspUPUNotifWindowTime
+          interval. This duration value can range from 0 upto
+          cgspUPUNotifWindowTime.  For the notifications generated
+          at the end of the interval, this value will be equal to
+          cgspUPUNotifWindowTime."
+    ::= { cgspNotificationsInfo 1 }
+
+cgspIntervalUPUs            OBJECT-TYPE
+     SYNTAX                 Unsigned32
+     UNITS                  "MSUs"
+     MAX-ACCESS             read-only
+     STATUS                 current
+     DESCRIPTION
+         "Number of UPU MSUs received or transmitted during this
+          specific cgspUPUIntervalDuration interval."
+    ::= { cgspNotificationsInfo 2 }
 
 -- *************************************************************
 -- *                                                           *
@@ -3208,11 +3455,54 @@ ciscoGspIsolation NOTIFICATION-TYPE
              "This notification indicates the instance specified
               by cgspInstDisplayName and cgspInstDescription has 
               become isolated. All linkset used to connect MTP3 node
-              (instance) are unavailable.  Isloation is ended when 
+              (instance) are unavailable.  Isolation is ended when 
               any linkset supported by this instance reaches the
               active state."
               
      ::= { ciscoGspMIBNotifs 6 }
+
+ciscoGspUPUReceived NOTIFICATION-TYPE
+     OBJECTS {
+             cgspEventSequenceNumber,
+             cgspCLLICode,
+             cgspInstUserPartDisplay,
+             cgspUPUIntervalDuration,
+             cgspIntervalUPUs
+     }
+     STATUS  current
+     DESCRIPTION 
+             "The notification is generated when an UPU MSU is received
+              from a remote signalling point, for a specific instance
+              and user part for the first time in the configured
+              cgspUPUNotifWindowTime. For cases when there is a non-zero
+              number of UPU MSUs received, this notification will be sent
+              at the end of the cgspUPUNotifWindowTime interval, with
+              cgspIntervalUPUs indicating the total count of UPU
+              MSUs received for that specific instance and user part
+              during the entire cgspUPUNotifWindowTime interval Q752/5.6."
+     ::= { ciscoGspMIBNotifs 8 }
+
+ciscoGspUPUTransmitted NOTIFICATION-TYPE
+     OBJECTS {
+             cgspEventSequenceNumber,
+             cgspCLLICode,
+             cgspInstUserPartDisplay,
+             cgspUPUIntervalDuration,
+             cgspIntervalUPUs
+     }
+     STATUS  current
+     DESCRIPTION
+             "The notification is generated when an UPU MSU is transmitted
+              to a remote signalling point, for a specific instance and
+              user part for the first time in the configured
+              cgspUPUNotifWindowTime. For cases when there is a non-zero
+              number of UPU MSUs received, this notification will be sent
+              at the end of the cgspUPUNotifWindowTime interval, with
+              cgspIntervalUPUs indicating the total count of UPU MSUs
+              transmitted for that specific instance and user part
+              during the entire cgspUPUNotifWindowTime interval Q752/5.7."
+     ::= { ciscoGspMIBNotifs 9 }
+
 --
 -- Conformance Information
 --
@@ -3534,7 +3824,7 @@ ciscoGspMIBCompliance MODULE-COMPLIANCE
         ::= { ciscoGspMIBCompliances 1 }
         
 ciscoGspMIBComplianceRev1 MODULE-COMPLIANCE
-        STATUS deprecated -- replace by ciscoGspMIBComplianceRev2
+        STATUS deprecated -- replaced by ciscoGspMIBComplianceRev2
         DESCRIPTION
                 "The compliance statement for entities which implement
                  the CISCO-ITP-GSP-MIB"
@@ -3845,12 +4135,11 @@ ciscoGspMIBComplianceRev1 MODULE-COMPLIANCE
          
         ::= { ciscoGspMIBCompliances 2 }
         
-
 ciscoGspMIBComplianceRev2 MODULE-COMPLIANCE
-        STATUS current
+        STATUS deprecated -- replaced by ciscoGspMIBComplianceRev3
         DESCRIPTION
                 "The compliance statement for entities which implement
-                 the CISCO-ITP-SP-MIB"
+                 the CISCO-ITP-GSP-MIB"
         MODULE -- this module
                 MANDATORY-GROUPS {
                         ciscoGspScalarsGroup,
@@ -4160,7 +4449,326 @@ ciscoGspMIBComplianceRev2 MODULE-COMPLIANCE
          
         ::= { ciscoGspMIBCompliances 3 }
         
+ciscoGspMIBComplianceRev3 MODULE-COMPLIANCE
+        STATUS current
+        DESCRIPTION
+                "The compliance statement for entities which implement
+                 the CISCO-ITP-GSP-MIB"
+        MODULE -- this module
+                MANDATORY-GROUPS {
+                        ciscoGspScalarsGroup,
+                        ciscoGspProfileGroup,
+                        ciscoGspInstanceGroup,
+                        ciscoGspInstTimerGroup,
+                        ciscoGspPointCodeGroup,
+                        ciscoGspLinksetGroup,
+                        ciscoGspLinksetTimerGroup,
+                        ciscoGspLinkTimerGroup,
+                        ciscoGspLinkRemoteIpGroup,
+                        ciscoGspLinkUtilGroup,
+                        ciscoGspNotificationsEnableGroup,
+                        ciscoGspNotificationsGroup,
+                        ciscoGspLinkGroupRev1,
+                        ciscoGspNotificationsEnableGroupSup1,
+                        ciscoGspNotificationsGroupSup1,
+                        ciscoGspLinkGroupSup1,
+                        ciscoGspScalarsGroupSup1,
+                        ciscoGspInstUPUGroup,
+                        ciscoGspNotificationsInfoGroup,
+                        ciscoGspNotificationsEnableGroupSup2,
+                        ciscoGspNotificationsGroupSup2
+                }
+
+
+--       *** Scalars objects ***************************************
+         OBJECT           cgspCLLICode
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspUtilSampleInterval
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspUtilThreshold
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspUtilAbateDelta
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspPlanCapacityDefault
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+--       *** Profile objects ***************************************
+         OBJECT           cgspProfileVariant
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspProfileMtp2BundleTimer
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspProfileMtp2SendQueueDepth
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspProfileRowStatus
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+--       *** Profile Timer objects *********************************
+         OBJECT           cgspProfileTimerValue
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspProfileTimerRowStatus
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+--       *** cgspInstanceTable *************************************
+
+         OBJECT           cgspInstNetworkIndicator
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspInstVariant
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspInstDisplayName
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspInstDescription
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspInstTFR
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspInstCongestionsLevels
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspInstFastRestart
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspInstDistSccpUnseq
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
         
+         OBJECT           cgspInstSummaryRoutingException
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspInstRouteTableName
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspInstRowStatus
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+
+--       *** cgspInstTimer *****************************************
+
+         OBJECT           cgspInstTimerValue
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+         OBJECT
+                          cgspInstTimerRowStatus
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+
+--       *** cgspPointCodeTable ************************************
+
+         OBJECT           cgspPointCodeType
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspPointCodeRowStatus
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+--       *** cgspLinksetTable **************************************
+
+         OBJECT           cgspLinksetSourcePointCode
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinksetAdjacentPointCode
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinksetInboundAcl
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinksetOutboundAcl
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinksetAccountingMtp3
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinksetAccountingGtt
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinksetActPriority
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinksetDisplayName
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinksetDescription
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinksetRotateSlsEnable
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinksetRotateSlsShift
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinksetProfileName
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinksetRowStatus
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+
+--       *** cgspLinksetTimerTable **********************************
+
+         OBJECT           cgspLinksetTimerValue
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinksetTimerRowStatus
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+--       *** cgspLinkTable *****************************************
+         OBJECT           cgspLinkDescription
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinkType
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinkifIndex
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinkXmitQueueDepthHigh
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinkCongestionAbate1
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinkCongestionAbate2
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinkCongestionAbate3
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinkCongestionOnset1
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinkCongestionOnset2
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinkCongestionOnset3
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinkSigLinkTest
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinkLocalPeerPort
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinkRemotePeerPort
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinkQosClass
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinkDisplayName
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinkPlanCapacityRcvd
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinkUtilThresholdRcvd
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinkPlanCapacitySent
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinkUtilThresholdSent
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinkRowStatus
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+
+--       *** cgspLinkTimerTable ************************************
+
+         OBJECT           cgspLinkTimerValue
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinkTimerRowStatus
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+--       *** cgspLinkRemoteIpTable *********************************
+
+         OBJECT           cgspLinkRemoteIpAddrType
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinkRemoteIpAddress
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgspLinkRemoteIpAddrRowStatus
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+        ::= { ciscoGspMIBCompliances 4 }
+
+
 -- Units of Conformance
 
 ciscoGspScalarsGroup OBJECT-GROUP
@@ -4541,7 +5149,67 @@ ciscoGspNotificationsGroupSup1 NOTIFICATION-GROUP
                 " Isolation notification."
         ::= { ciscoGspMIBGroups 16 }
         
+ciscoGspLinkGroupSup1 OBJECT-GROUP
+        OBJECTS {
+                cgspLinkQ752T1E12,
+                cgspLinkQ752T1E12Errors,
+                cgspLinkQ752T2E11,
+                cgspLinkQ752T2E17,
+                cgspLinkQ752T2E19
+        }
+        STATUS current
+        DESCRIPTION
+                "Additional Link statistics."
+        ::= { ciscoGspMIBGroups 17 }
+
+ciscoGspScalarsGroupSup1 OBJECT-GROUP
+        OBJECTS {
+                cgspUPUNotifWindowTime
+        }
+        STATUS current
+        DESCRIPTION
+                "Scalar Group supplements."
+        ::= { ciscoGspMIBGroups 18 }
+
+ciscoGspInstUPUGroup OBJECT-GROUP
+    OBJECTS {
+             cgspInstSIUPUReceived,
+             cgspInstSIUPUTransmitted,
+             cgspInstUserPartDisplay
+    }
+    STATUS current
+    DESCRIPTION
+            "SS7 Destination and Service Indicator group."
+    ::= { ciscoGspMIBGroups 20 }
+
+ciscoGspNotificationsInfoGroup OBJECT-GROUP
+        OBJECTS { 
+                cgspUPUIntervalDuration,
+                cgspIntervalUPUs
+        }
+        STATUS current
+        DESCRIPTION
+                "  Notifications Info Group."
+        ::= { ciscoGspMIBGroups 21 }
+
+ciscoGspNotificationsEnableGroupSup2 OBJECT-GROUP
+        OBJECTS { 
+                cgspUPUNotifEnabled
+        }
+        STATUS current
+        DESCRIPTION
+                " UPU notifications enable."
+        ::= { ciscoGspMIBGroups 22 }
+
+ciscoGspNotificationsGroupSup2 NOTIFICATION-GROUP
+        NOTIFICATIONS {
+                ciscoGspUPUReceived,
+                ciscoGspUPUTransmitted
+        }
+        STATUS current
+        DESCRIPTION
+                "Adjacent SP accessibility notification,
+                 UPU sent and received notifications."
+        ::= { ciscoGspMIBGroups 23 }
+
 END
-
- 
-

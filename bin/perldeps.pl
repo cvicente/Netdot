@@ -21,7 +21,7 @@ my @DEPS = (
     'Apache::Session 1.6' ,
     'URI::Escape' ,
     'DBIx::DataSource' ,
-    'GraphViz 2.02' ,
+    'GraphViz 2.04' ,
     'SQL::Translator 0.07' ,
     'SNMP::Info' ,
     'NetAddr::IP' ,
@@ -44,8 +44,12 @@ if ( $action eq 'test' ){
     foreach my $module ( @DEPS ){
 	eval "use $module";
 	print $module, "................";
-	if ( $@ ){
+	my $e;
+	if ( ($e = $@) =~ /Can't locate/ ){
 	    print "MISSING";
+	}elsif ( $e ){
+	    print "$module is present but cannot be loaded: \n";
+	    print $e;
 	}else{
 	    print "installed"
 	}
@@ -57,14 +61,17 @@ elsif ( $action eq 'install' ){
     $CPAN::Config->{prerequisites_policy} = 'follow';
     foreach my $module ( @DEPS ){
 	eval "use $module";	
-	if ( $@ ){
+	my $e;
+	if ( ($e = $@) =~ /Can't locate/ ){
 	    $module =~ s/^(.*)\s+.*/$1/;
 	    eval {
 		CPAN::Shell->install($module);
 	    };
-	    if ( my $e = $@ ){
-		print $e;
+	    if ( my $e2 = $@ ){
+		print $e2;
 	    }
+	}else{
+	    print $e;
 	}
     }
 }

@@ -1,13 +1,12 @@
-
 -- *****************************************************************
 -- CISCO-TC.my:  Cisco MIB Textual Conventions
 --   
 -- May 1994, Jeffrey T. Johnson
 --   
--- Copyright (c) 1994-2004, 2005 and 2006 by cisco Systems, Inc.
+-- Copyright (c) 1994-2008 and by cisco Systems Inc.
 -- All rights reserved.
 --   
--- *****************************************************************
+-- ***************************************************************
 
 CISCO-TC DEFINITIONS ::= BEGIN
 
@@ -25,7 +24,7 @@ IMPORTS
 
 
 ciscoTextualConventions MODULE-IDENTITY
-    LAST-UPDATED    "200607060000Z"
+    LAST-UPDATED    "200804020000Z"
     ORGANIZATION    "Cisco Systems, Inc."
     CONTACT-INFO
             "Cisco Systems
@@ -41,11 +40,20 @@ ciscoTextualConventions MODULE-IDENTITY
     DESCRIPTION
         "This module defines textual conventions used throughout
         cisco enterprise mibs."
+    REVISION        "200804020000Z"
+    DESCRIPTION
+        "Added the new textual convention CiscoBridgeDomain."
+    REVISION        "200702150000Z"
+    DESCRIPTION
+        "Added following textual conventions:
+        CiscoVlanList,
+        CiscoCosList, 
+        CiscoPbbServiceIdentifier"
     REVISION        "200607060000Z"
     DESCRIPTION
         "Added the following enums to IfOperStatusReason:
         - elpFailureAllZeroPeerWWNRcvd,
-        - preferredPathIsolation. "
+        - preferredPathIsolation."
     REVISION        "200604130000Z"
     DESCRIPTION
         "Added enumeration to IfOperStatusReason from 113-131
@@ -130,7 +138,7 @@ ciscoTextualConventions MODULE-IDENTITY
     DESCRIPTION
         "Miscellaneous updates/corrections, including making
         CiscoNetworkProtocol enumerations contiguous."
-          ::= { ciscoModules 1 }
+    ::= { ciscoModules 1 }
 
 
 
@@ -225,8 +233,7 @@ CiscoNetworkAddress ::= TEXTUAL-CONVENTION
                  next 2 octets are the TCP port 
                  number
                  remaining(1 upto 64) octets are 
-                 the URI
-        "
+                 the URI"
     SYNTAX          OCTET STRING
 
 Unsigned64 ::= TEXTUAL-CONVENTION
@@ -298,8 +305,7 @@ CiscoRowOperStatus ::= TEXTUAL-CONVENTION
 
         missingDependency(4) -
             Indicates that at least one dependency does
-            not exist in it's table.
-        "
+            not exist in it's table."
     SYNTAX          INTEGER  {
                         active(1),
                         activeDependencies(2),
@@ -309,7 +315,8 @@ CiscoRowOperStatus ::= TEXTUAL-CONVENTION
 
 CiscoPort ::= TEXTUAL-CONVENTION
     STATUS          current
-    DESCRIPTION     "The TCP or UDP port number range."
+    DESCRIPTION
+        "The TCP or UDP port number range."
 
     REFERENCE
         "Transmission Control Protocol. J. Postel. RFC793,
@@ -318,7 +325,8 @@ CiscoPort ::= TEXTUAL-CONVENTION
 
 CiscoIpProtocol ::= TEXTUAL-CONVENTION
     STATUS          current
-    DESCRIPTION     "IP protocol number range."
+    DESCRIPTION
+        "IP protocol number range."
 
     REFERENCE       "Internet Protocol. J. Postel. RFC791"
     SYNTAX          Integer32 (0..255 )
@@ -339,8 +347,7 @@ CiscoLocationClass ::= TEXTUAL-CONVENTION
                   subPort on a DS3 physical port).
         channel - a logical interface (e.g., a DS0 channel, signaling
                   channel, ATM port, other virtual interfaces).
-        subChannel - a sub-channel on a logical interface.
-        "
+        subChannel - a sub-channel on a logical interface."
     SYNTAX          INTEGER  {
                         chassis(1),
                         shelf(2),
@@ -400,8 +407,7 @@ CiscoLocationSpecifier ::= TEXTUAL-CONVENTION
 
         A zero length of CiscoLocationSpecifier is object-specific
         and must be defined as part of the description of any object
-        which uses this syntax.
-        "
+        which uses this syntax."
 
     REFERENCE
         "RFC2234, Augmented BNF for syntax specifications: ABNF"
@@ -507,8 +513,7 @@ CiscoAlarmSeverity ::= TEXTUAL-CONVENTION
                 Indicates an alarm condition that does not
                 meet any other severity definition.  This can
                 include important, but non-urgent, notices or
-                informational events.
-         "
+                informational events."
 
     REFERENCE       "ITU-X.733"
     SYNTAX          INTEGER  {
@@ -724,8 +729,7 @@ ConfigIterator ::= TEXTUAL-CONVENTION
         manager. Otherwise, another SNMP manager might issue
         the bulk configuration to the same table before the previous
         bulk operation has been completed. These two objects will 
-        represent the last bulk operation in the table. 
-        "
+        represent the last bulk operation in the table."
     SYNTAX          Unsigned32 (1..4294967295 )
 
 BulkConfigResult ::= TEXTUAL-CONVENTION
@@ -742,8 +746,7 @@ BulkConfigResult ::= TEXTUAL-CONVENTION
 
         For example:
         'COMPLETION=22/100,ERROR=38/44:Invalid Ds1 line coding 
-         for the line type'
-        "
+         for the line type'"
     SYNTAX          OCTET STRING (SIZE (0..255))
 
 ListIndex ::= TEXTUAL-CONVENTION
@@ -769,22 +772,26 @@ ListIndexOrZero ::= TEXTUAL-CONVENTION
 
 TimeIntervalSec ::= TEXTUAL-CONVENTION
     STATUS          current
-    DESCRIPTION     "A period of time, measured in units of 1 second."
+    DESCRIPTION
+        "A period of time, measured in units of 1 second."
     SYNTAX          Unsigned32
 
 TimeIntervalMin ::= TEXTUAL-CONVENTION
     STATUS          current
-    DESCRIPTION     "A period of time, measured in units of 1 minute."
+    DESCRIPTION
+        "A period of time, measured in units of 1 minute."
     SYNTAX          Unsigned32
 
 CiscoMilliSeconds ::= TEXTUAL-CONVENTION
     STATUS          current
-    DESCRIPTION     "Represents time unit value in milliseconds."
+    DESCRIPTION
+        "Represents time unit value in milliseconds."
     SYNTAX          Unsigned32
 
 MicroSeconds ::= TEXTUAL-CONVENTION
     STATUS          current
-    DESCRIPTION     "Represents time unit value in microseconds."
+    DESCRIPTION
+        "Represents time unit value in microseconds."
     SYNTAX          Unsigned32
 
 CiscoPortList ::= TEXTUAL-CONVENTION
@@ -1363,7 +1370,7 @@ IfOperStatusReason ::= TEXTUAL-CONVENTION
             failure due to peer WWN is received with all zeros.
 
             'preferredPathIsolation (133)' - port isolated due to
-             preferred path not able to program the routes. "
+             preferred path not able to program the routes."
     SYNTAX          INTEGER  {
                         other(1),
                         none(2),
@@ -1558,6 +1565,7 @@ CiscoHTTPResponseStatusCode ::= TEXTUAL-CONVENTION
         "RFC 2616 Section 6.1.1 Status Code and Reason Phrase."
     SYNTAX          Unsigned32 (100..599 )
 
+
 CvE164Address ::= TEXTUAL-CONVENTION
     STATUS          current
     DESCRIPTION
@@ -1566,12 +1574,81 @@ CvE164Address ::= TEXTUAL-CONVENTION
         Note that  represents the double quote which
         cannot be contained in a SMI description clause.
              OR
-        An IA5String limited to the character set '0123456789*#,.'
-        "
+        An IA5String limited to the character set '0123456789*#,.'"
 
     REFERENCE
         "ITU-T E.164, Q.931 chapter 4.5.10
          ITU-H H.225.0 Annex H"
     SYNTAX          OCTET STRING (SIZE (1..128))
 
+CiscoVlanList ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION
+        "Each octet within this value specifies a set of eight
+        VLANs. The object defined by this textual convention
+        can specify a VLAN range of 1k VLANs in its description.
+        Example: 0 - 1023, 1024 - 2047, etc. The first octet
+        represents the first 8 VLANs of the range of VLANs
+        specified by the object, the second octet represents
+        the next 8 VLANs, etc. When a VLAN range is not
+        specified, a default port range of '0 - 1023' is assumed.
+
+        Within each octet, the most significant bit represents
+        the lowest numbered VLAN, and the least significant bit
+        represents the highest numbered VLAN. Thus, each VLAN
+        of the device is represented by a single bit within the
+        value of this object.  If that bit has a value of '1'
+        then that VLAN is included in the set of VLANs; the VLAN
+        is not included if its bit has a value of '0'.
+
+        Note that if the length of this string is less than
+        128 octets, any 'missing' octets are assumed to contain
+        the value zero. An NMS may omit any zero-valued octets
+        from the end of this string in order to reduce SetPDU size,
+        and the agent may also omit zero-valued trailing octets,
+        to reduce the size of GetResponse PDUs."
+    SYNTAX          OCTET STRING (SIZE (0..128))
+
+CiscoCosList ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION
+        "Each bit represents a CoS value (0 through 7)."
+    SYNTAX          BITS {
+                        cos0(0),
+                        cos1(1),
+                        cos2(2),
+                        cos3(3),
+                        cos4(4),
+                        cos5(5),
+                        cos6(6),
+                        cos7(7)
+                    }
+
+CiscoPbbServiceIdentifier ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION
+        "An integer-value which identifies the service instance of
+        the Provider Backbone Bridge frame."
+
+    REFERENCE       "IEEE P802.1ah/D3.3 chapter 9.8, December 2006"
+    SYNTAX          Unsigned32 (1..16777216 )
+
+CiscoBridgeDomain ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION
+        "An object with this syntax contains a bridge domain number
+        which is used to distinguish between multiple bridge domains. A
+        bridge domain represents a set of (logical) Ethernet segments
+        which are interconnected by 802.1D bridges. 802.1Q allows for a
+        maximum of 4095 VLANs within a bridge domain. Some devices can
+        be connected to multiple bridge domains, e.g., routers with
+        some of their interfaces in one bridge domain and other
+        interfaces in other bridge domain. In such devices, the
+        combination of bridge-domain-number and VLAN-id can be used to
+        uniquely identify any VLAN across all interfaces."
+    SYNTAX          Unsigned32 (1..65535 )
+
 END
+
+
+

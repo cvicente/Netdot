@@ -9,10 +9,12 @@
            MODULE-COMPLIANCE, OBJECT-GROUP
                FROM SNMPv2-CONF
            hpicfObjectModules, icfSecurity
-               FROM HP-ICF-OID;
+               FROM HP-ICF-OID
+           InetAddress, InetAddressType, InetAddressPrefixLength
+               FROM INET-ADDRESS-MIB;
 
        icfSecurityMib MODULE-IDENTITY
-            LAST-UPDATED "200301090112Z"  -- January 9, 2003
+            LAST-UPDATED "200710010903Z"  -- October 01, 2007
             ORGANIZATION "Hewlett Packard Company,
                           Network Infrastructure Solutions"
             CONTACT-INFO "Hewlett Packard Company
@@ -22,6 +24,9 @@
                          the SNMPv1 authorization configuration for
                          devices in the HP Integrated Communication
                          Facility product line."
+
+            REVISION     "200710010903Z"  -- October 01, 2007
+            DESCRIPTION  "Deprecated icfAuthIPMgrAddress and icfAuthIPMgrMask."
 
             REVISION     "200301090112Z"  -- January 9, 2003
             DESCRIPTION  "Deprecated icfCommunityTable and icfAuthMgrTable."
@@ -506,79 +511,126 @@
            ::= { icfAuthMgrEntry 5 }
 
 
-	icfAuthIPMgrTable OBJECT-TYPE
-	    SYNTAX      SEQUENCE OF IcfAuthIPMgrEntry
-            MAX-ACCESS  not-accessible
-            STATUS      current
-            DESCRIPTION "This table contains a list of IP manager
+       icfAuthIPMgrTable OBJECT-TYPE
+           SYNTAX      SEQUENCE OF IcfAuthIPMgrEntry
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           DESCRIPTION "This table contains a list of IP manager
                         addresses.  This list is used grant or deny
                         access to HTTP, telnet, and TFTP."
             ::= { icfSecurity 7 }
 
-	icfAuthIPMgrEntry OBJECT-TYPE
-	    SYNTAX      IcfAuthIPMgrEntry
-            MAX-ACCESS  not-accessible
-            STATUS      current
-            DESCRIPTION "An entry in the table containing a single
+       icfAuthIPMgrEntry OBJECT-TYPE
+           SYNTAX      IcfAuthIPMgrEntry
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           DESCRIPTION "An entry in the table containing a single
                         IP authorized manager address."
-            INDEX       { icfAuthIPMgrIndex }
+           INDEX       { icfAuthIPMgrIndex }
             ::= { icfAuthIPMgrTable 1 }
        
-        IcfAuthIPMgrEntry ::=
-            SEQUENCE {
-                icfAuthIPMgrIndex         Integer32,
-                icfAuthIPMgrAddress       IpAddress,
-                icfAuthIPMgrMask          IpAddress,
-                icfAuthIPMgrAccess        INTEGER,
-	        icfAuthIPMgrStatus        RowStatus
-            }
+       IcfAuthIPMgrEntry ::=
+           SEQUENCE {
+                icfAuthIPMgrIndex            Integer32,
+                icfAuthIPMgrAddress          IpAddress,
+                icfAuthIPMgrMask             IpAddress,
+                icfAuthIPMgrAccess           INTEGER,
+                icfAuthIPMgrStatus           RowStatus,
+                icfAuthIPMgrInetAddrType     InetAddressType,
+                icfAuthIPMgrInetAddress      InetAddress,
+                icfAuthIPMgrInetAddrMaskType InetAddressType,
+                icfAuthIPMgrInetAddrMask     InetAddress
+           }
 
-	icfAuthIPMgrIndex OBJECT-TYPE
-	    SYNTAX      Integer32 (1..65535)
-            MAX-ACCESS  not-accessible
-            STATUS      current
-            DESCRIPTION "An index which uniquely identifies an address
+       icfAuthIPMgrIndex OBJECT-TYPE
+           SYNTAX      Integer32 (1..65535)
+           MAX-ACCESS  not-accessible
+           STATUS      current
+           DESCRIPTION "An index which uniquely identifies an address
                         within the group."
-            ::= { icfAuthIPMgrEntry 1 }
+           ::= { icfAuthIPMgrEntry 1 }
 
-	icfAuthIPMgrAddress OBJECT-TYPE
-	    SYNTAX      IpAddress
-            MAX-ACCESS  read-create
-            STATUS      current
-            DESCRIPTION "The IP address of the authorized manager for
-                        this entry."
-            ::= { icfAuthIPMgrEntry 2 }
+       icfAuthIPMgrAddress OBJECT-TYPE
+           SYNTAX      IpAddress
+           MAX-ACCESS  read-create
+           STATUS      deprecated 
+           DESCRIPTION "**************deprecated*********************
+                        The IP address of the authorized manager for
+                        this entry.
+                        This object is deprecated new object icfAuthIPMgr
+                        InetAddress has been defined to hold version neutral
+                        address type."  
+           ::= { icfAuthIPMgrEntry 2 }
 
-	icfAuthIPMgrMask OBJECT-TYPE
-	    SYNTAX      IpAddress
-            MAX-ACCESS  read-create
-            STATUS      current
-            DESCRIPTION "This object qualifies the value of the
+       icfAuthIPMgrMask OBJECT-TYPE
+           SYNTAX      IpAddress
+           MAX-ACCESS  read-create
+           STATUS      deprecated 
+           DESCRIPTION "**************deprecated**********************
+                        This object qualifies the value of the
                         corresponding instance of icfAuthIPMgrAddress.
                         This object can be used to allow access by all
-                        managers on a particular IP subnet."
-            ::= { icfAuthIPMgrEntry 3 }
+                        managers on a particular IP subnet.
+                        This object is deprecated the new objects which are
+                        defined to hold this is value are
+                        icfAuthIPMgrInetAddrMaskType and icfAuthIPMgrInetAddrMask."
+           ::= { icfAuthIPMgrEntry 3 }
 
-	icfAuthIPMgrAccess OBJECT-TYPE
-	    SYNTAX      INTEGER {
+       icfAuthIPMgrAccess OBJECT-TYPE
+           SYNTAX      INTEGER {
                             operator(1),
                             manager(2)
                         }
-            MAX-ACCESS  read-create
-            STATUS      current
-            DESCRIPTION "This object defines the access level for a
+           MAX-ACCESS  read-create
+           STATUS      current 
+           DESCRIPTION "This object defines the access level for a
                         given manager.  Operator allows for read only
                         access, and Manager allows for read/write
                         access."
-            ::= { icfAuthIPMgrEntry 4 }
+           ::= { icfAuthIPMgrEntry 4 }
 
-	icfAuthIPMgrStatus OBJECT-TYPE
-	    SYNTAX      RowStatus
-            MAX-ACCESS  read-create
-            STATUS      current
-            DESCRIPTION "Status of this entry."
-            ::= { icfAuthIPMgrEntry 5 }
+       icfAuthIPMgrStatus OBJECT-TYPE
+           SYNTAX      RowStatus
+           MAX-ACCESS  read-create
+           STATUS      current
+           DESCRIPTION "Status of this entry."
+           ::= { icfAuthIPMgrEntry 5 }
 
+       icfAuthIPMgrInetAddrType OBJECT-TYPE
+           SYNTAX      InetAddressType
+           MAX-ACCESS  read-create
+           STATUS      current
+           DESCRIPTION "Specifies the type of address stored in 
+                        icfAuthIPMgrInetAddress object."
+           ::= { icfAuthIPMgrEntry 6 }
+
+       icfAuthIPMgrInetAddress OBJECT-TYPE
+           SYNTAX      InetAddress
+           MAX-ACCESS  read-create
+           STATUS      current
+           DESCRIPTION "The IP address of the authorized manager for
+                        this entry.This object can hold the version
+                        neutral IP address."
+           ::= { icfAuthIPMgrEntry 7 }
+
+       icfAuthIPMgrInetAddrMaskType OBJECT-TYPE
+           SYNTAX      InetAddressType
+           MAX-ACCESS  read-create
+           STATUS      current
+           DESCRIPTION "Specifies the type of IP Mask stored in  
+                        icfAuthIPMgrInetAddrMask object."
+           ::= { icfAuthIPMgrEntry 8 }
+
+       icfAuthIPMgrInetAddrMask OBJECT-TYPE
+           SYNTAX      InetAddress
+           MAX-ACCESS  read-create
+           STATUS      current
+           DESCRIPTION "This object qualifies the value of the
+                        corresponding instance of icfAuthIPMgrInetAddress.
+                        This object can be used to allow access by all
+                        managers on a particular IP subnet.This object can
+                        hold the version neutral IP address Mask."
+           ::= { icfAuthIPMgrEntry 9 }
 
        -- Conformance information
 
@@ -596,7 +648,7 @@
        icfSecurCompliance MODULE-COMPLIANCE
            STATUS     obsolete --  change to deprecated when new SMI
            DESCRIPTION
-                   "********* THIS COMPLIANCE IS DEPRECATED *********
+                   "********* THIS COMPLIANCE IS DEPRECATED *********/
 
                    A compliance statement for agents implementing
                    the original version of this module."
@@ -677,14 +729,28 @@
            OBJECTS     { icfAuthIPMgrAddress,
                          icfAuthIPMgrMask,
                          icfAuthIPMgrAccess,
-	                 icfAuthIPMgrStatus
+                         icfAuthIPMgrStatus
+                       }
+           STATUS      deprecated 
+           DESCRIPTION "***************** deprecated ******************
+                       A collection of objects for granting or denying
+                       access to specific IP addresses for HTTP, telnet,
+                       and TFTP.
+                       This Group object has been deprecated and a new 
+                       group object has been defined with name 
+                       icfAuthIPMgrInetGroup."
+           ::= { icfSecurityGroups 14 }
+
+       icfAuthIPMgrInetGroup OBJECT-GROUP
+           OBJECTS     { icfAuthIPMgrInetAddrType, 
+                         icfAuthIPMgrInetAddress,
+                         icfAuthIPMgrInetAddrMaskType,
+                         icfAuthIPMgrInetAddrMask
                        }
            STATUS      current
            DESCRIPTION "A collection of objects for granting or denying
                        access to specific IP addresses for HTTP, telnet,
-                       and TFTP."
-           ::= { icfSecurityGroups 14 }
-
-
+                       and TFTP." 
+           ::= { icfSecurityGroups 15 }
        END
 

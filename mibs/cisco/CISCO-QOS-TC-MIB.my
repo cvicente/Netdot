@@ -4,7 +4,7 @@
 --
 -- September 2006, Edward Pham 
 --
--- Copyright (c) 2006 by Cisco Systems, Inc.
+-- Copyright (c) 2006-2007 by Cisco Systems, Inc.
 -- All rights reserved.
 -- *********************************************************************
 
@@ -20,7 +20,7 @@ IMPORTS
          FROM CISCO-SMI;
 
 ciscoQosTcMIB MODULE-IDENTITY
-    LAST-UPDATED    "200609181200Z"
+    LAST-UPDATED    "200703050000Z"
     ORGANIZATION    "Cisco Systems, Inc."
     CONTACT-INFO
         "       Cisco Systems
@@ -34,8 +34,10 @@ ciscoQosTcMIB MODULE-IDENTITY
         E-mail: cs-snmp@cisco.com"
     DESCRIPTION
         "This module defines the textual conventions used within
-         Cisco Qos MIBs.
-         "
+         Cisco Qos MIBs."
+    REVISION      "200703050000Z"
+    DESCRIPTION
+         "Add QosPolicerType textual convention."
     REVISION      "200609181200Z"
     DESCRIPTION
          "The initial version of this MIB module."
@@ -89,6 +91,15 @@ QosMutationMapNameOrEmpty ::= TEXTUAL-CONVENTION
         non-empty mutation map name. This extension permits
         the addtional value of empty string."
     SYNTAX  OCTET STRING (SIZE (0..99))
+
+QosPolicerType ::= TEXTUAL-CONVENTION
+    STATUS  current
+    DESCRIPTION
+        "An integer indicating the type of a QoS policer.
+
+         microflow(1):     a microflow policer.
+         aggregate(2):     an aggregate policer."
+    SYNTAX INTEGER { microflow(1), aggregate(2) } 
 
 END
 

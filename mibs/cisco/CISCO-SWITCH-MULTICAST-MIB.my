@@ -4,7 +4,7 @@
 -- January 2006, Jayakumar Kadirvelu
 -- 
 --
--- Copyright (c) 2006 by cisco Systems, Inc.
+-- Copyright (c) 2006-2008 by cisco Systems, Inc.
 -- All rights reserved.
 -- *****************************************************************
 --
@@ -12,6 +12,7 @@ CISCO-SWITCH-MULTICAST-MIB DEFINITIONS ::= BEGIN
 IMPORTS
     MODULE-IDENTITY,
     OBJECT-TYPE,
+    Unsigned32,
     Gauge32
         FROM SNMPv2-SMI
     MODULE-COMPLIANCE,
@@ -27,7 +28,7 @@ IMPORTS
         FROM INET-ADDRESS-MIB;
 
 ciscoSwitchMulticastMIB MODULE-IDENTITY
-        LAST-UPDATED        "200601060000Z"
+        LAST-UPDATED        "200803200000Z"
         ORGANIZATION        "Cisco Systems, Inc."
         CONTACT-INFO
                 "       Cisco Systems
@@ -57,7 +58,7 @@ ciscoSwitchMulticastMIB MODULE-IDENTITY
  
                      Egress Multicast Replication - A type of multicast
                      replication where the replication engines on both
-                     the ingress and egress modules preform the replication. 
+                     the ingress and egress modules perform the replication. 
 
                      VPN  -  Virtual private network.
                      A secure IP-based network that shares resources 
@@ -77,8 +78,17 @@ ciscoSwitchMulticastMIB MODULE-IDENTITY
       
                      VRF-lite -  A feature that enables a service 
                      provider to support two or more VPNs, where IP 
-                     addresses can be overlapped among the VPNs."
+                     addresses can be overlapped among the VPNs.
 
+                     LTL - Local Target Logic
+                     A hardware resource table to aid in switching."
+
+        REVISION        "200803200000Z"
+        DESCRIPTION
+                "Added cswmBiDirPimDfUsageGroup.
+                 Added cswmLtlUsageGroup.
+                 Corrected the enum value of cswmReplConfigCurMode:
+                     From 'egress' to 'egressAndIngress'."
         REVISION        "200601060000Z"
         DESCRIPTION
                 "Initial version of this MIB module."
@@ -100,10 +110,23 @@ cswmMIBConform  OBJECT IDENTIFIER ::=  { ciscoSwitchMulticastMIB 2 }
 --
 -- 3. cswmMvrfStats             : A group of objects providing  
 --                                MVRF statistics. 
+--
+-- 4. cswmBiDirPimDfStats       : A group of objects providing  
+--                                Bi-directional PIM (Protocol 
+--                                Independent Multicast) Designated 
+--                                Forwarder database statistics. 
+--
+-- 5. cswmLtlStats              : A group of objects providing  
+--                                Multicast LTL (Local Target Logic)  
+--                                statistics. 
+
  
 cswmGlobal      OBJECT IDENTIFIER ::=  { cswmMIBObjects 1 }
 cswmReplication OBJECT IDENTIFIER ::=  { cswmMIBObjects 2 }
 cswmMvrfStats   OBJECT IDENTIFIER ::=  { cswmMIBObjects 3 }
+cswmBiDirPimDfStats     
+                OBJECT IDENTIFIER ::=  { cswmMIBObjects 4 }
+cswmLtlStats    OBJECT IDENTIFIER ::=  { cswmMIBObjects 5 }
 
 cswmMvpnHwSwitchingStatus OBJECT-TYPE
     SYNTAX      INTEGER { 
@@ -284,7 +307,7 @@ cswmReplConfigCurMode OBJECT-TYPE
     SYNTAX      INTEGER { 
                   notCapable(1),  -- read-only
                   ingress(2),
-                  egress(3)
+                  egressAndIngress(3)
                 }
     MAX-ACCESS  read-write
     STATUS      current
@@ -292,12 +315,14 @@ cswmReplConfigCurMode OBJECT-TYPE
         "Specifies the current mode of multicast flow replication
          for this address type.
 
-         'notCapable'  - This device is not capable of Multicast flow 
-                         replication for this address type. 
+         'notCapable'       - This device is not capable of Multicast
+                              flow replication for this address type. 
    
-         'ingress'     - The current mode of replication is ingress.
+         'ingress'          - The current mode of replication is 
+                              ingress.
    
-         'egress'      - The current mode of replication is egress.
+         'egressAndIngress' - The current mode of replication is 
+                              egress and ingress.
   
          When the value of this object is 'notCapable' the object
          value is not writable.
@@ -403,6 +428,47 @@ cswmMvrfRpfMfdFlows OBJECT-TYPE
          MVRF."
     ::= { cswmMvrfStatsEntry 4 }
 
+--  
+-- Designated Forwarder Database usage 
+--
+cswmBiDirPimDfUsed OBJECT-TYPE
+    SYNTAX        Unsigned32
+    MAX-ACCESS    read-only
+    STATUS        current
+    DESCRIPTION
+        "The number of Bi-directional PIM Designated Forwarder 
+         entries currently in use by this device."
+    ::= { cswmBiDirPimDfStats 1 }
+
+cswmBiDirPimDfTotal OBJECT-TYPE
+    SYNTAX        Unsigned32
+    MAX-ACCESS    read-only
+    STATUS        current
+    DESCRIPTION
+        "The total number of Bi-directional PIM Designated Forwarder 
+         entries for this device."
+    ::= { cswmBiDirPimDfStats 2 }
+
+--  
+-- Multicast LTL usage 
+--
+cswmLtlUsed OBJECT-TYPE
+    SYNTAX        Unsigned32
+    MAX-ACCESS    read-only
+    STATUS        current
+    DESCRIPTION
+        "This object indicates the number of Multicast LTL 
+         entries currently used by this device."
+    ::= { cswmLtlStats 1 }
+
+cswmLtlTotal OBJECT-TYPE
+    SYNTAX        Unsigned32
+    MAX-ACCESS    read-only
+    STATUS        current
+    DESCRIPTION
+        "This object indicates the total number of Multicast
+         LTL entries available for this device."
+    ::= { cswmLtlStats 2 }
 
 -- No Notification defined
 
@@ -413,7 +479,7 @@ cswmMIBGroups      OBJECT IDENTIFIER ::= { cswmMIBConform 2 }
 
 
 cswmMIBCompliance MODULE-COMPLIANCE
-        STATUS current
+        STATUS deprecated  -- superceded by cswmMIBCompliance2
         DESCRIPTION
             "The compliance statement for the 
              CISCO-SWITCH-MULTICAST-MIB.
@@ -443,6 +509,48 @@ cswmMIBCompliance MODULE-COMPLIANCE
                  statistics are supported."
 
         ::= { cswmMIBCompliances 1 }
+
+cswmMIBCompliance2 MODULE-COMPLIANCE
+        STATUS current
+        DESCRIPTION
+            "The compliance statement for the 
+             CISCO-SWITCH-MULTICAST-MIB.
+
+             OBJECT cswmReplConfigAddrType
+             SYNTAX InetAddressType { ipv4(1), ipv6(2) }
+             DESCRIPTION
+                 An implementation is only required to support IPv4
+                 and IPv6 addresses."
+
+        MODULE  -- this module
+            MANDATORY-GROUPS { cswmGlobalGroup }
+
+            GROUP   cswmConsistCheckGroup
+            DESCRIPTION
+                "This group is mandatory where multicast consistency
+                 check is supported."
+
+            GROUP   cswmReplicationGroup
+            DESCRIPTION
+                "This group is mandatory where multicast flow
+                 replication is supported."
+
+            GROUP   cswmMvrfStatsGroup
+            DESCRIPTION
+                "This group is mandatory where MVRF 
+                 statistics are supported."
+
+            GROUP   cswmBiDirPimDfUsageGroup
+            DESCRIPTION
+                "This group is mandatory where Bi-directional
+                 PIM Designated Forwarder database is supported."
+
+            GROUP   cswmLtlUsageGroup
+            DESCRIPTION
+                "This group is mandatory where Multicast
+                 LTL usage information is available."
+
+        ::= { cswmMIBCompliances 2 }
 
 
 -- Units of Conformance
@@ -493,4 +601,25 @@ cswmMvrfStatsGroup OBJECT-GROUP
              statistics."
         ::= { cswmMIBGroups 4 }
 
+cswmBiDirPimDfUsageGroup  OBJECT-GROUP
+        OBJECTS {
+            cswmBiDirPimDfUsed,
+            cswmBiDirPimDfTotal
+        }
+        STATUS current
+        DESCRIPTION
+            "A collection of objects providing Bi-directional
+             PIM Designated Forwarder database Usage information."
+        ::= { cswmMIBGroups 5 }
+
+cswmLtlUsageGroup OBJECT-GROUP
+        OBJECTS {
+            cswmLtlUsed,
+            cswmLtlTotal
+        }
+        STATUS current
+        DESCRIPTION
+            "A collection of objects providing Multicast LTL 
+             usage information."
+        ::= { cswmMIBGroups 6 }
 END

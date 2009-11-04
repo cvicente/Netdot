@@ -15,13 +15,16 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
             FROM ENTITY-MIB
         alarmEntry, eventEntry
             FROM RMON-MIB
+        InetAddress, InetAddressType, InetAddressPrefixLength,
+        InetPortNumber
+            FROM INET-ADDRESS-MIB
         hpicfObjectModules, hpicfCommon, hpicfCommonTrapsPrefix
             FROM HP-ICF-OID
         snmpTargetAddrEntry
             FROM SNMP-TARGET-MIB;
 
     hpicfBasicMib MODULE-IDENTITY
-        LAST-UPDATED "200511170000Z"  -- November 17, 2005
+        LAST-UPDATED "200706070000Z"  -- June 7, 2007
         ORGANIZATION "Hewlett Packard Company,
                      Network Infrastructure Solutions"
         CONTACT-INFO "Hewlett Packard Company
@@ -31,6 +34,16 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
                      management of devices in the HP Integrated
                      Communication Facility product line."
 
+        REVISION     "200709130000Z"  -- Sept 13, 2007
+        DESCRIPTION  "Limit the size to 1300 for the hpicfBannerMOTD."
+
+        REVISION     "200706070000Z"  -- June 7, 2007
+        DESCRIPTION  "Added hpicfIpConfigLocalProxyArp object to the
+                      the hpicfIpConfigEntry sequence."
+
+        REVISION     "200705300954Z"  -- May 30, 2007
+        DESCRIPTION  "Added the hpicfTelnet6Enable object."
+	
         REVISION     "200511170000Z"  -- November 17, 2005
         DESCRIPTION  "Added hpicfBasicDNSConfig object group to 
                       the HP ICF Basic Group.  Updated conformance and 
@@ -506,7 +519,6 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
                     to enabled(1), the switch will respond on ARP request
                     for IP addresses from other subnets."
         ::= { hpicfIpConfigEntry 7 }
-
 
     hpicfIpConfigLocalProxyArp OBJECT-TYPE
         SYNTAX      INTEGER {
@@ -1232,8 +1244,8 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
     hpicfDNSNameServerTable OBJECT-TYPE
         SYNTAX      SEQUENCE OF HpicfDNSNameServerEntry
         MAX-ACCESS  not-accessible
-        STATUS      current
-        DESCRIPTION "A table that contains information about the 
+        STATUS      deprecated
+        DESCRIPTION "#### Deprecated #### A table that contains information about the 
                     (DNS) Name Server configuration in this 
                     device."
         ::= { hpicfBasicDNSConfig 2 }
@@ -1241,8 +1253,8 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
     hpicfDNSNameServerEntry OBJECT-TYPE
         SYNTAX      HpicfDNSNameServerEntry
         MAX-ACCESS  not-accessible
-        STATUS      current
-        DESCRIPTION "Information about name server configuration entry
+        STATUS      deprecated
+        DESCRIPTION "### deprecated ###Information about name server configuration entry
                      on this resolver device. "
         INDEX       { hpicfDNSNameServerAddress }
         ::= { hpicfDNSNameServerTable 1 }
@@ -1256,16 +1268,80 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
     hpicfDNSNameServerAddress OBJECT-TYPE
         SYNTAX      IpAddress
         MAX-ACCESS  not-accessible
-        STATUS      current
-        DESCRIPTION "IPv4 address of the given name server."
+        STATUS      deprecated 
+        DESCRIPTION "### Deprecated ###IPv4 address of the given name server."
         ::= { hpicfDNSNameServerEntry 1 }
 
     hpicfDNSNameServerEntryStatus OBJECT-TYPE
         SYNTAX      RowStatus
         MAX-ACCESS  read-create
+        STATUS      deprecated
+        DESCRIPTION "### Deprecated ###The row status of a given name server entry."
+        ::= { hpicfDNSNameServerEntry 2 }
+
+    hpicfInetDNSNameServerTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF HpicfInetDNSNameServerEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "A table that contains information about the 
+                    (DNS) Name Server configuration in this 
+                    device.This table has 3 index's PRIORITY ADDRTYPE
+                    ADDR,for each pririoty only one address can be configured."
+
+        ::= { hpicfBasicDNSConfig 3 }
+
+    hpicfInetDNSNameServerEntry OBJECT-TYPE
+        SYNTAX      HpicfInetDNSNameServerEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "An entry in hpicfInetDNSNameServerEntry contains single 
+                     manually configured DNS Address
+                     on this resolver device. "
+        INDEX       { hpicfInetDNSNameServerAddrIndex,
+							 hpicfInetDNSNameServerAddrType, 
+                      hpicfInetDNSNameServerAddress }
+        ::= { hpicfInetDNSNameServerTable 1 }
+       
+    HpicfInetDNSNameServerEntry ::=
+        SEQUENCE {
+				hpicfInetDNSNameServerAddrIndex	 INTEGER, 
+            hpicfInetDNSNameServerAddrType    InetAddressType,
+            hpicfInetDNSNameServerAddress     InetAddress,
+            hpicfInetDNSNameServerEntryStatus RowStatus 
+        }
+
+	 hpicfInetDNSNameServerAddrIndex OBJECT-TYPE
+		SYNTAX		INTEGER(0..255)	
+		MAX-ACCESS 	not-accessible
+		STATUS	   current
+    DESCRIPTION "Index(which is also treated as priority) of DNS server address
+                 configured."
+		 ::=	{ hpicfInetDNSNameServerEntry 1 }
+			
+    hpicfInetDNSNameServerAddrType OBJECT-TYPE
+        SYNTAX      InetAddressType
+        MAX-ACCESS  not-accessible
+        STATUS      current 
+        DESCRIPTION "Address Type of the DNS Name server stored in hpicfInetDNSNameServer
+                     Address."
+        ::= { hpicfInetDNSNameServerEntry 2 }
+
+    hpicfInetDNSNameServerAddress OBJECT-TYPE
+        SYNTAX      InetAddress  
+        MAX-ACCESS  not-accessible
+        STATUS      current 
+        DESCRIPTION "Address of DNS and type of address stored is
+                      is mentioned in hpicfInetDNSNameServerAddType 
+                     This field needs to be used in conjuction with 
+                     hpicfInetDNSNameServerAddrType."
+        ::= { hpicfInetDNSNameServerEntry 3 }
+
+    hpicfInetDNSNameServerEntryStatus OBJECT-TYPE
+        SYNTAX      RowStatus
+        MAX-ACCESS  read-create
         STATUS      current
         DESCRIPTION "The row status of a given name server entry."
-        ::= { hpicfDNSNameServerEntry 2 }
+        ::= { hpicfInetDNSNameServerEntry 4 }
     -- HP ICF BASIC Banner 
 
     hpicfBannerStatus OBJECT-TYPE
@@ -1286,7 +1362,7 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
     hpicfBanner     OBJECT IDENTIFIER ::= { hpicfBasic 14}
 
     hpicfBannerMOTD OBJECT-TYPE
-        SYNTAX      OCTET STRING (SIZE(1..3070)) 
+        SYNTAX      OCTET STRING (SIZE(1..1300)) 
         MAX-ACCESS  read-write
         STATUS      current
         DESCRIPTION "An administratively configured message that is displayed 
@@ -1305,6 +1381,21 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
         DESCRIPTION "The switch boots from 'primary image' or 'secondary image' 
                     based on this object."
         ::= { hpicfBasic 16 }
+
+
+   hpicfTelnet6Enable OBJECT-TYPE
+	SYNTAX      INTEGER {
+			enabled(1),
+			disabled(2)
+		    }
+        MAX-ACCESS  read-write
+	STATUS      current
+	DESCRIPTION "When the value of this object is 'enabled(1)', the
+	             telnet6 server on this agent is running and allowed to
+		     accept connections.  When the value of this object is
+		     'disabled(2)', no incoming telnet6 connections will be
+		     accepted by this agent."
+        ::= { hpicfBasic 17 }
 
 
     -- Conformance information
@@ -1356,7 +1447,7 @@ HP-ICF-BASIC DEFINITIONS ::= BEGIN
                         requests (e.g. repeaters and switches)."
 
 --            GROUP       hpicfBasicSnmpNotifyLogFilterTable
---            DESCRIPTION "This group is required for devices that support
+--             DESCRIPTION "This group is required for devices that support
 --                         SNMPv3."
 
             OBJECT      hpicfIpConfigPingRouter

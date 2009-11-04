@@ -3,10 +3,10 @@
 --   
 -- May 2002, Manik Raina
 --   
--- Copyright (c) 2002-2007 by cisco Systems Inc.
+-- Copyright (c) 2002-2008 by cisco Systems Inc.
 --   
 -- All rights reserved.
--- **************************************************************
+-- ***************************************************************
 
 CISCO-IF-EXTENSION-MIB DEFINITIONS ::= BEGIN
 
@@ -47,7 +47,7 @@ IMPORTS
 
 
 ciscoIfExtensionMIB MODULE-IDENTITY
-    LAST-UPDATED    "200611180000Z"
+    LAST-UPDATED    "200707230000Z"
     ORGANIZATION    "Cisco Systems, Inc."
     CONTACT-INFO
             "Cisco Systems
@@ -66,6 +66,11 @@ ciscoIfExtensionMIB MODULE-IDENTITY
         to add objects which provide additional information
         about interfaces not available in other MIBS.
         This MIB replaces the OLD-CISCO-INTERFACES-MIB."
+    REVISION        "200707230000Z"
+    DESCRIPTION
+        "Added cieIfInterval in cieIfUtilTable. Changed
+        the description of objects in cieIfUtilTable.
+        Added ciscoIfExtUtilIntervalGroup."
     REVISION        "200611010000Z"
     DESCRIPTION
         "Add support for asymetrical interfaces speeds.
@@ -1042,7 +1047,8 @@ CieIfUtilEntry ::= SEQUENCE {
         cieIfInPktRate    Unsigned64,
         cieIfInOctetRate  Unsigned64,
         cieIfOutPktRate   Unsigned64,
-        cieIfOutOctetRate Unsigned64
+        cieIfOutOctetRate Unsigned64,
+        cieIfInterval     Unsigned32
 }
 
 cieIfInPktRate OBJECT-TYPE
@@ -1051,9 +1057,15 @@ cieIfInPktRate OBJECT-TYPE
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
-        "Five minute exponentially-decayed moving
-        average of inbound packet rate for this
-        interface." 
+        "By default, this is the five minute
+        exponentially-decayed moving average of the
+        inbound packet rate for this interface.
+        However, if the corresponding instance of
+        cieIfInterval is instantiated with a value
+        which specifies an interval different from
+        5-minutes, then cieIfInPktRate is the
+        exponentially-decayed moving average of inbound
+        packet rate over this different time interval." 
     ::= { cieIfUtilEntry 1 }
 
 cieIfInOctetRate OBJECT-TYPE
@@ -1062,9 +1074,15 @@ cieIfInOctetRate OBJECT-TYPE
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
-        "Five minute exponentially-decayed moving
-        average of inbound octet rate for this 
-        interface." 
+        "By default, this is the five minute
+        exponentially-decayed moving average of the
+        inbound octet rate for this interface.
+        However, if the corresponding instance of
+        cieIfInterval is instantiated with a value
+        which specifies an interval different from
+        5-minutes, then cieIfInOctetRate is the
+        exponentially-decayed moving average of inbound
+        octet rate over this different time interval." 
     ::= { cieIfUtilEntry 2 }
 
 cieIfOutPktRate OBJECT-TYPE
@@ -1073,9 +1091,15 @@ cieIfOutPktRate OBJECT-TYPE
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
-        "Five minute exponentially-decayed moving
-        average of outbound packet rate for this
-        interface." 
+        "By default, this is the five minute
+        exponentially-decayed moving average of the
+        outbound packet rate for this interface.
+        However, if the corresponding instance of
+        cieIfInterval is instantiated with a value
+        which specifies an interval different from
+        5-minutes, then cieIfOutPktRate is the
+        exponentially-decayed moving average of outbound
+        packet rate over this different time interval." 
     ::= { cieIfUtilEntry 3 }
 
 cieIfOutOctetRate OBJECT-TYPE
@@ -1084,10 +1108,27 @@ cieIfOutOctetRate OBJECT-TYPE
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
-        "Five minute exponentially-decayed moving
-        average of outbound octet rate for this
-        interface." 
+        "By default, this is the five minute
+        exponentially-decayed moving average of the
+        outbound octet rate for this interface.
+        However, if the corresponding instance of
+        cieIfInterval is instantiated with a value
+        which specifies an interval different from
+        5-minutes, then cieIfOutOctetRate is the
+        exponentially-decayed moving average of outbound
+        octet rate over this different time interval." 
     ::= { cieIfUtilEntry 4 }
+
+cieIfInterval OBJECT-TYPE
+    SYNTAX          Unsigned32 (1..4294967295 )
+    UNITS           "seconds"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the time interval over which
+        the inbound and outbound traffic rates are
+        calculated for this interface." 
+    ::= { cieIfUtilEntry 5 }
  
 
 -- dot1BaseMapping Group
@@ -1532,7 +1573,7 @@ ciscoIfExtensionMIBCompliance5 MODULE-COMPLIANCE
     ::= { ciscoIfExtensionMIBCompliances 6 }
 
 ciscoIfExtensionMIBCompliance6 MODULE-COMPLIANCE
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The compliance statement for entities which
         implement the CISCO-IF-EXTENSION-MIB."
@@ -1601,6 +1642,83 @@ ciscoIfExtensionMIBCompliance6 MODULE-COMPLIANCE
         "It is compliant to implement this object as
         read-only."
     ::= { ciscoIfExtensionMIBCompliances 7 }
+
+ciscoIfExtensionMIBCompliance7 MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for entities which
+        implement the CISCO-IF-EXTENSION-MIB."
+    MODULE          -- this module
+    GROUP           ciscoIfExtensionTablePacketGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           ciscoIfExtensionTableIntfGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           ciscoIfExtensionTableIntfGroup2
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           ciscoIfExtensionSystemGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           ciscoIfExtDot1qEtherTypeGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           ciscoIfExtUtilizationGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           ciscoIfExtDot1dBaseMappingGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           ciscoIfExtIfNameMappingGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           cieIfStatusListGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           cieLinkUpDownNotifEnableGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           cieLinkUpDownNotifGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           ciscoIfExtensionAsymmetricalSpeedGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           ciscoIfExtUtilIntervalGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory for those
+        platforms which provide the information of calculation 
+        interval for utilization rate on interfaces."
+
+    OBJECT          cieIfDhcpMode
+    SYNTAX          INTEGER  {
+                        false(2)
+                    }
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "It is compliant to implement this object as
+        read-only. Support for 'true' is only 
+        required on interfaces which support DHCP."
+
+    OBJECT          cieIfMtu
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "It is compliant to implement this object as
+        read-only."
+    ::= { ciscoIfExtensionMIBCompliances 8 }
 
 ciscoIfExtensionTablePacketGroup OBJECT-GROUP
     OBJECTS         {
@@ -1765,5 +1883,14 @@ ciscoIfExtensionAsymmetricalSpeedGroup OBJECT-GROUP
         "An optional group used to provide information on asymmetrical
         interface speeds."
     ::= { ciscoIfExtensionMIBGroups 13 }
+
+ciscoIfExtUtilIntervalGroup OBJECT-GROUP
+    OBJECTS         { cieIfInterval }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects containing
+        information about calculation interval for 
+        utilization rate on interfaces."
+    ::= { ciscoIfExtensionMIBGroups 14 }
 
 END

@@ -1,15 +1,3 @@
--- *****************************************************************
--- Cisco DAtA COLLECTION MIB
---
--- Nov 2002, Diwakar Rao Vepakomma
---
--- Copyright (c) 2006 by cisco Systems, Inc.
--- All rights reserved.
--- *****************************************************************
-
-
-
-
 CISCO-DATA-COLLECTION-MIB DEFINITIONS ::= BEGIN
 
 IMPORTS
@@ -191,7 +179,7 @@ ciscoDataCollectionMIB MODULE-IDENTITY
     REVISION     "200210300530Z"
     DESCRIPTION  
             "Initial Version."
-    ::= { ciscoMgmt 1099 }
+    ::= { ciscoMgmt 312}
 
 ciscoDataCollMIBNotifs
               OBJECT IDENTIFIER ::= { ciscoDataCollectionMIB 0 }
@@ -503,9 +491,9 @@ cdcVFileEntry OBJECT-TYPE
     DESCRIPTION
         "An entry in the cdcVFileTable. Each entry contains
          application specified configuration that is used to create
-     virtual files (VFile) and start data collection operations.
+	 virtual files (VFile) and start data collection operations.
 
-     A VFile is used to store data (values of base object
+	 A VFile is used to store data (values of base object
          instances) as selected by entities called data groups.
          A data group is defined in cdcDGTable. 
 
@@ -542,8 +530,8 @@ cdcVFileIndex OBJECT-TYPE
     STATUS      current
     DESCRIPTION
         "An arbitrary integer for uniquely identifying this
-     entry. When creating a row, the application should pick a
-     random number. 
+	 entry. When creating a row, the application should pick a
+	 random number. 
 
          If the configuration in this entry is persisted across
          system/agent restarts then the same value of cdcVFileIndex
@@ -556,15 +544,15 @@ cdcVFileName OBJECT-TYPE
     STATUS      current
     DESCRIPTION
         "The base-name of the VFiles (created by data collection
-     operations corresponding to this entry) into which data is to
-     be collected. 
+	 operations corresponding to this entry) into which data is to
+	 be collected. 
 
-     When a VFile is created, it's full name is obtained by the
+	 When a VFile is created, it's full name is obtained by the
          concatentation of a suffix to this value. The suffix will be
-     chosen by the agent such that the VFiles created for this
-     entry have unique names. For e.g. the suffix could be a
-     string representation of the date and time when the VFile was
-     created. 
+	 chosen by the agent such that the VFiles created for this
+	 entry have unique names. For e.g. the suffix could be a
+	 string representation of the date and time when the VFile was
+	 created. 
 
          If VFiles are to be placed in the agent's local filesystem
          (provided the agent supports it) then this value should also
@@ -590,7 +578,7 @@ cdcVFileDescription OBJECT-TYPE
     STATUS      current
     DESCRIPTION
         "A string that can be used for administrative purposes. 
-     This object's value may be modified at any time."
+	 This object's value may be modified at any time."
     DEFVAL { ''H }
     ::= { cdcVFileEntry 3 }
 
@@ -610,11 +598,11 @@ cdcVFileCommand OBJECT-TYPE
          'swapToNewFile'   When written, the current VFile is frozen,
                            and a new VFile is created for collecting
                            data.
-               If the data collection mode is automatic
+			   If the data collection mode is automatic
                            (see cdcVFileCollectMode), then the current 
                            collection interval is stopped and a new
                            collection interval is started 
-               (see cdcVFileCollectPeriod).  
+			   (see cdcVFileCollectPeriod).  
                            
          'collectNow'      When written, base object values for
                            all associated data groups are fetched 
@@ -633,13 +621,13 @@ cdcVFileMaxSize OBJECT-TYPE
     DESCRIPTION
         "The maximum size of a VFile. 
 
-     The agent maintains an internal counter for each
+	 The agent maintains an internal counter for each
          cdcVFileEntry. This counter counts the number of consecutive
          times the size of a VFile has exceeded the value of this
          object. When the value of this counter exceeds the value of
          cdcVFileMaxSizeHitsLimit, this entry is moved to the 'error'
          state (see cdcVFileOperStatus).
-     However if the value of cdcVFileMaxSizeHitsLimit is not
+	 However if the value of cdcVFileMaxSizeHitsLimit is not
          exceeded, then the current VFile is frozen, and a new VFile
          is created for data collection.
 
@@ -647,10 +635,10 @@ cdcVFileMaxSize OBJECT-TYPE
          cdcVFileCollectMode), then the current collection interval is
          stopped and a new collection interval is started.
 
-     This object's value may be modified at any time. The new
-     size limit MUST be checked against the size of the current
-     VFile at the time of modification, and appropriate action
-     taken." 
+	 This object's value may be modified at any time. The new
+	 size limit MUST be checked against the size of the current
+	 VFile at the time of modification, and appropriate action
+	 taken." 
     DEFVAL { 50000 }
     ::= { cdcVFileEntry 5 }
 
@@ -713,7 +701,7 @@ cdcVFileCollectionPeriod OBJECT-TYPE
     DESCRIPTION
         "Specifies the period of a collection interval. The value
          of this object is used only when the data collection mode is
-     automatic (see cdcVFileCollectMode).
+	 automatic (see cdcVFileCollectMode).
 
          A periodic timer (one per entry) is started when this
          entry is 'activated'. The time at which this entry is
@@ -729,9 +717,9 @@ cdcVFileCollectionPeriod OBJECT-TYPE
          cdcVFileMaxSize) 
 
          This object's value may be modified at any time, and the
-     new value takes effect immediately. i.e setting a new
-     value can cause the current collection interval to terminate
-     and a new collection interval to start."
+	 new value takes effect immediately. i.e setting a new
+	 value can cause the current collection interval to terminate
+	 and a new collection interval to start."
     DEFVAL { 1800 }
     ::= { cdcVFileEntry 9 }
 
@@ -744,7 +732,7 @@ cdcVFileRetentionPeriod OBJECT-TYPE
         "The time for which a frozen VFile is retained by the
          agent. When a VFile is frozen, a timer (one per frozen VFile)
          is started to keep track of the retention period for the
-     VFile. Once this timer expires, the VFile is deleted.
+	 VFile. Once this timer expires, the VFile is deleted.
          Till the expiry of the retention period, information 
          about frozen VFiles is maintained in 
          cdcVFileMgmtTable.
@@ -765,8 +753,8 @@ cdcVFileAdminStatus OBJECT-TYPE
         "A control object to indicate the administratively desired
          state of data collection for this entry. On setting the value
          to 'disabled' data collection operations for this
-     entry are stopped, the current VFile is frozen and it's
-     transfer is initiated. 
+	 entry are stopped, the current VFile is frozen and it's
+	 transfer is initiated. 
 
          Modifying the value of cdcVFileAdminStatus to 'disabled' does
          not remove or change the current configuration as represented
@@ -1006,7 +994,7 @@ cdcVFileMgmtXferURL OBJECT-TYPE
          specified in cdcFileXferConfPriUrl or cdcFileXferConfSecUrl,
          as the case may be.
 
-     However an application can specify a different URL, in which
+	 However an application can specify a different URL, in which
          case the VFile will be transferred to this new URL the next
          time transfer is initiated. 
 
@@ -1208,8 +1196,8 @@ cdcDGObjectGrpIndex OBJECT-TYPE
          used only when cdcDGType is of type 'table'. 
 
          This set of entries in cdcDGBaseObjectTable in turn
-     identifies the set of base objects, that makes up the columns
-     of this 'table' type data group.   
+	 identifies the set of base objects, that makes up the columns
+	 of this 'table' type data group.   
 
          This object's value may be modified at any time. The change
          takes effect the next time data is fetched for this data
@@ -1230,8 +1218,8 @@ cdcDGInstGrpIndex OBJECT-TYPE
          the set of instances of the base objects, whose values need
          to fetched. If the value is 0, then all instances of the base
          objects will be fetched.
-     
-     This object's value may be modified at any time. The change
+	 
+	 This object's value may be modified at any time. The change
          takes effect the next time data is fetched for this data
          group." 
     DEFVAL { 0 }
@@ -1325,7 +1313,7 @@ cdcDGBaseObjectGrpIndex OBJECT-TYPE
         "This object's value when combined with the value of
          cdcDGBaseObjectIndex uniquely identifies an entry in
          this table. An application must use the same value (can
-     be randomly picked) for this object while creating a group of
+	 be randomly picked) for this object while creating a group of
          entries that collectively identifies the set of base
          objects for a data group." 
      ::= { cdcDGBaseObjectEntry 1 }
@@ -1426,7 +1414,7 @@ cdcDGInstanceGrpIndex OBJECT-TYPE
         "This object's value when combined with the value of
          cdcDGInstanceIndex uniquely identifies an entry in
          this table. An application must use the same value (can
-     be randomly picked) for this object while creating a group of
+	 be randomly picked) for this object while creating a group of
          entries that collectively identifies the set of instances for a
          data group."
      ::= { cdcDGInstanceEntry 1 }
@@ -1648,11 +1636,11 @@ cdcFileXferConfSecUrl OBJECT-TYPE
         "The URL which specifies the secondary destination to which
          the file has to be transferred if the transfer to the 
          primary destination fails. Failure occurs when the file
-     cannot be transferred in it's entirety to the specified
-     destination for some reason. Some common reasons for such
-     failures are listed out in CdcFileXferStatus. 
+	 cannot be transferred in it's entirety to the specified
+	 destination for some reason. Some common reasons for such
+	 failures are listed out in CdcFileXferStatus. 
 
-     The specified URL should contain the base-name of the remote
+	 The specified URL should contain the base-name of the remote
          file, the suffix will be carried over from the name of the
          VFile being tranferred, and will be automatically appended by
          the agent. 
@@ -1668,8 +1656,8 @@ cdcFileXferConfRetryPeriod OBJECT-TYPE
     DESCRIPTION
         "Specifies the time interval after which transfer has to be
          retried. Transfer needs to be retried only if in a previous
-     attempt the file could not be successfully transferred to
-     either the primary destination or the secondary destination.
+	 attempt the file could not be successfully transferred to
+	 either the primary destination or the secondary destination.
 
          This object's value may be modified at any time."
     DEFVAL { 300 }
@@ -1685,7 +1673,7 @@ cdcFileXferConfRetryCount OBJECT-TYPE
          retry count exceeds this value, then no further attempts will
          be made.
 
-     This object's value may be modified at any time."
+	 This object's value may be modified at any time."
     DEFVAL { 3 }
     ::= { cdcFileXferConfEntry 4 } 
 
@@ -1844,3 +1832,4 @@ cdcNotificationGroup NOTIFICATION-GROUP
                  transfer operation."
         ::= { ciscoDataCollMIBGroups 4 }
 END
+

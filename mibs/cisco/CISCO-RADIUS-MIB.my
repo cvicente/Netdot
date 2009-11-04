@@ -4,11 +4,12 @@
 -- October 2002, Vinay Gaonkar
 -- March   2004, Binh Le
 --   
--- Copyright (c) 2002,-2007 by cisco Systems, Inc.
+-- Copyright (c) 2002-2008 by cisco Systems Inc.
 --   
+
 -- All rights reserved.
 --   
--- ********************************************************************
+-- ******************************************************************
 
 CISCO-RADIUS-MIB DEFINITIONS ::= BEGIN
 
@@ -38,8 +39,8 @@ IMPORTS
 
 
 ciscoRadiusMIB MODULE-IDENTITY
-    LAST-UPDATED    "200701030000Z"
-    ORGANIZATION    "Cisco Systems Inc. "
+    LAST-UPDATED    "200707220000Z"
+    ORGANIZATION    "Cisco Systems Inc."
     CONTACT-INFO
             "Cisco Systems
             Customer Service
@@ -68,6 +69,9 @@ ciscoRadiusMIB MODULE-IDENTITY
         enabling/disabling telnet and SSH (Secure Shell) 
         authentication. Secure Shell is program which is used 
         to log into another machine over a secured session."
+    REVISION        "200707220000Z"
+    DESCRIPTION
+        "Added support of crmRadiusKeepAliveUserGroup."
     REVISION        "200701030000Z"
     DESCRIPTION
         "Added support of
@@ -93,7 +97,7 @@ ciscoRadiusMIB MODULE-IDENTITY
     REVISION        "200210080000Z"
     DESCRIPTION
         "Initial version of this MIB module."
-          ::= { ciscoMgmt 288 }
+    ::= { ciscoMgmt 288 }
 
 
 ciscoRadiusMIBObjects  OBJECT IDENTIFIER
@@ -117,6 +121,7 @@ crRadiusVlanConfigGroup  OBJECT IDENTIFIER
 crRadiusKeepAliveConfig  OBJECT IDENTIFIER
     ::= { ciscoRadiusMIBObjects 5 }
 
+
 -- Textual Conventions
 
 CiscoRadiusAuthKey ::= TEXTUAL-CONVENTION
@@ -133,6 +138,7 @@ CiscoRadiusAuthKey ::= TEXTUAL-CONVENTION
     SYNTAX          OCTET STRING (SIZE (0..65))
 
 -- the RADIUS Configuration group
+
 crRadiusLoginAuthentication OBJECT-TYPE
     SYNTAX          BITS {
                         telnet(0),
@@ -272,7 +278,8 @@ crRadiusServerTable OBJECT-TYPE
     SYNTAX          SEQUENCE OF CrRadiusServerEntry 
     MAX-ACCESS      not-accessible
     STATUS          current
-    DESCRIPTION     "This table lists RADIUS servers."
+    DESCRIPTION
+        "This table lists RADIUS servers."
     ::= { crRadiusServerConfig 2 }
 
 crRadiusServerEntry OBJECT-TYPE
@@ -312,8 +319,8 @@ CrRadiusServerEntry ::= SEQUENCE {
         crRadiusServerAuthPort  CiscoPort,
         crRadiusServerAcctPort  CiscoPort,
         crRadiusServerKey       CiscoRadiusAuthKey,
-        crRadiusServerType      INTEGER ,
-        crRadiusServerMode      INTEGER ,
+        crRadiusServerType      INTEGER,
+        crRadiusServerMode      INTEGER,
         crRadiusServerRowStatus RowStatus
 }
 
@@ -343,7 +350,8 @@ crRadiusServerAddr OBJECT-TYPE
     SYNTAX          InetAddress
     MAX-ACCESS      read-create
     STATUS          current
-    DESCRIPTION     "The address of the RADIUS Server." 
+    DESCRIPTION
+        "The address of the RADIUS Server." 
     ::= { crRadiusServerEntry 3 }
 
 crRadiusServerAuthPort OBJECT-TYPE
@@ -382,7 +390,7 @@ crRadiusServerKey OBJECT-TYPE
 
         Note that if this object is a zero length string, then 
         'crRadiusAuthKey' is used as the key for this server."
-    DEFVAL          { '00000000'H } 
+    DEFVAL          { ''H } 
     ::= { crRadiusServerEntry 6 }
 
 crRadiusServerType OBJECT-TYPE
@@ -396,8 +404,7 @@ crRadiusServerType OBJECT-TYPE
         "Type of the RADIUS server.
         other (1),  - a lower priority server
         primary (2) - the primary server which is tried first
-                       by the RADIUS client.
-        "
+                       by the RADIUS client."
     DEFVAL          { other } 
     ::= { crRadiusServerEntry 7 }
 
@@ -417,8 +424,7 @@ crRadiusServerMode OBJECT-TYPE
         authAndAcct (2) - both authentication and 
                           accounting
         authOnly (3)    - only for authentication
-        acctOnly (4)    - only for accounting.
-        "
+        acctOnly (4)    - only for accounting."
     DEFVAL          { authAndAcct } 
     ::= { crRadiusServerEntry 8 }
 
@@ -426,7 +432,8 @@ crRadiusServerRowStatus OBJECT-TYPE
     SYNTAX          RowStatus
     MAX-ACCESS      read-create
     STATUS          current
-    DESCRIPTION     "Status of this row." 
+    DESCRIPTION
+        "Status of this row." 
     ::= { crRadiusServerEntry 9 }
  
 
@@ -472,7 +479,8 @@ crVlanGroupName OBJECT-TYPE
     SYNTAX          SnmpAdminString
     MAX-ACCESS      not-accessible
     STATUS          current
-    DESCRIPTION     "Specifies the name of the VLAN group." 
+    DESCRIPTION
+        "Specifies the name of the VLAN group." 
     ::= { crVlanGroupEntry 1 }
 
 crVlanGroupVlansLow OBJECT-TYPE
@@ -538,6 +546,7 @@ crVlanGroupRowStatus OBJECT-TYPE
 -- With RADIUS keep-alive feature enabled, a tracking message is sent to
 -- every configured RADIUS servers after every keep-alive timer to
 -- query the status of the servers.
+
 crRadiusKeepAliveEnabled OBJECT-TYPE
     SYNTAX          TruthValue
     MAX-ACCESS      read-write
@@ -581,7 +590,7 @@ crRadiusKeepAliveServerEntry OBJECT-TYPE
     ::= { crRadiusKeepAliveServerTable 1 }
 
 CrRadiusKeepAliveServerEntry ::= SEQUENCE {
-        crRadiusKeepAliveServerStatus INTEGER 
+        crRadiusKeepAliveServerStatus INTEGER
 }
 
 crRadiusKeepAliveServerStatus OBJECT-TYPE
@@ -619,7 +628,17 @@ crRadiusPortAutoInitialize OBJECT-TYPE
         initialized if their state machines are in 'aaaFail' 
         when a RADIUS server becomes available." 
     ::= { crRadiusKeepAliveConfig 4 }
+
+crRadiusKeepAliveUserName OBJECT-TYPE
+    SYNTAX          SnmpAdminString
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "Specifies the user name used in keep-alive communication
+        with RADIUS server." 
+    ::= { crRadiusKeepAliveConfig 5 }
 -- Conformance
+
 ciscoRadiusMIBCompliances  OBJECT IDENTIFIER
     ::= { ciscoRadiusMIBConformance 1 }
 
@@ -637,11 +656,13 @@ ciscoRadiusMIBCompliance MODULE-COMPLIANCE
 
     OBJECT          crRadiusTimeout
     SYNTAX          TimeIntervalSec (1..60 )
-    DESCRIPTION     "Only the range 1-60 needs to be supported."
+    DESCRIPTION
+        "Only the range 1-60 needs to be supported."
 
     OBJECT          crRadiusRetransmits
     SYNTAX          Unsigned32 (0..5 )
-    DESCRIPTION     "Only the range 0-5 needs to be supported."
+    DESCRIPTION
+        "Only the range 0-5 needs to be supported."
 
     OBJECT          crRadiusServerAddrType
     SYNTAX          INTEGER  {
@@ -668,7 +689,7 @@ ciscoRadiusMIBCompliance MODULE-COMPLIANCE
     ::= { ciscoRadiusMIBCompliances 1 }
 
 ciscoRadiusMIBCompliance2 MODULE-COMPLIANCE
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The compliance statement for entities which implement the
         CISCO-RADIUS-MIB."
@@ -698,11 +719,13 @@ ciscoRadiusMIBCompliance2 MODULE-COMPLIANCE
 
     OBJECT          crRadiusTimeout
     SYNTAX          TimeIntervalSec (1..60 )
-    DESCRIPTION     "Only the range 1-60 needs to be supported."
+    DESCRIPTION
+        "Only the range 1-60 needs to be supported."
 
     OBJECT          crRadiusRetransmits
     SYNTAX          Unsigned32 (0..5 )
-    DESCRIPTION     "Only the range 0-5 needs to be supported."
+    DESCRIPTION
+        "Only the range 0-5 needs to be supported."
 
     OBJECT          crRadiusServerAddrType
     SYNTAX          INTEGER  {
@@ -728,7 +751,81 @@ ciscoRadiusMIBCompliance2 MODULE-COMPLIANCE
         "Only read-only access is needed to be implemented."
     ::= { ciscoRadiusMIBCompliances 2 }
 
+ciscoRadiusMIBCompliance3 MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for entities which implement the
+        CISCO-RADIUS-MIB."
+    MODULE          -- this module
+    MANDATORY-GROUPS { crmConfigurationGroup }
+
+    GROUP           crmAttributesGroup
+    DESCRIPTION
+        "This group is mandatory only in implementation
+        which supports RADIUS attribute configuration."
+
+    GROUP           crmKeepAliveGroup
+    DESCRIPTION
+        "This group is mandatory only in implementation
+        which supports RADIUS keep-alive feature."
+
+    GROUP           crmAutoInitializeConfigGroup
+    DESCRIPTION
+        "This group is mandatory only in implementation
+        which supports RADIUS port auto initialization."
+
+    GROUP           crmAttributesGroup2
+    DESCRIPTION
+        "This group is mandatory only in implementation
+        which supports additional RADIUS attribute
+        configuration."
+
+    GROUP           crmVlanConfigGroup
+    DESCRIPTION
+        "This group is mandatory only in implementation
+        which supports RADIUS VLAN assignment configuration."
+
+    GROUP           crmRadiusKeepAliveUserGroup
+    DESCRIPTION
+        "This group is mandatory only in implementation
+        which supports RADIUS keep-alive user configuration."
+
+    OBJECT          crRadiusTimeout
+    SYNTAX          TimeIntervalSec (1..60 )
+    DESCRIPTION
+        "Only the range 1-60 needs to be supported."
+
+    OBJECT          crRadiusRetransmits
+    SYNTAX          Unsigned32 (0..5 )
+    DESCRIPTION
+        "Only the range 0-5 needs to be supported."
+
+    OBJECT          crRadiusServerAddrType
+    SYNTAX          INTEGER  {
+                        ipv4(1),
+                        dns(16)
+                    }
+    DESCRIPTION
+        "Only dns and ipv4 addresses are needed to be supported."
+
+    OBJECT          crRadiusServerRowStatus
+    SYNTAX          INTEGER  {
+                        active(1),
+                        createAndGo(4),
+                        destroy(6)
+                    }
+    DESCRIPTION
+        "Only 'active', 'createAndGo' and 'destroy' are needed to be
+        supported."
+
+    OBJECT          crRadiusDeadtime
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Only read-only access is needed to be implemented."
+    ::= { ciscoRadiusMIBCompliances 3 }
+
 -- Units of Conformance
+
 crmConfigurationGroup OBJECT-GROUP
     OBJECTS         {
                         crRadiusLoginAuthentication,
@@ -749,7 +846,8 @@ crmConfigurationGroup OBJECT-GROUP
                         crRadiusServerRowStatus
                     }
     STATUS          current
-    DESCRIPTION     "A collection of objects for RADIUS configuration."
+    DESCRIPTION
+        "A collection of objects for RADIUS configuration."
     ::= { ciscoRadiusMIBGroups 1 }
 
 crmAttributesGroup OBJECT-GROUP
@@ -801,6 +899,12 @@ crmAttributesGroup2 OBJECT-GROUP
         attributes configuration."
     ::= { ciscoRadiusMIBGroups 6 }
 
+crmRadiusKeepAliveUserGroup OBJECT-GROUP
+    OBJECTS         { crRadiusKeepAliveUserName }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects for RADIUS keep-alive
+        user configuration."
+    ::= { ciscoRadiusMIBGroups 7 }
+
 END
-
-

@@ -9,7 +9,7 @@ IMPORTS
             FROM SNMPv2-TC;                              -- [RFC2579]
 
 ianaPrinterMIB MODULE-IDENTITY
-    LAST-UPDATED  "200509140000Z" -- September 14, 2005
+    LAST-UPDATED  "200902060000Z" -- February 6, 2009
 
     ORGANIZATION  "IANA"
     CONTACT-INFO  "Internet Assigned Numbers Authority
@@ -18,7 +18,7 @@ ianaPrinterMIB MODULE-IDENTITY
                           Marina del Rey, CA 90292
 
                   Tel:    +1 310 823 9358
-                  E-Mail: iana@iana.org"
+                  E-Mail: iana&iana.org"
     DESCRIPTION   "This MIB module defines a set of printing-related
                   TEXTUAL-CONVENTIONs for use in Printer MIB (RFC 3805),
                   Finisher MIB (RFC 3806), and other MIBs which need to
@@ -36,6 +36,10 @@ ianaPrinterMIB MODULE-IDENTITY
                   in RFC 3805.  For full legal notices see the RFC
                   itself or see:
                   http://www.ietf.org/copyrights/ianamib.html"
+
+    REVISION      "200902060000Z" -- February 6, 2009
+    DESCRIPTION   "Added chWSPrint(46) 'Channel Type' for Web 
+                  Services based printing." 
 
     REVISION      "200509140000Z"  -- September 14, 2005
     DESCRIPTION   "Updates to include missing 'unknown' values
@@ -353,7 +357,7 @@ PrtChannelTypeTC ::= TEXTUAL-CONVENTION
                       -- application protocol available on
                       -- multiple transport protocols.
                       -- Underscore, Inc.
-                      -- Contact: info@underscore.com
+                      -- Contact: info&underscore.com
                   chAppleTalkADSP(40),  -- Not in RFC 1759
                       -- AppleTalk Data Stream Protocol.
                       -- ADSP is part of the AppleTalk
@@ -515,7 +519,7 @@ PrtChannelTypeTC ::= TEXTUAL-CONVENTION
                       --     for use in all IPP Requests (for optimum
                       --     interworking).
                       --   See: [RFC2911].
-                  chSMTP(45)
+                  chSMTP(45),
                       -- Print Job submission via Simple Mail
                       -- Transfer Protocol (SMTP) - see [RFC2821]
                       --
@@ -527,6 +531,39 @@ PrtChannelTypeTC ::= TEXTUAL-CONVENTION
                       --   Multiplicity: Single
                       --   Default:      not applicable
                       --   Description:  The SMTP URL of the printer.
+                  chWSPrint(46) -- Not in RFC 3805
+                      -- Web Services on Devices Printer (WS-Print),
+                      -- (WS-Print 1.0 - see [WS-Print])
+                      -- 
+                      -- WS-Print Service URL
+                      -- Keyword: ServiceURL
+                      -- Syntax: URI (Unicode UTF-8 per
+                      -- [RFC3986])
+                      -- Status: Mandatory
+                      -- Multiplicity: Multiple
+                      -- Default: not applicable
+                      -- Description: URL of this WS-Print Printer
+                      -- within Internet naming scope. Unicode
+                      -- UTF-8 [RFC3629] string with
+                      -- hexadecimal escapes for any non-ASCII
+                      -- characters (per [RFC3986]).
+                      -- Conformance: A WS-Print Printer shall list
+                      -- all URLs it
+                      -- 
+                      -- WS-Print Web Services Target Namespace
+                      -- Keyword: Namespace
+                      -- Syntax: 'URI (Unicode UTF-8 per RFC 3986)
+                      -- Status: Optional
+                      -- Multiplicity: Multiple
+                      -- Default: http://schemas.microsoft.com/windows/2006/08/wdp/print
+                      -- Description: XML Namespace for the Service
+                      -- and associated print service model. Unicode
+                      -- UTF-8 [RFC3629] string with
+                      -- hexadecimal escapes for any non-ASCII
+                      -- characters (per [RFC3986]).
+                      -- Conformance: A WS-Print Printer shall list
+                      -- all interoperable WS-Print namespaces it
+                      -- supports.
 }
 
 --

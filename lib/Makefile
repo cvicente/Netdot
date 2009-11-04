@@ -8,6 +8,8 @@ NDIR = Netdot Netdot/Manual Netdot/Meta Netdot/Meta/Table Netdot/Model Netdot/Mo
 
 FILES := `find -name "*.pm" | grep -v snmp-info | sed -e 's/\.\///'`
 
+PATCHED := $(shell ls ../lib/patched_modules)
+
 all: wipedir dir
 	$(substitute)
 
@@ -18,3 +20,15 @@ wipedir:
 # This section creates the lib/Netdot subdirs
 dir:
 	$(mkdirs)
+
+patcheddeps:
+	@echo "Installing patched Perl modules"
+	cd patched_modules
+	for dir in $(PATCHED); do\
+            cd $$dir/;\
+	    perl Makefile.PL;\
+	    make test;\
+	    make install;\
+	    cd ../../;\
+	done
+

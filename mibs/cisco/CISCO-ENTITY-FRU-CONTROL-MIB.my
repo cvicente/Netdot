@@ -4,7 +4,7 @@
 -- October 2002, Srini Kode
 --   
 --   
--- Copyright (c) 1998-2002, 2003-2005, 2007 by cisco Systems Inc.
+-- Copyright (c) 1998-2008 by cisco Systems Inc.
 -- All rights reserved.
 -- ****************************************************************
 
@@ -33,15 +33,17 @@ IMPORTS
     entPhysicalVendorType,
     entPhysicalName
         FROM ENTITY-MIB
-    ciscoMgmt
-        FROM CISCO-SMI
     InetAddressType,
     InetAddress
-        FROM INET-ADDRESS-MIB;
+        FROM INET-ADDRESS-MIB
+    SnmpAdminString
+        FROM SNMP-FRAMEWORK-MIB
+    ciscoMgmt
+        FROM CISCO-SMI;
 
 
 ciscoEntityFRUControlMIB MODULE-IDENTITY
-    LAST-UPDATED    "200509060000Z"
+    LAST-UPDATED    "200703140000Z"
     ORGANIZATION    "Cisco Systems, Inc."
     CONTACT-INFO
             "Postal: Cisco Systems, Inc.
@@ -61,6 +63,18 @@ ciscoEntityFRUControlMIB MODULE-IDENTITY
 
         FRUs include assemblies such as power supplies, fans, 
         processor modules, interface modules, etc."
+    REVISION        "200703140000Z"
+    DESCRIPTION
+        "* Added cefcTotalDrawnInlineCurrent and
+        cefcMIBInLinePowerCurrentGroup.
+        * Added cefcPowerNonRedundantReason and 
+        cefcMIBPowerRedundancyInfoGroup. 
+        * Added cefcFanCoolingCapTable and 
+        cefcFanCoolingCapGroup.
+        * Added cefcMIBPowerCompliance8."
+    REVISION        "200606230000Z"
+    DESCRIPTION
+        "* Added new value 'onButInlinePowerFail(12)' to PowerOperType."
     REVISION        "200509060000Z"
     DESCRIPTION
         "* Added cefcPowerCapacityGroup,
@@ -201,20 +215,26 @@ PowerRedundancyType ::= TEXTUAL-CONVENTION
     DESCRIPTION
         "power supply redundancy modes.  valid values are:
 
-        notsupported(1):  Read-only operational state, indicates
+        notsupported(1): Read-only operational state, indicates
             that the requested administrative state (redundant(2)
             or combined(3)) is not supported by the system.
 
-        redundant(2):  A single power supply output can power
-            the entire system, although there may be more than
-            one supply in the system.  
+        redundant(2): A single power supply output can power
+            the entire system, although there are more than
+            one matched supply in the system.
 
-        combined(3):  The combined output of the power supplies
-            are available to operate the system."
+        combined(3): The combined output of the power supplies
+            are available to operate the system when there are
+            more than one matched power supply in the system.
+
+        nonRedundant(4): Read-only operational state, indicates
+            that there is only one power supply or there are
+            unmatched power supplies in the system."
     SYNTAX          INTEGER  {
                         notsupported(1),
                         redundant(2),
-                        combined(3)
+                        combined(3),
+                        nonRedundant(4)
                     }
 
 PowerAdminType ::= TEXTUAL-CONVENTION
@@ -285,7 +305,12 @@ PowerOperType ::= TEXTUAL-CONVENTION
                          insufficient cooling capacity.
 
         offConnectorRating(11): FRU is powered off because of the 
-                                system's connector rating exceeded."
+                                system's connector rating exceeded.
+
+        onButInlinePowerFail(12): The FRU on, but no inline power
+                                  is being delivered as the
+                                  data/inline power component of the
+                                  FRU has failed."
     SYNTAX          INTEGER  {
                         offEnvOther(1),
                         on(2),
@@ -297,7 +322,8 @@ PowerOperType ::= TEXTUAL-CONVENTION
                         failed(8),
                         onButFanFail(9),
                         offCooling(10),
-                        offConnectorRating(11)
+                        offConnectorRating(11),
+                        onButInlinePowerFail(12)
                     }
 
 FRUCurrentType ::= TEXTUAL-CONVENTION
@@ -310,7 +336,7 @@ FRUCurrentType ::= TEXTUAL-CONVENTION
 
         A negative value expresses current used by the FRU.
         A positive value expresses current supplied by the FRU."
-    SYNTAX          Integer32 (-1000000000..1000000000 )
+    SYNTAX          Integer32 (-1000000000..1000000000)
 
 ModuleAdminType ::= TEXTUAL-CONVENTION
     STATUS          current
@@ -614,7 +640,9 @@ CefcFRUPowerSupplyGroupEntry ::= SEQUENCE {
         cefcPowerUnits              DisplayString,
         cefcTotalAvailableCurrent   FRUCurrentType,
         cefcTotalDrawnCurrent       FRUCurrentType,
-        cefcPowerRedundancyOperMode PowerRedundancyType
+        cefcPowerRedundancyOperMode PowerRedundancyType,
+        cefcPowerNonRedundantReason INTEGER,
+        cefcTotalDrawnInlineCurrent FRUCurrentType
 }
 
 cefcPowerRedundancyMode OBJECT-TYPE
@@ -665,6 +693,46 @@ cefcPowerRedundancyOperMode OBJECT-TYPE
     DESCRIPTION
         "The power supply redundancy operational mode." 
     ::= { cefcFRUPowerSupplyGroupEntry 5 }
+
+cefcPowerNonRedundantReason OBJECT-TYPE
+    SYNTAX          INTEGER  {
+                        notApplicable(1),
+                        unknown(2),
+                        singleSupply(3),
+                        mismatchedSupplies(4),
+                        supplyError(5)
+                    }
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object has the value of notApplicable(1) when
+        cefcPowerRedundancyOperMode of the instance does not
+        have the value of nonRedundant(4).
+
+        The other values explain the reason why 
+        cefcPowerRedundancyOperMode is nonRedundant(4), e.g.
+
+        unknown(2)             the reason is not identified.
+
+        singleSupply(3)        There is only one power supply
+                               in the group.
+
+        mismatchedSupplies(4)  There are more than one power
+                               supplies in the groups. However
+                               they are mismatched and can not
+                               work redundantly.
+
+        supplyError(5)         Some power supply or supplies
+                               does or do not working properly." 
+    ::= { cefcFRUPowerSupplyGroupEntry 6 }
+
+cefcTotalDrawnInlineCurrent OBJECT-TYPE
+    SYNTAX          FRUCurrentType
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Total inline current drawn for inline operation." 
+    ::= { cefcFRUPowerSupplyGroupEntry 7 }
  
 
 -- cefcFRUPowerStatusTable
@@ -734,7 +802,7 @@ cefcFRUCurrent OBJECT-TYPE
 -- cefcMaxDefaultInLinePower
 
 cefcMaxDefaultInLinePower OBJECT-TYPE
-    SYNTAX          Integer32 (0..12500 )
+    SYNTAX          Integer32 (0..12500)
     UNITS           "miliwatts"
     MAX-ACCESS      read-write
     STATUS          deprecated
@@ -1098,7 +1166,7 @@ cefcFanTrayStatusEntry OBJECT-TYPE
     ::= { cefcFanTrayStatusTable 1 }
 
 CefcFanTrayStatusEntry ::= SEQUENCE {
-        cefcFanTrayOperStatus INTEGER 
+        cefcFanTrayOperStatus INTEGER
 }
 
 cefcFanTrayOperStatus OBJECT-TYPE
@@ -1140,7 +1208,7 @@ cefcPhysicalEntry OBJECT-TYPE
     ::= { cefcPhysicalTable 1 }
 
 CefcPhysicalEntry ::= SEQUENCE {
-        cefcPhysicalStatus INTEGER 
+        cefcPhysicalStatus INTEGER
 }
 
 cefcPhysicalStatus OBJECT-TYPE
@@ -1201,7 +1269,7 @@ cefcPowerSupplyInputEntry OBJECT-TYPE
 
 CefcPowerSupplyInputEntry ::= SEQUENCE {
         cefcPowerSupplyInputIndex Unsigned32,
-        cefcPowerSupplyInputType  INTEGER 
+        cefcPowerSupplyInputType  INTEGER
 }
 
 cefcPowerSupplyInputIndex OBJECT-TYPE
@@ -1383,7 +1451,7 @@ cefcFanCoolingEntry OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "A cefcFanCoolingEntry lists the cooling
-        capacity that could be provided by the 
+        capacity that is provided by the 
         manageable components of type PhysicalClass 
         'fan'.
 
@@ -1406,7 +1474,7 @@ cefcFanCoolingCapacity OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "The cooling capacity in the unit of CFM
-        that could be provided by this fan." 
+        that is provided by this fan." 
     ::= { cefcFanCoolingEntry 1 }
  
 
@@ -1451,6 +1519,87 @@ cefcModuleCooling OBJECT-TYPE
         "The cooling requirement in the unit of CFM
         of the module and its daughter cards." 
     ::= { cefcModuleCoolingEntry 1 }
+ 
+
+
+cefcFanCoolingCapTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CefcFanCoolingCapEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table contains a list of the possible cooling
+        capacity modes and properties of the fans, whose 
+        ENTITY-MIB entPhysicalTable entries have an 
+        entPhysicalClass of 'fan'."
+    ::= { cefcCooling 4 }
+
+cefcFanCoolingCapEntry OBJECT-TYPE
+    SYNTAX          CefcFanCoolingCapEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "A cefcFanCoolingCapacityEntry lists the cooling
+        capacity mode of a manageable components of type
+        entPhysicalClass 'fan'. It also lists the corresponding
+        cooling capacity provided and the power consumed
+        by the fan on this mode.
+
+
+        Entries are created by the agent if the corresponding
+        entry is created in ENTITY-MIB entPhysicalTable.
+
+        Entries are deleted by the agent if the corresponding
+        entry is deleted in ENTITY-MIB entPhysicalTable."
+    INDEX           {
+                        entPhysicalIndex,
+                        cefcFanCoolingCapIndex
+                    } 
+    ::= { cefcFanCoolingCapTable 1 }
+
+CefcFanCoolingCapEntry ::= SEQUENCE {
+        cefcFanCoolingCapIndex     Unsigned32,
+        cefcFanCoolingCapModeDescr SnmpAdminString,
+        cefcFanCoolingCapCapacity  Unsigned32,
+        cefcFanCoolingCapCurrent   FRUCurrentType
+}
+
+cefcFanCoolingCapIndex OBJECT-TYPE
+    SYNTAX          Unsigned32 (1..4095)
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "An arbitrary value that uniquely identifies a
+        cooling capacity mode for a fan." 
+    ::= { cefcFanCoolingCapEntry 1 }
+
+cefcFanCoolingCapModeDescr OBJECT-TYPE
+    SYNTAX          SnmpAdminString
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "A textual description of the cooling capacity
+        mode of the fan." 
+    ::= { cefcFanCoolingCapEntry 2 }
+
+cefcFanCoolingCapCapacity OBJECT-TYPE
+    SYNTAX          Unsigned32
+    UNITS           "cfm"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The cooling capacity in the unit of CFM
+        that could be provided when the fan is 
+        operating in this mode." 
+    ::= { cefcFanCoolingCapEntry 3 }
+
+cefcFanCoolingCapCurrent OBJECT-TYPE
+    SYNTAX          FRUCurrentType
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The power consumption of the fan when operating in
+        in this mode." 
+    ::= { cefcFanCoolingCapEntry 4 }
  
 
 -- Connector rating management
@@ -1998,7 +2147,7 @@ cefcMIBPowerCompliance6 MODULE-COMPLIANCE
     ::= { cefcMIBCompliances 6 }
 
 cefcMIBPowerCompliance7 MODULE-COMPLIANCE
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "An Entity-MIB implementation can implement this group to
         provide FRU power status and control."
@@ -2129,6 +2278,158 @@ cefcMIBPowerCompliance7 MODULE-COMPLIANCE
         "An implementation is only required to
         support IPv4 addresses."
     ::= { cefcMIBCompliances 7 }
+
+cefcMIBPowerCompliance8 MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "An Entity-MIB implementation can implement this group to
+        provide FRU power status and control."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        cefcMIBPowerModeGroup,
+                        cefcMgmtNotificationsGroup
+                    }
+
+    GROUP           cefcMIBPowerFRUControlGroup
+    DESCRIPTION
+        "The cefcMIBPowerFRUControlGroup must be implemented
+        for FRUs that have power control"
+
+    GROUP           cefcMIBModuleGroup
+    DESCRIPTION
+        "The cefcMIBModuleGroup must be implemented for
+        FRUs that are of module type."
+
+    GROUP           cefcMIBInLinePowerControlGroupRev1
+    DESCRIPTION
+        "The cefcMIBInLinePowerControlGroup must be
+        implemented for FRUs that have inline power control"
+
+    GROUP           cefcMIBNotificationEnablesGroup
+    DESCRIPTION
+        "The cefcMIBNotificationEnablesGroup must be
+        implemented for FRUs that have notification"
+
+    GROUP           cefcModuleGroupRev1
+    DESCRIPTION
+        "The cefcModuleGroupRev1 is not mandatory for
+        agents with FRUs that are of module type."
+
+    GROUP           cefcMIBPowerFRUValueGroup
+    DESCRIPTION
+        "The cefcMIBPowerFRUValueGroup must be implemented for
+        power supply FRUs that have variable output"
+
+    GROUP           cefcMIBFanTrayStatusGroup
+    DESCRIPTION
+        "The cefcMIBFanTrayStatusGroup must be implemented
+        in all systems which can detect the status of Fan
+        Tray FRUs."
+
+    GROUP           cefcMIBPhysicalGroup
+    DESCRIPTION
+        "The collection of objects which show information of
+        the Physical Entity."
+
+    GROUP           cefcMgmtNotificationsGroup2
+    DESCRIPTION
+        "The implementation of this group of notifications
+        is optional."
+
+    GROUP           cefcMIBPowerOperModeGroup
+    DESCRIPTION
+        "The cefcMIBPowerOperModeGroup must be
+        implemented for the device which supports
+        power supply operational modes."
+
+    GROUP           cefcModuleExtGroup
+    DESCRIPTION
+        "Implementation of cefcModuleExtGroup is
+        optional."
+
+    GROUP           cefcIntelliModuleGroup
+    DESCRIPTION
+        "Implementation of cefcModuleAddrGroup is
+        optional."
+
+    GROUP           cefcPowerCapacityGroup
+    DESCRIPTION
+        "This group is mandatory for devices which
+        have the capability to populate power capacity
+        information."
+
+    GROUP           cefcCoolingGroup
+    DESCRIPTION
+        "This group is mandatory for devices which
+        have the capability to populate cooling
+        capacity information."
+
+    GROUP           cefcConnectorRatingGroup
+    DESCRIPTION
+        "This group is mandatory for devices which
+        have the capability to populate power
+        connector rating and module power total
+        consumption information."
+
+    GROUP           cefcMIBNotificationEnablesGroup2
+    DESCRIPTION
+        "This group is mandatory for devices which
+        support the SNMP notification to notify
+        the power supply output capacity changes."
+
+    GROUP           cefcMgmtNotificationsGroup3
+    DESCRIPTION
+        "This group is mandatory for devices which
+        support the SNMP notification to notify
+        the power supply output capacity changes."
+
+    GROUP           cefcMIBInLinePowerCurrentGroup
+    DESCRIPTION
+        "This group is mandatory for devices which
+        have the capability to populate inline power
+        usage infrmation."
+
+    GROUP           cefcMIBPowerRedundancyInfoGroup
+    DESCRIPTION
+        "This group is mandatory for devices which
+        have the capability to populate the reason
+        why the redundancy of the power supplies cannot
+        be achived."
+
+    GROUP           cefcFanCoolingCapGroup
+    DESCRIPTION
+        "This group is mandatory for devices which
+        can provide the cooling capacity modes 
+        and properties of the fans in the system."
+
+    OBJECT          cefcFRUTotalSystemCurrent
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cefcFRUDrawnSystemCurrent
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cefcFRUTotalInlineCurrent
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cefcFRUDrawnInlineCurrent
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cefcIntelliModuleIPAddrType
+    SYNTAX          INTEGER  {
+                        ipv4(1)
+                    }
+    DESCRIPTION
+        "An implementation is only required to
+        support IPv4 addresses."
+    ::= { cefcMIBCompliances 8 }
 
 -- units of conformance
 
@@ -2345,5 +2646,36 @@ cefcMgmtNotificationsGroup3 NOTIFICATION-GROUP
         power capacity mode change."
     ::= { cefcMIBGroups 20 }
 
+cefcMIBInLinePowerCurrentGroup OBJECT-GROUP
+    OBJECTS         { cefcTotalDrawnInlineCurrent }
+    STATUS          current
+    DESCRIPTION
+        "The collection of objects which are used to
+        monitor inline power usage for FRUs."
+    ::= { cefcMIBGroups 21 }
+
+cefcMIBPowerRedundancyInfoGroup OBJECT-GROUP
+    OBJECTS         { cefcPowerNonRedundantReason }
+    STATUS          current
+    DESCRIPTION
+        "The collection of objects provide additional
+        information about the device's power supply 
+        redundancy."
+    ::= { cefcMIBGroups 22 }
+
+cefcFanCoolingCapGroup OBJECT-GROUP
+    OBJECTS         {
+                        cefcFanCoolingCapModeDescr,
+                        cefcFanCoolingCapCapacity,
+                        cefcFanCoolingCapCurrent
+                    }
+    STATUS          current
+    DESCRIPTION
+        "The collection of objects provide the cooling
+        capacity modes and properties of the fans."
+    ::= { cefcMIBGroups 23 }
+
 END
+
+
 

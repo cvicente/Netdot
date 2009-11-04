@@ -3,6 +3,7 @@
 -- CISCO-GGSN-QOS-MIB.my: GGSN Quality of Service(Qos) MIB
 --
 -- Dec 2001, Rajesh M. L.
+-- Oct 2008, Annie Mishalini Devasahayam
 --
 -- Copyright (c), 2001, 2002, 2003, 2005, 2006 by Cisco Systems, Inc.
 -- All rights reserved.
@@ -31,7 +32,7 @@ IMPORTS
                 FROM CISCO-SMI;
 
 cggsnQosMIB    MODULE-IDENTITY
-        LAST-UPDATED    "200609110000Z"
+        LAST-UPDATED    "200812170000Z"
         ORGANIZATION    "Cisco Systems, Inc."
         CONTACT-INFO
                 "       Cisco Systems
@@ -166,7 +167,11 @@ cggsnQosMIB    MODULE-IDENTITY
                     Service(GPRS); Service description; Stage 2 
                     (Release 1999) 3G TS 23.060 v3.3.1.
                 "
-        
+        REVISION       "200812170000Z"
+        DESCRIPTION
+            "Deprecated cggsnUmtsQosCacTcBitRate.
+             Added cggsnUmtsQosCacTcRevBitRate to
+             cggsnUmtsQosCacTcTable."
         REVISION       "200609110000Z"
         DESCRIPTION
                 " Deprecated following objects from cggsnQosUmtsCac:
@@ -1036,7 +1041,8 @@ CggsnUmtsQosCacTcEntry  ::= SEQUENCE {
     cggsnUmtsQosCacTcDirection       INTEGER,
     cggsnUmtsQosCacTcRowStatus       RowStatus,
     cggsnUmtsQosCacTcBitRate         Integer32,
-    cggsnUmtsQosCacTcReject          TruthValue
+    cggsnUmtsQosCacTcReject          TruthValue,
+    cggsnUmtsQosCacTcRevBitRate      Unsigned32
 }
 
 cggsnUmtsQosCacTcTrafClass            OBJECT-TYPE
@@ -1094,10 +1100,14 @@ cggsnUmtsQosCacTcBitRate              OBJECT-TYPE
     SYNTAX                            Integer32 (1..16000)
     UNITS                             "Kbps"
     MAX-ACCESS                        read-create
-    STATUS                            current
+    STATUS                            deprecated 
     DESCRIPTION
-        "This object specifies the MBR/GBR allowed for the traffic
-        class defined by cggsnUmtsQosCacTcTrafClass."
+        "This object specifies the MBR/GBR allowed for the traffic class
+        defined by cggsnUmtsQosCacTcTrafClass. This object is deprecated
+        and replaced by cggsnUmtsQosCacTcRevBitRate. While retrieving the
+        the value of cggsnUmtsQosCacTcBitRate, the maximum value of 16000
+        will be returned if the value of cggsnUmtsQosCacTcRevBitRate for
+        the same instance exceeds 16000."
     ::= { cggsnUmtsQosCacTcEntry 5 }
 
 cggsnUmtsQosCacTcReject               OBJECT-TYPE
@@ -1114,6 +1124,16 @@ cggsnUmtsQosCacTcReject               OBJECT-TYPE
                   exceeded."
     DEFVAL { false }
     ::= { cggsnUmtsQosCacTcEntry 6 }
+
+cggsnUmtsQosCacTcRevBitRate           OBJECT-TYPE
+    SYNTAX                            Unsigned32(1..256000)
+    UNITS                             "Kbps"
+    MAX-ACCESS                        read-create
+    STATUS                            current 
+    DESCRIPTION
+        "This object specifies the MBR/GBR allowed for the traffic
+        class defined by cggsnUmtsQosCacTcTrafClass."
+    ::= { cggsnUmtsQosCacTcEntry 7 }
 
 cggsnUmtsQosCacBWPoolTable       OBJECT-TYPE
     SYNTAX                       SEQUENCE OF CggsnUmtsQosCacBWPoolEntry
@@ -1409,10 +1429,11 @@ cggsnQosMIBComplianceRev2 MODULE-COMPLIANCE
         ::= { cggsnQosMIBCompliances  3 }
 
 cggsnQosMIBComplianceRev3 MODULE-COMPLIANCE
-        STATUS            current
+        STATUS            deprecated
         DESCRIPTION
              "The compliance statements for entities which
-             implement the CISCO-GGSN-QOS-MIB."
+             implement the CISCO-GGSN-QOS-MIB. This is
+             deprecated by cggsnQosMIBComplianceRev4."
         MODULE      -- this module
         MANDATORY-GROUPS { cggsnQosGeneralConfigGroup,
                            cggsnQosCanonicalQosGroup,
@@ -1452,6 +1473,51 @@ cggsnQosMIBComplianceRev3 MODULE-COMPLIANCE
              "The states notInService(2), notReady(3) and
              createAndWait(5) need not be supported."
         ::= { cggsnQosMIBCompliances  4 }
+
+cggsnQosMIBComplianceRev4 MODULE-COMPLIANCE
+        STATUS            current
+        DESCRIPTION
+             "The compliance statements for entities which
+             implement the CISCO-GGSN-QOS-MIB."
+        MODULE      -- this module
+        MANDATORY-GROUPS { cggsnQosGeneralConfigGroup,
+                           cggsnQosCanonicalQosGroup,
+                           cggsnQosUmtsQosGroup,
+                           cggsnQosUmtsCacGroupRev2
+                         }
+        OBJECT           cggsnUmtsQosCacRowStatus
+        SYNTAX           INTEGER { active(1),
+                                   createAndGo(4),
+                                   destroy(6)
+                                 }
+        DESCRIPTION
+             "The states notInService(2), notReady(3) and
+             createAndWait(5) need not be supported."
+        OBJECT           cggsnUmtsQosCacTcRowStatus
+        SYNTAX           INTEGER { active(1),
+                                   createAndGo(4),
+                                   destroy(6)
+                                 }
+        DESCRIPTION
+             "The states notInService(2), notReady(3) and
+             createAndWait(5) need not be supported."
+        OBJECT           cggsnUmtsQosCacBWPoolRowStatus
+        SYNTAX           INTEGER { active(1),
+                                   createAndGo(4),
+                                   destroy(6)
+                                 }
+        DESCRIPTION
+             "The states notInService(2), notReady(3) and
+             createAndWait(5) need not be supported."
+        OBJECT           cggsnQosBWPoolTrafClassRowStatus
+        SYNTAX           INTEGER { active(1),
+                                   createAndGo(4),
+                                   destroy(6)
+                                 }
+        DESCRIPTION
+             "The states notInService(2), notReady(3) and
+             createAndWait(5) need not be supported."
+        ::= { cggsnQosMIBCompliances  5 }
 
 -- units of conformance
 
@@ -1544,9 +1610,36 @@ cggsnQosUmtsCacGroupRev1 OBJECT-GROUP
                              cggsnQosBWPoolTrafClassAbsVal,
                              cggsnQosBWPoolTrafClassAvailBw
                            }
-    STATUS                 current 
+    STATUS                 deprecated 
+    DESCRIPTION
+        "A collection of objects pertaining to the CAC on GGSN.
+         This is deprecated by cggsnQosUmtsCacGroupRev2."
+    ::= { cggsnQosMIBGroups 5 }
+
+cggsnQosUmtsCacGroupRev2 OBJECT-GROUP
+    OBJECTS                { cggsnUmtsQosCacRowStatus,
+                             cggsnUmtsQosCacMaxPdp,
+                             cggsnUmtsQosCacPdpThreshold,
+                             cggsnUmtsQosCacMaxTrafficClass,
+                             cggsnUmtsQosCacMaxTrafHandPrio,
+                             cggsnUmtsQosCacMaxThruPut,
+                             cggsnUmtsQosCacMaxThruPutReject,
+                             cggsnUmtsQosCacMaxDelayClass,
+                             cggsnUmtsQosCacMaxDelayClassRej,
+                             cggsnUmtsQosCacTcRowStatus,
+                             cggsnUmtsQosCacTcReject,
+                             cggsnUmtsQosCacTcRevBitRate,
+                             cggsnUmtsQosCacBWPoolRowStatus,
+                             cggsnUmtsQosCacBWPoolBWVal,
+                             cggsnQosBWPoolTrafClassRowStatus,
+                             cggsnQosBWPoolTrafClassPercent,
+                             cggsnQosBWPoolTrafClassPerVal,
+                             cggsnQosBWPoolTrafClassAbsVal,
+                             cggsnQosBWPoolTrafClassAvailBw
+                           }
+    STATUS                 current
     DESCRIPTION
         "A collection of objects pertaining to the CAC on GGSN."
-    ::= { cggsnQosMIBGroups 5 }
+    ::= { cggsnQosMIBGroups 6 }
 
 END

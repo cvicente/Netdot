@@ -15,7 +15,9 @@ HP-ICF-IP-ROUTING DEFINITIONS ::= BEGIN
         ipCidrRouteEntry, inetCidrRouteEntry
             FROM IP-FORWARD-MIB
         hpSwitch
-            FROM HP-ICF-OID;
+            FROM HP-ICF-OID
+								ipDefaultRouterEntry
+								    FROM IP-MIB;
 
     hpicfIpRouting MODULE-IDENTITY
         LAST-UPDATED "200704200000Z" -- Apr 20, 2007
@@ -707,7 +709,160 @@ HP-ICF-IP-ROUTING DEFINITIONS ::= BEGIN
         DEFVAL { 20 }                     
         ::= { hpicfArpInfo 1 }
 
+    -- HP Default Router objects
 
+    hpicfIpDefaultRouterPrefixInfo OBJECT IDENTIFIER ::= { hpicfIpRoutingObjects 7 }
+
+    hpicfIpDefaultRouterPrefixTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF HpicfIpDefaultRouterPrefixEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Table of default routers learnt through auto-config
+        This Table will be used in conjunction of ipDefaultRouterTable 
+        defined in RFC 4293 to get the attributes of the default routers
+        learnt through auto-config"
+        ::= { hpicfIpDefaultRouterPrefixInfo 1 }
+
+    hpicfIpDefaultRouterPrefixEntry OBJECT-TYPE
+        SYNTAX      HpicfIpDefaultRouterPrefixEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "A row in the default router table, containing
+                    information about a single learnt default router"
+        INDEX       { 
+                      hpicfIpDefaultRouterAddressType,
+                      hpicfIpDefaultRouterAddress,
+                      hpicfIpDefaultRouterIfIndex,
+                      hpicfIpDefaultRouterPrefixType,
+                      hpicfIpDefaultRouterPrefix,
+                      hpicfIpDefaultRouterPrefixLength}
+        ::= { hpicfIpDefaultRouterPrefixTable 1 }
+
+    HpicfIpDefaultRouterPrefixEntry ::=
+        SEQUENCE { 
+                  hpicfIpDefaultRouterAddressType InetAddressType,
+                  hpicfIpDefaultRouterAddress InetAddress,
+                  hpicfIpDefaultRouterIfIndex InterfaceIndex,
+                  hpicfIpDefaultRouterPrefixType InetAddressType,
+                  hpicfIpDefaultRouterPrefix InetAddress,
+                  hpicfIpDefaultRouterPrefixLength InetAddressPrefixLength,
+                  hpicfIpDefaultRouterPrefixOnLink TruthValue,
+                  hpicfIpDefaultRouterPrefixAutonomous TruthValue,
+                  hpicfIpDefaultRouterPrefixValidLifeTime Unsigned32,
+                  hpicfIpDefaultRouterPrefixPrefdLifeTime Unsigned32}
+
+    hpicfIpDefaultRouterAddressType OBJECT-TYPE
+        SYNTAX      InetAddressType
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "The address type of the default router.
+        The only supported type is IPV6 as of now"
+        ::= { hpicfIpDefaultRouterPrefixEntry 1 }
+
+    hpicfIpDefaultRouterAddress OBJECT-TYPE
+        SYNTAX      InetAddress
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "The address of the default router."
+        ::= { hpicfIpDefaultRouterPrefixEntry 2 }
+
+    hpicfIpDefaultRouterIfIndex OBJECT-TYPE
+        SYNTAX      InterfaceIndex
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "The address of the default router."
+        ::= { hpicfIpDefaultRouterPrefixEntry 3 }
+
+    hpicfIpDefaultRouterPrefixType OBJECT-TYPE
+        SYNTAX      InetAddressType
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Type of the prefix."
+        ::= { hpicfIpDefaultRouterPrefixEntry 4 }
+
+    hpicfIpDefaultRouterPrefix OBJECT-TYPE
+        SYNTAX      InetAddress
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "The prefix."
+        ::= { hpicfIpDefaultRouterPrefixEntry 5 }
+
+     hpicfIpDefaultRouterPrefixLength OBJECT-TYPE
+        SYNTAX      InetAddressPrefixLength
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Length of the prefix."
+        ::= { hpicfIpDefaultRouterPrefixEntry 6 }
+
+   hpicfIpDefaultRouterPrefixOnLink OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "The object has the value true (1) if the prefix can
+        be used for on-link determination, otherwise the value is false(2)"
+        ::= { hpicfIpDefaultRouterPrefixEntry 7 }
+
+   hpicfIpDefaultRouterPrefixAutonomous OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "The object has the value true(1) if this prefix can be
+        used for autonomous address configuration. If the value is false(2),
+        the prefix is not used to autoconfigure a local interface address"
+        ::= { hpicfIpDefaultRouterPrefixEntry 8 }
+
+   hpicfIpDefaultRouterPrefixValidLifeTime OBJECT-TYPE
+        SYNTAX      Unsigned32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "The valid life time for the router."
+        ::= { hpicfIpDefaultRouterPrefixEntry 9 }
+
+    hpicfIpDefaultRouterPrefixPrefdLifeTime OBJECT-TYPE
+        SYNTAX      Unsigned32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "The preferred life time for the router."
+        ::= { hpicfIpDefaultRouterPrefixEntry 10 }
+
+   -- Default Router table extensions
+    hpicfIpDefaultRouterProperties OBJECT IDENTIFIER ::= 
+				                                   { hpicfIpRoutingObjects 8 }
+
+    hpicfIpDefaultRouterTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF HpicfIpDefaultRouterEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "HP extensions to the ipDefaultRouterTable."
+        ::= { hpicfIpDefaultRouterProperties 1 }
+
+    hpicfIpDefaultRouterEntry OBJECT-TYPE
+        SYNTAX      HpicfIpDefaultRouterEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Extended information about a single route."
+        AUGMENTS    { ipDefaultRouterEntry }
+        ::= { hpicfIpDefaultRouterTable 1 }
+
+    HpicfIpDefaultRouterEntry ::=
+        SEQUENCE {
+            hpicfIpDefaultRouterMTU         Integer32,
+												hpicfIpDefaultRouterHopLimit         Integer32
+        }
+
+    hpicfIpDefaultRouterMTU OBJECT-TYPE
+        SYNTAX      Integer32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "The link MTU size advertised by the router. The selected Mlink TU may be different from this one."
+        ::= { hpicfIpDefaultRouterEntry 1 }
+
+    hpicfIpDefaultRouterHopLimit OBJECT-TYPE
+        SYNTAX      Integer32
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "The hop limit to be used by the host on outgoing packets."
+        ::= { hpicfIpDefaultRouterEntry 2 }
 
     hpicfIpRoutingConformance OBJECT IDENTIFIER ::= { hpicfIpRouting 2 }
 
@@ -851,5 +1006,6 @@ HP-ICF-IP-ROUTING DEFINITIONS ::= BEGIN
             MANDATORY-GROUPS { hpicfArpBaseGroup }
 
         ::= { hpicfIpRoutingCompliances 4 }
+
 
 END

@@ -1,11 +1,9 @@
-
-
 -- *****************************************************************
 -- CISCO-TAP2-MIB.my:  Cisco intercept ("tap") MIB
 --
 -- November 2003, Srinivas Dhulipala
 --
--- Copyright (c) 2003-2004 by Cisco Systems, Inc.
+-- Copyright (c) 2003-2005, 2007-2008 by Cisco Systems, Inc.
 -- All rights reserved.
 --
 -- *****************************************************************
@@ -16,6 +14,7 @@ CISCO-TAP2-MIB DEFINITIONS ::= BEGIN
 
 
 IMPORTS
+        Counter64,
         Counter32,
         Integer32,
         MODULE-IDENTITY,
@@ -36,6 +35,7 @@ IMPORTS
 
         DateAndTime,
         RowStatus,
+        StorageType,
         TruthValue,
         TEXTUAL-CONVENTION
                 FROM SNMPv2-TC
@@ -51,7 +51,7 @@ IMPORTS
 
 
 ciscoTap2MIB MODULE-IDENTITY
-        LAST-UPDATED  "200403110000Z"
+        LAST-UPDATED  "200712210000Z"
         ORGANIZATION  "Cisco Systems, Inc."
         CONTACT-INFO
                 "      Cisco Systems
@@ -76,6 +76,30 @@ ciscoTap2MIB MODULE-IDENTITY
                 for IP intercepts, CISCO-802-TAP-MIB for IEEE 802
                 intercepts and CISCO-USER-CONNECTION-TAP-MIB for
                 RADIUS-based user connection intercepts."
+
+        REVISION        "200712210000Z"
+        DESCRIPTION
+               "- Added support for cTap2DebugUserTable.
+                - Added new enumeration rtp to
+                  'cTap2MediationTransport' object.
+                - Added new enumeration rtp to 
+                  'cTap2MediationCapabilities' object.
+                - Added ciscoTap2MIBComplianceRev3 compliance
+                  which deprecates ciscoTap2MIBComplianceRev2.
+                - Added ciscoTap2DebugComplianceGroupRev1
+                  compliance Group which deprecates
+                  ciscoTap2DebugComplianceGroup."
+
+        REVISION        "200611270000Z"
+        DESCRIPTION
+               "- Following objects are added in table     
+                  cTap2StreamTable to support counter64 data 
+                      cTap2StreamInterceptedHCPackets 
+                      cTap2StreamInterceptHCDrops  
+                                                         
+                - Added ciscoTap2StreamHCStatsGroup OBJECT-GROUP 
+                - Added ciscoTap2MIBComplianceRev2 compliance 
+                  which deprecates ciscoTap2MIBCompliance."
 
         REVISION        "200403110000Z"
         DESCRIPTION
@@ -326,7 +350,8 @@ cTap2MediationTransport OBJECT-TYPE
                            udp(1),
                            rtpNack(2),
                            tcp(3),
-                           sctp(4)
+                           sctp(4),
+                           rtp(5)
                 }
      MAX-ACCESS read-create
      STATUS     current
@@ -336,7 +361,9 @@ cTap2MediationTransport OBJECT-TYPE
                    udp:     PacketCable udp format
                    rtpNack: RTP with Nack resilience
                    tcp:     TCP with head of line blocking
-                   sctp:    SCTP with head of line blocking "
+                   sctp:    SCTP with head of line blocking
+                   rtp:     Realtime Transport Protocol(RTP)
+                            packet format"
      ::= { cTap2MediationEntry 11 }
 
 
@@ -385,7 +412,8 @@ cTap2MediationCapabilities  OBJECT-TYPE
                          udp(2),
                          rtpNack(3),
                          tcp(4),
-                         sctp(5)
+                         sctp(5),
+                         rtp(6)
                      }
      MAX-ACCESS read-only
      STATUS     current
@@ -431,7 +459,12 @@ cTap2MediationCapabilities  OBJECT-TYPE
              sctp:              SCTP may be used as transport protocol
                                 (denoted by cTap2MediationTransport) in
                                 transferring intercepted data to the
-                                Mediation Device." 
+                                Mediation Device.
+ 
+             rtp:               RTP may be used as transport protocol
+                                (denoted by cTap2MediationTransport) in
+                                transferring intercepted data to the
+                                Mediation Device."
      ::= { cTap2MediationGroup 3 }
 
 --
@@ -499,6 +532,8 @@ CTap2StreamEntry ::= SEQUENCE {
         cTap2StreamInterceptEnable       TruthValue,
         cTap2StreamInterceptedPackets    Counter32,
         cTap2StreamInterceptDrops        Counter32,
+        cTap2StreamInterceptedHCPackets  Counter64,
+        cTap2StreamInterceptHCDrops      Counter64,
         cTap2StreamStatus                RowStatus
 }
 
@@ -588,6 +623,26 @@ cTap2StreamStatus OBJECT-TYPE
         'notInService'."
      ::= { cTap2StreamEntry 6 }
 
+cTap2StreamInterceptedHCPackets OBJECT-TYPE
+     SYNTAX     Counter64
+     MAX-ACCESS read-only
+     STATUS     current
+     DESCRIPTION
+        "The number of packets matching this data stream specification
+        that have been intercepted. This object is a 64-bit version of
+        cTap2StreamInterceptedPackets."
+     ::= { cTap2StreamEntry 7 }
+
+cTap2StreamInterceptHCDrops OBJECT-TYPE
+     SYNTAX     Counter64
+     MAX-ACCESS read-only
+     STATUS     current
+     DESCRIPTION
+        "The number of packets matching this data stream specification
+        that, having been intercepted, were dropped in the lawful
+        intercept process. This object is a 64-bit version of
+        cTap2StreamInterceptDrops."
+     ::= { cTap2StreamEntry 8 }
 --
 -- The debug information
 --
@@ -719,6 +774,86 @@ cTap2DebugStatus OBJECT-TYPE
         by setting this object to 'destroy'."
      ::= { cTap2DebugEntry 5 }
 
+--
+-- Debug User Information
+--
+
+cTap2DebugUserTable OBJECT-TYPE
+     SYNTAX       SEQUENCE OF CTap2DebugUserEntry
+     MAX-ACCESS   not-accessible
+     STATUS       current
+     DESCRIPTION
+        "The User Table lists information of all the users configured
+        in the system who are given permission by different Mediation
+        Devices to access Lawful Intercept CLIs.
+
+        This table will have dependancy on cTap2MediationTable. When
+        entry in cTap2MediationTable is deleted or moved to
+        'notInService', entries corresponding cTap2MediationContentId
+        in this table will be deleted."
+     ::= { cTap2DebugGroup 4 }
+
+cTap2DebugUserEntry OBJECT-TYPE
+     SYNTAX     CTap2DebugUserEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     DESCRIPTION
+        "A conceptual row in the cTap2DebugUserTable. Each row
+        represents name of user on the router to whom Mediation Device
+        with CCCid represented by cTap2MediationContentId has given
+        access to Lawful Intercept commands and cTap2DebugUserTimeout
+        represents the time when the entry will expire."
+     INDEX { cTap2MediationContentId, cTap2DebugUserName }
+     ::= { cTap2DebugUserTable 1 }
+
+CTap2DebugUserEntry ::= SEQUENCE {
+        cTap2DebugUserName               SnmpAdminString,
+        cTap2DebugUserTimeout            DateAndTime,
+        cTap2DebugUserStorageType        StorageType,
+        cTap2DebugUserStatus             RowStatus
+}
+
+cTap2DebugUserName OBJECT-TYPE
+     SYNTAX     SnmpAdminString (SIZE(1..255))
+     MAX-ACCESS not-accessible
+     STATUS     current
+     DESCRIPTION
+        "A human readable string representing the name of debug user
+        who will have access to Lawful Intercept commands."
+     ::= { cTap2DebugUserEntry 1 }
+
+cTap2DebugUserTimeout OBJECT-TYPE
+     SYNTAX     DateAndTime
+     MAX-ACCESS read-create
+     STATUS     current
+     DESCRIPTION
+        "This object specifies the time at which the row will be
+        removed from the table by the system. The value of this object
+        is only effective when the value of corresponding instance of
+        cTap2DebugUserStatus is 'active'."
+     ::= { cTap2DebugUserEntry 2 }
+
+cTap2DebugUserStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object specifies the storage type of this conceptual row.
+         If it is set to 'nonVolatile', this entry can be saved into
+         non-volatile memory."
+    DEFVAL { volatile }
+     ::= { cTap2DebugUserEntry 3 }
+
+cTap2DebugUserStatus OBJECT-TYPE
+     SYNTAX     RowStatus
+     MAX-ACCESS read-create
+     STATUS     current
+     DESCRIPTION
+        "The status of this conceptual row. This object manages
+        creation, modification, and deletion of rows in this table.
+        cTap2DebugUserTimeout may be modified any time even when the
+        value of this entry rowStatus object is 'active'."
+     ::= { cTap2DebugUserEntry 4 }
 
 -- notifications
 
@@ -819,8 +954,10 @@ ciscoTap2MIBGroups      OBJECT IDENTIFIER ::= { ciscoTap2MIBConform 2 }
 -- compliance statement
 
 
+
 ciscoTap2MIBCompliance MODULE-COMPLIANCE
-     STATUS  current
+     STATUS  deprecated
+               -- superceded by ciscoTap2MIBComplianceRev2
      DESCRIPTION
         "The compliance statement for entities which implement the
         Cisco Intercept MIB"
@@ -833,6 +970,38 @@ ciscoTap2MIBCompliance MODULE-COMPLIANCE
         }
      ::= { ciscoTap2MIBCompliances 1 }
 
+ciscoTap2MIBComplianceRev2 MODULE-COMPLIANCE
+     STATUS  deprecated
+               -- superseded by ciscoTap2MIBComplianceRev3
+     DESCRIPTION
+        "The compliance statement for entities which implement the
+        Cisco Intercept MIB. This compliance deprecates ciscoTap2MIBCompliance."
+     MODULE        -- this module
+        MANDATORY-GROUPS {
+                ciscoTap2MediationComplianceGroup,
+                ciscoTap2StreamComplianceGroup,
+                ciscoTap2MediationCpbComplianceGroup,
+                ciscoTap2NotificationGroup,
+                ciscoTap2StreamHCStatsGroup
+        }
+     ::= { ciscoTap2MIBCompliances 2 }
+
+ciscoTap2MIBComplianceRev3 MODULE-COMPLIANCE
+     STATUS  current
+     DESCRIPTION
+        "The compliance statement for entities which implement the
+        Cisco Intercept MIB. This compliance deprecates
+        ciscoTap2MIBComplianceRev2."
+     MODULE        -- this module
+        MANDATORY-GROUPS {
+                ciscoTap2MediationComplianceGroup,
+                ciscoTap2StreamComplianceGroup,
+                ciscoTap2MediationCpbComplianceGroup,
+                ciscoTap2NotificationGroup,
+                ciscoTap2StreamHCStatsGroup,
+                ciscoTap2DebugComplianceGroupRev1
+        }
+     ::= { ciscoTap2MIBCompliances 3 }
 
 -- units of conformance
 
@@ -909,12 +1078,40 @@ ciscoTap2DebugComplianceGroup OBJECT-GROUP
         cTap2DebugMessage,
         cTap2DebugStatus
      }
-     STATUS     current
+     STATUS     deprecated
+               -- superseded by ciscoTap2DebugComplianceGroupRev1
      DESCRIPTION
-        "These objects are necessary for debug information." 
+        "These objects are necessary for debug information."
      ::= { ciscoTap2MIBGroups 5 }
 
+ciscoTap2StreamHCStatsGroup OBJECT-GROUP
+     OBJECTS {
+         cTap2StreamInterceptedHCPackets,
+         cTap2StreamInterceptHCDrops
+     }
+     STATUS     current
+     DESCRIPTION
+        "These objects are required for 64 bit version of
+         cTap2StreamInterceptedPackets and
+         cTap2StreamInterceptDrops"
+     ::= { ciscoTap2MIBGroups 6 }
+
+ciscoTap2DebugComplianceGroupRev1 OBJECT-GROUP
+     OBJECTS {
+        cTap2DebugAge,
+        cTap2DebugMaxEntries,
+        cTap2DebugMediationId,
+        cTap2DebugStreamId,
+        cTap2DebugMessage,
+        cTap2DebugStatus,
+        cTap2DebugUserTimeout,
+        cTap2DebugUserStorageType,
+        cTap2DebugUserStatus
+     }
+     STATUS     current
+     DESCRIPTION
+        "These objects are necessary for debug information.
+        This compliance group deprecates ciscoTap2DebugComplianceGroup."
+     ::= { ciscoTap2MIBGroups 7 }
 
 END
- 
- 

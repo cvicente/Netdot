@@ -10,7 +10,7 @@
 -- October  2003, Liwei Lue
 -- November 2003, Edward Pham
 --
--- Copyright (c) 2001,2002,2003, 2004, 2005, 2006 by cisco Systems, Inc.
+-- Copyright (c) 2001-2007 by cisco Systems, Inc.
 -- All rights reserved.
 --
 -- *****************************************************************
@@ -34,6 +34,7 @@ IMPORTS
     TEXTUAL-CONVENTION,
     RowStatus,
     MacAddress,
+    DateAndTime,
     TruthValue
         FROM SNMPv2-TC
 
@@ -62,17 +63,19 @@ IMPORTS
     SnmpAdminString
         FROM SNMP-FRAMEWORK-MIB
 
-    CiscoPortList
+    CiscoPortList,
+    CiscoIpProtocol
         FROM CISCO-TC
 
     InetAddressType,
-    InetAddress
+    InetAddress,
+    InetPortNumber
         FROM INET-ADDRESS-MIB
     ;
 
 
 ciscoCatOSAclQosMIB    MODULE-IDENTITY
-    LAST-UPDATED    "200607150000Z"
+    LAST-UPDATED    "200711020000Z"
     ORGANIZATION    "Cisco Systems Inc. "
     CONTACT-INFO
         "Cisco Systems
@@ -213,6 +216,17 @@ ciscoCatOSAclQosMIB    MODULE-IDENTITY
         interface. If the packet matches an ACE in the ACLs, it is
         either permitted to go through the device or blocked and
         dropped or redirected to another interface."
+    REVISION   "200711020000Z"
+    DESCRIPTION
+        "Add the following groups:
+             caqDownloadClassifierGroup,
+             caqIpOperClassifierGroup,
+             caqSecurityDownloadAclInfoGroup,
+             caqSecurityDownloadIpAceGroup,
+             caqIfDownloadAclMapGroup,
+             caqIfIpPhoneMapGroup,
+             caqArpLoggingSourceGroup,
+             caqIpAceTypeGroup." 
     REVISION   "200607150000Z"
     DESCRIPTION
         "Add 'include' enumeration value for caqSecurityAction.
@@ -320,7 +334,6 @@ CaqAclName ::= TEXTUAL-CONVENTION
         non-numeric character. Acl name is case sensitive."
     SYNTAX     OCTET STRING (SIZE(1..31)) 
 
-
 CaqPolicerName ::= TEXTUAL-CONVENTION
     DISPLAY-HINT "31a"
     STATUS  current
@@ -406,8 +419,9 @@ CaqHitCountAclType ::= TEXTUAL-CONVENTION
                       ipxSecurity(2), 
                       macSecurity(3) 
                     } 
-
+--
 -- Cisco CatOS Acl Qos MIB object definitions
+--
 
 ciscoCatOSAclQosMIBObjects OBJECT IDENTIFIER 
     ::= { ciscoCatOSAclQosMIB 1 }
@@ -440,7 +454,8 @@ caqArpInspObjects     OBJECT IDENTIFIER
     ::= { ciscoCatOSAclQosMIBObjects 8 }
 caqAclHitCountObjects     OBJECT IDENTIFIER
     ::= { ciscoCatOSAclQosMIBObjects 9 }
-
+caqDownloadAclObjects     OBJECT IDENTIFIER
+    ::= { ciscoCatOSAclQosMIBObjects 10 }
 
 --**********************************************************************
 -- Cisco CatOS Acl Qos Global Group
@@ -1473,6 +1488,191 @@ caqIfSecurityAclBase OBJECT-TYPE
    ::= { caqIfSecurityAclConfigEntry 1 }
 
 
+--
+-- The caqIpOperClassifierTable
+--
+
+caqIpOperClassifierTable      OBJECT-TYPE
+    SYNTAX      SEQUENCE OF CaqIpOperClassifierEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "This table identifies which operational IP ACLs are in use 
+        on which interfaces." 
+    ::= { caqInterfaceObjects 4 }
+
+caqIpOperClassifierEntry      OBJECT-TYPE
+    SYNTAX      CaqIpOperClassifierEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "An entry in this table identifies operational IP ACLs that
+        are currently in use on a particular interface. An interface
+        can be a physical port or a VLAN."
+    INDEX { ifIndex, caqIpOperAclFeature }
+    ::= { caqIpOperClassifierTable 1 }
+
+CaqIpOperClassifierEntry ::= SEQUENCE {
+    caqIpOperAclFeature        INTEGER,
+    caqIpOperAclName           SnmpAdminString, 
+    caqIpOperAclMapSource      BITS 
+}
+
+caqIpOperAclFeature       OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    ingressIpQos(1),
+                    egressIpQos(2),
+                    ipSecurity(3)
+                } 
+    MAX-ACCESS  not-accessible 
+    STATUS      current
+    DESCRIPTION
+        "An index indicates the feature to which the operational
+        IP ACLs mapped at this interface are applied.
+
+        'ingressIpQos' indicates the ACL mapped at this interface
+        is used to classify ingress IP traffic for QoS feature.
+
+        'egressIpQos' indicates the ACL mapped at this interface
+        is used to classify egress IP traffic for QoS feature.
+          
+        'ipSecurity' indicates the ACL mapped at this interface
+        is used to classify IP traffic for security feature."
+    ::= { caqIpOperClassifierEntry 1 }
+
+caqIpOperAclName       OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  read-only 
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the name of an operational IP ACL 
+         which is mapped at this interface to classify IP traffic
+         for feature denoted by caqIpOperAclFeature object." 
+    ::= { caqIpOperClassifierEntry 2 }
+
+caqIpOperAclMapSource     OBJECT-TYPE
+    SYNTAX      BITS {
+                    configured(0),
+                    dot1x(1),
+                    macAuth(2),
+                    webAuth(3),
+                    eou(4)     
+                } 
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the sources that map the operational
+         IP ACLs at this interface.
+
+         'configured' indicates that the ACL mapping is introduced
+         by manual configuration through CLI or an NMS application. 
+
+         'dot1x' indicates that the ACL mapping is introduced by
+         the operation of 802.1x feature. 
+
+         'macAuth' indicates that the ACL mapping is introduced by
+         the operation of Mac Authentication Bypass feature.
+
+         'webAuth' indicates that the ACL mapping is introduced by
+         the operation of Web Authentication feature. 
+
+         'eou' indicates that the ACL mapping is introduced by
+         the operation of Extensible Authentication Protocol over
+         UDP (EOU) feature."
+    ::= { caqIpOperClassifierEntry 3 }
+
+--
+-- The caqDownloadClassifierTable
+--
+
+caqDownloadClassifierTable      OBJECT-TYPE
+    SYNTAX      SEQUENCE OF CaqDownloadClassifierEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "This table identifies ACLs assignment to capable
+        interface which is downloaded using different 
+        security features."  
+    ::= { caqInterfaceObjects 5 }
+
+caqDownloadClassifierEntry      OBJECT-TYPE
+    SYNTAX      CaqDownloadClassifierEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "An entry identifies ACLs assignment on a capable
+        physical interface."
+    INDEX { ifIndex, caqDownloadAclFeature }
+    ::= { caqDownloadClassifierTable 1 }
+
+CaqDownloadClassifierEntry ::= SEQUENCE {
+    caqDownloadAclFeature        INTEGER,
+    caqDownloadClassifierAclName CaqAclName, 
+    caqDownloadMapSource         INTEGER, 
+    caqDownloadAclType           INTEGER 
+}
+
+caqDownloadAclFeature       OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    ingressIpQos(1),
+                    egressIpQos(2),
+                    ipSecurity(3)
+                } 
+    MAX-ACCESS  not-accessible 
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the feature that ACLs mapped
+        at this interface is used for.
+
+        'ingressIpQos' indicates the ACL mapped at this interface
+        is used to classify ingress IP traffic for QoS feature.
+
+        'egressIpQos' indicates the ACL mapped at this interface
+        is used to classify egress IP traffic for QoS feature.
+          
+        'ipSecurity' indicates the ACL mapped at this interface
+        is used to classify IP traffic for security feature."
+    ::= { caqDownloadClassifierEntry 1 }
+
+caqDownloadClassifierAclName       OBJECT-TYPE
+    SYNTAX      CaqAclName 
+    MAX-ACCESS  read-only 
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the ACL name mapped to this
+        interface to classify traffic for a specific feature
+        denoted by the corresponding caqDownloadAclFeature."
+    ::= { caqDownloadClassifierEntry 2 }
+
+caqDownloadMapSource     OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    dot1x(1),
+                    macAuth(2)
+                } 
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the source that maps the ACLs at this
+        interface.
+
+         'dot1x' indicates that the ACL mapping is introduced by
+         the operation of 802.1x feature. 
+
+         'macAuth' indicates that the ACL mapping is introduced by
+         the operation of Mac Authentication Bypass feature."
+    ::= { caqDownloadClassifierEntry 3 }
+
+caqDownloadAclType     OBJECT-TYPE
+    SYNTAX      INTEGER { pacl(1), vacl(2) } 
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the type of the ACL.
+
+         'pacl' indicates this is a port-based ACL.
+         'vacl' indicates this is a VLAN-based ACL."
+    ::= { caqDownloadClassifierEntry 4 }
+
 --**********************************************************************
 -- Cisco CatOS Acl Qos Acl Group
 --**********************************************************************
@@ -1551,7 +1751,7 @@ CaqIpAceEntry ::= SEQUENCE {
     caqIpAclName                   CaqAclName,
     caqIpAceIndex                  Unsigned32,
     caqIpAceMatchedAction          Unsigned32, 
-    caqIpAceProtocolType           Unsigned32,
+    caqIpAceProtocolType           Unsigned32, 
     caqIpAceAddrType               InetAddressType,
     caqIpAceSrcIp                  InetAddress,
     caqIpAceSrcIpMask              InetAddress,
@@ -1575,7 +1775,8 @@ CaqIpAceEntry ::= SEQUENCE {
     caqIpAceStatus                 RowStatus,
     caqIpAceSecurityId             Unsigned32,
     caqIpAceSrcGroup               SnmpAdminString,
-    caqIpAceDestGroup              SnmpAdminString
+    caqIpAceDestGroup              SnmpAdminString,
+    caqIpAceType                   INTEGER
 }
 
 caqIpAceFeature       OBJECT-TYPE
@@ -1620,7 +1821,7 @@ caqIpAceMatchedAction      OBJECT-TYPE
     ::= { caqIpAceEntry 4 }
 
 caqIpAceProtocolType        OBJECT-TYPE
-    SYNTAX      Unsigned32 (0..255)
+    SYNTAX      Unsigned32 (0..255) 
     MAX-ACCESS  read-create
     STATUS      current
     DESCRIPTION
@@ -2015,7 +2216,10 @@ caqIpAceStatus      OBJECT-TYPE
         caqIpAclName object matches the value of caqClassifierAclName
         object in any active entry of the caqClassifierTable, removing
         this entry will also remove the associated entry in the 
-        caqClassifierTable." 
+        caqClassifierTable.
+
+        If the value of caqIpAceType in this row is 'systemGenerated', 
+        this row cannot be deleted or modified." 
     ::= { caqIpAceEntry 26 }
 
 caqIpAceSecurityId        OBJECT-TYPE
@@ -2054,6 +2258,14 @@ caqIpAceDestGroup        OBJECT-TYPE
          the same row will have the value of 0."
     DEFVAL { "" }
     ::= { caqIpAceEntry 29 }
+
+caqIpAceType        OBJECT-TYPE
+    SYNTAX      INTEGER { configured(1), systemGenerated(2) } 
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the ACE type." 
+    ::= { caqIpAceEntry 30 }
 
 --
 -- caqIpxAceTable
@@ -3250,7 +3462,6 @@ caqSecurityDownloadedAceFeature  OBJECT-TYPE
         cannot be used for this object value."
     DEFVAL { notApplicable } 
     ::= { caqSecurityActionEntry 9 }
-
 --
 -- caqSecurityAclCaptureIfTable
 --
@@ -4345,7 +4556,10 @@ CaqIpFlowLoggingEntry ::= SEQUENCE {
     caqIpFlowArpSrcMacAddr         MacAddress,
     caqIpFlowArpHeaderSrcMacAddr   MacAddress, 
     caqIpFlowPacketsCount          Counter32,
-    caqIpFlowLoggingTTL            Unsigned32
+    caqIpFlowLoggingTTL            Unsigned32,
+    caqIpFlowArpLoggingSource      INTEGER,
+    caqIpFlowArpAclName            SnmpAdminString, 
+    caqIpFlowArpAceNumber          Unsigned32
 }
 
 caqIpFlowLoggingIndex       OBJECT-TYPE
@@ -4517,6 +4731,48 @@ caqIpFlowLoggingTTL  OBJECT-TYPE
         "Indicates the TTL (Time to Live) of this entry. The entry 
         is removed when its value of this object reaches 0."  
     ::= { caqIpFlowLoggingEntry 17 }
+
+caqIpFlowArpLoggingSource  OBJECT-TYPE
+    SYNTAX      INTEGER { 
+                          notApplicable(1), 
+                          dai(2), 
+                          acl(3) 
+                }  
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the source that triggered the logging of this 
+        ARP flow. This object value is 'notApplicable' if the
+        flow is not ARP traffic.
+
+        'dai' indicates the logging source is Dynamic Arp Inspection
+        feature.
+
+        'acl' indicates the logging source is a configured security
+        access control list (ACL)." 
+    ::= { caqIpFlowLoggingEntry 18 }
+
+caqIpFlowArpAclName  OBJECT-TYPE
+    SYNTAX      SnmpAdminString 
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the security ACL name which triggered the 
+        logging of this ARP flow. This object is ignored if
+        the value of caqIpFlowArpLoggingSource object in the
+        same row is not 'acl'." 
+    ::= { caqIpFlowLoggingEntry 19 }
+
+caqIpFlowArpAceNumber  OBJECT-TYPE
+    SYNTAX      Unsigned32 
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the ACE number within the ACL denoted by 
+        caqIpFlowArpAclName object which triggered the logging 
+        of this ARP flow. This object is ignored if the value of
+        caqIpFlowArpLoggingSource object in the same row is not 'acl'."
+    ::= { caqIpFlowLoggingEntry 20 }
 
 --*********************************************************************
 --*********************************************************************
@@ -5079,6 +5335,554 @@ caqIfAclEgressHitCount     OBJECT-TYPE
         "Indicates the number of hit count of this ACE for
         egress traffic on this interface." 
     ::= { caqIfAclHitCountEntry 5 }
+
+--
+-- The caqDownloadAclInfoTable
+--
+
+caqDownloadAclInfoTable      OBJECT-TYPE
+    SYNTAX      SEQUENCE OF CaqDownloadAclInfoEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "This table provides the management information for 
+        downloaded ACLs."
+    ::= { caqDownloadAclObjects 1 }
+
+caqDownloadAclInfoEntry      OBJECT-TYPE
+    SYNTAX      CaqDownloadAclInfoEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "An entry is populated for each downloaded ACL in 
+         the device." 
+    INDEX { IMPLIED caqDownloadAclName }
+    ::= { caqDownloadAclInfoTable 1 }
+
+CaqDownloadAclInfoEntry ::= SEQUENCE {
+    caqDownloadAclName             SnmpAdminString, 
+    caqDownloadAclUserCount        Unsigned32,
+    caqDownloadAclDownloadTime     DateAndTime 
+}
+
+caqDownloadAclName       OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE (1..255))
+    MAX-ACCESS  not-accessible 
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the name of a downloaded ACL." 
+    ::= { caqDownloadAclInfoEntry 1 }
+
+caqDownloadAclUserCount     OBJECT-TYPE
+    SYNTAX      Unsigned32 
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the number of users (i.e., 
+        authenticated hosts) who are using this downloaded ACL." 
+    ::= { caqDownloadAclInfoEntry 2 }
+
+caqDownloadAclDownloadTime     OBJECT-TYPE
+    SYNTAX      DateAndTime 
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the time when this ACL is downloaded
+         to the device." 
+    ::= { caqDownloadAclInfoEntry 3 }
+
+--
+-- caqIpDownloadAceTable
+--
+
+caqIpDownloadAceTable    OBJECT-TYPE
+    SYNTAX      SEQUENCE OF CaqIpDownloadAceEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "This table contains a list of downloaded IP ACEs for 
+        security purpose. Each ACE consists of a filter specification
+        and behavior associated with it which describes what action
+        to carry out on packets which match.
+
+        An ACL is defined as the set of ACEs. Each ACE is named by
+        a combination of an AclName and an ACE index, such that all
+        the ACEs which are named using the same AclName are part of
+        the same ACL."
+    ::= { caqDownloadAclObjects 2 }
+
+caqIpDownloadAceEntry    OBJECT-TYPE
+    SYNTAX      CaqIpDownloadAceEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "An entry defines an ACE, consisting of a set of match
+        criteria. For a packet to match an entry, it has to match
+        all the criteria specified in that entry."
+    INDEX { caqIpDownloadAclName, caqIpDownloadAceIndex }
+    ::= { caqIpDownloadAceTable 1 }
+
+CaqIpDownloadAceEntry ::= SEQUENCE {
+    caqIpDownloadAclName                   SnmpAdminString,
+    caqIpDownloadAceIndex                  Unsigned32,
+    caqIpDownloadAceMatchedAction          INTEGER, 
+    caqIpDownloadAceProtocolType           CiscoIpProtocol,
+    caqIpDownloadAceAddrType               InetAddressType,
+    caqIpDownloadAceSrcIp                  InetAddress,
+    caqIpDownloadAceSrcIpMask              InetAddress,
+    caqIpDownloadAceSrcPortOp              INTEGER,
+    caqIpDownloadAceSrcPort                InetPortNumber,
+    caqIpDownloadAceSrcPortRange           InetPortNumber,
+    caqIpDownloadAceDestIp                 InetAddress,
+    caqIpDownloadAceDestIpMask             InetAddress,
+    caqIpDownloadAceDestPortOp             INTEGER,
+    caqIpDownloadAceDestPort               InetPortNumber,
+    caqIpDownloadAceDestPortRange          InetPortNumber,
+    caqIpDownloadAceTosMatchCriteria       INTEGER,
+    caqIpDownloadAceIpPrec                 CaqIpPrecedence,
+    caqIpDownloadAceDscp                   Dscp,
+    caqIpDnldAcePrtocolMatchCriteria       INTEGER,
+    caqIpDownloadAceIcmpType               Unsigned32,
+    caqIpDownloadAceIcmpCode               Unsigned32
+}
+
+caqIpDownloadAclName  OBJECT-TYPE
+    SYNTAX      SnmpAdminString
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The name of a downloaded IP ACL."
+    ::= { caqIpDownloadAceEntry 1 }
+
+caqIpDownloadAceIndex       OBJECT-TYPE
+    SYNTAX      Unsigned32 
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The index of an ACE within a downloaded ACL." 
+    ::= { caqIpDownloadAceEntry 2 }
+
+caqIpDownloadAceMatchedAction      OBJECT-TYPE
+    SYNTAX    INTEGER {
+                  permit(1),
+                  deny(2),
+                  denyAndLog(3),
+                  permitAndCapture(4)
+              }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the action to be taken if a packet matches this ACE.
+
+        If 'permit' is specified, the matched packet will be allowed
+        through the device.
+
+        If 'deny' is specified, the matched packet will be blocked and
+        dropped.
+
+        If 'denyAndLog' is specified, the matched packet will be
+        blocked, dropped and logged.
+
+        If 'permitAndCapture' is specified, the matched packet will be
+        allowed, and a copy of it will be forwarded to capture port(s)."
+    ::= { caqIpDownloadAceEntry 3 }
+
+caqIpDownloadAceProtocolType        OBJECT-TYPE
+    SYNTAX      CiscoIpProtocol 
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The protocol number field in the IP header used to indicate
+        the higher layer protocol as specified in RFC 1700. A value 
+        value of 0 matches every IP packet. 
+
+        For example :
+        0 is IP, 1 is ICMP, 2 is IGMP, 4 is IP in IP encapsulation,
+        6 is TCP, 9 is IGRP, 17 is UDP, 47 is GRE, 50 is ESP, 51 is AH,
+        88 is IGRP, 89 is OSPF, 94 is KA9Q/NOS compatible IP over IP,
+        103 is PIMv2, 108 is PCP."
+    REFERENCE
+        "RFC 1700, Assigned Numbers."
+    ::= { caqIpDownloadAceEntry 4 }
+
+caqIpDownloadAceAddrType        OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The type of IP address used by this ACE entry."
+    ::= { caqIpDownloadAceEntry 5 } 
+
+caqIpDownloadAceSrcIp           OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The specified source IP address. The packet's source address
+        is AND-ed with the value of caqIpDownloadAceSrcIpMask and then
+        compared against the value of this object. If this object value
+        is 0.0.0.0, and the value of caqIpDownloadAceSrcIpMask object
+        in the same entry is 255.255.255.255, this entry matches any
+        source IP address." 
+    ::= { caqIpDownloadAceEntry 6 }
+
+caqIpDownloadAceSrcIpMask           OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The specified source IP address mask."
+    ::= { caqIpDownloadAceEntry 7 }
+
+caqIpDownloadAceSrcPortOp       OBJECT-TYPE
+    SYNTAX      INTEGER { noOperator(1), lt(2), gt(3),
+                          eq(4), neq(5), range(6) }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates how a packet's source TCP/UDP port number is
+        to be compared.
+
+        'noOperator', which is the default value, means that no
+        comparison is to be made with the source TCP/UDP port number.
+
+        'lt' means less than, 'gt' means greater than, 'eq'
+        means equal, 'neq' means not equal. Those 4 operators
+        are using the caqIpDownloadAceSrcPort object as an operand
+        which is the only one needed. 
+
+        'range' means that it compares the port value between two 
+        numbers, so this operator needs 2 operands. One operand is 
+        the starting port number of the range which is
+        caqIpDownloadAceSrcPort object, and the other operand is the
+        ending port number of the range which the
+        caqIpDownloadAceSrcPortRange object is in."
+    ::= { caqIpDownloadAceEntry 8 }
+
+caqIpDownloadAceSrcPort     OBJECT-TYPE
+    SYNTAX      InetPortNumber 
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The source port number of the TCP or UDP protocol. If the
+        caqIpDownloadAceSrcPortOp object in the same row is 'range',
+        this object will be the starting port number of the port
+        range."
+    ::= { caqIpDownloadAceEntry 9 }
+
+caqIpDownloadAceSrcPortRange    OBJECT-TYPE
+    SYNTAX      InetPortNumber 
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The source port number of the TCP or UDP protocol. If the
+        caqIpDownloadAceSrcPortOp object in the same row is 'range',
+        this object will be the ending port number of the port range,
+        otherwise the value of this object is ignored."
+    ::= { caqIpDownloadAceEntry 10 }
+
+caqIpDownloadAceDestIp          OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The specified destination IP address. The packet's destination
+        address is AND-ed with the value of caqIpDownloadAceDestIpMask
+        and then compared against the value of this object. If this
+        object value is 0.0.0.0 and the value of
+        caqIpDownloadAceDestIpMask object in the same entry is
+        255.255.255.255, this entry matches any destination IP
+        address." 
+    ::= { caqIpDownloadAceEntry 11 }
+
+caqIpDownloadAceDestIpMask  OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The specified destination IP address mask."
+    ::= { caqIpDownloadAceEntry 12 }
+
+caqIpDownloadAceDestPortOp      OBJECT-TYPE
+    SYNTAX      INTEGER { noOperator(1), lt(2), gt(3),
+                          eq(4), neq(5), range(6) }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates how a packet's destination TCP/UDP port number is
+        to be compared.
+
+        'noOperator', which is the default value, means that no
+        comparison is to be made with the destination TCP/UDP port
+        number.
+
+        'lt' means less than.
+        
+        'gt' means greater than.
+ 
+        'eq' means equal. 
+        
+        'neq' means not equal. Those 4 operators are using the 
+        caqIpDownloadAceDestPort object as an operand which is the
+        only one needed. 
+
+        'range' means that it compares the port value between two
+        numbers, so this operator needs 2 operands. One operand is the
+        starting port number of the range which is
+        caqIpDownloadAceDestPort object, and the other operand is the
+        ending port number of the range which the
+        caqIpDownloadAceDestPortRange object is in."
+    ::= { caqIpDownloadAceEntry 13 }
+
+caqIpDownloadAceDestPort        OBJECT-TYPE
+    SYNTAX      InetPortNumber 
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The destination port number of the TCP or UDP protocol.
+        If the caqIpDownloadAceDestPortOp object in the same row is
+        'range' this object will be the starting port number of the
+        port range."
+    ::= { caqIpDownloadAceEntry 14 }
+
+caqIpDownloadAceDestPortRange   OBJECT-TYPE
+    SYNTAX      InetPortNumber 
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The destination port number of the TCP or UDP protocol.
+        If the caqIpDownloadAceDestPortOp object in the same row is
+        'range', this object will be the ending port number of the
+        port range, otherwise this object value is ignored."
+    ::= { caqIpDownloadAceEntry 15 }
+
+caqIpDownloadAceTosMatchCriteria     OBJECT-TYPE
+    SYNTAX        INTEGER {
+                    none(1), 
+                    matchDscp(2),
+                    matchIpPrec(3)
+                  }
+    MAX-ACCESS    read-only
+    STATUS        current
+    DESCRIPTION
+        "Indicates what field of Tos octet in the packet header
+         to be matched. 
+         
+         'none' means that there is no need to match the ToS octet.
+
+         'matchDscp' means that the DSCP value of packet header need
+         to be matched. If this value is specified, the 
+         caqIpDownloadAceDscp object in the same row should have 
+         valid value. 
+
+         'matchIpPrec' means that the IpPrecedence value of packet
+         header need to be matched. If this value is specifed, the 
+         caqIpDownloadAceIpPrec object in the same row should have
+         a valid value." 
+    ::= { caqIpDownloadAceEntry 16 }
+ 
+caqIpDownloadAceIpPrec    OBJECT-TYPE
+    SYNTAX      CaqIpPrecedence
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Specifies the IP precedence value to be matched against.
+        
+        The value of this object is ignored whenever the value of 
+        caqIpDownloadAceTosMatchCritial object is not 'matchIpPrec'."
+    ::= { caqIpDownloadAceEntry 17 }
+
+caqIpDownloadAceDscp       OBJECT-TYPE
+    SYNTAX      Dscp
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Specifies the Dscp value to be matched against.
+        Packets can be matched to DSCP value from 0 to 63. 
+
+        The value of this object is ignored whenever the value of 
+        caqIpDownloadAceTosMatchCritial object is not 'matchDscp'."
+    ::= { caqIpDownloadAceEntry 18 }
+
+caqIpDnldAcePrtocolMatchCriteria  OBJECT-TYPE
+    SYNTAX        INTEGER {
+                    none(1), 
+                    matchIcmpType(2),
+                    matchIcmpTypeAndCode(3),
+                    matchEstablished(4)
+                  }
+    MAX-ACCESS    read-only
+    STATUS        current
+    DESCRIPTION
+        "Indicates what field in the packet header for ICMP or IGMP
+         or TCP protocol to be matched. 
+         
+         'none' means no comparison is to be done for ICMP/TCP.
+
+         'matchIcmpType' means that the Type field of ICMP protocol
+         packet header needs to be matched. If this value is specified,
+         the caqIpDownloadAceIcmpType object in the same row should
+         have a valid value. 
+
+         'matchIcmpTypeAndCode' means that both the Type and Code
+         fields of ICMP protocol packet header need to be matched.
+         If this value is specified, the caqIpDownloadAceIcmpType and
+         caqIpDownloadAceIcmpCode object in the same row should have
+         valid values. 
+         
+         'matchEstablished' means that a match occurs if the TCP packet
+         has the ACK or RST bits set. The non matching case is that of
+         the intial TCP packet to form a connection."
+    ::= { caqIpDownloadAceEntry 19 }
+
+caqIpDownloadAceIcmpType        OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the message type of ICMP packets. The type is
+        a number from 0 to 255. 
+
+        The value of this object is ignored whenever the value of 
+        caqIpDnldAcePrtocolMatchCriteria object is not 'matchIcmpType'
+        or 'matchIcmpTypeAndCode'."
+    ::= { caqIpDownloadAceEntry 20 }
+
+caqIpDownloadAceIcmpCode        OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the message code of ICMP packets. The code is
+        a number from 0 to 255. 
+
+        The value of this object is ignored whenever the value of 
+        caqIpDnldAcePrtocolMatchCriteria object is not
+        'matchIcmpTypeAndCode'."
+    ::= { caqIpDownloadAceEntry 21 }
+
+--
+-- The caqIfDownloadAclTable
+--
+
+caqIfDownloadAclTable      OBJECT-TYPE
+    SYNTAX      SEQUENCE OF CaqIfDownloadAclEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "This table provides the management information for 
+        physical interface where downloaded ACLs are applied."
+    ::= { caqDownloadAclObjects 3 }
+
+caqIfDownloadAclEntry      OBJECT-TYPE
+    SYNTAX      CaqIfDownloadAclEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "An entry is populated for each interface that utilies
+         downloaded ACLs in the device." 
+    INDEX { ifIndex, IMPLIED caqDownloadAclName }
+    ::= { caqIfDownloadAclTable 1 }
+
+CaqIfDownloadAclEntry ::= SEQUENCE {
+    caqIfDownloadAclFeature          INTEGER,
+    caqIfDownloadAclAddressType      InetAddressType,
+    caqIfDownloadAclHostAddress      InetAddress
+}
+
+caqIfDownloadAclFeature   OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    dot1x(1),
+                    eou(2),
+                    macAuth(3),
+                    webAuth(4)
+                } 
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the security feature running at this
+        interface and trigger the download of this ACL.
+
+        'dot1x' indicates that the 802.1x feature is running at this
+        interface and trigger the download of this ACL.
+
+        'eou' indicates that the Extensible Authentication Protocol
+        over UDP (EOU) feature is running at this interface and trigger
+        the download of this ACL.
+
+        'macAuth' indicates that the Mac Authentication Bypass
+        feature is running at this interface and trigger the download
+        of this ACL.
+
+        'webAuth' indicates that the Web Authentication feature is
+        running at this interface and trigger the download of this ACL."
+    ::= { caqIfDownloadAclEntry 1 }
+
+caqIfDownloadAclAddressType  OBJECT-TYPE
+    SYNTAX      InetAddressType 
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the type of IP address of the host."
+    ::= { caqIfDownloadAclEntry 2 }
+
+caqIfDownloadAclHostAddress  OBJECT-TYPE
+    SYNTAX      InetAddress 
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This object indicates IP address of the host connected
+        to this interface. The type of this address is determined
+        by the value of caqIfDownloadAclAddressType object." 
+    ::= { caqIfDownloadAclEntry 3 }
+
+--
+-- The caqIfIpPhoneMapTable
+--
+
+caqIfIpPhoneMapTable      OBJECT-TYPE
+    SYNTAX      SEQUENCE OF CaqIfIpPhoneMapEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "This table provides the management information for 
+        the mapping of IP Phone to interface that utilizes
+        downloaded ACL."
+    ::= { caqDownloadAclObjects 4 }
+
+caqIfIpPhoneMapEntry      OBJECT-TYPE
+    SYNTAX      CaqIfIpPhoneMapEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "An entry is populated for each interface that has
+         an IP Phone connected to and utilizes downloaded ACL."
+    INDEX { ifIndex }
+    ::= { caqIfIpPhoneMapTable 1 }
+
+CaqIfIpPhoneMapEntry ::= SEQUENCE {
+    caqIfIpPhoneAddressType      InetAddressType,
+    caqIfIpPhoneHostAddress      InetAddress
+}
+
+caqIfIpPhoneAddressType  OBJECT-TYPE
+    SYNTAX      InetAddressType 
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the type of IP address of the
+        IP Phone connected to this interface." 
+    ::= { caqIfIpPhoneMapEntry 1 }
+
+caqIfIpPhoneHostAddress  OBJECT-TYPE
+    SYNTAX      InetAddress 
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the IP address of the IP Phone.
+        The type of this address is determined by the value of
+        the caqIfIpPhoneAddressType object."
+    ::= { caqIfIpPhoneMapEntry 2 }
 
 --
 -- Notifications
@@ -6255,4 +7059,112 @@ caqSecurityActionDnldAceGroup OBJECT-GROUP
          ACE." 
     ::= { caqMIBGroups 48 }
 
+caqSecurityDownloadAclInfoGroup OBJECT-GROUP
+    OBJECTS {
+        caqDownloadAclUserCount,
+        caqDownloadAclDownloadTime 
+    }
+    STATUS current
+    DESCRIPTION
+        "A collection of object providing downloaded ACL information."
+    ::= { caqMIBGroups 49 }
+
+caqSecurityDownloadIpAceGroup OBJECT-GROUP
+    OBJECTS {
+        caqIpDownloadAceMatchedAction,
+        caqIpDownloadAceProtocolType,
+        caqIpDownloadAceAddrType,
+        caqIpDownloadAceSrcIp,
+        caqIpDownloadAceSrcIpMask,
+        caqIpDownloadAceSrcPortOp,
+        caqIpDownloadAceSrcPort,
+        caqIpDownloadAceSrcPortRange,
+        caqIpDownloadAceDestIp,
+        caqIpDownloadAceDestIpMask,
+        caqIpDownloadAceDestPortOp,
+        caqIpDownloadAceDestPort,
+        caqIpDownloadAceDestPortRange,
+        caqIpDownloadAceTosMatchCriteria,
+        caqIpDownloadAceIpPrec,
+        caqIpDownloadAceDscp,
+        caqIpDnldAcePrtocolMatchCriteria,
+        caqIpDownloadAceIcmpType,
+        caqIpDownloadAceIcmpCode
+    }
+    STATUS current
+    DESCRIPTION
+        "A collection of object providing download IP ACE information."
+    ::= { caqMIBGroups 50 }
+
+caqIfDownloadAclMapGroup OBJECT-GROUP
+    OBJECTS {
+        caqIfDownloadAclFeature,
+        caqIfDownloadAclAddressType, 
+        caqIfDownloadAclHostAddress     
+    }
+    STATUS current
+    DESCRIPTION
+        "A collection of object providing mapping information of
+        downloaded ACL to capable interface."
+    ::= { caqMIBGroups 51 }
+
+caqIfIpPhoneMapGroup OBJECT-GROUP
+    OBJECTS {
+        caqIfIpPhoneAddressType, 
+        caqIfIpPhoneHostAddress     
+    }
+    STATUS current
+    DESCRIPTION
+        "A collection of object providing mapping information
+        of IP phone to capable interface where downloaded ACL
+        is utilized." 
+    ::= { caqMIBGroups 52 }
+
+caqIpAceTypeGroup OBJECT-GROUP
+    OBJECTS {
+        caqIpAceType 
+    }
+    STATUS current
+    DESCRIPTION
+        "A collection of object providing the type of an Ip ACE."
+    ::= { caqMIBGroups 53 }
+
+caqIpOperClassifierGroup OBJECT-GROUP
+    OBJECTS {
+        caqIpOperAclName,
+        caqIpOperAclMapSource
+    }
+    STATUS current
+    DESCRIPTION
+        "A collection of objects provides the operational mapping
+         of IP ACLs to each applicable interface." 
+    ::= { caqMIBGroups 54 }
+
+caqDownloadClassifierGroup OBJECT-GROUP
+    OBJECTS {
+        caqDownloadClassifierAclName,
+        caqDownloadMapSource,
+        caqDownloadAclType
+    }
+    STATUS current
+    DESCRIPTION
+        "A collection of objects provides the mapping of ACLs to each
+        applicable interface downloaded by security features." 
+    ::= { caqMIBGroups 55 }
+
+caqArpLoggingSourceGroup OBJECT-GROUP
+    OBJECTS {
+        caqIpFlowArpLoggingSource,
+        caqIpFlowArpAclName,
+        caqIpFlowArpAceNumber
+    }
+    STATUS current
+    DESCRIPTION
+        "A collection of objects provides the logging source of
+        ARP flow."
+    ::= { caqMIBGroups 56 }
+
 END
+
+
+

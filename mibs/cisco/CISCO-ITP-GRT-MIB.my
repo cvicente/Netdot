@@ -3,7 +3,7 @@
 --
 -- September 2002, John Linton, Shekhar Acharya
 --
--- Copyright (c) 2002-2003 by Cisco Systems, Inc.
+-- Copyright (c) 2002-2003, 2006-2008 by Cisco Systems, Inc.
 -- All rights reserved.
 -- *****************************************************************
 --
@@ -13,7 +13,8 @@ CISCO-ITP-GRT-MIB DEFINITIONS ::= BEGIN
 IMPORTS
         cgspCLLICode,
         cgspEventSequenceNumber,
-        cgspInstNetwork
+        cgspInstNetwork,
+        cgspInstDisplayName 
                 FROM CISCO-ITP-GSP-MIB
         
         Counter32,  
@@ -22,12 +23,14 @@ IMPORTS
         MODULE-IDENTITY,
         NOTIFICATION-TYPE,
         OBJECT-TYPE,
-        Unsigned32
+        Unsigned32,
+        Counter64
                 FROM SNMPv2-SMI
                 
         RowStatus,
         TimeStamp,
-        TruthValue 
+        TruthValue,
+        TEXTUAL-CONVENTION
                 FROM SNMPv2-TC
 
         MODULE-COMPLIANCE,
@@ -40,14 +43,16 @@ IMPORTS
         CItpTcQos,
         CItpTcRouteTableName, 
         CItpTcTableLoadStatus,
-        CItpTcURL
+        CItpTcURL,
+        CItpTcDisplayPC,
+        CItpTcServiceIndicator
                 FROM CISCO-ITP-TC-MIB
        
         ciscoMgmt
-                FROM CISCO-SMI;        
-                
+                FROM CISCO-SMI;
+
 ciscoGrtMIB MODULE-IDENTITY
-        LAST-UPDATED    "200303030000Z"
+        LAST-UPDATED    "200805010000Z"
         ORGANIZATION    "Cisco Systems, Inc."
         CONTACT-INFO
                 "       Cisco Systems, Inc
@@ -194,7 +199,7 @@ ciscoGrtMIB MODULE-IDENTITY
            5.5.5/14  3         STP1-STP3
            5.5.5/14  7         STP1-STP4
 
-           Description: Two route table entrys that define a
+           Description: Two route table entries that define a
            combined linkset consisting of linkset 'STP1-STP2' and
            'STP1-STP3' to point code 5.5.5.  An alternate route is
            also defined using linkset 'STP1-STP4'.
@@ -218,13 +223,13 @@ ciscoGrtMIB MODULE-IDENTITY
            
 
            Description: The mixing of fully-qualified and summary
-           route table entrys allow for different routes to be
+           route table entries allow for different routes to be
            defined for certain DPC in a cluster.  In this 
            configuration, the fully-qualified route will be the 
            primary and the summary route will act as a backup.
                             
            Route table:  
-           A group of route table entrys used to route MSU for a 
+           A group of route table entries used to route MSU for a 
            particular instance of a signalling point.
            
            A sample route table.
@@ -242,7 +247,86 @@ ciscoGrtMIB MODULE-IDENTITY
            243.200.1 6         STP1-STP3
            "
            
-                
+        REVISION        "200805010000Z"
+        DESCRIPTION
+                "Deprecated the following objects:
+                    cgrtDestNotifDelayTime, cgrtDestNotifWindowTime,
+                    cgrtDestNotifMaxPerWindow, cgrtDestNotifEnabled,
+                    cgrtMgmtNotifDelayTime, cgrtMgmtNotifWindowTime,
+                    cgrtMgmtNotifMaxPerWindow, cgrtMgmtNotifEnabled.
+
+                 Deprecated the following notifications:  
+                    ciscoGrtDestStateChange, ciscoGrtMgmtStateChange
+
+                 Deprecated the following objects under cgrtNotificationsInfo: 
+                    cgrtDestNotifSupFlag, cgrtDestNotifChanges,
+                    cgrtMgmtNotifSupFlag, cgrtMgmtNotifChanges. 
+
+                 Deprecated the following compliance statement:
+                    ciscoGrtMIBCompliance.  
+
+                 Deprecated the following object groups:
+                    ciscoGrtDestGroup, ciscoGrtRouteGroup.
+
+                 Deprecated the following notification group:
+                    ciscoGrtNotificationGroup.
+
+                 Added the following textual convention:
+                    CgrtDisplayPCSI.
+
+                 Added the following objects:
+                    cgrtDestNotifWindowTimeRev1, cgrtDestNotifMaxPerWindowRev1,
+                    cgrtDestNotifEnabledRev1, cgrtMgmtNotifWindowTimeRev1,
+                    cgrtMgmtNotifMaxPerWindowRev1, cgrtMgmtNotifEnabledRev1,
+                    cgrtOrigTableEnabled, cgrtPCStatsInterval,
+                    cgrtNoRouteMSUsNotifEnabled, cgrtNoRouteMSUsNotifWindowTime.
+
+                 Added the following object to cgrtInstTable:
+                    cgrtInstUnknownOrigPCs, cgrtInstNoRouteDrops.
+   
+                 Added these objects to cgrtDestTable: 
+                    cgrtDestAccessibleSeconds, cgrtDestInaccessibleSeconds,
+                    cgrtDestRestrictedSeconds, cgrtDestMSUsOut,
+                    cgrtDestOctetsOut, cgrtDestMSUsIn,
+                    cgrtDestOctetsIn, cgrtDestInaccessibleDrops,
+                    cgrtDestRestrictedMSUs, cgrtDestCongestionDrops,
+                    cgrtDestDisplay.
+
+                 Added these objects to cgrtRouteTable:
+                    cgrtRouteAllowedSeconds, cgrtRouteRestrictedSeconds,
+                    cgrtRouteProhibitedSeconds, cgrtRouteDisplay.
+
+                 Added a new table cgrtOrigTable with following objects:
+                    cgrtOrigPC, cgrtOrigMSUs, cgrtOrigOctets,
+                    cgrtOrigDisplay.
+
+                 Added a new table cgrtDestSITable with following objects:
+                    cgrtMtp3SI, cgrtDestSIMSUsOut, cgrtDestSIOctetsOut,
+                    cgrtDestSIMSUsIn, cgrtDestSIOctetsIn, cgrtDestSIDisplay.
+
+                 Added a new table cgrtOrigSITable with following objects:
+                    cgrtOrigSIMSUs, cgrtOrigSIOctets, cgrtOrigSIDisplay.
+                    
+                 Added the following notifications: 
+                    ciscoGrtDestStateChangeRev1, ciscoGrtMgmtStateChangeRev1,
+                    ciscoGrtNoRouteMSUDiscards.
+
+                 Added the following objects under cgrtNotificationsInfo:
+                    cgrtDestNotifSuppressed, cgrtRouteNotifSuppressed,
+                    cgrtNoRouteMSUsInterval, cgrtIntervalNoRouteMSUs.
+
+                 Added the following compliance statement:
+                    ciscoGrtMIBComplianceRev1.
+
+                 Added the following object groups:
+                    ciscoGrtScalarsGroup, ciscoGrtDestGroupRev1,
+                    ciscoGrtRouteGroupRev1, ciscoGrtOrigGroup,
+                    ciscoGrtDestSIGroup, ciscoGrtOrigSIGroup,
+                    ciscoGrtInstGroupSup1.
+
+                 Added the following notification group:
+                    ciscoGrtNotificationsGroupRev1."
+
         REVISION        "200303030000Z"
         DESCRIPTION
                 "Initial version of this MIB module."
@@ -258,9 +342,23 @@ ciscoGrtMIBConform     OBJECT IDENTIFIER ::= { ciscoGrtMIB  2 }
 cgrtScalars   OBJECT IDENTIFIER ::= { ciscoGrtMIBObjects 1 }
 cgrtObjects   OBJECT IDENTIFIER ::= { ciscoGrtMIBObjects 2 }
 
+-- **************************************************************
+-- *                                                            *
+-- * Textual Conventions                                        *
+-- *                                                            *
+-- **************************************************************
+CgrtDisplayPCSI ::= TEXTUAL-CONVENTION
+    STATUS                       current
+    DESCRIPTION
+            "The point code and service indicator information 
+             formatted for display. Point code will be formatted 
+             based on the variant and the customer defined 
+             parameters."
+    SYNTAX OCTET STRING ( SIZE ( 1..20 ) )
+
 --  *************************************************************
 --  *                                                           *
---  * SP - Scalers                                              *
+--  * SP - Scalars                                              *
 --  *                                                           *
 --  *************************************************************
 cgrtRouteMaxDynamic              OBJECT-TYPE
@@ -282,7 +380,7 @@ cgrtDestNotifDelayTime           OBJECT-TYPE
     SYNTAX                       Unsigned32 (0..60)
     UNITS                        "seconds"
     MAX-ACCESS                   read-write
-    STATUS                       current 
+    STATUS                       deprecated 
     DESCRIPTION
         "This object specifies the maximum amount of time to delay
          before generating the ciscoGrtDestStateChange notification.
@@ -309,7 +407,7 @@ cgrtDestNotifWindowTime          OBJECT-TYPE
     SYNTAX                       Integer32 (30..900)
     UNITS                        "seconds"
     MAX-ACCESS                   read-write
-    STATUS                       current 
+    STATUS                       deprecated
     DESCRIPTION
         "This object specifies the time interval used to monitor
          the rate of destination state changes notifications.  This 
@@ -321,11 +419,11 @@ cgrtDestNotifWindowTime          OBJECT-TYPE
 cgrtDestNotifMaxPerWindow        OBJECT-TYPE
     SYNTAX                       Integer32 (10..9000)
     MAX-ACCESS                   read-write
-    STATUS                       current 
+    STATUS                       deprecated
     DESCRIPTION
         "This object specifies the maximum number of destination
          state changes that can occur in the time interval 
-         specified in the cgrtDestNotifWindowTime object.  
+         specified in the cgrtDestNotifWindowTime object.
          If additional state changes can occur in the specified
          time interval the notifications are suppressed."
     ::= { cgrtScalars 13 }
@@ -333,7 +431,7 @@ cgrtDestNotifMaxPerWindow        OBJECT-TYPE
 cgrtDestNotifEnabled             OBJECT-TYPE
      SYNTAX                      TruthValue
      MAX-ACCESS                  read-write
-     STATUS                      current
+     STATUS                      deprecated
      DESCRIPTION          
          "A control to enable or disable ciscoGrtDestStateChange
           notifications as follows:
@@ -350,7 +448,7 @@ cgrtMgmtNotifDelayTime           OBJECT-TYPE
     SYNTAX                       Unsigned32 (0..60)
     UNITS                        "seconds"
     MAX-ACCESS                   read-write
-    STATUS                       current
+    STATUS                       deprecated
     DESCRIPTION
         "This object specifies the maximum amount of time to delay
          before generating the ciscoGrtMgmtStateChange notification.
@@ -376,7 +474,7 @@ cgrtMgmtNotifWindowTime          OBJECT-TYPE
     SYNTAX                       Integer32 (30..900)
     UNITS                        "seconds"
     MAX-ACCESS                   read-write
-    STATUS                       current 
+    STATUS                       deprecated
     DESCRIPTION
         "This object specifies the time interval used to monitor
          the rate of route state changes notifications.  This 
@@ -388,7 +486,7 @@ cgrtMgmtNotifWindowTime          OBJECT-TYPE
 cgrtMgmtNotifMaxPerWindow        OBJECT-TYPE
     SYNTAX                       Integer32 (10..9000)
     MAX-ACCESS                   read-write
-    STATUS                       current 
+    STATUS                       deprecated
     DESCRIPTION
         "This object specifies the maximum number of route
          management state changes that can occur in the time 
@@ -401,7 +499,7 @@ cgrtMgmtNotifMaxPerWindow        OBJECT-TYPE
 cgrtMgmtNotifEnabled             OBJECT-TYPE
      SYNTAX                      TruthValue
      MAX-ACCESS                  read-write
-     STATUS                      current
+     STATUS                      deprecated
      DESCRIPTION          
         "A control to enable or disable ciscoGrtMgmtStateChange
           notifications as follows:
@@ -457,6 +555,153 @@ cgrtDynamicRoutesDropped         OBJECT-TYPE
              
     ::= { cgrtScalars  22 }
 
+cgrtDestNotifWindowTimeRev1      OBJECT-TYPE
+    SYNTAX                       Integer32 (0 | 60..86400)
+    UNITS                        "seconds"
+    MAX-ACCESS                   read-write
+    STATUS                       current
+    DESCRIPTION
+        "This object specifies the time interval used to monitor
+         the rate of destination state changes notifications.  This
+         object in combination with cgrtDestNotifMaxPerWindowRev1 is
+         used to determine the notification transit rate and
+         suppress destination state notifications."
+    DEFVAL { 900 }      
+    ::= { cgrtScalars 23 }
+
+cgrtDestNotifMaxPerWindowRev1    OBJECT-TYPE
+    SYNTAX                       Integer32 (10..9000)
+    MAX-ACCESS                   read-write
+    STATUS                       current
+    DESCRIPTION
+        "This object specifies the maximum number of destination
+         state changes that can occur in the time interval
+         specified in the cgrtDestNotifWindowTimeRev1 object.
+         If additional state changes do occur in the specified
+         time interval the notifications are suppressed."
+    ::= { cgrtScalars 24 }
+
+cgrtDestNotifEnabledRev1         OBJECT-TYPE
+     SYNTAX                      TruthValue
+     MAX-ACCESS                  read-write
+     STATUS                      current
+     DESCRIPTION
+         "A control to enable or disable ciscoGrtDestStateChangeRev1
+          notifications as follows:
+        'true'  Indicates that the ciscoGrtDestStateChangeRev1
+                notification should be generated when the state of
+                any destination changes. That is, the notification
+                generation is enabled.
+        'false' Indicates that ciscoGrtDestStateChangeRev1
+                notification generation is disabled."
+     DEFVAL { false }
+    ::= { cgrtScalars 25 }
+
+cgrtMgmtNotifWindowTimeRev1      OBJECT-TYPE
+    SYNTAX                       Integer32 (0 | 60..86400)
+    UNITS                        "seconds"
+    MAX-ACCESS                   read-write
+    STATUS                       current
+    DESCRIPTION
+        "This object specifies the time interval used to monitor
+         the rate of route state changes notifications.  This
+         object in combination with cgrtMgmtNotifMaxPerWindowRev1 is
+         used to determine the notification transit rate and suppress
+         route management state notifications."
+    DEFVAL { 900 }
+    ::= { cgrtScalars 26 }
+
+cgrtMgmtNotifMaxPerWindowRev1    OBJECT-TYPE
+    SYNTAX                       Integer32 (10..9000)
+    MAX-ACCESS                   read-write
+    STATUS                       current
+    DESCRIPTION
+        "This object specifies the maximum number of route
+         management state changes that can occur in the time
+         interval specified in the cgrtMgmtNotifWindowTimeRev1
+         object.  If additional state changes can occur in
+         the specified time interval the notifications
+         are suppressed."
+    ::= { cgrtScalars 27 }
+
+cgrtMgmtNotifEnabledRev1         OBJECT-TYPE
+    SYNTAX                       TruthValue
+    MAX-ACCESS                   read-write
+    STATUS                       current
+    DESCRIPTION
+        "A control to enable or disable ciscoGrtMgmtStateChangeRev1
+         notifications as follows:
+        'true'  Indicates that the ciscoGrtMgmtStateChangeRev1
+                notification should be generated when the state
+                of any route changes. That is, the notification
+                generation is enabled.
+        'false' Indicates that ciscoGrtMgmtStateChangeRev1
+                notification generation is disabled."
+    DEFVAL { false }
+    ::= { cgrtScalars 28 }
+
+cgrtOrigTableEnabled             OBJECT-TYPE
+    SYNTAX                       TruthValue
+    MAX-ACCESS                   read-write
+    STATUS                       current 
+    DESCRIPTION 
+        "A control to enable or disable the support of optional 
+         cgrtOrigTable.
+        'true'  Enables the OrigTable optional feature.
+        'false' Disables the OrigTable optional feature."
+    DEFVAL { false }
+    ::= { cgrtScalars 29 }
+
+cgrtPCStatsInterval              OBJECT-TYPE
+    SYNTAX                       Unsigned32 (0 | 900..3600)
+    UNITS                        "seconds"
+    MAX-ACCESS                   read-write
+    STATUS                       current
+    DESCRIPTION
+        "This object indicates the allowed values for the statistics
+         sampling interval. A value of zero is only valid for a single
+         processor platform. 
+
+         For distributed platforms, the value in seconds specifies how 
+         often information on measurements will be refreshed on supervisor. 
+         The valid range for distributed platforms is from 15 minutes., 
+         i.e., 900 seconds to 1 hour."
+    DEFVAL { 900 }
+    ::= { cgrtScalars 30 }
+
+cgrtNoRouteMSUsNotifEnabled      OBJECT-TYPE
+    SYNTAX                       TruthValue
+    MAX-ACCESS                   read-write
+    STATUS                       current
+    DESCRIPTION
+        "A control to enable or disable ciscoGrtNoRouteMSUDiscards 
+         notifications as follows:
+         'true'  Indicates that the ciscoGrtNoRouteMSUDiscards
+                 notification generation is enabled.
+         'false' Indicates that ciscoGrtNoRouteMSUDiscards
+                 notification generation is disabled."
+    DEFVAL { false }
+    ::= { cgrtScalars 31 }
+
+cgrtNoRouteMSUsNotifWindowTime   OBJECT-TYPE
+    SYNTAX                       Integer32 (60..86400)
+    UNITS                        "seconds"
+    MAX-ACCESS                   read-write
+    STATUS                       current
+    DESCRIPTION
+        "This object specifies the time interval used to monitor
+         the ciscoGrtNoRouteMSUDiscards notifications generated
+         for a signalling point instance.  The first occurrence of
+         ciscoGrtNoRouteMSUDiscards notifications in this interval
+         is sent and the further occurrences of notifications in 
+         this interval are suppressed.
+
+         At the end of this interval, a notification is sent with
+         total number of MSUs discarded due to routing data error
+         during this interval."
+    DEFVAL { 900 }
+    ::= { cgrtScalars 32 }
+
 --  *************************************************************
 --  *                                                           *
 --  * Route Table information per instance of signalling point  *
@@ -493,7 +738,9 @@ CgrtInstEntry  ::= SEQUENCE {
     cgrtInstTableName               CItpTcRouteTableName,
     cgrtInstLastURL                 CItpTcURL,
     cgrtInstNumberDestinations      Gauge32,
-    cgrtInstNumberRoutes            Gauge32
+    cgrtInstNumberRoutes            Gauge32,
+    cgrtInstUnknownOrigPCs          Counter32,
+    cgrtInstNoRouteDrops            Counter32
 }
 
 cgrtInstLastChanged               OBJECT-TYPE
@@ -558,7 +805,7 @@ cgrtInstNumberDestinations        OBJECT-TYPE
     DESCRIPTION
             "The number of destination in the cgrtDestTable 
              Table." 
-    ::= { cgrtInstEntry 6}
+    ::= { cgrtInstEntry 6 }
     
 cgrtInstNumberRoutes              OBJECT-TYPE
     SYNTAX                        Gauge32
@@ -567,7 +814,32 @@ cgrtInstNumberRoutes              OBJECT-TYPE
     STATUS                        current
     DESCRIPTION
             "The number of routes in the cgrtRouteTable Table." 
-    ::= { cgrtInstEntry 7}
+    ::= { cgrtInstEntry 7 }
+
+cgrtInstUnknownOrigPCs            OBJECT-TYPE
+    SYNTAX                        Counter32
+    UNITS                         "MSUs"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "The number of MSUs with unknown origination point
+             codes arrived to this signalling point instance. MSUs
+             originated from local pointcode will not be counted as
+             unknown OPCs."
+    ::= { cgrtInstEntry 8 }
+
+cgrtInstNoRouteDrops              OBJECT-TYPE
+    SYNTAX                        Counter32
+    UNITS                         "MSUs"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "The number of MSUs dropped due to no corresponding 
+             entry in the destination table for this signalling 
+             point instance Q752/5.5."
+    REFERENCE
+            "ANSI GR-82-CORE 6.4.2 System Total Measurements Item 32."
+    ::= { cgrtInstEntry 9 }
 
 --  *************************************************************
 --  *                                                           *
@@ -600,7 +872,18 @@ cgrtDestEntry                     OBJECT-TYPE
 
 CgrtDestEntry  ::= SEQUENCE {
     cgrtDestStatus               INTEGER,
-    cgrtDestCongestion           Unsigned32
+    cgrtDestCongestion           Unsigned32,
+    cgrtDestAccessibleSeconds    Counter32,
+    cgrtDestInaccessibleSeconds  Counter32,
+    cgrtDestRestrictedSeconds    Counter32,
+    cgrtDestMSUsOut              Counter32,
+    cgrtDestOctetsOut            Counter64,
+    cgrtDestMSUsIn               Counter32,
+    cgrtDestOctetsIn             Counter64,
+    cgrtDestInaccessibleDrops    Counter32,
+    cgrtDestRestrictedMSUs       Counter32,
+    cgrtDestCongestionDrops      Counter32,
+    cgrtDestDisplay              CItpTcDisplayPC
 }
 
 cgrtDestStatus                    OBJECT-TYPE
@@ -623,7 +906,7 @@ cgrtDestStatus                    OBJECT-TYPE
                 'accessible'    : The destination can be reached by 
                 one or more routes specified for the destination. 
                 When summary routing is enabled, a destination 
-                status will also depend on route table entrys that
+                status will also depend on route table entries that
                 specify less specific matches.  See Example 4 in 
                 the DESCRIPTION section for such a configuration. 
 
@@ -654,6 +937,121 @@ cgrtDestCongestion                OBJECT-TYPE
             No. 7 (SS7)-Signalling network functions and messages
             2.3.5.2."
     ::= { cgrtDestEntry  2 }
+
+cgrtDestAccessibleSeconds         OBJECT-TYPE
+    SYNTAX                        Counter32
+    UNITS                         "seconds"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "Duration in seconds that this destination was in the 
+             accessible state."
+    ::= { cgrtDestEntry  3 }
+
+cgrtDestInaccessibleSeconds       OBJECT-TYPE
+    SYNTAX                        Counter32
+    UNITS                         "seconds"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "Duration in seconds that this destination was in the
+             inaccessible state."
+    ::= { cgrtDestEntry  4 }
+
+cgrtDestRestrictedSeconds         OBJECT-TYPE
+    SYNTAX                        Counter32
+    UNITS                         "seconds"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "Duration in seconds that this destination was in the 
+             restricted state."
+    ::= { cgrtDestEntry  5 }
+
+cgrtDestMSUsOut                   OBJECT-TYPE
+    SYNTAX                        Counter32
+    UNITS                         "MSUs"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "The number of MSUs that were queued to linkset for 
+             transmission to this destination. Management MSUs that
+             originate from this signalling point are also counted. 
+             It is important to note that, in rare cases, MSU discards 
+             due to any abnormal system resource error conditions may 
+             be included in this count."
+    ::= { cgrtDestEntry  6 }
+
+cgrtDestOctetsOut                 OBJECT-TYPE
+    SYNTAX                        Counter64
+    UNITS                         "octets"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "The number of Octets in MSUs that were queued to linkset for
+             transmission to this destination. It is important to note that,
+             in rare cases, octets discarded due to any abnormal system
+             resource error conditions may be included in this count."
+    ::= { cgrtDestEntry  7 }
+
+cgrtDestMSUsIn                    OBJECT-TYPE
+    SYNTAX                        Counter32
+    UNITS                         "MSUs"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "The number of MSUs that arrived to this signalling point 
+             bound for this destination. This includes the received
+             as well as blocked MSUs."
+    ::= { cgrtDestEntry  8 }
+
+cgrtDestOctetsIn                  OBJECT-TYPE
+    SYNTAX                        Counter64
+    UNITS                         "octets"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "The number of Octets in MSUs that arrived to this
+            signalling point bound for this destination."
+    ::= { cgrtDestEntry  9 }
+
+cgrtDestInaccessibleDrops         OBJECT-TYPE
+    SYNTAX                        Counter32
+    UNITS                         "MSUs"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "The number of MSUs dropped for this destination 
+             due to inaccessible route state."
+    ::= { cgrtDestEntry  10 }
+
+cgrtDestRestrictedMSUs            OBJECT-TYPE
+    SYNTAX                        Counter32
+    UNITS                         "MSUs"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "The number of MSUs transferred for this destination 
+             during a restricted route state."
+    ::= { cgrtDestEntry  11 }
+
+cgrtDestCongestionDrops           OBJECT-TYPE
+    SYNTAX                        Counter32
+    UNITS                         "MSUs"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "The number of MSUs dropped for this destination
+             due to local and remote congestion."
+    ::= { cgrtDestEntry  12 }
+
+cgrtDestDisplay                   OBJECT-TYPE
+    SYNTAX                        CItpTcDisplayPC
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+        "The destination point code in display format."
+    ::= { cgrtDestEntry  13 }
     
 --  *************************************************************
 --  *                                                           *
@@ -698,7 +1096,11 @@ CgrtRouteEntry  ::= SEQUENCE {
     cgrtRouteDynamic                  TruthValue,
     cgrtRouteType                     INTEGER,
     cgrtRouteAdminStatus              INTEGER,
-    cgrtRouteRowStatus                RowStatus
+    cgrtRouteRowStatus                RowStatus,
+    cgrtRouteAllowedSeconds           Counter32,
+    cgrtRouteRestrictedSeconds        Counter32,
+    cgrtRouteProhibitedSeconds        Counter32,
+    cgrtRouteDisplay                  CItpTcDisplayPC
 }
 
 
@@ -924,7 +1326,290 @@ cgrtRouteRowStatus                OBJECT-TYPE
          object available for modification is the 
          cgrtRouteAdminStatus object."
     ::= { cgrtRouteEntry  11 }
+
+cgrtRouteAllowedSeconds           OBJECT-TYPE
+    SYNTAX                        Counter32
+    UNITS                         "seconds"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "Duration in seconds during which forwarding was allowed
+             for this route."
+    ::= { cgrtRouteEntry  12 }
+
+cgrtRouteRestrictedSeconds        OBJECT-TYPE
+    SYNTAX                        Counter32
+    UNITS                         "seconds"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "Duration in seconds during which forwarding was restricted
+             for this route."
+    ::= { cgrtRouteEntry  13 }
+
+cgrtRouteProhibitedSeconds        OBJECT-TYPE
+    SYNTAX                        Counter32
+    UNITS                         "seconds"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "Duration in seconds during which forwarding was prohibited
+             for this route."
+    ::= { cgrtRouteEntry  14 }
+
+cgrtRouteDisplay                  OBJECT-TYPE
+    SYNTAX                        CItpTcDisplayPC
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "The destination point code associated with the route in
+             display format."
+    ::= { cgrtRouteEntry  15 }
     
+--  *************************************************************
+--  *                                                           *
+--  * Origination Table                                         *
+--  *                                                           *
+--  *************************************************************
+cgrtOrigTable                     OBJECT-TYPE
+    SYNTAX                        SEQUENCE OF CgrtOrigEntry
+    MAX-ACCESS                    not-accessible
+    STATUS                        current
+    DESCRIPTION
+          "The origination table provides information on
+           the incoming MTP packets from a particular
+           origination point code."
+    ::= { cgrtObjects  5 }
+
+cgrtOrigEntry                     OBJECT-TYPE
+    SYNTAX                        CgrtOrigEntry
+    MAX-ACCESS                    not-accessible
+    STATUS                        current
+    DESCRIPTION
+            "Each table entry represents a specific origination
+             point code(OPC)."
+
+    INDEX   { cgspInstNetwork,  -- shared index
+              cgrtOrigPC,       -- shared index
+              cgrtRouteMask     -- shared index
+    }
+    ::= { cgrtOrigTable  1 }
+
+CgrtOrigEntry  ::= SEQUENCE {
+    cgrtOrigPC              CItpTcPointCode,
+    cgrtOrigMSUs            Counter32,
+    cgrtOrigOctets          Counter64,
+    cgrtOrigDisplay         CItpTcDisplayPC
+}
+
+cgrtOrigPC                        OBJECT-TYPE
+    SYNTAX                        CItpTcPointCode
+    MAX-ACCESS                    not-accessible
+    STATUS                        current
+    DESCRIPTION
+            "The origination point code."
+    ::= { cgrtOrigEntry  1 }
+
+cgrtOrigMSUs                      OBJECT-TYPE
+    SYNTAX                        Counter32
+    UNITS                         "MSUs"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "The number of incoming MSUs from this origination."
+    ::= { cgrtOrigEntry  2 }
+
+cgrtOrigOctets                    OBJECT-TYPE
+    SYNTAX                        Counter64
+    UNITS                         "octets"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "The number of incoming octets from this origination."
+    ::= { cgrtOrigEntry  3 }
+
+cgrtOrigDisplay                   OBJECT-TYPE
+    SYNTAX                        CItpTcDisplayPC
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "The origination point code associated with the
+             table entry in display format."
+    ::= { cgrtOrigEntry  4 }
+
+--  *************************************************************
+--  *                                                           *
+--  * Destination Service Indicator Table                       *
+--  *                                                           *
+--  *************************************************************
+cgrtDestSITable                   OBJECT-TYPE
+    SYNTAX                        SEQUENCE OF CgrtDestSIEntry
+    MAX-ACCESS                    not-accessible
+    STATUS                        current
+    DESCRIPTION
+          "The Destination Service Indicator table contains 
+           information about the number of MSUs and octets at
+           the MTP3 transport layer for a specific destination 
+           and service indicator. The information is collected
+           from both directions. This provides the granularity 
+           of information required by Q752 table 6."  
+    ::= { cgrtObjects  6 }
+
+cgrtDestSIEntry                   OBJECT-TYPE
+    SYNTAX                        CgrtDestSIEntry
+    MAX-ACCESS                    not-accessible
+    STATUS                        current
+    DESCRIPTION
+            "Each table entry represents a specific destination
+             point code(DPC) and Service Indicator(SI)."
+
+    INDEX   { cgspInstNetwork,  -- shared index
+              cgrtRouteDpc,     -- shared index
+              cgrtRouteMask,    -- shared index
+              cgrtMtp3SI
+    }
+    ::= { cgrtDestSITable  1 }
+
+CgrtDestSIEntry  ::= SEQUENCE {
+    cgrtMtp3SI              CItpTcServiceIndicator,
+    cgrtDestSIMSUsOut       Counter32,
+    cgrtDestSIOctetsOut     Counter64,
+    cgrtDestSIMSUsIn        Counter32,
+    cgrtDestSIOctetsIn      Counter64,
+    cgrtDestSIDisplay       CgrtDisplayPCSI
+}
+
+cgrtMtp3SI                        OBJECT-TYPE
+    SYNTAX                        CItpTcServiceIndicator
+    MAX-ACCESS                    not-accessible
+    STATUS                        current
+    DESCRIPTION
+           "The service indicator."
+    ::= { cgrtDestSIEntry  1 }
+
+cgrtDestSIMSUsOut                 OBJECT-TYPE
+    SYNTAX                        Counter32
+    UNITS                         "MSUs"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "The number of outgoing MSUs that were queued to linkset 
+             for transmission to this specific destination and service 
+             indicator. Management MSUs that originate from this 
+             signalling point are also counted. It is important to note 
+             that, in rare cases, MSU discards due to any abnormal system 
+             resource error conditions may be included in this count."
+    ::= { cgrtDestSIEntry  2 }
+
+cgrtDestSIOctetsOut               OBJECT-TYPE
+    SYNTAX                        Counter64
+    UNITS                         "octets"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "The number of outgoing octets that were queued to linkset
+             for transmission to this specific destination and service
+             indicator. It is important to note that, in rare cases, octets
+             discarded due to any abnormal system resource error conditions
+             may be included in this count."
+    ::= { cgrtDestSIEntry  3 }
+
+cgrtDestSIMSUsIn                  OBJECT-TYPE
+    SYNTAX                        Counter32
+    UNITS                         "MSUs"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "The number of incoming MSUs for this specific
+             destination and service indicator. This includes 
+             the received as well as blocked MSUs."
+    ::= { cgrtDestSIEntry  4 }
+
+cgrtDestSIOctetsIn                OBJECT-TYPE
+    SYNTAX                        Counter64
+    UNITS                         "octets"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "The number of incoming octets for this specific
+             destination and service indicator."
+    ::= { cgrtDestSIEntry  5 }
+
+cgrtDestSIDisplay                 OBJECT-TYPE
+    SYNTAX                        CgrtDisplayPCSI
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "The destination point code and service indicator
+             associated with the table entry in display format."
+    ::= { cgrtDestSIEntry  6 }
+
+--  *************************************************************
+--  *                                                           *
+--  * Origination Service Indicator Table                                         *
+--  *                                                           *
+--  *************************************************************
+cgrtOrigSITable                   OBJECT-TYPE
+    SYNTAX                        SEQUENCE OF CgrtOrigSIEntry
+    MAX-ACCESS                    not-accessible
+    STATUS                        current
+    DESCRIPTION
+          "The Origination Service Indicator table contains
+           information about the number of incoming MSUs and
+           octets at the MTP3 transport layer from a specific
+           origination and service indicator.  This provides the
+           granularity of information required by Q752 table 6."
+    ::= { cgrtObjects  7 }
+
+cgrtOrigSIEntry                   OBJECT-TYPE
+    SYNTAX                        CgrtOrigSIEntry
+    MAX-ACCESS                    not-accessible
+    STATUS                        current
+    DESCRIPTION
+            "Each table entry represents a specific origination
+             point code(OPC) and Service Indicator(SI)."
+
+    INDEX   { cgspInstNetwork,  -- shared index
+              cgrtOrigPC,       -- shared index
+              cgrtRouteMask,    -- shared index
+              cgrtMtp3SI        -- shared index
+    }
+    ::= { cgrtOrigSITable  1 }
+
+CgrtOrigSIEntry  ::= SEQUENCE {
+    cgrtOrigSIMSUs          Counter32,
+    cgrtOrigSIOctets        Counter64,
+    cgrtOrigSIDisplay       CgrtDisplayPCSI
+}
+
+cgrtOrigSIMSUs                    OBJECT-TYPE
+    SYNTAX                        Counter32
+    UNITS                         "MSUs"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "The number of incoming MSUs for this specific
+             origination and service indicator."
+    ::= { cgrtOrigSIEntry  1 }
+
+cgrtOrigSIOctets                  OBJECT-TYPE
+    SYNTAX                        Counter64
+    UNITS                         "octets"
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "The number of incoming MSUs for this specific 
+             origination and service indicator."
+    ::= { cgrtOrigSIEntry  2 }
+
+cgrtOrigSIDisplay                 OBJECT-TYPE
+    SYNTAX                        CgrtDisplayPCSI
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION
+            "The origination point code and service indicator 
+             associated with the table entry in display format."
+    ::= { cgrtOrigSIEntry  3 }
 
 -- *************************************************************
 -- *                                                           *
@@ -936,7 +1621,7 @@ cgrtNotificationsInfo  OBJECT IDENTIFIER ::= { cgrtObjects 4 }
 cgrtDestNotifSupFlag        OBJECT-TYPE
      SYNTAX                 TruthValue
      MAX-ACCESS             accessible-for-notify
-     STATUS                 current
+     STATUS                 deprecated
      DESCRIPTION          
          "A flag to indicate whether destination notifications  
           notifications have been suppressed in the current time 
@@ -955,10 +1640,10 @@ cgrtDestNotifSupFlag        OBJECT-TYPE
 cgrtDestNotifChanges        OBJECT-TYPE
      SYNTAX                 OCTET STRING (SIZE(0..255))
      MAX-ACCESS             accessible-for-notify
-     STATUS                 current
+     STATUS                 deprecated
      DESCRIPTION
         "This object contains a list of destination state changes 
-         accumulated until the list is full or the time time interval
+         accumulated until the list is full or the time interval
          specified in cgrtDestNotifDelayTime has passed.
          
          It consists of one or more tuples packed
@@ -976,17 +1661,17 @@ cgrtDestNotifChanges        OBJECT-TYPE
          are encoded in network byte order.
                
          The maximum number of tuples is 7."
-         
+
     REFERENCE
-            "ITU Q752 Table 4 Item 9 - Unavailablity of routeset
-             to particulare destination and Telcordia 
+            "ITU Q752 Table 4 Item 9 - Unavailablity of routeset 
+             to particular destination and Telcordia 
              GR-3053-CORE R5-127 SS7 Route Set Remote Congestion"
     ::= { cgrtNotificationsInfo 2 }
     
 cgrtMgmtNotifSupFlag        OBJECT-TYPE
      SYNTAX                 TruthValue
      MAX-ACCESS             accessible-for-notify
-     STATUS                 current
+     STATUS                 deprecated
      DESCRIPTION          
          "A flag to indicate whether management route notifications  
           have been suppressed in the current time interval specified
@@ -1004,12 +1689,12 @@ cgrtMgmtNotifSupFlag        OBJECT-TYPE
 cgrtMgmtNotifChanges        OBJECT-TYPE
      SYNTAX                 OCTET STRING (SIZE(0..255))
      MAX-ACCESS             accessible-for-notify
-     STATUS                 current
+     STATUS                 deprecated
      DESCRIPTION
         "This object contains a list of management route
          state changes accumulated until the list is full or 
-         the time time interval specified in 
-         cgrtMgmtNotifDelayTime has passed.
+         the time interval specified in cgrtMgmtNotifDelayTime 
+         has passed.
          
          It consists of one or more tuples packed
          together in the format of '<tuple1><tuple2>...<tuple6>'.
@@ -1030,9 +1715,52 @@ cgrtMgmtNotifChanges        OBJECT-TYPE
          and cgrtRouteAdminStatus are encoded in network byte order.
          
          The maximum number of tuples is 3."
-         
+
     ::= { cgrtNotificationsInfo 4 }
-    
+
+cgrtDestNotifSuppressed     OBJECT-TYPE
+     SYNTAX                 Counter32
+     UNITS                  "occurrences"
+     MAX-ACCESS             accessible-for-notify
+     STATUS                 current
+     DESCRIPTION
+         "Number of ciscoGrtDestStateChangeRev1 notifications suppressed
+          for the specific cgrtDestNotifWindowTimeRev1 duration."
+    ::= { cgrtNotificationsInfo 5 }
+
+cgrtRouteNotifSuppressed    OBJECT-TYPE
+     SYNTAX                 Counter32
+     UNITS                  "occurrences"
+     MAX-ACCESS             accessible-for-notify
+     STATUS                 current
+     DESCRIPTION
+         "Number of ciscoGrtMgmtStateChangeRev1 notifications suppressed
+          for the specific cgrtRouteNotifWindowTimeRev1 duration."
+    ::= { cgrtNotificationsInfo 6 }
+
+cgrtNoRouteMSUsInterval     OBJECT-TYPE
+     SYNTAX                 Unsigned32
+     UNITS                  "seconds"
+     MAX-ACCESS             accessible-for-notify
+     STATUS                 current
+     DESCRIPTION
+         "Duration elapsed since the start of 
+          cgrtNoRouteMSUsNotifWindowTime interval. This duration value 
+          can range from 0 upto cgrtNoRouteMSUsNotifWindowTime.  For the 
+          notifications generated at the end of the interval, this value 
+          will be equal to cgrtNoRouteMSUsNotifWindowTime."
+    ::= { cgrtNotificationsInfo 7 }
+
+cgrtIntervalNoRouteMSUs     OBJECT-TYPE
+     SYNTAX                 Unsigned32
+     UNITS                  "MSUs"
+     MAX-ACCESS             accessible-for-notify
+     STATUS                 current
+     DESCRIPTION
+         "Number of MSUs discarded due to routing data error in
+          this specific cgspNoRouteMSUsInterval interval."
+    ::= { cgrtNotificationsInfo 8 }
+
 -- *************************************************************
 -- *                                                           *
 -- * Notifications                                             *
@@ -1045,7 +1773,7 @@ ciscoGrtDestStateChange NOTIFICATION-TYPE
               cgrtDestNotifSupFlag,
               cgrtDestNotifChanges
      }
-     STATUS  current
+     STATUS  deprecated
      DESCRIPTION
              "This notification is generated whenever one or more
               destination changes states. This notification 
@@ -1065,7 +1793,10 @@ ciscoGrtDestStateChange NOTIFICATION-TYPE
               number of destination state changes exceed the 
               specified value the last notification will indicate 
               that notifications are suppressed for the remainder
-              of the window."
+              of the window.
+
+              This notification is deprecated by 
+              ciscoGrtDestStateChangeRev1."
      ::= { ciscoGrtNotifications 1 }
      
 ciscoGrtMgmtStateChange NOTIFICATION-TYPE
@@ -1075,7 +1806,7 @@ ciscoGrtMgmtStateChange NOTIFICATION-TYPE
               cgrtMgmtNotifSupFlag,
               cgrtMgmtNotifChanges
      }
-     STATUS  current 
+     STATUS  deprecated
      DESCRIPTION
              "This notification is generated whenever one or more
               management routes change state.  This notification
@@ -1095,7 +1826,10 @@ ciscoGrtMgmtStateChange NOTIFICATION-TYPE
               number of route state changes exceed the specified
               value the last notification will indicate that
               notifications are suppressed for the remainder
-              of the window."
+              of the window.
+
+              This notification is deprecated by
+              ciscoGrtMgmtStateChangeRev1."
      ::= { ciscoGrtNotifications 2 }
      
 ciscoGrtRouteTableLoad NOTIFICATION-TYPE
@@ -1116,6 +1850,95 @@ ciscoGrtRouteTableLoad NOTIFICATION-TYPE
               tables to be reloaded whenever a device restarts."
      ::= { ciscoGrtNotifications 3 }
            
+ciscoGrtDestStateChangeRev1 NOTIFICATION-TYPE
+     OBJECTS {
+              cgspEventSequenceNumber,
+              cgspCLLICode,
+              cgrtDestNotifSuppressed,
+              cgrtDestDisplay,
+              cgrtDestStatus,
+              cgrtDestCongestion
+     }
+     STATUS  current
+     DESCRIPTION
+             "This notification is generated whenever one or more
+              destination changes states within the 
+              cgrtDestNotifWindowTimeRev1 duration.  Latest state 
+              information at the end of cgrtDestNotifWindowTimeRev1
+              is provided.
+
+              It may be necessary to suppress the sending of
+              notification when a large number destinations change
+              state, due the failure of some common resource.  The
+              number of notifications can be controlled by
+              specifying values for cgrtDestNotifWindowTimeRev1
+              and cgrtDestNotifMaxPerWindowRev1 objects.  When the
+              number of destination state changes exceed the
+              specified value, the notification will provide a  
+              count of notifications that got suppressed for the 
+              remainder of the window.
+
+              This notification deprecates ciscoGrtDestStateChange."
+     ::= { ciscoGrtNotifications 4 }
+
+ciscoGrtMgmtStateChangeRev1 NOTIFICATION-TYPE
+     OBJECTS {
+              cgspEventSequenceNumber,
+              cgspCLLICode,
+              cgrtRouteStatus,
+              cgrtRouteMgmtStatus,
+              cgrtRouteDynamic,
+              cgrtRouteAdminStatus,
+              cgrtRouteNotifSuppressed,
+              cgrtRouteDisplay
+     }
+     STATUS  current
+     DESCRIPTION
+             "This notification is generated whenever one or more
+              management routes change states within the 
+              cgrtMgmtNotifWindowTimeRev1 duration.  Latest state
+              information at the end of cgrtMgmtNotifWindowTimeRev1
+              is provided.
+
+              It may be necessary to suppress the sending of
+              notification when a large number of routes change
+              state, due the failure of some common resource.  The
+              number of notifications can be controlled by
+              specifying values for cgrtMgmtNotifWindowTimeRev1
+              and cgrtMgmtNotifMaxPerWindowRev1 objects.  When the
+              number of route state changes exceed the specified
+              value, the last notification will provide a count
+              of notifications that got suppressed for the 
+              remainder of the window.
+
+              This notification deprecates ciscoGrtMgmtStateChange."
+     ::= { ciscoGrtNotifications 5 }
+
+ciscoGrtNoRouteMSUDiscards NOTIFICATION-TYPE
+     OBJECTS {
+              cgspEventSequenceNumber,
+              cgspCLLICode,
+              cgspInstDisplayName,
+              cgrtNoRouteMSUsInterval,
+              cgrtIntervalNoRouteMSUs
+     }
+     STATUS  current
+     DESCRIPTION
+             "This notification is generated whenever one or more
+              MSU discards happen due to route data error for a
+              specific signalling point instance in the configured
+              cgrtNoRouteMSUsNotifWindowTime.  For cases when there
+              is a non-zero number of MSUs discarded, this
+              notification will be sent at the end of the
+              cgrtNoRouteMSUsNotifWindowTime interval, with
+              cgrtIntervalNoRouteMSUs indicating the total count of
+              MSUs discarded for that specific signalling point
+              instance during the entire cgrtNoRouteMSUsNotifWindowTime
+              interval Q752/5.5."
+    REFERENCE
+             "ANSI GR-82-CORE 6.4.2 System Total Measurements Item 32."
+     ::= { ciscoGrtNotifications 6 }
+
 -- *************************************************************
 -- *                                                           *
 -- * Conformance Information                                   *
@@ -1126,7 +1949,8 @@ ciscoGrtMIBGroups      OBJECT IDENTIFIER ::= { ciscoGrtMIBConform 2 }
 
 -- Compliance
 ciscoGrtMIBCompliance MODULE-COMPLIANCE
-    STATUS current
+    STATUS deprecated
+    -- superseded by ciscoGrtMIBComplianceRev1
     DESCRIPTION
             "The compliance statement for entities which implement
              the Cisco CISCO-ITP-GRT-MIB.my MIB"
@@ -1159,6 +1983,45 @@ ciscoGrtMIBCompliance MODULE-COMPLIANCE
          DESCRIPTION      "Create/Write access is not required."
     ::= { ciscoGrtMIBCompliances 1 }
 
+ciscoGrtMIBComplianceRev1 MODULE-COMPLIANCE
+    STATUS current
+    DESCRIPTION
+            "The compliance statement for entities which implement
+             the Cisco CISCO-ITP-GRT-MIB.my MIB"
+    MODULE -- this module
+            MANDATORY-GROUPS {
+                    ciscoGrtInstGroup,
+                    ciscoGrtScalarsGroup,
+                    ciscoGrtDestGroupRev1,
+                    ciscoGrtRouteGroupRev1,
+                    ciscoGrtOrigGroup,
+                    ciscoGrtDestSIGroup,
+                    ciscoGrtOrigSIGroup,
+                    ciscoGrtNotificationsGroupRev1,
+                    ciscoGrtInstGroupSup1
+            }
+
+         OBJECT           cgrtRouteQos
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgrtRouteStatus
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgrtRouteMgmtStatus
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgrtRouteAdminStatus
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+
+         OBJECT           cgrtRouteRowStatus
+         MIN-ACCESS       read-only
+         DESCRIPTION      "Create/Write access is not required."
+    ::= { ciscoGrtMIBCompliances 2 }
+
 -- Units of Conformance
 
 ciscoGrtInstGroup OBJECT-GROUP
@@ -1174,7 +2037,7 @@ ciscoGrtInstGroup OBJECT-GROUP
     }
     STATUS current
     DESCRIPTION
-            "SS7 route instance group"
+            "SS7 route instance group."
     ::= { ciscoGrtMIBGroups 1 }
     
 ciscoGrtDestGroup OBJECT-GROUP
@@ -1188,9 +2051,9 @@ ciscoGrtDestGroup OBJECT-GROUP
              cgrtDestStatus,
              cgrtDestCongestion
     }
-    STATUS current
+    STATUS deprecated
     DESCRIPTION
-            "SS7 Destination group "
+            "SS7 Destination group."
     ::= { ciscoGrtMIBGroups 2 }
     
 ciscoGrtRouteGroup OBJECT-GROUP
@@ -1212,9 +2075,9 @@ ciscoGrtRouteGroup OBJECT-GROUP
              cgrtRouteAdminStatus,
              cgrtRouteRowStatus
     }
-    STATUS current
+    STATUS deprecated
     DESCRIPTION
-            "SS7 Route group "
+            "SS7 Route group."
     ::= { ciscoGrtMIBGroups 3 }
     
     
@@ -1224,8 +2087,131 @@ ciscoGrtNotificationsGroup NOTIFICATION-GROUP
                 ciscoGrtMgmtStateChange,
                 ciscoGrtRouteTableLoad
         }                      
-        STATUS current
+        STATUS deprecated
         DESCRIPTION
                 "Gateway route notification objects."
     ::= { ciscoGrtMIBGroups 4 }
+
+ciscoGrtScalarsGroup OBJECT-GROUP
+    OBJECTS {
+             cgrtPCStatsInterval
+        }
+        STATUS current
+        DESCRIPTION
+                "Scalars Group for Gateway Signalling Point Route Table."
+    ::= { ciscoGrtMIBGroups 5 }
+
+ciscoGrtDestGroupRev1 OBJECT-GROUP
+    OBJECTS {
+             cgrtDestNotifWindowTimeRev1,
+             cgrtDestNotifMaxPerWindowRev1,
+             cgrtDestNotifEnabledRev1,
+             cgrtDestNotifSuppressed,
+             cgrtDestStatus,
+             cgrtDestCongestion,
+             cgrtDestAccessibleSeconds,
+             cgrtDestInaccessibleSeconds,
+             cgrtDestRestrictedSeconds,
+             cgrtDestMSUsOut,
+             cgrtDestOctetsOut,
+             cgrtDestMSUsIn,
+             cgrtDestOctetsIn,
+             cgrtDestRestrictedMSUs,
+             cgrtDestInaccessibleDrops,
+             cgrtDestCongestionDrops,
+             cgrtDestDisplay
+    }
+    STATUS current
+    DESCRIPTION
+            "SS7 Destination group."
+    ::= { ciscoGrtMIBGroups 6 }
+
+ciscoGrtRouteGroupRev1 OBJECT-GROUP
+    OBJECTS {
+             cgrtRouteMaxDynamic,
+             cgrtMgmtNotifWindowTimeRev1,
+             cgrtMgmtNotifMaxPerWindowRev1,
+             cgrtMgmtNotifEnabledRev1,
+             cgrtRouteNotifSuppressed,
+             cgrtDynamicRoutes,
+             cgrtDynamicRoutesDropped,
+             cgrtRouteQos,
+             cgrtRouteStatus,
+             cgrtRouteMgmtStatus,
+             cgrtRouteDynamic,
+             cgrtRouteType,
+             cgrtRouteAdminStatus,
+             cgrtRouteRowStatus,
+             cgrtRouteAllowedSeconds,
+             cgrtRouteRestrictedSeconds,
+             cgrtRouteProhibitedSeconds,
+             cgrtRouteDisplay
+    }
+    STATUS current
+    DESCRIPTION
+            "SS7 Route group."
+    ::= { ciscoGrtMIBGroups 7 }
+
+ciscoGrtOrigGroup OBJECT-GROUP
+    OBJECTS {
+             cgrtOrigTableEnabled,
+             cgrtOrigMSUs,
+             cgrtOrigOctets,
+             cgrtOrigDisplay
+    }
+    STATUS current
+    DESCRIPTION
+            "SS7 Origination group."
+    ::= { ciscoGrtMIBGroups 8 }
+
+ciscoGrtDestSIGroup OBJECT-GROUP
+    OBJECTS {
+             cgrtDestSIMSUsOut,
+             cgrtDestSIOctetsOut,
+             cgrtDestSIMSUsIn,
+             cgrtDestSIOctetsIn,
+             cgrtDestSIDisplay
+    }
+    STATUS current
+    DESCRIPTION
+            "SS7 Destination and Service Indicator group."
+    ::= { ciscoGrtMIBGroups 9 }
+
+ciscoGrtOrigSIGroup OBJECT-GROUP
+    OBJECTS {
+             cgrtOrigSIMSUs,             
+             cgrtOrigSIOctets,
+             cgrtOrigSIDisplay
+    }
+    STATUS current
+    DESCRIPTION
+            "SS7 Destination and Service Indicator group."
+    ::= { ciscoGrtMIBGroups 10 }
+
+ciscoGrtNotificationsGroupRev1 NOTIFICATION-GROUP
+        NOTIFICATIONS {
+                ciscoGrtRouteTableLoad,
+                ciscoGrtDestStateChangeRev1,
+                ciscoGrtMgmtStateChangeRev1,
+                ciscoGrtNoRouteMSUDiscards
+        }
+        STATUS current
+        DESCRIPTION
+                "Gateway route notification objects."
+    ::= { ciscoGrtMIBGroups 11 }
+
+ciscoGrtInstGroupSup1 OBJECT-GROUP
+        OBJECTS {
+                cgrtNoRouteMSUsNotifEnabled,
+                cgrtNoRouteMSUsNotifWindowTime,
+                cgrtInstUnknownOrigPCs,
+                cgrtInstNoRouteDrops,
+                cgrtNoRouteMSUsInterval,
+                cgrtIntervalNoRouteMSUs
+        }
+        STATUS current
+        DESCRIPTION
+                "Additional Inst table objects." 
+        ::= { ciscoGrtMIBGroups 12 }
+
 END

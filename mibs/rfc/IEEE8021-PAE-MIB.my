@@ -19,14 +19,48 @@ IMPORTS
     ;
 
 ieee8021paeMIB MODULE-IDENTITY
-    LAST-UPDATED "200101160000Z"
+    LAST-UPDATED "200406220000Z"
     ORGANIZATION "IEEE 802.1 Working Group"
     CONTACT-INFO
         "http://grouper.ieee.org/groups/802/1/index.html"
+
     DESCRIPTION
         "The Port Access Entity module for managing IEEE
         802.1X."
-    ::= { iso(1) std(0) iso8802(8802) ieee802dot1(1)
+
+    REVISION     "200406220000Z"  -- June 22nd, 2004
+    DESCRIPTION
+        "IEEE Std. 802.1X-2004 revision:
+          - In the MODULE-IDENTITY value assignment changed
+            iso(1) to iso;
+          - Clarified original references to 802.1X-2001;
+          - Added references to 802.1X-2004;
+          - Added restart(10) to dot1xAuthPaeState;
+          - Added ignore(8) to dot1xAuthBackendAuthState;
+          - Deprecated dot1xAuthTxPeriod, dot1xSuppTimeout,
+            dotxAuthMaxReq, all of dot1xAuthDiagTable,
+            dot1xSuppEapolRespIdFramesTx,
+            dot1xSuppEapolRespFramesTx,
+            dot1xSuppEapolReqIdFramesRx,
+            dot1xSuppEapolReqFramesRx;
+          - Added restart(8), sForceAuth(9) and
+            sForceUnauth(10) to dot1xSuppPaeState;
+          - Added dot1xSuppControlledPortStatus;
+          - Added dot1xSuppAccessCtrlWithAuth;
+          - Added dot1xSuppBackendState;
+          - Bug fix to add dot1xPaePortReauthenticate and
+            dot1xAuthSessionUserName to the appropriate
+            conformance groups;
+          - Updated conformance groups for new and deprecated
+            objects;
+          - Deprecated dot1xPaeCompliance;
+          - Added dot1xPaeCompliance2."
+
+    REVISION     "200101160000Z"  -- Jan 16th, 2001
+    DESCRIPTION
+        "IEEE Std. 802.1X-2001 initial version."
+
+    ::= { iso std(0) iso8802(8802) ieee802dot1(1)
           ieee802dot1mibs(1) 1 }
 
 paeMIBObjects OBJECT IDENTIFIER ::= { ieee8021paeMIB 1 }
@@ -89,7 +123,8 @@ dot1xPaeSystemAuthControl OBJECT-TYPE
         "The administrative enable/disable state for
          Port Access Control in a System."
     REFERENCE
-        "9.6.1, SystemAuthControl"
+        "802.1X-2001 9.6.1, SystemAuthControl,
+         802.1X-2004 9.6.1, SystemAuthControl"
     ::= { dot1xPaeSystem 1 }
 
 -- ---------------------------------------------------------- --
@@ -105,7 +140,8 @@ dot1xPaePortTable OBJECT-TYPE
         supported by the Port Access Entity.  An entry appears
         in this table for each port of this system."
     REFERENCE
-        "9.6.1"
+        "802.1X-2001 9.6.1,
+         802.1X-2004 9.6.1"
     ::= { dot1xPaeSystem 2 }
 
 dot1xPaePortEntry OBJECT-TYPE
@@ -139,7 +175,8 @@ dot1xPaePortNumber OBJECT-TYPE
     DESCRIPTION
         "The Port number associated with this Port."
     REFERENCE
-        "9.6.1, Port number"
+        "802.1X-2001 9.6.1, Port number,
+         802.1X-2004 9.6.1, Port number"
     ::= { dot1xPaePortEntry 1 }
 
 dot1xPaePortProtocolVersion OBJECT-TYPE
@@ -149,7 +186,8 @@ dot1xPaePortProtocolVersion OBJECT-TYPE
     DESCRIPTION
         "The protocol version associated with this Port."
     REFERENCE
-        "9.6.1, Protocol version"
+        "802.1X-2001 9.6.1, Protocol version,
+         802.1X-2004 9.6.1, Protocol version"
     ::= { dot1xPaePortEntry 2 }
 
 dot1xPaePortCapabilities OBJECT-TYPE
@@ -165,7 +203,8 @@ dot1xPaePortCapabilities OBJECT-TYPE
         "Indicates the PAE functionality that this Port
         supports and that may be managed through this MIB."
     REFERENCE
-        "9.6.1, PAE Capabilities"
+        "802.1X-2001 9.6.1, PAE Capabilities,
+         802.1X-2004 9.6.1, PAE Capabilities"
     ::= { dot1xPaePortEntry 3 }
 
 dot1xPaePortInitialize OBJECT-TYPE
@@ -178,22 +217,24 @@ dot1xPaePortInitialize OBJECT-TYPE
         The attribute value reverts to FALSE once initialization
         has completed."
     REFERENCE
-        "9.6.1.2, Initialize Port"
+        "802.1X-2001 9.6.1.3, Initialize Port,
+         802.1X-2004 9.6.1.3, Initialize Port"
     ::= { dot1xPaePortEntry 4 }
 
 dot1xPaePortReauthenticate OBJECT-TYPE
-  SYNTAX TruthValue
-  MAX-ACCESS read-write
-  STATUS current
-  DESCRIPTION
-    "The reauthentication control for this port. Setting
-    this attribute TRUE causes the Authenticator PAE state
-    machine for the Port to reauthenticate the Supplicant.
-    Setting this attribute FALSE has no effect.
-    This attribute always returns FALSE when it is read."
-  REFERENCE
-    "9.4.1.3 Reauthenticate"
-::= { dot1xPaePortEntry 5 }
+    SYNTAX TruthValue
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "The reauthentication control for this port. Setting
+        this attribute TRUE causes the Authenticator PAE state
+        machine for the Port to reauthenticate the Supplicant.
+        Setting this attribute FALSE has no effect.
+        This attribute always returns FALSE when it is read."
+    REFERENCE
+        "802.1X-2001 9.4.1.3 Reauthenticate,
+         802.1X-2004 9.4.1.3 Reauthenticate"
+    ::= { dot1xPaePortEntry 5 }
 
 -- ---------------------------------------------------------- --
 -- The PAE Authenticator Group
@@ -213,7 +254,8 @@ dot1xAuthConfigTable OBJECT-TYPE
         An entry appears in this table for each port that may
         authenticate access to itself."
     REFERENCE
-        "9.4.1 Authenticator Configuration"
+        "802.1X-2001 9.4.1 Authenticator Configuration,
+         802.1X-2004 9.4.1 Authenticator Configuration"
     ::= { dot1xPaeAuthenticator 1 }
 
 dot1xAuthConfigEntry OBJECT-TYPE
@@ -268,7 +310,8 @@ dot1xAuthPaeState OBJECT-TYPE
                     aborting(6),
                     held(7),
                     forceAuth(8),
-                    forceUnauth(9)
+                    forceUnauth(9),
+                    restart(10)
                 }
     MAX-ACCESS  read-only
     STATUS      current
@@ -276,7 +319,8 @@ dot1xAuthPaeState OBJECT-TYPE
         "The current value of the Authenticator PAE state
         machine."
     REFERENCE
-        "9.4.1, Authenticator PAE state"
+        "802.1X-2001 9.4.1, Authenticator PAE state,
+         802.1X-2004 9.4.1, Authenticator PAE state"
     ::= { dot1xAuthConfigEntry 1 }
 
 dot1xAuthBackendAuthState OBJECT-TYPE
@@ -287,7 +331,8 @@ dot1xAuthBackendAuthState OBJECT-TYPE
                     fail(4),
                     timeout(5),
                     idle(6),
-                    initialize(7)
+                    initialize(7),
+                    ignore(8)
                 }
     MAX-ACCESS  read-only
     STATUS      current
@@ -295,7 +340,8 @@ dot1xAuthBackendAuthState OBJECT-TYPE
         "The current state of the Backend Authentication
         state machine."
     REFERENCE
-        "9.4.1, Backend Authentication state"
+        "802.1X-2001 9.4.1, Backend Authentication state,
+         802.1X-2004 9.4.1, Backend Authentication state"
     ::= { dot1xAuthConfigEntry 2 }
 
 dot1xAuthAdminControlledDirections OBJECT-TYPE
@@ -306,7 +352,8 @@ dot1xAuthAdminControlledDirections OBJECT-TYPE
         "The current value of the administrative controlled
         directions parameter for the Port."
     REFERENCE
-        "9.4.1, Admin Control Mode"
+        "802.1X-2001 9.4.1, Admin Control Mode,
+         802.1X-2004 9.4.1, Admin Control Mode"
     ::= { dot1xAuthConfigEntry 3 }
 
 dot1xAuthOperControlledDirections OBJECT-TYPE
@@ -317,7 +364,8 @@ dot1xAuthOperControlledDirections OBJECT-TYPE
         "The current value of the operational controlled
         directions parameter for the Port."
     REFERENCE
-        "9.4.1, Oper Control Mode"
+        "802.1X-2001 9.4.1, Oper Control Mode,
+         802.1X-2004 9.4.1, Oper Control Mode"
     ::= { dot1xAuthConfigEntry 4 }
 
 dot1xAuthAuthControlledPortStatus OBJECT-TYPE
@@ -328,7 +376,8 @@ dot1xAuthAuthControlledPortStatus OBJECT-TYPE
         "The current value of the controlled Port
         status parameter for the Port."
     REFERENCE
-        "9.4.1, AuthControlledPortStatus"
+        "802.1X-2001 9.4.1, AuthControlledPortStatus,
+         802.1X-2004 9.4.1, AuthControlledPortStatus"
     ::= { dot1xAuthConfigEntry 5 }
 
 dot1xAuthAuthControlledPortControl OBJECT-TYPE
@@ -339,7 +388,8 @@ dot1xAuthAuthControlledPortControl OBJECT-TYPE
         "The current value of the controlled Port
         control parameter for the Port."
     REFERENCE
-        "9.4.1, AuthControlledPortControl"
+        "802.1X-2001 9.4.1, AuthControlledPortControl,
+         802.1X-2004 9.4.1, AuthControlledPortControl"
     ::= { dot1xAuthConfigEntry 6 }
 
 dot1xAuthQuietPeriod OBJECT-TYPE
@@ -351,33 +401,35 @@ dot1xAuthQuietPeriod OBJECT-TYPE
         currently in use by the Authenticator PAE state
         machine."
     REFERENCE
-        "9.4.1, quietPeriod"
+        "802.1X-2001 9.4.1, quietPeriod,
+         802.1X-2004 9.4.1, quietPeriod"
     DEFVAL { 60 }
     ::= { dot1xAuthConfigEntry 7 }
 
 dot1xAuthTxPeriod OBJECT-TYPE
     SYNTAX      Unsigned32
     MAX-ACCESS  read-write
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "The value, in seconds, of the txPeriod constant
         currently in use by the Authenticator PAE state
         machine."
     REFERENCE
-        "9.4.1, txPeriod"
+        "802.1X-2001 9.4.1, txPeriod"
     DEFVAL { 30 }
     ::= { dot1xAuthConfigEntry 8 }
 
 dot1xAuthSuppTimeout OBJECT-TYPE
     SYNTAX      Unsigned32
     MAX-ACCESS  read-write
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "The value, in seconds, of the suppTimeout constant
         currently in use by the Backend Authentication state
         machine."
     REFERENCE
-        "9.4.1, suppTimeout"
+        "802.1X-2001 9.4.1, suppTimeout,
+         802.1X-2004 9.4.1, suppTimeout"
     DEFVAL { 30 }
     ::= { dot1xAuthConfigEntry 9 }
 
@@ -390,19 +442,20 @@ dot1xAuthServerTimeout OBJECT-TYPE
         currently in use by the Backend Authentication state
         machine."
     REFERENCE
-        "9.4.1, serverTimeout"
+        "802.1X-2001 9.4.1, serverTimeout,
+         802.1X-2004 9.4.1, serverTimeout"
     DEFVAL { 30 }
     ::= { dot1xAuthConfigEntry 10 }
 
 dot1xAuthMaxReq OBJECT-TYPE
     SYNTAX      Unsigned32
     MAX-ACCESS  read-write
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "The value of the maxReq constant currently in use by
         the Backend Authentication state machine."
     REFERENCE
-        "9.4.1, maxReq"
+        "802.1X-2001 9.4.1, maxReq"
     DEFVAL { 2 }
     ::= { dot1xAuthConfigEntry 11 }
 
@@ -415,7 +468,8 @@ dot1xAuthReAuthPeriod OBJECT-TYPE
         currently in use by the Reauthentication Timer state
         machine."
     REFERENCE
-        "9.4.1, reAuthPeriod"
+        "802.1X-2001 9.4.1, reAuthPeriod,
+         802.1X-2004 9.4.1, reAuthPeriod"
     DEFVAL { 3600 }
     ::= { dot1xAuthConfigEntry 12 }
 
@@ -427,7 +481,8 @@ dot1xAuthReAuthEnabled OBJECT-TYPE
         "The enable/disable control used by the Reauthentication
         Timer state machine (8.5.5.1)."
     REFERENCE
-        "9.4.1, reAuthEnabled"
+        "802.1X-2001 9.4.1, reAuthEnabled,
+         802.1X-2004 9.4.1, reAuthEnabled"
     DEFVAL { false }
     ::= { dot1xAuthConfigEntry 13 }
 
@@ -440,7 +495,8 @@ dot1xAuthKeyTxEnabled OBJECT-TYPE
         currently in use by the Authenticator PAE state
         machine."
     REFERENCE
-        "9.4.1, keyTransmissionEnabled"
+        "802.1X-2001 9.4.1, keyTransmissionEnabled,
+         802.1X-2004 9.4.1, keyTransmissionEnabled"
     ::= { dot1xAuthConfigEntry 14 }
 
 -- ---------------------------------------------------------- --
@@ -457,7 +513,8 @@ dot1xAuthStatsTable OBJECT-TYPE
          An entry appears in this table for each port that may
          authenticate access to itself."
     REFERENCE
-        "9.4.2 Authenticator Statistics"
+        "802.1X-2001 9.4.2 Authenticator Statistics,
+         802.1X-2004 9.4.2 Authenticator Statistics"
     ::= { dot1xPaeAuthenticator 2 }
 
 dot1xAuthStatsEntry OBJECT-TYPE
@@ -505,7 +562,8 @@ dot1xAuthEapolFramesRx OBJECT-TYPE
         "The number of valid EAPOL frames of any type
         that have been received by this Authenticator."
     REFERENCE
-        "9.4.2, EAPOL frames received"
+        "802.1X-2001 9.4.2, EAPOL frames received,
+         802.1X-2004 9.4.2, EAPOL frames received"
     ::= { dot1xAuthStatsEntry 1 }
 
 dot1xAuthEapolFramesTx OBJECT-TYPE
@@ -516,7 +574,8 @@ dot1xAuthEapolFramesTx OBJECT-TYPE
         "The number of EAPOL frames of any type
         that have been transmitted by this Authenticator."
     REFERENCE
-        "9.4.2, EAPOL frames transmitted"
+        "802.1X-2001 9.4.2, EAPOL frames transmitted,
+         802.1X-2004 9.4.2, EAPOL frames transmitted"
     ::= { dot1xAuthStatsEntry 2 }
 
 dot1xAuthEapolStartFramesRx OBJECT-TYPE
@@ -527,7 +586,8 @@ dot1xAuthEapolStartFramesRx OBJECT-TYPE
         "The number of EAPOL Start frames that have
         been received by this Authenticator."
     REFERENCE
-        "9.4.2, EAPOL Start frames received"
+        "802.1X-2001 9.4.2, EAPOL Start frames received,
+         802.1X-2004 9.4.2, EAPOL Start frames received"
     ::= { dot1xAuthStatsEntry 3 }
 
 dot1xAuthEapolLogoffFramesRx OBJECT-TYPE
@@ -538,7 +598,8 @@ dot1xAuthEapolLogoffFramesRx OBJECT-TYPE
         "The number of EAPOL Logoff frames that have
         been received by this Authenticator."
     REFERENCE
-        "9.4.2, EAPOL Logoff frames received"
+        "802.1X-2001 9.4.2, EAPOL Logoff frames received,
+         802.1X-2004 9.4.2, EAPOL Logoff frames received"
     ::= { dot1xAuthStatsEntry 4 }
 
 dot1xAuthEapolRespIdFramesRx OBJECT-TYPE
@@ -549,7 +610,8 @@ dot1xAuthEapolRespIdFramesRx OBJECT-TYPE
         "The number of EAP Resp/Id frames that have
         been received by this Authenticator."
     REFERENCE
-        "9.4.2, EAPOL Resp/Id frames received"
+        "802.1X-2001 9.4.2, EAPOL Resp/Id frames received,
+         802.1X-2004 9.4.2, EAPOL Resp/Id frames received"
     ::= { dot1xAuthStatsEntry 5 }
 
 dot1xAuthEapolRespFramesRx OBJECT-TYPE
@@ -561,7 +623,8 @@ dot1xAuthEapolRespFramesRx OBJECT-TYPE
         (other than Resp/Id frames) that have been
         received by this Authenticator."
     REFERENCE
-        "9.4.2, EAPOL Response frames received"
+        "802.1X-2001 9.4.2, EAPOL Response frames received,
+         802.1X-2004 9.4.2, EAPOL Response frames received"
     ::= { dot1xAuthStatsEntry 6 }
 
 dot1xAuthEapolReqIdFramesTx OBJECT-TYPE
@@ -572,7 +635,8 @@ dot1xAuthEapolReqIdFramesTx OBJECT-TYPE
         "The number of EAP Req/Id frames that have been
         transmitted by this Authenticator."
     REFERENCE
-        "9.4.2, EAPOL Req/Id frames transmitted"
+        "802.1X-2001 9.4.2, EAPOL Req/Id frames transmitted,
+         802.1X-2004 9.4.2, EAPOL Req/Id frames transmitted"
     ::= { dot1xAuthStatsEntry 7 }
 
 dot1xAuthEapolReqFramesTx OBJECT-TYPE
@@ -584,7 +648,8 @@ dot1xAuthEapolReqFramesTx OBJECT-TYPE
         (other than Rq/Id frames) that have been
         transmitted by this Authenticator."
     REFERENCE
-        "9.4.2, EAPOL Request frames transmitted"
+        "802.1X-2001 9.4.2, EAPOL Request frames transmitted,
+         802.1X-2004 9.4.2, EAPOL Request frames transmitted"
     ::= { dot1xAuthStatsEntry 8 }
 
 dot1xAuthInvalidEapolFramesRx OBJECT-TYPE
@@ -596,7 +661,8 @@ dot1xAuthInvalidEapolFramesRx OBJECT-TYPE
         received by this Authenticator in which the
         frame type is not recognized."
     REFERENCE
-        "9.4.2, Invalid EAPOL frames received"
+        "802.1X-2001 9.4.2, Invalid EAPOL frames received,
+         802.1X-2004 9.4.2, Invalid EAPOL frames received"
     ::= { dot1xAuthStatsEntry 9 }
 
 dot1xAuthEapLengthErrorFramesRx OBJECT-TYPE
@@ -608,7 +674,8 @@ dot1xAuthEapLengthErrorFramesRx OBJECT-TYPE
         by this Authenticator in which the Packet Body
         Length field is invalid."
     REFERENCE
-        "9.4.2, EAP length error frames received"
+        "802.1X-2001 9.4.2, EAP length error frames received,
+         802.1X-2004 9.4.2, EAP length error frames received"
     ::= { dot1xAuthStatsEntry 10 }
 
 dot1xAuthLastEapolFrameVersion OBJECT-TYPE
@@ -619,7 +686,8 @@ dot1xAuthLastEapolFrameVersion OBJECT-TYPE
         "The protocol version number carried in the
         most recently received EAPOL frame."
     REFERENCE
-        "9.4.2, Last EAPOL frame version"
+        "802.1X-2001 9.4.2, Last EAPOL frame version,
+         802.1X-2004 9.4.2, Last EAPOL frame version"
     ::= { dot1xAuthStatsEntry 11 }
 
 dot1xAuthLastEapolFrameSource OBJECT-TYPE
@@ -630,7 +698,8 @@ dot1xAuthLastEapolFrameSource OBJECT-TYPE
         "The source MAC address carried in the
         most recently received EAPOL frame."
     REFERENCE
-        "9.4.2, Last EAPOL frame source"
+        "802.1X-2001 9.4.2, Last EAPOL frame source,
+         802.1X-2004 9.4.2, Last EAPOL frame source"
     ::= { dot1xAuthStatsEntry 12 }
 
 -- ---------------------------------------------------------- --
@@ -640,20 +709,20 @@ dot1xAuthLastEapolFrameSource OBJECT-TYPE
 dot1xAuthDiagTable OBJECT-TYPE
     SYNTAX      SEQUENCE OF Dot1xAuthDiagEntry
     MAX-ACCESS  not-accessible
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "A table that contains the diagnostics objects for the
          Authenticator PAE associated with each Port.
          An entry appears in this table for each port that may
          authenticate access to itself."
     REFERENCE
-        "9.4.3 Authenticator Diagnostics"
+        "802.1X-2001 9.4.3 Authenticator Diagnostics"
     ::= { dot1xPaeAuthenticator 3 }
 
 dot1xAuthDiagEntry OBJECT-TYPE
     SYNTAX      Dot1xAuthDiagEntry
     MAX-ACCESS  not-accessible
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "The diagnostics information for an Authenticator PAE."
     INDEX { dot1xPaePortNumber }
@@ -676,6 +745,7 @@ Dot1xAuthDiagEntry ::=
         dot1xAuthAuthReauthsWhileAuthenticating
             Counter32,
         dot1xAuthAuthEapStartsWhileAuthenticating
+
             Counter32,
         dot1xAuthAuthEapLogoffWhileAuthenticating
             Counter32,
@@ -702,44 +772,44 @@ Dot1xAuthDiagEntry ::=
 dot1xAuthEntersConnecting OBJECT-TYPE
     SYNTAX      Counter32
     MAX-ACCESS  read-only
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "Counts the number of times that the state machine
         transitions to the CONNECTING state from any other
         state."
     REFERENCE
-        "9.4.2, 8.5.4.2.1"
+        "802.1X-2001 9.4.2, 802.1X-2001 8.5.4.2.1"
     ::= { dot1xAuthDiagEntry 1 }
 
 dot1xAuthEapLogoffsWhileConnecting OBJECT-TYPE
     SYNTAX      Counter32
     MAX-ACCESS  read-only
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "Counts the number of times that the state machine
         transitions from CONNECTING to DISCONNECTED as a result
         of receiving an EAPOL-Logoff message."
     REFERENCE
-        "9.4.2, 8.5.4.2.2"
+        "802.1X-2001 9.4.2, 802.1X-2001 8.5.4.2.2"
     ::= { dot1xAuthDiagEntry 2 }
 
 dot1xAuthEntersAuthenticating OBJECT-TYPE
     SYNTAX      Counter32
     MAX-ACCESS  read-only
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "Counts the number of times that the state machine
         transitions from CONNECTING to AUTHENTICATING, as a
         result of an EAP-Response/Identity message being
         received from the Supplicant."
     REFERENCE
-        "9.4.2, 8.5.4.2.3"
+        "802.1X-2001 9.4.2, 802.1X-2001 8.5.4.2.3"
     ::= { dot1xAuthDiagEntry 3 }
 
 dot1xAuthAuthSuccessWhileAuthenticating OBJECT-TYPE
     SYNTAX      Counter32
     MAX-ACCESS  read-only
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "Counts the number of times that the state machine
         transitions from AUTHENTICATING to AUTHENTICATED, as a
@@ -747,116 +817,116 @@ dot1xAuthAuthSuccessWhileAuthenticating OBJECT-TYPE
         indicating successful authentication of the Supplicant
         (authSuccess = TRUE)."
     REFERENCE
-        "9.4.2, 8.5.4.2.4"
+        "802.1X-2001 9.4.2, 802.1X-2001 8.5.4.2.4"
     ::= { dot1xAuthDiagEntry 4 }
 
 dot1xAuthAuthTimeoutsWhileAuthenticating OBJECT-TYPE
     SYNTAX      Counter32
     MAX-ACCESS  read-only
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "Counts the number of times that the state machine
         transitions from AUTHENTICATING to ABORTING, as a result
         of the Backend Authentication state machine indicating
         authentication timeout (authTimeout = TRUE)."
     REFERENCE
-        "9.4.2, 8.5.4.2.5"
+        "802.1X-2001 9.4.2, 802.1X-2001 8.5.4.2.5"
     ::= { dot1xAuthDiagEntry 5 }
 
 dot1xAuthAuthFailWhileAuthenticating OBJECT-TYPE
     SYNTAX      Counter32
     MAX-ACCESS  read-only
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "Counts the number of times that the state machine
         transitions from AUTHENTICATING to HELD, as a result
         of the Backend Authentication state machine indicating
         authentication failure (authFail = TRUE)."
     REFERENCE
-        "9.4.2, 8.5.4.2.6"
+        "802.1X-2001 9.4.2, 802.1X-2001 8.5.4.2.6"
     ::= { dot1xAuthDiagEntry 6 }
 
 dot1xAuthAuthReauthsWhileAuthenticating OBJECT-TYPE
     SYNTAX      Counter32
     MAX-ACCESS  read-only
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "Counts the number of times that the state machine
         transitions from AUTHENTICATING to ABORTING, as a result
         of a reauthentication request (reAuthenticate = TRUE)."
     REFERENCE
-        "9.4.2, 8.5.4.2.7"
+        "802.1X-2001 9.4.2, 802.1X-2001 8.5.4.2.7"
     ::= { dot1xAuthDiagEntry 7 }
 
 dot1xAuthAuthEapStartsWhileAuthenticating OBJECT-TYPE
     SYNTAX      Counter32
     MAX-ACCESS  read-only
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "Counts the number of times that the state machine
         transitions from AUTHENTICATING to ABORTING, as a result
         of an EAPOL-Start message being received
         from the Supplicant."
     REFERENCE
-        "9.4.2, 8.5.4.2.8"
+        "802.1X-2001 9.4.2, 802.1X-2001 8.5.4.2.8"
     ::= { dot1xAuthDiagEntry 8 }
 
 dot1xAuthAuthEapLogoffWhileAuthenticating OBJECT-TYPE
     SYNTAX      Counter32
     MAX-ACCESS  read-only
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "Counts the number of times that the state machine
         transitions from AUTHENTICATING to ABORTING, as a result
         of an EAPOL-Logoff message being received
         from the Supplicant."
     REFERENCE
-        "9.4.2, 8.5.4.2.9"
+        "802.1X-2001 9.4.2, 802.1X-2001 8.5.4.2.9"
     ::= { dot1xAuthDiagEntry 9 }
 
 dot1xAuthAuthReauthsWhileAuthenticated OBJECT-TYPE
     SYNTAX      Counter32
     MAX-ACCESS  read-only
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "Counts the number of times that the state machine
         transitions from AUTHENTICATED to CONNECTING, as a
         result of a reauthentication request
         (reAuthenticate = TRUE)."
     REFERENCE
-        "9.4.2, 8.5.4.2.10"
+        "802.1X-2001 9.4.2, 802.1X-2001 8.5.4.2.10"
     ::= { dot1xAuthDiagEntry 10 }
 
 dot1xAuthAuthEapStartsWhileAuthenticated OBJECT-TYPE
     SYNTAX      Counter32
     MAX-ACCESS  read-only
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "Counts the number of times that the state machine
         transitions from AUTHENTICATED to CONNECTING, as a
         result of an EAPOL-Start message being received from the
         Supplicant."
     REFERENCE
-        "9.4.2, 8.5.4.2.11"
+        "802.1X-2001 9.4.2, 802.1X-2001 8.5.4.2.11"
     ::= { dot1xAuthDiagEntry 11 }
 
 dot1xAuthAuthEapLogoffWhileAuthenticated OBJECT-TYPE
     SYNTAX      Counter32
     MAX-ACCESS  read-only
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "Counts the number of times that the state machine
         transitions from AUTHENTICATED to DISCONNECTED, as a
         result of an EAPOL-Logoff message being received from
         the Supplicant."
     REFERENCE
-        "9.4.2, 8.5.4.2.12"
+        "802.1X-2001 9.4.2, 802.1X-2001 8.5.4.2.12"
     ::= { dot1xAuthDiagEntry 12 }
 
 dot1xAuthBackendResponses OBJECT-TYPE
     SYNTAX      Counter32
     MAX-ACCESS  read-only
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "Counts the number of times that the state machine sends
         an initial Access-Request packet to the Authentication
@@ -864,13 +934,13 @@ dot1xAuthBackendResponses OBJECT-TYPE
         RESPONSE state). Indicates that the Authenticator
         attempted communication with the Authentication Server."
     REFERENCE
-        "9.4.2, 8.5.6.2.1"
+        "802.1X-2001 9.4.2, 802.1X-2001 8.5.6.2.1"
     ::= { dot1xAuthDiagEntry 13 }
 
 dot1xAuthBackendAccessChallenges OBJECT-TYPE
     SYNTAX      Counter32
     MAX-ACCESS  read-only
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "Counts the number of times that the state machine
         receives an initial Access-Challenge packet from the
@@ -879,13 +949,13 @@ dot1xAuthBackendAccessChallenges OBJECT-TYPE
         the Authentication Server has communication with
         the Authenticator."
     REFERENCE
-        "9.4.2, 8.5.6.2.2"
+        "802.1X-2001 9.4.2, 802.1X-2001 8.5.6.2.2"
     ::= { dot1xAuthDiagEntry 14 }
 
 dot1xAuthBackendOtherRequestsToSupplicant OBJECT-TYPE
     SYNTAX      Counter32
     MAX-ACCESS  read-only
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "Counts the number of times that the state machine
         sends an EAP-Request packet (other than an Identity,
@@ -894,13 +964,13 @@ dot1xAuthBackendOtherRequestsToSupplicant OBJECT-TYPE
         REQUEST state). Indicates that the Authenticator chose
         an EAP-method."
     REFERENCE
-        "9.4.2, 8.5.6.2.3"
+        "802.1X-2001 9.4.2, 802.1X-2001 8.5.6.2.3"
     ::= { dot1xAuthDiagEntry 15 }
 
 dot1xAuthBackendNonNakResponsesFromSupplicant OBJECT-TYPE
     SYNTAX      Counter32
     MAX-ACCESS  read-only
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "Counts the number of times that the state machine
         receives a response from the Supplicant to an initial
@@ -908,16 +978,16 @@ dot1xAuthBackendNonNakResponsesFromSupplicant OBJECT-TYPE
         EAP-NAK (i.e., rxResp becomes TRUE, causing the state
         machine to transition from REQUEST to RESPONSE,
         and the response is not an EAP-NAK). Indicates that
-        the Supplicant can respond to the Authenticator's
+        the Supplicant can respond to the Authenticators
         chosen EAP-method."
     REFERENCE
-        "9.4.2, 8.5.6.2.4"
+        "802.1X-2001 9.4.2, 802.1X-2001 8.5.6.2.4"
     ::= { dot1xAuthDiagEntry 16 }
 
 dot1xAuthBackendAuthSuccesses OBJECT-TYPE
     SYNTAX      Counter32
     MAX-ACCESS  read-only
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "Counts the number of times that the state machine
         receives an EAP-Success message from the Authentication
@@ -926,13 +996,13 @@ dot1xAuthBackendAuthSuccesses OBJECT-TYPE
         the Supplicant has successfully authenticated to
         the Authentication Server."
     REFERENCE
-        "9.4.2, 8.5.6.2.5"
+        "802.1X-2001 9.4.2, 802.1X-2001 8.5.6.2.5"
     ::= { dot1xAuthDiagEntry 17 }
 
 dot1xAuthBackendAuthFails OBJECT-TYPE
     SYNTAX      Counter32
     MAX-ACCESS  read-only
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "Counts the number of times that the state machine
         receives an EAP-Failure message from the Authentication
@@ -940,7 +1010,7 @@ dot1xAuthBackendAuthFails OBJECT-TYPE
         from RESPONSE to FAIL). Indicates that the Supplicant
         has not authenticated to the Authentication Server."
     REFERENCE
-        "9.4.2, 8.5.6.2.6"
+        "802.1X-2001 9.4.2, 802.1X-2001 8.5.6.2.6"
     ::= { dot1xAuthDiagEntry 18 }
 
 -- ---------------------------------------------------------- --
@@ -957,7 +1027,8 @@ dot1xAuthSessionStatsTable OBJECT-TYPE
         An entry appears in this table for each port that may
         authenticate access to itself."
     REFERENCE
-        "9.4.4"
+        "802.1X-2001 9.4.4,
+         802.1X-2004 9.4.4"
     ::= { dot1xPaeAuthenticator 4 }
 
 dot1xAuthSessionStatsEntry OBJECT-TYPE
@@ -1003,7 +1074,8 @@ dot1xAuthSessionOctetsRx OBJECT-TYPE
         "The number of octets received in user data
         frames on this Port during the session."
     REFERENCE
-        "9.4.4, Session Octets Received"
+        "802.1X-2001 9.4.4, Session Octets Received,
+         802.1X-2004 9.4.4, Session Octets Received"
     ::= { dot1xAuthSessionStatsEntry 1 }
 
 dot1xAuthSessionOctetsTx OBJECT-TYPE
@@ -1014,7 +1086,8 @@ dot1xAuthSessionOctetsTx OBJECT-TYPE
         "The number of octets transmitted in user data
         frames on this Port during the session."
     REFERENCE
-        "9.4.4, Session Octets Transmitted"
+        "802.1X-2001 9.4.4, Session Octets Transmitted,
+         802.1X-2004 9.4.4, Session Octets Transmitted"
     ::= { dot1xAuthSessionStatsEntry 2 }
 
 dot1xAuthSessionFramesRx OBJECT-TYPE
@@ -1025,7 +1098,8 @@ dot1xAuthSessionFramesRx OBJECT-TYPE
         "The number of user data frames received
         on this Port during the session."
     REFERENCE
-        "9.4.4, Session Frames Received"
+        "802.1X-2001 9.4.4, Session Frames Received,
+         802.1X-2004 9.4.4, Session Frames Received"
     ::= { dot1xAuthSessionStatsEntry 3 }
 
 dot1xAuthSessionFramesTx OBJECT-TYPE
@@ -1036,7 +1110,8 @@ dot1xAuthSessionFramesTx OBJECT-TYPE
         "The number of user data frames transmitted
         on this Port during the session."
     REFERENCE
-        "9.4.4, Session Frames Transmitted"
+        "802.1X-2001 9.4.4, Session Frames Transmitted,
+         802.1X-2004 9.4.4, Session Frames Transmitted"
     ::= { dot1xAuthSessionStatsEntry 4 }
 
 dot1xAuthSessionId OBJECT-TYPE
@@ -1048,7 +1123,8 @@ dot1xAuthSessionId OBJECT-TYPE
         form of a printable ASCII string of at least
         three characters."
     REFERENCE
-        "9.4.4, Session Identifier"
+        "802.1X-2001 9.4.4, Session Identifier,
+         802.1X-2004 9.4.4, Session Identifier"
     ::= { dot1xAuthSessionStatsEntry 5 }
 
 dot1xAuthSessionAuthenticMethod OBJECT-TYPE
@@ -1062,7 +1138,8 @@ dot1xAuthSessionAuthenticMethod OBJECT-TYPE
         "The authentication method used to establish the
         session."
     REFERENCE
-        "9.4.4, Session Authentication Method"
+        "802.1X-2001 9.4.4, Session Authentication Method,
+         802.1X-2004 9.4.4, Session Authentication Method"
     ::= { dot1xAuthSessionStatsEntry 6 }
 
 dot1xAuthSessionTime OBJECT-TYPE
@@ -1072,7 +1149,8 @@ dot1xAuthSessionTime OBJECT-TYPE
     DESCRIPTION
         "The duration of the session in seconds."
     REFERENCE
-        "9.4.4, Session Time"
+        "802.1X-2001 9.4.4, Session Time,
+         802.1X-2004 9.4.4, Session Time"
     ::= { dot1xAuthSessionStatsEntry 7 }
 
 dot1xAuthSessionTerminateCause OBJECT-TYPE
@@ -1091,7 +1169,8 @@ dot1xAuthSessionTerminateCause OBJECT-TYPE
     DESCRIPTION
         "The reason for the session termination."
     REFERENCE
-        "9.4.4, Session Terminate Cause"
+        "802.1X-2001 9.4.4, Session Terminate Cause,
+         802.1X-2004 9.4.4, Session Terminate Cause"
     ::= { dot1xAuthSessionStatsEntry 8 }
 
 dot1xAuthSessionUserName OBJECT-TYPE
@@ -1102,8 +1181,10 @@ dot1xAuthSessionUserName OBJECT-TYPE
         "The User-Name representing the identity of the
         Supplicant PAE."
     REFERENCE
-        "9.4.4, Session User Name"
+        "802.1X-2001 9.4.4, Session User Name,
+         802.1X-2004 9.4.4, Session User Name"
     ::= { dot1xAuthSessionStatsEntry 9 }
+
 
 -- ---------------------------------------------------------- --
 -- The PAE Supplicant Group
@@ -1123,7 +1204,8 @@ dot1xSuppConfigTable OBJECT-TYPE
         An entry appears in this table for each port that may
         authenticate itself when challenged by a remote system."
     REFERENCE
-        "9.5.1"
+        "802.1X-2001 9.5.1,
+         802.1X-2004 9.5.1"
     ::= { dot1xPaeSupplicant 1 }
 
 dot1xSuppConfigEntry OBJECT-TYPE
@@ -1146,8 +1228,14 @@ Dot1xSuppConfigEntry ::=
         dot1xSuppStartPeriod
             Unsigned32,
         dot1xSuppMaxStart
-            Unsigned32
-        }
+            Unsigned32,
+        dot1xSuppControlledPortStatus
+            PaeControlledPortStatus,
+        dot1xSuppAccessCtrlWithAuth
+            INTEGER,
+        dot1xSuppBackendState
+            INTEGER
+    }
 
 dot1xSuppPaeState OBJECT-TYPE
     SYNTAX      INTEGER {
@@ -1156,8 +1244,11 @@ dot1xSuppPaeState OBJECT-TYPE
                     connecting(3),
                     authenticating(4),
                     authenticated(5),
-                    acquired(6),
-                    held(7)
+                    acquired(6),            -- deprecated
+                    held(7),
+                    restart(8),
+                    sForceAuth(9),
+                    sForceUnauth(10)
                 }
     MAX-ACCESS  read-only
     STATUS      current
@@ -1165,7 +1256,8 @@ dot1xSuppPaeState OBJECT-TYPE
         "The current state of the Supplicant PAE state
         machine (8.5.8)."
     REFERENCE
-        "9.5.1, Supplicant PAE State"
+        "802.1X-2001 9.5.1, Supplicant PAE State,
+         802.1X-2004 9.5.1, Supplicant PAE State"
     ::= { dot1xSuppConfigEntry 1 }
 
 dot1xSuppHeldPeriod OBJECT-TYPE
@@ -1177,7 +1269,8 @@ dot1xSuppHeldPeriod OBJECT-TYPE
         constant currently in use by the Supplicant
         PAE state machine (8.5.8.1.2)."
     REFERENCE
-        "9.5.1, heldPeriod"
+        "802.1X-2001 9.5.1, heldPeriod,
+         802.1X-2004 9.5.1, heldPeriod"
     DEFVAL { 60 }
     ::= { dot1xSuppConfigEntry 2 }
 
@@ -1190,7 +1283,8 @@ dot1xSuppAuthPeriod OBJECT-TYPE
         constant currently in use by the Supplicant
         PAE state machine (8.5.8.1.2)."
     REFERENCE
-        "9.5.1, authPeriod"
+        "802.1X-2001 9.5.1, authPeriod,
+         802.1X-2004 9.5.1, authPeriod"
     DEFVAL { 30 }
     ::= { dot1xSuppConfigEntry 3 }
 
@@ -1203,7 +1297,8 @@ dot1xSuppStartPeriod OBJECT-TYPE
         constant currently in use by the Supplicant
         PAE state machine (8.5.8.1.2)."
     REFERENCE
-        "9.5.1, startPeriod"
+        "802.1X-2001 9.5.1, startPeriod,
+         802.1X-2004 9.5.1, startPeriod"
     DEFVAL { 30 }
     ::= { dot1xSuppConfigEntry 4 }
 
@@ -1215,9 +1310,67 @@ dot1xSuppMaxStart OBJECT-TYPE
         "The value of the maxStart constant currently in use by
         the Supplicant PAE state machine (8.5.8.1.2)."
     REFERENCE
-        "9.5.1, maxStart"
-    DEFVAL { 3}
+        "802.1X-2001 9.5.1, maxStart,
+         802.1X-2004 9.5.1, maxStart"
+    DEFVAL { 3 }
     ::= { dot1xSuppConfigEntry 5 }
+
+dot1xSuppControlledPortStatus OBJECT-TYPE
+    SYNTAX      PaeControlledPortStatus
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The current state of the Supplicant PAE state
+        machine (8.5.8)."
+    REFERENCE
+        "802.1X-2001 9.5.1, Supplicant PAE State,
+         802.1X-2004 9.5.1, Supplicant PAE State"
+    ::= { dot1xSuppConfigEntry 6 }
+
+dot1xSuppAccessCtrlWithAuth OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    inactive(1),
+                    active(2)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The setting for the application of the Supplicant
+        authorization state when the port is operating as
+        both a Supplicant and an Authenticator.
+            inactive  indicates the port will not apply the
+                      the Supplicant authorization state, using
+                      only the Authenticator authorization 
+                      state to restrict access to the port.
+            active    indicates the port will apply the
+                      the Supplicant authorization state, as
+                      well as the Authenticator
+                      authorization state."
+    REFERENCE
+        "802.1X-2004 9.5.1, Supplicant Access Control With
+        Authenticator"
+    DEFVAL { inactive }
+    ::= { dot1xSuppConfigEntry 7 }
+
+dot1xSuppBackendState OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    initialize(1),
+                    idle(2),
+                    request(3),
+                    response(4),
+                    receive(5),
+                    fail(6),
+                    success(7),
+                    timeout(8)
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The current state of the Supplicant Backend state
+	machine."
+    REFERENCE
+        "802.1X-2004 9.5.1, Backend Supplicant state"
+    ::= { dot1xSuppConfigEntry 8 }
 
 -- ---------------------------------------------------------- --
 -- The Supplicant Statistics Table
@@ -1233,7 +1386,8 @@ dot1xSuppStatsTable OBJECT-TYPE
         An entry appears in this table for each port that may
         authenticate itself when challenged by a remote system."
     REFERENCE
-        "9.5.2"
+        "802.1X-2001 9.5.2,
+         802.1X-2004 9.5.2"
     ::= { dot1xPaeSupplicant 2 }
 
 dot1xSuppStatsEntry OBJECT-TYPE
@@ -1281,7 +1435,8 @@ dot1xSuppEapolFramesRx OBJECT-TYPE
         "The number of EAPOL frames of any type
         that have been received by this Supplicant."
     REFERENCE
-        "9.5.2, EAPOL frames received"
+        "802.1X-2001 9.5.2, EAPOL frames received,
+         802.1X-2004 9.5.2, EAPOL frames received"
     ::= { dot1xSuppStatsEntry 1 }
 
 dot1xSuppEapolFramesTx OBJECT-TYPE
@@ -1292,7 +1447,8 @@ dot1xSuppEapolFramesTx OBJECT-TYPE
         "The number of EAPOL frames of any type
         that have been transmitted by this Supplicant."
     REFERENCE
-        "9.5.2, EAPOL frames transmitted"
+        "802.1X-2001 9.5.2, EAPOL frames transmitted,
+         802.1X-2004 9.5.2, EAPOL frames transmitted"
     ::= { dot1xSuppStatsEntry 2 }
 
 dot1xSuppEapolStartFramesTx OBJECT-TYPE
@@ -1303,7 +1459,8 @@ dot1xSuppEapolStartFramesTx OBJECT-TYPE
         "The number of EAPOL Start frames
         that have been transmitted by this Supplicant."
     REFERENCE
-        "9.5.2, EAPOL Start frames transmitted"
+        "802.1X-2001 9.5.2, EAPOL Start frames transmitted,
+         802.1X-2004 9.5.2, EAPOL Start frames transmitted"
     ::= { dot1xSuppStatsEntry 3 }
 
 dot1xSuppEapolLogoffFramesTx OBJECT-TYPE
@@ -1314,52 +1471,57 @@ dot1xSuppEapolLogoffFramesTx OBJECT-TYPE
         "The number of EAPOL Logoff frames
         that have been transmitted by this Supplicant."
     REFERENCE
-        "9.5.2, EAPOL Logoff frames transmitted"
+        "802.1X-2001 9.5.2, EAPOL Logoff frames transmitted,
+         802.1X-2004 9.5.2, EAPOL Logoff frames transmitted"
     ::= { dot1xSuppStatsEntry 4 }
 
 dot1xSuppEapolRespIdFramesTx OBJECT-TYPE
     SYNTAX      Counter32
     MAX-ACCESS  read-only
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "The number of EAP Resp/Id frames
         that have been transmitted by this Supplicant."
     REFERENCE
-        "9.5.2, EAP Resp/Id frames transmitted"
+        "802.1X-2001 9.5.2, EAP Resp/Id frames transmitted,
+         802.1X-2004 9.5.2, EAP Resp/Id frames transmitted"
     ::= { dot1xSuppStatsEntry 5 }
 
 dot1xSuppEapolRespFramesTx OBJECT-TYPE
     SYNTAX      Counter32
     MAX-ACCESS  read-only
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "The number of valid EAP Response frames
         (other than Resp/Id frames)
         that have been transmitted by this Supplicant."
     REFERENCE
-        "9.5.2, EAP Resp frames transmitted"
+        "802.1X-2001 9.5.2, EAP Resp frames transmitted,
+         802.1X-2004 9.5.2, EAP Resp frames transmitted"
     ::= { dot1xSuppStatsEntry 6 }
 
 dot1xSuppEapolReqIdFramesRx OBJECT-TYPE
     SYNTAX      Counter32
     MAX-ACCESS  read-only
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "The number of EAP Req/Id frames
         that have been received by this Supplicant."
     REFERENCE
-        "9.5.2, EAP Req/Id frames received"
+        "802.1X-2001 9.5.2, EAP Req/Id frames received,
+         802.1X-2004 9.5.2, EAP Req/Id frames received"
     ::= { dot1xSuppStatsEntry 7 }
 
 dot1xSuppEapolReqFramesRx OBJECT-TYPE
     SYNTAX      Counter32
     MAX-ACCESS  read-only
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "The number of EAP Request frames (other than Rq/Id
         frames) that have been received by this Supplicant."
     REFERENCE
-        "9.5.2, EAP Req frames received"
+        "802.1X-2001 9.5.2, EAP Req frames received,
+         802.1X-2004 9.5.2, EAP Req frames received"
     ::= { dot1xSuppStatsEntry 8 }
 
 dot1xSuppInvalidEapolFramesRx OBJECT-TYPE
@@ -1371,7 +1533,8 @@ dot1xSuppInvalidEapolFramesRx OBJECT-TYPE
         received by this Supplicant in which the
         frame type is not recognized."
     REFERENCE
-        "9.5.2, Invalid EAPOL frames received"
+        "802.1X-2001 9.5.2, Invalid EAPOL frames received,
+         802.1X-2004 9.5.2, Invalid EAPOL frames received"
     ::= { dot1xSuppStatsEntry 9 }
 
 dot1xSuppEapLengthErrorFramesRx OBJECT-TYPE
@@ -1383,7 +1546,8 @@ dot1xSuppEapLengthErrorFramesRx OBJECT-TYPE
         received by this Supplicant in which the Packet
         Body Length field (7.5.5) is invalid."
     REFERENCE
-        "9.5.2, EAP length error frames received"
+        "802.1X-2001 9.5.2, EAP length error frames received,
+         802.1X-2004 9.5.2, EAP length error frames received"
     ::= { dot1xSuppStatsEntry 10 }
 
 dot1xSuppLastEapolFrameVersion OBJECT-TYPE
@@ -1394,7 +1558,8 @@ dot1xSuppLastEapolFrameVersion OBJECT-TYPE
         "The protocol version number carried in the
         most recently received EAPOL frame."
     REFERENCE
-        "9.5.2, Last EAPOL frame version"
+        "802.1X-2001 9.5.2, Last EAPOL frame version,
+         802.1X-2004 9.5.2, Last EAPOL frame version"
     ::= { dot1xSuppStatsEntry 11 }
 
 dot1xSuppLastEapolFrameSource OBJECT-TYPE
@@ -1405,7 +1570,8 @@ dot1xSuppLastEapolFrameSource OBJECT-TYPE
         "The source MAC address carried in the
         most recently received EAPOL frame."
     REFERENCE
-        "9.5.2, Last EAPOL frame source"
+        "802.1X-2001 9.5.2, Last EAPOL frame source,
+         802.1X-2004 9.5.2, Last EAPOL frame source"
     ::= { dot1xSuppStatsEntry 12 }
 
 -- ---------------------------------------------------------- --
@@ -1428,7 +1594,8 @@ dot1xPaeSystemGroup OBJECT-GROUP
         dot1xPaeSystemAuthControl,
         dot1xPaePortProtocolVersion,
         dot1xPaePortCapabilities,
-        dot1xPaePortInitialize
+        dot1xPaePortInitialize,
+        dot1xPaePortReauthenticate
     }
     STATUS      current
     DESCRIPTION
@@ -1453,7 +1620,7 @@ dot1xPaeAuthConfigGroup OBJECT-GROUP
         dot1xAuthReAuthEnabled,
         dot1xAuthKeyTxEnabled
     }
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "A collection of objects providing configuration
         information about an Authenticator PAE."
@@ -1501,7 +1668,7 @@ dot1xPaeAuthDiagGroup OBJECT-GROUP
         dot1xAuthBackendAuthSuccesses,
         dot1xAuthBackendAuthFails
     }
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "A collection of objects providing diagnostic statistics
         about an Authenticator PAE."
@@ -1516,7 +1683,8 @@ dot1xPaeAuthSessionStatsGroup OBJECT-GROUP
         dot1xAuthSessionId,
         dot1xAuthSessionAuthenticMethod,
         dot1xAuthSessionTime,
-        dot1xAuthSessionTerminateCause
+        dot1xAuthSessionTerminateCause,
+        dot1xAuthSessionUserName
     }
     STATUS      current
     DESCRIPTION
@@ -1553,18 +1721,67 @@ dot1xPaeSuppStatsGroup OBJECT-GROUP
         dot1xSuppLastEapolFrameVersion,
         dot1xSuppLastEapolFrameSource
     }
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
         "A collection of objects providing statistics about a
         Supplicant PAE."
     ::= { dot1xPaeGroups 7 }
 
+dot1xPaeAuthConfigGroup2 OBJECT-GROUP
+    OBJECTS {
+        dot1xAuthPaeState,
+        dot1xAuthBackendAuthState,
+        dot1xAuthAdminControlledDirections,
+        dot1xAuthOperControlledDirections,
+        dot1xAuthAuthControlledPortStatus,
+        dot1xAuthAuthControlledPortControl,
+        dot1xAuthQuietPeriod,
+        dot1xAuthServerTimeout,
+        dot1xAuthReAuthPeriod,
+        dot1xAuthReAuthEnabled,
+        dot1xAuthKeyTxEnabled
+    }
+    STATUS      current
+    DESCRIPTION
+        "A collection of objects providing configuration
+        information about an Authenticator PAE."
+    ::= { dot1xPaeGroups 8 }
+
+dot1xPaeSuppConfigGroup2 OBJECT-GROUP
+    OBJECTS {
+        dot1xSuppControlledPortStatus,
+        dot1xSuppAccessCtrlWithAuth,
+        dot1xSuppBackendState
+    }
+    STATUS      current
+    DESCRIPTION
+        "A collection of objects providing configuration
+        information about a Supplicant PAE."
+    ::= { dot1xPaeGroups 9 }
+
+dot1xPaeSuppStatsGroup2 OBJECT-GROUP
+    OBJECTS {
+        dot1xSuppEapolFramesRx,
+        dot1xSuppEapolFramesTx,
+        dot1xSuppEapolStartFramesTx,
+        dot1xSuppEapolLogoffFramesTx,
+        dot1xSuppInvalidEapolFramesRx,
+        dot1xSuppEapLengthErrorFramesRx,
+        dot1xSuppLastEapolFrameVersion,
+        dot1xSuppLastEapolFrameSource
+    }
+    STATUS      current
+    DESCRIPTION
+        "A collection of objects providing statistics about a
+        Supplicant PAE."
+    ::= { dot1xPaeGroups 10 }
+
 -- ---------------------------------------------------------- --
--- compliance statements
+-- compliance statements for 802.1X-2001
 -- ---------------------------------------------------------- --
 
 dot1xPaeCompliance MODULE-COMPLIANCE
-    STATUS  current
+    STATUS  deprecated
     DESCRIPTION
         "The compliance statement for device support of
         Port Access Control."
@@ -1628,7 +1845,76 @@ dot1xPaeCompliance MODULE-COMPLIANCE
 
     ::= { dot1xPaeCompliances 1 }
 
-END
+-- ---------------------------------------------------------- --
+-- compliance statements for 802.1X-2004
+-- ---------------------------------------------------------- --
+
+dot1xPaeCompliance2 MODULE-COMPLIANCE
+    STATUS  current
+    DESCRIPTION
+        "The compliance statement for device support of
+        Port Access Control."
+
+    MODULE
+        MANDATORY-GROUPS {
+            dot1xPaeSystemGroup
+        }
+
+        GROUP   dot1xPaeAuthConfigGroup2
+        DESCRIPTION
+            "This group is mandatory for systems that support
+            the Authenticator functions of the PAE."
+
+        OBJECT  dot1xAuthAdminControlledDirections
+        SYNTAX  INTEGER {
+                    both(0)
+                }
+        MIN-ACCESS read-only
+        DESCRIPTION
+            "Support for in(1) is optional."
+
+        OBJECT  dot1xAuthOperControlledDirections
+        SYNTAX  INTEGER {
+                    both(0)
+                }
+        DESCRIPTION
+            "Support for in(1) is optional."
+
+        OBJECT dot1xAuthKeyTxEnabled
+        MIN-ACCESS read-only
+        DESCRIPTION
+          "An Authenticator PAE that does not support
+          EAPOL-Key frames may implement this object as
+          read-only, returning a value of FALSE."
+
+        GROUP   dot1xPaeAuthStatsGroup
+        DESCRIPTION
+            "This group is mandatory for systems that support
+            the Authenticator functions of the PAE."
+
+        GROUP   dot1xPaeAuthSessionStatsGroup
+        DESCRIPTION
+            "This group is optional for systems that support
+            the Authenticator functions of the PAE."
+
+        GROUP   dot1xPaeSuppConfigGroup
+        DESCRIPTION
+            "This group is mandatory for systems that support
+            the Supplicant functions of the PAE."
+
+        GROUP   dot1xPaeSuppStatsGroup2
+        DESCRIPTION
+            "This group is mandatory for systems that support
+            the Supplicant functions of the PAE."
+
+        GROUP   dot1xPaeSuppConfigGroup2
+        DESCRIPTION
+            "This group is mandatory for systems that support
+            the Supplicant functions of the PAE."
+
+    ::= { dot1xPaeCompliances 2 }
+
+ END
 
 
 

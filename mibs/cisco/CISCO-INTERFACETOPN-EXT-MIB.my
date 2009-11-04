@@ -24,7 +24,7 @@ IMPORTS
                 FROM Q-BRIDGE-MIB;
 
 ciscoInterfaceTopNExtMIB MODULE-IDENTITY
-        LAST-UPDATED        "200603150000Z"
+        LAST-UPDATED        "200801150000Z"
         ORGANIZATION        "Cisco Systems, Inc."
         CONTACT-INFO
                 "       Cisco Systems
@@ -42,6 +42,12 @@ ciscoInterfaceTopNExtMIB MODULE-IDENTITY
                 It provides additional management information for
                 sorting device interfaces." 
 
+        REVISION        "200801150000Z"
+        DESCRIPTION 
+                "Modified the object descriptions of
+                 citneInterfaceTopNCounterType,
+                 citneInterfaceTopNInterfaceType 
+                 and citneInterfaceTopNVlanNumber."
         REVISION        "200603150000Z"
         DESCRIPTION 
                 "Initial version of this MIB module."
@@ -204,7 +210,7 @@ citneInterfaceTopNCounterType OBJECT-TYPE
                 in the corresponding entries in interfaceTopNTable. 
 
             This object may not be modified if the associated
-            interfaceTopNControlStatus object is equal to 'active'."
+            interfaceTopNRowStatus object is equal to 'active'."
      DEFVAL { none }
      ::= { citneInterfaceTopNControlEntry 1 }
  
@@ -243,7 +249,7 @@ citneInterfaceTopNInterfaceType OBJECT-TYPE
             layer3 -- all layer-3 interfaces in the system.  
  
             This object may not be modified if the associated
-            interfaceTopNControlStatus object is equal to 'active'."
+            interfaceTopNRowStatus object is equal to 'active'."
     DEFVAL { all }
     ::= { citneInterfaceTopNControlEntry 2 }
 
@@ -269,7 +275,7 @@ citneInterfaceTopNVlanNumber OBJECT-TYPE
             the value of 0.
 
             This object may not be modified if the associated
-            interfaceTopNControlStatus object is equal to 'active'."
+            interfaceTopNRowStatus object is equal to 'active'."
     DEFVAL { 0 }
     ::= { citneInterfaceTopNControlEntry 3 }
 

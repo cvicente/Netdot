@@ -18,7 +18,9 @@ CONFIG-MIB DEFINITIONS ::= BEGIN
         HpSwitchPortType, ConfigStatus
             FROM HP-ICF-TC
         hpSwitch
-            FROM HP-ICF-OID;
+            FROM HP-ICF-OID
+        InetAddressType, InetAddress
+            FROM INET-ADDRESS-MIB;
 
     -- type.
     Timeout ::= INTEGER -- a STP timer in units of 1/100 seconds
@@ -165,6 +167,28 @@ CONFIG-MIB DEFINITIONS ::= BEGIN
                     expires, at which time the traffic filter is then
                     removed."
         ::= { hpSwitchSystemConfig 11 }
+
+    hpSwitchMaxFrameSize OBJECT-TYPE
+        SYNTAX      INTEGER (1..65535)
+        ACCESS      read-write
+        STATUS      mandatory
+        DESCRIPTION "This is the value of the global jumbos max-frame-size
+                    supported by the switch. The default value for this is
+                    set to 9216, in order to make it compatible with
+                    previous versions of software. This configuration does
+                    not take a reboot to take effect."
+        ::= { hpSwitchSystemConfig 12 }
+
+    hpSwitchIpMTU OBJECT-TYPE
+        SYNTAX      INTEGER (1..65535)
+        ACCESS      read-write
+        STATUS      mandatory
+        DESCRIPTION "This is the value of the global jumbos IP MTU or L3 MTU
+                    supported by the switch. The default value for this is
+                    set to 9198, in order to make it compatible with
+                    previous versions of software. This configuration does
+                    not take a reboot to take effect."
+        ::= { hpSwitchSystemConfig 13 }
 
           
     hpSwitchConsoleConfig OBJECT IDENTIFIER ::= { hpSwitchConfig 2 }
@@ -500,8 +524,8 @@ CONFIG-MIB DEFINITIONS ::= BEGIN
     hpSwitchIpTimepServerAddr OBJECT-TYPE
         SYNTAX      IpAddress
         ACCESS      read-write
-        STATUS      mandatory
-        DESCRIPTION "The IP address of the Time server." 
+        STATUS      deprecated
+        DESCRIPTION "### deprecated ### The IP address of the Time server." 
         ::= { hpSwitchIpConfig 2 }
        
     hpSwitchIpTimepPollInterval OBJECT-TYPE
@@ -529,6 +553,23 @@ CONFIG-MIB DEFINITIONS ::= BEGIN
         STATUS      mandatory
         DESCRIPTION "The operational mode of the Tftp protocol." 
         ::= { hpSwitchIpConfig 6 }
+
+    hpSwitchIpTimepInetServerAddrType OBJECT-TYPE
+        SYNTAX      InetAddressType
+        ACCESS      read-write
+        STATUS      mandatory
+        DESCRIPTION "The IP address type of the Time server." 
+        ::= { hpSwitchIpConfig 7 }
+
+    hpSwitchIpTimepInetServerAddr OBJECT-TYPE
+        SYNTAX      InetAddress
+        ACCESS      read-write
+        STATUS      mandatory
+        DESCRIPTION "The IP address (of the Time server)to which this entry's
+                    addressing information pertains.
+                    hpSwitchIpTimepInetServerAddr is always interpreted within 
+                    the context of hpSwitchIpTimepInetServerAddrType."
+        ::= { hpSwitchIpConfig 8 }
 
 
     hpSwitchSerialLinkConfig OBJECT IDENTIFIER ::= { hpSwitchConfig 6 }
@@ -1139,7 +1180,9 @@ CONFIG-MIB DEFINITIONS ::= BEGIN
             hpSwitchStpPortMode               INTEGER,
             hpSwitchStpPortBpduFilter         INTEGER,
             hpSwitchStpPortBpduProtection     INTEGER,
-            hpSwitchStpPortErrantBpduCounter  Counter
+            hpSwitchStpPortErrantBpduCounter  Counter,
+	    hpSwitchStpPortPvstFilter         INTEGER,
+	    hpSwitchStpPortPvstProtection     INTEGER
         }
 
     hpSwitchStpPort OBJECT-TYPE
@@ -1245,12 +1288,36 @@ CONFIG-MIB DEFINITIONS ::= BEGIN
         SYNTAX      Counter
         ACCESS      read-only
         STATUS      optional
-        DESCRIPTION "Counts the number of BPDUs that were not expected to be
-                    received on this port. This counter gets incremented only
-                    if hpSwitchStpPortBpduProtection or
-                    hpSwitchStpPortBpduFilter is True for the port, otherwise
-                    it is cleared to zero."
+        DESCRIPTION "Counts the number of BPDUs that were not expected 
+                    to be received on this port. This counter gets 
+                    incremented only if hpSwitchStpPortBpduProtection,
+                    hpSwitchStpPortBpduFilter, hpSwitchStpPortPvstFilter,
+                    or hpSwitchStpPvstProtection is True for the port, 
+                    otherwise it is cleared to zero."
         ::= { hpSwitchStpPortEntry 9 }
+
+    hpSwitchStpPortPvstFilter OBJECT-TYPE
+        SYNTAX      TruthValue
+        ACCESS      read-write
+        STATUS      optional
+        DESCRIPTION "Setting True will cause the port to ignore incoming
+                    PVST BPDUs.
+                    Default is False."
+        DEFVAL      { false }
+        ::= { hpSwitchStpPortEntry 10 }
+
+    hpSwitchStpPortPvstProtection OBJECT-TYPE
+        SYNTAX      TruthValue
+        ACCESS      read-write
+        STATUS      optional
+        DESCRIPTION "Setting True indicates that any PVST BPDUs arriving
+                    on this port should be discarded and that this will
+                    cause the port to be disabled.  The port will remain
+                    disabled for the time period indicated by
+                    hpSwitchStpBpduProtectionTimeout.
+                    Default is False."
+        DEFVAL      { false }
+        ::= { hpSwitchStpPortEntry 11 }
 
     hpSwitchStpTrapCntl OBJECT-TYPE
         SYNTAX       BITS {
@@ -1304,7 +1371,8 @@ CONFIG-MIB DEFINITIONS ::= BEGIN
             hpSwitchIgmpVlanIndex             VlanID,
             hpSwitchIgmpState                 INTEGER,
             hpSwitchIgmpQuerierState          INTEGER,
-            hpSwitchIgmpPriorityState         INTEGER
+            hpSwitchIgmpPriorityState         INTEGER,
+            hpSwitchIgmpQuerierInterval       INTEGER
         }
 
     hpSwitchIgmpVlanIndex OBJECT-TYPE
@@ -1349,6 +1417,13 @@ CONFIG-MIB DEFINITIONS ::= BEGIN
                     Priority mode for  this virtual LAN."
         ::= { hpSwitchIgmpConfigEntry 4 }
 
+    hpSwitchIgmpQuerierInterval OBJECT-TYPE
+        SYNTAX      INTEGER (5..300)
+        ACCESS      read-write
+        STATUS      mandatory
+        DESCRIPTION "The time (in seconds) to wait between Querier
+                    election cycles for this virtual LAN."
+        ::= { hpSwitchIgmpConfigEntry 5 }
 
     hpSwitchIgmpPortConfigTable OBJECT-TYPE
         SYNTAX      SEQUENCE OF HpSwitchIgmpPortConfigEntry
@@ -2405,12 +2480,30 @@ CONFIG-MIB DEFINITIONS ::= BEGIN
                     and process file transfer requests."
         ::= { hpSwitchSshConfig 6 }
 
+    hpSwitchSshIpVersion OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        ipv4(1),
+                        ipv6(2),
+                        ipv4or6(3)
+                    }
+        ACCESS      read-write
+        STATUS      mandatory
+        DESCRIPTION "The types of IP connections SSH will support. 
+                     'ipv4' will accept connections from
+                     Ipv4 clients. 'ipv6' will accept 
+                     connections only from ipv6 clients.
+                     The default is 'ipv4or6' which will accept 
+                     Connections from both ipv4 and ipv6 clients."
+        DEFVAL { 3 }
+        ::= { hpSwitchSshConfig 7 }
+
     hpSwitchPendingConfig OBJECT IDENTIFIER ::= { hpSwitchConfig 21 }
 
     hpSwitchPendingConfigControl OBJECT-TYPE
         SYNTAX      INTEGER {
                         applyMstp(1),
-                        resetMstp(2)
+                        resetMstp(2),
+                        noAction(3)
                     }
         MAX-ACCESS  read-write
         STATUS      mandatory
@@ -2681,6 +2774,26 @@ CONFIG-MIB DEFINITIONS ::= BEGIN
 
         ::= { hpSwitchReboot 2 }
 
+
+    hpSwitchProtectedPortsConfig OBJECT IDENTIFIER ::= { hpSwitchConfig 26 }
+
+    hpSwitchProtectedPortsMask OBJECT-TYPE
+        SYNTAX      OCTET STRING
+        ACCESS      read-write
+        STATUS      mandatory
+        DESCRIPTION "This variable specifies a group of ports that are not
+                    allowed to communicate to each-other. Each octet within
+                    the value of this object specifies a set of eight ports,
+                    with the first octet specifying ports 1 through 8, the
+                    second octet specifying ports 9 through 16, etc.
+                    Within each octet, the most significant bit represents
+                    the lowest numbered port, and the least significant bit
+                    represents the highest numbered port.  Thus, each port
+                    of the switch is represented by a single bit within
+                    the value of this object."
+        ::= { hpSwitchProtectedPortsConfig 1 }
+
+
     -- **********************************************************
     -- Trap Definitions
     -- **********************************************************
@@ -2693,7 +2806,9 @@ CONFIG-MIB DEFINITIONS ::= BEGIN
     hpSwitchStpErrantBpduDetector OBJECT-TYPE 
         SYNTAX       INTEGER {
                          bpduFilter (1),
-                         bpduProtection (2)
+                         bpduProtection (2),
+			 pvstFilter (3),
+			 pvstProtection (4)
                      }
         ACCESS       accessible-for-notify
         STATUS       optional

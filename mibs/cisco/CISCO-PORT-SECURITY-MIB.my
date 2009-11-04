@@ -28,7 +28,7 @@ IMPORTS
                 FROM Q-BRIDGE-MIB;
 
 ciscoPortSecurityMIB MODULE-IDENTITY
-        LAST-UPDATED    "200505040000Z"
+        LAST-UPDATED    "200905080000Z"
         ORGANIZATION    "Cisco Systems, Inc."
         CONTACT-INFO
                 "       Cisco Systems
@@ -45,6 +45,9 @@ ciscoPortSecurityMIB MODULE-IDENTITY
 
 -- Revision History
 
+        REVISION        "200905080000Z"
+	DESCRIPTION
+	        "Update description of cpsIfMaxSecureMacAddr object."
         REVISION        "200505040000Z"
 	DESCRIPTION
 	        "Obsolete cpsIfVlanTable and replace it with
@@ -308,9 +311,9 @@ cpsIfMaxSecureMacAddr OBJECT-TYPE
                       on the interface. One way to change the number in
                       this case is by deleting sufficient number of 
                       secure mac addresses configured or learned on the
-                      device. Also, sum of this object value for all the
-                      interfaces is less than or equal to 
-                      cpsGlobalMaxSecureAddress."
+                      device. Also, some devices may choose to limit the
+                      sum of this object value for all interfaces to 
+                      less than or equal to cpsGlobalMaxSecureAddress." 
         ::= { cpsIfConfigEntry 3 }
 
 cpsIfCurrentSecureMacAddrCount OBJECT-TYPE
@@ -1697,3 +1700,6 @@ cpsExtInterfaceGroup1 OBJECT-GROUP
         ::= { ciscoPortSecurityMIBGroups 17 }
 
 END
+
+
+

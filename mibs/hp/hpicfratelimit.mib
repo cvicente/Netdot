@@ -13,7 +13,7 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
         ;
 
     hpicfRateLimitMIB MODULE-IDENTITY
-         LAST-UPDATED "200607071833Z"  -- July 07, 2006
+         LAST-UPDATED "200708291120Z"  -- August 29, 2007
          ORGANIZATION "Hewlett Packard Company,
                        Procurve Networking Business"
          CONTACT-INFO "Hewlett Packard Company
@@ -21,7 +21,26 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
                        Roseville, CA 95747"
          DESCRIPTION  "This MIB module describes HP rate limit information."
 
-	      REVISION     "200607071833Z"  -- July 07, 2007
+	      REVISION     "200708291120Z"  -- August 29, 2007
+         DESCRIPTION  "Deprecated all bps objects for 
+                       hpEgressRateLimitPortConfigTable and 
+                       hpIngressRateLimitPortConfigTable, and updated 
+                       compliance information (including correcting ICMP 
+                       group to be hpICMPRateLimitPortConfigGroup2)."
+
+	      REVISION     "200707271920Z"  -- July 27, 2007
+         DESCRIPTION  "Modified enumerated type names for 
+                       hpICMPRateLimitPortControlMode object."
+
+	      REVISION     "200706011146Z"  -- June 1, 2007
+         DESCRIPTION  "Deprecated hpICMPRateLimitPortState in favor of new 
+                       hpICMPRateLimitPortControlMode object."
+
+	      REVISION     "200705301610Z"  -- May 30, 2007
+         DESCRIPTION  "Added Kbps configuration for ICMP, port-egress, 
+                       and port-ingress rate-limiting definitions."
+
+	      REVISION     "200607071833Z"  -- July 07, 2006
          DESCRIPTION  "Added new egress rate limiting bps objects, and
                        ingress rate-limiting definitions."
 
@@ -65,7 +84,9 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
             hpICMPRateLimitPortConfigIndex              InterfaceIndex,
             hpICMPRateLimitPortState                    INTEGER,
             hpICMPRateLimitPortPrct                     Integer32,
-            hpICMPRateLimitPortAlarmFlag                INTEGER
+            hpICMPRateLimitPortAlarmFlag                INTEGER,
+            hpICMPRateLimitPortKbps                     Integer32,
+            hpICMPRateLimitPortControlMode              INTEGER
         }
 
     hpICMPRateLimitPortConfigIndex OBJECT-TYPE
@@ -81,9 +102,14 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
             disabled(2)
         }
         MAX-ACCESS  read-write
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION "This object indicates whether ICMP rate limiting is
-                     enabled on the corresponding port."
+                     enabled on the corresponding port.
+
+                     Because this is a State object it cannot distinguish
+                     between percent-based ICMP Rate-Limiting and the newer
+                     Kbps-based ICMP Rate-Limiting. Therefore, it has been 
+                     deprecated in favor of hpICMPRateLimitPortControlMode."
         DEFVAL     { disabled }
         ::= { hpICMPRateLimitPortConfigEntry 2 }
 
@@ -113,6 +139,39 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
                      sent again for this port."
         DEFVAL     { clear }
         ::= { hpICMPRateLimitPortConfigEntry 4 }
+
+
+    hpICMPRateLimitPortKbps OBJECT-TYPE
+        SYNTAX      Integer32 (0..10000000)
+        MAX-ACCESS  read-write
+        STATUS      current
+       DESCRIPTION "The maximum Kilobits-per-second of ICMP traffic that may 
+                     be received inbound on the port.  The value of this 
+                     object must be interpreted under the context of 
+                     hpICMPRateLimitControlMode.  A value of 0 is not the
+                     same as disabling, but means instead that all ICMP 
+                     traffic must be dropped."
+        ::= { hpICMPRateLimitPortConfigEntry 5 }
+
+    hpICMPRateLimitPortControlMode OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        disabled(1),
+                        portPrct(2),
+                        portKbps(3)
+                    }
+        MAX-ACCESS      read-write
+        STATUS      current
+        DESCRIPTION "The mode by which inbound ICMP traffic on this port will 
+                    Rate-Limited. If icmpRateLimitPerPortOnly is configured, 
+		    there will be a single maximum percentage-based rate for 
+                    the entire port. If icmpRateLimitPerPortOnlyKbpsMode is 
+                    configured, there will be a single maximum kilobits-per-
+                    second rate for the entire port. When ICMP rate-limiting 
+                    is disabled, there are no maximum controls on inbound
+                    ICMP traffic for this port."
+        DEFVAL { disabled }
+        ::= { hpICMPRateLimitPortConfigEntry 6 }
+
 
     hpICMPRateLimitPortNotification NOTIFICATION-TYPE
         OBJECTS     { hpICMPRateLimitNotifyPortIndex }
@@ -290,7 +349,8 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
             hpEgressRateLimitPortIndex             InterfaceIndex,
             hpEgressRateLimitPortControlMode       INTEGER,
             hpEgressRateLimitPortSingleControlPrct Integer32,
-            hpEgressRateLimitPortSingleControlBps  Unsigned32
+            hpEgressRateLimitPortSingleControlBps  Unsigned32,
+            hpEgressRateLimitPortSingleControlKbps Integer32
         }
 
     hpEgressRateLimitPortIndex  OBJECT-TYPE
@@ -307,7 +367,8 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
                         egressRateLimitPerPortOnly(2),
                         egressRateLimitPerQueue(3),
                         egressRateLimitPerPortOnlyBpsMode(4),
-                        egressRateLimitPerQueueBpsMode(5)
+                        egressRateLimitPerQueueBpsMode(5),
+                        egressRateLimitPerPortOnlyKbpsMode(6)
                     }
         MAX-ACCESS      read-write
         STATUS      current
@@ -319,12 +380,15 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
                     percentage of port traffic that may be transmitted by that
                     queue. If egressRateLimitPerPortOnlyBpsMode is configured, 
                     there will be a single maximum bits-per-second rate for 
-                    the entire port. If egressRateLimitPerQueueBpsMode  is
-                    configured, the maximum transmission-rate values for each 
-                    of the queues will be expressed in bits-per-second (again,
-                    the sum of these values must not exceed the maximum Bytes-
-                    per-second capability of the network link). The queues are 
-                    defined under hpEgressRateLimitPortPrctTable.  When egress 
+                    the entire port. If egressRateLimitPerPortOnlyKbpsMode is
+                    configured, there will be a single maximum 
+                    kilobits-per-second rate for the entire port. If 
+                    egressRateLimitPerQueueBpsMode is configured, the maximum 
+                    transmission-rate values for each of the queues will be 
+                    expressed in bits-per-second (again, the sum of these 
+                    values must not exceed the maximum Bytes-per-second 
+                    capability of the network link). The queues are defined 
+                    under hpEgressRateLimitPortPrctTable.  When egress 
                     rate-limiting is disabled, there are no maximum controls 
                     on egress for this port."
         DEFVAL { disabled }
@@ -343,12 +407,22 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
     hpEgressRateLimitPortSingleControlBps OBJECT-TYPE
         SYNTAX	    Unsigned32 (0..4200000000) 
         MAX-ACCESS  read-write
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION "When hpEgressRateLimitPortControlMode is configured for 
                     egressRateLimitPerPortOnlyBpsMode, this value is the 
                     maximum bits-per-second of traffic that may be transmitted 
                     by this port on egress."
         ::= { hpEgressRateLimitPortConfigEntry 4 }
+
+    hpEgressRateLimitPortSingleControlKbps OBJECT-TYPE
+        SYNTAX      Integer32 (0..10000000)
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "When hpEgressRateLimitPortControlMode is configured for 
+                    egressRateLimitPerPortOnlyKbpsMode, this value is the 
+                    maximum kilobits-per-second of traffic that may be 
+                    transmitted by this port on egress."
+        ::= { hpEgressRateLimitPortConfigEntry 5 }
 
     hpEgressRateLimitPortPrctTable OBJECT-TYPE
         SYNTAX      SEQUENCE OF HpEgressRateLimitPortPrctEntry
@@ -406,7 +480,7 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
     hpEgressRateLimitPortBpsTable OBJECT-TYPE
         SYNTAX      SEQUENCE OF HpEgressRateLimitPortBpsEntry
         MAX-ACCESS  not-accessible
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION "A table that contains information about the port
                     egress Rate-Limiting bits-per-second configurations on this
                     switch.  The number of entries in this table is determined 
@@ -420,7 +494,7 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
     hpEgressRateLimitPortBpsEntry OBJECT-TYPE
         SYNTAX      HpEgressRateLimitPortBpsEntry
         MAX-ACCESS  not-accessible
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION "The information associated with each port's egress
                     Rate-Limiting bits-per-second configuration."
         INDEX       { hpEgressRateLimitPortIndex, 
@@ -437,7 +511,7 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
     hpEgressRateLimitPortBpsQueue  OBJECT-TYPE
         SYNTAX      Integer32 (1..64)
         MAX-ACCESS  not-accessible
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION "The queue associated with this entry. The priority of 
 	            the queues is in ascending order, starting with queue one 
                     being the lowest and queue 
@@ -447,7 +521,7 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
     hpEgressRateLimitPortBps  OBJECT-TYPE 
         SYNTAX      Unsigned32 (0..4200000000)
         MAX-ACCESS  read-write
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION "The maximum bits-per-second of traffic that may be 
                     transmitted by this port's queue on egress.
                     hpEgressRateLimitPortControlMode must be configured to use 
@@ -497,7 +571,8 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
             hpIngressRateLimitPortIndex             InterfaceIndex,
             hpIngressRateLimitPortControlMode       INTEGER,
             hpIngressRateLimitPortSingleControlPrct Integer32,
-            hpIngressRateLimitPortSingleControlBps  Unsigned32
+            hpIngressRateLimitPortSingleControlBps  Unsigned32,
+            hpIngressRateLimitPortSingleControlKbps Integer32
         }
 
     hpIngressRateLimitPortIndex  OBJECT-TYPE
@@ -514,7 +589,8 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
                         ingressRateLimitPerPortOnly(2),
                         ingressRateLimitPerQueue(3),
                         ingressRateLimitPerPortOnlyBpsMode(4),
-                        ingressRateLimitPerQueueBpsMode(5)
+                        ingressRateLimitPerQueueBpsMode(5),
+                        ingressRateLimitPerPortOnlyKbpsMode(6)
                     }
         MAX-ACCESS      read-write
         STATUS      current
@@ -527,14 +603,16 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
                     by that queue. If ingressRateLimitPerPortOnlyBpsMode is 
                     configured, there will be a single maximum bits-per-second 
                     rate for the entire port. If 
-                    ingressRateLimitPerQueueBpsMode is configured, the maximum 
-                    transmission-rate values for each of the queues will be 
-                    expressed in bits-per-second (again, the sum of these 
-                    values must not exceed the maximum Bytes-per-second 
-                    capability of the network link). The queues are defined 
-                    under hpIngressRateLimitPortPrctTable.  When ingress 
-                    rate-limiting is disabled, there are no maximum controls 
-                    on ingress for this port."
+                    ingressRateLimitPerPortOnlyKbpsMode is configured, there
+                    will be a single maximum kilobits-per-second rate for the
+                    entire port. If ingressRateLimitPerQueueBpsMode is 
+                    configured, the maximum transmission-rate values for each 
+                    of the queues will be expressed in bits-per-second (again, 
+                    the sum of these values must not exceed the maximum 
+                    Bytes-per-second capability of the network link). The 
+                    queues are defined under hpIngressRateLimitPortPrctTable.  
+                    When ingress rate-limiting is disabled, there are no 
+                    maximum controls on ingress for this port."
         DEFVAL { disabled }
         ::= { hpIngressRateLimitPortConfigEntry 2 }
 
@@ -551,12 +629,22 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
     hpIngressRateLimitPortSingleControlBps OBJECT-TYPE
         SYNTAX	    Unsigned32 (0..4200000000) 
         MAX-ACCESS  read-write
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION "When hpIngressRateLimitPortControlMode is configured for 
                     ingressRateLimitPerPortOnlyBpsMode, this value is the 
                     maximum bits-per-second of traffic that may be transmitted 
                     by this port on ingress."
        ::= { hpIngressRateLimitPortConfigEntry 4}
+
+    hpIngressRateLimitPortSingleControlKbps OBJECT-TYPE
+        SYNTAX      Integer32 (0..10000000)
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "When hpIngressRateLimitPortControlMode is configured for 
+                    ingressRateLimitPerPortOnlyKbpsMode, this value is the 
+                    maximum kilobits-per-second of traffic that may be 
+                    transmitted by this port on ingress."
+       ::= { hpIngressRateLimitPortConfigEntry 5}
 
     hpIngressRateLimitPortPrctTable OBJECT-TYPE
         SYNTAX      SEQUENCE OF HpIngressRateLimitPortPrctEntry
@@ -615,7 +703,7 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
     hpIngressRateLimitPortBpsTable OBJECT-TYPE
         SYNTAX      SEQUENCE OF HpIngressRateLimitPortBpsEntry
         MAX-ACCESS  not-accessible
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION "A table that contains information about the port ingress
                     Rate-Limiting bits-per-second configurations on this
                     switch.  The number of entries in this table is determined 
@@ -629,7 +717,7 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
     hpIngressRateLimitPortBpsEntry OBJECT-TYPE
         SYNTAX      HpIngressRateLimitPortBpsEntry
         MAX-ACCESS  not-accessible
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION "The information associated with each port's egress
                     Rate-Limiting bits-per-second configuration."
         INDEX       { hpIngressRateLimitPortIndex, 
@@ -645,7 +733,7 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
     hpIngressRateLimitPortBpsQueue  OBJECT-TYPE
         SYNTAX      Integer32 (1..64)
         MAX-ACCESS  not-accessible
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION "The queue associated with this entry. The priority of 
 	            the queues is in ascending order, starting with queue one 
                     being the lowest and queue 
@@ -655,7 +743,7 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
     hpIngressRateLimitPortBps  OBJECT-TYPE 
         SYNTAX      Unsigned32 (0..4200000000)
         MAX-ACCESS  read-write
-        STATUS      current
+        STATUS      deprecated
         DESCRIPTION "The maximum bits-per-second of traffic that may be 
                     transmitted by this port's queue on ingress.
                     hpIngressRateLimitPortControlMode must be configured to 
@@ -685,7 +773,7 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
             hpICMPRateLimitPortAlarmFlag,
             hpICMPRateLimitNotifyPortIndex
         }
-        STATUS     current
+        STATUS     deprecated 
         DESCRIPTION    
           "A collection of objects providing configuration to ICMP rate
            limiting on an interface."
@@ -722,9 +810,10 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
                    hpEgressRateLimitPortSingleControlPrct,  
                    hpEgressRateLimitPortSingleControlBps,  
                    hpEgressRateLimitPortPrct,
-                   hpEgressRateLimitPortBps 
+                   hpEgressRateLimitPortBps,
+                   hpEgressRateLimitPortSingleControlKbps
                 }
-        STATUS     current
+        STATUS     deprecated
         DESCRIPTION    
           "A collection of objects providing configuration to Egress  
            Rate-Limiting on an interface." 
@@ -736,13 +825,57 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
                    hpIngressRateLimitPortSingleControlPrct,  
                    hpIngressRateLimitPortSingleControlBps,  
                    hpIngressRateLimitPortPrct,
-                   hpIngressRateLimitPortBps 
+                   hpIngressRateLimitPortBps,
+                   hpIngressRateLimitPortSingleControlKbps
                 }
-        STATUS     current
+        STATUS     deprecated
         DESCRIPTION    
           "A collection of objects providing configuration to Ingress  
            Rate-Limiting on an interface." 
        ::= { hpicfRateLimitGroups 6 }
+
+   hpICMPRateLimitPortConfigGroup2 OBJECT-GROUP
+        OBJECTS {
+            hpICMPRateLimitPortPrct,
+            hpICMPRateLimitPortAlarmFlag,
+            hpICMPRateLimitNotifyPortIndex,
+            hpICMPRateLimitPortKbps,
+            hpICMPRateLimitPortControlMode
+        }
+        STATUS     current
+        DESCRIPTION    
+          "This replaces the deprecated hpICMPRateLimitPortConfigGroup.
+           A collection of objects providing configuration to ICMP rate
+           limiting on an interface."
+       ::= { hpicfRateLimitGroups 7 }
+
+   hpEgressRateLimitPortConfigGroup2 OBJECT-GROUP
+        OBJECTS {  hpEgressRateLimitPortNumQueues,
+                   hpEgressRateLimitPortControlMode,
+                   hpEgressRateLimitPortSingleControlPrct,  
+                   hpEgressRateLimitPortPrct,
+                   hpEgressRateLimitPortSingleControlKbps
+                }
+        STATUS     current
+        DESCRIPTION    
+          "This replaces the deprecated hpEgressRateLimitPortConfigGroup.
+           A collection of objects providing configuration to Egress  
+           Rate-Limiting on an interface." 
+       ::= { hpicfRateLimitGroups 8 }
+
+   hpIngressRateLimitPortConfigGroup2 OBJECT-GROUP
+        OBJECTS {  hpIngressRateLimitPortNumQueues,
+                   hpIngressRateLimitPortControlMode,
+                   hpIngressRateLimitPortSingleControlPrct,  
+                   hpIngressRateLimitPortPrct,
+                   hpIngressRateLimitPortSingleControlKbps
+                }
+        STATUS     current
+        DESCRIPTION    
+          "This replaces the deprecated hpIngressRateLimitPortConfigGroup.
+           A collection of objects providing configuration to Ingress  
+           Rate-Limiting on an interface." 
+       ::= { hpicfRateLimitGroups 9 }
 
 
 -- compliance statements
@@ -767,11 +900,11 @@ HP-ICF-RATE-LIMIT-MIB DEFINITIONS ::= BEGIN
            HP-ICF-RATE-LIMIT MIB."
        MODULE -- This Module
 
-          MANDATORY-GROUPS { hpICMPRateLimitPortConfigGroup,
+          MANDATORY-GROUPS { hpICMPRateLimitPortConfigGroup2,
                              hpICMPRateLimitPortNotifyGroup,
                              hpBWMinIngressPortConfigGroup,
-                             hpEgressRateLimitPortConfigGroup,
-                             hpIngressRateLimitPortConfigGroup
+                             hpEgressRateLimitPortConfigGroup2,
+                             hpIngressRateLimitPortConfigGroup2
                            }   
        ::= { hpicfRateLimitCompliances 2 }
  END

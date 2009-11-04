@@ -141,8 +141,3 @@ installdb:
 oui:
 	cd bin ; make oui
 
-snmp_info:
-	@echo
-	@echo "Building and installing SNMP::Info"
-	cd lib/snmp-info ; perl Makefile.PL ; make ; make install
-	@echo

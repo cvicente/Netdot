@@ -13,7 +13,7 @@ HP-ICF-VRRP-MIB DEFINITIONS ::= BEGIN
             FROM HP-ICF-OID;
 
     hpicfVrrpMIB MODULE-IDENTITY 
-        LAST-UPDATED "200507140000Z"   -- July 14, 2005
+        LAST-UPDATED "200708220000Z"  -- AUGUST 22, 2007
 	ORGANIZATION "Hewlett Packard Company,
                       Procurve Networking Business"
         CONTACT-INFO "Hewlett Packard Company
@@ -21,6 +21,10 @@ HP-ICF-VRRP-MIB DEFINITIONS ::= BEGIN
                       Roseville, CA 95747"
         DESCRIPTION  "This MIB module contains HP proprietary
                      extensions to the standard VRRP MIB (RFC 2787)."
+
+        REVISION     "200708220000Z"  -- AUGUST 22, 2007
+        DESCRIPTION  "Added hpicfVrrpVrPreemptDelayTime to the 
+                      hpicfVrrpOperEntry object."
 
         REVISION      "200507140000Z"  -- July 14, 2005
         DESCRIPTION   "Initial revision."
@@ -71,7 +75,8 @@ HP-ICF-VRRP-MIB DEFINITIONS ::= BEGIN
         SEQUENCE {
             hpicfVrrpVrMode             INTEGER,
             hpicfVrrpVrMasterPreempt    TruthValue,
-            hpicfVrrpVrTransferControl  TruthValue
+            hpicfVrrpVrTransferControl  TruthValue,
+            hpicfVrrpVrPreemptDelayTime Integer32
         }
 
     hpicfVrrpVrMode OBJECT-TYPE
@@ -111,6 +116,17 @@ HP-ICF-VRRP-MIB DEFINITIONS ::= BEGIN
                     it always returns FALSE."
         DEFVAL      { false }
         ::= { hpicfVrrpOperEntry 3 }
+
+    hpicfVrrpVrPreemptDelayTime OBJECT-TYPE
+        SYNTAX      Integer32(0..600)  
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION "This object specifies the time that the owner 
+                     virtual router will wait before taking control of 
+                     its virtual IP address. A value of 0 indicates 
+                     that that the pre-empt delay timer is not active"
+        DEFVAL      { 0 }
+        ::= { hpicfVrrpOperEntry 4 }
 
 -- **********************************************************************
 -- Extensions to the VRRP Associated IP Address Table (RFC 2787)
@@ -178,6 +194,7 @@ HP-ICF-VRRP-MIB DEFINITIONS ::= BEGIN
                       hpicfVrrpVrMode,
                       hpicfVrrpVrMasterPreempt,
                       hpicfVrrpVrTransferControl,
+                      hpicfVrrpVrPreemptDelayTime,
                       hpicfVrrpAssoIpMask }
         STATUS      current
         DESCRIPTION "A collection of HP proprietary objects to support 

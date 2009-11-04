@@ -3,7 +3,7 @@
 --   
 -- October 2002, Vinay Gaonkar, Dipesh Gorashia
 --   
--- Copyright (c) 2002, 2003, 2004, 2006, 2007 by cisco Systems, Inc.
+-- Copyright (c) 2002-2004, 2006-2008 by cisco Systems Inc.
 -- All rights reserved.
 --   
 -- *********************************************************************
@@ -37,12 +37,13 @@ IMPORTS
         FROM CISCO-SYSLOG-MIB
     ciscoMgmt
         FROM CISCO-SMI
-    CiscoURLString
+    CiscoURLString,
+    EntPhysicalIndexOrZero
         FROM CISCO-TC;
 
 
 ciscoCallHomeMIB MODULE-IDENTITY
-    LAST-UPDATED    "200703290000Z"
+    LAST-UPDATED    "200807010000Z"
     ORGANIZATION    "Cisco Systems Inc."
     CONTACT-INFO
             "Cisco Systems
@@ -69,6 +70,19 @@ ciscoCallHomeMIB MODULE-IDENTITY
         features that allow storage systems to send 
         performance, accounting and system health information 
         in addition to just the fault information."
+    REVISION        "200807010000Z"
+    DESCRIPTION
+        "Added support for ccmOnDemandMsgSendControlGroup,
+        ccmOnDemandMsgStatusGroup, ccmSmartCallHomeGroup and
+        ccmEventStatsGroup. Modified callHomeAlertGroupCapability 
+        to include the following two enum values:
+                       onDemand(4),
+                       onDemandPerEntity(5)"
+    REVISION        "200712190000Z"
+    DESCRIPTION
+        "Refined the DESCRIPTION clauses for the objects
+        callHomeDestProfileAlertGroups and
+        callHomeAlertGroupCapability."
     REVISION        "200703290000Z"
     DESCRIPTION
         "chConfigurationGroup2 is deprecated and replaced by the
@@ -134,7 +148,7 @@ ciscoCallHomeMIB MODULE-IDENTITY
     REVISION        "200210280000Z"
     DESCRIPTION
         "Initial version of this MIB module."
-          ::= { ciscoMgmt 300 }
+    ::= { ciscoMgmt 300 }
 
 
 ccmCallHomeNotifications  OBJECT IDENTIFIER
@@ -154,6 +168,13 @@ ccmCallHomeStats  OBJECT IDENTIFIER
 
 ccmCallHomeStatus  OBJECT IDENTIFIER
     ::= { ciscoCallHomeMIBObjects 3 }
+
+ccmCallHomeOnDemandActions  OBJECT IDENTIFIER
+    ::= { ciscoCallHomeMIBObjects 4 }
+
+ccmSmartCallHomeActions  OBJECT IDENTIFIER
+    ::= { ciscoCallHomeMIBObjects 5 }
+
 
 -- Textual Conventions
 
@@ -287,9 +308,9 @@ CallHomeMsgLevel ::= TEXTUAL-CONVENTION
 AlertGroupList ::= TEXTUAL-CONVENTION
     STATUS          current
     DESCRIPTION
-        "AlertGroups are a pre-defined set of call-home alerts.
+        "AlertGroups are a pre-defined set of Call Home alerts.
         Users can specify these alert groups for a destination
-        profile, to choose the call-home alerts messages to be
+        profile, to choose the Call Home alerts messages to be
         sent out to the destination. This object represents 
         the list of alert groups (alert group types)
         configured for a destination profile.
@@ -331,6 +352,7 @@ AlertGroupList ::= TEXTUAL-CONVENTION
     SYNTAX          OCTET STRING (SIZE (0..8))
 
 -- Call Home MIB objects
+
 callHomeEnable OBJECT-TYPE
     SYNTAX          TruthValue
     MAX-ACCESS      read-write
@@ -341,7 +363,7 @@ callHomeEnable OBJECT-TYPE
     ::= { ccmCallHomeConfiguration 1 }
 
 sysContactPhoneNumber OBJECT-TYPE
-    SYNTAX          SnmpAdminString (SIZE  (0  |  12  |  13..17))
+    SYNTAX          SnmpAdminString (SIZE  (0 | 12 | 13..17))
     MAX-ACCESS      read-write
     STATUS          current
     DESCRIPTION
@@ -379,7 +401,8 @@ sysStreetAddress OBJECT-TYPE
     SYNTAX          SnmpAdminString
     MAX-ACCESS      read-write
     STATUS          current
-    DESCRIPTION     "The mailing address of this managed node." 
+    DESCRIPTION
+        "The mailing address of this managed node." 
     ::= { ccmCallHomeConfiguration 4 }
 
 callHomeCustomerId OBJECT-TYPE
@@ -405,7 +428,8 @@ callHomeSiteId OBJECT-TYPE
     SYNTAX          SnmpAdminString
     MAX-ACCESS      read-write
     STATUS          current
-    DESCRIPTION     "A location identifier of this device." 
+    DESCRIPTION
+        "A location identifier of this device." 
     ::= { ccmCallHomeConfiguration 7 }
 
 callHomeDeviceServicePriority OBJECT-TYPE
@@ -509,7 +533,8 @@ callHomeDestProfileName OBJECT-TYPE
     SYNTAX          SnmpAdminString (SIZE  (1..31))
     MAX-ACCESS      not-accessible
     STATUS          current
-    DESCRIPTION     "Name of the destination profile." 
+    DESCRIPTION
+        "Name of the destination profile." 
     ::= { callHomeDestProfileEntry 1 }
 
 callHomeDestProfileMsgFormat OBJECT-TYPE
@@ -523,7 +548,7 @@ callHomeDestProfileMsgFormat OBJECT-TYPE
     ::= { callHomeDestProfileEntry 2 }
 
 callHomeDestProfileMaxMsgSize OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..1000000 )
+    SYNTAX          Unsigned32 (0..1000000)
     UNITS           "bytes"
     MAX-ACCESS      read-create
     STATUS          current
@@ -557,7 +582,8 @@ callHomeDestProfileStatus OBJECT-TYPE
     SYNTAX          RowStatus
     MAX-ACCESS      read-create
     STATUS          current
-    DESCRIPTION     "Status of this row." 
+    DESCRIPTION
+        "Status of this row." 
     ::= { callHomeDestProfileEntry 5 }
 
 callHomeDestProfileMsgLevel OBJECT-TYPE
@@ -581,25 +607,17 @@ callHomeDestProfileAlertGroups OBJECT-TYPE
     DESCRIPTION
         "This object represent the list of configured alert
         groups for this destination profile.
-        User can modify the configured alert groups, by 
-        Setting/Resetting the appropriate bits in this 
-        object. Resetting all the bits to '0' means no alert
-        group is configured, hence no alert would be sent 
-        to the destination profile. 
+        User can modify the configured alert groups, by
+        Setting/Resetting the appropriate bits in this
+        object.
 
-        If the existing value of this object has all bits
-        'set' , corresponding to all the 
-        'callHomeAlertGroupTypeIndex' in the
-        'callHomeAlertGroupTypeTable', then the user can
-        either 'reset all' or 'set all' of the above 
-        configured bits. User can't choose to modify only
-        few bits in this case.
+        Setting a bit to '1' means that the alert group
+        is configured and alerts for this alert group
+        would be sent to the destination profile.
 
-        However if the existing value of this object,
-        has not have 'all bits set' corresponding 
-        to the all 'callHomeAlertGroupTypeIndex' in the 
-        'callHomeAlertGroupTypeTable', then user can
-        choose to modify only few or all the bits." 
+        Resetting a bit to '0', means that alert group
+        is not configured and alerts for this alert group
+        would not be sent to the destination profile." 
     ::= { callHomeDestProfileEntry 7 }
 
 callHomeDestProfileActive OBJECT-TYPE
@@ -633,7 +651,7 @@ callHomeDestProfileHiMaxMsgSize OBJECT-TYPE
 
 
 callHomeEmailAddrTblMaxEntries OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..65535 )
+    SYNTAX          Unsigned32 (0..65535)
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
@@ -641,7 +659,7 @@ callHomeEmailAddrTblMaxEntries OBJECT-TYPE
         the callHomeDestEmailAddressTable.
 
         A value of zero indicates no limitation on the number of entries
-        in callHomeDestEmailAddressTable."
+        in callHomeDestEmailAddressTable." 
     ::= { ccmCallHomeConfiguration 13 }
 -- callHomeDestEmailAddressTable
 
@@ -671,12 +689,12 @@ CallHomeDestEmailAddressEntry ::= SEQUENCE {
         callHomeDestEmailAddressIndex  Unsigned32,
         callHomeDestEmailAddress       SnmpAdminString,
         callHomeDestEmailAddressStatus RowStatus,
-        callHomeDestType               INTEGER ,
+        callHomeDestType               INTEGER,
         callHomeDestHttpUrl            CiscoURLString
 }
 
 callHomeDestEmailAddressIndex OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..65535 )
+    SYNTAX          Unsigned32 (1..65535)
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
@@ -709,7 +727,8 @@ callHomeDestEmailAddressStatus OBJECT-TYPE
     SYNTAX          RowStatus
     MAX-ACCESS      read-create
     STATUS          current
-    DESCRIPTION     "Status of this row." 
+    DESCRIPTION
+        "Status of this row." 
     ::= { callHomeDestEmailAddressEntry 3 }
 
 callHomeDestType OBJECT-TYPE
@@ -750,6 +769,7 @@ callHomeDestHttpUrl OBJECT-TYPE
 
 
 -- Transport configurations
+
 callHomeEmailFrom OBJECT-TYPE
     SYNTAX          SnmpAdminString
     MAX-ACCESS      read-write
@@ -817,22 +837,25 @@ callHomeSmtpServerAddrType OBJECT-TYPE
     SYNTAX          InetAddressType
     MAX-ACCESS      read-write
     STATUS          current
-    DESCRIPTION     "Address Type of the SMTP server." 
+    DESCRIPTION
+        "Address Type of the SMTP server." 
     ::= { ccmCallHomeConfiguration 18 }
 
 callHomeSmtpServerAddr OBJECT-TYPE
     SYNTAX          InetAddress
     MAX-ACCESS      read-write
     STATUS          current
-    DESCRIPTION     "Address of the SMTP server."
+    DESCRIPTION
+        "Address of the SMTP server."
     REFERENCE       "RFC 2821 - Simple Mail Transfer Protocol." 
     ::= { ccmCallHomeConfiguration 19 }
 
 callHomeSmtpServerPort OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..65535 )
+    SYNTAX          Unsigned32 (1..65535)
     MAX-ACCESS      read-write
     STATUS          current
-    DESCRIPTION     "Port of the SMTP server."
+    DESCRIPTION
+        "Port of the SMTP server."
     REFERENCE       "RFC 2821 - Simple Mail Transfer Protocol."
     DEFVAL          { 25 } 
     ::= { ccmCallHomeConfiguration 20 }
@@ -840,8 +863,9 @@ callHomeSmtpServerPort OBJECT-TYPE
 -- -
 -- - Call Home multiple smtp server configuration
 -- -
+
 ccmSmtpServersTblMaxEntries OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..65535 )
+    SYNTAX          Unsigned32 (0..65535)
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
@@ -855,14 +879,13 @@ ccmSmtpServersTable OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "This table contains entries that identify lists of
-        SMTP servers that may be used by system to send out
-        e-mail notification to addresses configured in
-        callHomeDestEmailAddressTable.
+        "This table contains a list of SMTP servers that may be
+        used to send out Call Home e-mail messages.
 
-        The maximum number of entries that can be created for
-        for this table is limited by the scalar object
-        ccmSmtpServersTblMaxEntries."
+        An entry is created and deleted by using ccmSmtpServersStatus.
+
+        The maximum number of entries that can be created in this
+        table is limited by the object ccmSmtpServersTblMaxEntries."
     ::= { ccmCallHomeConfiguration 22 }
 
 ccmSmtpServersEntry OBJECT-TYPE
@@ -889,22 +912,25 @@ ccmSmtpServersAddrType OBJECT-TYPE
     SYNTAX          InetAddressType
     MAX-ACCESS      not-accessible
     STATUS          current
-    DESCRIPTION     "Address Type of the SMTP server." 
+    DESCRIPTION
+        "Address Type of the SMTP server." 
     ::= { ccmSmtpServersEntry 1 }
 
 ccmSmtpServersAddr OBJECT-TYPE
     SYNTAX          InetAddress (SIZE  (1..64))
     MAX-ACCESS      not-accessible
     STATUS          current
-    DESCRIPTION     "Address of the SMTP server."
+    DESCRIPTION
+        "Address of the SMTP server."
     REFERENCE       "RFC 2821 - Simple Mail Transfer Protocol." 
     ::= { ccmSmtpServersEntry 2 }
 
 ccmSmtpServersPort OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..65535 )
+    SYNTAX          Unsigned32 (1..65535)
     MAX-ACCESS      read-create
     STATUS          current
-    DESCRIPTION     "Port of the SMTP server."
+    DESCRIPTION
+        "Port of the SMTP server."
     REFERENCE       "RFC 2821 - Simple Mail Transfer Protocol."
     DEFVAL          { 25 } 
     ::= { ccmSmtpServersEntry 3 }
@@ -917,11 +943,11 @@ ccmSmtpServersStatus OBJECT-TYPE
         "The status object used to manage the rows in this table.
 
         Objects in this conceptual row may not be modified while the
-        value of this object is 'active'."
+        value of this object is 'active'." 
     ::= { ccmSmtpServersEntry 4 }
 
 ccmSmtpServersPriority OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..100 )
+    SYNTAX          Unsigned32 (1..100)
     MAX-ACCESS      read-create
     STATUS          current
     DESCRIPTION
@@ -940,6 +966,7 @@ ccmSmtpServersPriority OBJECT-TYPE
 
 
 -- Call Home statistics
+
 callHomeLastAlertSent OBJECT-TYPE
     SYNTAX          TimeStamp
     MAX-ACCESS      read-only
@@ -953,7 +980,8 @@ callHomeAlerts OBJECT-TYPE
     SYNTAX          Counter32
     MAX-ACCESS      read-only
     STATUS          current
-    DESCRIPTION     "The number of  Call Home alerts sent." 
+    DESCRIPTION
+        "The number of  Call Home alerts sent." 
     ::= { ccmCallHomeStats 2 }
 
 callHomeHCAlerts OBJECT-TYPE
@@ -974,7 +1002,165 @@ ccmAlertsDropped OBJECT-TYPE
         limiting configured through ccmAlertRateLimit." 
     ::= { ccmCallHomeStats 4 }
 
+ccmEventStatsTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CcmEventStatsEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table contains a list of Call Home message type for
+        each Call Home event.
+
+        An entry will exist for each call-home message type which
+        supports Call Home event statistics."
+    ::= { ccmCallHomeStats 5 }
+
+ccmEventStatsEntry OBJECT-TYPE
+    SYNTAX          CcmEventStatsEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "An entry containing Call Home event statistics for a particular
+        Call Home message type."
+    INDEX           {
+                        ccmEventStatsTypeIndex,
+                        ccmEventStatsMsgTypeIndex
+                    } 
+    ::= { ccmEventStatsTable 1 }
+
+CcmEventStatsEntry ::= SEQUENCE {
+        ccmEventStatsTypeIndex     INTEGER,
+        ccmEventStatsMsgTypeIndex  INTEGER,
+        ccmEventStatsTotal         Counter64,
+        ccmEventStatsConfiguration Counter64,
+        ccmEventStatsDiagnostic    Counter64,
+        ccmEventStatsEnvironment   Counter64,
+        ccmEventStatsInventory     Counter64,
+        ccmEventStatsSystemLog     Counter64,
+        ccmEventStatsTest          Counter64,
+        ccmEventStatsRequest       Counter64,
+        ccmEventStatsSendCliOutput Counter64
+}
+
+ccmEventStatsTypeIndex OBJECT-TYPE
+    SYNTAX          INTEGER  {
+                        successful(1),
+                        inQueue(2),
+                        dropped(3),
+                        failed(4)
+                    }
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the type of Call Home event.
+
+        'successful' - Call Home messages were generated successfully
+                       for corresponding Call Home event.
+
+        'inQueue'    - Call Home events are queued for processing.
+
+        'dropped'    - Call Home events were dropped due to the Rate
+                       Limiting feature within Call Home component.
+
+        'failed'     - Call Home events which failed to generate 
+                       Call Home messages." 
+    ::= { ccmEventStatsEntry 1 }
+
+ccmEventStatsMsgTypeIndex OBJECT-TYPE
+    SYNTAX          INTEGER  {
+                        total(1),
+                        email(2),
+                        http(3)
+                    }
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the type of Call Home message.
+
+        'total' - statistics based on all the message types.
+
+        'email' - statistics for Call Home messages which use
+                  e-mail transport.
+
+        'http'  - statistics for Call Home messages which use
+                  http transport." 
+    ::= { ccmEventStatsEntry 2 }
+
+ccmEventStatsTotal OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Total number of Call Home events." 
+    ::= { ccmEventStatsEntry 3 }
+
+ccmEventStatsConfiguration OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of Configuration Call Home events." 
+    ::= { ccmEventStatsEntry 4 }
+
+ccmEventStatsDiagnostic OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of Diagnostic Call Home events." 
+    ::= { ccmEventStatsEntry 5 }
+
+ccmEventStatsEnvironment OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of Environment Call Home events." 
+    ::= { ccmEventStatsEntry 6 }
+
+ccmEventStatsInventory OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of Inventory Call Home events." 
+    ::= { ccmEventStatsEntry 7 }
+
+ccmEventStatsSystemLog OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of System Log Call Home events." 
+    ::= { ccmEventStatsEntry 8 }
+
+ccmEventStatsTest OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of Test Call Home events." 
+    ::= { ccmEventStatsEntry 9 }
+
+ccmEventStatsRequest OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of Request Call Home events." 
+    ::= { ccmEventStatsEntry 10 }
+
+ccmEventStatsSendCliOutput OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of Send-CLI-Output Call Home events." 
+    ::= { ccmEventStatsEntry 11 }
+ 
+
+
 -- Call Home Status Objects
+
 ccmSmtpServerStatusTimeStamp OBJECT-TYPE
     SYNTAX          TimeStamp
     MAX-ACCESS      read-only
@@ -1028,13 +1214,9 @@ ccmSmtpServerStatusTable OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "This table contains information about the
-        availability status of the SMTP Servers configured
-        in ccmSmtpServersTable.
-
-        Entries is populated only if the value of
-        ccmSmtpServerStatusResult is 'successful', otherwise
-        there will be no entries in this table."
+        "A list of SMTP servers.  An entry will exist for each SMTP
+        server which is configured in the ccmSmtpServersTable if the
+        value of ccmSmtpServerStatusResult is 'successful'."
     ::= { ccmCallHomeStatus 4 }
 
 ccmSmtpServerStatusEntry OBJECT-TYPE
@@ -1042,9 +1224,8 @@ ccmSmtpServerStatusEntry OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "An entry containing information about the
-        availability status of the corresponding SMTP Server
-        configured in ccmSmtpServersTable."
+        "An entry containing availability status of a particular
+        SMTP Server."
     INDEX           {
                         ccmSmtpServersAddrType,
                         ccmSmtpServersAddr
@@ -1052,7 +1233,7 @@ ccmSmtpServerStatusEntry OBJECT-TYPE
     ::= { ccmSmtpServerStatusTable 1 }
 
 CcmSmtpServerStatusEntry ::= SEQUENCE {
-        ccmSmtpServerStatusAvailability INTEGER 
+        ccmSmtpServerStatusAvailability INTEGER
 }
 
 ccmSmtpServerStatusAvailability OBJECT-TYPE
@@ -1065,10 +1246,24 @@ ccmSmtpServerStatusAvailability OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "This variable indicates whether the SMTP Server
-        is currently available."
+        is currently available." 
     ::= { ccmSmtpServerStatusEntry 1 }
-
  
+
+
+ccmOnDemandMsgServAvailable OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates whether the system is ready to generate
+        on demand Call Home messages.
+
+        A value of 'true' indicates that the system is ready to generate
+        on demand Call Home messages. A value of 'false' indicates that
+        sending of on demand Call Home messages can not be initiated." 
+    ::= { ccmCallHomeStatus 5 }
+
 ccmSysLogSeverity OBJECT-TYPE
     SYNTAX          SyslogSeverity
     MAX-ACCESS      read-write
@@ -1140,7 +1335,7 @@ CallHomeAlertGroupTypeEntry ::= SEQUENCE {
 }
 
 callHomeAlertGroupTypeIndex OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..256 )
+    SYNTAX          Unsigned32 (1..256)
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
@@ -1178,7 +1373,9 @@ callHomeAlertGroupCapability OBJECT-TYPE
                         callHomeMessageSeverity(0),
                         periodic(1),
                         regularExpression(2),
-                        event(3)
+                        event(3),
+                        onDemand(4),
+                        onDemandPerEntity(5)
                     }
     MAX-ACCESS      read-only
     STATUS          current
@@ -1187,8 +1384,8 @@ callHomeAlertGroupCapability OBJECT-TYPE
         to generate Call Home messages.
 
         callHomeMessageSeverity -
-            Call Home alert is generated based on the level of
-            severity.
+            Call Home alert is generated based only on the level
+            of severity.
 
         periodic - 
             Call Home alert is generated periodically.
@@ -1200,7 +1397,12 @@ callHomeAlertGroupCapability OBJECT-TYPE
         event - 
             Call Home alert is generated based on change event.
 
-        "
+        onDemand -
+            Call Home alert is generated at user request.
+
+        onDemandPerEntity -
+            Call Home alert is generated for specific entities
+            at user request." 
     ::= { callHomeAlertGroupTypeEntry 4 }
  
 
@@ -1249,7 +1451,7 @@ callHomeSwServiceName OBJECT-TYPE
     ::= { callHomeSwInventoryEntry 1 }
 
 callHomeInventoryNVPairIndex OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..256 )
+    SYNTAX          Unsigned32 (1..256)
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
@@ -1290,6 +1492,7 @@ callHomeInventoryInfoValue OBJECT-TYPE
 
 -- Objects for Enabling Periodic Software Inventory
 -- Call Home Messages
+
 ccmPeriodicSwInventoryMsgEnable OBJECT-TYPE
     SYNTAX          TruthValue
     MAX-ACCESS      read-write
@@ -1301,7 +1504,7 @@ ccmPeriodicSwInventoryMsgEnable OBJECT-TYPE
     ::= { ccmCallHomeConfiguration 27 }
 
 ccmPeriodicSwInventoryTimeFrame OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..30 )
+    SYNTAX          Unsigned32 (1..30)
     UNITS           "days"
     MAX-ACCESS      read-write
     STATUS          current
@@ -1315,6 +1518,7 @@ ccmPeriodicSwInventoryTimeFrame OBJECT-TYPE
     ::= { ccmCallHomeConfiguration 28 }
 
 -- Object to Enable Message Throttling Mechanism.
+
 ccmMsgThrottlingEnable OBJECT-TYPE
     SYNTAX          TruthValue
     MAX-ACCESS      read-write
@@ -1341,7 +1545,6 @@ ccmMsgThrottlingEnable OBJECT-TYPE
         messages will be reset to '0'."
     DEFVAL          { true } 
     ::= { ccmCallHomeConfiguration 29 }
-
 ccmCallHomeAlertGroupCfg  OBJECT IDENTIFIER
     ::= { ccmCallHomeConfiguration 30 }
 
@@ -1368,7 +1571,8 @@ ccmSeverityAlertGroupEntry OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "An entry containing severity information for this entry." 
+        "An entry containing severity configuration information
+        for a particular alert group in a profile."
     INDEX           {
                         callHomeDestProfileName,
                         callHomeAlertGroupTypeIndex
@@ -1419,8 +1623,8 @@ ccmPeriodicAlertGroupEntry OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "A set of periodic configuration information for a
-        periodic type alert group."
+        "An entry containing periodic configuration information for a
+        particular alert group in a profile."
     INDEX           {
                         callHomeDestProfileName,
                         callHomeAlertGroupTypeIndex
@@ -1495,7 +1699,7 @@ ccmPeriodicAlertGroupDayOfWeek OBJECT-TYPE
     ::= { ccmPeriodicAlertGroupEntry 2 }
 
 ccmPeriodicAlertGroupDayOfMonth OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..31 )
+    SYNTAX          Unsigned32 (1..31)
     MAX-ACCESS      read-write
     STATUS          current
     DESCRIPTION
@@ -1514,7 +1718,7 @@ ccmPeriodicAlertGroupDayOfMonth OBJECT-TYPE
     ::= { ccmPeriodicAlertGroupEntry 3 }
 
 ccmPeriodicAlertGroupHour OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..23 )
+    SYNTAX          Unsigned32 (0..23)
     MAX-ACCESS      read-write
     STATUS          current
     DESCRIPTION
@@ -1529,7 +1733,7 @@ ccmPeriodicAlertGroupHour OBJECT-TYPE
     ::= { ccmPeriodicAlertGroupEntry 4 }
 
 ccmPeriodicAlertGroupMinute OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..59 )
+    SYNTAX          Unsigned32 (0..59)
     MAX-ACCESS      read-write
     STATUS          current
     DESCRIPTION
@@ -1548,13 +1752,15 @@ ccmPeriodicAlertGroupEnable OBJECT-TYPE
     MAX-ACCESS      read-write
     STATUS          current
     DESCRIPTION
-       "This object specifies whether sending Call Home messages
-       periodically is enabled."
-    DEFVAL          { false }
+        "This object specifies whether sending Call Home messages
+        periodically is enabled."
+    DEFVAL          { false } 
     ::= { ccmPeriodicAlertGroupEntry 6 }
+ 
 
 
 -- Call Home Syslog Pattern Configuration
+
 ccmMaxSyslogAlertGroupPatterns OBJECT-TYPE
     SYNTAX          Unsigned32
     MAX-ACCESS      read-only
@@ -1566,7 +1772,7 @@ ccmMaxSyslogAlertGroupPatterns OBJECT-TYPE
 
         A value of zero for this object indicates that there is no
         limitation on maximum number of entries that can be created
-        in this table with same value of callHomeDestProfileName."
+        in this table with same value of callHomeDestProfileName." 
     ::= { ccmCallHomeAlertGroupCfg 3 }
 
 ccmPatternAlertGroupTable OBJECT-TYPE
@@ -1575,7 +1781,7 @@ ccmPatternAlertGroupTable OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "A list of pattern used by the pattern type alert groups
-         which are currently configured in the device.
+        which are currently configured in the device.
 
         An entry is created if a configured alert group
         whose callHomeAlertGroupCapability has 'regularExpression'.
@@ -1700,7 +1906,8 @@ ccmPatternAlertGroupStorage OBJECT-TYPE
     SYNTAX          StorageType
     MAX-ACCESS      read-create
     STATUS          current
-    DESCRIPTION     "The storage type for this conceptual row."
+    DESCRIPTION
+        "The storage type for this conceptual row."
     DEFVAL          { volatile } 
     ::= { ccmPatternAlertGroupEntry 3 }
 
@@ -1709,14 +1916,15 @@ ccmPatternAlertGroupStatus OBJECT-TYPE
     MAX-ACCESS      read-create
     STATUS          current
     DESCRIPTION
-        "Object to manage creation and deletion of rows in this table."
+        "Object to manage creation and deletion of rows in this table." 
     ::= { ccmPatternAlertGroupEntry 4 }
  
 
 
 -- Call Home User Specified CLI Command specifications table
+
 callHomeUserDefMaxCmds OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..65535 )
+    SYNTAX          Unsigned32 (0..65535)
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
@@ -1823,9 +2031,11 @@ callHomeUserDefCmdRowStatus OBJECT-TYPE
     SYNTAX          RowStatus
     MAX-ACCESS      read-create
     STATUS          current
-    DESCRIPTION     "Status of this row." 
+    DESCRIPTION
+        "Status of this row." 
     ::= { callHomeUserDefCmdEntry 3 }
  
+
 -- Call Home Event AlertGroup Configuration Table
 
 ccmEventAlertGroupTable OBJECT-TYPE
@@ -1848,7 +2058,8 @@ ccmEventAlertGroupEntry OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "Information about one event alert group."
+        "An entry containing configuration information about the
+        'event' alert group configured for a profile."
     INDEX           {
                         callHomeDestProfileName,
                         callHomeAlertGroupTypeIndex
@@ -1856,8 +2067,8 @@ ccmEventAlertGroupEntry OBJECT-TYPE
     ::= { ccmEventAlertGroupTable 1 }
 
 CcmEventAlertGroupEntry ::= SEQUENCE {
-        ccmEventAlertGroupEnable         TruthValue,
-        ccmEventAlertGroupOperSeverity   CallHomeMsgLevel
+        ccmEventAlertGroupEnable       TruthValue,
+        ccmEventAlertGroupOperSeverity CallHomeMsgLevel
 }
 
 ccmEventAlertGroupEnable OBJECT-TYPE
@@ -1865,9 +2076,9 @@ ccmEventAlertGroupEnable OBJECT-TYPE
     MAX-ACCESS      read-write
     STATUS          current
     DESCRIPTION
-       "This object specifies whether sending Call Home messages
-       based on alert group event is enabled."
-    DEFVAL          { true }
+        "This object specifies whether sending Call Home messages
+        based on alert group event is enabled."
+    DEFVAL          { true } 
     ::= { ccmEventAlertGroupEntry 1 }
 
 ccmEventAlertGroupOperSeverity OBJECT-TYPE
@@ -1875,10 +2086,10 @@ ccmEventAlertGroupOperSeverity OBJECT-TYPE
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
-        "This object inidcates the severity level used in the
-        Call Home messages."
+        "This object indicates the severity level used in the
+        Call Home messages." 
     ::= { ccmEventAlertGroupEntry 2 }
-
+ 
 
 ccmCallHomeProfileTestControl  OBJECT IDENTIFIER
     ::= { ccmCallHomeConfiguration 31 }
@@ -1889,8 +2100,8 @@ ccmDestProfileTestTable OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "This table allows users to test profiles configured in the
-        system.
+        "This table lists status information about the profiles
+        configured on this device.
 
         An entry will be created in this table, for each
         destination profile configured in callHomeDestProfileTable.
@@ -1912,7 +2123,7 @@ ccmDestProfileTestEntry OBJECT-TYPE
 CcmDestProfileTestEntry ::= SEQUENCE {
         ccmDestProfileTestTrigger      TruthValue,
         ccmDestProfileTestMessage      SnmpAdminString,
-        ccmDestProfileTestStatus       INTEGER ,
+        ccmDestProfileTestStatus       INTEGER,
         ccmDestProfileTestFailureCause SnmpAdminString
 }
 
@@ -1929,7 +2140,7 @@ ccmDestProfileTestTrigger OBJECT-TYPE
 
         Setting this object to 'false' has no effect.
 
-        When read, this object always returns 'false'."
+        When read, this object always returns 'false'." 
     ::= { ccmDestProfileTestEntry 1 }
 
 ccmDestProfileTestMessage OBJECT-TYPE
@@ -1941,7 +2152,7 @@ ccmDestProfileTestMessage OBJECT-TYPE
         used for the test operation.
 
         If this object contains zero-length string,
-        a default test message will be used."
+        a default test message will be used." 
     ::= { ccmDestProfileTestEntry 2 }
 
 ccmDestProfileTestStatus OBJECT-TYPE
@@ -2004,7 +2215,6 @@ ccmSmtpMsgSendFailNotifEnable OBJECT-TYPE
         ccmSmtpMsgSendFailNotif notification on the 
         system." 
     ::= { ccmCallHomeNotifConfig 1 }
-
 ccmPeriodicSwInventoryCfg  OBJECT IDENTIFIER
     ::= { ccmCallHomeConfiguration 33 }
 
@@ -2031,10 +2241,159 @@ ccmAlertRateLimit OBJECT-TYPE
     DESCRIPTION
         "The rate-limit, in alerts per minute, of call home
         alerts generated by the system.  Upon exceeding the rate,
-        the alert is dropped."
+        the alert is dropped." 
     ::= { ccmCallHomeConfiguration 34 }
--- Notifications
+ccmOnDemandMsgSendControl  OBJECT IDENTIFIER
+    ::= { ccmCallHomeOnDemandActions 1 }
 
+
+ccmOnDemandMsgSendAlertGroup OBJECT-TYPE
+    SYNTAX          Unsigned32 (1..256)
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The object specifies the alert group for which on demand
+        Call Home message should be generated.
+
+        Only those alert groups whose corresponding instance
+        of callHomeAlertGroupCapability has 'onDemand' or
+        'onDemandPerEntity', may be set for this object." 
+    ::= { ccmOnDemandMsgSendControl 1 }
+
+ccmOnDemandMsgSendProfile OBJECT-TYPE
+    SYNTAX          SnmpAdminString (SIZE  (0..31))
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the name of the profile for which
+        the on demand Call Home messages should be generated.
+
+        A zero length string for this object indicates that
+        on demand Call Home messages are generated for all profiles." 
+    ::= { ccmOnDemandMsgSendControl 2 }
+
+ccmOnDemandMsgSendEntPhyIndex OBJECT-TYPE
+    SYNTAX          EntPhysicalIndexOrZero
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the value of entPhysicalIndex of the
+        physical entity for which the on demand Call Home messages
+        should be generated.
+
+        Only those entities which support generation of on demand
+        Call Home messages may be specified for this object. 
+
+        The value of this object should be ignored if alert group
+        specified by ccmOnDemandMsgSendAlertGroup does not have
+        'onDemandPerEntity' capability." 
+    ::= { ccmOnDemandMsgSendControl 3 }
+
+ccmOnDemandMsgSendTrigger OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "Object to trigger on demand Call Home messages.
+
+        Setting the object to 'true' triggers on demand Call Home
+        messages.
+
+        Setting the object to 'false' has no effect.
+
+        When read, this object always returns 'false'." 
+    ::= { ccmOnDemandMsgSendControl 4 }
+
+ccmSmartCallHomeProfile OBJECT-TYPE
+    SYNTAX          SnmpAdminString (SIZE  (0..31))
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the name of the profile for which
+        the Smart Call Home messages should be generated.
+
+        A zero length string for this object indicates that the
+        Smart Call Home messages are generated only for Cisco-TAC
+        profile." 
+    ::= { ccmSmartCallHomeActions 1 }
+
+ccmSmartCallHomeServiceType OBJECT-TYPE
+    SYNTAX          INTEGER  {
+                        commandReference(1),
+                        configSanity(2),
+                        bugsList(3),
+                        outputAnalysis(4),
+                        productAdvisory(5)
+                    }
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The object specifies the type of service requested from
+        Smart Call Home server.
+
+        'commandReference' indicates a request for command reference
+        to Smart Call Home server.
+
+        'configSanity' indicates a request for config-sanity request
+        to Smart Call Home server. 
+
+        'bugsList' indicates a request for bugs-list
+        to Smart Call Home server.
+
+        'outputAnalysis' indicates a request for output-analysis
+        to Smart Call Home server. 
+
+        'productAdvisory' indicates a request for exceptions
+        report/advisory to Smart Call Home server." 
+    ::= { ccmSmartCallHomeActions 2 }
+
+ccmSmartCallHomeAnalysisCmd OBJECT-TYPE
+    SYNTAX          SnmpAdminString
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The object specifies an existing diplay/show command on the
+        the system. The output of the command will be included in
+        the Call Home message and be processed by Cisco backend OI
+        (Output Interpreter) tool for further analysis.
+
+        This object is applicable only if the value of the corresponding
+        ccmSmartCallHomeServiceType is 'outputAnalysis'." 
+    ::= { ccmSmartCallHomeActions 3 }
+
+ccmSmartCallHomeCcoId OBJECT-TYPE
+    SYNTAX          SnmpAdminString
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The object specifies registered CCO ID (Cisco Connection
+        Online) ID to which the response to Smart Call Home requests
+        should be directed.
+
+        Response from Cisco will be directed to system contact
+        address specified in the Smart Call Home request if value
+        of this object is a zero length string." 
+    ::= { ccmSmartCallHomeActions 4 }
+
+ccmSmartCallHomeTrigger OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "Object to trigger Smart Call Home request messages.
+
+        Setting the object to 'true' triggers Smart Call Home
+        request message.
+
+        The object can be set to the value of 'true' only if 
+        ccmOnDemandMsgServAvailable returns 'true'.
+
+        Setting the object to 'false' has no effect.
+
+        When read, this object always returns 'false'." 
+    ::= { ccmSmartCallHomeActions 5 }
+
+-- Notifications
 
 ccmSmtpServerFailNotif NOTIFICATION-TYPE
     OBJECTS         { ccmSmtpServersPort }
@@ -2057,7 +2416,6 @@ ccmSmtpServerFailNotif NOTIFICATION-TYPE
         by the agent until the current throttling period expires."
    ::= { ccmCallHomeNotifications 1 }
 
-
 ccmAlertGroupTypeAddedNotif NOTIFICATION-TYPE
     OBJECTS         { callHomeAlertGroupName }
     STATUS          current
@@ -2069,7 +2427,6 @@ ccmAlertGroupTypeAddedNotif NOTIFICATION-TYPE
         callHomeAlertGroupTypeTable."
    ::= { ccmCallHomeNotifications 2 }
 
-
 ccmAlertGroupTypeDeletedNotif NOTIFICATION-TYPE
     OBJECTS         { callHomeAlertGroupName }
     STATUS          current
@@ -2080,7 +2437,6 @@ ccmAlertGroupTypeDeletedNotif NOTIFICATION-TYPE
         from the callHomeAlertGroupTypeTable."
    ::= { ccmCallHomeNotifications 3 }
 
-
 ccmSmtpMsgSendFailNotif NOTIFICATION-TYPE
     STATUS          current
     DESCRIPTION
@@ -2089,6 +2445,7 @@ ccmSmtpMsgSendFailNotif NOTIFICATION-TYPE
         SMTP servers in ccmSmtpServersTable."
    ::= { ccmCallHomeNotifications 4 }
 -- Conformance
+
 chMIBCompliances  OBJECT IDENTIFIER
     ::= { chMIBConformance 1 }
 
@@ -2121,10 +2478,12 @@ chMIBCompliance MODULE-COMPLIANCE
                     }
 
     GROUP           chSystemInformationGroup
-    DESCRIPTION     "Implementation of this group is optional."
+    DESCRIPTION
+        "Implementation of this group is optional."
 
     GROUP           chEmailMsgDispGroup
-    DESCRIPTION     "Implementation of this group is optional."
+    DESCRIPTION
+        "Implementation of this group is optional."
 
     GROUP           chSingleSmtpServerGroup
     DESCRIPTION
@@ -2143,31 +2502,36 @@ chMIBCompliance MODULE-COMPLIANCE
         syslog messages generated on the device."
 
     GROUP           ccmMIBNotificationsConfigGroup
-    DESCRIPTION     "The ccmMIBNotificationsConfigGroup is optional."
+    DESCRIPTION
+        "The ccmMIBNotificationsConfigGroup is optional."
 
     GROUP           ccmMIBNotificationsGroup
-    DESCRIPTION     "The ccmMIBNotificationsGroup is optional."
+    DESCRIPTION
+        "The ccmMIBNotificationsGroup is optional."
 
     OBJECT          callHomeDestProfileTrnsprtMthd
     SYNTAX          INTEGER  {
                         email(1)
                     }
     MIN-ACCESS      read-only
-    DESCRIPTION     "Only 'email' needs to be supported."
+    DESCRIPTION
+        "Only 'email' needs to be supported."
 
     OBJECT          callHomeDestProfileMsgFormat
     SYNTAX          INTEGER  {
                         shortText(3)
                     }
     MIN-ACCESS      read-only
-    DESCRIPTION     "Only 'shortText' needs to be supported."
+    DESCRIPTION
+        "Only 'shortText' needs to be supported."
 
     OBJECT          callHomeDestProfileStatus
     SYNTAX          INTEGER  {
                         active(1)
                     }
     MIN-ACCESS      read-only
-    DESCRIPTION     "Only 'active' needs to be supported."
+    DESCRIPTION
+        "Only 'active' needs to be supported."
 
     OBJECT          callHomeDestEmailAddress
     SYNTAX          SnmpAdminString (SIZE (1..63))
@@ -2188,7 +2552,8 @@ chMIBCompliance MODULE-COMPLIANCE
 
     OBJECT          ccmSmtpServersPort
     MIN-ACCESS      read-only
-    DESCRIPTION     "Write access is not required."
+    DESCRIPTION
+        "Write access is not required."
 
     OBJECT          ccmSmtpServersStatus
     SYNTAX          INTEGER  {
@@ -2247,10 +2612,12 @@ chMIBCompliance1 MODULE-COMPLIANCE
                     }
 
     GROUP           chSystemInformationGroup
-    DESCRIPTION     "Implementation of this group is optional."
+    DESCRIPTION
+        "Implementation of this group is optional."
 
     GROUP           chEmailMsgDispGroup
-    DESCRIPTION     "Implementation of this group is optional."
+    DESCRIPTION
+        "Implementation of this group is optional."
 
     GROUP           chSingleSmtpServerGroup
     DESCRIPTION
@@ -2269,24 +2636,28 @@ chMIBCompliance1 MODULE-COMPLIANCE
         syslog messages generated on the device."
 
     GROUP           ccmMIBNotificationsConfigGroup
-    DESCRIPTION     "The ccmMIBNotificationsConfigGroup is optional."
+    DESCRIPTION
+        "The ccmMIBNotificationsConfigGroup is optional."
 
     GROUP           ccmMIBNotificationsGroup1
-    DESCRIPTION     "The ccmMIBNotificationsGroup is optional."
+    DESCRIPTION
+        "The ccmMIBNotificationsGroup is optional."
 
     OBJECT          callHomeDestProfileTrnsprtMthd
     SYNTAX          INTEGER  {
                         email(1)
                     }
     MIN-ACCESS      read-only
-    DESCRIPTION     "Only 'email' needs to be supported."
+    DESCRIPTION
+        "Only 'email' needs to be supported."
 
     OBJECT          callHomeDestProfileMsgFormat
     SYNTAX          INTEGER  {
                         shortText(3)
                     }
     MIN-ACCESS      read-only
-    DESCRIPTION     "Only 'shortText' needs to be supported."
+    DESCRIPTION
+        "Only 'shortText' needs to be supported."
 
     OBJECT          callHomeDestProfileStatus
     SYNTAX          INTEGER  {
@@ -2295,7 +2666,8 @@ chMIBCompliance1 MODULE-COMPLIANCE
                         destroy(6)
                     }
     MIN-ACCESS      read-only
-    DESCRIPTION     "Only 'active' needs to be supported."
+    DESCRIPTION
+        "Only 'active' needs to be supported."
 
     OBJECT          callHomeDestEmailAddress
     SYNTAX          SnmpAdminString (SIZE (1..63))
@@ -2316,7 +2688,8 @@ chMIBCompliance1 MODULE-COMPLIANCE
 
     OBJECT          ccmSmtpServersPort
     MIN-ACCESS      read-only
-    DESCRIPTION     "Write access is not required."
+    DESCRIPTION
+        "Write access is not required."
 
     OBJECT          ccmSmtpServersStatus
     SYNTAX          INTEGER  {
@@ -2376,10 +2749,12 @@ chMIBCompliance2 MODULE-COMPLIANCE
                     }
 
     GROUP           chSystemInformationGroup
-    DESCRIPTION     "Implementation of this group is optional."
+    DESCRIPTION
+        "Implementation of this group is optional."
 
     GROUP           chEmailMsgDispGroup
-    DESCRIPTION     "Implementation of this group is optional."
+    DESCRIPTION
+        "Implementation of this group is optional."
 
     GROUP           chSingleSmtpServerGroup
     DESCRIPTION
@@ -2398,24 +2773,28 @@ chMIBCompliance2 MODULE-COMPLIANCE
         syslog messages generated on the device."
 
     GROUP           ccmMIBNotificationsConfigGroup
-    DESCRIPTION     "The ccmMIBNotificationsConfigGroup is optional."
+    DESCRIPTION
+        "The ccmMIBNotificationsConfigGroup is optional."
 
     GROUP           ccmMIBNotificationsGroup1
-    DESCRIPTION     "The ccmMIBNotificationsGroup is optional."
+    DESCRIPTION
+        "The ccmMIBNotificationsGroup is optional."
 
     OBJECT          callHomeDestProfileTrnsprtMthd
     SYNTAX          INTEGER  {
                         email(1)
                     }
     MIN-ACCESS      read-only
-    DESCRIPTION     "Only 'email' needs to be supported."
+    DESCRIPTION
+        "Only 'email' needs to be supported."
 
     OBJECT          callHomeDestProfileMsgFormat
     SYNTAX          INTEGER  {
                         shortText(3)
                     }
     MIN-ACCESS      read-only
-    DESCRIPTION     "Only 'shortText' needs to be supported."
+    DESCRIPTION
+        "Only 'shortText' needs to be supported."
 
     OBJECT          callHomeDestProfileStatus
     SYNTAX          INTEGER  {
@@ -2424,7 +2803,8 @@ chMIBCompliance2 MODULE-COMPLIANCE
                         destroy(6)
                     }
     MIN-ACCESS      read-only
-    DESCRIPTION     "Only 'active' needs to be supported."
+    DESCRIPTION
+        "Only 'active' needs to be supported."
 
     OBJECT          callHomeDestEmailAddress
     SYNTAX          SnmpAdminString (SIZE (1..63))
@@ -2445,7 +2825,8 @@ chMIBCompliance2 MODULE-COMPLIANCE
 
     OBJECT          ccmSmtpServersPort
     MIN-ACCESS      read-only
-    DESCRIPTION     "Write access is not required."
+    DESCRIPTION
+        "Write access is not required."
 
     OBJECT          ccmSmtpServersStatus
     SYNTAX          INTEGER  {
@@ -2504,16 +2885,20 @@ chMIBCompliance3 MODULE-COMPLIANCE
                     }
 
     GROUP           chSystemInformationGroup
-    DESCRIPTION     "Implementation of this group is optional."
+    DESCRIPTION
+        "Implementation of this group is optional."
 
     GROUP           chEmailMsgDispGroup
-    DESCRIPTION     "Implementation of this group is optional."
+    DESCRIPTION
+        "Implementation of this group is optional."
 
     GROUP           chSwInventoryInfoGroup1
-    DESCRIPTION     "Implementation of this group is optional."
+    DESCRIPTION
+        "Implementation of this group is optional."
 
     GROUP           chPeriodicSwInventoryInfoGroup
-    DESCRIPTION     "Implementation of this group is optional."
+    DESCRIPTION
+        "Implementation of this group is optional."
 
     GROUP           chSingleSmtpServerGroup
     DESCRIPTION
@@ -2532,24 +2917,28 @@ chMIBCompliance3 MODULE-COMPLIANCE
         syslog messages generated on the device."
 
     GROUP           ccmMIBNotificationsConfigGroup
-    DESCRIPTION     "The ccmMIBNotificationsConfigGroup is optional."
+    DESCRIPTION
+        "The ccmMIBNotificationsConfigGroup is optional."
 
     GROUP           ccmMIBNotificationsGroup1
-    DESCRIPTION     "The ccmMIBNotificationsGroup is optional."
+    DESCRIPTION
+        "The ccmMIBNotificationsGroup is optional."
 
     OBJECT          callHomeDestProfileTrnsprtMthd
     SYNTAX          INTEGER  {
                         email(1)
                     }
     MIN-ACCESS      read-only
-    DESCRIPTION     "Only 'email' needs to be supported."
+    DESCRIPTION
+        "Only 'email' needs to be supported."
 
     OBJECT          callHomeDestProfileMsgFormat
     SYNTAX          INTEGER  {
                         shortText(3)
                     }
     MIN-ACCESS      read-only
-    DESCRIPTION     "Only 'shortText' needs to be supported."
+    DESCRIPTION
+        "Only 'shortText' needs to be supported."
 
     OBJECT          callHomeDestProfileStatus
     SYNTAX          INTEGER  {
@@ -2558,7 +2947,8 @@ chMIBCompliance3 MODULE-COMPLIANCE
                         destroy(6)
                     }
     MIN-ACCESS      read-only
-    DESCRIPTION     "Only 'active' needs to be supported."
+    DESCRIPTION
+        "Only 'active' needs to be supported."
 
     OBJECT          callHomeDestEmailAddress
     SYNTAX          SnmpAdminString (SIZE (1..63))
@@ -2579,7 +2969,8 @@ chMIBCompliance3 MODULE-COMPLIANCE
 
     OBJECT          ccmSmtpServersPort
     MIN-ACCESS      read-only
-    DESCRIPTION     "Write access is not required."
+    DESCRIPTION
+        "Write access is not required."
 
     OBJECT          ccmSmtpServersStatus
     SYNTAX          INTEGER  {
@@ -2614,7 +3005,7 @@ chMIBCompliance3 MODULE-COMPLIANCE
     ::= { chMIBCompliances 4 }
 
 chMIBCompliance4 MODULE-COMPLIANCE
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The compliance statement for entities which
         implement the Call Home feature.
@@ -2632,17 +3023,22 @@ chMIBCompliance4 MODULE-COMPLIANCE
                 support a profile name of size 1 to 31
                 octets."
     MODULE          -- this module
-    MANDATORY-GROUPS { ccmConfigurationGroup3,
-                       chStatisticsGroup }
+    MANDATORY-GROUPS {
+                        ccmConfigurationGroup3,
+                        chStatisticsGroup
+                    }
 
     GROUP           chSystemInformationGroup1
-    DESCRIPTION     "Implementation of this group is optional."
+    DESCRIPTION
+        "Implementation of this group is optional."
 
-    GROUP           chSystemServicePriorityGroup 
-    DESCRIPTION     "Implementation of this group is optional."
+    GROUP           chSystemServicePriorityGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
 
     GROUP           chEmailMsgDispGroup
-    DESCRIPTION     "Implementation of this group is optional."
+    DESCRIPTION
+        "Implementation of this group is optional."
 
     GROUP           ccmAlertActionGroup
     DESCRIPTION
@@ -2691,13 +3087,16 @@ chMIBCompliance4 MODULE-COMPLIANCE
         which support such message throttling functionality."
 
     GROUP           chSwInventoryInfoGroup1
-    DESCRIPTION     "Implementation of this group is optional."
+    DESCRIPTION
+        "Implementation of this group is optional."
 
     GROUP           chPeriodicSwInventoryInfoGroup
-    DESCRIPTION     "Implementation of this group is optional."
+    DESCRIPTION
+        "Implementation of this group is optional."
 
     GROUP           ccmPeriodicSwInventoryInfoGroup1
-    DESCRIPTION     "Implementation of this group is optional."
+    DESCRIPTION
+        "Implementation of this group is optional."
 
     GROUP           chSingleSmtpServerGroup
     DESCRIPTION
@@ -2721,10 +3120,12 @@ chMIBCompliance4 MODULE-COMPLIANCE
         syslog messages generated on the device."
 
     GROUP           ccmMIBNotificationsConfigGroup
-    DESCRIPTION     "The ccmMIBNotificationsConfigGroup is optional."
+    DESCRIPTION
+        "The ccmMIBNotificationsConfigGroup is optional."
 
     GROUP           ccmMIBNotificationsGroup1
-    DESCRIPTION     "The ccmMIBNotificationsGroup1 is optional."
+    DESCRIPTION
+        "The ccmMIBNotificationsGroup1 is optional."
 
     GROUP           ccmHttpCfgGroup
     DESCRIPTION
@@ -2758,7 +3159,8 @@ chMIBCompliance4 MODULE-COMPLIANCE
         devices which support alert group capabilities."
 
     GROUP           ccmUserDefCmdGroup
-    DESCRIPTION     "Implementation of this group is optional."
+    DESCRIPTION
+        "Implementation of this group is optional."
 
     GROUP           ccmSmtpMsgSendFailNotifCtrlGroup
     DESCRIPTION
@@ -2797,14 +3199,16 @@ chMIBCompliance4 MODULE-COMPLIANCE
                         email(1)
                     }
     MIN-ACCESS      read-only
-    DESCRIPTION     "Only 'email' needs to be supported."
+    DESCRIPTION
+        "Only 'email' needs to be supported."
 
     OBJECT          callHomeDestProfileMsgFormat
     SYNTAX          INTEGER  {
                         shortText(3)
                     }
     MIN-ACCESS      read-only
-    DESCRIPTION     "Only 'shortText' needs to be supported."
+    DESCRIPTION
+        "Only 'shortText' needs to be supported."
 
     OBJECT          callHomeDestProfileStatus
     SYNTAX          INTEGER  {
@@ -2813,7 +3217,8 @@ chMIBCompliance4 MODULE-COMPLIANCE
                         destroy(6)
                     }
     MIN-ACCESS      read-only
-    DESCRIPTION     "Only 'active' needs to be supported."
+    DESCRIPTION
+        "Only 'active' needs to be supported."
 
     OBJECT          callHomeDestEmailAddress
     SYNTAX          SnmpAdminString (SIZE (1..63))
@@ -2834,7 +3239,8 @@ chMIBCompliance4 MODULE-COMPLIANCE
 
     OBJECT          ccmSmtpServersPort
     MIN-ACCESS      read-only
-    DESCRIPTION     "Write access is not required."
+    DESCRIPTION
+        "Write access is not required."
 
     OBJECT          ccmSmtpServersStatus
     SYNTAX          INTEGER  {
@@ -2868,7 +3274,293 @@ chMIBCompliance4 MODULE-COMPLIANCE
         octets."
     ::= { chMIBCompliances 5 }
 
+chMIBCompliance5 MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for entities which
+        implement the Call Home feature.
+
+        OBJECT ccmSmtpServersAddrType 
+        SYNTAX  INTEGER { ipv4(1) }
+        DESCRIPTION
+                An implementation is only required to 
+                support IPv4 addresses."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        ccmConfigurationGroup3,
+                        chStatisticsGroup
+                    }
+
+    GROUP           chSystemInformationGroup1
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           chSystemServicePriorityGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           chEmailMsgDispGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           ccmAlertActionGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for
+        the platforms which generate test messages for all
+        (and not any particular) of configured destination
+        profiles which meet test message generation criteria
+        determined by platform."
+
+    GROUP           ccmProfileMessageLevelGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for
+        the platforms which allow user to filter Call Home 
+        messages based on their associated levels."
+
+    GROUP           ccmProfileActivationGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for
+        the platforms which provide user control to enable or
+        disable configured Call Home profiles."
+
+    GROUP           ccmProfileTestGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for
+        the platforms which are capable of generating test
+        messages specifically for a configured destination
+        profile."
+
+    GROUP           ccmProfileAlertGroupsGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for
+        the platforms which categorize various events that result
+        in Call Home messages in different alert-groups and
+        provide user control to associate different alert-groups
+        to configured profiles."
+
+    GROUP           ccmProfileAlertGroupControlGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for
+        the platforms which implement ccmProfileAlertGroupsGroup
+        and can enable or disable various alert-groups."
+
+    GROUP           ccmThrottleConfigurationGroup
+    DESCRIPTION
+        "Implementation of this group is only for the systems
+        which support such message throttling functionality."
+
+    GROUP           chSwInventoryInfoGroup1
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           chPeriodicSwInventoryInfoGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           ccmPeriodicSwInventoryInfoGroup1
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           chSingleSmtpServerGroup
+    DESCRIPTION
+        "This group is mandatory for devices which support
+        single SMTP server."
+
+    GROUP           chMultipleSmtpServersGroup
+    DESCRIPTION
+        "This group is mandatory for devices which support
+        multiple SMTP servers."
+
+    GROUP           ccmSmtpServersPriorityGroup
+    DESCRIPTION
+        "This group is mandatory for devices which support
+        prioritization among multiple SMTP servers."
+
+    GROUP           ccmSysLogSeverityGroup
+    DESCRIPTION
+        "This group is mandatory for devices that issue
+        Call Home alerts based on  severity level of the 
+        syslog messages generated on the device."
+
+    GROUP           ccmMIBNotificationsConfigGroup
+    DESCRIPTION
+        "The ccmMIBNotificationsConfigGroup is optional."
+
+    GROUP           ccmMIBNotificationsGroup1
+    DESCRIPTION
+        "The ccmMIBNotificationsGroup1 is optional."
+
+    GROUP           ccmHttpCfgGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which support http as a transport method to deliver
+        Call Home messages."
+
+    GROUP           ccmSeverityAlertGroupCfgGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which support severity based alert groups."
+
+    GROUP           ccmPeriodicAlertGroupCfgGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which support periodic alert groups."
+
+    GROUP           ccmPatternAlertGroupCfgGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which support pattern based alert groups."
+
+    GROUP           ccmEventAlertGroupCfgGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which support event based alert groups."
+
+    GROUP           ccmAlertGroupCapabilityGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which support alert group capabilities."
+
+    GROUP           ccmUserDefCmdGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           ccmSmtpMsgSendFailNotifCtrlGroup
+    DESCRIPTION
+        "Implementation of chSmtpMsgSendFailNotifCtrlGroup
+        is optional."
+
+    GROUP           ccmSmtpMsgSendFailNotifGroup
+    DESCRIPTION
+        "Implementation of chSmtpMsgSendFailNotifGroup
+        is optional."
+
+    GROUP           ccmAlertHCStatisticsGroup
+    DESCRIPTION
+        "Implementation of this group mandatory only for the
+        devices which support 64 bit Call Home alert statistics."
+
+    GROUP           ccmAlertRateLimitGroup
+    DESCRIPTION
+        "Implementation of this group mandatory only for the
+        devices which support Call Home alert rate limit feature."
+
+    GROUP           ccmSmtpServerStatusGroup
+    DESCRIPTION
+        "Implementation of this group mandatory only for the
+        devices which support Call Home SMTP Server status
+        check feature."
+
+    GROUP           ccmProfileHiMessageSizeGroup
+    DESCRIPTION
+        "Implementation of this group mandatory only for the
+        devices which support the maximum size of message 
+        greater than 1000,000 bytes."
+
+    GROUP           ccmOnDemandMsgSendControlGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which support on demand Call Home messages."
+
+    GROUP           ccmOnDemandMsgStatusGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which do not support concurrent generation of
+        on demand Call Home messages."
+
+    GROUP           ccmSmartCallHomeGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which support Smart Call Home messages."
+
+    GROUP           ccmEventStatsGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which maintain statistical information CallHome
+        events."
+
+    OBJECT          callHomeDestProfileTrnsprtMthd
+    SYNTAX          INTEGER  {
+                        email(1)
+                    }
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Only 'email' needs to be supported."
+
+    OBJECT          callHomeDestProfileMsgFormat
+    SYNTAX          INTEGER  {
+                        shortText(3)
+                    }
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Only 'shortText' needs to be supported."
+
+    OBJECT          callHomeDestProfileStatus
+    SYNTAX          INTEGER  {
+                        active(1),
+                        createAndGo(4),
+                        destroy(6)
+                    }
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Only 'active' needs to be supported."
+
+    OBJECT          callHomeDestEmailAddress
+    SYNTAX          SnmpAdminString (SIZE (1..63))
+    DESCRIPTION
+        "An implementation is only required to
+        support an address of size 1 to 63
+        octets."
+
+    OBJECT          callHomeDestEmailAddressStatus
+    SYNTAX          INTEGER  {
+                        active(1),
+                        createAndGo(4),
+                        destroy(6)
+                    }
+    DESCRIPTION
+        "Only 'active', 'createAndGo' and 'destroy' needs
+        to be supported."
+
+    OBJECT          ccmSmtpServersPort
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          ccmSmtpServersStatus
+    SYNTAX          INTEGER  {
+                        active(1),
+                        createAndGo(4),
+                        destroy(6)
+                    }
+    DESCRIPTION
+        "Only 'active', 'createAndGo' and 'destroy' needs
+        to be supported."
+
+    OBJECT          callHomeEmailFrom
+    SYNTAX          SnmpAdminString (SIZE (0..63))
+    DESCRIPTION
+        "An implementation is only required to
+        support an address of size 0 to 63
+        octets."
+
+    OBJECT          callHomeEmailReplyTo
+    SYNTAX          SnmpAdminString (SIZE (0..63))
+    DESCRIPTION
+        "An implementation is only required to
+        support an address of size 0 to 63
+        octets."
+
+    OBJECT          callHomeEmailMsgDispNotification
+    SYNTAX          SnmpAdminString (SIZE (0..63))
+    DESCRIPTION
+        "An implementation is only required to
+        support an address of size 0 to 63 
+        octets."
+    ::= { chMIBCompliances 6 }
+
 -- Units of Conformance
+
 chSystemInformationGroup OBJECT-GROUP
     OBJECTS         {
                         sysContactPhoneNumber,
@@ -2974,7 +3666,8 @@ ccmMIBNotificationsConfigGroup OBJECT-GROUP
 ccmMIBNotificationsGroup NOTIFICATION-GROUP
    NOTIFICATIONS    { ccmSmtpServerFailNotif }
     STATUS          deprecated
-    DESCRIPTION     "A collection of notifications."
+    DESCRIPTION
+        "A collection of notifications."
     ::= { chMIBGroups 9 }
 
 chConfigurationGroup1 OBJECT-GROUP
@@ -3009,7 +3702,8 @@ ccmMIBNotificationsGroup1 NOTIFICATION-GROUP
                         ccmAlertGroupTypeDeletedNotif
                     }
     STATUS          current
-    DESCRIPTION     "A collection of notifications."
+    DESCRIPTION
+        "A collection of notifications."
     ::= { chMIBGroups 11 }
 
 chConfigurationGroup2 OBJECT-GROUP
@@ -3086,14 +3780,12 @@ ccmUserDefCmdGroup OBJECT-GROUP
     ::= { chMIBGroups 16 }
 
 ccmPeriodicSwInventoryInfoGroup1 OBJECT-GROUP
-    OBJECTS         {
-                        ccmPeriodicSwInventoryTimeOfDay
-                    }
+    OBJECTS         { ccmPeriodicSwInventoryTimeOfDay }
     STATUS          current
     DESCRIPTION
         "A collection of objects for configuring the
-         additional information of periodic software
-         inventory information."
+        additional information of periodic software
+        inventory information."
     ::= { chMIBGroups 17 }
 
 ccmConfigurationGroup3 OBJECT-GROUP
@@ -3311,13 +4003,11 @@ ccmSmtpServerStatusGroup OBJECT-GROUP
     ::= { chMIBGroups 37 }
 
 ccmProfileHiMessageSizeGroup OBJECT-GROUP
-    OBJECTS         {
-                        callHomeDestProfileHiMaxMsgSize
-                    }
+    OBJECTS         { callHomeDestProfileHiMaxMsgSize }
     STATUS          current
     DESCRIPTION
-        "A collection of objects providing information 
-         regarding to maximum size message to destination." 
+        "A collection of objects providing information
+        regarding to maximum size message to destination."
     ::= { chMIBGroups 38 }
 
 chSystemInformationGroup1 OBJECT-GROUP
@@ -3336,16 +4026,66 @@ chSystemInformationGroup1 OBJECT-GROUP
         Call Home."
     ::= { chMIBGroups 39 }
 
-
 chSystemServicePriorityGroup OBJECT-GROUP
-    OBJECTS         {
-                        callHomeDeviceServicePriority
-                    }
+    OBJECTS         { callHomeDeviceServicePriority }
     STATUS          current
     DESCRIPTION
-        "A collection of objects for configuring 
+        "A collection of objects for configuring
         configuring system service priority pertaining to
         Call Home."
     ::= { chMIBGroups 40 }
+
+ccmOnDemandMsgSendControlGroup OBJECT-GROUP
+    OBJECTS         {
+                        ccmOnDemandMsgSendAlertGroup,
+                        ccmOnDemandMsgSendProfile,
+                        ccmOnDemandMsgSendEntPhyIndex,
+                        ccmOnDemandMsgSendTrigger
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects that enable sending on demand
+        Call Home messages."
+    ::= { chMIBGroups 41 }
+
+ccmOnDemandMsgStatusGroup OBJECT-GROUP
+    OBJECTS         { ccmOnDemandMsgServAvailable }
+    STATUS          current
+    DESCRIPTION
+        "A collection of object(s) to indicate status of
+        on demand message service on the device."
+    ::= { chMIBGroups 42 }
+
+ccmSmartCallHomeGroup OBJECT-GROUP
+    OBJECTS         {
+                        ccmSmartCallHomeProfile,
+                        ccmSmartCallHomeServiceType,
+                        ccmSmartCallHomeAnalysisCmd,
+                        ccmSmartCallHomeCcoId,
+                        ccmSmartCallHomeTrigger
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects that enable issuing Smart Call Home
+        messages."
+    ::= { chMIBGroups 43 }
+
+ccmEventStatsGroup OBJECT-GROUP
+    OBJECTS         {
+                        ccmEventStatsTotal,
+                        ccmEventStatsConfiguration,
+                        ccmEventStatsDiagnostic,
+                        ccmEventStatsEnvironment,
+                        ccmEventStatsInventory,
+                        ccmEventStatsSystemLog,
+                        ccmEventStatsTest,
+                        ccmEventStatsRequest,
+                        ccmEventStatsSendCliOutput
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of object(s) indicating statistical information
+        for the Call Home events."
+    ::= { chMIBGroups 44 }
 
 END

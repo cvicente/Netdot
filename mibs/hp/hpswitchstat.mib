@@ -12,6 +12,9 @@ STATISTICS-MIB DEFINITIONS ::= BEGIN
             FROM RFC1213-MIB
         HpSwitchPortType
             FROM HP-ICF-TC
+        InetAddress, InetAddressType,
+        InetPortNumber
+            FROM INET-ADDRESS-MIB
         hpSwitch
             FROM HP-ICF-OID;
 
@@ -1311,7 +1314,10 @@ STATISTICS-MIB DEFINITIONS ::= BEGIN
             hpSshStatsSesIndex           INTEGER,
             hpSshStatsSesType            INTEGER,
             hpSshStatsSourceIpPort       DisplayString,
-            hpSshStatsSesVersion         INTEGER
+            hpSshStatsSesVersion         INTEGER,
+            hpSshStatsSourceIpType       InetAddressType, 
+            hpSshStatsSourceIpAddress    InetAddress,
+            hpSshStatsSourceIpPortNum    InetPortNumber
         }
 
     hpSshStatsSesIndex OBJECT-TYPE
@@ -1337,9 +1343,13 @@ STATISTICS-MIB DEFINITIONS ::= BEGIN
     hpSshStatsSourceIpPort OBJECT-TYPE
         SYNTAX      DisplayString (SIZE (0..21))
         ACCESS      read-only
-        STATUS      mandatory
+        STATUS      deprecated
         DESCRIPTION "Contains the information about source ip address and 
-                     port number of active SSH session (e.g. 192.168.31.114:1722)"
+                     port number of active SSH session (e.g. 192.168.31.114:1722).
+
+                     This object has been depreceted as its not big enough to store 
+                     IPv6 addresses. It is loosely replaced by hpSshStatsSourceIpAddress
+                     and hpSshStatsSourceIpPortNum"
         ::= { hpSshStatsEntry 3 }
 
     hpSshStatsSesVersion OBJECT-TYPE
@@ -1353,6 +1363,30 @@ STATISTICS-MIB DEFINITIONS ::= BEGIN
         DESCRIPTION "Specifies the SSH protocol version in use for a
                     given session."
         ::= { hpSshStatsEntry 4 }
+
+    hpSshStatsSourceIpType OBJECT-TYPE
+        SYNTAX      InetAddressType
+        ACCESS      read-only
+        STATUS      mandatory
+        DESCRIPTION "Specifies the Address type of source ip 
+                     address of active SSH session."
+        ::= { hpSshStatsEntry 5 }
+
+    hpSshStatsSourceIpAddress OBJECT-TYPE
+        SYNTAX      InetAddress
+        ACCESS      read-only
+        STATUS      mandatory
+        DESCRIPTION "Specifies the source ip address of
+                     active SSH session."
+        ::= { hpSshStatsEntry 6 }
+
+    hpSshStatsSourceIpPortNum OBJECT-TYPE
+        SYNTAX      InetPortNumber
+        ACCESS      read-only
+        STATUS      mandatory
+        DESCRIPTION "Specifies the source port number of 
+                     active SSH session."
+        ::= { hpSshStatsEntry 7 }
 
   hpSwitchPhysicalPort   OBJECT IDENTIFIER ::= { hpSwitchStatistics 18 }
 

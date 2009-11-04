@@ -3,7 +3,7 @@
 --   
 -- January, 2007 Thamilarasu K
 --   
--- Copyright (c) 2007 by cisco Systems, Inc.
+-- Copyright (c) 2007-2009 by cisco Systems, Inc.
 -- All rights reserved.
 --   
 -- ****************************************************************
@@ -17,18 +17,19 @@ IMPORTS
     Counter64,
     Gauge32,
     Integer32,
+    Unsigned32,
     NOTIFICATION-TYPE
         FROM SNMPv2-SMI
+    MODULE-COMPLIANCE,
+    OBJECT-GROUP,
+    NOTIFICATION-GROUP
+        FROM SNMPv2-CONF
     TEXTUAL-CONVENTION,
     TruthValue,
     RowStatus,
     TimeInterval,
     TimeStamp
         FROM SNMPv2-TC
-    MODULE-COMPLIANCE,
-    OBJECT-GROUP,
-    NOTIFICATION-GROUP
-        FROM SNMPv2-CONF
     InetAddressType,
     InetAddress,
     InetPortNumber
@@ -42,7 +43,7 @@ IMPORTS
 
 
 ciscoContentServicesMIB MODULE-IDENTITY
-    LAST-UPDATED    "200703210000Z"
+    LAST-UPDATED    "200901280000Z"
     ORGANIZATION    "Cisco Systems, Inc."
     CONTACT-INFO
             "Cisco Systems
@@ -73,7 +74,110 @@ ciscoContentServicesMIB MODULE-IDENTITY
 
           UDB        User Database. The user database is a 
                      service that translates a client IP 
-                     address into a user identifier."
+                     address into a user identifier.
+
+          GPRS       General Packet Radio Service.
+
+          GTP        GPRS Tunneling Protocol. Transfer Protocol
+                     for Charging Detail Records to BMAs and 
+                     billing quota from quota managers.
+
+          IPC        Inter Processor Communicaiton.
+          Network Server  The service provider who provides the
+                          online service.
+          AdControl  The Cisco product to enable service providers to
+                     share subscriber data with advertising providers 
+                     in a controlled and secure manner."
+    REVISION        "200901280000Z"
+    DESCRIPTION
+        "Added following objects to ccsGlobalCfgTable:
+        ccsNetServerAlarmUpdateTimer
+        ccsNetServerResponseFailAlarmThreshold
+        ccsNetServerResponseFailClearThreshold
+        ccsNetServerFirstPayloadResponseTime
+        ccsNetServerResponseTimeFailAlarmThreshold
+        ccsNetServerResponseTimeFailClearThreshold
+        ccsProtocolParseFailAlarmThreshold
+        ccsProtocolParseFailClearThreshold.
+        Added following object to ccsNotifCfgTable:
+        ccsAdControlNotifEnabled.
+        Added following object to ciscoContentServicesMIBObjects:
+        ccsNotifInfo.
+        Added following objects to ciscoContentServicesNotifGroup:
+        ciscoContentServicesNetServerResponseFailExceeded,
+        ciscoContentServicesNetServerResponseTimeExceeded
+        ciscoContentServicesProtocolParseFailExceeded
+        ciscoContentServicesNetServerResponseFailAlarmCleared
+        ciscoContentServicesNetServerResponseTimeAlarmCleared
+        ciscoContentServicesProtocolParseFailAlarmCleared
+        Added ciscoContentServicesNotifInfoGroup with following objects:
+        ccsTPIndexNotifInfo
+        ccsServiceNameNotifInfo
+        ccsContentNameNotifInfo
+        ccsPolicyNameNotifInfo
+        ccsNetServerIpAddrTypeNotifInfo
+        ccsNetServerIpAddrNotifInfo
+        ccsNetServerPortNotifInfo
+        ccsSubscriberIpAddrTypeNotifInfo
+        ccsSubscriberIpAddrNotifInfo
+        ccsSubscriberPortNotifInfo
+        ccsNetServerResponseFailCountNotifInfo
+        ccsNetServerResponseTimeFailCountNotifInfo
+        ccsProtocolParseFailCountNotifInfo
+        Added following object groups to ciscoContentServicesMIBGroups:
+        ciscoContentServicesGlobalCfgGroupSup2
+        ciscoContentServicesNotifEnableGroupSup2
+        ciscoContentServicesNotifGroupSup2
+        ciscoContentServicesNotifInfoGroup
+        Added following new compliance statement to
+        ciscoContentServicesMIBCompliances:
+        ciscoContentServicesMIBComplianceRev3"
+    REVISION        "200809260000Z"
+    DESCRIPTION
+        "Added following object to ccsGlobalCfgTable.
+        ccsgsUserThreshold.
+        Added following object to ccsNotifCfgTable.
+        ccsUserThresholdExceededNotifEnabled
+        Added following object to ciscoContentServicesNotifGroup.
+        ciscoContentServicesUserThresholdExceeded.
+        Added following object groups to ciscoContentServicesMIBGroups.
+        ciscoContentServicesGlobalCfgGroupSup1,
+        ciscoContentServicesNotifEnableGroupSup1,
+        ciscoContentServicesNotifGroupSup1
+        Added following new compliance statement to
+        ciscoContentServicesMIBCompliances.
+        ciscoContentServicesMIBComplianceRev2"
+    REVISION        "200804210000Z"
+    DESCRIPTION
+        "Added following object to ccsGlobalStatsTable.
+        ccsgsGTPBMARejected,
+        ccsgsHCGTPBMARejected,
+        ccsgsGTPBMADropped,
+        ccsgsHCGTPBMADropped,
+        ccsgsGTPBMARetransmit,
+        ccsgsHCGTPBMARetransmit,
+        ccsgsGTPQuotaMgrRejected,
+        ccsgsHCGTPQuotaMgrRejected,
+        ccsgsGTPQuotaMgrDropped,
+        ccsgsHCGTPQuotaMgrDropped,
+        ccsgsGTPQuotaMgrRetransmit,
+        ccsgsHCGTPQuotaMgrRetransmit,
+        ccsgsGTPBMARateInterval,
+        ccsgsGTPQuotaMgrRateInterval
+        Added following object to ccsBMATable.
+        ccsBMAPacketRate,
+        ccsBMAAckRate
+        Added following object to ccsQuotaMgrTable.
+        ccsQuotaMgrPacketRate,
+        ccsQuotaMgrAckRate
+        Added following OID subtree in ccsStats to support load statistics.
+        ccsLoadStatistics
+        Added following object groups to ciscoContentServicesMIBGroups.
+        ciscoContentServicesGlobalStatsGroupSup1,
+        ciscoContentServicesBMAGroupSup1,
+        ciscoContentServicesQuotaMgrGroupSup1
+        Added following new compliance statement to ciscoContentServicesMIBCompliances.
+        ciscoContentServicesMIBComplianceRev1"
     REVISION        "200703210000Z"
     DESCRIPTION
         "Initial version of this MIB module."
@@ -98,6 +202,10 @@ ccsStats  OBJECT IDENTIFIER
 ccsNotifConfig  OBJECT IDENTIFIER
     ::= { ciscoContentServicesMIBObjects 3 }
 
+ccsNotifInfo  OBJECT IDENTIFIER
+    ::= { ciscoContentServicesMIBObjects 4 }
+
+
 -- ********************************************************************
 -- *                                                                  *
 -- * Textual Conventions                                              *
@@ -112,7 +220,7 @@ CcsServerPriority ::= TEXTUAL-CONVENTION
         type are defined, the priority defines the order of
         activation of the servers. The lowest priority value
         designates the highest priority."
-    SYNTAX          Integer32 (1..1000 )
+    SYNTAX          Integer32 (1..1000)
 -- *************************************************************
 -- *                                                           *
 -- * Content Billing Global Config Table                       *
@@ -142,8 +250,17 @@ ccsGlobalCfgTableEntry OBJECT-TYPE
     ::= { ccsGlobalCfgTable 1 }
 
 CcsGlobalCfgTableEntry ::= SEQUENCE {
-        ccsgcBMALostRecordTimer      TimeInterval,
-        ccsgcQuotaMgrLostRecordTimer TimeInterval
+        ccsgcBMALostRecordTimer                    TimeInterval,
+        ccsgcQuotaMgrLostRecordTimer               TimeInterval,
+        ccsgsUserThreshold                         Unsigned32,
+        ccsAdControlAlarmUpdateTimer               TimeInterval,
+        ccsNetServerResponseFailAlarmThreshold     Unsigned32,
+        ccsNetServerResponseFailClearThreshold     Unsigned32,
+        ccsNetServerFirstPayloadResponseTime       TimeInterval,
+        ccsNetServerResponseTimeFailAlarmThreshold Unsigned32,
+        ccsNetServerResponseTimeFailClearThreshold Unsigned32,
+        ccsProtocolParseFailAlarmThreshold         Unsigned32,
+        ccsProtocolParseFailClearThreshold         Unsigned32
 }
 
 ccsgcBMALostRecordTimer OBJECT-TYPE
@@ -191,6 +308,231 @@ ccsgcQuotaMgrLostRecordTimer OBJECT-TYPE
         The interval value ranges from 1 to 2147483647."
     DEFVAL          { 60 } 
     ::= { ccsGlobalCfgTableEntry 3 }
+
+ccsgsUserThreshold OBJECT-TYPE
+    SYNTAX          Unsigned32
+    UNITS           "users"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The maximum number of users that is contractually
+        allowed.  When the actual number of user exceeds
+        the contractually established limit, a notification
+        (ciscoContentServicesUserThresholdExceeded)
+        is issued." 
+    ::= { ccsGlobalCfgTableEntry 4 }
+
+ccsAdControlAlarmUpdateTimer OBJECT-TYPE
+    SYNTAX          TimeInterval (1..2147483647)
+    UNITS           "seconds"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The time interval to monitor the AdControl related errors.
+        The alarm and clear notifications are enabled
+        when ccsAdControlNotifEnabled is set to 'true'. The alarm 
+        notifications are specified by
+        ciscoContentServicesNetServerResponseFailExceeded,
+        ciscoContentServicesNetServerResponseTimeExceeded,
+        ciscoContentServicesProtocolParseFailExceeded.
+        The clear notifications are specified
+        ciscoContentServicesNetServerResponseFailAlarmCleared,
+        ciscoContentServicesNetServerResponseTimeAlarmCleared,
+        ciscoContentServicesProtocolParseFailAlarmCleared
+        The AdControl will start a timer for each type of errors.
+        Each error has a counter. The counters for the errors are
+        ccsNetServerResponseFailCountNotifInfo,
+        ccsNetServerResponseTimeFailCountNotifInfo,
+        ccsProtocolParseFailCountNotifInfo.
+        An alarm notification will be generated if the error exceeds
+        the alarm threshold within the time interval and no such alarm
+        has been raised yet. The timer will be restarted after an alarm 
+        notification is generated. When the timer expires, a clear 
+        notification will be generated if the error is equal to or less
+        than the clear threshold and the alarm exists.
+        The alarm thresholds are specified by
+        ccsNetServerResponseFailAlarmThreshold,
+        ccsNetServerResponseTimeFailAlarmThreshold,
+        ccsProtocolParseFailAlarmThreshold.
+        The clear thresholds are specified by
+        ccsNetServerResponseFailClearThreshold,
+        ccsNetServerResponseTimeFailClearThreshold,
+        ccsProtocolParseFailClearThreshold.
+        When the timer is changed, the alarm counters will be reset
+        and the related alarms will be cleared if exist."
+    DEFVAL          { 300 } 
+    ::= { ccsGlobalCfgTableEntry 5 }
+
+ccsNetServerResponseFailAlarmThreshold OBJECT-TYPE
+    SYNTAX          Unsigned32 (1..4294967294)
+    UNITS           "errors"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the alarm threshold of the
+        number of the failed responses specified by
+        ccsNetServerResponseFailCountNotifInfo from the network server
+        in the time interval (ccsAdControlAlarmUpdateTimer).
+        When ccsAdControlNotifEnabled is set to 'true', the count
+        is greater than the threshold, and no alarm notification
+        specified by
+        ciscoContentServicesNetServerResponseFailExceeded
+        has been issued within the timer interval, the alarm 
+        notification will be generated and the timer will be
+        re-started.
+        The threshold should be greater than the clear 
+        threshold ccsNetServerResponseFailClearThreshold.
+        When the threshold is changed, the counter will be
+        reset, the alarm will be cleared, and the timer will 
+        be re-started."
+    DEFVAL          { 5 } 
+    ::= { ccsGlobalCfgTableEntry 6 }
+
+ccsNetServerResponseFailClearThreshold OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..4294967293)
+    UNITS           "errors"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the clear threshold associated
+        with ccsNetServerResponseFailAlarmThreshold.
+        If ccsAdControlNotifEnabled is set to 'true', the count
+        (ccsNetServerResponseFailCountNotifInfo)
+        is equal to or lower than the threshold when the timer
+        (ccsAlarmUpdateTimer) expires and the 
+        alarm specified by
+        ciscoContentServicesNetServerResponseFailExceeded
+        exists, the clear notification specified by
+        ciscoContentServicesNetServerResponseFailAlarmCleared
+        is generated.  The threshold should be less than the
+        alarm threshold specified by
+        ccsNetServerResponseFailAlarmThreshold.
+        When the threshold is changed, the counter will be
+        reset, the alarm will be cleared if exists, and the timer
+        will be re-started."
+    DEFVAL          { 0 } 
+    ::= { ccsGlobalCfgTableEntry 7 }
+
+ccsNetServerFirstPayloadResponseTime OBJECT-TYPE
+    SYNTAX          TimeInterval (1..2147483647)
+    UNITS           "seconds"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The amount of time to wait for the first payload packet from
+        the network server. The
+        ciscoContentServicesNetServerResponseTimeExceeded notification
+        is generated when the first payload response is exceeded by 
+        the network server.
+        When the time interval is changed, the
+        counter specified by ccsNetServerResponseTimeFailCountNotifInfo
+        will be reset and the alarm specified by
+        ciscoContentServicesNetServerResponseTimeExceeded
+        will be cleared if exists."
+    DEFVAL          { 5 } 
+    ::= { ccsGlobalCfgTableEntry 8 }
+
+ccsNetServerResponseTimeFailAlarmThreshold OBJECT-TYPE
+    SYNTAX          Unsigned32 (1..4294967294)
+    UNITS           "errors"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the alarm threshold of the
+        number of the responses specified by
+        ccsNetServerResponseTimeFailCountNotifInfo
+        for the first payload packet from the network server exceeds
+        the response time ccsNetServerFirstPayloadResponseTime
+        within the time interval (ccsAdControlAlarmUpdateTimer).
+        When ccsAdControlNotifEnabled is set to 'true', the count 
+        is greater than the threshold and no alarm notification
+        specified by
+        ciscoContentServicesNetServerResponseTimeExceeded
+        has been issued, the alarm notification will be generated
+        and the timer will be re-started. 
+        The threshold should be greater than the clear threshold
+        ccsNetServerResponseTimeFailClearThreshold.
+        When the threshold is changed, the counter will be 
+        reset, the alarm will be cleared if exists, and the timer
+        will be re-started."
+    DEFVAL          { 5 } 
+    ::= { ccsGlobalCfgTableEntry 9 }
+
+ccsNetServerResponseTimeFailClearThreshold OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..4294967293)
+    UNITS           "errors"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the clear threshold associated with
+        ccsNetServerResponseTimeFailAlarmThreshold.
+        If ccsAdControlNotifEnabled is set to 'true', the count 
+        (ccsNetServerResponseTimeFailCountNotifInfo)
+        is equal to or lower than the threshold when the timer
+        (ccsAdControlAlarmUpdateTimer) expires and the alarm 
+        specified by
+        ciscoContentServicesNetServerResponseTimeExceeded
+        exists, the clear notification specified by
+        ciscoContentServicesNetServerResponseTimeAlarmCleared
+        is generated.  The threshold should be less than the
+        alarm threshold specified by
+        ccsNetServerResponseTimeFailAlarmThreshold.
+        When the threshold is changed, the counter will be 
+        reset, the alarm will be cleared, and the timer will be
+        re-started."
+    DEFVAL          { 0 } 
+    ::= { ccsGlobalCfgTableEntry 10 }
+
+ccsProtocolParseFailAlarmThreshold OBJECT-TYPE
+    SYNTAX          Unsigned32 (1..4294967294)
+    UNITS           "errors"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the alarm threshold of the
+        number of errors specified by 
+        ccsProtocolParseFailCountNotifInfo fail the
+        protocol parsing in the time interval
+        (ccsAdControlAlarmUpdateTimer). When 
+        ccsAdControlNotifEnabled is set to 'true', the count 
+        (ccsProtocolParseFailCountNotifInfo) is greater 
+        than the thresholdand and no alarm notification specified
+        by ciscoContentServicesProtocolParseFailExceeded
+        has been issued within the time interval, the alarm 
+        notification will be generated and the timer will be
+        re-started. The threshold should be greater than
+        the clear threshold
+        ccsProtocolParseFailClearThreshold.
+        When the threshold is changed, the counter will be reset,
+        the alarm will be cleared, and the timer will be
+        re-started."
+    DEFVAL          { 5 } 
+    ::= { ccsGlobalCfgTableEntry 11 }
+
+ccsProtocolParseFailClearThreshold OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..4294967293)
+    UNITS           "errors"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the clear threshold associated
+        with ccsProtocolParseFailAlarmThreshold.
+        If ccsAdControlNotifEnabled is set to 'true', the count
+        (ccsProtocolParseFailCountNotifInfo)
+        is equal to or lower than the threshold when the timer
+        (ccsAdControlAlarmUpdateTimer) expires and the 
+        alarm specified by
+        ciscoContentServicesProtocolParseFailExceeded
+        exists, the clear notification specified by
+        ciscoContentServicesProtocolParseFailAlarmCleared
+        is generated. The threshold should be less than
+        the alarm threshold specified by
+        ccsProtocolParseFailAlarmThreshold.
+        When the threshold is changed, the counter will be 
+        reset, the alarm will be cleared, and the timer will 
+        be re-started."
+    DEFVAL          { 0 } 
+    ::= { ccsGlobalCfgTableEntry 12 }
  
 
 -- *************************************************************
@@ -227,7 +569,21 @@ CcsGlobalStatsTableEntry ::= SEQUENCE {
         ccsgsUserHighWaterResetTime    TimeStamp,
         ccsgsSessionCurrent            Gauge32,
         ccsgsSessionHighWater          Gauge32,
-        ccsgsSessionHighWaterResetTime TimeStamp
+        ccsgsSessionHighWaterResetTime TimeStamp,
+        ccsgsGTPBMARejected            Counter32,
+        ccsgsHCGTPBMARejected          Counter64,
+        ccsgsGTPBMADropped             Counter32,
+        ccsgsHCGTPBMADropped           Counter64,
+        ccsgsGTPBMARetransmit          Counter32,
+        ccsgsHCGTPBMARetransmit        Counter64,
+        ccsgsGTPQuotaMgrRejected       Counter32,
+        ccsgsHCGTPQuotaMgrRejected     Counter64,
+        ccsgsGTPQuotaMgrDropped        Counter32,
+        ccsgsHCGTPQuotaMgrDropped      Counter64,
+        ccsgsGTPQuotaMgrRetransmit     Counter32,
+        ccsgsHCGTPQuotaMgrRetransmit   Counter64,
+        ccsgsGTPBMARateInterval        TimeInterval,
+        ccsgsGTPQuotaMgrRateInterval   TimeInterval
 }
 
 ccsgsUserCurrent OBJECT-TYPE
@@ -290,6 +646,148 @@ ccsgsSessionHighWaterResetTime OBJECT-TYPE
         "The time stamp at which the ccsgsSessionHighWater object was
         last reset to 0." 
     ::= { ccsGlobalStatsTableEntry 6 }
+
+ccsgsGTPBMARejected OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of  messages received from all
+        the BMAs with reject cause code." 
+    ::= { ccsGlobalStatsTableEntry 7 }
+
+ccsgsHCGTPBMARejected OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsgsGTPBMARejected." 
+    ::= { ccsGlobalStatsTableEntry 8 }
+
+ccsgsGTPBMADropped OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Total Number of messages dropped
+        destined for any of the BMAs." 
+    ::= { ccsGlobalStatsTableEntry 9 }
+
+ccsgsHCGTPBMADropped OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsgsGTPBMADropped." 
+    ::= { ccsGlobalStatsTableEntry 10 }
+
+ccsgsGTPBMARetransmit OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of messages retransmitted to
+        all BMAs." 
+    ::= { ccsGlobalStatsTableEntry 11 }
+
+ccsgsHCGTPBMARetransmit OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsgsGTPBMARetransmit." 
+    ::= { ccsGlobalStatsTableEntry 12 }
+
+ccsgsGTPQuotaMgrRejected OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of messages received from all the
+        Quota Managers with reject cause code." 
+    ::= { ccsGlobalStatsTableEntry 13 }
+
+ccsgsHCGTPQuotaMgrRejected OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsgsGTPQuotaMgrRejected." 
+    ::= { ccsGlobalStatsTableEntry 14 }
+
+ccsgsGTPQuotaMgrDropped OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Total Number of messages dropped
+        destined for any of the Quota Managers." 
+    ::= { ccsGlobalStatsTableEntry 15 }
+
+ccsgsHCGTPQuotaMgrDropped OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsgsGTPQuotaMgrDropped." 
+    ::= { ccsGlobalStatsTableEntry 16 }
+
+ccsgsGTPQuotaMgrRetransmit OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of messages retransmitted
+        to all the Quota Managers." 
+    ::= { ccsGlobalStatsTableEntry 17 }
+
+ccsgsHCGTPQuotaMgrRetransmit OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsgsGTPQuotaMgrRetransmit." 
+    ::= { ccsGlobalStatsTableEntry 18 }
+
+ccsgsGTPBMARateInterval OBJECT-TYPE
+    SYNTAX          TimeInterval
+    UNITS           "seconds"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The duration of the time interval in
+        ccsBMAPacketRate and ccsBMAAckRate."
+    DEFVAL          { 2 } 
+    ::= { ccsGlobalStatsTableEntry 19 }
+
+ccsgsGTPQuotaMgrRateInterval OBJECT-TYPE
+    SYNTAX          TimeInterval
+    UNITS           "seconds"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The duration of the time interval in
+        ccsQuotaMgrPacketRate and ccsQuotaMgrAckRate."
+    DEFVAL          { 2 } 
+    ::= { ccsGlobalStatsTableEntry 20 }
  
 
 -- *************************************************************
@@ -333,7 +831,7 @@ CcsUserDbTableEntry ::= SEQUENCE {
         ccsUserDbIpAddrType     InetAddressType,
         ccsUserDbIpAddr         InetAddress,
         ccsUserDbPort           InetPortNumber,
-        ccsUserDbState          INTEGER ,
+        ccsUserDbState          INTEGER,
         ccsUserDbRequests       Counter32,
         ccsUserDbHCRequests     Counter64,
         ccsUserDbUidsReturned   Counter32,
@@ -362,7 +860,7 @@ ccsUserDbIpAddrType OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "Represents the type of the address specified by
+        "This object specifies the type of the address specified by
         ccsUserDbIpAddr." 
     ::= { ccsUserDbTableEntry 2 }
 
@@ -401,6 +899,7 @@ ccsUserDbState OBJECT-TYPE
     ::= { ccsUserDbTableEntry 5 }
 
 -- User Database statistics
+
 ccsUserDbRequests OBJECT-TYPE
     SYNTAX          Counter32
     UNITS           "requests"
@@ -570,7 +1069,7 @@ CcsBMATableEntry ::= SEQUENCE {
         ccsBMAIpAddr             InetAddress,
         ccsBMAPort               InetPortNumber,
         ccsBMAPriority           CcsServerPriority,
-        ccsBMAState              INTEGER ,
+        ccsBMAState              INTEGER,
         ccsBMALostRecords        Counter32,
         ccsBMAHCLostRecords      Counter64,
         ccsBMATotalSent          Counter32,
@@ -584,7 +1083,9 @@ CcsBMATableEntry ::= SEQUENCE {
         ccsBMAHCBadRecord        Counter64,
         ccsBMARetransmit         Counter32,
         ccsBMAHCRetransmit       Counter64,
-        ccsBMARowStatus          RowStatus
+        ccsBMARowStatus          RowStatus,
+        ccsBMAPacketRate         Gauge32,
+        ccsBMAAckRate            Gauge32
 }
 
 ccsBMAVrfName OBJECT-TYPE
@@ -602,7 +1103,7 @@ ccsBMAIpAddrType OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "Represents the type of the address specified by
+        "This object specifies the type of the address specified by
         ccsBMAIpAddr." 
     ::= { ccsBMATableEntry 2 }
 
@@ -823,6 +1324,28 @@ ccsBMARowStatus OBJECT-TYPE
         of ccsBMAState. Requests queued for the deleted
         BMA are requeued to another BMA." 
     ::= { ccsBMATableEntry 20 }
+
+ccsBMAPacketRate OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of packets sent to the BMA per
+        second calculated over the interval 
+        indicated by ccsgsGTPBMARateInterval object." 
+    ::= { ccsBMATableEntry 21 }
+
+ccsBMAAckRate OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "acknowledgments"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of acknowledgments received from
+        the BMA per second calculated over the interval 
+        indicated by ccsgsGTPBMARateInterval object." 
+    ::= { ccsBMATableEntry 22 }
  
 
 -- *************************************************************
@@ -867,7 +1390,7 @@ CcsQuotaMgrTableEntry ::= SEQUENCE {
         ccsQuotaMgrIpAddr             InetAddress,
         ccsQuotaMgrPort               InetPortNumber,
         ccsQuotaMgrPriority           CcsServerPriority,
-        ccsQuotaMgrState              INTEGER ,
+        ccsQuotaMgrState              INTEGER,
         ccsQuotaMgrLostRecords        Counter32,
         ccsQuotaMgrHCLostRecords      Counter64,
         ccsQuotaMgrTotalSent          Counter32,
@@ -881,7 +1404,9 @@ CcsQuotaMgrTableEntry ::= SEQUENCE {
         ccsQuotaMgrHCBadRecord        Counter64,
         ccsQuotaMgrRetransmit         Counter32,
         ccsQuotaMgrHCRetransmit       Counter64,
-        ccsQuotaMgrRowStatus          RowStatus
+        ccsQuotaMgrRowStatus          RowStatus,
+        ccsQuotaMgrPacketRate         Gauge32,
+        ccsQuotaMgrAckRate            Gauge32
 }
 
 ccsQuotaMgrVrfName OBJECT-TYPE
@@ -899,7 +1424,7 @@ ccsQuotaMgrIpAddrType OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "Represents the type of the address specified by
+        "This object specifies the type of the address specified by
         ccsQuotaMgrIpAddr." 
     ::= { ccsQuotaMgrTableEntry 2 }
 
@@ -1119,11 +1644,811 @@ ccsQuotaMgrRowStatus OBJECT-TYPE
         available. If no QuotaMgr is available, processing
         reverts to post-paid billing." 
     ::= { ccsQuotaMgrTableEntry 20 }
+
+ccsQuotaMgrPacketRate OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of packets sent to the Quota Manager
+        per second calculated over the interval 
+        indicated by ccsgsGTPQuotaMgrRateInterval object." 
+    ::= { ccsQuotaMgrTableEntry 21 }
+
+ccsQuotaMgrAckRate OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "acknowledgments"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of acknowledgments received from the
+        Quota Manager per second calculated over the interval 
+        indicated by ccsgsGTPQuotaMgrRateInterval object." 
+    ::= { ccsQuotaMgrTableEntry 22 }
+ 
+
+ccsLoadStatistics  OBJECT IDENTIFIER
+    ::= { ccsStats 5 }
+
+-- *************************************************************
+-- *                                                           *
+-- *      Table of Radius Load Statistics                      *
+-- *                                                           *
+-- *************************************************************
+
+ccsLoadStatRadiusTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CcsLoadStatRadiusEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table contains the load statistical
+        information related to Radius Protocol. All
+        the counters in this table are related to 
+        outgoing traffic."
+    ::= { ccsLoadStatistics 1 }
+
+ccsLoadStatRadiusEntry OBJECT-TYPE
+    SYNTAX          CcsLoadStatRadiusEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Each row in this table contains load
+        statistics related to Radius.
+
+        entPhysicalIndex identifies the entity 
+        that provides the content services."
+    INDEX           { entPhysicalIndex } 
+    ::= { ccsLoadStatRadiusTable 1 }
+
+CcsLoadStatRadiusEntry ::= SEQUENCE {
+        ccsLoadStatRadiusStartAllowed                Counter32,
+        ccsLoadStatHCRadiusStartAllowed              Counter64,
+        ccsLoadStatRadiusStartAllowedRate            Gauge32,
+        ccsLoadStatRadiusStartAllowedRateHighWater   Gauge32,
+        ccsLoadStatHCRadiusStartAllowedRateHighWater Counter64,
+        ccsLoadStatRadiusStartIPCQueueDepthTolerance Integer32,
+        ccsLoadStatRadiusStartDenied                 Counter32,
+        ccsLoadStatHCRadiusStartDenied               Counter64,
+        ccsLoadStatRadiusStartDenialRate             Gauge32,
+        ccsLoadStatRadiusStartDenialRateHighWater    Gauge32,
+        ccsLoadStatHCRadiusStartDenialRateHighWater  Counter64
+}
+
+ccsLoadStatRadiusStartAllowed OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of outgoing Radius start requests
+        allowed." 
+    ::= { ccsLoadStatRadiusEntry 1 }
+
+ccsLoadStatHCRadiusStartAllowed OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsLoadStatRadiusStartAllowed." 
+    ::= { ccsLoadStatRadiusEntry 2 }
+
+ccsLoadStatRadiusStartAllowedRate OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of outgoing Radius start requests
+        allowed per second." 
+    ::= { ccsLoadStatRadiusEntry 3 }
+
+ccsLoadStatRadiusStartAllowedRateHighWater OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The highest number of outgoing Radius start
+        requests allowed per second as reported 
+        by ccsLoadStatRadiusStartAllowedRate." 
+    ::= { ccsLoadStatRadiusEntry 4 }
+
+ccsLoadStatHCRadiusStartAllowedRateHighWater OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsLoadStatRadiusStartAllowedRateHighWater." 
+    ::= { ccsLoadStatRadiusEntry 5 }
+
+ccsLoadStatRadiusStartIPCQueueDepthTolerance OBJECT-TYPE
+    SYNTAX          Integer32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Maximum queue depth for Radius start in
+        the IPC queue." 
+    ::= { ccsLoadStatRadiusEntry 6 }
+
+ccsLoadStatRadiusStartDenied OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of outgoing Radius start requests
+        denied." 
+    ::= { ccsLoadStatRadiusEntry 7 }
+
+ccsLoadStatHCRadiusStartDenied OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsLoadStatRadiusStartDenied." 
+    ::= { ccsLoadStatRadiusEntry 8 }
+
+ccsLoadStatRadiusStartDenialRate OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of outgoing Radius start requests
+        denied per second." 
+    ::= { ccsLoadStatRadiusEntry 9 }
+
+ccsLoadStatRadiusStartDenialRateHighWater OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The highest number of outgoing Radius start
+        requests denied per second as reported 
+        by ccsLoadStatRadiusStartDenialRate." 
+    ::= { ccsLoadStatRadiusEntry 10 }
+
+ccsLoadStatHCRadiusStartDenialRateHighWater OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsLoadStatRadiusStartDenialRateHighWater." 
+    ::= { ccsLoadStatRadiusEntry 11 }
  
 
 -- *************************************************************
 -- *                                                           *
--- *      Notifications Config Table                         *
+-- *      Table of User Database Load Statistics               *
+-- *                                                           *
+-- *************************************************************
+
+ccsLoadStatUserDBTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CcsLoadStatUserDBEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table contains the load statistical
+        information related to user database. All
+        the counters in this table are related to 
+        outgoing traffic."
+    ::= { ccsLoadStatistics 2 }
+
+ccsLoadStatUserDBEntry OBJECT-TYPE
+    SYNTAX          CcsLoadStatUserDBEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Each row in this table contains load
+        statistics related to user database.
+
+        entPhysicalIndex identifies the entity 
+        that provides the content services."
+    INDEX           { entPhysicalIndex } 
+    ::= { ccsLoadStatUserDBTable 1 }
+
+CcsLoadStatUserDBEntry ::= SEQUENCE {
+        ccsLoadStatUserDBReqAllowed                Counter32,
+        ccsLoadStatHCUserDBReqAllowed              Counter64,
+        ccsLoadStatUserDBReqAllowedRate            Gauge32,
+        ccsLoadStatUserDBReqAllowedRateHighWater   Gauge32,
+        ccsLoadStatHCUserDBReqAllowedRateHighWater Counter64,
+        ccsLoadStatUserDBReqIPCQueueDepthTolerance Integer32,
+        ccsLoadStatUserDBReqDenied                 Counter32,
+        ccsLoadStatHCUserDBReqDenied               Counter64,
+        ccsLoadStatUserDBReqDenialRate             Gauge32,
+        ccsLoadStatUserDBReqDenialRateHighWater    Gauge32,
+        ccsLoadStatHCUserDBReqDenialRateHighWater  Counter64
+}
+
+ccsLoadStatUserDBReqAllowed OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of outgoing UDB requests allowed." 
+    ::= { ccsLoadStatUserDBEntry 1 }
+
+ccsLoadStatHCUserDBReqAllowed OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsLoadStatUserDBReqAllowed." 
+    ::= { ccsLoadStatUserDBEntry 2 }
+
+ccsLoadStatUserDBReqAllowedRate OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of outgoing UDB requests allowed
+        per second." 
+    ::= { ccsLoadStatUserDBEntry 3 }
+
+ccsLoadStatUserDBReqAllowedRateHighWater OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The highest number of outgoing UDB
+        requests allowed per second as reported
+        by ccsLoadStatUserDBReqAllowedRate." 
+    ::= { ccsLoadStatUserDBEntry 4 }
+
+ccsLoadStatHCUserDBReqAllowedRateHighWater OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsLoadStatUserDBReqAllowedRateHighWater." 
+    ::= { ccsLoadStatUserDBEntry 5 }
+
+ccsLoadStatUserDBReqIPCQueueDepthTolerance OBJECT-TYPE
+    SYNTAX          Integer32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Maximum queue depth for UDB requests
+        in the IPC queue." 
+    ::= { ccsLoadStatUserDBEntry 6 }
+
+ccsLoadStatUserDBReqDenied OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of outgoing UDB requests denied." 
+    ::= { ccsLoadStatUserDBEntry 7 }
+
+ccsLoadStatHCUserDBReqDenied OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsLoadStatUserDBReqDenied." 
+    ::= { ccsLoadStatUserDBEntry 8 }
+
+ccsLoadStatUserDBReqDenialRate OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of outgoing UDB requests denied
+        per second." 
+    ::= { ccsLoadStatUserDBEntry 9 }
+
+ccsLoadStatUserDBReqDenialRateHighWater OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The highest number of outgoing UDB
+        requests denied per second as reported
+        by ccsLoadStatUserDBReqDenialRate." 
+    ::= { ccsLoadStatUserDBEntry 10 }
+
+ccsLoadStatHCUserDBReqDenialRateHighWater OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsLoadStatUserDBReqDenialRateHighWater." 
+    ::= { ccsLoadStatUserDBEntry 11 }
+ 
+
+-- *************************************************************
+-- *                                                           *
+-- *      Table of Session Load Statistics                     *
+-- *                                                           *
+-- *************************************************************
+
+ccsLoadStatSessionTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CcsLoadStatSessionEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table contains the load statistical
+        information related to sessions on the system.
+        A session corresponds to a TCP/UDP flow on the
+        system."
+    ::= { ccsLoadStatistics 3 }
+
+ccsLoadStatSessionEntry OBJECT-TYPE
+    SYNTAX          CcsLoadStatSessionEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Each row in this table contains load
+        statistics related to sessions on the system.
+
+        entPhysicalIndex identifies the entity 
+        that provides the content services."
+    INDEX           { entPhysicalIndex } 
+    ::= { ccsLoadStatSessionTable 1 }
+
+CcsLoadStatSessionEntry ::= SEQUENCE {
+        ccsLoadStatSessionCreateAllowed                Counter32,
+        ccsLoadStatHCSessionCreateAllowed              Counter64,
+        ccsLoadStatSessionCreateAllowedRate            Gauge32,
+        ccsLoadStatSessionCreateAllowedRateHighWater   Gauge32,
+        ccsLoadStatHCSessionCreateAllowedRateHighWater Counter64,
+        ccsLoadStatSessionCreateIPCQueueDepthTolerance Integer32,
+        ccsLoadStatSessionCreateDenied                 Counter32,
+        ccsLoadStatHCSessionCreateDenied               Counter64,
+        ccsLoadStatSessionCreateDenialRate             Gauge32,
+        ccsLoadStatSessionCreateDenialRateHighWater    Gauge32,
+        ccsLoadStatHCSessionCreateDenialRateHighWater  Counter64
+}
+
+ccsLoadStatSessionCreateAllowed OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of session creation requests
+        allowed on the system." 
+    ::= { ccsLoadStatSessionEntry 1 }
+
+ccsLoadStatHCSessionCreateAllowed OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsLoadStatSessionCreateAllowed." 
+    ::= { ccsLoadStatSessionEntry 2 }
+
+ccsLoadStatSessionCreateAllowedRate OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of session creation requests
+        allowed per second on the system." 
+    ::= { ccsLoadStatSessionEntry 3 }
+
+ccsLoadStatSessionCreateAllowedRateHighWater OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The highest number of session creation
+        requests allowed per second as reported 
+        by ccsLoadStatSessionCreateAllowedRate." 
+    ::= { ccsLoadStatSessionEntry 4 }
+
+ccsLoadStatHCSessionCreateAllowedRateHighWater OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsLoadStatSessionCreateAllowedRateHighWater." 
+    ::= { ccsLoadStatSessionEntry 5 }
+
+ccsLoadStatSessionCreateIPCQueueDepthTolerance OBJECT-TYPE
+    SYNTAX          Integer32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Maximum queue depth for session creation
+        in the IPC queue." 
+    ::= { ccsLoadStatSessionEntry 6 }
+
+ccsLoadStatSessionCreateDenied OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of session creation requests
+        denied on the system." 
+    ::= { ccsLoadStatSessionEntry 7 }
+
+ccsLoadStatHCSessionCreateDenied OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsLoadStatSessionCreateDenied." 
+    ::= { ccsLoadStatSessionEntry 8 }
+
+ccsLoadStatSessionCreateDenialRate OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of session creation requests
+        denied per second on the system." 
+    ::= { ccsLoadStatSessionEntry 9 }
+
+ccsLoadStatSessionCreateDenialRateHighWater OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The highest number of session creation
+        requests denied per second as reported by 
+        ccsLoadStatSessionCreateDenialRate." 
+    ::= { ccsLoadStatSessionEntry 10 }
+
+ccsLoadStatHCSessionCreateDenialRateHighWater OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "requests"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsLoadStatSessionCreateDenialRateHighWater." 
+    ::= { ccsLoadStatSessionEntry 11 }
+ 
+
+-- *************************************************************
+-- *                                                           *
+-- *      Table of BMA Load Statistics                         *
+-- *                                                           *
+-- *************************************************************
+
+ccsLoadStatBMATable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CcsLoadStatBMAEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table contains the load statistical
+        information related to BMA. All the counters
+        in this table are related to outgoing traffic."
+    ::= { ccsLoadStatistics 4 }
+
+ccsLoadStatBMAEntry OBJECT-TYPE
+    SYNTAX          CcsLoadStatBMAEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Each row in this table contains load
+        statistics related to BMAs.
+
+        entPhysicalIndex identifies the entity 
+        that provides the content services."
+    INDEX           { entPhysicalIndex } 
+    ::= { ccsLoadStatBMATable 1 }
+
+CcsLoadStatBMAEntry ::= SEQUENCE {
+        ccsLoadStatBMAMsgsAllowed                Counter32,
+        ccsLoadStatHCBMAMsgsAllowed              Counter64,
+        ccsLoadStatBMAMsgsAllowedRate            Gauge32,
+        ccsLoadStatBMAMsgsAllowedRateHighWater   Gauge32,
+        ccsLoadStatHCBMAMsgsAllowedRateHighWater Counter64,
+        ccsLoadStatBMAMsgsIPCQueueDepthTolerance Integer32,
+        ccsLoadStatBMAMsgsDenied                 Counter32,
+        ccsLoadStatHCBMAMsgsDenied               Counter64,
+        ccsLoadStatBMAMsgsDenialRate             Gauge32,
+        ccsLoadStatBMAMsgsDenialRateHighWater    Gauge32,
+        ccsLoadStatHCBMAMsgsDenialRateHighWater  Counter64
+}
+
+ccsLoadStatBMAMsgsAllowed OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of outgoing BMA messages allowed." 
+    ::= { ccsLoadStatBMAEntry 1 }
+
+ccsLoadStatHCBMAMsgsAllowed OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsLoadStatBMAMsgsAllowed." 
+    ::= { ccsLoadStatBMAEntry 2 }
+
+ccsLoadStatBMAMsgsAllowedRate OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of outgoing BMA messages allowed per
+        per second." 
+    ::= { ccsLoadStatBMAEntry 3 }
+
+ccsLoadStatBMAMsgsAllowedRateHighWater OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The highest number of outgoing BMA messages
+        allowed per second as reported by 
+        ccsLoadStatBMAMsgsAllowedRate." 
+    ::= { ccsLoadStatBMAEntry 4 }
+
+ccsLoadStatHCBMAMsgsAllowedRateHighWater OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsLoadStatBMAMsgsAllowedRateHighWater." 
+    ::= { ccsLoadStatBMAEntry 5 }
+
+ccsLoadStatBMAMsgsIPCQueueDepthTolerance OBJECT-TYPE
+    SYNTAX          Integer32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Maximum queue depth for BMA messages
+        in the IPC queue." 
+    ::= { ccsLoadStatBMAEntry 6 }
+
+ccsLoadStatBMAMsgsDenied OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of outgoing BMA messages denied." 
+    ::= { ccsLoadStatBMAEntry 7 }
+
+ccsLoadStatHCBMAMsgsDenied OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsLoadStatBMAMsgsDenied." 
+    ::= { ccsLoadStatBMAEntry 8 }
+
+ccsLoadStatBMAMsgsDenialRate OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of outgoing BMA messages denied
+        per second." 
+    ::= { ccsLoadStatBMAEntry 9 }
+
+ccsLoadStatBMAMsgsDenialRateHighWater OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The highest number of outgoing BMA messages
+        denied per second as reported by 
+        ccsLoadStatBMAMsgsDenialRate." 
+    ::= { ccsLoadStatBMAEntry 10 }
+
+ccsLoadStatHCBMAMsgsDenialRateHighWater OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsLoadStatBMAMsgsDenialRateHighWater." 
+    ::= { ccsLoadStatBMAEntry 11 }
+ 
+
+-- *************************************************************
+-- *                                                           *
+-- *      Table of Quota Manager Load Statistics               *
+-- *                                                           *
+-- *************************************************************
+
+ccsLoadStatQuotaMgrTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CcsLoadStatQuotaMgrEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table contains the load statistical
+        information related to QuotaMgr. All 
+        the counters in this table are related to 
+        outgoing traffic."
+    ::= { ccsLoadStatistics 5 }
+
+ccsLoadStatQuotaMgrEntry OBJECT-TYPE
+    SYNTAX          CcsLoadStatQuotaMgrEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Each row in this table contains load
+        statistics related to QuotaMgr.
+
+        entPhysicalIndex identifies the entity 
+        that provides the content services."
+    INDEX           { entPhysicalIndex } 
+    ::= { ccsLoadStatQuotaMgrTable 1 }
+
+CcsLoadStatQuotaMgrEntry ::= SEQUENCE {
+        ccsLoadStatQuotaMgrMsgsAllowed                Counter32,
+        ccsLoadStatHCQuotaMgrMsgsAllowed              Counter64,
+        ccsLoadStatQuotaMgrMsgsAllowedRate            Gauge32,
+        ccsLoadStatQuotaMgrMsgsAllowedRateHighWater   Gauge32,
+        ccsLoadStatHCQuotaMgrMsgsAllowedRateHighWater Counter64,
+        ccsLoadStatQuotaMgrMsgsIPCQueueDepthTolerance Integer32,
+        ccsLoadStatQuotaMgrMsgsDenied                 Counter32,
+        ccsLoadStatHCQuotaMgrMsgsDenied               Counter64,
+        ccsLoadStatQuotaMgrMsgsDenialRate             Gauge32,
+        ccsLoadStatQuotaMgrMsgsDenialRateHighWater    Gauge32,
+        ccsLoadStatHCQuotaMgrMsgsDenialRateHighWater  Counter64
+}
+
+ccsLoadStatQuotaMgrMsgsAllowed OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of outgoing messages to QuotaMgr
+        allowed." 
+    ::= { ccsLoadStatQuotaMgrEntry 1 }
+
+ccsLoadStatHCQuotaMgrMsgsAllowed OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsLoadStatQuotaMgrMsgsAllowed." 
+    ::= { ccsLoadStatQuotaMgrEntry 2 }
+
+ccsLoadStatQuotaMgrMsgsAllowedRate OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of outgoing messages to QuotaMgr
+        allowed per second." 
+    ::= { ccsLoadStatQuotaMgrEntry 3 }
+
+ccsLoadStatQuotaMgrMsgsAllowedRateHighWater OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The highest number of outgoing messages to
+        QuotaMgr allowed per second as reported 
+        by ccsLoadStatQuotaMgrMsgsAllowedRate." 
+    ::= { ccsLoadStatQuotaMgrEntry 4 }
+
+ccsLoadStatHCQuotaMgrMsgsAllowedRateHighWater OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsLoadStatQuotaMgrMsgsAllowedRateHighWater." 
+    ::= { ccsLoadStatQuotaMgrEntry 5 }
+
+ccsLoadStatQuotaMgrMsgsIPCQueueDepthTolerance OBJECT-TYPE
+    SYNTAX          Integer32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Maximum queue depth for messages to
+        QuotaMgr in the IPC queue." 
+    ::= { ccsLoadStatQuotaMgrEntry 6 }
+
+ccsLoadStatQuotaMgrMsgsDenied OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of outgoing messages to QuotaMgr
+        denied." 
+    ::= { ccsLoadStatQuotaMgrEntry 7 }
+
+ccsLoadStatHCQuotaMgrMsgsDenied OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsLoadStatQuotaMgrMsgsDenied." 
+    ::= { ccsLoadStatQuotaMgrEntry 8 }
+
+ccsLoadStatQuotaMgrMsgsDenialRate OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of outgoing messages to QuotaMgr
+        denied per second." 
+    ::= { ccsLoadStatQuotaMgrEntry 9 }
+
+ccsLoadStatQuotaMgrMsgsDenialRateHighWater OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The highest number of outgoing messages to
+        QuotaMgr denied per second as reported 
+        by ccsLoadStatQuotaMgrMsgsDenialRate." 
+    ::= { ccsLoadStatQuotaMgrEntry 10 }
+
+ccsLoadStatHCQuotaMgrMsgsDenialRateHighWater OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsLoadStatQuotaMgrMsgsDenialRateHighWater." 
+    ::= { ccsLoadStatQuotaMgrEntry 11 }
+ 
+
+-- *************************************************************
+-- *                                                           *
+-- *      Notifications Config Table                           *
 -- *                                                           *
 -- *************************************************************
 
@@ -1152,7 +2477,9 @@ CcsNotifCfgTableEntry ::= SEQUENCE {
         ccsQuotaMgrStateChangeNotifEnabled     TruthValue,
         ccsUserDbStateChangeNotifEnabled       TruthValue,
         ccsBMALostRecordEventNotifEnabled      TruthValue,
-        ccsQuotaMgrLostRecordEventNotifEnabled TruthValue
+        ccsQuotaMgrLostRecordEventNotifEnabled TruthValue,
+        ccsUserThresholdExceededNotifEnabled   TruthValue,
+        ccsAdControlNotifEnabled               TruthValue
 }
 
 ccsBMAStateChangeNotifEnabled OBJECT-TYPE
@@ -1227,14 +2554,170 @@ ccsQuotaMgrLostRecordEventNotifEnabled OBJECT-TYPE
         'false' Indicates that notification is disabled."
     DEFVAL          { false } 
     ::= { ccsNotifCfgTableEntry 5 }
+
+ccsUserThresholdExceededNotifEnabled OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object controls the generation of the
+        Users threshold exceeded notification
+        (ciscoContentServicesUserThresholdExceeded)
+
+        'true'  Indicates that Users threshold
+                exceeded notification is enabled.
+        'false' Indicates that notification is disabled."
+    DEFVAL          { true } 
+    ::= { ccsNotifCfgTableEntry 6 }
+
+ccsAdControlNotifEnabled OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object controls the generation of the notifications
+        for the AdControl. The alarm and clear notifications are 
+        enabled when ccsAdControlNotifEnabled is set to 'true'. 
+        The AdControl will start a timer with the interval controlled 
+        by ccsAdControlAlarmUpdateTimer for each event. An alarm
+        notification will be generated if the error exceeds the 
+        alarm threshold within the interval and no such alarm has
+        been raised yet. The timer will be restarted after an 
+        alarm notification is generated. When the timer expires, 
+        a clear notification will be generated if the error is 
+        equal to or less than the clear threshold and the 
+        alarm exists.
+
+        'true'  Indicates that the notifications are enabled.
+        'false' Indicates that notifications are disabled."
+    DEFVAL          { false } 
+    ::= { ccsNotifCfgTableEntry 7 }
  
+
+
+-- *************************************************************
+-- *                                                           *
+-- *      Info for notification                                *
+-- *                                                           *
+-- *************************************************************
+
+ccsTPIndexNotifInfo OBJECT-TYPE
+    SYNTAX          Unsigned32
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the Traffic Processor (TP) index." 
+    ::= { ccsNotifInfo 1 }
+
+ccsServiceNameNotifInfo OBJECT-TYPE
+    SYNTAX          OCTET STRING (SIZE  (1..16))
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the Service Name that the notification is
+        generated for." 
+    ::= { ccsNotifInfo 2 }
+
+ccsContentNameNotifInfo OBJECT-TYPE
+    SYNTAX          OCTET STRING (SIZE  (1..15))
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the content name." 
+    ::= { ccsNotifInfo 3 }
+
+ccsPolicyNameNotifInfo OBJECT-TYPE
+    SYNTAX          OCTET STRING (SIZE  (1..16))
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the policy name." 
+    ::= { ccsNotifInfo 4 }
+
+ccsNetServerIpAddrTypeNotifInfo OBJECT-TYPE
+    SYNTAX          InetAddressType
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the type of the address specified by
+        ccsNetServerIpAddrNotifInfo." 
+    ::= { ccsNotifInfo 5 }
+
+ccsNetServerIpAddrNotifInfo OBJECT-TYPE
+    SYNTAX          InetAddress
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the IP address of the network server." 
+    ::= { ccsNotifInfo 6 }
+
+ccsNetServerPortNotifInfo OBJECT-TYPE
+    SYNTAX          InetPortNumber
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the port number of the network server." 
+    ::= { ccsNotifInfo 7 }
+
+ccsSubscriberIpAddrTypeNotifInfo OBJECT-TYPE
+    SYNTAX          InetAddressType
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the type of the address specified by
+        ccsSubscriberIpAddrNotifInfo." 
+    ::= { ccsNotifInfo 8 }
+
+ccsSubscriberIpAddrNotifInfo OBJECT-TYPE
+    SYNTAX          InetAddress
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the IP address of the subscriber." 
+    ::= { ccsNotifInfo 9 }
+
+ccsSubscriberPortNotifInfo OBJECT-TYPE
+    SYNTAX          InetPortNumber
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the port number of the subscriber." 
+    ::= { ccsNotifInfo 10 }
+
+ccsNetServerResponseFailCountNotifInfo OBJECT-TYPE
+    SYNTAX          Unsigned32
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the number of the failed response
+        from the network server." 
+    ::= { ccsNotifInfo 11 }
+
+ccsNetServerResponseTimeFailCountNotifInfo OBJECT-TYPE
+    SYNTAX          Unsigned32
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the number of the response for
+        the first payload packet from the network server exceeds
+        the response time specified by
+        ccsNetServerFirstPayloadResponseTime." 
+    ::= { ccsNotifInfo 12 }
+
+ccsProtocolParseFailCountNotifInfo OBJECT-TYPE
+    SYNTAX          Unsigned32
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the number of the errors fail the
+        protocol parsing." 
+    ::= { ccsNotifInfo 13 }
 
 -- *************************************************************
 -- *                                                           *
 -- *      Notifications                                        *
 -- *                                                           *
 -- *************************************************************
-
 
 ciscoContentServicesBMAStateChange NOTIFICATION-TYPE
     OBJECTS         {
@@ -1256,7 +2739,6 @@ ciscoContentServicesBMAStateChange NOTIFICATION-TYPE
         cause an excessive number of notifications."
    ::= { ciscoContentServicesMIBNotifs 1 }
 
-
 ciscoContentServicesQuotaMgrStateChange NOTIFICATION-TYPE
     OBJECTS         {
                         ccsQuotaMgrState,
@@ -1277,7 +2759,6 @@ ciscoContentServicesQuotaMgrStateChange NOTIFICATION-TYPE
         cause an excessive number of notifications."
    ::= { ciscoContentServicesMIBNotifs 2 }
 
-
 ciscoContentServicesUserDbStateChange NOTIFICATION-TYPE
     OBJECTS         {
                         ccsUserDbState,
@@ -1292,7 +2773,6 @@ ciscoContentServicesUserDbStateChange NOTIFICATION-TYPE
         "This notification is issued when ccsUserDbStateChangeNotifEnabled
         is set to 'true', and the user database changes state."
    ::= { ciscoContentServicesMIBNotifs 3 }
-
 
 ciscoContentServicesBMALostRecordEvent NOTIFICATION-TYPE
     OBJECTS         {
@@ -1330,7 +2810,6 @@ ciscoContentServicesBMALostRecordEvent NOTIFICATION-TYPE
         is repeated."
    ::= { ciscoContentServicesMIBNotifs 4 }
 
-
 ciscoContentServicesQuotaMgrLostRecordEvent NOTIFICATION-TYPE
     OBJECTS         {
                         ccsQuotaMgrState,
@@ -1350,11 +2829,222 @@ ciscoContentServicesQuotaMgrLostRecordEvent NOTIFICATION-TYPE
         is the same as described in the description for 
         ccsBMALostRecordEvent."
    ::= { ciscoContentServicesMIBNotifs 5 }
+
+ciscoContentServicesUserThresholdExceeded NOTIFICATION-TYPE
+    OBJECTS         {
+                        ccsgsUserCurrent,
+                        ccsgsUserHighWater,
+                        ccsgsUserThreshold
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This notification is issued when
+        ccsUserThresholdExceededNotifEnabled
+        is set to 'true', and when actual users limit
+        exceeds threshold which is set by ccsgsUserThreshold."
+   ::= { ciscoContentServicesMIBNotifs 6 }
+
+ciscoContentServicesNetServerResponseFailExceeded NOTIFICATION-TYPE
+    OBJECTS         {
+                        ccsTPIndexNotifInfo,
+                        ccsServiceNameNotifInfo,
+                        ccsContentNameNotifInfo,
+                        ccsPolicyNameNotifInfo,
+                        ccsNetServerIpAddrTypeNotifInfo,
+                        ccsNetServerIpAddrNotifInfo,
+                        ccsNetServerPortNotifInfo,
+                        ccsSubscriberIpAddrTypeNotifInfo,
+                        ccsSubscriberIpAddrNotifInfo,
+                        ccsSubscriberPortNotifInfo,
+                        ccsNetServerResponseFailCountNotifInfo,
+                        ccsNetServerResponseFailAlarmThreshold,
+                        ccsNetServerResponseFailClearThreshold
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A notification of this type is generated for the service
+        specified by ccsServiceNameNotifInfo when the number of
+        failed responses received on the Traffic Processor specified
+        by ccsTPIndexNotifInfo from the network server exceeds the 
+        alarm threshold ccsNetServerResponseFailAlarmThreshold
+        within the interval ccsAdControlAlarmUpdateTimer. The alarm
+        is not generated repeatly on the same alarm state.
+        The ccsAdControlNotifEnabled has to set to 'true' to generate
+        the notification.
+        The timer will be restarted after the notification is 
+        generated."
+   ::= { ciscoContentServicesMIBNotifs 7 }
+
+ciscoContentServicesNetServerResponseTimeExceeded NOTIFICATION-TYPE
+    OBJECTS         {
+                        ccsTPIndexNotifInfo,
+                        ccsServiceNameNotifInfo,
+                        ccsContentNameNotifInfo,
+                        ccsPolicyNameNotifInfo,
+                        ccsNetServerIpAddrTypeNotifInfo,
+                        ccsNetServerIpAddrNotifInfo,
+                        ccsNetServerPortNotifInfo,
+                        ccsSubscriberIpAddrTypeNotifInfo,
+                        ccsSubscriberIpAddrNotifInfo,
+                        ccsSubscriberPortNotifInfo,
+                        ccsNetServerResponseTimeFailCountNotifInfo,
+                        ccsNetServerResponseTimeFailAlarmThreshold,
+                        ccsNetServerResponseTimeFailClearThreshold
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A notification of this type is generated for the service
+        specified by ccsServiceNameNotifInfo when the
+        number of the responses that are received on the Traffic 
+        Processor from the network server and exceed the response
+        time (ccsNetServerFirstPayloadResponseTime) for the 
+        first payload packet exceeds the alarm theshold
+        ccsNetServerResponseTimeFailAlarmThreshold,
+        within the interval ccsAdControlAlarmUpdateTimer. The alarm
+        is not generated repeatly on the same alarm state.
+        The ccsAdControlNotifEnabled has to set to 'true' to generate
+        the notification.
+        The timer will be restarted after the notification is generated."
+   ::= { ciscoContentServicesMIBNotifs 8 }
+
+ciscoContentServicesProtocolParseFailExceeded NOTIFICATION-TYPE
+    OBJECTS         {
+                        ccsTPIndexNotifInfo,
+                        ccsServiceNameNotifInfo,
+                        ccsContentNameNotifInfo,
+                        ccsPolicyNameNotifInfo,
+                        ccsNetServerIpAddrTypeNotifInfo,
+                        ccsNetServerIpAddrNotifInfo,
+                        ccsNetServerPortNotifInfo,
+                        ccsSubscriberIpAddrTypeNotifInfo,
+                        ccsSubscriberIpAddrNotifInfo,
+                        ccsSubscriberPortNotifInfo,
+                        ccsProtocolParseFailCountNotifInfo,
+                        ccsProtocolParseFailAlarmThreshold,
+                        ccsProtocolParseFailClearThreshold
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A notification of this type is generated for the service
+        specified by ccsServiceNameNotifInfo when the
+        number of errors that are received on the Traffic Processor 
+        and fail the protocol parsing exceeds the alarm threshold
+        ccsProcolParseFailedAlarmThreshold
+        within the interval ccsAdControlAlarmUpdateTimer. The alarm
+        is not generated repeatly on the same alarm state.
+        The ccsAdControlNotifEnabled has to set to 'true' to generate
+        the notification.
+        The timer will be restarted after the notification is generated."
+   ::= { ciscoContentServicesMIBNotifs 9 }
+
+ciscoContentServicesNetServerResponseFailAlarmCleared NOTIFICATION-TYPE
+    OBJECTS         {
+                        ccsTPIndexNotifInfo,
+                        ccsServiceNameNotifInfo,
+                        ccsContentNameNotifInfo,
+                        ccsPolicyNameNotifInfo,
+                        ccsNetServerIpAddrTypeNotifInfo,
+                        ccsNetServerIpAddrNotifInfo,
+                        ccsNetServerPortNotifInfo,
+                        ccsSubscriberIpAddrTypeNotifInfo,
+                        ccsSubscriberIpAddrNotifInfo,
+                        ccsSubscriberPortNotifInfo,
+                        ccsNetServerResponseFailCountNotifInfo,
+                        ccsNetServerResponseFailAlarmThreshold,
+                        ccsNetServerResponseFailClearThreshold
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A notification of this type is generated for the service
+        specified by ccsServiceNameNotifInfo if the number of 
+        failed responses received on the Traffic Processor 
+        from the network server is equal to or lower than 
+        ccsNetServerResponseFailClearThreshold when 
+        the timer ccsAdControlAlarmUpdateTimer expires.
+        The notification is also generated when the update timer,
+        the alarm threshold, or the clear threshold is changed.
+        The notification is generated only when the alarm
+        (ciscoContentServicesNetServerResponseFailExceeded)
+        exists. The ccsAdControlNotifEnabled has to set to 'true'
+        to generate the notification.
+        The timer will be restarted after the notification is generated."
+   ::= { ciscoContentServicesMIBNotifs 10 }
+
+ciscoContentServicesNetServerResponseTimeAlarmCleared NOTIFICATION-TYPE
+    OBJECTS         {
+                        ccsTPIndexNotifInfo,
+                        ccsServiceNameNotifInfo,
+                        ccsContentNameNotifInfo,
+                        ccsPolicyNameNotifInfo,
+                        ccsNetServerIpAddrTypeNotifInfo,
+                        ccsNetServerIpAddrNotifInfo,
+                        ccsNetServerPortNotifInfo,
+                        ccsSubscriberIpAddrTypeNotifInfo,
+                        ccsSubscriberIpAddrNotifInfo,
+                        ccsSubscriberPortNotifInfo,
+                        ccsNetServerResponseTimeFailCountNotifInfo,
+                        ccsNetServerResponseTimeFailAlarmThreshold,
+                        ccsNetServerResponseTimeFailClearThreshold
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A notification of this type is generated for the service
+        specified by ccsServiceNameNotifInfo if the number of the 
+        responses that are received on the Traffic Processor from 
+        the network server and exceed the response time
+        (ccsNetServerFirstPayloadResponseTime) for the
+        first payload packet is equal to or lower than
+        ccsNetServerResponseTimeFailClearThreshold
+        when the timer ccsAdControlAlarmUpdateTimer expires.
+        The notification is also generated when the update timer,
+        the response time, the alarm threshold, or the clear threshold
+        is changed. The notification is generated only when the alarm
+        (ciscoContentServicesNetServerResponseTimeExceeded) exists,
+        The ccsAdControlNotifEnabled has to set to 'true'
+        to generate the notification.
+        The update timer will be restarted after the notification
+        is generated."
+   ::= { ciscoContentServicesMIBNotifs 11 }
+
+ciscoContentServicesProtocolParseFailAlarmCleared NOTIFICATION-TYPE
+    OBJECTS         {
+                        ccsTPIndexNotifInfo,
+                        ccsServiceNameNotifInfo,
+                        ccsContentNameNotifInfo,
+                        ccsPolicyNameNotifInfo,
+                        ccsNetServerIpAddrTypeNotifInfo,
+                        ccsNetServerIpAddrNotifInfo,
+                        ccsNetServerPortNotifInfo,
+                        ccsSubscriberIpAddrTypeNotifInfo,
+                        ccsSubscriberIpAddrNotifInfo,
+                        ccsSubscriberPortNotifInfo,
+                        ccsProtocolParseFailCountNotifInfo,
+                        ccsProtocolParseFailAlarmThreshold,
+                        ccsProtocolParseFailClearThreshold
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A notification of this type is generated for the service
+        specified by ccsServiceNameNotifInfo if the number of errors
+        that are received on the Traffic Processor and fail the 
+        protocol parsing is equal to or lower than 
+        ccsProcolParseFailedAlarmThreshold
+        when the timer ccsAdControlAlarmUpdateTimer expires.
+        The notification is also generated when the update timer,
+        the alarm threshold, or the clear threshold is changed.
+        The notification is generated only when the alarm
+        (ciscoContentServicesProtocolParseFailExceeded) exists.
+        The ccsAdControlNotifEnabled has to set to 'true'
+        to generate the notification.
+        The update timer will be restarted after the notification
+        is generated."
+   ::= { ciscoContentServicesMIBNotifs 12 }
 -- *************************************************************
 -- *                                                           *
 -- *      Conformance Information                              *
 -- *                                                           *
 -- *************************************************************
+
 ciscoContentServicesMIBCompliances  OBJECT IDENTIFIER
     ::= { ciscoContentServicesMIBConform 1 }
 
@@ -1363,12 +3053,13 @@ ciscoContentServicesMIBGroups  OBJECT IDENTIFIER
 
 
 -- compliance statements
+
 ciscoContentServicesMIBCompliance MODULE-COMPLIANCE
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The compliance statement for entities which implement
         the Cisco Content Services MIB."
-    MODULE  -- this module
+    MODULE          -- this module
     MANDATORY-GROUPS {
                         ciscoContentServicesGlobalCfgGroup,
                         ciscoContentServicesGlobalStatsGroup,
@@ -1410,7 +3101,213 @@ ciscoContentServicesMIBCompliance MODULE-COMPLIANCE
         "Write access is not required."
     ::= { ciscoContentServicesMIBCompliances 1 }
 
+ciscoContentServicesMIBComplianceRev1 MODULE-COMPLIANCE
+    STATUS          deprecated
+    DESCRIPTION
+        "The compliance statement for entities which implement
+        the Cisco Content Services MIB."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        ciscoContentServicesGlobalCfgGroup,
+                        ciscoContentServicesGlobalStatsGroup,
+                        ciscoContentServicesBMAGroup,
+                        ciscoContentServicesQuotaMgrGroup,
+                        ciscoContentServicesUserDbGroup,
+                        ciscoContentServicesNotifEnableGroup,
+                        ciscoContentServicesNotifGroup,
+                        ciscoContentServicesLoadStatRadiusGroup,
+                        ciscoContentServicesLoadStatUserDBGroup,
+                        ciscoContentServicesLoadStatSessionGroup,
+                        ciscoContentServicesLoadStatBMAGroup,
+                        ciscoContentServicesLoadStatQuotaMgrGroup,
+                        ciscoContentServicesGlobalStatsGroupSup1,
+                        ciscoContentServicesBMAGroupSup1,
+                        ciscoContentServicesQuotaMgrGroupSup1
+                    }
+
+    OBJECT          ccsBMAHighWater
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          ccsQuotaMgrHighWater
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          ccsBMAPriority
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          ccsQuotaMgrPriority
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          ccsBMARowStatus
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          ccsQuotaMgrRowStatus
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          ccsgsGTPBMARateInterval
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          ccsgsGTPQuotaMgrRateInterval
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+    ::= { ciscoContentServicesMIBCompliances 2 }
+
+ciscoContentServicesMIBComplianceRev2 MODULE-COMPLIANCE
+    STATUS          deprecated
+    DESCRIPTION
+        "The compliance statement for entities which implement
+        the Cisco Content Services MIB."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        ciscoContentServicesGlobalCfgGroup,
+                        ciscoContentServicesGlobalStatsGroup,
+                        ciscoContentServicesBMAGroup,
+                        ciscoContentServicesQuotaMgrGroup,
+                        ciscoContentServicesUserDbGroup,
+                        ciscoContentServicesNotifEnableGroup,
+                        ciscoContentServicesNotifGroup,
+                        ciscoContentServicesLoadStatRadiusGroup,
+                        ciscoContentServicesLoadStatUserDBGroup,
+                        ciscoContentServicesLoadStatSessionGroup,
+                        ciscoContentServicesLoadStatBMAGroup,
+                        ciscoContentServicesLoadStatQuotaMgrGroup,
+                        ciscoContentServicesGlobalStatsGroupSup1,
+                        ciscoContentServicesBMAGroupSup1,
+                        ciscoContentServicesQuotaMgrGroupSup1,
+                        ciscoContentServicesGlobalCfgGroupSup1,
+                        ciscoContentServicesNotifEnableGroupSup1,
+                        ciscoContentServicesNotifGroupSup1
+                    }
+
+    OBJECT          ccsBMAHighWater
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          ccsQuotaMgrHighWater
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          ccsBMAPriority
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          ccsQuotaMgrPriority
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          ccsBMARowStatus
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          ccsQuotaMgrRowStatus
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          ccsgsGTPBMARateInterval
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          ccsgsGTPQuotaMgrRateInterval
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+    ::= { ciscoContentServicesMIBCompliances 3 }
+
+ciscoContentServicesMIBComplianceRev3 MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for entities which implement
+        the Cisco Content Services MIB."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        ciscoContentServicesGlobalCfgGroup,
+                        ciscoContentServicesGlobalStatsGroup,
+                        ciscoContentServicesBMAGroup,
+                        ciscoContentServicesQuotaMgrGroup,
+                        ciscoContentServicesUserDbGroup,
+                        ciscoContentServicesNotifEnableGroup,
+                        ciscoContentServicesNotifGroup,
+                        ciscoContentServicesLoadStatRadiusGroup,
+                        ciscoContentServicesLoadStatUserDBGroup,
+                        ciscoContentServicesLoadStatSessionGroup,
+                        ciscoContentServicesLoadStatBMAGroup,
+                        ciscoContentServicesLoadStatQuotaMgrGroup,
+                        ciscoContentServicesGlobalStatsGroupSup1,
+                        ciscoContentServicesBMAGroupSup1,
+                        ciscoContentServicesQuotaMgrGroupSup1,
+                        ciscoContentServicesGlobalCfgGroupSup1,
+                        ciscoContentServicesNotifEnableGroupSup1,
+                        ciscoContentServicesNotifGroupSup1,
+                        ciscoContentServicesGlobalCfgGroupSup2,
+                        ciscoContentServicesNotifEnableGroupSup2,
+                        ciscoContentServicesNotifGroupSup2,
+                        ciscoContentServicesNotifInfoGroup
+                    }
+
+    OBJECT          ccsBMAHighWater
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          ccsQuotaMgrHighWater
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          ccsBMAPriority
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          ccsQuotaMgrPriority
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          ccsBMARowStatus
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          ccsQuotaMgrRowStatus
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          ccsgsGTPBMARateInterval
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          ccsgsGTPQuotaMgrRateInterval
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+    ::= { ciscoContentServicesMIBCompliances 4 }
+
 -- units of conformance
+
 ciscoContentServicesGlobalCfgGroup OBJECT-GROUP
     OBJECTS         {
                         ccsgcBMALostRecordTimer,
@@ -1528,5 +3425,239 @@ ciscoContentServicesNotifGroup NOTIFICATION-GROUP
     DESCRIPTION
         "A collection of objects providing notifications."
     ::= { ciscoContentServicesMIBGroups 8 }
+
+ciscoContentServicesLoadStatRadiusGroup OBJECT-GROUP
+    OBJECTS         {
+                        ccsLoadStatRadiusStartAllowed,
+                        ccsLoadStatHCRadiusStartAllowed,
+                        ccsLoadStatRadiusStartAllowedRate,
+                        ccsLoadStatRadiusStartAllowedRateHighWater,
+                        ccsLoadStatHCRadiusStartAllowedRateHighWater,
+                        ccsLoadStatRadiusStartIPCQueueDepthTolerance,
+                        ccsLoadStatRadiusStartDenied,
+                        ccsLoadStatHCRadiusStartDenied,
+                        ccsLoadStatRadiusStartDenialRate,
+                        ccsLoadStatRadiusStartDenialRateHighWater,
+                        ccsLoadStatHCRadiusStartDenialRateHighWater
+                    }
+    STATUS          current
+    DESCRIPTION
+        "Load Statistics for Radius."
+    ::= { ciscoContentServicesMIBGroups 9 }
+
+ciscoContentServicesLoadStatUserDBGroup OBJECT-GROUP
+    OBJECTS         {
+                        ccsLoadStatUserDBReqAllowed,
+                        ccsLoadStatHCUserDBReqAllowed,
+                        ccsLoadStatUserDBReqAllowedRate,
+                        ccsLoadStatUserDBReqAllowedRateHighWater,
+                        ccsLoadStatHCUserDBReqAllowedRateHighWater,
+                        ccsLoadStatUserDBReqIPCQueueDepthTolerance,
+                        ccsLoadStatUserDBReqDenied,
+                        ccsLoadStatHCUserDBReqDenied,
+                        ccsLoadStatUserDBReqDenialRate,
+                        ccsLoadStatUserDBReqDenialRateHighWater,
+                        ccsLoadStatHCUserDBReqDenialRateHighWater
+                    }
+    STATUS          current
+    DESCRIPTION
+        "Load Statistics for Database."
+    ::= { ciscoContentServicesMIBGroups 10 }
+
+ciscoContentServicesLoadStatSessionGroup OBJECT-GROUP
+    OBJECTS         {
+                        ccsLoadStatSessionCreateAllowed,
+                        ccsLoadStatHCSessionCreateAllowed,
+                        ccsLoadStatSessionCreateAllowedRate,
+                        ccsLoadStatSessionCreateAllowedRateHighWater,
+                        ccsLoadStatHCSessionCreateAllowedRateHighWater,
+                        ccsLoadStatSessionCreateIPCQueueDepthTolerance,
+                        ccsLoadStatSessionCreateDenied,
+                        ccsLoadStatHCSessionCreateDenied,
+                        ccsLoadStatSessionCreateDenialRate,
+                        ccsLoadStatSessionCreateDenialRateHighWater,
+                        ccsLoadStatHCSessionCreateDenialRateHighWater
+                    }
+    STATUS          current
+    DESCRIPTION
+        "Load Statistics for Session."
+    ::= { ciscoContentServicesMIBGroups 11 }
+
+ciscoContentServicesLoadStatBMAGroup OBJECT-GROUP
+    OBJECTS         {
+                        ccsLoadStatBMAMsgsAllowed,
+                        ccsLoadStatHCBMAMsgsAllowed,
+                        ccsLoadStatBMAMsgsAllowedRate,
+                        ccsLoadStatBMAMsgsAllowedRateHighWater,
+                        ccsLoadStatHCBMAMsgsAllowedRateHighWater,
+                        ccsLoadStatBMAMsgsIPCQueueDepthTolerance,
+                        ccsLoadStatBMAMsgsDenied,
+                        ccsLoadStatHCBMAMsgsDenied,
+                        ccsLoadStatBMAMsgsDenialRate,
+                        ccsLoadStatBMAMsgsDenialRateHighWater,
+                        ccsLoadStatHCBMAMsgsDenialRateHighWater
+                    }
+    STATUS          current
+    DESCRIPTION
+        "Load Statistics for BMA."
+    ::= { ciscoContentServicesMIBGroups 12 }
+
+ciscoContentServicesLoadStatQuotaMgrGroup OBJECT-GROUP
+    OBJECTS         {
+                        ccsLoadStatQuotaMgrMsgsAllowed,
+                        ccsLoadStatHCQuotaMgrMsgsAllowed,
+                        ccsLoadStatQuotaMgrMsgsAllowedRate,
+                        ccsLoadStatQuotaMgrMsgsAllowedRateHighWater,
+                        ccsLoadStatHCQuotaMgrMsgsAllowedRateHighWater,
+                        ccsLoadStatQuotaMgrMsgsIPCQueueDepthTolerance,
+                        ccsLoadStatQuotaMgrMsgsDenied,
+                        ccsLoadStatHCQuotaMgrMsgsDenied,
+                        ccsLoadStatQuotaMgrMsgsDenialRate,
+                        ccsLoadStatQuotaMgrMsgsDenialRateHighWater,
+                        ccsLoadStatHCQuotaMgrMsgsDenialRateHighWater
+                    }
+    STATUS          current
+    DESCRIPTION
+        "Load Statistics for Quota Manager."
+    ::= { ciscoContentServicesMIBGroups 13 }
+
+ciscoContentServicesGlobalStatsGroupSup1 OBJECT-GROUP
+    OBJECTS         {
+                        ccsgsGTPBMARejected,
+                        ccsgsHCGTPBMARejected,
+                        ccsgsGTPBMADropped,
+                        ccsgsHCGTPBMADropped,
+                        ccsgsGTPBMARetransmit,
+                        ccsgsHCGTPBMARetransmit,
+                        ccsgsGTPQuotaMgrRejected,
+                        ccsgsHCGTPQuotaMgrRejected,
+                        ccsgsGTPQuotaMgrDropped,
+                        ccsgsHCGTPQuotaMgrDropped,
+                        ccsgsGTPQuotaMgrRetransmit,
+                        ccsgsHCGTPQuotaMgrRetransmit,
+                        ccsgsGTPBMARateInterval,
+                        ccsgsGTPQuotaMgrRateInterval
+                    }
+    STATUS          current
+    DESCRIPTION
+        "Collection of objects providing aggregate statistics for all
+        the BMAs and Quota Managers. This group augments the objects
+        contained in the ciscoContentServicesGlobalStatsGroup."
+    ::= { ciscoContentServicesMIBGroups 14 }
+
+ciscoContentServicesBMAGroupSup1 OBJECT-GROUP
+    OBJECTS         {
+                        ccsBMAPacketRate,
+                        ccsBMAAckRate
+                    }
+    STATUS          current
+    DESCRIPTION
+        "Collection of objects providing BMA statistics.
+        This group augments the objects contained in the
+        ciscoContentServicesBMAGroup."
+    ::= { ciscoContentServicesMIBGroups 15 }
+
+ciscoContentServicesQuotaMgrGroupSup1 OBJECT-GROUP
+    OBJECTS         {
+                        ccsQuotaMgrPacketRate,
+                        ccsQuotaMgrAckRate
+                    }
+    STATUS          current
+    DESCRIPTION
+        "Collection of objects providing Quota Manager statistics.
+        This group augments the objects contained in the
+        ciscoContentServicesQuotaMgrGroup."
+    ::= { ciscoContentServicesMIBGroups 16 }
+
+ciscoContentServicesGlobalCfgGroupSup1 OBJECT-GROUP
+    OBJECTS         { ccsgsUserThreshold }
+    STATUS          current
+    DESCRIPTION
+        "Global Config objects.
+        This group augments the objects contained in the
+        ciscoContentServicesGlobalCfgGroup."
+    ::= { ciscoContentServicesMIBGroups 17 }
+
+ciscoContentServicesNotifEnableGroupSup1 OBJECT-GROUP
+    OBJECTS         { ccsUserThresholdExceededNotifEnabled }
+    STATUS          current
+    DESCRIPTION
+        "Notifications enable/disable flags.
+        This group augments the objects contained in the
+        ciscoContentServicesNotifEnableGroup"
+    ::= { ciscoContentServicesMIBGroups 18 }
+
+ciscoContentServicesNotifGroupSup1 NOTIFICATION-GROUP
+   NOTIFICATIONS    { ciscoContentServicesUserThresholdExceeded }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects providing notifications.
+        This group augments the objects contained in the
+        ciscoContentServicesNotifGroup."
+    ::= { ciscoContentServicesMIBGroups 19 }
+
+ciscoContentServicesGlobalCfgGroupSup2 OBJECT-GROUP
+    OBJECTS         {
+                        ccsAdControlAlarmUpdateTimer,
+                        ccsNetServerResponseFailAlarmThreshold,
+                        ccsNetServerResponseFailClearThreshold,
+                        ccsNetServerFirstPayloadResponseTime,
+                        ccsNetServerResponseTimeFailAlarmThreshold,
+                        ccsNetServerResponseTimeFailClearThreshold,
+                        ccsProtocolParseFailAlarmThreshold,
+                        ccsProtocolParseFailClearThreshold
+                    }
+    STATUS          current
+    DESCRIPTION
+        "Global Config objects.
+        This group augments the objects contained in the
+        ciscoContentServicesGlobalCfgGroup."
+    ::= { ciscoContentServicesMIBGroups 20 }
+
+ciscoContentServicesNotifEnableGroupSup2 OBJECT-GROUP
+    OBJECTS         { ccsAdControlNotifEnabled }
+    STATUS          current
+    DESCRIPTION
+        "Notifications enable/disable flags.
+        This group augments the objects contained in the
+        ciscoContentServicesNotifEnableGroup"
+    ::= { ciscoContentServicesMIBGroups 21 }
+
+ciscoContentServicesNotifGroupSup2 NOTIFICATION-GROUP
+   NOTIFICATIONS    {
+                        ciscoContentServicesNetServerResponseFailExceeded,
+                        ciscoContentServicesNetServerResponseTimeExceeded,
+                        ciscoContentServicesProtocolParseFailExceeded,
+                        ciscoContentServicesNetServerResponseFailAlarmCleared,
+                        ciscoContentServicesNetServerResponseTimeAlarmCleared,
+                        ciscoContentServicesProtocolParseFailAlarmCleared
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects providing notifications.
+        This group augments the objects contained in the
+        ciscoContentServicesNotifGroup."
+    ::= { ciscoContentServicesMIBGroups 22 }
+
+ciscoContentServicesNotifInfoGroup OBJECT-GROUP
+    OBJECTS         {
+                        ccsTPIndexNotifInfo,
+                        ccsServiceNameNotifInfo,
+                        ccsContentNameNotifInfo,
+                        ccsPolicyNameNotifInfo,
+                        ccsNetServerIpAddrTypeNotifInfo,
+                        ccsNetServerIpAddrNotifInfo,
+                        ccsNetServerPortNotifInfo,
+                        ccsSubscriberIpAddrTypeNotifInfo,
+                        ccsSubscriberIpAddrNotifInfo,
+                        ccsSubscriberPortNotifInfo,
+                        ccsNetServerResponseFailCountNotifInfo,
+                        ccsNetServerResponseTimeFailCountNotifInfo,
+                        ccsProtocolParseFailCountNotifInfo
+                    }
+    STATUS          current
+    DESCRIPTION
+        "Collection of objects providing info for notifications."
+    ::= { ciscoContentServicesMIBGroups 23 }
 
 END

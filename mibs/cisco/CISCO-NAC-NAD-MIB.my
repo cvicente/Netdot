@@ -1,13 +1,13 @@
 -- *****************************************************************
--- Cisco NAD-NAC MIB
+-- Cisco NAC-NAD MIB
 --   
 -- July, 2005 Liwei Lue
 --   
--- Copyright (c) 2005,-2007 by Cisco Systems, Inc.
+-- Copyright (c) 2005-2007 by Cisco Systems, Inc.
 --   
+
 -- All rights reserved.
 -- *****************************************************************
--- %DNP
 
 CISCO-NAC-NAD-MIB DEFINITIONS ::= BEGIN
 
@@ -52,7 +52,7 @@ IMPORTS
 
 
 ciscoNacNadMIB MODULE-IDENTITY
-    LAST-UPDATED    "200702230000Z"
+    LAST-UPDATED    "200711120000Z"
     ORGANIZATION    "Cisco Systems, Inc."
     CONTACT-INFO
             "Cisco Systems
@@ -193,6 +193,9 @@ ciscoNacNadMIB MODULE-IDENTITY
         UCT - Un Conditional Transition.
 
         Clientless - Client without Cisco Posture Agent."
+    REVISION        "200711120000Z"
+    DESCRIPTION
+        "Add cnnEouIfIpDevTrackConfigGrp MIB group."
     REVISION        "200702230000Z"
     DESCRIPTION
         "Move all the TEXTUAL-CONVENTION to CISCO-NAC-TC-MIB;
@@ -230,7 +233,7 @@ ciscoNacNadMIB MODULE-IDENTITY
     REVISION        "200506280000Z"
     DESCRIPTION
         "Initial version of this MIB module."
-          ::= { ciscoMgmt 484 }
+    ::= { ciscoMgmt 484 }
 
 
 ciscoNacNadMIBNotifs  OBJECT IDENTIFIER
@@ -259,6 +262,7 @@ cnnIpDeviceTrackingObjects  OBJECT IDENTIFIER
 
 
 -- The cnnEouGlobalObjects group
+
 cnnEouVersion OBJECT-TYPE
     SYNTAX          Unsigned32
     MAX-ACCESS      read-only
@@ -310,7 +314,8 @@ cnnEouMaxRetry OBJECT-TYPE
     SYNTAX          Integer32
     MAX-ACCESS      read-write
     STATUS          current
-    DESCRIPTION     "The number of maximum retry attempts for EOU." 
+    DESCRIPTION
+        "The number of maximum retry attempts for EOU." 
     ::= { cnnEouGlobalObjects 6 }
 
 cnnEouPort OBJECT-TYPE
@@ -398,6 +403,7 @@ cnnEouCriticalRecoveryDelay OBJECT-TYPE
     ::= { cnnEouGlobalObjects 14 }
 
 -- The cnnIpDeviceTrackingObjects group
+
 cnnIpDeviceTrackingEnabled OBJECT-TYPE
     SYNTAX          TruthValue
     MAX-ACCESS      read-write
@@ -426,6 +432,40 @@ cnnIpDeviceTrackingProbeInterval OBJECT-TYPE
         "Specifies the number of the seconds that this device waits
         before resending the ARP probe." 
     ::= { cnnIpDeviceTrackingObjects 3 }
+
+cnnEouIfIpDevTrackConfigTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CnnEouIfIpDevTrackConfigEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "A table of IP Device Tracking configuration for EOU
+        interfaces in the system."
+    ::= { cnnIpDeviceTrackingObjects 4 }
+
+cnnEouIfIpDevTrackConfigEntry OBJECT-TYPE
+    SYNTAX          CnnEouIfIpDevTrackConfigEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "A set of EOU IP Device Tracking configuration information on
+        an EOU interface."
+    INDEX           { ifIndex } 
+    ::= { cnnEouIfIpDevTrackConfigTable 1 }
+
+CnnEouIfIpDevTrackConfigEntry ::= SEQUENCE {
+        cnnEouIfIpDevTrackEnabled TruthValue
+}
+
+cnnEouIfIpDevTrackEnabled OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "Specifies if IP Device Tracking feature is enabled on this
+        interface." 
+    ::= { cnnEouIfIpDevTrackConfigEntry 1 }
+ 
+
 -- statically authorized device
 
 cnnEouAuthIpTable OBJECT-TYPE
@@ -526,7 +566,8 @@ cnnEouAuthIpStorageType OBJECT-TYPE
     SYNTAX          StorageType
     MAX-ACCESS      read-create
     STATUS          current
-    DESCRIPTION     "The storage type for this conceptual row."
+    DESCRIPTION
+        "The storage type for this conceptual row."
     DEFVAL          { nonVolatile } 
     ::= { cnnEouAuthIpEntry 5 }
 
@@ -584,7 +625,8 @@ cnnEouAuthMacAddr OBJECT-TYPE
     SYNTAX          MacAddress
     MAX-ACCESS      not-accessible
     STATUS          current
-    DESCRIPTION     "The MAC address of the static authorized device." 
+    DESCRIPTION
+        "The MAC address of the static authorized device." 
     ::= { cnnEouAuthMacEntry 1 }
 
 cnnEouAuthMacAddrMask OBJECT-TYPE
@@ -625,7 +667,8 @@ cnnEouAuthMacStorageType OBJECT-TYPE
     SYNTAX          StorageType
     MAX-ACCESS      read-create
     STATUS          current
-    DESCRIPTION     "The storage type for this conceptual row."
+    DESCRIPTION
+        "The storage type for this conceptual row."
     DEFVAL          { nonVolatile } 
     ::= { cnnEouAuthMacEntry 4 }
 
@@ -679,14 +722,16 @@ cnnEouAuthDeviceType OBJECT-TYPE
     SYNTAX          CnnEouDeviceType
     MAX-ACCESS      not-accessible
     STATUS          current
-    DESCRIPTION     "The static authorize device type." 
+    DESCRIPTION
+        "The static authorize device type." 
     ::= { cnnEouAuthDeviceTypeEntry 1 }
 
 cnnEouAuthDeviceTypeStorageType OBJECT-TYPE
     SYNTAX          StorageType
     MAX-ACCESS      read-create
     STATUS          current
-    DESCRIPTION     "The storage type for this conceptual row."
+    DESCRIPTION
+        "The storage type for this conceptual row."
     DEFVAL          { nonVolatile } 
     ::= { cnnEouAuthDeviceTypeEntry 2 }
 
@@ -760,7 +805,7 @@ cnnEouIfAdminStatus OBJECT-TYPE
         Setting this object to 'bypass' allows the host connected
         to this interface this interface to bypass the Posture
         Validation and directly download the host network access policy
-        from AAA server. " 
+        from AAA server." 
     ::= { cnnEouIfConfigEntry 1 }
 
 cnnEouIfMaxRetry OBJECT-TYPE
@@ -911,6 +956,7 @@ cnnEouIfAaaFailPolicy OBJECT-TYPE
 
 
 -- Validation Action: Initialize, Revalidate, noRevalidate
+
 cnnEouHostValidateAction OBJECT-TYPE
     SYNTAX          INTEGER  {
                         none(1),
@@ -1070,7 +1116,8 @@ cnnEouHostValidateIpAddrType OBJECT-TYPE
     SYNTAX          InetAddressType
     MAX-ACCESS      read-write
     STATUS          current
-    DESCRIPTION     "The type of Internet address for a detected host." 
+    DESCRIPTION
+        "The type of Internet address for a detected host." 
     ::= { cnnEouHostMIBObjects 2 }
 
 cnnEouHostValidateIpAddr OBJECT-TYPE
@@ -1087,7 +1134,8 @@ cnnEouHostValidateMacAddr OBJECT-TYPE
     SYNTAX          MacAddress
     MAX-ACCESS      read-write
     STATUS          current
-    DESCRIPTION     "The Mac address for a detected host." 
+    DESCRIPTION
+        "The Mac address for a detected host." 
     ::= { cnnEouHostMIBObjects 4 }
 
 cnnEouHostValidatePostureToken OBJECT-TYPE
@@ -1102,6 +1150,7 @@ cnnEouHostValidatePostureToken OBJECT-TYPE
     ::= { cnnEouHostMIBObjects 5 }
 
 -- EOU endpoint device query table
+
 cnnEouHostMaxQueries OBJECT-TYPE
     SYNTAX          Unsigned32
     MAX-ACCESS      read-only
@@ -1250,7 +1299,8 @@ cnnEouHostQueryIpAddrType OBJECT-TYPE
     SYNTAX          InetAddressType
     MAX-ACCESS      read-create
     STATUS          current
-    DESCRIPTION     "The internet address type for the queried host."
+    DESCRIPTION
+        "The internet address type for the queried host."
     DEFVAL          { ipv4 } 
     ::= { cnnEouHostQueryEntry 4 }
 
@@ -1368,7 +1418,8 @@ cnnEouHostQueryCreateTime OBJECT-TYPE
     SYNTAX          TimeStamp
     MAX-ACCESS      read-only
     STATUS          current
-    DESCRIPTION     "Time when this query was last set to active." 
+    DESCRIPTION
+        "Time when this query was last set to active." 
     ::= { cnnEouHostQueryEntry 12 }
 
 cnnEouHostQueryStatus OBJECT-TYPE
@@ -1491,7 +1542,8 @@ cnnEouHostResultMacAddr OBJECT-TYPE
     SYNTAX          MacAddress
     MAX-ACCESS      read-only
     STATUS          current
-    DESCRIPTION     "Indicates The MAC address of the detected host." 
+    DESCRIPTION
+        "Indicates The MAC address of the detected host." 
     ::= { cnnEouHostResultEntry 5 }
 
 cnnEouHostResultAuthType OBJECT-TYPE
@@ -1599,13 +1651,15 @@ cnnEouHostValidatePostureTokenStr OBJECT-TYPE
     SYNTAX          CnnEouPostureTokenString
     MAX-ACCESS      read-write
     STATUS          current
-    DESCRIPTION     "Posture token string for a detected host." 
+    DESCRIPTION
+        "Posture token string for a detected host." 
     ::= { cnnEouHostMIBObjects 9 }
 -- Notifications
 --   
 -- no notifications defined
 --   
 -- Conformance
+
 ciscoNacNadMIBCompliances  OBJECT IDENTIFIER
     ::= { ciscoNacNadMIBConformance 1 }
 
@@ -1680,15 +1734,18 @@ ciscoNacNadMIBCompliance MODULE-COMPLIANCE
 
     OBJECT          cnnEouEnabled
     MIN-ACCESS      read-only
-    DESCRIPTION     "Write access is not required."
+    DESCRIPTION
+        "Write access is not required."
 
     OBJECT          cnnEouAllowIpStationId
     MIN-ACCESS      read-only
-    DESCRIPTION     "Write access is not required."
+    DESCRIPTION
+        "Write access is not required."
 
     OBJECT          cnnEouPort
     MIN-ACCESS      read-only
-    DESCRIPTION     "Write access is not required."
+    DESCRIPTION
+        "Write access is not required."
 
     OBJECT          cnnEouHostResultIpAddrType
     SYNTAX          INTEGER  {
@@ -1700,19 +1757,22 @@ ciscoNacNadMIBCompliance MODULE-COMPLIANCE
 
     OBJECT          cnnEouAuthIpStorageType
     MIN-ACCESS      read-only
-    DESCRIPTION     "Write access is not required."
+    DESCRIPTION
+        "Write access is not required."
 
     OBJECT          cnnEouAuthMacStorageType
     MIN-ACCESS      read-only
-    DESCRIPTION     "Write access is not required."
+    DESCRIPTION
+        "Write access is not required."
 
     OBJECT          cnnEouAuthDeviceTypeStorageType
     MIN-ACCESS      read-only
-    DESCRIPTION     "Write access is not required."
+    DESCRIPTION
+        "Write access is not required."
     ::= { ciscoNacNadMIBCompliances 1 }
 
 ciscoNacNadMIBCompliance2 MODULE-COMPLIANCE
-    STATUS          current
+    STATUS          deprecated 
     DESCRIPTION
         "The compliance statement for the CISCO-NAC-NAD-MIB.
 
@@ -1794,15 +1854,18 @@ ciscoNacNadMIBCompliance2 MODULE-COMPLIANCE
 
     OBJECT          cnnEouEnabled
     MIN-ACCESS      read-only
-    DESCRIPTION     "Write access is not required."
+    DESCRIPTION
+        "Write access is not required."
 
     OBJECT          cnnEouAllowIpStationId
     MIN-ACCESS      read-only
-    DESCRIPTION     "Write access is not required."
+    DESCRIPTION
+        "Write access is not required."
 
     OBJECT          cnnEouPort
     MIN-ACCESS      read-only
-    DESCRIPTION     "Write access is not required."
+    DESCRIPTION
+        "Write access is not required."
 
     OBJECT          cnnEouHostResultIpAddrType
     SYNTAX          INTEGER  {
@@ -1814,18 +1877,147 @@ ciscoNacNadMIBCompliance2 MODULE-COMPLIANCE
 
     OBJECT          cnnEouAuthIpStorageType
     MIN-ACCESS      read-only
-    DESCRIPTION     "Write access is not required."
+    DESCRIPTION
+        "Write access is not required."
 
     OBJECT          cnnEouAuthMacStorageType
     MIN-ACCESS      read-only
-    DESCRIPTION     "Write access is not required."
+    DESCRIPTION
+        "Write access is not required."
 
     OBJECT          cnnEouAuthDeviceTypeStorageType
     MIN-ACCESS      read-only
-    DESCRIPTION     "Write access is not required."
+    DESCRIPTION
+        "Write access is not required."
     ::= { ciscoNacNadMIBCompliances 2 }
 
+ciscoNacNadMIBCompliance3 MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for the CISCO-NAC-NAD-MIB.
+
+        OBJECT cnnEouAuthIpAddrType
+        SYNTAX  InetAddressType { ipv4(1) }
+        DESCRIPTION
+            An implementation is only required to support IPv4
+            addresses."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        ciscoNacNadEouGlobalGroup,
+                        ciscoNacNadEouAuthIpGroup,
+                        ciscoNacNadEouIfConfigGroup,
+                        ciscoNacNadEouHostGrp
+                    }
+
+    GROUP           ciscoNacNadEouIfTimeoutGroup
+    DESCRIPTION
+        "This group is mandatory only for the platforms which
+        support the timeout configuration on interface."
+
+    GROUP           ciscoNacNadEouIfMaxRetryGroup
+    DESCRIPTION
+        "This group is mandatory only for the platforms which
+        support the max-retry configuration on interface."
+
+    GROUP           ciscoNacNadEouRateLimitGroup
+    DESCRIPTION
+        "This group is mandatory only for the platforms which
+        support the rate-limit configuration."
+
+    GROUP           ciscoNacNadEouIfAdminGroup
+    DESCRIPTION
+        "This group is mandatory only for the platforms which
+        support enabled/disabled/bypassed EOU feature on the
+        interface."
+
+    GROUP           ciscoNacNadEouAuthMacGroup
+    DESCRIPTION
+        "This group is mandatory only for the platforms which
+        support the exempted MAC device with a policy associated."
+
+    GROUP           ciscoNacNadEouAuthDeviceTypeGrp
+    DESCRIPTION
+        "This group is mandatory only for the platforms which support
+        statically authorize device identified by device type."
+
+    GROUP           ciscoNacNadEouHostAgeGroup
+    DESCRIPTION
+        "This group is mandatory only for the platforms which
+        support the age information on the interface."
+
+    GROUP           ciscoNacNadEouHostUrlRedir
+    DESCRIPTION
+        "This group is mandatory only for the platforms which
+        support the redirection URL information on the interface."
+
+    GROUP           ciscoNacNadEouHostAclGroup
+    DESCRIPTION
+        "This group is mandatory only for the platforms which
+        support the ACL(Access Control List) information on the
+        interface."
+
+    GROUP           ciscoNacNadEouIfAaaFailPolicyGrp
+    DESCRIPTION
+        "This group is mandatory only for the platforms which
+        support IAB(Inaccessible Authentication Bypass) feature
+        on the interface."
+
+    GROUP           cnnIpDeviceTrackingConfigGrp
+    DESCRIPTION
+        "This group is mandatory only for the platforms which
+        support IP device tracking feature."
+
+    GROUP           cnnEouCriticalRecoveryDelayGrp
+    DESCRIPTION
+        "This group is mandatory only for the platforms which
+        support critical recovery delay feature."
+
+    GROUP           cnnEouIfIpDevTrackConfigGrp
+    DESCRIPTION
+        "This group is mandatory only for the platforms which
+        support EOU IP Device Tracking per interface in the device."
+
+    OBJECT          cnnEouEnabled
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cnnEouAllowIpStationId
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cnnEouPort
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cnnEouHostResultIpAddrType
+    SYNTAX          INTEGER  {
+                        ipv4(1)
+                    }
+    DESCRIPTION
+        "An implementation is only required to support IPv4
+        addresses."
+
+    OBJECT          cnnEouAuthIpStorageType
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cnnEouAuthMacStorageType
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cnnEouAuthDeviceTypeStorageType
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+    ::= { ciscoNacNadMIBCompliances 3 }
+
 -- Units of Conformance
+
 ciscoNacNadEouGlobalGroup OBJECT-GROUP
     OBJECTS         {
                         cnnEouVersion,
@@ -2054,5 +2246,13 @@ cnnEouCriticalRecoveryDelayGrp OBJECT-GROUP
         "A collection of objects providing critical recovery delay
         for the device."
     ::= { ciscoNacNadMIBGroups 17 }
+
+cnnEouIfIpDevTrackConfigGrp OBJECT-GROUP
+    OBJECTS         { cnnEouIfIpDevTrackEnabled }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects providing EOU IP device tracking
+        per interface in the device."
+    ::= { ciscoNacNadMIBGroups 18 }
 
 END
