@@ -335,17 +335,31 @@ foreach my $t (keys %timeStampChangeNull) {
 
 push @statements, (
     "ALTER TABLE `interface` ADD COLUMN `circuit` integer NOT NULL",
-    "ALTER TABLE `interface` ADD INDEX Interface10 (`circuit`)",
     "ALTER TABLE `interface` ADD COLUMN `dlci` varchar(64)",
+    "ALTER TABLE `interface` ADD INDEX Interface10 (`circuit`)",
     "ALTER TABLE `interface_history` ADD COLUMN `circuit` integer NOT NULL",
+    "ALTER TABLE `interface_history` ADD COLUMN `dlci` integer NOT NULL",
+    "ALTER TABLE `interface_history` DROP INDEX Interface_history9",
+    "ALTER TABLE `interface_history` ADD INDEX Interface_history9 (`circuit`)",
+    "ALTER TABLE `interface_history` ADD INDEX Interface_history10 (`interface_id`)",
     "UPDATE interface,circuit SET interface.circuit=circuit.id, interface.dlci=circuit.dlci 
      WHERE circuit.farend=interface.id OR circuit.nearend=interface.id",
     "ALTER TABLE `circuit` DROP COLUMN `dlci`",
     "ALTER TABLE `circuit` DROP COLUMN `farend`",
     "ALTER TABLE `circuit` DROP COLUMN `nearend`",
+    "ALTER TABLE `circuit` DROP INDEX Circuit2",
+    "ALTER TABLE `circuit` DROP INDEX Circuit3",
+    "ALTER TABLE `circuit` DROP INDEX Circuit4",
+    "ALTER TABLE `circuit` ADD INDEX Circuit2 (`linkid`)",
     "ALTER TABLE `circuit_history` DROP COLUMN `dlci`",
     "ALTER TABLE `circuit_history` DROP COLUMN `farend`",
-    "ALTER TABLE `circuit_history` DROP COLUMN `nearend`"
+    "ALTER TABLE `circuit_history` DROP COLUMN `nearend`",
+    "ALTER TABLE `circuit_history` DROP INDEX Circuit_history1",
+    "ALTER TABLE `circuit_history` DROP INDEX Circuit_history2",
+    "ALTER TABLE `circuit_history` DROP INDEX Circuit_history3",
+    "ALTER TABLE `circuit_history` DROP INDEX Circuit_history4",
+    "ALTER TABLE `circuit_history` ADD INDEX Circuit_history1 (`linkid`)",
+    "ALTER TABLE `circuit_history` ADD INDEX Circuit_history2 (`circuit_id`)"
    );
 
 ###################################################################################
@@ -368,7 +382,7 @@ foreach my $ci ( keys(%{$cref}) ){
                 last;
         }
     } 
-    if (!$bool){
+    if ($bool){
         push (@statements, 
               "INSERT INTO room (name, floor) VALUES ('$cref->{$ci}->{number}', '$cref->{$ci}->{floor}')"
              );
@@ -400,8 +414,10 @@ foreach my $st ( @statements ) {
     }
 }
 
+print "\nNOTE: Multiple executions of this script probably leads to many \"failed statements\" after the first run.\n\n";
+
 &dbdisconnect($dbh);
 
 sub debug {
-    print STDERR "DEBUG: ", @_, "\n" if $CONFIG{debug};
+    print STDERR "[DEBUG] Executing: ", @_, "\n" if $CONFIG{debug};
 }
