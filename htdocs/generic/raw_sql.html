@@ -5,10 +5,11 @@
 </%doc>
 
 <%args>
-$sql    => undef
-$action => undef
-$sid    => undef
-$table  => undef
+$sql    =>         undef
+$action =>         undef
+$sid    =>         undef
+$table  =>         undef
+$sql_name =>       undef
 </%args>
 
 <%attr>
@@ -24,6 +25,7 @@ my $session;
 my @orderbrief;
 my @headers;
 my $headers;
+my $bool_unique_query = 1;
 
 if ( $action eq "DO_SQL" ){
     eval {
@@ -31,6 +33,20 @@ if ( $action eq "DO_SQL" ){
     };
     if ( my $e = $@ ){
 	$sql_err = $e;
+    }
+}
+if($action eq "SAVE_QUERY"){
+   if($sql_name && $sql){
+      SavedQueries->insert({name=>"$sql_name", querytext=>"$sql"});
+   }
+}
+
+my @saved_queries = SavedQueries->retrieve_all();
+@saved_queries = sort { $a->name cmp $b->name } @saved_queries;
+foreach (@saved_queries){
+    if(lc($_->querytext) eq lc($sql)){
+        $bool_unique_query = 0;
+        last;
     }
 }
 </%init>
@@ -44,12 +60,24 @@ if ( $action eq "DO_SQL" ){
 
     <p><b>Be Careful!</b></p>
 
-    <form action="<% $r->dir_config('NetdotPath') %>generic/" method="POST">
+    <form name = "sql_form" action="<% $r->dir_config('NetdotPath') %>generic/" method="POST">
       <input type="hidden" name="action" value="DO_SQL">
       SQL query: <input type="text" size="80" name="sql" value="<% $sql | h %>">
+      <select name="saved_queries" onChange="document.forms['sql_form']['sql'].value = saved_queries.value">
+        <option value="">Saved Queries</option>
+%           foreach (@saved_queries){
+                <option value='<% $_->querytext %>'><% $_->name  %></option>
+%           }                
+      </select>
       <input name="submit" value="Go" type="submit">
     </form>
- 
+%   if($action eq "DO_SQL" && (! $sql_err) && $bool_unique_query){
+        <form name = "save_query" method="POST">
+            <input type="hidden" name="action" value="SAVE_QUERY">
+            <input type="hidden" name="sql" value="<% $sql %>">
+            Save this query?  Name: <input type="text" name="sql_name" value=""> <input name = "submit" type="submit" value="Save Query">
+        </form>
+%   }    
     </div> <!-- close containerbody -->
 </div> <!-- close container -->
 % my @rows;
@@ -67,14 +95,15 @@ if ( $action eq "DO_SQL" ){
     }elsif ( $sql_err ){
         print $sql_err, "<br>";
     }
-
-# Create new session and get a new window for csv output
-$session = $ui->mk_session();
-$headers = $result->{headers};
-@orderbrief = @$headers;
-$session->{objindex}    = \%objindex;
-$session->{orderbrief}  = \@orderbrief;
-$session->{page}        = $result->{rows};
+if(@headers && @rows && $headers){
+    # Create new session and get a new window for csv output
+    $session = $ui->mk_session();
+    $headers = $result->{headers};
+    @orderbrief = @$headers;
+    $session->{objindex}    = \%objindex;
+    $session->{orderbrief}  = \@orderbrief;
+    $session->{page}        = $result->{rows};
+}
 </%perl>
 
 <div class="containerheadright">
