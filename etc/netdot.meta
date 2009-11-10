@@ -8163,5 +8163,52 @@ $meta = {
       ]
     }
   },
+  SavedQueries => { 
+    table_db_name => 'savedqueries',
+    columns => { 
+      id => { 
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => '',
+        type => 'integer'
+      },
+      name => {
+        default => '',
+        description => 'Name',
+        length => '255',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      },
+      querytext => {
+        default => '',
+        description => 'Saved SQL',
+        length => '',
+        nullable => 0,
+        tag => 'Saved SQL',
+        nullable => 0,
+        type => 'blob'
+      }        
+    },
+    description => 'Saved SQL queries',
+    has_history => '0',
+    unique => [ [ ] ],
+    label => [ 'name', 'querytext'  ],
+    index => [],
+    isjoin => '0',
+    primary_key => 'id',
+    views => { 
+      'all' => [
+         'name',
+         'querytext'
+      ],
+      brief => [
+         'name'
+      ]
+    } 
+       	   
+  },   
  }
 }
