@@ -195,6 +195,7 @@ if ( defined($object) && scalar @$object ){
     $table      = $session->{table};
     @orderbrief = @{ $session->{orderbrief} };
     $page       = $session->{page};
+    print "<br>Page is now $page<br/>" if $DEBUG;
     $withedit   = $session->{withedit};
     $total      = $session->{total};   
     $caller_path = $session->{caller_path};
@@ -210,12 +211,15 @@ if ( defined($object) && scalar @$object ){
 # Some tables have a specific view page. 
 # Point to those when appropriate
 #
-unless ( $page ){
+#I'm not sure why the first column of a sorted table of lists needs special treatment on how to get back, vs using meta data to get the table
+#it should link to like the other columns, if this page were only used for devices I would remove this check all together.  But its possible
+#this is being used somewhere else in the program.  I tried removing this check and clicked around, and everything seemed fine, but just in case,
+#we'll ignore it if DEVICE is set, since thats whats causing the bugs on the device page (with links not resolving correctly after a list has been
+#resorted.
+unless($page && $page ne "DEVICE"){
     $page = $ui->table_view_page($table);
 }
 $page ||= 'view.html';
-
-print "<br/>Page is $page table is $table<br/>" if $DEBUG;
 
 # Calculate last item to show
 $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
