@@ -112,6 +112,7 @@ sub _get_arp_from_cli {
 		    SHKC      => 0,
 		    Opts      => [
 			'-o', "ConnectTimeout=$timeout",
+			'-o', 'CheckHostIP=no',
 		    ],
 	    );
 	
