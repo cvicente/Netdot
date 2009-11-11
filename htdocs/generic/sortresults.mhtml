@@ -190,7 +190,7 @@ if ( defined($object) && scalar @$object ){
 # Some tables have a specific view page. 
 # Point to those when appropriate
 #
-unless ( $page ){
+unless ( $page && $page ne "DEVICE"){
     $page = $ui->table_view_page($table);
 }
 $page ||= 'view.html';
@@ -339,10 +339,10 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
       Results: [<% $offset+1 %>-<% $last_item %>] of <% $total %> 
 %     my $prev_offset = $offset - $per_page; 
 %     if ( $sid && $prev_offset >= 0 ){
-          <a href="../generic/list.html?sid=<% $sid %>&offset=<% $prev_offset %>&per_page=<% $per_page %>">[<<] </a>
+          <a href="../generic/list.html?sid=<% $sid %>&osid=<% $osession->{_session_id} %>offset=<% $prev_offset %>&per_page=<% $per_page %>">[<<] </a>
 %     }
 %     unless ( $last_item == $total ){
-          <a href="../generic/list.html?sid=<% $session->{_session_id} %>&offset=<% $last_item %>&per_page=<% $per_page %>">[>>] </a>
+          <a href="../generic/list.html?sid=<% $session->{_session_id} %>&osid=<% $osession->{_session_id} %>&offset=<% $last_item %>&per_page=<% $per_page %>">[>>] </a>
 %     }
 % }
 
@@ -360,6 +360,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 % if ( $session && ($total > $per_page) ){
     <form name="form_sortresults" method="POST" action="list.html">
       <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
+      <input type="hidden" name="osid" value="<% $osession->{_session_id} %>" >
       <input type="hidden" name="offset" value="<% $offset %>">
       <input type="submit" name="Show" value="Show"> <input type="text" size="3" name="per_page" value="<% $per_page %>"> items per page
     </form>
