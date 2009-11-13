@@ -10,6 +10,7 @@ use Netdot::Config;
 use Netdot::Meta::SQLT;
 $|=1; #unbuffer output.
 
+
 my %config;
 
 $config{ACTION}       = $ARGV[0] || "";
@@ -24,6 +25,15 @@ my $netdot_config = Netdot::Config->new(config_dir => $config{CONFIG_DIR});
 foreach my $var ( qw /DB_TYPE DB_HOME DB_HOST DB_PORT DB_DBA DB_DBA_PASSWORD 
 		  DB_NETDOT_USER DB_NETDOT_PASS DB_DATABASE/ ){
     $config{$var} = $netdot_config->get($var);
+}
+
+#since DB_DBA and DB_DBA_PASSWORD can be sent in the commandline, we need to check if they're set,
+#and if they are, put them in
+if($ARGV[1] ne 'default'){
+    $config{"DB_DBA"} = $ARGV[1];
+}
+if($ARGV[2] ne 'default'){
+    $config{"DB_DBA_PASSWORD"} = $ARGV[2];
 }
 
 $config{BINDIR} = "$config{DB_HOME}/bin";
