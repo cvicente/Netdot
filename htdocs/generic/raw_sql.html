@@ -62,11 +62,11 @@ foreach (@saved_queries){
 
     <form name = "sql_form" action="<% $r->dir_config('NetdotPath') %>generic/" method="POST">
       <input type="hidden" name="action" value="DO_SQL">
-      SQL query: <input type="text" size="80" name="sql" value="<% $sql | h %>">
+      SQL query: <br/><textarea type="text" cols = '80' rows='5' name="sql"><% $sql | h %></textarea><br/>
       <select name="saved_queries" onChange="document.forms['sql_form']['sql'].value = saved_queries.value">
         <option value="">Saved Queries</option>
 %           foreach (@saved_queries){
-                <option value='<% $_->querytext %>'><% $_->name  %></option>
+                <option value="<% $_->querytext %>"><% $_->name  %></option>
 %           }                
       </select>
       <input name="submit" value="Go" type="submit">
