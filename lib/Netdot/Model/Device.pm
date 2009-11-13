@@ -1209,30 +1209,33 @@ sub discover {
     my $sinfo = $argv{session} || 0;
     my $dev;
     my $ip;
-    #we need to check and make sure there isn't a device in 
-    #the database with the same phyiscal address and/or serial number 
-    unless ( $info ){
-	unless ( $sinfo ){
-	    $sinfo = $class->_get_snmp_session(host        => $name,
-					       communities => $argv{communities},
-					       version     => $argv{version},
-					       timeout     => $argv{timeout},
-					       retries     => $argv{retries},
-		);
-	}
-	$info = $class->_exec_timeout($name, 
-				      sub{ return $class->get_snmp_info(session   => $sinfo,
-									bgp_peers => $argv{bgp_peers},
-					       ) });
-    }
-
     my $device_changed_name;
 
     if ( $dev = Device->search(name=>$name)->first ){
         $logger->debug(sub{"Device::discover: Device $name already exists in DB"});
-    }
 
-    elsif( !$dev && $info->{serial_number} ){
+    }else{
+	# Device not found by that name
+	# We need to check and make sure there isn't a device in 
+	# the database with the same phyiscal address and/or serial number 
+
+	unless ( $info ){
+	    unless ( $sinfo ){
+		$sinfo = $class->_get_snmp_session(host        => $name,
+						   communities => $argv{communities},
+						   version     => $argv{version},
+						   timeout     => $argv{timeout},
+						   retries     => $argv{retries},
+		    );
+	    }
+	    $info = $class->_exec_timeout($name, 
+					  sub{ return $class->get_snmp_info(session   => $sinfo,
+									    bgp_peers => $argv{bgp_peers},
+						   ) });
+	}
+	
+	
+	if( $info->{serial_number} ){
 	    my %search_args = (serialnumber=>$info->{serial_number});
 	    if ( $info->{sysobjectid} && 
 	         (my $product = Product->search(sysobjectid=>$info->{sysobjectid})->first) ){
@@ -1242,15 +1245,16 @@ sub discover {
 	        $logger->info(sub{"Device::discover: Device already exists in db with serial number ".$info->{serial_number}});
 	        $device_changed_name = 1;
 	    }
-    }
-
-    elsif( !$dev && $info->{physaddr}){
+	}
+	
+	if( $info->{physaddr}){
 	    if ( my $physaddr = PhysAddr->search(address=>($info->{physaddr}))->first ){
 	        if ( $dev = Device->search(physaddr=>$physaddr)->first ){
 		    $logger->info(sub{"Device::discover: Device already exists in db with physical address ".$physaddr->address});
 		    $device_changed_name = 1; #using this to indicate this device exists with another name in the DB
 	        }
 	    }
+	}
     }
     
     if(! $dev){ #still no dev! guess we better make it!
