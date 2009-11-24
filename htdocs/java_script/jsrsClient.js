@@ -170,6 +170,7 @@ function contextGET( rsPage, func, parms ){
   URL += "&U=" + d.getTime();
  
   // make the call
+
   switch( jsrsBrowser ) {
     case 'NS':
       this.container.src = URL;
@@ -199,6 +200,9 @@ function contextGetPayload(){
     case 'IE':
       return this.container.document.forms['jsrs_Form']['jsrs_Payload'].value;
     case 'MOZ':
+	alert("start");
+	alert(window.frames[this.container.name].document.forms['jsrs_Form']['jsrs_Payload']==null); //false
+	alert(window.frames[this.container.name].document.forms['jsrs_Form']['jsrs_Payload'].value);
       return window.frames[this.container.name].document.forms['jsrs_Form']['jsrs_Payload'].value; 
     case 'OPR':
       var textElement = window.frames[this.container.name].document.getElementById("jsrs_Payload");
@@ -277,7 +281,6 @@ function jsrsExecute( rspage, callback, func, parms, visibility ){
   } else {
     contextObj.GET( rspage, func, parms );
   }  
-
   return contextObj.id;
 }
 

@@ -35,7 +35,8 @@
     }
 
     function jsrsParseresults( returnstring ) {
-        // alert(returnstring);
+	alert("Return string is:");
+         alert(returnstring);
         var data = explode(returnstring, "&");
         var form_elt;
         var thelist;
