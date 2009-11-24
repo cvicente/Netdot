@@ -103,7 +103,7 @@ sub search {
 =cut
 sub search_like {
     my ($class, %argv) = @_;
-    $class->isa_class_method('search');
+    $class->isa_class_method('search_like');
 
     my @res;
     if ( @res = $class->SUPER::search_like(%argv) ){
@@ -111,6 +111,9 @@ sub search_like {
     }elsif ( defined $argv{name} ){
 	if ( my $alias = ZoneAlias->search_like(name=>$argv{name})->first ) {
 	    return $class->retrieve($alias->zone->id);
+	} else {
+	    # maybe just a return; would suffice..
+	    return $class->SUPER::search_like(%argv);
 	}
     }else{
 	return $class->SUPER::search_like(%argv);
