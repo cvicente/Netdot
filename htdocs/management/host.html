@@ -380,7 +380,7 @@ foreach my $o ( values %rrs ) {
 
 	foreach my $ipblock ( @ips ){
 	    my $gscope; # global scope
-	    if ( ($ipblock->parent != 0) && $ipblock->parent->dhcp_scopes ) {
+	    if ( int($ipblock->parent) != 0 && $ipblock->parent->dhcp_scopes ) {
 		# Subnet is in DHCP
 		$gscope = $ipblock->parent->dhcp_scopes->first->container;
 	    }else{
