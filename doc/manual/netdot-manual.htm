@@ -1,0 +1,350 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>The Netdot Manual</title>
+<meta name="generator" content="DocBook XSL Stylesheets V1.68.1">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="article" lang="en">
+<div class="titlepage">
+<div>
+<div><h2 class="title">
+<a name="id2915395"></a>The Netdot Manual</h2></div>
+<div><h3 class="subtitle"><i>Network Documentation Tool</i></h3></div>
+<div><p class="releaseinfo">Version 0.8</p></div>
+<div><p class="copyright">Copyright © 2009 University of Oregon</p></div>
+</div>
+<hr>
+</div>
+<div class="toc">
+<p><b>Table of Contents</b></p>
+<dl>
+<dt><span class="section"><a href="#id2915428">The Network Documentation Tool</a></span></dt>
+<dt><span class="section"><a href="#id2915554">Structure</a></span></dt>
+<dt><span class="section"><a href="#id2915626">Installation</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="#id2915632">Requirements</a></span></dt>
+<dt><span class="section"><a href="#id2915790">Configuration</a></span></dt>
+<dt><span class="section"><a href="#id2915827">Upgrading</a></span></dt>
+<dt><span class="section"><a href="#id2915845">Installing the package for the first time</a></span></dt>
+</dl></dd>
+<dt><span class="section"><a href="#id2916061">Operation</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="#id2916066">Device Management</a></span></dt>
+<dt><span class="section"><a href="#id2916550">IP Address Space</a></span></dt>
+<dt><span class="section"><a href="#id2916755">DNS</a></span></dt>
+<dt><span class="section"><a href="#id2916766">DHCP</a></span></dt>
+<dt><span class="section"><a href="#id2916777">Contact Information</a></span></dt>
+<dt><span class="section"><a href="#id2916783">Cable Plant</a></span></dt>
+<dt><span class="section"><a href="#id2916792">Advanced DB operations</a></span></dt>
+<dt><span class="section"><a href="#id2916798">Reports</a></span></dt>
+<dt><span class="section"><a href="#id2916805">Exporting Configurations for External Programs</a></span></dt>
+</dl></dd>
+</dl>
+</div>
+<div class="abstract">
+<p class="title"><b>Abstract</b></p>
+<p>This manual documents the installation, administration and operation of the Netdot application.  </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="id2915428"></a>The Network Documentation Tool</h2></div></div></div>
+<p><a href="http://netdot.uoregon.edu" target="_top">Netdot</a> is an open source tool designed to help network administrators collect, organize and maintain network documentation.</p>
+<p>Netdot is actively developed by the <a href="http://ns.uoregon.edu" target="_top">Network and Telecommunication Services</a> group of the <a href="http://www.uoregon.edu" target="_top">University of Oregon</a>. </p>
+<p>Netdot features include:</p>
+<div class="itemizedlist"><ul type="disc">
+<li><p>Device discovery via SNMP</p></li>
+<li><p>Layer 2 topology discovery and graphing, using multiple sources of information: CDP+LLDP, Spanning Tree Protocol, switch forwarding tables, router point-to-point subnets.</p></li>
+<li><p>IPv4 and IPv6 address space management (also referred to  as <span class="italic">IPAM</span>), including hierarchical organization, address block visualization and IP and MAC address location and tracking.</p></li>
+<li><p>Cable plant information including: sites, rooms, jacks, closets, inter and intra-building wiring, circuits, etc.</p></li>
+<li><p>Contact information for related entities: departments, providers, vendors, etc.</p></li>
+<li><p>Netdot can generate configuration files for various other tools, including: <a href="http://www.nagios.org" target="_top">Nagios</a>, <a href="http://www.sysmon.org" target="_top">Sysmon</a>, <a href="http://www.shrubbery.net/rancid" target="_top">RANCID</a>, <a href="http://www.cacti.net" target="_top">Cacti</a>.  Starting with version 0.9, Netdot will also generate configurations for ISC BIND and ISC DHCPD.</p></li>
+</ul></div>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="id2915554"></a>Structure</h2></div></div></div>
+<p>Netdot consists of several components:</p>
+<div class="orderedlist"><ol type="1">
+<li>
+<p>The database</p>
+<p>Our goal has been to make Netdot database-agnostic as much as possible.  In principle, it should be able to use any database supported by Perl DBI.  There are, however, some limitations to this, for example, schema migration scripts are db-specific and may not always be availab.e. Currently MySQL is fully supported.  There is currently partial support for PostgreSQL.</p>
+</li>
+<li>
+<p>The libraries</p>
+<p>The back-end code is a hierarchy of object-oriented Perl classes.  It can function as an API as well. One advantage of this model is that presentation, collection and database can be separated among different physical machines.</p>
+</li>
+<li>
+<p>User Interface (UI)</p>
+<p>The web user interface is built on a templating system called HTML::Mason.</p>
+</li>
+<li>
+<p>Command Line scripts (CLI)</p>
+<p>Certain tasks, like device discovery, can be executed from the command line.  Therefore, these tasks can be automated by running them periodically via CRON.</p>
+</li>
+</ol></div>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="id2915626"></a>Installation</h2></div></div></div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="id2915632"></a>Requirements</h3></div></div></div>
+<div class="itemizedlist"><ul type="disc">
+<li><p>Perl 5.6.1 or later</p></li>
+<li><p>Apache2 with mod_perl2</p></li>
+<li><p>MySQL (5.x preferred) or PostgreSQL (limited support)</p></li>
+<li>
+<p>Authentication Server.  Netdot supports both Radius and LDAP.</p>
+<div class="itemizedlist"><ul type="circle">
+<li>
+<p>For Radius, we recommend FreeRadius, available at:</p>
+<p><a href="http://www.freeradius.org" target="_top">http://www.freeradius.org</a></p>
+</li>
+<li>
+<p>For LDAP, you can try OpenLdap, available at:</p>
+<p><a href="http://www.openldap.org" target="_top">http://www.openldap.org</a></p>
+</li>
+</ul></div>
+</li>
+<li>
+<p>The RRDtool package, including its Perl modules, available at:</p>
+<p><a href="http://oss.oetiker.ch/rrdtool/" target="_top">http://oss.oetiker.ch/rrdtool/</a></p>
+</li>
+<li>
+<p>The GraphViz package, available at:</p>
+<p><a href="http://www.graphviz.org" target="_top">http://www.graphviz.org</a></p>
+</li>
+<li>
+<p>Various Perl modules.  To test for missing modules in your system, run:</p>
+<pre class="programlisting">%make tesdeps</pre>
+<div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;">
+<h3 class="title">Tip</h3>
+<p>If any of these modules are provided by your distribution, we recommend installing those.</p>
+</div>
+</li>
+<li>
+<p>You can install any missing modules automatically using the CPAN, by running:</p>
+<pre class="programlisting">%make installdeps</pre>
+<p>If you want to install modules individually, you can do this instead:</p>
+<pre class="programlisting">%perl -MCPAN -e shell
+&gt;install Module::Blah</pre>
+<div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;">
+<h3 class="title">Tip</h3>
+<p>If you have problems installing Net::IRR, it is possible that the Net::TCP module cannot be installed.  There is an open bug and patch available at:</p>
+<p><a href="http://rt.cpan.org/Public/Bug/Display.html?id=43071" target="_top">http://rt.cpan.org/Public/Bug/Display.html?id=43071</a></p>
+</div>
+</li>
+</ul></div>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="id2915790"></a>Configuration</h3></div></div></div>
+<p>Netdot comes with a configuration file that you need to customize
+to your needs.    You need to:</p>
+<pre class="programlisting">% cp etc/Default.conf etc/Site.conf</pre>
+<p>Then, modify Site.conf to reflect your specific options.  The original file contains descriptions of each configuration item.</p>
+<p><span class="bold"><strong>Netdot will first read Default.conf and then Site.conf</strong></span></p>
+<p>The reason for keeping two files is that when an upgrade is performed, 
+the Default.conf can be re-written (to add new variables, etc.), without 
+overwriting your site-specific configuration.</p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="id2915827"></a>Upgrading</h3></div></div></div>
+<p>Netdot's database schema only changes between major versions.
+For example, if upgrading from 0.8.x to 0.9.x, you will need to run an
+upgrade script to adapt your current database to the new schema.  This can be usually accomplished by running the 'make upgrade' command.  However, if upgrading from 0.8.X to 0.8.Y, it should suffice to run 'make install' and restart Apache.  </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="id2915845"></a>Installing the package for the first time</h3></div></div></div>
+<div class="itemizedlist"><ul type="disc">
+<li><p>Make sure you have created the file etc/Site.conf with your configurations (See above).</p></li>
+<li>
+<p>From the top directory in the package, do:</p>
+<pre class="programlisting">%make install [parameters]</pre>
+<p>Possible parameters include:</p>
+<pre class="programlisting">PREFIX=YOUR-PREFIX (default: /usr/local/netdot) 
+APACHEUSER=USER-YOUR-APACHE-RUNS-AS (default: apache)
+APACHEGROUP=GROUP-YOUR-APACHE-RUNS-AS (default: apache)
+</pre>
+</li>
+<li>
+<p>You will then be ready to initialize the database. </p>
+<pre class="programlisting">%make installdb [parameters]</pre>
+<p>Remember you need to set DB_DBA and DB_DBA_PASSWORD to your database's admin username/password in Site.conf before running this command.  Or if you prefer, you can specify the DB_DBA and DB_DBA_PASSWORD values as parameters (DB_DBA and DB_DBA_PASSWORD are used by many functions in Netdot, they will need to be set to the correct value in Site.conf eventually)</p>
+<pre class="programlisting">DB_DBA=DATABASE-ADMIN-ACCOUNT
+DB_DBA_PASSWORD=DATABASE-ADMIN-PASSWORD</pre>
+</li>
+</ul></div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="id2915927"></a>Apache Configuration</h4></div></div></div>
+<p>Edit the supplied Apache config template for either Radius or LDAP,  copy it to
+  your Apache config dir and include it somewhere in your Apache config (e.g.):</p>
+<pre class="programlisting">Include conf/netdot_apache2_&lt;radius|ldap&gt;.conf</pre>
+<p>Alternatively, some Apache environments provide a directory from which files are included automatically when Apache starts.  In that case, it's sufficient to copy the file into that directory, for example:</p>
+<pre class="programlisting"># cp /usr/local/netdot/etc/netdot_apache2_radius.conf /etc/apache2/conf.d/</pre>
+<div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;">
+<h3 class="title">Tip</h3>
+<p>Make sure you use the version of the file that gets copied into your install directory by 'make install'.  This file contains relevant path substitutions based on your chosen install prefix</p>
+</div>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="id2915977"></a>CRON jobs</h4></div></div></div>
+<p>Netdot comes with a few scripts that should be run periodically as cron jobs.</p>
+<div class="itemizedlist"><ul type="disc">
+<li><p>Retrieval of forwarding tables and ARP caches for IP/MAC address tracking</p></li>
+<li><p>Devices should be re-discovered via SNMP frequently to maintain an accurate 
+   list of ports, ip addresses, etc.</p></li>
+<li><p>Rediscovery of network topology</p></li>
+<li><p>Netdot keeps history records for some objects every time they are updated.
+   With time, old history should be deleted from the database to save disk space.</p></li>
+<li><p>Netdot can generate text documentation that is easy to find via simple
+   grepping commands, for example, information about people, locations, 
+   device port assignments, etc.  This documentation should be kept up to
+   date by exporting it frequently.</p></li>
+<li><p>Configurations for external programs can be generated using Netdot data.
+   Current supported programs include: Nagios, Sysmon and Rancid.</p></li>
+<li>
+<p>The netdot.cron file included in the package is a sample crontab containing 
+   recommended periodic jobs.  You should customize it to your liking and copy it to your cron directory, for example:</p>
+<pre class="programlisting"># cp netdot.cron /etc/cron.d/netdot</pre>
+</li>
+</ul></div>
+</div>
+</div>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="id2916061"></a>Operation</h2></div></div></div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="id2916066"></a>Device Management</h3></div></div></div>
+<p>Netdot can discover and maintain an extensive amount of information about network devices.  The easiest way to gather and store this information is by querying the devices using the Simple Network Management Protocol (SNMP).  Devices can be discovered individually, by subnet, or by providing a text file with a list of devices.</p>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="id2916081"></a>Device Discovery using the web UI</h4></div></div></div>
+<p> Go to Management -&gt; Devices.  In the Tasks section, type the hostname or IP address of the device in question, along with the SNMP community and click [discover].  Netdot will then query the device using SNMP and present a window where you can assign an owner entity (for example, your organization), the entity that uses the device (for example, your customer), the location and a contact list.</p>
+<p>If you are discovering a layer 3 device with ip forwarding turned on (such as a router or firewall), Netdot will ask you if you would like to automatically create subnets, based on the IP configuration of the device interfaces.  This is a convenient way to add your subnets to Netdot.</p>
+<p>Another option is to specify whether Netdot should assign any newly created subnets the same owner and user entities assigned to the device.</p>
+<p>Once you click the [update] button, Netdot will show the discovery information and a link to the device page at the button.</p>
+<p>You can always re-discover a device manually by using the [snmp-update] button on the top right corner of the device page. For example, if you have added a new port adapter, new interface cards, or if the device has been replaced with a different unit. </p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="id2916132"></a>Device discovery using the command line interface (CLI)</h4></div></div></div>
+<p>For brevity, let's assume you are located at the Netdot installation prefix, for example, /usr/local/netdot.</p>
+<p>You can discover a single device by executing:</p>
+<pre class="programlisting">bin/updatedevices.pl -H &lt;device-name&gt; -I -c &lt;community&gt;</pre>
+<p>You can also try discovering a whole subnet like this:</p>
+<pre class="programlisting">bin/updatedevices.pl -B 192.168.1.0/24 -I -c &lt;community&gt;</pre>
+<p>In addition, you can give Netdot a specific list of devices you would like to discover:</p>
+<pre class="programlisting">bin/updatedevices.pl -F &lt;text-file&gt; -I -c &lt;community&gt;</pre>
+<p>The file should contain a list of devices and their communities, separated by spaces, one device/community per line, for example:</p>
+<pre class="programlisting">device1 community1
+device2 community1
+device3 community2
+...</pre>
+<p>Netdot can retrieve ARP caches and bridge forwarding tables.  You will probably want to fetch ARP caches from your layer 3 devices (i.e. routers and firewalls), and forwarding tables from your layer 2 devices (switches).  Examples:</p>
+<pre class="programlisting">bin/updatedevices.pl -H &lt;router&gt; -A -c &lt;community&gt;</pre>
+<pre class="programlisting">bin/updatedevices.pl -H &lt;switch&gt; -F -c &lt;community&gt;</pre>
+<p>Netdot can also try to discover the network topology.  For that, you need to run:</p>
+<pre class="programlisting">bin/updatedevices.pl -T</pre>
+<p>Ideally, once you have discovered all your devices, you should combine all this functionality and have it run periodically via CRON.   A sample crontab entry would be:</p>
+<pre class="programlisting">0 * * * * root /usr/local/netdot/bin/updatedevices.pl -I -A -F -T</pre>
+<p>You will find some examples of cron jobs in the file named <span class="italic">netdot.cron</span></p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="id2916248"></a>Device Documentation</h4></div></div></div>
+<p>Once you have created a device, you can go ahead and add more information about it. </p>
+<p>Going to Management -&gt; Devices  you can search a device based on its name, IP or MAC address.  </p>
+<p>From the device page, you can navigate to the different sub-sections depending on the information you want to edit.  </p>
+<p> <span class="underline">Interfaces</span>:  Here you can edit interface descriptions, assign network jacks, etc. by clicking on the [edit] button.  You can also edit a specific interface by clicking on its number or on its name. If you are running topology discovery, you will probably see neighbor information.  If for some reason the topology discovery process cannot dectect a neighbor, you can add it manually by clicking on the [add] button in the neighbor column.  </p>
+<p>Manually adding a neighbor sets the "Neighbor Fixed" flag in the Interface object.  This flag prevents the topology discovery process from removing the neighbor relationship.</p>
+<div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;">
+<h3 class="title">Tip</h3>
+<p>Neighbor relationships tend to change frequently as hardware is replaced and connections are moved.  Therefore, fixed neighbor settings can become out of date pretty soon.  It is preferable to let the topology discovery process maintain neighbor relationships.</p>
+</div>
+</div>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="id2916550"></a>IP Address Space</h3></div></div></div>
+<p>Netdot is a useful tool for IP address space management (referred to as <span class="italic">IPAM</span> these days).  Some key features are:</p>
+<div class="itemizedlist"><ul type="disc">
+<li><p>Address space is hierarchically organized through the use of a fast binary tree algorithm, which is the same technique used by routers for doing route lookups.</p></li>
+<li><p>New subnets can be automatically created based on the interface  information retrieved from routers and firewalls.  </p></li>
+<li><p>Easy visualization of used vs. available address space for easier allocations</p></li>
+</ul></div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h4 class="title">
+<a name="id2916594"></a>IP blocks</h4></div></div></div>
+<p>IP objects are called IP blocks.  These objects can represent individual end-node addresses, as well as groups of addresses.  The distinguishing characteristic is the prefix attribute.  For example, an IPv4 block with a 32 bit prefix is an end-node address, while a block with a 24 prefix represents a group of 254 end-node addresses.</p>
+<p>Each address or block has a corresponding status.  Let's see those in detail.</p>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h5 class="title">
+<a name="id2916613"></a>IP block Status</h5></div></div></div>
+<p>IP objects are assigned a status to better represent their nature.  Depending on whether the IP is an end address or a block, different status values can be assigned.</p>
+<p>The status of an end-node address can be one of:</p>
+<div class="itemizedlist"><ul type="disc">
+<li><p><span class="underline">Static</span>: These are addresses that have been statically assigned to hosts or device interfaces.  </p></li>
+<li><p><span class="underline">Dynamic</span>: Addresses that belong to a DHCP pool</p></li>
+<li><p><span class="underline">Discovered</span>: Addresses that have not been assigned as static or dynamic, but have been seen on the network (as part of ARP entries, for example).</p></li>
+<li><p><span class="underline">Reserved</span>: Addresses that should not be assigned</p></li>
+</ul></div>
+<p>On the other hand, the the status of an IP block can be one of:</p>
+<div class="itemizedlist"><ul type="disc">
+<li>
+<p><span class="underline">Container</span>: This kind of block is meant to group or contain other blocks, such as Subnet blocks or other Container blocks.  For example, let's say your whole IPv4 address space is 192.168.0.0/16.  You also have partitioned this space into two /17 blocks, and from these blocks, you allocate subnets that you configure in your routers.  In this case, you would have:</p>
+<pre class="programlisting">192.168.0.0/16 -&gt; Container
+    192.168.0.0/17  -&gt; Container
+        192.168.0.1/24 -&gt; Subnet
+        192.168.0.2/24 -&gt; Subnet
+    192.168.128.0/17 -&gt; Container
+        192.168.128.10/24 -&gt; Subnet
+        192.168.128.20/24 -&gt; Subnet</pre>
+</li>
+<li><p><span class="underline">Subnet</span>: This kind of block is meant to represent actual subnets that are configured on the interfaces of your layer 3 devices such as routers or firewalls.  Subnets usually contain the end-node addresses that you assign to your users.</p></li>
+<li><p><span class="underline">Reserved</span>: Similarly to reserved addresses, reserved blocks are not supposed to be allocated for whatever reason.</p></li>
+</ul></div>
+</div>
+</div>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="id2916755"></a>DNS</h3></div></div></div>
+<p>Support for DNS records will be available starting with release 0.9</p>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="id2916766"></a>DHCP</h3></div></div></div>
+<p>DHCP integration will be available starting with release 0.9</p>
+</div>
+<div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title">
+<a name="id2916777"></a>Contact Information</h3></div></div></div></div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="id2916783"></a>Cable Plant</h3></div></div></div>
+<p></p>
+</div>
+<div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title">
+<a name="id2916792"></a>Advanced DB operations</h3></div></div></div></div>
+<div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title">
+<a name="id2916798"></a>Reports</h3></div></div></div></div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="id2916805"></a>Exporting Configurations for External Programs</h3></div></div></div>
+<p>You can use the exporter tool to generate text files that can be used as configurations for third-party tools and programs.</p>
+<p>The exporter tool is available in the web UI, under the "Export" tab.  Simply select one or more programs and click on the [submit] button.  Netdot will show some output from the exporter tool, including the paths to the new files.</p>
+<p>Additionally, the exporter can be called from the command line.  For example, to generate Nagios configurations:</p>
+<pre class="programlisting">bin/exporter.pl -t Nagios</pre>
+<p>Or you can export several in one call:</p>
+<pre class="programlisting">bin/exporter.pl -t Nagios,Sysmon,Rancid</pre>
+<p>There are specific export parameters for each of these which you can customize by editing your Site.conf file.</p>
+</div>
+</div>
+</div></body>
+</html>
