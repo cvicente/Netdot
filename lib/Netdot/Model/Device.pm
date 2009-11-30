@@ -4800,7 +4800,7 @@ sub _update_interfaces {
     ##############################################################
     # Update A records for each IP address
     
-    if ( $self->config->get('UPDATE_DEVICE_IP_NAMES') ){
+    if ( $self->config->get('UPDATE_DEVICE_IP_NAMES') && $self->auto_dns ){
 	
 	# Get addresses that the main Device name resolves to
 	my @hostnameips;

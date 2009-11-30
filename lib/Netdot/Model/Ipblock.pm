@@ -1635,7 +1635,7 @@ sub subnet_usage {
 =head2 update_a_records -  Update DNS A record(s) for this ip 
 
     Creates or updates DNS records based on the output of configured plugin,
-    which can, for example, derive the names based on device/interface information.
+    which can, for example, derive the names from device/interface information.
     
   Arguments:
     Hash with following keys:
@@ -1662,14 +1662,28 @@ sub update_a_records {
 	$self->throw_fatal(sprintf('update_a_records: Address %s not associated with any Device'), 
 			   $self->address);
     } 
+
+    unless ( $self->interface->auto_dns ){
+	$logger->debug(sprintf("Interface %s configured for no auto DNS", 
+			      $self->interface->get_label));
+	return;
+    }
+    
     my $device = $self->interface->device;
+    my $host = $device->fqdn;
     
     # This shouldn't happen
     $self->throw_fatal( sprintf("update_a_records: Device id %d is missing its name!", $device->id) )
 	unless $device->name;
 
-    my $zone   = $device->name->zone;
-    my $host   = $device->fqdn;
+    # Only generate names for IP blocks that are mapped to a zone
+    my $zone;
+    unless ( $zone = $self->forward_zone ){
+	$logger->debug(sprintf("%s: Cannot determine DNS zone for IP: %s", 
+			       $host, $self->get_label));
+	return;
+	
+    }
 
     # Determine what DNS name this IP will have.
     # We delegate this logic to an external plugin to
