@@ -79,15 +79,7 @@ sub keyword_search {
                 map { $r->{$_->id} = $_ } @r;
             }
 	}else{
-            my @r = $table->search(name=>$terms[0]);
-            map { $r->{$_->id} = $_ } @r;
-            if ( !(scalar (keys %$r)) ){
-                @r = $table->search_like(name=>$terms[0]);
-                map { $r->{$_->id} = $_ } @r;
-            }
-            if ( !(scalar (keys %$r)) ){
-                $r = $ui->select_query(table => $table, terms => \@terms);
-            }
+	    $r = $ui->select_query(table => $table, terms => \@terms);
 	}
     }
     
