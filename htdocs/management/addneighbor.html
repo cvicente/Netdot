@@ -75,7 +75,7 @@ $m->clear_buffer;
 <%perl>
 
 if ( $Add ){
-    if ( !$neighbor ){
+    if ( !(defined $neighbor) ){  # note neighbor of 0 passes, not sure if this matters
 	$m->comp('/generic/error.mhtml', error=>"Missing neighbor value!");
     }
     if ( int($intobj->neighbor) == $neighbor ){

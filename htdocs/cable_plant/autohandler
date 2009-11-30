@@ -171,7 +171,7 @@ if( !$showheader ) {
 </%doc>
                 <p>
                 <label for="search">Site:</label>
-                <select name="id" id="site_id" onChange="jsrsSendqueryTB('Floor', floor_id, site_id.value, 'site'); jsrsResetSelection('room_id'); jsrsResetSelection('closet_id'); jsrsResetSelection('jack_id')">
+                <select name="id" id="site_id" onChange="jsrsSendqueryTB('Floor', floor_id.name, site_id.value, 'site'); jsrsResetSelection('room_id'); jsrsResetSelection('closet_id'); jsrsResetSelection('jack_id')">
                     <option value="0">-- Select --</option>
                     <%perl>
                     foreach my $site (@sites) {
@@ -188,7 +188,7 @@ if( !$showheader ) {
 
                 <p>
                 <label for="search">Floor:</label>
-                <select name="floor_id" id="floor_id" onChange="jsrsSendqueryTB('Room', room_id, floor_id.value, 'floor'); jsrsSendqueryTB('Closet', closet_id, floor_id.value, 'floor'); jsrsResetSelection('jack_id')">
+                <select name="floor_id" id="floor_id" onChange="jsrsSendqueryTB('Room', room_id.name, floor_id.value, 'floor'); jsrsSendqueryTB('Closet', closet_id.name, floor_id.value, 'floor'); jsrsResetSelection('jack_id')">
                 </select>
                 </p>
 
@@ -199,7 +199,7 @@ if( !$showheader ) {
  
                 <p>
                 <label for="search">Room: </label>
-                <select name="room_id" id="room_id" onChange="jsrsSendqueryTB('HorizontalCable', jack_id, room_id.value, 'room')">
+                <select name="room_id" id="room_id" onChange="jsrsSendqueryTB('HorizontalCable', jack_id.name, room_id.value, 'room')">
                </select>
  
 <%doc>
@@ -208,7 +208,7 @@ if( !$showheader ) {
 </%doc>
 
                 or Closet:
-                <select name="closet_id" id="closet_id" onChange="jsrsSendqueryTB('HorizontalCable', jack_id, closet_id.value, 'closet')">
+                <select name="closet_id" id="closet_id" onChange="jsrsSendqueryTB('HorizontalCable', jack_id.name, closet_id.value, 'closet')">
                 </select>
                 </p>
 
@@ -272,7 +272,7 @@ if( !$showheader ) {
  it was named "id", id.value returned an undefined value. not quite sure why this is, maybe
  javascript doens\'t allow fields to be named "id"?
 </%doc>
-                <select name="id" id="site_id" onChange="jsrsSendqueryTB('Floor', floor_id, site_id.value, 'site')">
+                <select name="id" id="site_id" onChange="jsrsSendqueryTB('Floor', floor_id.name, site_id.value, 'site')">
                     <option value="0">-- Select --</option>
                     <%perl>
                     foreach my $site ( @closet_sites ) {
@@ -284,7 +284,7 @@ if( !$showheader ) {
 
                 <p>
                 <label for="search">Floor:</label>
-                <select name="floor_id" id="floor_id" onChange="jsrsSendqueryTB('Closet', closet_id, floor_id.value, 'floor');">
+                <select name="floor_id" id="floor_id" onChange="jsrsSendqueryTB('Closet', closet_id.name, floor_id.value, 'floor');">
                 </select>
                 </p>
 

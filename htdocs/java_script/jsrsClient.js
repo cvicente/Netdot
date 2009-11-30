@@ -200,9 +200,6 @@ function contextGetPayload(){
     case 'IE':
       return this.container.document.forms['jsrs_Form']['jsrs_Payload'].value;
     case 'MOZ':
-	//alert("start");
-	//alert(window.frames[this.container.name].document.forms['jsrs_Form']['jsrs_Payload']==null); //false
-	//alert(window.frames[this.container.name].document.forms['jsrs_Form']['jsrs_Payload'].value);
       return window.frames[this.container.name].document.forms['jsrs_Form']['jsrs_Payload'].value; 
     case 'OPR':
       var textElement = window.frames[this.container.name].document.getElementById("jsrs_Payload");
