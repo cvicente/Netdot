@@ -196,7 +196,10 @@ function showVlan(){
     
     if ( exists $intinfo{jack} || $editints ){
         push @headers, '<a href="user_device.html?id=' . $id .'&ifsort=jack">Jack(cable)</a>';
-        @closet_jacks = $o->closet->horizontalcables if ( int($o->closet) != 0 );
+	my @closets = $o->room->closets if ( int($o->room) != 0 );
+	foreach my $cl (@closets) {
+	    push @closet_jacks, $cl->horizontalcables;
+	}
     }
     if ( exists $intinfo{room_char} || $editints ){
         push @headers, 'Room';
