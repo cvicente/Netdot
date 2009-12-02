@@ -1692,7 +1692,7 @@ sub update_a_records {
 
     my @arecords = $self->arecords;
 
-    my %rrstate = (name=>$name, zone=>$zone);
+    my %rrstate = (name=>$name, zone=>$zone, auto_update=>1);
 
     if ( ! @arecords  ){
 	# No A records exist for this IP yet.

@@ -83,56 +83,59 @@ sub get_name {
 	    my $vlan = $ip->parent->vlan;
 	    $name = 'vl-'.$vlan->vid."-gw";
 	}else{
-	    # No vlan, so use the subnet address
-	    $name = "net-".$ip->parent->address."-gw";
-	    $name =~ s/\./-/g;
+	    $name = $self->get_name_from_interface($ip);
 	}
     }else{
-	# Use interface name
-	$logger->debug("Plugins::DeviceIpNamesByInt::get_name: $ipaddr: Using Interface name");
-	$name = $ip->interface->name;
-    
-	foreach my $pat ( sort keys %ABBR ){
-	    my $conv = $ABBR{$pat};
-	    if ( $name =~ /^$pat/ ){
-		$logger->debug("Plugins::DeviceIpNamesByInt::get_name: $ipaddr: $name matches: $pat");
-		if ( $conv eq '$1' ){
-		    $conv = $1;
-		}
-		$name =~ s/$pat/$conv/i;
-		last;
-	    }else{
-		$logger->debug("Plugins::DeviceIpNamesByInt::get_name: $ipaddr: '$name' does not match '$pat'");
-	    }
-	}
-	$name =~ s/\/|\.|:|_|\s+/-/g;
-	$name =~ s/\'//g;
-	$name = lc( $name );
-
-	# Append device name
-	# Remove any possible prefixes added
-	# e.g. loopback0.devicename -> devicename
-	my $devname = $ip->interface->device->short_name;
-	$devname =~ s/^.*\.(.*)/$1/;
-	
-	if ( (my @ips = $ip->interface->ips) > 1  ){
-	    foreach my $i ( @ips ){
-		next if $i->id == $ip->id;
-		foreach my $a ( $i->arecords ){
-		    if ( $a->rr->name eq "$name.$devname" ){
-			$name .= "-".$ip->address;
-			$name =~ s/\./-/g;
-			last;
-		    }
-		}
-	    }
-	}
-	$name .= ".".$devname ;
+	$name = $self->get_name_from_interface($ip);
     }
-    
     $logger->debug("Plugins::DeviceIpNamesByInt::get_name: $ipaddr: Generated name: $name");
     return $name;
 }
+
+sub get_name_from_interface {
+    my ($self, $ip) = @_;
+    my $ipaddr = $ip->address;
+    $logger->debug("Plugins::DeviceIpNamesByInt::get_name_from_interface: $ipaddr: Using Interface name");
+    my $name = $ip->interface->name;
+    
+    foreach my $pat ( sort keys %ABBR ){
+	my $conv = $ABBR{$pat};
+	if ( $name =~ /^$pat/ ){
+	    $logger->debug("Plugins::DeviceIpNamesByInt::get_name_from_interface: $ipaddr: $name matches: $pat");
+	    if ( $conv eq '$1' ){
+		$conv = $1;
+	    }
+	    $name =~ s/$pat/$conv/i;
+	    last;
+	}
+    }
+    $name =~ s/\/|\.|:|_|\s+/-/g;
+    $name =~ s/\'//g;
+    $name = lc( $name );
+    
+    # Append device name
+    # Remove any possible prefixes added
+    # e.g. loopback0.devicename -> devicename
+    my $devname = $ip->interface->device->short_name;
+    $devname =~ s/^.*\.(.*)/$1/;
+    
+    if ( (my @ips = $ip->interface->ips) > 1  ){
+	foreach my $i ( @ips ){
+	    next if $i->id == $ip->id;
+	    foreach my $a ( $i->arecords ){
+		if ( $a->rr->name eq "$name.$devname" ){
+		    $name .= "-".$ip->address;
+		    $name =~ s/\./-/g;
+		    last;
+		}
+	    }
+	}
+    }
+    $name .= ".".$devname ;
+
+    return $name;
+}
+
 
 =head1 AUTHORS
 
