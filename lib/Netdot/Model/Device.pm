@@ -921,7 +921,6 @@ sub get_snmp_info {
 		    if ( my $mask = $hashes{'ip_netmask'}->{$ip} ){
 			$dev{interface}{$iid}{ips}{$ip}{mask} = $mask;
 		    }
-		    last;
 		}
 	    }
 	}
