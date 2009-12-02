@@ -118,19 +118,6 @@ sub get_name_from_interface {
     # e.g. loopback0.devicename -> devicename
     my $devname = $ip->interface->device->short_name;
     $devname =~ s/^.*\.(.*)/$1/;
-    
-    if ( (my @ips = $ip->interface->ips) > 1  ){
-	foreach my $i ( @ips ){
-	    next if $i->id == $ip->id;
-	    foreach my $a ( $i->arecords ){
-		if ( $a->rr->name eq "$name.$devname" ){
-		    $name .= "-".$ip->address;
-		    $name =~ s/\./-/g;
-		    last;
-		}
-	    }
-	}
-    }
     $name .= ".".$devname ;
 
     return $name;
