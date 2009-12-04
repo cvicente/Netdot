@@ -82,6 +82,10 @@ installdeps-apt-get:
 	@echo "Installing required Perl modules with apt-get"
 	$(PERL) bin/perldeps.pl apt-get-install
 
+installdeps-rpm:
+	@echo "Installing required Perl modules with yum"
+	$(PERL) bin/perldeps.pl rpm-install
+
 test:
 	prove -r
 
