@@ -131,7 +131,7 @@ sub print_zone_to_file {
     }
     my $path = "$dir/$filename";
     my $fh = $self->open_and_lock($path);
-    $zone->_update_serial();
+    $zone->update_serial();
 
     # Print the default TTL
     print $fh '$TTL '.$zone->default_ttl."\n" if (defined $zone->default_ttl);
