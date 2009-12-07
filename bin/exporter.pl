@@ -58,10 +58,14 @@ $logger->add_appender($logscr);
 my $dns_logger = Netdot->log->get_logger('Netdot::Model::DNS');
 $dns_logger->add_appender($logscr);
 
+my $dhcp_logger = Netdot->log->get_logger('Netdot::Model::DHCP');
+$dhcp_logger->add_appender($logscr);
+
 # Notice that $DEBUG is imported from Log::Log4perl
 if ( $self{debug} ){
     $logger->level($DEBUG);
     $dns_logger->level($DEBUG);
+    $dhcp_logger->level($DEBUG);
 }
 
 foreach my $type ( split ',', $self{types} ){

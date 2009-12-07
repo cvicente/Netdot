@@ -4,7 +4,7 @@ use base 'Netdot::Model';
 use warnings;
 use strict;
 
-my $logger = Netdot->log->get_logger('Netdot::Model');
+my $logger = Netdot->log->get_logger('Netdot::Model::DHCP');
 
 =head1 NAME
 
