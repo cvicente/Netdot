@@ -51,13 +51,18 @@ if ( $self{help} ) {
 
 defined $self{types} || die "Error: Missing required argument: types (-t)\n";
 
-my $logger = Netdot->log->get_logger('Netdot::Exporter');
 my $logscr = Netdot::Util::Log->new_appender('Screen', stderr=>0);
+my $logger = Netdot->log->get_logger('Netdot::Exporter');
 $logger->add_appender($logscr);
 
+my $dns_logger = Netdot->log->get_logger('Netdot::Model::DNS');
+$dns_logger->add_appender($logscr);
+
 # Notice that $DEBUG is imported from Log::Log4perl
-$logger->level($DEBUG) 
-    if ( $self{debug} ); 
+if ( $self{debug} ){
+    $logger->level($DEBUG);
+    $dns_logger->level($DEBUG);
+}
 
 foreach my $type ( split ',', $self{types} ){
     $type =~ s/\s+//g;

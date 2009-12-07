@@ -110,11 +110,23 @@ my @communities = split ',', $commstrs if defined $commstrs;
 map { $_ =~ s/\s+// } @communities;
 
 # Add a log appender 
-my $logger = Netdot->log->get_logger('Netdot::Model::Device');
 my $logscr = Netdot::Util::Log->new_appender('Screen', stderr=>0);
-$logger->add_appender($logscr);
-$logger->level($DEBUG) if ( $_DEBUG ); # Notice that $DEBUG is imported from Log::Log4perl
 
+# Associate new screen appender with relevant loggers
+my $logger = Netdot->log->get_logger('Netdot::Model::Device');
+$logger->add_appender($logscr);
+
+my $dns_logger = Netdot->log->get_logger('Netdot::Model::DNS');
+$dns_logger->add_appender($logscr);
+
+my $ip_logger = Netdot->log->get_logger('Netdot::Model::Ipblock');
+$ip_logger->add_appender($logscr);
+
+if ( $_DEBUG ){
+    $logger->level($DEBUG);
+    $dns_logger->level($DEBUG); 
+    $ip_logger->level($DEBUG); 
+}
 
 $logger->warn("Warning: Pretend (-p) flag enabled.  Changes will not be committed to the DB")
     if ( $PRETEND );
