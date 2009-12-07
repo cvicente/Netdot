@@ -165,7 +165,7 @@ sub insert {
 
     my $newzone = $class->SUPER::insert( \%state );
 
-    $newzone->_update_serial();
+    $newzone->update_serial();
 
     return $newzone;
 }
@@ -228,6 +228,65 @@ sub soa_string{
 	);
     return $soa->string;
 }
+
+#########################################################################
+=head2 update_serial - Update zone serial number based on configured format
+
+    Netdot will initialize and update the Zone's SOA serial number 
+    differently depending on ZONE_SERIAL_FORMAT config option. 
+    Valid values are:
+
+    'dateserial'  e.g. 2009050500
+    'epoch'       e.g. 1241562763 (Unix epoch)
+    'plain'       e.g. 123
+
+  Args: 
+    None
+  Returns: 
+    return value from update method
+  Examples:
+    $zone->update_serial();
+
+=cut
+sub update_serial {
+    my ($self, $argv) = @_;
+    $self->isa_object_method('update_serial');
+
+    my $serial = $self->serial;
+
+    my $format = Netdot->config->get('ZONE_SERIAL_FORMAT') || 'dateserial';
+
+    if ( $format eq 'dateserial' ){
+	# If current serial is from today, increment
+	# the counter.  Otherwise, use today's date and 00.
+	my $date   = $self->_dateserial();
+	if ( $serial =~ /$date(\d{2})/ ){
+	    my $counter = $1;
+	    if ( $counter < 99 ){
+		# we can't let the number have three digits because 
+		# it would be higher than 2^32-1
+		my $inc = sprintf("%02d", $counter+1);
+		$serial = $date . $inc;
+	    }else{
+		$logger->warn("Zone::update_serial: zone ".$self->get_label ." serial reached max counter per day!");
+		return;
+	    }
+	}else{
+	    $serial = $date . '00';
+	}
+    }elsif ( $format eq 'epoch' ){
+	$serial = time;
+
+    }elsif ( $format eq 'plain' ){
+	$serial++;
+    }else{
+	$self->throw_fatal("Unrecognized value for ZONE_SERIAL_FORMAT in config file");
+    }
+    
+    return $self->update({serial=>$serial});
+}
+
+
 
 ############################################################################
 =head2 get_all_records - Get all records for export
@@ -682,49 +741,6 @@ sub _dateserial {
     my $date = sprintf("%04d%02d%02d", $year+1900, $month+1, $day_of_month);
     return $date;
 }
-
-#########################################################################
-# _update_serial
-#
-#  Args: 
-#     None
-#   Returns: 
-#     Zone object
-#   Examples:
-#     Zone->_update_serial();
-#
-# 
-sub _update_serial {
-    my ($self, $argv) = @_;
-    $self->isa_object_method('_update_serial');
-
-    my $serial = $self->serial;
-
-    my $format = Netdot->config->get('ZONE_SERIAL_FORMAT') || 'dateserial';
-
-    if ( $format eq 'dateserial' ){
-	# If current serial is from today, increment
-	# the counter.  Otherwise, use today's date and 00.
-	my $date   = $self->_dateserial();
-	if ( $serial =~ /$date(\d{2})/ ){
-	    my $inc = sprintf("%02d", $1+1);
-	    $serial = $date . $inc;
-	}else{
-	    $serial = $date . '00';
-	}
-    }elsif ( $format eq 'epoch' ){
-	$serial = time;
-
-    }elsif ( $format eq 'plain' ){
-	$serial++;
-    }else{
-	$self->throw_fatal("Unrecognized value for ZONE_SERIAL_FORMAT in config file");
-    }
-    
-    return $self->update({serial=>$serial});
-}
-
-
 
 ############################################################################
 # _fix_child_names
