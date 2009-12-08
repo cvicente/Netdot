@@ -5,7 +5,7 @@
 </%doc>
 %
 <%attr>
-title        => 'Host Tasks' 
+title => 'Host Tasks' 
 </%attr>
 %
 %
@@ -93,7 +93,7 @@ if ( exists $ao->{Zone} ){
     <fieldset class="small">
         <legend>Search</legend>
         <form action="hostinfo_tasks.html" method="POST">
-        <label for="Find">Host:</label>
+        <label for="Find">Name/IP/MAC:</label>
         <input type="text" name="search" class="longtxt" value="<% $search %>"> 
         </form>
     </fieldset>
@@ -165,32 +165,35 @@ if ( $show_block_records ){
 }elsif ( $search ){
     $search =~ s/^\s*(.*)\s*$/$1/g;
     my @list;
-    if ( $search =~ /$MAC/ ){
-	my @macs = PhysAddr->search(address=>$search);
-	foreach my $mac ( @macs ){
-	    if ( my @dhcp_hosts = $mac->dhcp_hosts ){
-		foreach my $host ( @dhcp_hosts ){
-		    push @list, $host->ipblock;
-		}
+    my @allrecords;
+    foreach my $ipblock ( @ipblocks ){
+	if ( my $zone = $ipblock->forward_zone ){
+	    my $records = $zone->get_hosts($ipblock->id);
+	    push @allrecords, @$records;
+	}
+    
+    }
+    # Allrecords contains arrayrefs containing:
+    # rr.id, rr.name, ip.id, ip.address, ip.version, physaddr.id, physaddr.address
+    
+    foreach my $row ( @allrecords ){
+	my ($rrid, $rrname, $ipid, $ipaddr, $ipver, undef, $physaddr) = @$row;
+	if ( $rrname =~ /$search/i ){
+	    push @list, RR->retrieve($rrid);
+	}elsif ( $physaddr =~ /$search/i ){
+	    push @list, RR->retrieve($rrid);
+	}elsif ( $ipaddr && $ipver ){
+	    my $ip = Ipblock->int2ip($ipaddr, $ipver);
+	    if ( $ip =~ /$search/i ){
+		push @list, RR->retrieve($rrid);
 	    }
 	}
-    }elsif ( $search =~ /$IPV4|$IPV6/ ){
-	@list = Ipblock->search(address=>$search);
-    }else{
-	@list = RR->search_like(name=>$search);
     }
     # Display search results
     if ( @list ){
 	if ( scalar @list == 1 ){
 	    my $obj = $list[0];
-	    my $class = $obj->short_class;
-	    if ( $class eq 'RR' ){
-		$m->comp('/management/host.html', id=>$obj->id);
-	    }elsif ( $class eq 'Ipblock' ){
-		$m->comp('/management/ip.html', id=>$obj->id);
-	    }elsif ( $class eq 'PhysAddr' ){
-		$m->comp('/management/mac.html', id=>$obj->id);
-	    } 
+	    $m->comp('/management/host.html', id=>$obj->id);
 	}else{
 	    print '<div class="container">';
 	    print '<div class="containerhead">';
