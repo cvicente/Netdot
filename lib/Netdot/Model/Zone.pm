@@ -215,17 +215,15 @@ sub soa_string{
     my $self = shift;
     $self->isa_object_method('soa_string');
 
-    my $soa = Net::DNS::RR->new(
-	type        => 'SOA',
-	name        => $self->name,
-	mname       => $self->mname,
-	rname       => $self->rname,
-	serial      => $self->serial,
-	refresh     => $self->refresh,
-	retry       => $self->retry,
-	expire      => $self->expire,
-	minimum     => $self->minimum,
-	);
+    my %args = (type=>'SOA');
+    my @fields = qw(name mname rname serial refresh retry expire minimum);
+    foreach my $field ( @fields ){
+	$self->throw_user($self->get_label. ": Missing required field: '$field' in the SOA record")
+	    unless (defined $self->$field && $self->$field ne "");
+	$args{$field} = $self->$field;
+    }
+
+    my $soa = Net::DNS::RR->new(%args);
     return $soa->string;
 }
 
