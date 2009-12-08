@@ -292,15 +292,19 @@ foreach my $o ( values %rrs ) {
     }
     print '</div>';
 
-    $ui->add_to_fields(edit=>$edit, o=>$o, fields=>['name', 'zone', 'expiration', 'active', 'auto_update'],
+    $ui->add_to_fields(edit=>$edit, o=>$o, fields=>['name', 'zone', 'expiration', 'active'],
 		       field_headers=>\@field_headers, cell_data=>\@cell_data,
 		       linkpages=>['', 'zone.html', '']);
 
-    if ( my $device = ($o->devices)[0] ){
-	push @field_headers, 'Device:';
-	push @cell_data, '<a href="device.html?id='.$device.'">'.$device->get_label.'</a>';
+    if ( $manager && $manager->can($user, "access_section", 'host.html:auto_update') ){
+	if ( my $device = ($o->devices)[0] ){
+	    push @field_headers, 'Device:';
+	    push @cell_data, '<a href="device.html?id='.$device.'">'.$device->get_label.'</a>';
+	}
+	$ui->add_to_fields(edit=>$edit, o=>$o, fields=>['auto_update'],
+			   field_headers=>\@field_headers, cell_data=>\@cell_data,
+	    );
     }
-
 
     $m->comp('/generic/attribute_table.mhtml', %comphash, width=>2);
     (@field_headers, @cell_data) = ((),());
@@ -409,14 +413,12 @@ foreach my $o ( values %rrs ) {
 		# Show the MAC address
 		my $phys = $scope->physaddr();
 		push @field_headers, ('Ethernet: ');
+		push( @cell_data, '<a href="mac.html?id='.$phys.'">'.$phys->address.'</a>' );
 		if ( $edit ){
-		    push( @cell_data, '<input name="DhcpScope__'.$scope.'__physaddr" value="'.$phys->address.'" type="text">' );
 		    push @field_headers, 'Delete';
 		    push @cell_data, '<input type="checkbox" name="DhcpScope__'.$scope.'__DELETE">';
-		}else{
-		    push( @cell_data, '<a href="mac.html?id='.$phys.'">'.$phys->address.'</a>' );
 		}
-	    
+
 		$m->comp('/generic/attribute_table.mhtml', %comphash, width=>2);
 		(@field_headers, @cell_data) = ((),());
 
