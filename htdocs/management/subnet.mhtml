@@ -5,6 +5,7 @@
 
 <%args>
 $network
+$user    => $ui->get_current_user($r)
 </%args>
 
 <%init>
@@ -15,6 +16,7 @@ my %iplinks;
 my @children; 
 my $dbh = Netdot::Model->db_Main();
 my $id = $network->id;
+my $manager = $ui->get_permission_manager($r);
 </%init>
 
 <%perl>
@@ -128,8 +130,16 @@ for( my $i=0; $i<(($net->num()+1)/$cols); $i++ ) {
 	    $ipaddr = '<a href="ip.html?id='.$iplinks{$net->numeric}.'" class="ipaddr">'.$ipaddr.'</a>';
 	    $ipaddr = '<div class="'.$divclass.'" title="'.$divtitle.'" width="100%">'.$ipaddr.'</div>';
 	} else {
-	    # link this address to the "Add" section in ip.html
-	    $ipaddr = '<div class="ipaddr_available"><a href="ip.html?add_block_prefix='.$net->addr().'%2F32&_action=ADD_BLOCK" class="ipaddr">'.$ipaddr.'</a></div>';
+	    # Unprivileged users cannot select new IPs to create.
+	    # We want them to use automatic allocation, so that ip addresses are always assigned
+	    # sequentially.  This allows for easier subnet size reduction if address space is underutilized.
+	    if ( $manager && $manager->can($user, "access_section", 'subnet.mhtml:add_block_prefix') ){
+		# link this address to the "Add" section in ip.html
+		$ipaddr = '<div class="ipaddr_available"><a href="ip.html?add_block_prefix='.$net->addr().'%2F32&_action=ADD_BLOCK" class="ipaddr">'.$ipaddr.'</a></div>';
+	    }else{
+		$ipaddr = '<div class="ipaddr_available">'.$ipaddr.'</div>';
+	    }
+
 	}
 
 	push( @row, $ipaddr );

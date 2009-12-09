@@ -489,7 +489,7 @@ sub add_host {
 		unless ( $subnet = ($argv{block}->dhcp_scopes)[0] ){
 		    $class->throw_user("Subnet ".$argv{block}->get_label." not dhcp-enabled (no Subnet scope found).");
 		}
-		$global = $subnet->container;
+		$global = $subnet->get_global;
 		my $host;
 		if ( $host = DhcpScope->search(name=>$argv{address})->first ){
 		    $class->throw_user("A DHCP scope for host $argv{address} already exists!");

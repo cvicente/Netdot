@@ -83,34 +83,48 @@ sub denies(){
 		}
 	    }
 	    return 1;
+	}elsif ( $otype eq 'Ipblock' ){
+	    return &deny_ip_access($action, $access, $object);
+
+	}elsif ( $otype eq 'IpblockAttr' ){
+	    # IP attributes match subnet permissions
+	    # Notice that users need to edit/delete attributes, even though
+	    # they can only view IP addresses
+	    my $ipblock = $object->ipblock;
+	    my $parent;
+	    if ( int($parent = $ipblock->parent) != 0 ){
+		if ( exists $access->{'Ipblock'} && 
+		     exists $access->{'Ipblock'}->{$parent->id} ){
+		    return &_deny_action_access($action, $access->{'Ipblock'}->{$parent->id});
+		}
+	    }
 	}elsif ( $otype eq 'PhysAddr' ){
 	    # Grant view access to physaddr if it has a dhcp scope in an allowed subnet
 	    if ( my @scopes = $object->dhcp_hosts ){
 		foreach my $scope ( @scopes ){
 		    if ( int($scope->ipblock) != 0 ){
 			my $ipb = $scope->ipblock;
-			my $parent = $ipb->parent;
-			if ( exists $access->{'Ipblock'} && 
-			     exists $access->{'Ipblock'}->{$parent->id} ){
-			    if ( $action eq 'view' ){
-				return &_deny_action_access($action, $access->{'Ipblock'}->{$parent->id});
+			return 0 if ( !&deny_ip_access($action, $access, $ipb) );
+		    }
+		}
+	    }
+	    return 1;
+	}elsif ( $otype eq 'PhysAddrAttr' ){
+	    if ( my @scopes = $object->dhcp_hosts ){
+		foreach my $scope ( @scopes ){
+		    if ( int($scope->ipblock) != 0 ){
+			my $ipblock = $scope->ipblock;
+			my $parent;
+			if ( int($parent = $ipblock->parent) != 0 ){
+			    if ( exists $access->{'Ipblock'} && 
+				 exists $access->{'Ipblock'}->{$parent->id} ){
+				return 0 if ( !&_deny_action_access($action, $access->{'Ipblock'}->{$parent->id}) );
 			    }
 			}
 		    }
 		}
 	    }
-	}elsif ( $otype eq 'Ipblock' ){
-	    # Grant access to Block's children
-	    my $parent = $object->parent;
-	    if ( exists $access->{'Ipblock'} && 
-		 exists $access->{'Ipblock'}->{$parent->id} ){
-		if ( $action eq 'delete' ){
-		    # Allow user to delete children blocks if they have 'edit' access to the parent
-		    return &_deny_action_access('edit', $access->{'Ipblock'}->{$parent->id});
-		}else{
-		    return &_deny_action_access($action, $access->{'Ipblock'}->{$parent->id});
-		}
-	    }
+	    return 1;
 	}elsif ( $otype =~ /^RR/ ){
 	    my ($rr, $zone);
 	    if ( $otype eq 'RR' ){
@@ -120,20 +134,18 @@ sub denies(){
 	    }
 	    $zone = $rr->zone;
 	    
-	    # If the RR has a Device pointing to it,
-	    # then the user can operate on the RR with the same permissions as Device
+	    # Users cannot edit RRs for Devices or Device IPs
 	    if ( my $dev = ($rr->devices)[0] ) {
-		return &_deny_action_access($action, $access->{'Device'}->{$dev->id});
+		$logger->debug("Netdot::ObjectAccessRule::_denies: ".$rr->get_label." linked to Device interface. Denying access.");
+		return 1;
 	    }
-	    
-	    # Users cannot edit RRs for Device IPs
-# 	    foreach my $arecord ( $rr->arecords ){
-# 		my $ip = $arecord->ipblock;
-# 		if ( int($ip->interface) != 0 ){
-# 		    $logger->debug("Netdot::ObjectAccessRule::_denies: ".$rr->get_label." linked to Device interface. Denying access.");
-# 		    return 1;
-# 		}
-# 	    }
+ 	    foreach my $arecord ( $rr->arecords ){
+ 		my $ip = $arecord->ipblock;
+ 		if ( int($ip->interface) != 0 ){
+ 		    $logger->debug("Netdot::ObjectAccessRule::_denies: ".$rr->get_label." linked to Device interface. Denying access.");
+ 		    return 1;
+ 		}
+ 	    }
 
 	    # If user has rights on the zone, they have the same rights over records
 	    if ( exists $access->{'Zone'}->{$zone->id} ){
@@ -229,6 +241,20 @@ sub _deny_action_access {
 	return 0; # Do not deny access
     }
     $logger->debug("Netdot::ObjectAccessRule::_deny_action_access: access for $action not found.  Denying access.");
+    return 1;
+}
+
+##################################################################################
+# ip addresses inherit parent's permissions, but only for view
+sub deny_ip_access {
+    my ($action, $access, $ipblock) = @_;
+    my $parent = $ipblock->parent;
+    if ( exists $access->{'Ipblock'} && 
+	 exists $access->{'Ipblock'}->{$parent->id} ){
+	if ( $action eq 'view' ){
+	    return &_deny_action_access($action, $access->{'Ipblock'}->{$parent->id});
+	}
+    }
     return 1;
 }
 

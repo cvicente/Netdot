@@ -24,6 +24,11 @@ print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 my $obj = ContactList->retrieve($id);
 if ( $edit ) { $show_buttons = 0; }
 my $manager = $ui->get_permission_manager($r);
+# Unprivileged users cannot add new foreign objects
+my $new_button = 0;
+if ( $manager && $manager->can($user, "access_section", 'contactlist.mhtml:new_button') ){
+    $new_button = 1;
+}
 </%init>
 
 
@@ -69,8 +74,9 @@ my $manager = $ui->get_permission_manager($r);
 
 <%perl>
 my (@headers, @data);
+
 $ui->add_to_fields(table=>'Contact', edit=>$edit, fields=>['contacttype', 'notify_email', 'notify_pager', 'notify_voice'], 
-		   field_headers=>\@headers, cell_data=>\@data, shortFieldName=>0,
+		   field_headers=>\@headers, cell_data=>\@data, shortFieldName=>0, new_button=>$new_button,
 		   linkpages=>['view.html','','', '']);
 </%perl>
 
@@ -121,7 +127,7 @@ $ui->add_to_fields(table=>'Contact', edit=>$edit, fields=>['contacttype', 'notif
           <div class="container">
             <div class="containerheadleft">Edit contactlist name</div>
              <div class="containerheadright">&nbsp;</div>
-                <div class=containerbody" style="display:block">
+                <div class="containerbody" style="display:block">
               
                 <p>
                 <label for="Find">Enter new name:</label>
@@ -166,7 +172,7 @@ $ui->add_to_fields(table=>'Contact', edit=>$edit, fields=>['contacttype', 'notif
                  <div class="containerbodyoutside">
 
 %     $ui->add_to_fields(o=>$role, edit=>$editct, fields=>['contacttype', 'notify_email', 'notify_pager', 'notify_voice', 'escalation_level'], 
-%	                 field_headers=>\@headers, cell_data=>\@data, shortFieldName=>0,
+%	                 field_headers=>\@headers, cell_data=>\@data, shortFieldName=>0, new_button=>$new_button,
 %		         linkpages=>['view.html','view.html','view.html', 'view.html']);
 
           <& /generic/attribute_table.mhtml, field_headers=>\@headers, data=>\@data, 

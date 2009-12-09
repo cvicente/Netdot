@@ -354,24 +354,6 @@ foreach my $o ( values %rrs ) {
 	    $m->comp('/generic/attribute_table.mhtml', %comphash, width=>2);
 	    (@field_headers, @cell_data) = ((),());
 	    
-            ################################################################
-            # Custom Attributes
-            ################################################################
-	    print '<!-- Display Custom Attributes -->';
-	    my @attributes = $ipblock->attributes;
-	    print '<div class="container" style="margin-left:80px">';
-	    print '<div class="containerheadleft"><strong>Custom Attributes</strong></div>';
-	    print '<div class="containerheadright">';
-	    if ( @attributes ) {
-		print '<a href="host.html?id='.$id.'&editattr=1&editipblock='.$ipblock.'">[edit]</a>';
-	    }
-	    print '<a href="edit.html?table=IpblockAttr&ipblock='.$ipblock.'">[add]</a>';
-	    print '</div>';
-	    print '<div class="containerbody">';
-	    $m->comp('/generic/sortresults.mhtml', object=>\@attributes, withedit=>($editattr && ($editipblock == $ipblock)), return_args=>"?id=$id");
-	    print '</div>';
-	    print '</div>';
-	    print '<!-- End Display Custom Attributes -->';
 	}
 
 	print '<div id="rraddr_div_'.$o.'"></div>';
