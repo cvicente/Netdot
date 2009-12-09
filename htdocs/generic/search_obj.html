@@ -21,6 +21,7 @@ Arguments:
 </%doc>
 
 <%args>
+$user  => $ui->get_current_user($r)
 $table => undef
 $res   => undef
 $adv_search => 0
@@ -32,6 +33,11 @@ section => 'Generic'
 </%attr>
 
 <%init>
+my $manager = $ui->get_permission_manager($r);
+unless ( $manager && $manager->can($user, "access_section", 'device.html') ){
+    $m->comp('/generic/error.mhtml', error=>"You don't have permission to access this page");
+}
+
 my $maxselect = 100;
 my $DEBUG     = 0;
 
