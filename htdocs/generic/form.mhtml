@@ -8,6 +8,7 @@ objects to the database.
 </%doc>
 
 <%args>
+$user              => $ui->get_current_user($r)
 $table                       #  name of table (REQUIRED)
 $id                => undef  #  id (row) from the above table  (OPTIONAL)
 %session           => undef  #  ref to a hash with values to insert (if object does not exist)
@@ -35,6 +36,7 @@ if($alias){
 my $maxselect = $ui->config->get('DEFAULT_SELECTMAX');
 my $DEBUG     = 0;
 my $js_prefix = $r->dir_config('NetdotPath') . "java_script";
+my $manager   = $ui->get_permission_manager($r);
 
 if ( $DEBUG ){
     print "ARGS: ";
@@ -84,11 +86,18 @@ foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
 	    }
     }
     my %field;
+    # Unprivileged users cannot add new foreign objects
+    my $new_button = 0;
+    if ( $manager && $manager->can($user, "access_section", 'form.html:new_button') ){
+	$new_button = 1;
+    }
     
     if ( $obj ) {
 	    if ( my $ftable = $linksto{$c} ){
 	        my $linkPage = $ui->table_view_page($ftable) || 'view.html';
-	        %field = $ui->form_field(object=>$obj, column=>$c, edit=>$edit, shortFieldName=>$short_field_names, linkPage=>$linkPage, adv_search=>$adv_search);
+	        %field = $ui->form_field(object=>$obj, column=>$c, edit=>$edit, new_button=>$new_button,
+					 shortFieldName=>$short_field_names, 
+					 linkPage=>$linkPage, adv_search=>$adv_search);
 	    }
         else{
 	        # Do not create link if column is local
@@ -99,11 +108,11 @@ foreach my $c ( sort { $order{$a} <=> $order{$b} } keys %order ) {
     elsif( exists( $session{$c} ) ) {
 	    my @defaults = ($linksto{$c}->retrieve($session{$c}));
 	    %field = $ui->form_field(table=>$table, column=>$c, 
-             defaults=>\@defaults, default=>$session{$c}, 
+             defaults=>\@defaults, default=>$session{$c}, new_button=>$new_button,
              edit=>$edit, shortFieldName=>$short_field_names, adv_search=>$adv_search);
     } 
     else {
-	    %field = $ui->form_field(table=>$table, column=>$c, 
+	    %field = $ui->form_field(table=>$table, column=>$c, new_button=>$new_button,
 	        edit=>$edit, shortFieldName=>$short_field_names, adv_search=>$adv_search);
     }
 

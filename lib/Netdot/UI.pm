@@ -277,6 +277,7 @@ sub form_to_db{
     - table:          Name of table in DB. (optional, but required if object is null)
     - column:         Name of the field in the database
     - edit:           True if editing, false otherwise
+    - new_button:     Show [new] button to create new foreign objects
     - default:        Default value to display if none defined in DB (defined by object)
     - defaults:       Default values to add to select box
     - htmlExtra:      String of additional html to add to the form field
@@ -311,7 +312,8 @@ sub form_field {
     my $table   = ($o ? $o->short_class : $args{table});
     my $id      = ($o ? $o->id      : "NEW");
     my $current = ($o ? $o->$column : $args{default});
-    
+    $args{new_button} = 1 unless defined $args{new_button};
+
     
     my $mtable  = $table->meta_data;
     my $mcol    = $mtable->get_column($column);
@@ -322,7 +324,8 @@ sub form_field {
     ## The column is a foreign key. Provide a list to select.
     if ( defined $f_table  ){
         $value = $self->select_lookup(object=>$o, table=>$table, column=>$column, htmlExtra=>$args{htmlExtra}, 
-				      lookup=>$f_table, edit=>$args{edit}, linkPage=>$args{linkPage}, default=>$args{default},
+				      lookup=>$f_table, edit=>$args{edit}, new_button=>$args{new_button},
+				      linkPage=>$args{linkPage}, default=>$args{default},
 				      defaults=>$args{defaults}, returnAsVar=>1, shortFieldName=>$args{shortFieldName});
     }
     ################################################
@@ -465,6 +468,7 @@ sub help_link {
     - lookup:         Name of foreign table to look up
     - column:         Name of field in DB.
     - edit:           True if editing, false otherwise.
+    - new_button:     Show [new] button to create new foreign objects
     - where:         (optional) Key/value pairs to pass to search function in CDBI
     - defaults:      (optional) array of objects to be shown in the drop-down list by default, 
     - default:       (optional) id of the object in defaults that should be selected by default
@@ -502,6 +506,7 @@ sub select_lookup{
     
     $args{htmlExtra} = "" if ( !defined $args{htmlExtra} );
     $args{maxCount} ||= $self->config->get('DEFAULT_SELECTMAX');
+    $args{new_button} = 1 unless defined $args{new_button};
 
     my $name;
     my $id = ($o ? $o->id : "NEW");
@@ -589,10 +594,12 @@ sub select_lookup{
             $output .= sprintf("</select>\n");
         }
 
-        # show link to add new item to this table
-        $output .= sprintf("<a class=\"hand\" onClick=\"openinsertwindow('table=%s&select_id=%s&selected=1&dowindow=1');\">[new]</a>", 
-			   $args{lookup}, $name);
-        $output .= "</nobr>";
+	if ( $args{new_button} ){
+	    # show link to add new item to this table
+	    $output .= sprintf("<a class=\"hand\" onClick=\"openinsertwindow('table=%s&select_id=%s&selected=1&dowindow=1');\">[new]</a>", 
+			       $args{lookup}, $name);
+	    $output .= "</nobr>";
+	}
 	
     }elsif ( $args{linkPage} && $o->$column ){
 	if ( $args{linkPage} eq "1" || $args{linkPage} eq "view.html" ){
@@ -1288,6 +1295,7 @@ sub format_size {
     Hash of key/value pairs where keys are:
     - o:              A reference to a DBI object
     - edit:           True if editing, false otherwise
+    - new_button:     Show [new] button to create new foreign objects
     - fields:         Reference to an array of column names in the database
     - defaults:       Reference to an array containing default objects or values
     - linkpages:      Reference to an array of the same size as @fields, with optional pages to link to
@@ -1316,16 +1324,18 @@ sub add_to_fields {
     
     $self->throw_fatal("You need to pass either a valid object or a table name")
 	unless ( ref($o) || $table );
-    
+
+    $args{new_button} = 1 unless defined $args{new_button};
+
     for( my $i=0; $i<@{$fields}; $i++ ) {
         my $field = ${$fields}[$i];
         my $linkpage = ${$linkpages}[$i];
         my %tmp;
-	my %args = (object=>$o, table=>$table, column=>$field, edit=>$edit, 
-		    linkPage=>$linkpage);
-	$args{defaults} = $defaults->[$i] 
+	my %ffargs = (object=>$o, table=>$table, column=>$field, edit=>$edit, 
+		      linkPage=>$linkpage, new_button=>$args{new_button});
+	$ffargs{defaults} = $defaults->[$i] 
 	    if ( defined $defaults && defined $defaults->[$i] );
-        %tmp = $self->form_field(%args);
+        %tmp = $self->form_field(%ffargs);
         push( @{$field_headers}, $tmp{label} );
         push( @{$cell_data}, $tmp{value} );
     }

@@ -164,7 +164,7 @@ if ( $show_block_records ){
 
 }elsif ( $search ){
     $search =~ s/^\s*(.*)\s*$/$1/g;
-    my %rrs;
+    my %rrids;
     my @allrecords;
     foreach my $ipblock ( @ipblocks ){
 	if ( my $zone = $ipblock->forward_zone ){
@@ -179,28 +179,29 @@ if ( $show_block_records ){
     foreach my $row ( @allrecords ){
 	my ($rrid, $rrname, $ipid, $ipaddr, $ipver, undef, $physaddr) = @$row;
 	if ( $rrname =~ /$search/i ){
-	    $rrs{$rrid} = RR->retrieve($rrid);
+	    $rrids{$rrid} = $row
 	}elsif ( $physaddr =~ /$search/i ){
-	    $rrs{$rrid} = RR->retrieve($rrid);
+	    $rrids{$rrid} = $row;
 	}elsif ( $ipaddr && $ipver ){
 	    my $ip = Ipblock->int2ip($ipaddr, $ipver);
 	    if ( $ip =~ /$search/i ){
-		$rrs{$rrid} = RR->retrieve($rrid);
+		$rrids{$rrid} = $row;
 	    }
 	}
     }
     # Display search results
-    if ( my @list = values %rrs ){
+    if ( my @list = values %rrids ){
 	if ( scalar(@list) == 1 ){
-	    my $obj = $list[0];
-	    $m->comp('/management/host.html', id=>$obj->id);
+	    my $row = $list[0];
+	    my $id = $row->[0];
+	    $m->comp('/management/host.html', id=>$id);
 	}else{
 	    print '<div class="container">';
 	    print '<div class="containerhead">';
 	    print "Query <em>$search</em> returned: ".scalar(@list)." matches";
 	    print "</div>";
 	    print '<div class="containerbody">';
-	    $m->comp('/generic/sortresults.mhtml', object=>\@list, withedit=>0);
+	    $m->comp('/management/hostlist.mhtml', records=>\@list, withedit=>0);
 	    print "</div>\n</div>";
 	}
     } else {
