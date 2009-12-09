@@ -164,7 +164,7 @@ if ( $show_block_records ){
 
 }elsif ( $search ){
     $search =~ s/^\s*(.*)\s*$/$1/g;
-    my @list;
+    my %rrs;
     my @allrecords;
     foreach my $ipblock ( @ipblocks ){
 	if ( my $zone = $ipblock->forward_zone ){
@@ -179,19 +179,19 @@ if ( $show_block_records ){
     foreach my $row ( @allrecords ){
 	my ($rrid, $rrname, $ipid, $ipaddr, $ipver, undef, $physaddr) = @$row;
 	if ( $rrname =~ /$search/i ){
-	    push @list, RR->retrieve($rrid);
+	    $rrs{$rrid} = RR->retrieve($rrid);
 	}elsif ( $physaddr =~ /$search/i ){
-	    push @list, RR->retrieve($rrid);
+	    $rrs{$rrid} = RR->retrieve($rrid);
 	}elsif ( $ipaddr && $ipver ){
 	    my $ip = Ipblock->int2ip($ipaddr, $ipver);
 	    if ( $ip =~ /$search/i ){
-		push @list, RR->retrieve($rrid);
+		$rrs{$rrid} = RR->retrieve($rrid);
 	    }
 	}
     }
     # Display search results
-    if ( @list ){
-	if ( scalar @list == 1 ){
+    if ( my @list = values %rrs ){
+	if ( scalar(@list) == 1 ){
 	    my $obj = $list[0];
 	    $m->comp('/management/host.html', id=>$obj->id);
 	}else{
