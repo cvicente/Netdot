@@ -83,6 +83,22 @@ sub denies(){
 		}
 	    }
 	    return 1;
+	}elsif ( $otype eq 'PhysAddr' ){
+	    # Grant view access to physaddr if it has a dhcp scope in an allowed subnet
+	    if ( my @scopes = $object->dhcp_hosts ){
+		foreach my $scope ( @scopes ){
+		    if ( int($scope->ipblock) != 0 ){
+			my $ipb = $scope->ipblock;
+			my $parent = $ipb->parent;
+			if ( exists $access->{'Ipblock'} && 
+			     exists $access->{'Ipblock'}->{$parent->id} ){
+			    if ( $action eq 'view' ){
+				return &_deny_action_access($action, $access->{'Ipblock'}->{$parent->id});
+			    }
+			}
+		    }
+		}
+	    }
 	}elsif ( $otype eq 'Ipblock' ){
 	    # Grant access to Block's children
 	    my $parent = $object->parent;
@@ -183,7 +199,7 @@ sub _get_rr_subnets {
 	    my @ipblist = values %ipblocks;
 	    if ( $logger->is_debug() ){
 		my $list = join ', ', map { $_->get_label } @ipblist;
-		$logger->debug("Netdot::ObjectAccessRule::_get_rr_subnets: subnets for RR $rr: ".$rr->id.": $list");
+		$logger->debug("Netdot::ObjectAccessRule::_get_rr_subnets: subnets for RR: $rr: $list");
 	    }
 	    return @ipblist;
 	}else{

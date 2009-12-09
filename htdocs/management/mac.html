@@ -32,12 +32,6 @@ my $edge_port;
 my ($fwt, $arp);
 print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
-# Check if user can access this section
-my $manager = $ui->get_permission_manager($r);
-unless ( $manager && $manager->can($user, "access_section", 'mac.html') ){
-    $m->comp('/generic/error.mhtml', error=>"You don't have permission to access this page");
-}
-
 </%init>
 
 <%doc>
@@ -102,6 +96,12 @@ if ( $id && !$o ){
 }
 
 if ( $o ){
+    
+    my $manager = $ui->get_permission_manager($r);
+    unless ( $manager && $manager->can($user, "view", $o) ){
+	$m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
+    }
+
     $id ||= $o->id;
     # Get latest forwarding table entries
     $fwt = $o->get_last_n_fte($fwt_limit);
