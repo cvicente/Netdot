@@ -77,7 +77,10 @@ is($s, $subnet->address, 'get_subnet_addr');
 my $hosts = Ipblock->get_host_addrs( $subnet->address ."/". $subnet->prefix );
 is($hosts->[0], '192.168.60.1', 'get_host_addrs');
 
-ok(Ipblock->is_loopback('127.0.0.1'), 'is_loopback');
+ok(Ipblock->is_loopback('127.0.0.1'), 'is_loopback_v4');
+ok(Ipblock->is_loopback('::1'), 'is_loopback_v6');
+ok(Ipblock->is_multicast('239.255.0.1'), 'is_multicast_v4');
+ok(Ipblock->is_multicast('FF02::1'), 'is_multicast_v6');
 
 is(Ipblock->get_covering_block(address=>'192.168.60.5', prefix=>'32'), $subnet,
    'get_covering_block');

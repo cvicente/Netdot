@@ -300,11 +300,9 @@ sub get_unused_subnets {
     my @result;
     foreach my $id ( @ids ){
 	my $ip = Ipblock->retrieve($id);
-	if ( defined $args{version} && $args{version} == 4 ){
-	    # Ignore IPv4 multicast blocks
-	    if ( $ip->_netaddr->within(new NetAddr::IP "224.0.0.0/4") ){
-		next;
-	    }
+	# Ignore multicast blocks
+	if ( $ip->is_multicast ){
+	    next;
 	}
 	push @result, $ip;
     }
@@ -347,35 +345,85 @@ sub get_subnet_addr {
 =head2 is_loopback - Check if address is a loopback address
 
   Arguments:
-    address - dotted quad ip address.  Required.
+    address - dotted quad ip address.  Required unless called as object method
     prefix  - dotted quad or prefix length. Optional. NetAddr::IP will assume it is a host (/32 or /128)
 
   Returns:
-    NetAddr::IP object or 0 if failure
+    True (1) or False (0)
   Example:
+    my $flag = $ipblock->is_loopback;
     my $flag = Ipblock->is_loopback('127.0.0.1');
 
 =cut
 sub is_loopback{
-    my ( $class, $address, $prefix ) = @_;
-    $class->isa_class_method('is_loopback');
-
-    $class->throw_fatal("Missing required arguments: address")
-	unless $address;
-
-    my $ip;
-    my $str;
-    if ( !($ip = NetAddr::IP->new($address, $prefix))){
-	$str = ( $address && $prefix ) ? (join '/', $address, $prefix) : $address;
-	$class->throw_user("Invalid IP: $str");
+    my ( $self, $address, $prefix ) = @_;
+    my ($netaddr, $version);
+    if ( ref($self) ){
+	# Called as object method
+	$netaddr = $self->_netaddr;
+	$version = $self->version;
+    }else{
+	# Called as class method
+	$self->throw_fatal("Missing required arguments when called as class method: address")
+	    unless ( defined $address );
+	if ( !($netaddr = NetAddr::IP->new($address, $prefix))){
+	    my $str = ( $address && $prefix ) ? (join '/', $address, $prefix) : $address;
+	    $self->throw_user("Invalid IP: $str");
+	}
+	$version = $netaddr->version;
     }
-
-    if ( $ip->within(new NetAddr::IP "127.0.0.0", "255.0.0.0") 
-	 || $ip eq '::1' ) {
-	return 1;	
+    if ( $version == 4 && 
+	 $netaddr->within(new NetAddr::IP '127.0.0.0', '255.0.0.0') ){
+	return 1;
+    }elsif ( $version == 6 &&
+	     $netaddr == NetAddr::IP->new6('::1') ){
+	return 1;
     }
-    return;
+    return 0;
+
 }
+
+##################################################################
+=head2 is_multicast - Check if address is a multicast address
+
+  Arguments:
+    address - dotted quad ip address.  Required unless called as object method
+    prefix  - dotted quad or prefix length. Optional. NetAddr::IP will assume it is a host (/32 or /128)
+
+  Returns:
+    True (1) or False (0)
+  Example:
+    my $flag = $ipblock->is_multicast();
+    my $flag = Ipblock->is_multicast('239.255.0.1');
+
+=cut
+sub is_multicast{
+    my ($self, $address, $prefix) = @_;
+    my ($netaddr, $version);
+    if ( ref($self) ){
+	# Called as object method
+	$netaddr = $self->_netaddr;
+	$version = $self->version;
+    }else{
+	# Called as class method
+	$self->throw_fatal("Missing required arguments when called as class method: address")
+	    unless ( defined $address );
+	if ( !($netaddr = NetAddr::IP->new($address, $prefix))){
+	    my $str = ( $address && $prefix ) ? (join '/', $address, $prefix) : $address;
+	    $self->throw_user("Invalid IP: $str");
+	}
+	$version = $netaddr->version;
+    }
+    if ( $version == 4 && 
+	 $netaddr->within(new NetAddr::IP "224.0.0.0/4") ){
+	return 1;
+    }elsif ( $version == 6 &&
+	     $netaddr->within(new6 NetAddr::IP "FF00::/8") ){
+	return 1;
+    }
+    return 0;
+}
+
 
 ##################################################################
 =head2 within - Check if address is within block
