@@ -76,12 +76,12 @@ my $logstr;
                 </select>
                 </p>
                 <p>
-                   <label for="bind_force">Force</label>
                    <input type="checkbox" name="bind_force">
+                   <label for="bind_force">Force export even if no pending changes</label>
                 </p>
                 <p>
-                   <label for="bind_no_priv">Exclude Private Data</label> 
                    <input type="checkbox" name="bind_no_priv" CHECKED>
+                   <label for="bind_no_priv">Exclude Private Data (HINFO and TXT records)</label> 
                 </p>
         </fieldset>
         <fieldset class="small">
@@ -117,7 +117,7 @@ if ( $submit ){
     foreach my $type ( @config_types ){
 	my %args;
 	if ( $type eq 'BIND' ){
-	    $args{zone_ids} = \@zones if @zones;
+	    $args{zone_ids} = \@zones if ( scalar @zones && $zones[0] ne "" );
 	    $args{force}    = 1 if ($bind_force);
 	    $args{nopriv}   = 1 if ($bind_no_priv);
 	}elsif ( $type eq 'DHCPD' ){
