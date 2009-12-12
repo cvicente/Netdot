@@ -65,7 +65,7 @@ sub insert {
     my ($class, $argv) = @_;
     $class->isa_class_method('insert');
     $class->throw_fatal('DhcpAttr::insert: Missing required parameters')
-	unless ( defined $argv->{name} && defined $argv->{value} );
+	unless ( defined $argv->{name}  );
  
     $class->_objectify_args($argv);
 
