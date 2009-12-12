@@ -451,10 +451,10 @@ sub _validate_args {
     $self->throw_user("$fields{name}: A scope type is required")
 	unless $fields{type};
 
-    if ( defined $fields{physaddr} && $fields{physaddr} != 0 && $fields{type}->name ne 'host' ){
+    if ( defined $fields{physaddr} && int($fields{physaddr}) != 0 && $fields{type}->name ne 'host' ){
 	$self->throw_user("$fields{name}: Cannot assign physical address ($fields{physaddr}) to a non-host scope");
     }
-    if ( defined $fields{ipblock} && $fields{ipblock} != 0 ){
+    if ( defined $fields{ipblock} && int($fields{ipblock}) != 0 ){
 	if ( ($fields{ipblock}->status->name eq 'Subnet') && $fields{type}->name ne 'subnet' ){
 	    $self->throw_user("$fields{name}: Cannot assign a subnet to a non-subnet scope");
 	}elsif ( ($fields{ipblock}->status->name eq 'Static') && $fields{type}->name ne 'host'  ){
@@ -469,7 +469,7 @@ sub _validate_args {
 
     my $type = $fields{type}->name;
 
-    if ( exists $fields{container} && $fields{container} != 0 ){
+    if ( exists $fields{container} && int($fields{container}) != 0 ){
 	my $ctype = $fields{container}->type->name;
 	$self->throw_user("$fields{name}: container scope type not defined")
 	    unless defined $ctype;
@@ -569,13 +569,15 @@ sub _print {
 			$value = "\"$value\"";
 		    }
 		}
-		print $fh " $value;\n";
+		print $fh " $value";
 	    }
 	    elsif ( $data->{$id}->{type} eq 'global' && 
 		    defined $code && defined $format ){
 		# Assume that user is trying to define a new option
-		print $fh " $code = $format;\n";
+		print $fh " $code = $format";
 	    }
+	    print $fh ";\n";
+	    
 	}
     }
     # Print "inherited" attributes from used templates
@@ -750,12 +752,14 @@ sub _update_attributes {
     while ( my($key, $val) = each %$attributes ){
 	my $attr;
 	my %args = (name=>$key, scope=>$self->id);
+	my $str = $key;
+	$str .= ": $val" if $val;
 	if ( $attr = DhcpAttr->search(%args)->first ){
-	    $logger->debug("DhcpScope::_update_attributes: ".$self->get_label.": Updating DhcpAttr $key: $val");
+	    $logger->debug("DhcpScope::_update_attributes: ".$self->get_label.": Updating DhcpAttr $str");
 	    $args{value} = $val;
 	    $attr->update(\%args);
 	}else{
-	    $logger->debug("DhcpScope::_update_attributes: ".$self->get_label.": Inserting DhcpAttr $key: $val");
+	    $logger->debug("DhcpScope::_update_attributes: ".$self->get_label.": Inserting DhcpAttr $str");
 	    $args{value} = $val;
 	    DhcpAttr->insert(\%args);
 	}
