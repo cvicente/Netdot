@@ -514,7 +514,7 @@ sub _validate_args {
 sub _print {
     my ($class, $fh, $id, $data, $indent) = @_;
     
-    $indent ||= " ";
+    $indent ||= "";
     my $pindent = $indent;
 
     if ( !defined $fh ){
@@ -523,6 +523,10 @@ sub _print {
 
     if ( !defined $id ){
 	$class->throw_fatal("Scope id missing");
+    }
+
+    if ( !defined $data || ref($data) ne 'HASH' ){
+	$class->throw_fatal("Data missing or invalid");
     }
 
     if ( !defined $data->{$id}->{type} ){
@@ -535,7 +539,10 @@ sub _print {
     }
     
     # Print free-form text
-    print $fh $indent.$data->{$id}->{text}, "\n" if $data->{$id}->{text};
+    if ( $data->{$id}->{text} ){
+	chomp $data->{$id}->{text};
+	print $fh $indent.$data->{$id}->{text}, "\n" ;
+    }
     
     # Print attributes
     foreach my $attr_id ( sort { $data->{$id}->{attrs}->{$a}->{name} cmp 
@@ -555,21 +562,22 @@ sub _print {
 	    my $format = $data->{$id}->{attrs}->{$attr_id}->{format};
 	    my $value  = $data->{$id}->{attrs}->{$attr_id}->{value};
 	    print $fh $indent.$name;
-	    if ( defined $code && defined $format ){
-		print $fh " $code = $format";
-	    }elsif ( defined $value ) {
-		if ( $name eq 'option domain-name' ){
-		    # DHCPD requires double quotes here
+	    if ( defined $value ) {
+		if ( defined $format && ($format eq 'text' || $format eq 'string') ){
+		    # DHCPD requires double quotes
 		    if ( $value !~ /^"(.*)"$/ ){
 			$value = "\"$value\"";
 		    }
 		}
-		print $fh " $value";
+		print $fh " $value;\n";
 	    }
-	    print $fh ";\n";
+	    elsif ( $data->{$id}->{type} eq 'global' && 
+		    defined $code && defined $format ){
+		# Assume that user is trying to define a new option
+		print $fh " $code = $format;\n";
+	    }
 	}
     }
-    
     # Print "inherited" attributes from used templates
     if ( defined $data->{$id}->{templates} ){
 	foreach my $template_id ( @{$data->{$id}->{templates}} ){
