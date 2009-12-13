@@ -167,7 +167,6 @@ if ( $submit ){
 %     }
       </div>
 
-
 <!-- Display list of records -->
 <%perl>
 if ( $view eq 'records' || $edit eq 'records' ){
@@ -178,6 +177,17 @@ if ( $view eq 'records' || $edit eq 'records' ){
     print '</div>';
 } 
 </%perl>
+   </div>
+
+
+<!-- Display list of pending changes -->
+% my @audit_records = $obj->audit_records;
+  <div class="container">
+      <div class="containerhead">Pending Changes</div>
+        <div class="containerbody">
+          <& /generic/sortresults.mhtml, object=>\@audit_records, withedit=>0  &>
+       </div>
+  </div>
 
 
 <!-- Show Bulk Import Interface -->
