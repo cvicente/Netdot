@@ -96,7 +96,6 @@ BEGIN {
 
     sub _host_audit_update {
 	my ($self, %args) = @_;
-	$logger->warn("Hello");
 	return unless ( $self->table =~ /^rr/ || $self->table eq 'zone' ||
 			$self->table eq 'dhcpscope' || $self->table eq 'dhcpattr');
 	$args{operation} = 'update';
