@@ -87,6 +87,29 @@ sub closets {
     return @closets;
 }
 
+##################################################################
+=head2 get_label - Override get_label method
+
+    Appends site number if available
+
+  Arguments:
+    None
+  Returns:
+    string
+  Examples:
+    print $site->get_label();
+
+=cut
+sub get_label {
+    my $self = shift;
+    $self->isa_object_method('get_label');
+    my $lbl = $self->name;
+    if ( my $number = $self->number ){
+	$lbl .= " ($number)";
+    }
+    return $lbl;
+}
+
 =head1 AUTHOR
 
 Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
