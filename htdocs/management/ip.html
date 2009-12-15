@@ -19,6 +19,7 @@ $recursivedel      => undef
 $add_range_start   => undef
 $add_range_end     => undef
 $add_block_prefix  => undef
+$add_block_parent  => undef
 $range_owner       => undef
 $range_status      => undef
 $range_used_by     => undef
@@ -282,20 +283,18 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
         }
 	my $block;
 	eval {
+	    my %args = (status      => $block_status,
+			owner       => $block_owner,
+			used_by     => $block_used_by,
+			description => $block_description,
+		);
 	    if ( $block = Ipblock->search(address=>$address, prefix=>$prefix)->first ){
-		$block->update({status      => $block_status,
-				owner       => $block_owner,
-				used_by     => $block_used_by,
-				description => $block_description,
-			       });
+		$block->update(\%args);
 	    }else{
-		$block = Ipblock->insert({address     => $address,
-					  prefix      => $prefix,
-					  status      => $block_status,
-					  owner       => $block_owner,
-					  used_by     => $block_used_by,
-					  description => $block_description,
-					 });
+		$args{address} = $address;
+		$args{prefix}  = $prefix;
+		$args{parent}  = $add_block_parent if $add_block_parent;
+		$block = Ipblock->insert(\%args);
 	    }
 	};
 	if ( my $e = $@ ){

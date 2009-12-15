@@ -135,7 +135,7 @@ for( my $i=0; $i<(($net->num()+1)/$cols); $i++ ) {
 	    # sequentially.  This allows for easier subnet size reduction if address space is underutilized.
 	    if ( $manager && $manager->can($user, "access_section", 'subnet.mhtml:add_block_prefix') ){
 		# link this address to the "Add" section in ip.html
-		$ipaddr = '<div class="ipaddr_available"><a href="ip.html?add_block_prefix='.$net->addr().'%2F32&_action=ADD_BLOCK" class="ipaddr">'.$ipaddr.'</a></div>';
+		$ipaddr = '<div class="ipaddr_available"><a href="ip.html?add_block_prefix='.$net->addr().'%2F32&add_block_parent='.$network->id.'&_action=ADD_BLOCK" class="ipaddr">'.$ipaddr.'</a></div>';
 	    }else{
 		$ipaddr = '<div class="ipaddr_available">'.$ipaddr.'</div>';
 	    }
