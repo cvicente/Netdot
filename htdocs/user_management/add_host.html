@@ -120,8 +120,11 @@ if ( $submit ){
 	my @aliases = split ',', $aliases;
 	foreach my $alias ( @aliases ){
 	    $alias =~ s/\s+//g;
+	    # In case they included the domain part in the alias
+	    my $domain = $zone->name;
+	    $alias =~ s/\.$domain$//;
 	    if ( my $h = RR->search(name=>$alias, zone=>$zone)->first ){
-		$m->comp('/generic/error.mhtml', error=>$h->get_label." is already taken");
+		$m->comp('/generic/error.mhtml', error=>$h->get_label." from your aliases list is already taken");
 	    }
 	    eval {
 		RR->validate_name($alias);
@@ -133,7 +136,8 @@ if ( $submit ){
 	}
     }
     
-    foreach my $key qw(hostname expiration cpu os site_name site_id room_number room_id person contact_name contact_email contact_phone ethernet) {
+    foreach my $key qw(hostname expiration cpu os site_name site_id room_number room_id person 
+                       contact_name contact_email contact_phone ethernet) {
 	$args{$key} = $ARGS{$key};
     }
     $args{zone}    = $zone;
@@ -170,11 +174,13 @@ if ( $submit ){
     <input type="hidden" name="add_host_block" value="<% $add_host_block %>">
     <input type="hidden" name="address" value="<% $address %>">
     <table><tr><td>
-    <p>
+    <p>Required fields are marked with an asterisk (<font color="red">*</font>).<br>
+    <p>Help is available for some fields by clicking on the field name.<br>
+    <p><br>
     <fieldset class="medium">
         <legend>Host Identification</legend>
         <p>
-        <label for="domain">Domain</label>
+        <label for="domain">Domain <font color="red">*</font></label>
 %       if ( $zone ){
             <input type="hidden" name="zone" value="<% $zone->id %>">
             <% $zone->get_label %>
@@ -204,20 +210,20 @@ if ( $submit ){
 %       }
         </p>
         <p>
-        <label for="name">Host Name</label>
-        <input type="text" name="hostname" class="longtxt" value=""> <% $ui->help_link('../user_help/hosts.html#Hostname') %>
+        <label for="name"><% $ui->help_link('../user_help/hosts.html#Hostname', '', '', 'Host Name') %> <font color="red">*</font></label>
+        <input type="text" name="hostname" class="longtxt" value="">
         </p>
         <p>
-        <label for="ethernet">Ethernet Address</label>
-        <input type="text" name="ethernet" class="ethertxt" value=""> <% $ui->help_link('../user_help/hosts.html#Ethernet') %>
+        <label for="ethernet"><% $ui->help_link('../user_help/hosts.html#Ethernet', '', '', 'Ethernet Address') %></label>
+        <input type="text" name="ethernet" class="ethertxt" value="">
         </p>
         <p>
-        <label for="aliases">Aliases</label>
-        <input type="text" name="aliases" class="longtxt" value=""> <% $ui->help_link('../user_help/hosts.html#Cnames') %>
+        <label for="aliases"><% $ui->help_link('../user_help/hosts.html#Cnames', '', '', 'Aliases') %></label>
+        <input type="text" name="aliases" class="longtxt" value="">
         </p>
         <p>
-        <label for="expiration">Expiration Date</label>
-%	 $ui->date_field(table=>"RR", column=>"expiration", edit=>1, shortFieldName=>1);
+        <label for="expiration"><% $ui->help_link('../user_help/hosts.html#Expiration', '', '', 'Expiraton Date') %></label>
+	<% $ui->date_field(table=>"RR", column=>"expiration", edit=>1, shortFieldName=>1, returnAsVar=>1) %>
         </p>
     </fieldset>
 
@@ -225,7 +231,7 @@ if ( $submit ){
     <fieldset class="medium">
         <legend>Hardware Information</legend>
         <p>
-        <label for="cpu">CPU</label>
+        <label for="cpu"><% $ui->help_link('../user_help/hosts.html#CPU', '', '', 'CPU') %></label>
         <select name="cpu" id="cpu">
             <option value="0">-- Select --</option>
             <option value="PC-INTEL">PC-Intel</option>
@@ -235,7 +241,7 @@ if ( $submit ){
         </select>
         </p>
         <p>
-        <label for="os">Operating System</label>
+        <label for="os"><% $ui->help_link('../user_help/hosts.html#OS', '', '', 'Operating System') %></label>
         <select name="os" id="os">
             <option value="0">-- Select --</option>
             <option value="WINDOWS">Windows</option>

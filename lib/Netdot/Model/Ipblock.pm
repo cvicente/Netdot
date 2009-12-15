@@ -56,8 +56,7 @@ my $range_dns_plugin = __PACKAGE__->load_range_dns_plugin();
 
 # The binary tree will reside in memory to speed things up 
 # when inserting/deleting individual objects
-my $tree4;
-my $tree6;
+my ($tree4, $tree6);
 
 =head1 CLASS METHODS
 =cut
@@ -474,7 +473,10 @@ sub insert {
     
     # Update tree unless we're told not to do so for speed reasons
     # (usually because it will be rebuilt at the end of a device update)
-    $newblock->_update_tree() unless $no_update_tree;
+    # or if we already have the parent
+    unless ( $argv->{parent} || $no_update_tree ){
+	$newblock->_update_tree();
+    }
     
     #####################################################################
     # Now check for rules
@@ -2534,17 +2536,18 @@ sub _delete_from_tree{
     if ( ! $self->is_address ){
 	# This is a block (subnet, container, etc)
 	# Assign all my children my current parent
-	my $parent   = $self->parent;
-	my @children = $self->children;
-	foreach my $child ( @children ){
-	    $child->update({parent=>$parent});
+	if ( my $parent = $self->parent ){
+	    my $dbh = $class->db_Main;
+	    my $sth = $dbh->prepare_cached("UPDATE ipblock SET parent=? WHERE parent=?");
+	    $sth->execute($parent->id, $self->id);
 	}
-    }
-    my $n = $class->_tree_find(version  => $self->version, 
-			       address  => $self->address_numeric,
-			       prefix   => $self->prefix);
-    if ( $n && ($n->iaddress == $self->address_numeric  && $n->prefix == $self->prefix ) ){
-	$n->delete();
+	# Remove this node from the trie
+	my $n = $class->_tree_find(version  => $self->version, 
+				   address  => $self->address_numeric,
+				   prefix   => $self->prefix);
+	if ( $n && ($n->iaddress == $self->address_numeric  && $n->prefix == $self->prefix ) ){
+	    $n->delete();
+	}
     }
     return 1;
 }
