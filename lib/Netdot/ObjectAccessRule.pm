@@ -169,7 +169,7 @@ sub denies(){
 	    }else{
 		if ( my @ipbs = &_get_rr_ips($rr) ){
 		    foreach my $ipb ( @ipbs ){
-			next if scalar($ipb) == 0;
+			next if int($ipb) == 0;
 			return 1 if ( &_deny_ip_access($action, $access, $ipb) );
 		    }
 		    return 0;
