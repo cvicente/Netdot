@@ -571,16 +571,20 @@ sub find_edge_port {
     my ($self) = @_;
     $self->isa_object_method('find_edge_port');
     my ($sth, $sth2, $rows, $rows2);
-    eval {
-	my $dbh = $self->db_Main();
-	$sth = $dbh->prepare_cached('SELECT   DISTINCT(i.id), ft.id
-                                     FROM     interface i, fwtableentry fte, fwtable ft 
-                                     WHERE    fte.physaddr=? 
-                                       AND    fte.interface=i.id 
-                                       AND    fte.fwtable=ft.id
-                                       AND    ft.tstamp=?
-                                     ');
-	
+    my $dbh = $self->db_Main();
+    $sth = $dbh->prepare_cached('SELECT   DISTINCT(i.id), ft.id
+                                 FROM     interface i, fwtableentry fte, fwtable ft 
+                                 WHERE    fte.physaddr=? 
+                                   AND    fte.interface=i.id 
+                                   AND    fte.fwtable=ft.id
+                                   AND    ft.tstamp=?
+                                   AND    i.neighbor=0');
+    
+	$sth->execute($self->id, $self->last_seen);
+	$rows = $sth->fetchall_arrayref;
+
+    if ( scalar @$rows > 1 ){
+	my @results;
 	$sth2 = $dbh->prepare_cached('SELECT COUNT(i.id) 
                                       FROM   interface i, fwtable ft, fwtableentry fte 
                                       WHERE  fte.fwtable=ft.id 
@@ -588,15 +592,6 @@ sub find_edge_port {
                                         AND  ft.id=? 
                                         AND  fte.interface=?');
 	
-	$sth->execute($self->id, $self->last_seen);
-	$rows = $sth->fetchall_arrayref;
-    };
-    if ( my $e = $@ ){
-	$self->throw_fatal($e);
-    }
-    
-    if ( scalar @$rows > 1 ){
-	my @results;
 	foreach my $row ( @$rows ){
 	    my ($iid, $ftid) = @$row;
 	    $sth2->execute($ftid, $iid);
