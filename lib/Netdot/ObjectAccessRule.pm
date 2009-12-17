@@ -84,7 +84,7 @@ sub denies(){
 	    }
 	    return 1;
 	}elsif ( $otype eq 'Ipblock' ){
-	    return &deny_ip_access($action, $access, $object);
+	    return &_deny_ip_access($action, $access, $object);
 
 	}elsif ( $otype eq 'IpblockAttr' ){
 	    # IP attributes match subnet permissions
@@ -104,7 +104,7 @@ sub denies(){
 		foreach my $scope ( @scopes ){
 		    if ( int($scope->ipblock) != 0 ){
 			my $ipb = $scope->ipblock;
-			return 0 if ( !&deny_ip_access($action, $access, $ipb) );
+			return 0 if ( !&_deny_ip_access($action, $access, $ipb) );
 		    }
 		}
 	    }
@@ -158,28 +158,28 @@ sub denies(){
 	    if ( $otype eq 'RRCNAME' ){
 		# Search for the record that the CNAME points to
 		if ( my $crr = RR->search(name=>$object->cname)->first ){
-		    if ( my @ipbs = &_get_rr_subnets($crr) ){
+		    if ( my @ipbs = &_get_rr_ips($crr) ){
 			foreach my $ipb ( @ipbs ){
 			    next if $ipb == 0;
-			    return 1 if ( &_deny_action_access($action, $access->{'Ipblock'}->{$ipb->id}) );
+			    return 1 if ( &_deny_ip_access($action, $access, $ipb) );
 			}
 			return 0;
 		    }
 		}
 	    }else{
-		if ( my @ipbs = &_get_rr_subnets($rr) ){
+		if ( my @ipbs = &_get_rr_ips($rr) ){
 		    foreach my $ipb ( @ipbs ){
 			next if scalar($ipb) == 0;
-			return 1 if ( &_deny_action_access($action, $access->{'Ipblock'}->{$ipb->id}) );
+			return 1 if ( &_deny_ip_access($action, $access, $ipb) );
 		    }
 		    return 0;
 		}elsif ( my $cname = $object->cnames->first ){
 		    # This RR is the alias of something else
 		    if ( my $crr = RR->search(name=>$cname->cname)->first ){
-			if ( my @ipbs = &_get_rr_subnets($crr) ){
+			if ( my @ipbs = &_get_rr_ips($crr) ){
 			    foreach my $ipb ( @ipbs ){
 				next if $ipb == 0;
-				return 1 if ( &_deny_action_access($action, $access->{'Ipblock'}->{$ipb->id}) );
+				return 1 if ( &_deny_ip_access($action, $access, $ipb) );
 			    }
 			    return 0;
 			}
@@ -193,29 +193,24 @@ sub denies(){
 }
 
 ##################################################################################
-# Given an RR object, return the list of subnets where its A/AAAA records are
+# Given an RR object, return the list of IP addresses from A records
 #
-sub _get_rr_subnets {
+sub _get_rr_ips {
     my ($rr) = @_;
 
     Netdot->throw_fatal("Missing arguments")
 	unless ( $rr );
 
     if ( my @rraddrs = $rr->arecords ){
-	my %ipblocks;
+	my @ipblist;        
 	foreach my $rraddr ( @rraddrs ){
 	    my $ipb = $rraddr->ipblock;
-	    $ipblocks{$ipb->parent->id} = $ipb->parent if int($ipb->parent);
+	    push @ipblist, $ipb;
 	}
-	if ( %ipblocks ){
-	    my @ipblist = values %ipblocks;
-	    if ( $logger->is_debug() ){
-		my $list = join ', ', map { $_->get_label } @ipblist;
-		$logger->debug("Netdot::ObjectAccessRule::_get_rr_subnets: subnets for RR: $rr: $list");
-	    }
+	if ( @ipblist ){
 	    return @ipblist;
 	}else{
-	    $logger->debug("Netdot::ObjectAccessRule::_get_rr_subnets: no ipblocks found for RR: ".$rr->id);
+	    $logger->debug("Netdot::ObjectAccessRule::_get_rr_ips: no IPs found for RR: ".$rr->id);
 	    return;
 	}
     }	    
@@ -246,12 +241,19 @@ sub _deny_action_access {
 
 ##################################################################################
 # ip addresses inherit parent's permissions, but only for view
-sub deny_ip_access {
+sub _deny_ip_access {
     my ($action, $access, $ipblock) = @_;
     my $parent = $ipblock->parent;
     if ( exists $access->{'Ipblock'} && 
 	 exists $access->{'Ipblock'}->{$parent->id} ){
 	if ( $action eq 'view' ){
+	    if ( int($ipblock->status) ){
+		my $status = $ipblock->status->name;
+		if ( $status eq 'Dynamic' || $status eq 'Reserved' ){
+		    # Unprivileged users cannot modify dynamic or reserved IPs
+		    return 1;
+		}
+	    }
 	    return &_deny_action_access($action, $access->{'Ipblock'}->{$parent->id});
 	}
     }
