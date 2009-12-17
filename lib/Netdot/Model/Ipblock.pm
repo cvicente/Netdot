@@ -2031,7 +2031,7 @@ sub enable_dhcp{
     $self->throw_user("Missing required arguments: container")
 	unless (defined $argv{container});
 
-    $self->throw_fatal("Ipblock::enable_dhcp: Invalid call to this method on a non-subnet")
+    $self->throw_user("Trying to enable DHCP on a non-subnet block")
 	if ( $self->status->name ne 'Subnet' );
     
     my $scope;
