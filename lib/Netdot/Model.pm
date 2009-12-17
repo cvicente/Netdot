@@ -635,8 +635,6 @@ sub update {
 	    }elsif ( $e =~ /out of range/i ){
 		$msg = "Some values are out of valid range.";
 	    }
-
-	    $self->throw_user("$msg\n\nFull Error: $e\n");
 	}
 	# For some reason, we (with some classes) get an empty object after updating (weird)
 	# so we re-read the object from the DB to make sure we have the id value below:

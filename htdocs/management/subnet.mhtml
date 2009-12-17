@@ -17,6 +17,11 @@ my @children;
 my $dbh = Netdot::Model->db_Main();
 my $id = $network->id;
 my $manager = $ui->get_permission_manager($r);
+
+my $priv_user = 0;
+if ( $manager && $manager->can($user, "access_section", 'subnet.mhtml:ip_add_link') ){
+    $priv_user = 1;
+}
 </%init>
 
 <%perl>
@@ -105,43 +110,44 @@ for( my $i=0; $i<(($net->num()+1)/$cols); $i++ ) {
 	    my $divtitle = $names{$net->numeric} if exists $names{$net->numeric};
 
 	    if( $status{$net->numeric} eq "Static" ) {
-		# show used addresses in red, with no link tag, show dns name on mouseover
+		# show used addresses in red, show dns name on mouseover
 		$divclass = "ipaddr_static";
+		$ipaddr = '<a href="ip.html?id='.$iplinks{$net->numeric}.'" class="ipaddr">'.$ipaddr.'</a>';
 
 	    } elsif( $status{$net->numeric} eq "Dynamic" ) {
 		# show dynamic addresses in orange, don't link
 		$divclass = "ipaddr_dynamic";
+		$ipaddr = '<a href="ip.html?id='.$iplinks{$net->numeric}.'" class="ipaddr">'.$ipaddr.'</a>' if $priv_user;
 
 	    } elsif( $status{$net->numeric} eq "Reserved" ) {
 		# show reserved addresses in grey, don't link
 		$divclass = "ipaddr_reserved";
+		$ipaddr = '<a href="ip.html?id='.$iplinks{$net->numeric}.'" class="ipaddr">'.$ipaddr.'</a>' if $priv_user;
 
 	    } elsif( $status{$net->numeric} eq "Container" ) {
 		# link to detail page for containers
 		$divclass = "ipaddr_container";
+		$ipaddr = '<a href="ip.html?id='.$iplinks{$net->numeric}.'" class="ipaddr">'.$ipaddr.'</a>' if $priv_user;
 
 	    } elsif( $status{$net->numeric} eq "Discovered" ) {
 		$divclass = "ipaddr_discovered";
+		$ipaddr = '<a href="ip.html?id='.$iplinks{$net->numeric}.'" class="ipaddr">'.$ipaddr.'</a>';
 
 	    } elsif( $status{$net->numeric} eq "Available" ) {
 		$divclass = "ipaddr_available";
+		$ipaddr = '<a href="ip.html?id='.$iplinks{$net->numeric}.'" class="ipaddr">'.$ipaddr.'</a>' if $priv_user;
 	    }
 
-	    $ipaddr = '<a href="ip.html?id='.$iplinks{$net->numeric}.'" class="ipaddr">'.$ipaddr.'</a>';
 	    $ipaddr = '<div class="'.$divclass.'" title="'.$divtitle.'" width="100%">'.$ipaddr.'</div>';
+
 	} else {
-	    # Unprivileged users cannot select new IPs to create.
-	    # We want them to use automatic allocation, so that ip addresses are always assigned
-	    # sequentially.  This allows for easier subnet size reduction if address space is underutilized.
-	    if ( $manager && $manager->can($user, "access_section", 'subnet.mhtml:add_block_prefix') ){
+	    if ( $priv_user ){
 		# link this address to the "Add" section in ip.html
 		$ipaddr = '<div class="ipaddr_available"><a href="ip.html?add_block_prefix='.$net->addr().'%2F32&add_block_parent='.$network->id.'&_action=ADD_BLOCK" class="ipaddr">'.$ipaddr.'</a></div>';
 	    }else{
 		$ipaddr = '<div class="ipaddr_available">'.$ipaddr.'</div>';
 	    }
-
 	}
-
 	push( @row, $ipaddr );
 	$net++;                      # increment the IP address
     }

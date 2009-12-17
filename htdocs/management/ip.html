@@ -1105,6 +1105,7 @@ if ($o->status->name eq "Subnet") {
 %################################################################
 %# DHCP Scopes
 %################################################################
+% if ( int($o->status) && $o->status->name eq 'Subnet' ){
     <div class="container">
       <div class="containerheadleft">DHCP Scope</div>
 %   if ( my @scopes = $o->dhcp_scopes ){
@@ -1115,6 +1116,7 @@ if ($o->status->name eq "Subnet") {
 %   }else{
       <div class="containerheadright"><a href="ip.html?id=<% $id %>&edit=enable_dhcp">[enable]</a></div>
 %   }
+% }
     </div>
 
 %################################################################

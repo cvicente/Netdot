@@ -312,7 +312,7 @@ device3 community2
     </section>
     <section>
       <title>DNS</title>
-      <para>Support for DNS records will be available starting with release 0.9</para>
+      <para/>
     </section>
     <section>
       <title>DHCP</title>
@@ -340,6 +340,79 @@ device3 community2
       <para>Or you can export several in one call:</para>
       <programlisting>bin/exporter.pl -t Nagios,Sysmon,Rancid</programlisting>
       <para>There are specific export parameters for each of these which you can customize by editing your Site.conf file.</para>
+    </section>
+    <section>
+      <title>Authorization</title>
+      <para>Starting with version 0.9, netdot supports multi-level user access.  </para>
+      <para>There are three types of users that correspond with levels of access in 
+Netdot:</para>
+      <itemizedlist>
+        <listitem>
+          <para>Admin: Full access to the UI and operations on objects.</para>
+        </listitem>
+        <listitem>
+          <para>Operator: Full access to the UI, but read-only access to objects.</para>
+        </listitem>
+        <listitem>
+          <para>User: Limited UI, with view, edit, and delete access to particular 
+objects.  </para>
+        </listitem>
+      </itemizedlist>
+      <section>
+        <title>Assigning permissions to unprivileged users</title>
+        <para>Permissions can be assigned to individuals or to groups. Individuals are 
+grouped in contact lists.  A user who is a member of a contact list 
+inherits the permissions from the list.  However, the individual can 
+have more specific permissions (or no permissions) if necessary.</para>
+        <para>There is a limited number of objects which unprivileged users can gain 
+access to:</para>
+        <itemizedlist>
+          <listitem>
+            <para>DNS records: Users can create, modify and delete records from a 
+certain zone.  Permissions can be given for the entire zone or for 
+subsets of it, based on IP blocks.  For example, if a user is given 
+view, edit and delete permissions to myzone.com, he or she can view, 
+modify and remove any record from that zone.  On the other hand, if the 
+zone covers hosts from a supernet, i.e. 10.0.0.0/16, and the user should 
+only have control on records within a particular subnet, i.e. 
+10.0.0.0/24, instead of assigning permissions on myzone.com, the 
+administrator can assign view, edit and delete permissions on that 
+particular subnet.
+</para>
+          </listitem>
+          <listitem>
+            <para>Device interfaces: Users can view port details such as number, name, 
+vlan, room, jack, description and neighbor.  A user can only edit the 
+room, jack and description fields. To assign permissions to a user on a 
+list of devices, select the Device class and then select one or more 
+devices to which the user can have access.</para>
+          </listitem>
+          <listitem>
+            <para>Contact Lists: A user can add, modify and delete contacts from given 
+contact lists.  </para>
+          </listitem>
+        </itemizedlist>
+        <para>To assign permissions for an individual user, perform the following tasks:</para>
+        <itemizedlist>
+          <listitem>
+            <para>Make sure there is a Person object for the user.  You can verify if a Person object exists by going to Contacts -&gt; People and searching for the person&apos;s name in the Search box.  If the object does not exist, you can create a new one by clicking on the [new] button on the upper right corner of the same window.</para>
+          </listitem>
+          <listitem>
+            <para>Make sure that the person object has a Username and a User Type set.  If you have configured netdot to use Radius or LDAP authentication, make sure that the username corresponds with the login information in those central authentication systems.  If you are using local authentication instead, make sure that you set a local password using the Password field.</para>
+          </listitem>
+        </itemizedlist>
+        <itemizedlist>
+          <listitem>
+            <para>On the Person page, you can add permissions by clicking on the [access_rights] button.  This will display current permissions.  You can now add new ones by clicking on the [add] button on the right.</para>
+          </listitem>
+          <listitem>
+            <para>On the UserRight window, select the Object Class, the specific object or objects, and one or more access rights (view, edit, delete).  Only select the &apos;none&apos; right to revoke all permissions inherited from a group.  Click on &apos;Insert&apos;.</para>
+          </listitem>
+          <listitem>
+            <para/>
+          </listitem>
+        </itemizedlist>
+      </section>
     </section>
   </section>
 </article>
