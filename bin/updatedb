@@ -491,15 +491,11 @@ push @statements, (
     "ALTER TABLE `circuit` DROP COLUMN `dlci`",
     "ALTER TABLE `circuit` DROP COLUMN `farend`",
     "ALTER TABLE `circuit` DROP COLUMN `nearend`",
-    "ALTER TABLE `circuit` DROP INDEX Circuit2",
-    "ALTER TABLE `circuit` DROP INDEX Circuit3",
     "ALTER TABLE `circuit` DROP INDEX Circuit4",
     "ALTER TABLE `circuit` ADD INDEX Circuit2 (`linkid`)",
     "ALTER TABLE `circuit_history` DROP COLUMN `dlci`",
     "ALTER TABLE `circuit_history` DROP COLUMN `farend`",
     "ALTER TABLE `circuit_history` DROP COLUMN `nearend`",
-    "ALTER TABLE `circuit_history` DROP INDEX Circuit_history1",
-    "ALTER TABLE `circuit_history` DROP INDEX Circuit_history2",
     "ALTER TABLE `circuit_history` DROP INDEX Circuit_history3",
     "ALTER TABLE `circuit_history` DROP INDEX Circuit_history4",
     "ALTER TABLE `circuit_history` ADD INDEX Circuit_history1 (`linkid`)",
@@ -508,25 +504,24 @@ push @statements, (
 
 ###################################################################################
 #     Change the number field in closet into a foreign key pointing to room       #
-my $closet_handler = $dbh->prepare("SELECT * FROM closet ORDER BY id") or die $dbh->errstr;
-$closet_handler->execute() or die $dbh->errstr;
+my $closet_handler = $dbh->prepare("SELECT * FROM closet ORDER BY id");
+$closet_handler->execute();
 
-my $room_handler = $dbh->prepare("SELECT * FROM room ORDER BY id") or die $dbh->errstr;
-$room_handler->execute() or die $dbh->errstr;
+my $room_handler = $dbh->prepare("SELECT * FROM room ORDER BY id");
+$room_handler->execute();
 
-my $cref = $closet_handler->fetchall_hashref('id') or die $dbh->errstr;
-my $rref = $room_handler->fetchall_hashref('id') or die $dbh->errstr;
+my $cref = $closet_handler->fetchall_hashref('id');
+my $rref = $room_handler->fetchall_hashref('id');
 
 foreach my $ci ( keys(%{$cref}) ){
-    my $bool = 0;
+    my $found = 0;
     my $ri;
     foreach $ri ( keys(%{$rref}) ){
         if ( ($cref->{$ci}->{number} eq $rref->{$ri}->{name}) && ($cref->{$ci}->{floor} eq $rref->{$ri}->{floor}) ) {
-                $bool = 1;
-                last;
+                $found = 1;
         }
     } 
-    if ($bool){
+    if (!$found){
         push (@statements, 
               "INSERT INTO room (name, floor) VALUES ('$cref->{$ci}->{number}', '$cref->{$ci}->{floor}')"
              );
