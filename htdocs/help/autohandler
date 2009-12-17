@@ -39,6 +39,7 @@ my $page = $user->getAttribute("$PAGE_ATTRIBUTE");
 	    title        => 'Help',
 	    attribute    => $PAGE_ATTRIBUTE,
 	    sub_sections => [		
+	        { section => 'MANUAL',   title => 'User Manual' },
 	        { section => 'DATABASE', title => 'Database Help' },
             ],
         };
@@ -47,7 +48,10 @@ my $page = $user->getAttribute("$PAGE_ATTRIBUTE");
 
 <%perl>
 
-if ($page eq "DATABASE") {
+if ($page eq "MANUAL") {
+    $m->comp("manual.html");
+
+}elsif ($page eq "DATABASE") {
 </%perl>	
 	<div class="container">
 	<div class="containerhead">Database Help</div>
