@@ -24,46 +24,39 @@ sub new{
 }
 
 ############################################################################
+=head2 generate_records - Generates A/AAAA & PTR records
+
+    It figures out the host octets and adds the given prefix and suffix strings
+    For example, given the IP: 192.168.10.20
+    it will create A && PTR records like "<prefix>10-20<suffix>.my-given-domain"
+
+  Arguments:
+    prefix  -  String to prepend to host part of IP address
+    suffix  -  String to append to host part of IP address
+    ipstart -  First IP in range
+    ipend   -  Last IP in range
+    fzone   -  Forward zone (for A records)
+    rzone   -  Reverse zone (for PTR records)
+  Returns:
+    Array of RRPTR and RRADDR objects
+  Examples:
+
+    From Ipblock class:
+
+    $range_dns_plugin->generate_records(
+       name_prefix=>$argv{name_prefix}, 
+       name_suffix=>$argv{name_suffix}, 
+       start=>$ipstart, end=>$ipend, 
+       fzone=>$fzone, rzone=>$rzone );
+
+=cut 
 sub generate_records {
     my ($self, %argv) = @_;
-    
-    if ( $argv{status} eq 'Dynamic' ){
-	return $self->generate_dynamic(%argv);
-    }elsif ( $argv{status} eq 'Static' ){
-	return $self->generate_static(%argv);
-    }else{
-	$self->throw_user("Cannot generate PTR records for IP status: $argv{status})");
-    }
-}
-
-
-############################################################################
-sub generate_dynamic {
-    my ($self, %argv) = @_;
-    return $self->_generate(prefix=>'d', %argv);
-}
-
-############################################################################
-sub generate_static {
-    my ($self, %argv) = @_;
-    return $self->_generate(prefix=>'host-', %argv);
-}
-
-############################################################################
-# _generate - Generates A/AAAA & PTR records
-# 
-# It figures out the host octets and appends them to the given prefix string
-# For example:
-#   given the IP - 192.168.10.20
-#   it will create PTR records like "d10-20.my-given-domain"
-#   
-sub _generate {
-    my ($self, %argv) = @_;
-    my($prefix, $ipstart, $ipend, $fzone, $rzone) 
-	= @argv{'prefix', 'start', 'end', 'fzone', 'rzone'};
+    my($prefix, $suffix, $ipstart, $ipend, $fzone, $rzone) 
+	= @argv{'prefix', 'suffix', 'start', 'end', 'fzone', 'rzone'};
 
     $self->throw_fatal("Missing required arguments")
-	unless ( $prefix && $ipstart && $ipend && $fzone && $rzone );
+	unless ( $ipstart && $ipend && $fzone && $rzone );
 
     my @rrs;
     my $zname = $rzone->name;
@@ -80,17 +73,21 @@ sub _generate {
 	    $name = $ip->addr;
 	    $name =~ s/$p\.//;
 	    $name =~ s/\./-/;
-	    $name = $prefix.$name;
+	    $name = $prefix.$name if ( defined $prefix );
+	    $name .= $suffix if ( defined $suffix );
 	    $ptrdname = "$name.".$fzone->name;
 
 	    my $ipb = Ipblock->search(address=>$ip->addr)->first;
 
 	    # We'll wipe out whatever records were there
+	    # We do it after we add the names to avoid the IPs
+	    # being set as availble
+	    my @to_delete;
 	    foreach my $r ( $ipb->ptr_records ){
-		$r->delete;
+		push @to_delete, $r;
 	    }
 	    foreach my $r ( $ipb->arecords ){
-		$r->delete;
+		push @to_delete, $r;
 	    }
 	    
 	    my $ptr = Netdot::Model::RRPTR->insert({ptrdname => $ptrdname, 
@@ -103,6 +100,8 @@ sub _generate {
 						    ipblock => $ipb, 
 						    zone    => $fzone});
 	    push @rrs, $rraddr;
+
+	    map { $_->delete } @to_delete;
 	    
 	}elsif ( $ip->version eq '6' ){
 	    # Pending
