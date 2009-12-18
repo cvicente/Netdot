@@ -4,7 +4,7 @@
   <title>The Netdot Manual</title>
   <articleinfo>
     <subtitle>Network Documentation Tool</subtitle>
-    <releaseinfo>Version 0.8</releaseinfo>
+    <releaseinfo>Version 0.9</releaseinfo>
     <copyright>
       <year>2009</year>
       <holder>University of Oregon</holder>
@@ -35,7 +35,7 @@
         <para>Contact information for related entities: departments, providers, vendors, etc.</para>
       </listitem>
       <listitem>
-        <para>Netdot can generate configuration files for various other tools, including: <ulink url="http://www.nagios.org">Nagios</ulink>, <ulink url="http://www.sysmon.org">Sysmon</ulink>, <ulink url="http://www.shrubbery.net/rancid">RANCID</ulink>, <ulink url="http://www.cacti.net">Cacti</ulink>.  Starting with version 0.9, Netdot will also generate configurations for ISC BIND and ISC DHCPD.</para>
+        <para>Netdot can generate configuration files for various other tools, including: <ulink url="http://www.nagios.org">Nagios</ulink>, <ulink url="http://www.sysmon.org">Sysmon</ulink>, <ulink url="http://www.shrubbery.net/rancid">RANCID</ulink>, <ulink url="http://www.cacti.net">Cacti</ulink>.  Starting with version 0.9, Netdot  also generates configurations for ISC BIND and ISC DHCPD.</para>
       </listitem>
     </itemizedlist>
   </section>
@@ -312,11 +312,27 @@ device3 community2
     </section>
     <section>
       <title>DNS</title>
-      <para/>
+      <para>Netdot can maintain DNS zone data. Zones can be exported as text files to be used by DNS server software.  Currently, only ISC BIND zone file exporting is supported.  </para>
+      <tip>
+        <para>The mechanisms by which zone files are transferred to and loaded by authoritative name servers are left to the administrator.  A simple way to do this is by running a name server locally in the machine that runs netdot, and saving those zone files in the location where the software can load them periodically. A more complex setup could involve saving these files into revision control systems (CVS, SVN, etc), which could then be used by system configuration engines like Puppet or CfEngine to run syntax checks and load them into the appropriate name servers.</para>
+      </tip>
+      <para>Netdot supports the following DNS records: A, AAAA, CNAME, DS, HINFO, LOC, MX, NAPTR, SRV, and TXT.</para>
+      <para>You can import your existing BIND zones into netdot with the help of the tool <emphasis role="italic">import_bind_zones.pl</emphasis> from the <emphasis role="italic">import</emphasis> subdirectory.  </para>
+      <para>To add a new zone manually, go to Management -&gt; Zones and click on [add].  You will see a new zone created with default values extracted from the configuration file.  </para>
+      <para>Once a zone is created, it must be linked to an IP block (Subnet or Container).  You can do this by clicking on the [add] button of the IP blocks section in the zone page.  </para>
+      <para>At this point, you can add new records by clicking on the [add] button on the Records section.  Records can also be added from other parts of the user interface, for example, from the IP address page, or the Hosts page.</para>
+      <para>Records can also be imported in bulk into the zone by clicking on the [import] button of the Records section and pasting the text from a BIND zone file into the text box.</para>
+      <para>Each time the zone or its contents are modified, the transaction is added to a list of &quot;pending changes&quot;.  This list is used to determine when a zone needs to be exported. Zones can be exported manually via the UI by going to the Export menu, or via cron jobs. When a zone is exported, its serial number is increased and its list of pending changes is flushed.</para>
+      <para>Netdot can auto-generate and maintain DNS records for IP address belonging to device interfaces, for example, routers.  The logic of how these names are generated is handed off to a plugin.  </para>
+      <section>
+        <title>The &apos;@&apos; record</title>
+        <para>In netdot, as in BIND, the &apos;@&apos; record symbolizes the domain.  In order to add records that apply to the domain itself, such as NS records, you must add the &apos;@&apos; name first.  Once this name is created, you can add NS, MX and A records to it, which will apply to the domain that the zone represents.</para>
+      </section>
     </section>
     <section>
       <title>DHCP</title>
-      <para>DHCP integration will be available starting with release 0.9</para>
+      <para>Netdot can maintain DHCP information and generate configurations for ISC DHCPD.</para>
+      <para>DHCP information is organized hierarchically around the DHCP Scope object.  Netdot supports scope definitions of the following types: global, subnet, shared-subnet, group, and host. Each of these scopes can be assigned one or more attributes.  </para>
     </section>
     <section>
       <title>Contact Information</title>
@@ -338,7 +354,7 @@ device3 community2
       <para>Additionally, the exporter can be called from the command line.  For example, to generate Nagios configurations:</para>
       <programlisting>bin/exporter.pl -t Nagios</programlisting>
       <para>Or you can export several in one call:</para>
-      <programlisting>bin/exporter.pl -t Nagios,Sysmon,Rancid</programlisting>
+      <programlisting>bin/exporter.pl -t Nagios,Sysmon,Rancid,BIND,DHCPD</programlisting>
       <para>There are specific export parameters for each of these which you can customize by editing your Site.conf file.</para>
     </section>
     <section>
@@ -407,9 +423,6 @@ contact lists.  </para>
           </listitem>
           <listitem>
             <para>On the UserRight window, select the Object Class, the specific object or objects, and one or more access rights (view, edit, delete).  Only select the &apos;none&apos; right to revoke all permissions inherited from a group.  Click on &apos;Insert&apos;.</para>
-          </listitem>
-          <listitem>
-            <para/>
           </listitem>
         </itemizedlist>
       </section>
