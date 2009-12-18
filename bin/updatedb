@@ -55,6 +55,9 @@ my @statements = (
     "ALTER TABLE `device` DROP COLUMN `person`",
     "ALTER TABLE `device` MODIFY `oobname` varchar(255)",
     "ALTER TABLE `device` ADD COLUMN `auto_dns` bool NOT NULL",
+    "ALTER TABLE `device` ADD INDEX Device9 (`down_from`)",
+    "ALTER TABLE `device` ADD INDEX Device10 (`down_until`)",
+    "ALTER TABLE `device` ADD INDEX Device11 (`serialnumber`)",
     "ALTER TABLE `device_history` DROP COLUMN `person`",
     "ALTER TABLE `device_history` MODIFY `modifier` varchar(255)",
     "ALTER TABLE `device_history` ADD COLUMN `auto_dns` bool NOT NULL",
@@ -76,7 +79,9 @@ my @statements = (
     "ALTER TABLE `interface_history` ADD COLUMN `ignore_ip` bool NOT NULL",
     "ALTER TABLE `interface_history` MODIFY `modifier` varchar(255)",
     "ALTER TABLE `interface_history` ADD COLUMN `auto_dns` bool NOT NULL",
+    "ALTER TABLE `interfacevlan` ADD INDEX interfacevlan5 (`vlan`)",
     "ALTER TABLE `ipblock` DROP COLUMN `dhcp_enabled`",
+    "ALTER TABLE `ipblock` ADD INDEX ipblock8 (`version`)",
     "ALTER TABLE `person` MODIFY `email` varchar(255)",
     "ALTER TABLE `person` MODIFY `emailpager` varchar(255)",
     "ALTER TABLE `person` ADD COLUMN `user_type` integer",
@@ -432,7 +437,7 @@ my @statements = (
     "INSERT INTO dhcpattrname (name, code, format) VALUES ('option fqdn.fqdn', '', 'text' );",
     "INSERT INTO dhcpattrname (name, code, format) VALUES ('option agent.circuit-id', '1', 'string' );",
     "INSERT INTO dhcpattrname (name, code, format) VALUES ('option agent.remote-id', '2', 'string' );",
-
+    "DELETE FROM dhcpscopetype WHERE name='class' OR name='subclass' OR name='pool'",
     );
 
 my @ttlchange = ("rraddr",

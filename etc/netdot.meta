@@ -2110,7 +2110,7 @@ $meta = {
     },
     description => 'A network device.  Particularly, Devices in Netdot are network infrastructure devices that network administrators care about for inventory, monitoring and management purposes.  Not to be confused with end nodes',
     has_history => 1,
-    index => [ ['physaddr'],  ['product'], ['used_by'],  ['inventorynumber'], ['owner'], ['os'], ['sysname'], ['down_from'], ['down_until'] ],
+    index => [ ['physaddr'],  ['product'], ['used_by'],  ['inventorynumber'], ['owner'], ['os'], ['sysname'], ['down_from'], ['down_until'], ['serialnumber'] ],
     isjoin => '0',
     label => [
       'name'
@@ -4376,29 +4376,14 @@ $meta = {
     },
     description => 'Interface to VLAN join table',
     has_history => 0,
-    index => [
-      [
-       'stp_instance',
-      ],
-      [
-       'stp_des_bridge',
-      ],
-      [
-       'stp_des_port',
-      ],
-    ],
+    index => [ ['stp_instance'],  ['stp_des_bridge'], ['stp_des_port'], ['vlan'] ],
     isjoin => '0',
     label => [
       'interface',
       'vlan'
     ],
     primary_key => 'id',
-    unique => [
-      [
-        'interface',
-        'vlan'
-      ]
-    ],
+    unique => [ ['interface', 'vlan' ] ],
     views => {
       all => [
         'interface',
@@ -4668,26 +4653,7 @@ $meta = {
     },
     description => 'An IP (v4 or v6) CIDR block, which can represent both individual addresses and blocks of addresses (subnets, etc).',
     has_history => 0,
-    index => [
-      [
-        'parent'
-      ],
-      [
-        'status'
-      ],
-      [
-        'first_seen'
-      ],
-      [
-        'last_seen'
-      ],
-      [
-        'interface'
-      ],
-      [
-        'vlan'
-      ]
-    ],
+    index => [ ['parent'], ['status'], ['first_seen'], ['last_seen'], ['interface'], ['vlan'], ['version'] ],
     isjoin => '0',
     label => [
       'address',
