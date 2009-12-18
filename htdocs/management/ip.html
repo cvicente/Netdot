@@ -28,6 +28,8 @@ $range_parent      => undef
 $range_gen_dns     => undef
 $range_fw_zone     => undef
 $range_rev_zone    => undef
+$name_prefix       => undef
+$name_suffix       => undef
 $block_owner       => undef
 $block_status      => undef
 $block_used_by     => undef
@@ -247,6 +249,8 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 					description => $range_description,
 					parent      => $range_parent,
 					gen_dns     => $range_gen_dns,
+					name_prefix => $name_prefix,
+					name_suffix => $name_suffix,
 					fzone       => $range_fw_zone,
 					rzone       => $range_rev_zone,
 		    );
@@ -801,6 +805,9 @@ if ( $edit ){
 
     push @fields, 'Auto-generate DNS records:';
     push @data, '<input type="checkbox" name="range_gen_dns" checked="checked">';
+
+    push @fields, 'DNS name prefix/suffix:';
+    push @data, '<input type="text" size="5" name="name_prefix"> <input type="text" size="5" name="name_suffix">';
 
     my $fwzone   = $o->forward_zone();
     my $revzone  = $o->reverse_zone();

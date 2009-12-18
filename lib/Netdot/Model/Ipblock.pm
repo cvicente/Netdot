@@ -970,13 +970,15 @@ sub get_maxed_out_subnets {
 
   Arguments: 
     Hash with following keys:
-      start   - First IP in range
-      end     - Last IP in range
-      status  - Ipblock status
-      parent  - Parent Ipblock id (optional)
-      gen_dns - Boolean.  Auto generate A/AAAA and PTR records
-      fzone   - Forward Zone id for DNS records
-      rzone   - Reverse Zone id for DNS records
+      start       - First IP in range
+      end         - Last IP in range
+      status      - Ipblock status
+      parent      - Parent Ipblock id (optional)
+      gen_dns     - Boolean.  Auto generate A/AAAA and PTR records
+      name_prefix - String to prepend to host part of IP address
+      name_suffix - String to append to host part of IP address
+      fzone       - Forward Zone id for DNS records
+      rzone       - Reverse Zone id for DNS records
   Returns:   
 
   Examples:
@@ -1002,7 +1004,7 @@ sub add_range{
 	}
 	my $np = $p->_netaddr();
 	unless ( $ipstart->within($np) && $ipend->within($np) ){
-	    $class->throw_user("Ipblock::add_range: start and/or end IPs not within given subnet: ".$p->get_label);
+	    $class->throw_user("Start and/or end IPs not within given subnet: ".$p->get_label);
 	}
     }
 
@@ -1033,16 +1035,20 @@ sub add_range{
     if ( my $e = $@ ){
 	$class->throw_user($e);
     }
-    $logger->info("Ipblock::add_range: Added/Modified address range: $argv{start} - $argv{end}");
+    $logger->info("Ipblock::add_range: Did $argv{status} range: $argv{start} - $argv{end}");
 
     #########################################
     # Call the plugin that generates DNS records
     #
     if ( $argv{gen_dns} && $argv{fzone} && $argv{rzone} ){
+	if ( $argv{status} ne 'Dynamic' && $argv{status} ne 'Static' ){
+	    $class->throw_user("DNS records can only be auto-generated for Dynamic or Static IPs");
+	}
 	my $fzone = Zone->retrieve($argv{fzone});
 	my $rzone = Zone->retrieve($argv{rzone});
 	$logger->info("Ipblock::add_range: Generating DNS records: $argv{start} - $argv{end}");
-	$range_dns_plugin->generate_records(status=>$argv{status}, 
+	$range_dns_plugin->generate_records(prefix=>$argv{name_prefix}, 
+					    suffix=>$argv{name_suffix}, 
 					    start=>$ipstart, end=>$ipend, 
 					    fzone=>$fzone, rzone=>$rzone );
     }
@@ -1103,7 +1109,7 @@ sub remove_range{
     if ( my $e = $@ ){
 	$class->throw_user($e);
     }
-    $logger->info("Ipblock::remove_range: Removed address range: $argv{start} - $argv{end}");
+    $logger->info("Ipblock::remove_range: done with $argv{start} - $argv{end}");
     
 }
 
