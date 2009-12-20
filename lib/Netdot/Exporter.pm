@@ -83,12 +83,11 @@ sub get_device_info {
     my $rows = $self->{_dbh}->selectall_arrayref("
                 SELECT    device.id, device.snmp_managed, device.community,
                           device.down_from, device.down_until, entity.name, contactlist.id,
-                          target.id, target.address, target.version, target.parent, rr.name, zone.name,
+                          target.id, target.address, target.version, target.parent, rr.name, zone.mname,
                           interface.id, interface.number, interface.admin_status, interface.monitored, interface.contactlist,
                           bgppeering.bgppeeraddr, bgppeering.monitored
-                FROM      rr, zone, device
+                FROM      rr, zone, interface, device
                 LEFT JOIN ipblock target ON device.snmp_target=target.id
-                LEFT JOIN interface ON device.id=interface.device
                 LEFT JOIN entity ON device.used_by=entity.id
                 LEFT JOIN devicecontacts ON device.id=devicecontacts.device
                 LEFT JOIN contactlist ON contactlist.id=devicecontacts.contactlist
