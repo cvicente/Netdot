@@ -83,7 +83,7 @@ sub get_device_info {
     my $rows = $self->{_dbh}->selectall_arrayref("
                 SELECT    device.id, device.snmp_managed, device.community,
                           device.down_from, device.down_until, entity.name, contactlist.id,
-                          target.id, target.address, target.version, target.parent, rr.name, zone.mname,
+                          target.id, target.address, target.version, target.parent, rr.name, zone.name,
                           interface.id, interface.number, interface.admin_status, interface.monitored, interface.contactlist,
                           bgppeering.bgppeeraddr, bgppeering.monitored
                 FROM      rr, zone, interface, device
