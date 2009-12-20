@@ -2389,14 +2389,22 @@ sub info_update {
 
     my @interfaces_to_check = ();
     #lets build two hashes to store before and after information in, the key of the hash will be the interface
-    #id, the value will be a concatanation of all the data
+    #id, the value will be a concatenation of all the data
     my %before_hash;
     my %after_hash;
     while(my @row = $before_stmt->fetchrow_array()){
-        $before_hash{$row[0]} = "".$row[1].$row[2].$row[3].$row[4];
+	my $i;
+	for ($i=1; $i<5; $i++){
+	    $row[$i] ||= 0; # Avoid warnings about concatenation of uninitialized values
+	}
+	$before_hash{$row[0]} = $row[1].$row[2].$row[3].$row[4];
     }
     while(my @row = $after_stmt->fetchrow_array()){
-        $after_hash{$row[0]} = "".$row[1].$row[2].$row[3].$row[4];
+	my $i;
+	for ($i=1; $i<5; $i++){
+	    $row[$i] ||= 0; # Avoid warnings about concatenation of uninitialized values
+	}
+        $after_hash{$row[0]} = $row[1].$row[2].$row[3].$row[4];
     }
 
     #we will have to loop through each hash, since before_hash might have some keys that after_hash doesn't, and visa versa
