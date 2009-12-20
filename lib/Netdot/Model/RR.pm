@@ -105,7 +105,7 @@ sub search_like {
 	    } else {
 		$argv{name} =~ s/\.$name//;
 		$argv{zone} = $zone->id;
-		return $class->SUPER::search_like(%argv);
+		return $class->SUPER::search(%argv);
 	    }
 	}else{
 	    # Zone not found, just do normal search
