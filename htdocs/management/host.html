@@ -110,14 +110,17 @@ if ( $submit ){
 			$rr = $newid;            
 		    }
 		    
-		    my $newrr = RR->retrieve($id);
-		    defined $newrr || die "Could not retrieve RR id $id";
-
-		    $rrs{$newrr->id} = $newrr;
 		    if (defined $ipblock) {
 			RRADDR->insert({rr=>$newid, ipblock=>$ipblock});
 		    }
 		}
+		# Add new RR to %rrs hash 
+		# Also, if RR was just updated, this re-reads it from the DB
+		# to avoid the old values from showing up
+		my $newrr = RR->retrieve($id);
+		defined $newrr ||  $m->comp('/generic/error.mhtml', error=>"Could not retrieve RR id $id"); ;
+		$rrs{$newrr->id} = $newrr;
+		
 	    }
 	};
 	if ( my $e = $@ ){
