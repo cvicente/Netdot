@@ -102,6 +102,10 @@ if ( $_action ){
 	    $m->comp('/generic/error.mhtml', error=>$e);
 	}
     }elsif ( $_action eq 'delete_role' ){
+	$m->comp('.delete_role_confirmation', role_id=>$role_id, contactlist_id=>$id);
+	$m->abort;
+
+    }elsif ( $_action eq 'delete_role_confirm' ){
 	my $role = Contact->retrieve($role_id);
 	unless ( $role ){
 	    $m->comp('/generic/error.mhtml', error=>"Cannot retrieve Role id $role_id");
@@ -224,7 +228,11 @@ $contactlist_id
 $person_id
 </%args>
 <%init>
-    my $person = Person->retrieve($person_id);
+my $person = Person->retrieve($person_id);
+unless ( $person ){
+    $m->comp('/generic/error.mhtml', error=>"Cannot retrieve Person id $person_id");
+}
+
 </%init>
 
 <div class="container">
@@ -258,5 +266,37 @@ $person_id
 
     </div>
 </div>
+</%def>
 
+<%def .delete_role_confirmation>
+<%args>
+$contactlist_id
+$role_id
+</%args>
+<%init>
+my $role = Contact->retrieve($role_id);
+unless ( $role ){
+    $m->comp('/generic/error.mhtml', error=>"Cannot retrieve Role id $role_id");
+}
+
+</%init>
+
+<div class="container">
+    <div class="containerbody">
+
+ <form name="netdotform" action="contactlist.html" method="POST">
+   <input type="hidden" name="id" value="<% $contactlist_id %>">
+
+   <p><% $role->get_label %>
+
+    <p><strong>Are you sure you want to delete this role?</strong>
+    <p>
+    <input type="submit" name="submit"    value="Confirm" >
+    <input type="button" name="cancel"    value="Cancel" onClick="history.go(-1);">
+    <input type="hidden" name="_action"   value="delete_role_confirm">
+    <input type="hidden" name="role_id" value="<% $role->id %>">
+ </form>
+
+    </div>
+</div>
 </%def>
