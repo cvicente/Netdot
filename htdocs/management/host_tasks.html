@@ -103,7 +103,11 @@ my @list;
                 <option value="0">- Select Block -</option>
 %           my @subnets = Ipblock->search(status=>"Subnet");
 %           foreach my $o ( sort { $a->address_numeric cmp $b->address_numeric } @subnets ){
-                <option value="<% $o %>"><% $o->get_label %></option>
+%               my $subnet_label = $o->get_label();
+%               if ( $o->description ){
+%                   $subnet_label .= " (".$o->description.")"; 
+%               }
+                <option value="<% $o %>"><% $subnet_label %></option>
 %           }
                 </select>
                 </p>
