@@ -1234,19 +1234,19 @@ sub discover {
 	}
 	
 	
-	if( $info->{serial_number} ){
-	    my %search_args = (serialnumber=>$info->{serial_number});
+	if ( $info->{serialnumber} ){
+	    my %search_args = (serialnumber=>$info->{serialnumber});
 	    if ( $info->{sysobjectid} && 
 	         (my $product = Product->search(sysobjectid=>$info->{sysobjectid})->first) ){
 	        $search_args{product} = $product;
 	    }
 	    if ( $dev = Device->search(%search_args)->first ){
-	        $logger->info(sub{"Device::discover: Device already exists in db with serial number ".$info->{serial_number}});
+	        $logger->info(sub{"Device::discover: Device already exists in db with serial number ".$info->{serialnumber}});
 	        $device_changed_name = 1;
 	    }
 	}
 	
-	if( $info->{physaddr}){
+	if ( $info->{physaddr} ){
 	    if ( my $physaddr = PhysAddr->search(address=>($info->{physaddr}))->first ){
 	        if ( $dev = Device->search(physaddr=>$physaddr)->first ){
 		    $logger->info(sub{"Device::discover: Device already exists in db with physical address ".$physaddr->address});
