@@ -88,7 +88,7 @@ sub build_configs{
 	    print FILE $prefix, ": Type: ", $c->type->name, "\n" if ($c->type);
 	    print FILE $prefix, ": Speed: ", $c->speed, "\n" if ($c->speed);
 	    print FILE $prefix, ": Provider: ", $c->vendor->name, "\n" if ($c->vendor);
-	    forach my $int ( $c->interfaces ){
+	    foreach my $int ( $c->interfaces ){
 		print FILE $prefix, ": Interface: ", $int->get_label, "\n";
 		print FILE $prefix, ": DLCI: ", $int->dlci, "\n" if ($int->dlci);
 	    }

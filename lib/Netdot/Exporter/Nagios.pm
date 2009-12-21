@@ -99,7 +99,7 @@ sub generate_configs {
                             email_period.name, pager_period.name
                   FROM      contactlist, person, contact
                   LEFT JOIN availability email_period ON (email_period.id=contact.notify_email)
-                  LEFT JOIN availability pager_period ON (pager_period.id=contact.notify_email)
+                  LEFT JOIN availability pager_period ON (pager_period.id=contact.notify_pager)
                   WHERE     contact.contactlist=contactlist.id
                       AND   contact.person=person.id
                  ");
@@ -143,7 +143,7 @@ sub generate_configs {
 
  	    # Then group by escalation level
  	    my $level = $contact->{esc_level} || 0;
- 	    $contactlists{$clid}{level}{$level}{$contid}{name} = $name;
+ 	    $contactlists{$clid}{level}{$level}{$contid} = $contact;
 	}
      }
 
@@ -599,8 +599,8 @@ sub print_contacts {
 	foreach my $level ( sort {$a <=> $b} keys %{ $contactlists->{$clid}->{level} } ){
 	    my @members;
 	    foreach my $contactid ( keys %{ $contactlists->{$clid}->{level}->{$level} } ){
-		my $name = $contactlists->{$clid}->{level}->{$level}->{$contactid}->{name};
-		my $contact = $contacts->{$name};
+		my $contact = $contactlists->{$clid}->{level}->{$level}->{$contactid};
+		my $name    = $contact->{name};
 		# One for e-mails
 		if ( my $period = $contact->{email_period} ){
 		    if ( exists $self->{NAGIOS_TIMEPERIODS}{$period} ){
@@ -636,7 +636,7 @@ sub print_contacts {
 			    print $out "}\n\n";
 			}
 		    }else{
-			$logger->warn($contact->notify_pager->name . " is not a defined timeperiod");
+			$logger->warn("$period is not a defined timeperiod");
 		    }
 		}
 	    }
