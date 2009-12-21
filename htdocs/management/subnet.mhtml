@@ -9,6 +9,15 @@ $user    => $ui->get_current_user($r)
 </%args>
 
 <%init>
+
+if ( $network->version == 4 && $network->prefix < 19 ){
+    print "This subnet is too big for the block view";
+    $m->abort;
+}elsif ( $network->version == 6 ){
+    print "Block view not supported yet for IPv6 subnets";
+    $m->abort;
+}
+
 my %used;
 my %names;
 my %status;
