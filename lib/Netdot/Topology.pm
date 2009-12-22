@@ -77,7 +77,9 @@ sub discover {
     # Get all existing links, or if there is anything in $sql_query_modifier, only the links specified
     my %old_links;
     my $dbh = Netdot::Model->db_Main;
-    foreach my $row (@{$dbh->selectall_arrayref("SELECT id, neighbor FROM interface WHERE neighbor != 0".$sql_query_modifier)}) {
+    my $q = 'SELECT id, neighbor FROM interface WHERE neighbor != 0';
+    $q .= $sql_query_modifier if defined $sql_query_modifier;
+    foreach my $row (@{$dbh->selectall_arrayref($q)}) {
 	my ($id, $neighbor) = @$row;
 	$old_links{$id} = $neighbor;
     }
@@ -370,8 +372,9 @@ sub get_dp_links {
 
     # Now go through everything looking for results
     my %links = ();
-    my $allmacs = Device->get_macs_from_all();
-    my $allips  = Device->get_ips_from_all();
+    my $allmacs        = Device->get_macs_from_all();
+    my $interface_macs = PhysAddr->from_interfaces();
+    my $allips         = Device->get_ips_from_all();
     my %ips2discover;
 
     foreach my $row ( @$results ){
@@ -382,36 +385,46 @@ sub get_dp_links {
         next if (exists $links{$iid});
 
         my $rem_dev = 0;
+        my $rem_int = 0;
 
-        # Find the connected device
-        if ( $r_ip ) {
-            foreach my $rem_ip ( split ';', $r_ip ) {
-                my $decimalip = Ipblock->ip2int($rem_ip);
-                next unless (exists $allips->{$decimalip});
-		$rem_dev = $allips->{$decimalip};
-		last if $rem_dev;
-		unless ($rem_dev) {
-		    $logger->debug("Topology::get_dp_links: Interface id $iid: ".
-				   "Remote Device IP not found: $r_ip");
-		}
-            }
-	}
-        if ( !$rem_dev && $r_id ) {  
+        if ( $r_id ) {  
             foreach my $rem_id (split ';', $r_id){
                 if ( $rem_id =~ /($MAC)/i ){
                     my $mac = PhysAddr->format_address($1);
-                    if ( !exists $allmacs->{$mac} ){
-                        $logger->debug("Topology::get_dp_links: Interface id $iid: ".
-				       "Remote Device MAC not found: $mac");
-			next;
+                    if ( my $mac_id = $interface_macs->{$mac} ){
+			my @ints = Interface->search(physaddr=>$mac_id);
+			if ( !@ints ){
+			    $logger->debug("Topology::get_dp_links: Cannot find Interface using $mac");
+			}elsif ( scalar(@ints) > 1 ){
+			    $logger->debug("Topology::get_dp_links: There are multiple interfaces with using $mac. Ignoring.");
+			}elsif ( $ints[0]->devices ){
+			    # this means that this mac is also a base_mac 
+			    # don't set rem_int because it would most likely be wrong
+			}else{
+			    my $int = $ints[0];
+			    $rem_dev = $int->device;
+			    $links{$iid} = $rem_int;
+			    $links{$rem_int} = $iid;
+			    $logger->debug(sprintf("Topology::get_dp_links: Found link: %d -> %d", 
+					       $iid, $rem_int));
+			    last;
+			}
 		    }
-		    $rem_dev = $allmacs->{$mac};
+		    if ( !$rem_dev ){
+			if ( $rem_dev = $allmacs->{$mac} ){
+			    last;
+			}else{
+			    $logger->debug("Topology::get_dp_links: Interface id $iid: ".
+					   "Remote Device MAC not found: $mac");
+			}
+		    }
 		}elsif ( $rem_id =~ /($IP)/ ){
 		    # Turns out that some devices send IP addresses as IDs
 		    my $decimalip = Ipblock->ip2int($1);
 		    $rem_dev = $allips->{$decimalip};
-		    last if $rem_dev;
-		    unless ($rem_dev) {
+		    if ( $rem_dev ){
+			last;
+		    }else {
 			$logger->debug("Topology::get_dp_links: Interface id $iid: ".
 				       "Remote Device IP not found: $rem_id");
 		    }
@@ -419,18 +432,33 @@ sub get_dp_links {
 		    # Try to find the device name
 		    $rem_dev = Device->search(sysname=>$rem_id)->first 
 			|| Device->search(name=>$rem_id)->first;
-		    unless ($rem_dev) {
+		    if ( $rem_dev ) {
+			last;
+		    }else{
 			$logger->debug("Topology::get_dp_links: Interface id $iid: ".
 				       "Remote Device name not found: $rem_id");
 		    }
 		}
-		last if $rem_dev;
             }
             unless ( $rem_dev ) {
                 $logger->debug("Topology::get_dp_links: Interface id $iid: ".
 			       "Remote Device not found: $r_id");
             }
-        } 
+        }
+ 
+        if ( !$rem_dev && $r_ip ) {
+            foreach my $rem_ip ( split ';', $r_ip ) {
+                my $decimalip = Ipblock->ip2int($rem_ip);
+                next unless (exists $allips->{$decimalip});
+		$rem_dev = $allips->{$decimalip};
+		if ( $rem_dev ){
+		    last;
+		}else {
+		    $logger->debug("Topology::get_dp_links: Interface id $iid: ".
+				   "Remote Device IP not found: $r_ip");
+		}
+            }
+	}
 
 	unless ( $rem_dev ) {
 	    if ( $class->config->get('ADD_UNKNOWN_DP_DEVS') ){
@@ -465,40 +493,40 @@ sub get_dp_links {
 	    next;
 	}
 
-       # Now we have a remote device in $rem_dev
-        if ( $r_port ) {
-	    my $rem_int;
-            foreach my $rem_port ( split ';', $r_port ) {
-		# If interface name has a slot/sub-slot number, use that only
-		# (helps finding stuff like Gi2/7)
-		if ( $rem_port =~ /\w+(\d+\/\d+)$/ ){
-		    $rem_port = '%'. $1 .'%';
+	unless ( $rem_int ){
+	    if ( $r_port ) {
+		foreach my $rem_port ( split ';', $r_port ) {
+		    # If interface name has a slot/sub-slot number
+		    # (helps finding stuff like Gi2/7)
+		    if ( $rem_port =~ /([A-Z]+)(\d+\/\d+)$/i ){
+			$rem_port = $1.'%'.$2;
+		    }
+		    # Try name first, then number, then description (if it is unique)
+		    $rem_int = Interface->search_like(device=>$rem_dev, name=>$rem_port)->first
+			|| Interface->search(device=>$rem_dev, number=>$rem_port)->first;
+		    unless ( $rem_int ){
+			my @ints = Interface->search(device=>$rem_dev, description=>$rem_port);
+			$rem_int = $ints[0] if ( scalar @ints == 1 );
+		    }
+		    if ( $rem_int ){
+			$links{$iid} = $rem_int->id;
+			$links{$rem_int->id} = $iid;
+			$logger->debug(sprintf("Topology::get_dp_links: Found link: %d -> %d", 
+					       $iid, $rem_int->id));
+			last;
+		    }
 		}
-                # Try name first, then number, then description (if it is unique)
-                $rem_int = Interface->search_like(device=>$rem_dev, name=>$rem_port)->first
-		    || Interface->search(device=>$rem_dev, number=>$rem_port)->first;
 		unless ( $rem_int ){
-		    my @ints = Interface->search(device=>$rem_dev, description=>$rem_port);
-		    $rem_int = $ints[0] if ( scalar @ints == 1 );
+		    my $int = Interface->retrieve($iid);
+		    my $dev = ref($rem_dev) ? $rem_dev : Device->retrieve($rem_dev);
+		    $logger->warn(sprintf("Topology::get_dp_links: %s: Port %s not found in Device: %s", 
+					  $int->get_label, $r_port, $dev->get_label));
 		}
-                if ( $rem_int ){
-                    $links{$iid} = $rem_int->id;
-                    $links{$rem_int->id} = $iid;
-		    $logger->debug(sprintf("Topology::get_dp_links: Found link: %d -> %d", 
-					   $iid, $rem_int->id));
-		    last;
-                }
-            }
-	    unless ( $rem_int ){
+	    }else{
 		my $int = Interface->retrieve($iid);
-		my $dev = ref($rem_dev) ? $rem_dev : Device->retrieve($rem_dev);
-		$logger->warn(sprintf("Topology::get_dp_links: %s: Port %s not found in Device: %s", 
-				      $int->get_label, $r_port, $dev->get_label));
+		$logger->warn(sprintf("Topology::get_dp_links: %s: Remote Port not defined", $int->get_label));
 	    }
-        }else{
-	    my $int = Interface->retrieve($iid);
-            $logger->warn(sprintf("Topology::get_dp_links: %s: Remote Port not defined", $int->get_label));
-        }
+	}
     }
 
     $logger->debug(sprintf("Topology::get_dp_links: %d Links determined in %s", 
