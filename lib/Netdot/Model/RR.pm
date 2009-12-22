@@ -443,22 +443,24 @@ sub add_host {
 	    }
 	    
 	    # LOCATION
-	    my ($txtdata, $room);
-	    if ( $argv{room_id} ){
-		# Room label includes building name
-		$room = Room->retrieve($argv{room_id})->get_label;
-		$txtdata .= $room;
-	    }elsif ( $argv{site_id} || $argv{site_name} ){
-		my $sname = ($argv{site_id})? Site->retrieve($argv{site_id})->get_label : $argv{site_name};
-		my $txtdata =  "LOC: $sname";
-		if ( $argv{room_number} ){
-		    $txtdata .= " ".$argv{room_number};
+	    if ( $argv{room_id} || $argv{site_id} || $argv{site_name} ){
+		my ($txtdata, $room);
+		if ( $argv{room_id} ){
+		    # Room label includes building name
+		    $room = Room->retrieve($argv{room_id})->get_label;
+		    $txtdata .= $room;
+		}elsif ( $argv{site_id} || $argv{site_name} ){
+		    my $sname = ($argv{site_id})? Site->retrieve($argv{site_id})->get_label : $argv{site_name};
+		    my $txtdata =  "LOC: $sname";
+		    if ( $argv{room_number} ){
+			$txtdata .= " ".$argv{room_number};
+		    }
 		}
+		RR->insert({rr      => $rr, 
+			    type    =>'TXT',
+			    txtdata => $txtdata,
+			   });
 	    }
-	    RR->insert({rr      => $rr, 
-			type    =>'TXT',
-			txtdata => $txtdata,
-		       });
 	    
 	    # CONTACTS
 	    if ( $argv{person} ){

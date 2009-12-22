@@ -38,6 +38,10 @@ my $DEBUG     = 0;
 my $js_prefix = $r->dir_config('NetdotPath') . "java_script";
 my $manager   = $ui->get_permission_manager($r);
 
+if ( !($manager && $manager->can($user, "access_section", 'form.html:user_fields')) ){
+    push @exclude, ('username', 'user_type');
+}
+
 if ( $DEBUG ){
     print "ARGS: ";
     printf "<pre>%s</pre>\n", Dumper( \%ARGS );
