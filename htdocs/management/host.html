@@ -617,13 +617,17 @@ foreach my $o ( values %rrs ) {
 	#display/edit
 	print '<div class="containerbody">';
 	if ( @cnames ) {
-	    foreach my $cname (@cnames) {
-		if ( my $cnamerr = RR->search(name=>$cname->cname)->first ){
-		    push @field_headers, "Name:";
-		    push @cell_data, "<a href=\"host.html?id=$cnamerr\">".$cnamerr->get_label."</a>";
-		    $m->comp('/generic/attribute_table.mhtml', %comphash);
-		    (@field_headers, @cell_data) = ((),());
-		}
+	    my $cname = $cnames[0]; # shouldn't be more than one, right?
+	    if ( my $cnamerr = RR->search(name=>$cname->cname)->first ){
+		push @field_headers, "Canonical Name:";
+		push @cell_data, "<a href=\"host.html?id=$cnamerr\">".$cnamerr->get_label."</a>";
+		$m->comp('/generic/attribute_table.mhtml', %comphash);
+		(@field_headers, @cell_data) = ((),());
+	    }else{
+		push @field_headers, "Canonical Name:";
+		push @cell_data, $cname->cname;
+		$m->comp('/generic/attribute_table.mhtml', %comphash);
+		(@field_headers, @cell_data) = ((),());
 	    }
 	}
 	
@@ -836,7 +840,7 @@ foreach my $o ( values %rrs ) {
 	#new rrptr
 	push( @field_headers, "IP");
 	push( @cell_data, "<input name='RRPTR__NEW__ipblock' value='' type='text'>");
-	$ui->add_to_fields(table=>'RRPTR', edit=>1, fields=>['ttl'],
+	$ui->add_to_fields(table=>'RRPTR', edit=>1, fields=>['ptrdname', 'ttl'],
 			   field_headers=>\@field_headers, cell_data=>\@cell_data,
 			   linkpages=>['']);
 	my $newptr = $m->scomp('/generic/attribute_table.mhtml', %comphash);

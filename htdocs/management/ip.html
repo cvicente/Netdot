@@ -578,11 +578,7 @@ if (!$edit){
     print '<div class="container">';
     print '<div class="containerheadleft">DNS A Records</div>';
     print '<div class="containerheadright">';
-    if (!@rraddrs) {
-	print "<a href=\"host.html?ipblock=$o&action=new\">[add]</a>";
-    }else{
-	print '&nbsp;';
-    }
+    print "<a href=\"host.html?ipblock=$o&action=new\">[add]</a>";
     print '</div>';
     print '<div class="containerbody">';
     $m->comp('/generic/sortresults.mhtml', object=>\@rrs);
@@ -592,7 +588,10 @@ if (!$edit){
     my @ptrs = $o->ptr_records();
     my @prrs = map { $_->rr } @ptrs;
     print '<div class="container">';
-    print '<div class="containerhead">DNS PTR Records</div>';
+    print '<div class="containerheadleft">DNS PTR Records</div>';
+    print '<div class="containerheadright">';
+    print "<a href=\"edit.html?table=RRPTR&ipblock=$o\">[add]</a>";
+    print '</div>';
     print '<div class="containerbody">';
     $m->comp('/generic/sortresults.mhtml', object=>\@prrs);
     print '</div>';
