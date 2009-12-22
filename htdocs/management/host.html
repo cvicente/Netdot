@@ -318,7 +318,7 @@ foreach my $o ( values %rrs ) {
     #RRADDR
     if ( !$o->cnames && !$o->ptr_records && !$o->ns_records ){
 	print '<div class="container" style="margin-left:10px">';
-	print '<div class="containerheadleft"><b>Address (A/AAAA)</b></div>';
+	print '<div class="containerheadleft"><b>Address '.$ui->table_descr_link('RRADDR', '(A/AAAA)').'</b></div>';
 	print '<div class="containerheadright">';
 
 	if ( $manager && $manager->can($user, "access_section", 'host.html:add_rraddr') ){
@@ -429,7 +429,7 @@ foreach my $o ( values %rrs ) {
 	#####################################################################################################
 	#RRHINFO
 	print '<div class="container" style="margin-left:10px">';
-	print '<div class="containerheadleft"><b>Hardware Information (HINFO)</b></div>';
+	print '<div class="containerheadleft"><b>Hardware Information '.$ui->table_descr_link('RRHINFO', '(HINFO)').'</b></div>';
 	print '<div class="containerheadright">';
 
 	my $defaults = [ {'PC-INTEL'=>'PC-Intel' , 'MAC-INTEL'=>'Mac-Intel', 
@@ -477,7 +477,7 @@ foreach my $o ( values %rrs ) {
 	#####################################################################################################
 	#RRTXT
 	print '<div class="container" style="margin-left:10px">';
-	print '<div class="containerheadleft"><b>Text Records (TXT)</b></div>';
+	print '<div class="containerheadleft"><b>Text Records '.$ui->table_descr_link('RRTXT', '(TXT)').'</b></div>';
 	print '<div class="containerheadright">';
 	
 	#new rrtxt
@@ -511,7 +511,7 @@ foreach my $o ( values %rrs ) {
 	#####################################################################################################
 	#RRMX
 	print '<div class="container" style="margin-left:10px">';
-	print '<div class="containerheadleft"><b>Mail Exchangers (MX)</b></div>';
+	print '<div class="containerheadleft"><b>Mail Exchangers '.$ui->table_descr_link('RRMX', '(MX)').'</b></div>';
 	print '<div class="containerheadright">';
 	
 	#new rrmx
@@ -546,7 +546,7 @@ foreach my $o ( values %rrs ) {
 	#####################################################################################################
 	#RRCNAME for somewhere pointing to $o
 	print '<div class="container" style="margin-left:10px">';
-	print '<div class="containerheadleft"><b>Aliases of '.$o->get_label.' (CNAME)</b></div>';
+	print '<div class="containerheadleft"><b>Aliases of '.$o->get_label.' '.$ui->table_descr_link('RRCNAME', '(CNAME)').'</b></div>';
 	print '<div class="containerheadright">';
 	if ( $add_alias ){
 	    print '<input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">';
@@ -592,7 +592,7 @@ foreach my $o ( values %rrs ) {
     
     if ( !$o->arecords && !$o->ptr_records && !$o->ns_records ) {
 	print '<div class="container" style="margin-left:10px">';
-	print '<div class="containerheadleft"><b>'.$o->get_label.' is an alias of (CNAME)</b></div>';
+	print '<div class="containerheadleft"><b>'.$o->get_label.' is an alias of '.$ui->table_descr_link('RRCNAME', '(CNAME)').'</b></div>';
 	print '<div class="containerheadright">';
 	
 	my @cnames = $o->cnames();
@@ -658,7 +658,7 @@ foreach my $o ( values %rrs ) {
 	my $ptr = $ipblock->ptr_records->first;
 
 	print '<div class="container" style="margin-left:10px">';
-	print '<div class="containerheadleft"><b>Reverse for '.$ipblock->get_label.' (PTR)</b></div>';
+	print '<div class="containerheadleft"><b>Reverse for '.$ipblock->get_label.' '.$ui->table_descr_link('RRPTR', '(PTR)').'</b></div>';
 	print '<div class="containerheadright">';
 	if ( !$ptr ){
 	    print '<a href="host.html?id='.$id.'&add_ptr='.$ipblock.'">[add]</a>';
@@ -719,7 +719,7 @@ foreach my $o ( values %rrs ) {
     #RRNS
     if ( !$o->arecords && !$o->ptr_records  ){
 	print '<div class="container" style="margin-left:10px">';
-	print '<div class="containerheadleft"><b>Name Servers (NS)</b></div>';
+	print '<div class="containerheadleft"><b>Name Servers '.$ui->table_descr_link('RRNS', '(NS)').'</b></div>';
 	print '<div class="containerheadright">';
 
 	#new rrns
@@ -755,7 +755,7 @@ foreach my $o ( values %rrs ) {
     #RRDS
     if ( !$o->arecords && !$o->ptr_records  ){
 	print '<div class="container" style="margin-left:10px">';
-	print '<div class="containerheadleft"><b>Delegation Signers (DS)</b></div>';
+	print '<div class="containerheadleft"><b>Delegation Signers '.$ui->table_descr_link('RRDS', '(DS)').'</b></div>';
 	print '<div class="containerheadright">';
 
 	my @field_names = ('key_tag', 'algorithm', 'digest_type', 'digest', 'ttl');
@@ -793,7 +793,7 @@ foreach my $o ( values %rrs ) {
 
     if ( !$o->arecords && !$o->ptr_records && !$o->ns_records ){
 	print '<div class="container" style="margin-left:10px">';
-	print '<div class="containerheadleft"><b>Name Authority Pointer (NAPTR)</b></div>';
+	print '<div class="containerheadleft"><b>Name Authority Pointer '.$ui->table_descr_link('RRNAPTR', '(NAPTR)').'</b></div>';
 	print '<div class="containerheadright">';
 
 	#new rrnaptr
@@ -834,7 +834,7 @@ foreach my $o ( values %rrs ) {
     if ( !$o->arecords && !$o->ns_records ){
     
 	print '<div class="container" style="margin-left:10px">';
-	print '<div class="containerheadleft"><b>Pointer Records (PTR)</b></div>';
+	print '<div class="containerheadleft"><b>Pointer Records '.$ui->table_descr_link('RRPTR', '(PTR)').'</b></div>';
 	print '<div class="containerheadright">';
 
 	#new rrptr
@@ -879,7 +879,7 @@ foreach my $o ( values %rrs ) {
     #RRLOC
     if ( !$o->ptr_records && !$o->ns_records ){
 	print '<div class="container" style="margin-left:10px">';
-	print '<div class="containerheadleft"><b>Location Records (LOC)</b></div>';
+	print '<div class="containerheadleft"><b>Location Records '.$ui->table_descr_link('RRLOC', '(LOC)').'</b></div>';
 	print '<div class="containerheadright">';
 
 	#new
@@ -923,7 +923,7 @@ foreach my $o ( values %rrs ) {
     # Only show this part if owner name follows valid format
     if ( $o->name  =~ /^_\w+\._\w+/ ){
 	print '<div class="container" style="margin-left:10px">';
-	print '<div class="containerheadleft"><b>Service Records (SRV)</b></div>';
+	print '<div class="containerheadleft"><b>Service Records '.$ui->table_descr_link('RRSRV', '(SRV)').'</b></div>';
 	print '<div class="containerheadright">';
 
 	#new rrsrv
