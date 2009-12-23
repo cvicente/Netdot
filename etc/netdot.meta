@@ -4688,6 +4688,7 @@ $meta = {
         'status',
         'used_by',
         'description',
+        'last_seen',
       ]
     }
   },
@@ -5743,7 +5744,7 @@ $meta = {
         type => 'varchar'
       }
     },
-    description => 'DNS A or AAAA Record',
+    description => 'A DNS "A" record makes a connection between a domain name and an IPv4 address.  A "AAAA" record does the same thing, but with IPv6 addresses. A "dual-stack" host can have both an A record and a AAAA record at the same time.',
     has_history => 0,
     index => [ ['ipblock'] ],
     isjoin => '0',
@@ -6118,7 +6119,7 @@ $meta = {
     columns => {
       exchange => {
         default => '',
-        description => 'A domain-name which specifies a host willing to act as a mail exchange for the owner name.',
+        description => 'A domain-name which specifies a host willing to act as a mail exchange for the owner name. The host name must map directly to one or more address records (A, or AAAA) in the DNS, and must not point to any CNAME records.',
         nullable => 0,
         tag => 'Exchange',
         type => 'varchar',
@@ -6162,7 +6163,7 @@ $meta = {
         type => 'varchar'
       }
     },
-    description => 'DNS MX Record',
+    description => 'A mail exchanger record (MX record) is a type of resource record in the Domain Name System that specifies a mail server responsible for accepting email messages on behalf of a recipient\'s domain and a preference value used to prioritize mail delivery if multiple mail servers are available. The set of MX records of a domain name specifies how email should be routed with the Simple Mail Transfer Protocol.',
     has_history => 0,
     index => [ ['exchange'] ],
     isjoin => '0',
@@ -6426,7 +6427,7 @@ $meta = {
         type => 'varchar'
       }
     },
-    description => 'DNS PTR Record',
+    description => 'A PTR record is the reverse of an A record. That is, it maps an IP address to a hostname, rather than vice versa.',
     has_history => 0,
     index => [ ['ipblock'], ['rr'], ],
     isjoin => '0',
@@ -6590,7 +6591,7 @@ $meta = {
         type => 'varchar'
       }
     },
-    description => 'TXT RRs are used to hold descriptive text.  The semantics of the text depends on the domain where it is found.',
+    description => 'DNS TXT records are used to hold descriptive text.  The semantics of the text depends on the domain where it is found.',
     has_history => 0,
     index => [[ 'rr' ], ['txtdata']],
     isjoin => '0',

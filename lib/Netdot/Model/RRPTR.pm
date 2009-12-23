@@ -37,7 +37,8 @@ sub insert {
     $class->throw_fatal("Missing required arguments")
 	unless ( $argv->{ptrdname} && $argv->{ipblock} );
     
-    my $ipb  = ref($argv->{ipblock})? $argv->{ipblock} : Ipblock->retrieve($argv->{ipblock});
+    $argv->{ipblock} = $class->_convert_ipblock($argv->{ipblock});
+    my $ipb = $argv->{ipblock};
 
     if ( !defined $argv->{rr} ){
 	$class->throw_fatal("Figuring out the rr field requires passing zone")
@@ -166,6 +167,20 @@ sub as_text {
 # Private methods
 ##################################################################
 
+##################################################################
+# check if IP is an address string, if so then convert into object
+sub _convert_ipblock {
+    my ($self, $ip) = @_;
+    if (!(ref $ip) && ($ip =~ /\D/)) {
+	if (my $ipblock = Ipblock->search(address=>$ip)->first) {
+	    return $ipblock;
+	} else {
+	    return Ipblock->insert({address=>$ip, status=>'Static'});
+	}
+    } else {
+	return $ip;
+    }
+}
 
 ##################################################################
 sub _net_dns {

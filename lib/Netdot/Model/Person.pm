@@ -17,6 +17,38 @@ Netdot::Model::Person - Manipulate Person objects
 
 my $logger = Netdot->log->get_logger('Netdot::Model');
 
+=head1 CLASS METHODS
+=cut
+
+
+############################################################################
+=head2 insert - Insert new Person object
+
+    We override the base method to:
+      - Set some defaults
+  Arguments:
+    Hashref with key/value pairs
+  Returns:
+    Person object
+  Example:
+    my $person = Person->insert(\%args)
+
+=cut
+sub insert {
+    my($class, $argv) = @_;
+    $class->isa_class_method('insert');
+    
+    $class->throw_fatal('Missing required arguments')
+	unless ( $argv->{lastname} );
+    
+    unless ( defined $argv->{user_type} ){
+	if ( my $t = UserType->search(name=>'User')->first ){
+	    $argv->{user_type} = $t;
+	}
+    }
+    return $class->SUPER::insert($argv);
+}
+
 =head1 INSTANCE METHODS
 =cut
 

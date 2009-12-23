@@ -1,0 +1,36 @@
+<%doc>
+Show maxed out subnets
+</%doc>
+%
+%
+<%attr>
+title   => 'Unused Statics'
+section => 'Reports'
+</%attr>
+%
+%
+<%args>
+$days
+$version => 4
+$edit    => 0
+</%args>
+%
+%
+<%init>
+my $DEBUG = 0;
+print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+my $sqldate = Netdot::Model->sqldate_days_ago($days);
+print "$days days ago was: $sqldate", "<br>" if $DEBUG;
+my $static = IpblockStatus->search(name=>'Static')->first;
+my @unused = Ipblock->search_where({status=>$static, 
+				    version=>$version, 
+				    last_seen=>{ '<', $sqldate }}, 
+				   {order_by=>'address'});
+ 
+</%init>
+
+%if ( !scalar(@unused) ){
+    <p>No unused IPs found.</p>
+%}else{
+    <& /generic/sortresults.mhtml, object=>\@unused, withedit=>$edit &>
+%}

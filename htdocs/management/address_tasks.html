@@ -197,7 +197,7 @@ if ( $submit ){
       <div class="containerhead">
         Query <em><% $search %></em> returned: <% scalar(@list) %> matches
       </div>
-      <& ipblock_list.mhtml, objects => \@list  &>
+      <& ipblock_list.mhtml, objects => \@list, parent=>0  &>
 %   }else{
         <div class="containerhead"><em><% $search %></em> not found</div>
 %       if ( $covering_block ){
@@ -205,7 +205,7 @@ if ( $submit ){
             <div class="container">
               <div class="containerhead">Closest Covering Block:</div>
               <div class="containerbody">
-                <& ipblock_list.mhtml, objects =>[$covering_block] &>
+                <& ipblock_list.mhtml, objects =>[$covering_block], parent=>0  &>
               </div>
             </div>
 %       }

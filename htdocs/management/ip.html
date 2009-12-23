@@ -46,6 +46,7 @@ $view_format       => 'block'
 $rowsize           => 22
 $dividefreespace   => 'max'
 $arp_limit         => 10
+$ip_list_sort      => 'Address'
 </%args>
 %
 %
@@ -159,7 +160,7 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 	  </div>
           <div class="containerbody">
 %             if ( @list ){
-                  <& ipblock_list.mhtml, objects => \@list, type => "block"  &>
+                  <& ipblock_list.mhtml, parent=>0, objects => \@list, type => "block"  &>
 %             }
           </div>
        </div>
@@ -578,11 +579,7 @@ if (!$edit){
     print '<div class="container">';
     print '<div class="containerheadleft">DNS A Records</div>';
     print '<div class="containerheadright">';
-    if (!@rraddrs) {
-	print "<a href=\"host.html?ipblock=$o&action=new\">[add]</a>";
-    }else{
-	print '&nbsp;';
-    }
+    print "<a href=\"host.html?ipblock=$o&action=new\">[add]</a>";
     print '</div>';
     print '<div class="containerbody">';
     $m->comp('/generic/sortresults.mhtml', object=>\@rrs);
@@ -592,7 +589,10 @@ if (!$edit){
     my @ptrs = $o->ptr_records();
     my @prrs = map { $_->rr } @ptrs;
     print '<div class="container">';
-    print '<div class="containerhead">DNS PTR Records</div>';
+    print '<div class="containerheadleft">DNS PTR Records</div>';
+    print '<div class="containerheadright">';
+    print "<a href=\"edit.html?table=RRPTR&ipblock=$o\">[add]</a>";
+    print '</div>';
     print '<div class="containerbody">';
     $m->comp('/generic/sortresults.mhtml', object=>\@prrs);
     print '</div>';
@@ -1239,19 +1239,27 @@ if ($o->status->name eq "Subnet") {
           </div>  
        </div>  
 %     }  
-% } elsif ( $view_format eq 'list' ) {  
-%   #  
-%   # Get children  
-%   #  
-%   my @children;   
-%   if (scalar( @children = $o->children )){  
+<%perl>
+} elsif ( $view_format eq 'list' ) {  
+    my @children;
+    if ( $o->status->name eq 'Subnet' ){
+	@children = $o->get_addresses_by($ip_list_sort);
+    }else{
+	@children = $o->children;
+    }
+
+</%perl>
+%   if (scalar( @children )){  
        <div class="container">
 %      if ( $edit_children ){
-
 	     <form name="edit_children" id="edit_children" action="ip.html" method="POST">
 %      }
           <div class="containerheadleft">
-             Children Addresses/Blocks
+%      if ( $o->status->name eq 'Subnet' ){	      
+             Addresses
+%      }else{
+             Contained IP blocks
+%      }
           </div>
           <div class="containerheadright">
 %             if( $o->version == 4 ) {
@@ -1263,8 +1271,8 @@ if ($o->status->name eq "Subnet") {
 %		 }else{
 %                    if ( $manager && $manager->can($user, 'access_section', 'ip.html:edit_children') ){
 %		         print '<a href="ip.html?id='.$id.'&edit_children=1&view_format=list">[edit]</a>&nbsp;';
-%		         print '<a href="ip.html?id='.$id.'&view_format=block">[Block View]</a>';
 %                    }
+%                    print '<a href="ip.html?id='.$id.'&view_format=block">[Block View]</a>';
 %                    if ( $o->status->name eq 'Container' ){
                          <a href="ip.html?id=<% $id %>&view_format=tree">[Tree View]</a>
 %                    }
@@ -1274,7 +1282,7 @@ if ($o->status->name eq "Subnet") {
 %             }
           </div>
           <div class="containerbody">
-          <& ipblock_list.mhtml, objects => \@children, edit => $edit_children &>
+          <& ipblock_list.mhtml, parent=>$o, objects=>\@children, edit=>$edit_children, sort=>$ip_list_sort &>
 %	  if ( $edit_children ){
                   <input type="button" value="Check All" onclick="setCheckbox('edit_children', '', true);return false;" class="button" />
                   <input type="button" value="Clear All" onclick="setCheckbox('edit_children', '', false);return false;" class="button" />

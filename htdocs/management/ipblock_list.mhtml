@@ -14,12 +14,12 @@
 </%doc>
 
 <%args>
-$objects => undef
+$parent
+$objects
 $type    => undef
 $edit    => 0
 $sid     => undef
-$osid    => undef
-$table   => undef
+$sort    => 'Address'
 </%args>
 
 <%init>
@@ -54,6 +54,11 @@ if ( $type eq "address" ){
     }
     # @headers: header for html
     push @headers, ( 'Address', 'Name', 'Status', 'Used by', 'Description', 'Last Seen' );
+    foreach my $header ( @headers ){
+	unless ( $sort eq $header ){
+	    $header = "<a href=\"ip.html?id=$parent&view_format=list&ip_list_sort=$header\">$header</a>";
+	}
+    }
     # @text_headers: header for csv text
     push @text_headers, ( 'Address', 'Name', 'Status', 'Used by', 'Description', 'Last Seen' ); 
 
@@ -68,9 +73,14 @@ if ( $type eq "address" ){
 	}
 	push( @row, '<a href="ip.html?id=' . $o->id . '">' . $o->address . '</a>' );
         push( @text_row, $o->address );
-	if ( my $rraddr = ($o->arecords)[0] ){
-	    push @row, $ui->form_field(object=>$rraddr, column=>"rr", edit=>$edit, returnValOnly=>1, linkPage=>'host.html');
-            push @text_row, $rraddr->rr->get_label;
+	if ( my @rraddrs = $o->arecords ){
+	    my (@names, @text_names);
+	    foreach my $rraddr ( @rraddrs ){
+		push @names, $ui->form_field(object=>$rraddr, column=>"rr", edit=>$edit, returnValOnly=>1, linkPage=>'host.html');
+		push @text_names, $rraddr->rr->get_label;
+	    }
+	    push @row, join ', ', @names;
+            push @text_row, join ', ', @text_names;
 	} else {
 	    push( @row, "");
             push( @text_row, "");
