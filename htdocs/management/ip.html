@@ -1246,11 +1246,14 @@ if ($o->status->name eq "Subnet") {
 %   if (scalar( @children = $o->children )){  
        <div class="container">
 %      if ( $edit_children ){
-
 	     <form name="edit_children" id="edit_children" action="ip.html" method="POST">
 %      }
           <div class="containerheadleft">
-             Children Addresses/Blocks
+%      if ( $o->status->name eq 'Subnet' ){	      
+             Addresses
+%      }else{
+             Contained IP blocks
+%      }
           </div>
           <div class="containerheadright">
 %             if( $o->version == 4 ) {
@@ -1262,8 +1265,8 @@ if ($o->status->name eq "Subnet") {
 %		 }else{
 %                    if ( $manager && $manager->can($user, 'access_section', 'ip.html:edit_children') ){
 %		         print '<a href="ip.html?id='.$id.'&edit_children=1&view_format=list">[edit]</a>&nbsp;';
-%		         print '<a href="ip.html?id='.$id.'&view_format=block">[Block View]</a>';
 %                    }
+%                    print '<a href="ip.html?id='.$id.'&view_format=block">[Block View]</a>';
 %                    if ( $o->status->name eq 'Container' ){
                          <a href="ip.html?id=<% $id %>&view_format=tree">[Tree View]</a>
 %                    }
