@@ -46,6 +46,7 @@ $view_format       => 'block'
 $rowsize           => 22
 $dividefreespace   => 'max'
 $arp_limit         => 10
+$ip_list_sort      => 'Address'
 </%args>
 %
 %
@@ -159,7 +160,7 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 	  </div>
           <div class="containerbody">
 %             if ( @list ){
-                  <& ipblock_list.mhtml, objects => \@list, type => "block"  &>
+                  <& ipblock_list.mhtml, parent=>0, objects => \@list, type => "block"  &>
 %             }
           </div>
        </div>
@@ -1238,12 +1239,17 @@ if ($o->status->name eq "Subnet") {
           </div>  
        </div>  
 %     }  
-% } elsif ( $view_format eq 'list' ) {  
-%   #  
-%   # Get children  
-%   #  
-%   my @children;   
-%   if (scalar( @children = $o->children )){  
+<%perl>
+} elsif ( $view_format eq 'list' ) {  
+    my @children;
+    if ( $o->status->name eq 'Subnet' ){
+	@children = $o->get_addresses_by($ip_list_sort);
+    }else{
+	@children = $o->children;
+    }
+
+</%perl>
+%   if (scalar( @children )){  
        <div class="container">
 %      if ( $edit_children ){
 	     <form name="edit_children" id="edit_children" action="ip.html" method="POST">
@@ -1276,7 +1282,7 @@ if ($o->status->name eq "Subnet") {
 %             }
           </div>
           <div class="containerbody">
-          <& ipblock_list.mhtml, objects => \@children, edit => $edit_children &>
+          <& ipblock_list.mhtml, parent=>$o, objects=>\@children, edit=>$edit_children, sort=>$ip_list_sort &>
 %	  if ( $edit_children ){
                   <input type="button" value="Check All" onclick="setCheckbox('edit_children', '', true);return false;" class="button" />
                   <input type="button" value="Clear All" onclick="setCheckbox('edit_children', '', false);return false;" class="button" />

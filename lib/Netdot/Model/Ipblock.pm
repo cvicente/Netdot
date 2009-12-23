@@ -2319,6 +2319,52 @@ sub get_next_free {
 }
 
 ##################################################################
+=head2 get_addresses_by - Different sorts for ipblock_list page
+
+   Arguments: 
+     sort field (Address|Name|Status|Used By|Description|Last Seen)     
+  Returns:   
+    arrayref of arrayrefs
+  Examples:
+    my $rows = $subnet->get_addresses_by('Address')
+
+=cut
+sub get_addresses_by {
+    my ($self, $sort) = @_;
+    $self->isa_object_method('get_addresses_by');
+    $self->throw_fatal("Ipblock::get_addresses_by: Invalid call to this method for a non-subnet")
+	unless ( $self->status && $self->status->name eq 'Subnet' );
+    
+    $sort ||= 'Address';
+    my %sort2field = ('Address'     => 'ipblock.address',
+		      'Name'        => 'rr.name',
+		      'Status'      => 'ipblockstatus.name',
+		      'Used by'     => 'entity.name',
+		      'Description' => 'ipblock.description',
+		      'Last Seen'   => 'ipblock.last_seen',
+	);
+    unless ( exists $sort2field{$sort} ){
+	$self->throw_fatal("Ipblock::get_addresses_by: Invalid sort string");
+    }
+    my $id = $self->id;
+    my $query = "    
+    SELECT    DISTINCT(ipblock.id)
+    FROM      ipblockstatus, rraddr, rr,ipblock 
+    LEFT JOIN entity ON (ipblock.used_by=entity.id)
+    WHERE     ipblock.parent=$id
+      AND     ipblock.status=ipblockstatus.id
+      AND     rraddr.ipblock=ipblock.id
+      AND     rraddr.rr=rr.id
+    ORDER BY  $sort2field{$sort}";
+
+    my $dbh  = $self->db_Main();
+    my $rows = $dbh->selectall_arrayref($query);
+    my @objects;
+    map { push @objects, Ipblock->retrieve($_->[0]) } @$rows;
+    return @objects;
+}
+
+##################################################################
 #
 # Private Methods
 #

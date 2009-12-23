@@ -842,6 +842,23 @@ sub sqldate2time {
 }
 
 ############################################################################
+=head2 sqldate_days_ago
+
+  Arguments:  
+    number of days (integer)
+  Returns:    
+    SQL date num_days ago
+
+=cut
+sub sqldate_days_ago {
+    my ($self, $num_days) = @_;
+    my $epochdate = time-($num_days*24*60*60);
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime $epochdate;
+    $year += 1900; $mon += 1;
+    return sprintf("%4d-%02d-%02d %02d:%02d:%02d",$year,$mon,$mday,$hour,$min,$sec);
+}
+
+############################################################################
 =head2 time2sqldate
 
   Arguments:  

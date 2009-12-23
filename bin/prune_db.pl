@@ -97,11 +97,7 @@ my $db_type = Netdot->config->get('DB_TYPE');
 my $dbh = Netdot::Model::db_Main();
 
 # date NUM_DAYS ago
-my $epochdate = time-($NUM_DAYS*24*60*60);
-my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime $epochdate;
-$year += 1900; $mon += 1;
-my $sqldate = sprintf("%4d-%02d-%02d %02d:%02d:%02d",$year,$mon,$mday,$hour,$min,$sec);
-
+my $sqldate = Netdot::Model->sqldate_days_ago($NUM_DAYS);
 $logger->debug(sprintf("NUM_DAYS(%d) ago was : %s", $NUM_DAYS, $sqldate));
 
 my $start = time;
