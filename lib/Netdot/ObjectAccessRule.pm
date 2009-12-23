@@ -136,7 +136,7 @@ sub denies(){
 	    
 	    # Users cannot edit RRs for Devices or Device IPs
 	    if ( my $dev = ($rr->devices)[0] ) {
-		$logger->debug("Netdot::ObjectAccessRule::_denies: ".$rr->get_label." linked to Device interface. Denying access.");
+		$logger->debug("Netdot::ObjectAccessRule::_denies: ".$rr->get_label." linked to a Device. Denying access.");
 		return 1;
 	    }
  	    foreach my $arecord ( $rr->arecords ){
@@ -243,6 +243,10 @@ sub _deny_action_access {
 # ip addresses inherit parent's permissions, but only for view
 sub _deny_ip_access {
     my ($action, $access, $ipblock) = @_;
+    if ( int($ip->interface) != 0 ){
+	$logger->debug("Netdot::ObjectAccessRule::_denies: ".$ip->get_label." linked to Device interface. Denying access.");
+	return 1;
+    }
     my $parent = $ipblock->parent;
     if ( exists $access->{'Ipblock'} && 
 	 exists $access->{'Ipblock'}->{$parent->id} ){
