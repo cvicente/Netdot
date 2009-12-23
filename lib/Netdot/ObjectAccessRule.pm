@@ -243,8 +243,8 @@ sub _deny_action_access {
 # ip addresses inherit parent's permissions, but only for view
 sub _deny_ip_access {
     my ($action, $access, $ipblock) = @_;
-    if ( int($ip->interface) != 0 ){
-	$logger->debug("Netdot::ObjectAccessRule::_denies: ".$ip->get_label." linked to Device interface. Denying access.");
+    if ( int($ipblock->interface) != 0 ){
+	$logger->debug("Netdot::ObjectAccessRule::_deny_ip_access: ".$ipblock->get_label." linked to Device interface. Denying access.");
 	return 1;
     }
     my $parent = $ipblock->parent;
