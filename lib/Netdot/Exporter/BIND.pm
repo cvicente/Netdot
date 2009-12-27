@@ -83,15 +83,18 @@ sub generate_configs {
     }
     
     foreach my $zone ( @zones ){
-	if ( $zone->audit_records() || $argv{force} ){
+	if ( HostAudit->search(zone=>$zone, pending=>1) || $argv{force} ){
 	    if ( $zone->active ){
 		my $path = $self->print_zone_to_file(zone=>$zone, nopriv=>$argv{nopriv});
 		$logger->info("Zone ".$zone->name." written to file: $path");
 	    }
-	    
-	    # Flush audit records for this zone
-	    map { $_->delete } $zone->audit_records;
-
+	    # Notice that we intentionally search again, or we would miss the 
+	    # SOA serial update
+	    my @pending = HostAudit->search(zone=>$zone, pending=>1);
+	    foreach my $record ( @pending ){
+		# Un-mark audit records as pending
+		$record->update({pending=>0});
+	    }
 	}else{
 	    $logger->debug("Exporter::BIND::generate_configs: ".$zone->name.": No pending changes.  Use -f to force.");
 	}

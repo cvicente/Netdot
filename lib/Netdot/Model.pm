@@ -153,11 +153,12 @@ BEGIN {
 	}else{
 	    $self->throw_fatal("Netdot::Model::_host_audit: Invalid table: $table");
 	}
-	my $id = $self->id;
+	my $label = $self->get_label;
 	my %data = (tstamp      => $self->timestamp,
 		    record_type => $table,
 		    user        => $user,
 		    operation   => $args{operation},
+		    pending     => 1,
 		    );
 	$data{fields} = $args{fields} if $args{fields};
 	$data{vals}   = $args{values} if $args{values};
@@ -182,7 +183,7 @@ BEGIN {
 	    $logger->error("Netdot::Model::_host_audit: Could not insert HostAudit record about $table id ".$self->id.": $e");
 	    return;
 	}else{
-	    my $msg = "Netdot::Model::_host_audit: table: $table, id: $id, within: $name, user: $user, operation: $args{operation}";
+	    my $msg = "Netdot::Model::_host_audit: table: $table, record: $label, within: $name, user: $user, operation: $args{operation}";
 	    $msg .= " fields: ($args{fields}), values: ($args{values})" if (defined $args{fields} && defined $args{values});
 	    $logger->info($msg);
 	}

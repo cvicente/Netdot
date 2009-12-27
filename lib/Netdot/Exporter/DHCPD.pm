@@ -66,11 +66,14 @@ sub generate_configs {
 	}
     }
     foreach my $s ( @gscopes ){
-	if ( $s->audit_records() || $argv{force} ){
+	if ( (my @pending = HostAudit->search(scope=>$s, pending=>1)) || $argv{force} ){
+	    # Either there are pending changes or we were told to force
 	    $s->print_to_file();
 
-	    # Flush audit records
-	    map { $_->delete } $s->audit_records;
+	    foreach my $record ( @pending ){
+		# Un-mark audit records as pending
+		$record->update({pending=>0});
+	    }
 	}else{
 	    $logger->debug("Exporter::DHCPD::generate_configs: ".$s->name.": No pending changes.  Use -f to force.");
 	}

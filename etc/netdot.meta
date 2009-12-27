@@ -8045,6 +8045,14 @@ $meta = {
         tag => undef,
         type => 'integer'
       },
+      pending => {
+        default => '',
+        description => 'This flag specifies whether the change is pending or it has been committed.',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'bool'
+      },
       scope => {
         default => '',
         description => 'DHCP scope where change happened',
@@ -8122,7 +8130,7 @@ $meta = {
     },
     description => 'Zone Record changes',
     has_history => 0,
-    index => [ ['zone'], ['scope'], ['user'], ['record_type'] ],
+    index => [ ['zone'], ['scope'], ['user'], ['record_type'], ['pending'] ],
     isjoin => '0',
     label => [
       'zone',
@@ -8139,6 +8147,7 @@ $meta = {
         'operation',
         'fields',
         'vals',
+        'pending',
       ],
       brief => [
         'tstamp',
@@ -8147,6 +8156,7 @@ $meta = {
 	'scope',
         'operation',
         'record_type',
+        'pending',
       ]
     }
   },
