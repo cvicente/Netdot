@@ -2085,8 +2085,7 @@ sub update_bgp_peering {
     my %pstate = (device      => $self,
 		  entity      => $entity,
 		  bgppeerid   => $peer->{bgppeerid},
-		  bgppeeraddr => $peer->{address},
-		  monitored   => 1);
+		  bgppeeraddr => $peer->{address});
 	
     # Check if peering exists
     foreach my $peerid ( keys %{ $oldpeerings } ){
@@ -2109,7 +2108,8 @@ sub update_bgp_peering {
 	
     }else{
 	# Peering Doesn't exist.  Create.
-	#
+	# 
+	$pstate{monitored} = 1;
 	$p = BGPPeering->insert(\%pstate);
 	my $peer_label = $entity ? $entity->name : $peer->address;
 	$logger->info(sprintf("%s: Inserted new Peering with: %s. ", $host, $peer_label));
