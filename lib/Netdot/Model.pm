@@ -835,7 +835,7 @@ sub sqldate2time {
     if ( $date =~ /^(\d{4})-(\d{2})-(\d{2})$/ ){
 	my ($y, $m, $d) = ($1, $2, $3);
 	$self->throw_fatal("Netdot::Model::sqldate2time: Invalid date string: $date.")
-	    unless ($y && $m > 0 && $m < 12 && $d > 0 && $d <= 31);
+	    unless ($y && $m > 0 && $m <= 12 && $d > 0 && $d <= 31);
 	return timelocal(0,0,0,$d,$m-1,$y);
     }else{
 	$self->throw_fatal("Netdot::Model::sqldate2time: Invalid SQL date format: $d. Should be (YYYY-MM-DD).");
