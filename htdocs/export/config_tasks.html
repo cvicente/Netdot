@@ -22,6 +22,7 @@ $showheader     => 1
 $hideheader     => undef
 @zones          => undef
 $bind_force     => undef
+$dhcpd_force    => undef
 $bind_no_priv   => undef
 @scopes         => undef
 </%args>
@@ -90,9 +91,13 @@ my $logstr;
                 <label>Select specific scopes</strong> (default is ALL):</label>
                 <select name="scopes" size="6" MULTIPLE>
 %               foreach my $scope ( DhcpScope->search(type=>'global') ){
-        	    <option value="<% $scope %>"><% $scope->name %></option> 
+        	    <option value="<% $scope->name %>"><% $scope->name %></option> 
 %               } 
                 </select>
+                </p>
+                <p>
+                   <input type="checkbox" name="dhcpd_force">
+                   <label for="dhcpd_force">Force export even if no pending changes</label>
                 </p>
         </fieldset>
      </td>
@@ -114,6 +119,9 @@ if ( $submit ){
     $logstr = Netdot::Util::Log->new_appender('String', name=>'config_tasks.html');
     $logger->add_appender($logstr);
 
+    my $dhcp_logger = Netdot->log->get_logger('Netdot::Model::DHCP');
+    $dhcp_logger->add_appender($logstr);
+
     foreach my $type ( @config_types ){
 	my %args;
 	if ( $type eq 'BIND' ){
@@ -121,6 +129,7 @@ if ( $submit ){
 	    $args{force}    = 1 if ($bind_force);
 	    $args{nopriv}   = 1 if ($bind_no_priv);
 	}elsif ( $type eq 'DHCPD' ){
+	    $args{force}  = 1 if ($dhcpd_force);
 	    $args{scopes} = \@scopes if @scopes;	    
 	}
 	eval {

@@ -21,7 +21,6 @@ $action         => undef
 $search         => undef
 $submit         => undef
 $hostname       => undef
-$zone_id        => undef
 $show_tasks     => undef
 $showheader     => 1
 $ipblock_id     => undef
@@ -108,23 +107,6 @@ my @list;
 %                   $subnet_label .= " (".$o->description.")"; 
 %               }
                 <option value="<% $o %>"><% $subnet_label %></option>
-%           }
-                </select>
-                </p>
-
-                <p>
-                <label for="Zone">Zone:</label>
-                <select name="zone_id" id="zone">
-%           my $default_domain = Netdot->config->get('DEFAULT_DNSDOMAIN');
-%           my $default_zone = (Zone->search(name=>$default_domain))[0];
-%           my @zones = Zone->retrieve_all();
-            <option value="0">-- Select --</option>
-%           foreach my $z ( sort { $a->get_label cmp $b->get_label } @zones ){
-%               if ( $default_zone && $default_zone->id == $z->id ){
-                    <option value="<% $z->id %>" SELECTED><% $z->get_label %></option>
-%               }else{
-                    <option value="<% $z->id %>"><% $z->get_label %></option>
-%		}
 %           }
                 </select>
                 </p>
@@ -222,16 +204,10 @@ if ( $action eq "search" && $submit ){
 	$m->comp('/generic/error.mhtml', error=>"Could not get an available address from ".$block->get_label);
     }
 
-    my $zone;
-    if ( $zone_id ){
-	$zone = Zone->retrieve($zone_id);
-    }else{
-	$zone = $block->forward_zone();
-    }
 
     my %args;
-    $args{zone}     = $zone;
     $args{block}    = $block;
+    $args{zone}     = $block->forward_zone();
     $args{address}  = $address;
     $args{hostname} = $hostname;
     $args{ethernet} = $ethernet;

@@ -99,6 +99,7 @@ my $dbh = Netdot::Model::db_Main();
 # date NUM_DAYS ago
 my $sqldate = Netdot::Model->sqldate_days_ago($NUM_DAYS);
 $logger->debug(sprintf("NUM_DAYS(%d) ago was : %s", $NUM_DAYS, $sqldate));
+my $epochdate = time-($NUM_DAYS*24*60*60); 
 
 my $start = time;
 my %rows_deleted;

@@ -22,10 +22,19 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 my $sqldate = Netdot::Model->sqldate_days_ago($days);
 print "$days days ago was: $sqldate", "<br>" if $DEBUG;
 my $static = IpblockStatus->search(name=>'Static')->first;
-my @unused = Ipblock->search_where({status=>$static, 
-				    version=>$version, 
-				    last_seen=>{ '<', $sqldate }}, 
-				   {order_by=>'address'});
+my @ips = Ipblock->search_where({status=>$static, 
+				 version=>$version, 
+				 last_seen=>{ '<', $sqldate }}, 
+				{order_by=>'address'});
+
+# We're going to ignore device and multicast IPs
+my @unused;
+foreach my $ip ( @ips ){
+    next if ( int($ip->interface) != 0 );
+    next if ( $ip->snmp_devices );
+    next if ( $ip->is_multicast );
+    push @unused, $ip;
+}
  
 </%init>
 

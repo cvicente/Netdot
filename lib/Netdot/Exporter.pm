@@ -18,7 +18,7 @@ my %types = (
     );
 
 my %_class_data;
-my $_cache_timeout = 3600;  # Seconds	
+my $_cache_timeout = 60;  # Seconds	
 
 =head1 NAME
 

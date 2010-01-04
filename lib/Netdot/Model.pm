@@ -154,11 +154,12 @@ BEGIN {
 	}else{
 	    $self->throw_fatal("Netdot::Model::_host_audit: Invalid table: $table");
 	}
-	my $id = $self->id;
+	my $label = $self->get_label;
 	my %data = (tstamp      => $self->timestamp,
 		    record_type => $table,
 		    user        => $user,
 		    operation   => $args{operation},
+		    pending     => 1,
 		    );
 	$data{fields} = $args{fields} if $args{fields};
 	$data{vals}   = $args{values} if $args{values};
@@ -183,7 +184,7 @@ BEGIN {
 	    $logger->error("Netdot::Model::_host_audit: Could not insert HostAudit record about $table id ".$self->id.": $e");
 	    return;
 	}else{
-	    my $msg = "Netdot::Model::_host_audit: table: $table, id: $id, within: $name, user: $user, operation: $args{operation}";
+	    my $msg = "Netdot::Model::_host_audit: table: $table, record: $label, within: $name, user: $user, operation: $args{operation}";
 	    $msg .= " fields: ($args{fields}), values: ($args{values})" if (defined $args{fields} && defined $args{values});
 	    $logger->info($msg);
 	}
@@ -634,6 +635,8 @@ sub update {
 		$msg = "Some fields have invalid input syntax";
 	    }elsif ( $e =~ /out of range/i ){
 		$msg = "Some values are out of valid range.";
+	    }else{ 
+		$msg = $e;
 	    }
 	    $self->throw_user("$msg");
 	}
@@ -752,7 +755,9 @@ sub get_label {
 		push @ret, $self->$c;
 	    }else{
 		# The field is a foreign key
-		push @ret, $self->$c->get_label($delim);
+		if ( int($self->$c) ){
+		    push @ret, $self->$c->get_label($delim);
+		}
 	    }
 	}
     }
@@ -835,7 +840,7 @@ sub sqldate2time {
     if ( $date =~ /^(\d{4})-(\d{2})-(\d{2})$/ ){
 	my ($y, $m, $d) = ($1, $2, $3);
 	$self->throw_fatal("Netdot::Model::sqldate2time: Invalid date string: $date.")
-	    unless ($y && $m > 0 && $m < 12 && $d > 0 && $d <= 31);
+	    unless ($y && $m > 0 && $m <= 12 && $d > 0 && $d <= 31);
 	return timelocal(0,0,0,$d,$m-1,$y);
     }else{
 	$self->throw_fatal("Netdot::Model::sqldate2time: Invalid SQL date format: $d. Should be (YYYY-MM-DD).");
