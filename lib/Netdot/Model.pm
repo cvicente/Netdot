@@ -634,6 +634,8 @@ sub update {
 		$msg = "Some fields have invalid input syntax";
 	    }elsif ( $e =~ /out of range/i ){
 		$msg = "Some values are out of valid range.";
+	    }else{ 
+		$msg = $e;
 	    }
 	    $self->throw_user("$msg");
 	}
@@ -752,7 +754,9 @@ sub get_label {
 		push @ret, $self->$c;
 	    }else{
 		# The field is a foreign key
-		push @ret, $self->$c->get_label($delim);
+		if ( int($self->$c) ){
+		    push @ret, $self->$c->get_label($delim);
+		}
 	    }
 	}
     }
