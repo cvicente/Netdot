@@ -68,6 +68,9 @@ sub insert {
 	    $class->throw_user($rr->name.": Cannot add PTR records when other conflicting types exist.");
 	}
     }
+    
+    # Remove spaces from ptrdname
+    $argv->{ptrdname} =~ s/\s+//g;
 
     delete $argv->{zone};
     return $class->SUPER::insert($argv);
@@ -137,6 +140,9 @@ sub update {
     }else{
 	delete $argv->{ttl};
     }
+
+    # Remove spaces from ptrdname
+    $argv->{ptrdname} =~ s/\s+//g;
     
     return $self->SUPER::update($argv);
 }
