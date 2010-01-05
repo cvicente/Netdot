@@ -31,13 +31,13 @@ sub denies(){
     my $otype = $object->short_class();
 
     if ( !$otype ){
-	$logger->debug("Netdot::ObjectAccessRule::denies: object not valid");
+	$logger->debug("ObjectAccessRule::denies: object not valid");
 	return 1;
     }
     
     my $oid = $object->id;
     my $username  = $user->getUsername();
-    $logger->debug("Netdot::ObjectAccessRule::denies: Requesting permission to '$action' $otype id $oid on behalf of $username ($user_type)");
+    $logger->debug("ObjectAccessRule::denies: Requesting permission to '$action' $otype id $oid on behalf of $username ($user_type)");
 
     if ( $user_type eq 'User' || $user_type eq 'Operator' ){
 
@@ -46,7 +46,7 @@ sub denies(){
 
 	my $access;
 	if ( !($access = $user->getAttribute('ALLOWED_OBJECTS')) ){
-	    $logger->debug("Netdot::ObjectAccessRule::denies: $username: No 'ALLOWED_OBJECTS' attribute.  Denying access.");
+	    $logger->debug("ObjectAccessRule::denies: $username: No 'ALLOWED_OBJECTS' attribute.  Denying access.");
 	    return 1;
 	}
 	if ( exists $access->{$otype} && exists $access->{$otype}->{$oid} ){
@@ -54,6 +54,13 @@ sub denies(){
 		# Users cannot delete Zones
 		# These persmissions will only apply to records in the zone
 		if ( $user_type eq 'User' && $action eq 'delete' ){
+		    $logger->debug("ObjectAccessRule::denies: '$action' $otype id $oid denied to $username ($user_type)");
+		    return 1;
+		}
+	    }elsif ( $otype eq 'Ipblock' ){
+		# Users cannot delete subnets
+		if ( $user_type eq 'User' && $action eq 'delete' ){
+		    $logger->debug("ObjectAccessRule::denies: '$action' $otype id $oid denied to $username ($user_type)");
 		    return 1;
 		}
 	    }
@@ -84,6 +91,8 @@ sub denies(){
 	    }
 	    return 1;
 	}elsif ( $otype eq 'Ipblock' ){
+	    # Notice that only Ipblocks that are not in the %access hash make it here
+	    # for example, individual IP addresses
 	    return &_deny_ip_access($action, $access, $object);
 
 	}elsif ( $otype eq 'IpblockAttr' ){
@@ -136,13 +145,13 @@ sub denies(){
 	    
 	    # Users cannot edit RRs for Devices or Device IPs
 	    if ( my $dev = ($rr->devices)[0] ) {
-		$logger->debug("Netdot::ObjectAccessRule::_denies: ".$rr->get_label." linked to a Device. Denying access.");
+		$logger->debug("ObjectAccessRule::_denies: ".$rr->get_label." linked to a Device. Denying access.");
 		return 1;
 	    }
  	    foreach my $arecord ( $rr->arecords ){
  		my $ip = $arecord->ipblock;
  		if ( int($ip->interface) != 0 ){
- 		    $logger->debug("Netdot::ObjectAccessRule::_denies: ".$rr->get_label." linked to Device interface. Denying access.");
+ 		    $logger->debug("ObjectAccessRule::_denies: ".$rr->get_label." linked to Device interface. Denying access.");
  		    return 1;
  		}
  	    }
@@ -161,7 +170,7 @@ sub denies(){
 		    if ( my @ipbs = &_get_rr_ips($crr) ){
 			foreach my $ipb ( @ipbs ){
 			    next if $ipb == 0;
-			    return 1 if ( &_deny_ip_access($action, $access, $ipb) );
+			    return 1 if ( &_deny_rr_access($action, $access, $ipb) );
 			}
 			return 0;
 		    }
@@ -170,7 +179,7 @@ sub denies(){
 		if ( my @ipbs = &_get_rr_ips($rr) ){
 		    foreach my $ipb ( @ipbs ){
 			next if int($ipb) == 0;
-			return 1 if ( &_deny_ip_access($action, $access, $ipb) );
+			return 1 if ( &_deny_rr_access($action, $access, $ipb) );
 		    }
 		    return 0;
 		}elsif ( my $cname = $object->cnames->first ){
@@ -179,7 +188,7 @@ sub denies(){
 			if ( my @ipbs = &_get_rr_ips($crr) ){
 			    foreach my $ipb ( @ipbs ){
 				next if $ipb == 0;
-				return 1 if ( &_deny_ip_access($action, $access, $ipb) );
+				return 1 if ( &_deny_rr_access($action, $access, $ipb) );
 			    }
 			    return 0;
 			}
@@ -188,7 +197,7 @@ sub denies(){
 	    }
 	}
     }
-    $logger->debug("Netdot::ObjectAccessRule::denies: No matching criteria.  Denying access.");
+    $logger->debug("ObjectAccessRule::denies: No matching criteria.  Denying access.");
     return 1;
 }
 
@@ -210,7 +219,7 @@ sub _get_rr_ips {
 	if ( @ipblist ){
 	    return @ipblist;
 	}else{
-	    $logger->debug("Netdot::ObjectAccessRule::_get_rr_ips: no IPs found for RR: ".$rr->id);
+	    $logger->debug("ObjectAccessRule::_get_rr_ips: no IPs found for RR: ".$rr->id);
 	    return;
 	}
     }	    
@@ -227,7 +236,7 @@ sub _deny_action_access {
 	unless ( $action );
 
     if ( exists $access->{none} ){
-	$logger->debug("Netdot::ObjectAccessRule::_deny_action_access: access was explicitly denied for this object");
+	$logger->debug("ObjectAccessRule::_deny_action_access: access was explicitly denied for this object");
 	return 1;
     }
 
@@ -235,33 +244,68 @@ sub _deny_action_access {
     if ( exists $access->{$action} ){
 	return 0; # Do not deny access
     }
-    $logger->debug("Netdot::ObjectAccessRule::_deny_action_access: access for $action not found.  Denying access.");
+    $logger->debug("ObjectAccessRule::_deny_action_access: access for $action not found.  Denying access.");
     return 1;
 }
 
 ##################################################################################
-# ip addresses inherit parent's permissions, but only for view
+# ip addresses inherit subnet permissions, but users cannot edit or delete them
 sub _deny_ip_access {
     my ($action, $access, $ipblock) = @_;
     if ( int($ipblock->interface) != 0 ){
-	$logger->debug("Netdot::ObjectAccessRule::_deny_ip_access: ".$ipblock->get_label." linked to Device interface. Denying access.");
+	$logger->debug("ObjectAccessRule::_deny_ip_access: ".$ipblock->get_label." linked to Device interface. Denying access.");
 	return 1;
     }
     my $parent = $ipblock->parent;
-    if ( exists $access->{'Ipblock'} && 
+    if ( int($parent) &&
+	 exists $access->{'Ipblock'} && 
 	 exists $access->{'Ipblock'}->{$parent->id} ){
-	if ( $action eq 'view' ){
-	    if ( int($ipblock->status) ){
-		my $status = $ipblock->status->name;
-		if ( $status eq 'Dynamic' || $status eq 'Reserved' ){
-		    # Unprivileged users cannot modify dynamic or reserved IPs
-		    return 1;
-		}
-	    }
-	    return &_deny_action_access($action, $access->{'Ipblock'}->{$parent->id});
+	if ( $action eq 'delete' || $action eq 'edit' ){
+	    $logger->debug("ObjectAccessRule::_deny_ip_access: ".$ipblock->get_label
+			   ." Users cannot edit or delete IP addresses. Denying access.");
+	    return 1;
 	}
+	if ( int($ipblock->status) ){
+	    my $status = $ipblock->status->name;
+	    if ( $status eq 'Dynamic' || $status eq 'Reserved' ){
+		$logger->debug("ObjectAccessRule::_deny_ip_access: ".$ipblock->get_label
+			       ." is Dynamic or Reserved. Denying access.");
+		return 1;
+	    }
+	}
+	return &_deny_action_access($action, $access->{'Ipblock'}->{$parent->id});
     }
+    $logger->debug("ObjectAccessRule::_deny_ip_access: ".$ipblock->get_label
+		   ." not in allowed block. Denying access.");
     return 1;
 }
+
+##################################################################################
+# RRs inherit IP address permissions, but users are allowed to edit and delete RRs
+sub _deny_rr_access {
+    my ($action, $access, $ipblock) = @_;
+    if ( int($ipblock->interface) != 0 ){
+	$logger->debug("ObjectAccessRule::_deny_rr_access: ".$ipblock->get_label." linked to Device interface. Denying access.");
+	return 1;
+    }
+    my $parent = $ipblock->parent;
+    if ( int($parent) &&
+	 exists $access->{'Ipblock'} && 
+	 exists $access->{'Ipblock'}->{$parent->id} ){
+	if ( int($ipblock->status) ){
+	    my $status = $ipblock->status->name;
+	    if ( $status eq 'Dynamic' || $status eq 'Reserved' ){
+		$logger->debug("ObjectAccessRule::_deny_rr_access: ".$ipblock->get_label
+			       ." is Dynamic or Reserved. Denying access.");
+		return 1;
+	    }
+	}
+	return &_deny_action_access($action, $access->{'Ipblock'}->{$parent->id});
+    }
+    $logger->debug("ObjectAccessRule::_deny_rr_access: ".$ipblock->get_label
+		   ." not in allowed block. Denying access.");
+    return 1;
+}
+
 
 1;
