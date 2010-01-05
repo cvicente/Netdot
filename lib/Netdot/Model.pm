@@ -301,6 +301,8 @@ sub insert {
 	    $msg .= "Some fields have invalid input syntax.";
 	}elsif ( $e =~ /out of range/i ){
 	    $msg .= "Some values are out of valid range.";
+	}else{
+	    $msg .= $e;
 	}
 	$class->throw_user("$msg");
     }
@@ -549,11 +551,9 @@ sub do_transaction {
 		# Rethrow
 		if ( ref($e) =~ /Netdot::Util::Exception/  &&
 		     $e->isa_netdot_exception('User') ){
-		    $self->throw_user("Transaction aborted " 
-				      . "(Rollback successful): $e\n");
+		    $self->throw_user("Transaction aborted: $e\n");
 		}else{
-		    $self->throw_fatal("Transaction aborted " 
-				       . "(Rollback successful): $e\n");
+		    $self->throw_fatal("Transaction aborted: $e\n");
 		}
 	    }
 	    return;
@@ -629,13 +629,13 @@ sub update {
 	    # Class::DBI shows a full stack trace
 	    # Try to make it less frightening for the user
 	    if ( $e =~ /Duplicate/i ){
-		$msg = "Some values are duplicated";
+		$msg .= "Some values are duplicated";
 	    }elsif ( $e =~ /invalid input syntax/i ){
-		$msg = "Some fields have invalid input syntax";
+		$msg .= "Some fields have invalid input syntax";
 	    }elsif ( $e =~ /out of range/i ){
-		$msg = "Some values are out of valid range.";
+		$msg .= "Some values are out of valid range.";
 	    }else{ 
-		$msg = $e;
+		$msg .= $e;
 	    }
 	    $self->throw_user("$msg");
 	}

@@ -15,7 +15,6 @@ $submit         => undef
 $add_ptr        => undef
 $add_alias      => undef
 $add_dhcp       => undef
-$delete_dhcp    => undef
 $editattr       => undef
 $editipblock    => undef
 </%args>
@@ -69,17 +68,12 @@ if ( $submit ){
 	    $m->comp('/generic/error.mhtml', error=>"You don't have permission to delete this object");
 	}
 	my @ips = map { $_->ipblock } $rr->arecords();
-	my @dhcp_hosts = map { $_->dhcp_scopes } @ips;
 	$deleted_label = $rr->get_label();
 	delete $rrs{$rr->id};
 	$rr->delete();
-	if ( @dhcp_hosts && $delete_dhcp ){
-	    foreach my $host ( @dhcp_hosts ){
-		$host->delete();
-	    }
-	}
 	undef $rr;
 	$action = 'deleted';
+
     }elsif ($rr || $id || $ipblock || $action eq 'new') {
 	# insert/update
 	eval {
@@ -156,15 +150,6 @@ if ( $rr && $action eq 'delete' ){
     print '<p>';
     print '<strong>Are you sure you want to delete the records below?</strong>';
     print '<p>';
-    my @dhcp_hosts;
-    foreach my $ar ( $rr->arecords ){
-	push @dhcp_hosts, $ar->ipblock->dhcp_scopes 
-	    if $ar->ipblock->dhcp_scopes;
-    }
-    if ( @dhcp_hosts ){
-	print '<p>';
-	print 'Delete DHCP reservations too <input type="checkbox" name="delete_dhcp" CHECKED>';
-    }
     print '<p>';
     print '<input type="hidden" name="id" value="'.$rr.'">';
     print '<input type="hidden" name="action" value="delete_confirm" >';
