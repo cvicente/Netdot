@@ -191,15 +191,95 @@ sub search_like {
 	if ( $key eq 'address' ){
 	    my $pattern = $argv{address};
 	    $pattern =~ s/\./\\./g;
+	    
+	    # we assume we are looking for IPs that start with the pattern
+	    # because I do not think it is likely to search for a middle substring
+	    # without knowing the beginning.
+	    my $prefix = $pattern;  # this is string prefix not the IP prefix
+	    my $ipVersion;
+	    my $hasPrefix = 0;
+	    my $ipPattern;  # the pattern without IP prefix
+	    my $slashPrefix;
+	    my $lower;
+	    my $upper;
+	    $prefix =~ s/^\^//;
+	    if ( $prefix =~ /\/\d+$/ ) {  # if it has an IP prefix slash in it
+		$hasPrefix = 1;
+		($prefix, $slashPrefix) = split /\//, $prefix;
+	    }
+	    $ipPattern = $prefix;
+	    if ( $prefix =~ /\./ ) {  # IPv4
+		$ipVersion = 4;
+		$prefix =~ s/^(.*)\\\.[^\.]*/$1/;
+		$lower = $prefix;
+		$upper = $prefix;
+		do {
+		    $lower = $lower . "\\" . ".0";
+		    $upper = $upper . "\\" . ".255";
+		} while (($lower =~ tr/\.//) < 3);
+		$lower =~ s/\\\./\./g;
+		$upper =~ s/\\\./\./g;
+	    } elsif ( $prefix =~ /:/ ) {  #IPv6
+		$ipVersion = 6;
+		$prefix =~ s/^(.*):[^:]*/$1/;
+		$lower = $prefix;
+		$upper = $prefix;
+		do {
+		    $lower = $lower . ":0";
+		    $upper = $upper . ":FFFF";
+		} while (($lower =~ tr/://) < 7);
+	    } else {  # no indication (no '.' or ':'): search the old way
+		my @ipb;
+		my $it = $class->retrieve_all;
+		while ( my $ipb = $it->next ) {
+		    if ( $ipb->cidr() =~ /$pattern/ ){
+			push @ipb, $ipb;
+		    }
+		    if ( scalar(@ipb) > $class->config->get('IPMAXSEARCH') ){
+			last;
+		    }
+		}
+		@ipb = sort { $a->address_numeric <=> $b->address_numeric } @ipb;
+		return @ipb;
+	    }
+	    $lower = $class->ip2int($lower);
+	    $upper = $class->ip2int($upper);
+	    
+	    my $dbh = $class->db_Main;
+	    my $sth;
+	    eval {
+		$sth = $dbh->prepare("SELECT address, prefix, version FROM ipblock WHERE address>=? AND address<=?");
+		$sth->execute($lower, $upper);
+	    };
+	    $class->throw_fatal("$@") if $@;
+	    
 	    my @ipb;
-	    my $it = $class->retrieve_all;
-	    while ( my $ipb = $it->next ){
-		if ( $ipb->cidr() =~ /$pattern/ ){
-		    push @ipb, $ipb;
-		}
-		if ( scalar(@ipb) > $class->config->get('IPMAXSEARCH') ){
-		    last;
-		}
+	    while ( my ($ipbn, $prf, $ver) = $sth->fetchrow_array() ){
+		if ( $ipbn && $prf && $ver ) {
+		    # $ipbn is the numerical format
+		    # $ipbh is the human-readable format
+		    # $ipb is the Ipblock object
+		    my $ipb = $class->search(address=>$ipbn)->first;
+		    my $ipbh = $class->int2ip($ipbn, $ver);
+		    
+		    # traditionally expected matching method
+		    if ( $ipb->cidr() =~ /$pattern/ ){
+			push @ipb, $ipb;
+		    }
+		    # an alternative matching method which also might help
+		    elsif ( defined($slashPrefix) && $slashPrefix ne "" && $ipbh =~ /$ipPattern/ && $prf eq $slashPrefix ){
+			push @ipb, $ipb;
+		    } elsif ( (!defined($slashPrefix) || (defined($slashPrefix) && $slashPrefix eq "")) && $ipbh =~ /$ipPattern/ ) {
+			# this case might be the same as the first 'if'
+			push @ipb, $ipb;
+		    }
+		    
+		    # checking for upper limit of number of matches
+		    if ( scalar(@ipb) > $class->config->get('IPMAXSEARCH') ){
+			last;
+		    }
+		} # `prefix` in the database should be non-nullable defined by netdot.meta.
+		  # Therefore we do not look at the case when it is not defined.
 	    }
 	    @ipb = sort { $a->address_numeric <=> $b->address_numeric } @ipb;
 	    return @ipb;
