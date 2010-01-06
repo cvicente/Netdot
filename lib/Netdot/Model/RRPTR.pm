@@ -37,6 +37,7 @@ sub insert {
     $class->throw_fatal("Missing required arguments")
 	unless ( $argv->{ptrdname} && $argv->{ipblock} );
     
+    # Convert ipblock into object
     $argv->{ipblock} = $class->_convert_ipblock($argv->{ipblock});
     my $ipb = $argv->{ipblock};
 
@@ -53,14 +54,10 @@ sub insert {
 		       $ipb->get_label." as: ".$rr->get_label);
 	$argv->{rr} = $rr;
     }
-    
+
     my $rr = (ref $argv->{rr})? $argv->{rr} : RR->retrieve($argv->{rr});
     $class->throw_fatal("Invalid rr argument") unless $rr;
-
-    # TTL needs to be set and converted into integer
-    $argv->{ttl} = (defined($argv->{ttl}) && length($argv->{ttl}))? $argv->{ttl} : $rr->zone->default_ttl;
-    $argv->{ttl} = $class->ttl_from_text($argv->{ttl});
-
+    
     my %linksfrom = RR->meta_data->get_links_from;
     foreach my $i ( keys %linksfrom ){
 	if ( $rr->$i ){
@@ -68,9 +65,15 @@ sub insert {
 	    $class->throw_user($rr->name.": Cannot add PTR records when other conflicting types exist.");
 	}
     }
-    
-    # Remove spaces from ptrdname
-    $argv->{ptrdname} =~ s/\s+//g;
+
+    # Sanitize TTL
+    if ( defined $argv->{ttl} && length($argv->{ttl}) ){
+	$argv->{ttl} = $class->ttl_from_text($argv->{ttl});
+    }else{
+	$argv->{ttl} = $argv->{rr}->zone->default_ttl;
+    }
+
+    $class->_sanitize_ptrdname($argv);
 
     delete $argv->{zone};
     return $class->SUPER::insert($argv);
@@ -135,14 +138,23 @@ sub update {
     my($self, $argv) = @_;
     $self->isa_object_method('update');
 
+    if ( exists $argv->{ipblock} ){
+	unless ( $argv->{ipblock} ){
+	    # Make sure it is not null or 0 if passed
+	    $self->throw_user("IP cannot be null");
+	}
+	# Convert ipblock into object
+	$argv->{ipblock} = $self->_convert_ipblock($argv->{ipblock});
+    }
+
     if ( defined $argv->{ttl} && length($argv->{ttl}) ){
 	$argv->{ttl} = $self->ttl_from_text($argv->{ttl});
     }else{
+	# keep what we have
 	delete $argv->{ttl};
-    }
+    }    
 
-    # Remove spaces from ptrdname
-    $argv->{ptrdname} =~ s/\s+//g;
+    $self->_sanitize_ptrdname($argv);
     
     return $self->SUPER::update($argv);
 }
@@ -169,22 +181,55 @@ sub as_text {
 }
 
 
-##################################################################
-# Private methods
-##################################################################
+############################################################################
+# PRIVATE METHODS
+############################################################################
+
+############################################################################
+# _sanitize_ptrdname
+#
+#  Args: 
+#    hashref
+#  Returns: 
+#    True, or throws exception if validation fails
+#  Examples:
+#    $class->_sanitize_ptrdname($argv);
+#
+sub _sanitize_ptrdname {
+    my ($self, $argv) = @_;
+    
+    # Sanitize ptrdname
+    if ( exists $argv->{ptrdname} ){
+	if ( length($argv->{ptrdname}) < 1 || length($argv->{ptrdname}) > 255 ){
+	    $self->throw_user("Invalid domain name size");
+	}
+	$argv->{ptrdname} =~ s/\s+//g;  # remove spaces
+	$argv->{ptrdname} = lc($argv->{ptrdname}); # lowercase
+    }
+    1;
+}
 
 ##################################################################
 # check if IP is an address string, if so then convert into object
 sub _convert_ipblock {
     my ($self, $ip) = @_;
-    if (!(ref $ip) && ($ip =~ /\D/)) {
-	if (my $ipblock = Ipblock->search(address=>$ip)->first) {
+
+    if ( ref($ip) ){
+	return $ip;
+    }elsif ( $ip =~ /\D/ ){
+	# value has non-digits
+	if ( my $ipblock = Ipblock->search(address=>$ip)->first ){
 	    return $ipblock;
-	} else {
+	}else {
 	    return Ipblock->insert({address=>$ip, status=>'Static'});
 	}
-    } else {
-	return $ip;
+    }else{
+	# Value must be an integer, so it might be an id
+	if ( my $ipblock = Ipblock->retrieve($ip) ) {
+	    return $ipblock;
+	}else{
+	    $self->throw_user("Invalid ipblock value: $ip");
+	}
     }
 }
 
@@ -202,6 +247,7 @@ sub _net_dns {
     
     return $ndo;
 }
+
 
 =head1 AUTHOR
 

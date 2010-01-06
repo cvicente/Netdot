@@ -768,8 +768,10 @@ sub get_label {
 		push @ret, $self->$c;
 	    }else{
 		# The field is a foreign key
-		if ( int($self->$c) ){
+		if ( int($self->$c) && ref($self->$c) ){
 		    push @ret, $self->$c->get_label($delim);
+		}else{
+		    push @ret, $self->$c;
 		}
 	    }
 	}

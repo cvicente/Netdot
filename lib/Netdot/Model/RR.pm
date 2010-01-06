@@ -569,10 +569,12 @@ sub _validate_args {
 	}
     }
     if ( defined $argv->{name} ){
-	my $name = $argv->{name};
+	# Convert to lowercase
+	my $name = lc($argv->{name});
+	$argv->{name} = $name;
 
 	# Length restrictions
-	unless ( length($name) >= 1 && length($name ) < 64){
+	unless ( length($name) >= 1 && length($name) < 64 ){
 	    $self->throw_user("Invalid name: $name. Length must be between 1 and 63 characters");
 	}
 	if ( $zone ){
