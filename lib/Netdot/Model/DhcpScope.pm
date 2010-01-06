@@ -375,16 +375,14 @@ sub _objectify_args {
     }
 
     if ( $argv->{physaddr} && !ref($argv->{physaddr}) ){
-	if ( $argv->{physaddr} =~ /\D+/ ){
-	    my $physaddr;
-	    unless ( $physaddr = PhysAddr->search(address=>$argv->{physaddr})->first ){
-		$physaddr = PhysAddr->insert({address=>$argv->{physaddr}});
-	    }
-	    $argv->{physaddr} = $physaddr;
-	}elsif ( my $phys = PhysAddr->retrieve($argv->{physaddr}) ){
+	# Could be an ID or an actual address
+	my $phys;
+	$phys = PhysAddr->search(address=>$argv->{physaddr})->first ||
+	    PhysAddr->retrieve($argv->{physaddr});
+	if ( $phys ){
 	    $argv->{physaddr} = $phys;
 	}else{
-	    $self->throw_user("Invalid physaddr argument ".$argv->{physaddr});
+	    $self->throw_user("Could not find or create physaddr");
 	}
     }
 

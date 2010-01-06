@@ -265,7 +265,7 @@ sub validate {
 	$logger->debug(sub{ "PhysAddr::validate: HSRP: $addr" });
 	return 0;
 
-    }elsif ( $addr =~ /^([0-9A-F]{2})/  && $1 =~ /.(1|3|5|7|9|B|D|F)/ ) {
+    }elsif ( $addr =~ /^([0-9A-F]{2})/ && $1 =~ /.(1|3|5|7|9|B|D|F)/ ) {
 	 # Multicast addresses
 	$logger->debug(sub{ "PhysAddr::validate: address is Multicast: $addr" });
 	return 0;	

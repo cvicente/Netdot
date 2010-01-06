@@ -251,11 +251,13 @@ sub _net_dns {
 sub _convert_ipblock {
     my ($self, $ip) = @_;
     if (!(ref $ip) && ($ip =~ /\D/)) {
-	if (my $ipblock = Ipblock->search(address=>$ip)->first) {
-	    return $ipblock;
-	} else {
-	    return Ipblock->insert({address=>$ip, status=>'Static'});
+	my $ipblock;
+	unless ( $ipblock = Ipblock->search(address=>$ip)->first){
+	    $ipblock = Ipblock->insert({address=>$ip, status=>'Static'});
 	}
+	# Make sure it's set to static
+	$ipblock->update({status=>'Static'});
+	return $ipblock;
     } else {
 	return $ip;
     }
