@@ -15,14 +15,14 @@ title => 'Host Tasks'
 %#
 %#######################################################################
 <%args>
-$action     => undef
-$search     => undef
-$user       => undef
-$submit     => undef
-$show_tasks => undef
-$show_block_records  => undef
-$show_ipblock  => undef
-$showheader => 1
+$action          => undef
+$search          => undef
+$user            => undef
+$submit          => undef
+$show_tasks      => undef
+$ipblock         => undef
+$ipblock_action  => undef
+$showheader      => 1
 </%args>
 %
 %
@@ -83,6 +83,13 @@ if ( exists $ao->{Zone} ){
 	}
     }
 }
+
+my %ipb_actions = (
+    'show_block'     => 'Show Subnet',
+    'browse_records' => 'Browse Records',
+    'add_host'       => 'Add New Host',
+    );
+
 </%perl>
 
 <p>
@@ -100,31 +107,35 @@ if ( exists $ao->{Zone} ){
 
 % if ( @ipblocks ){
     <fieldset class="small">
-        <legend>Browse records in</legend>
-        <form name="subnet_form" action="hostinfo_tasks.html" method="POST">
-        <select name="show_block_records" onChange="document.subnet_form.submit();">
+        <legend>IP Block Actions</legend>
+        <form name="actions_form" action="hostinfo_tasks.html" method="POST">
+        <select name="ipblock">
             <option value="0">- Select Block -</option>
 %       foreach my $o ( sort { $a->address_numeric <=> $b->address_numeric } @ipblocks ){
-            <option value="<% $o %>"><% $o->get_label %></option>
+%           if ( $ipblock && $ipblock eq $o->id ){
+                <option value="<% $o %>" SELECTED><% $o->get_label %></option>
+%           }else{
+                <option value="<% $o %>"><% $o->get_label %></option>
+%	    }
 %       }
         </select>
+
+        <select name="ipblock_action">
+            <option value="0">- Select Action -</option>
+%	    foreach my $action ( sort keys %ipb_actions ){
+%		if ( $ipblock_action && $ipblock_action eq $action  ){
+		    <option value="<% $action %>" SELECTED><% $ipb_actions{$action} %></option>
+%		}else{
+		    <option value="<% $action %>"><% $ipb_actions{$action} %></option>
+%	        }
+%	    }
+        </select> 
+	<input type="submit" value="Go" name="submit">
         </form>
+	
     </fieldset>
 % }
 
-% if ( @ipblocks ){
-    <fieldset class="small">
-        <legend>Add new host in</legend>
-        <form name="add_host_form" action="add_host.html" method="POST">
-        <select name="add_host_block" onChange="document.add_host_form.submit();">
-            <option value="0">- Select Block -</option>
-%       foreach my $o ( sort { $a->address_numeric <=> $b->address_numeric } @ipblocks ){
-            <option value="<% $o %>"><% $o->get_label %></option>
-%       }
-        </select>
-        </form>
-    </fieldset>
-% }
 
 % if ( @zones ){
     <fieldset class="small">
@@ -150,17 +161,22 @@ if ( exists $ao->{Zone} ){
 </div> <!-- close sectiontools -->
 
 <%perl>
-if ( $show_block_records ){
-    my $ipblock = Ipblock->retrieve($show_block_records);
-    if ( my $zone = $ipblock->forward_zone ){
-	my $records = $zone->get_hosts($ipblock->id);
-	$m->comp('/management/hostlist.mhtml', records=>$records, withedit=>1, return_args=>"?show_block_records=$show_block_records");
-    }else{
-	$m->comp('/generic/error.mhtml', error=>$ipblock->get_label." not associated with a zone");
-    }
+if ( $submit && $ipblock ){
+    if ( $ipblock_action eq 'browse_records' ){
+	my $ipblock = Ipblock->retrieve($ipblock);
+	if ( my $zone = $ipblock->forward_zone ){
+	    my $records = $zone->get_hosts($ipblock->id);
+	    $m->comp('/management/hostlist.mhtml', records=>$records, withedit=>1, return_args=>"?ipblock=$ipblock&ipblock_action='browse_records'");
+	}else{
+	    $m->comp('/generic/error.mhtml', error=>$ipblock->get_label." not associated with a zone");
+	}
+	
+    }elsif ( $ipblock_action eq 'show_block' ){
+	$m->comp('../management/ip.html', id=>$ipblock, user=>$user);
 
-}elsif ( $show_ipblock ){
-    $m->comp('../management/ip.html', id=>$show_ipblock, user=>$user);
+    }elsif ( $ipblock_action eq 'add_host' ){
+	$m->comp('add_host.html', add_host_block=>$ipblock);
+    }
 
 }elsif ( $search ){
     $search =~ s/^\s*(.*)\s*$/$1/g;

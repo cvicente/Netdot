@@ -130,8 +130,9 @@ sub update {
     - When removing an address record, most likely the RR (name)
     associated with it needs to be deleted too, unless it has
     more adddress records associated with it.
-    - Also, delete any RRPTR(s) with corresponding ptrdname
-    - Sets ipblock status to 'Available' if needed
+    - Delete any RRPTR(s) with corresponding ptrdname
+    - Set ipblock status to 'Available' if needed
+    - Remove any DHCP host scopes related to the IP if needed
 
   Arguments:
     None
@@ -154,11 +155,18 @@ sub delete {
     foreach my $ptr ( RRPTR->search(ptrdname=>$rr_name) ){
 	$ptr->rr->delete();
     }
-    if ( int($ipblock->interface) == 0 && 
-	 !$ipblock->arecords ){
-	$ipblock->update({status=>"Available"});
+    
+    if ( !$ipblock->arecords ){
+	# This IP has no more A records
+	if (int($ipblock->interface) == 0 ){
+	    # Not an interface IP, so it should be available
+	    $ipblock->update({status=>"Available"});
+	}
+	# Remove any dhcp host scopes
+	foreach my $host ( $ipblock->dhcp_scopes ){
+	    $host->delete();
+	}
     }
-
     return 1;
 }
 
