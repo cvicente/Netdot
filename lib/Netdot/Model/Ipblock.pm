@@ -196,20 +196,20 @@ sub search_like {
 	    # because I do not think it is likely to search for a middle substring
 	    # without knowing the beginning.
 	    my $prefix = $pattern;  # this is string prefix not the IP prefix
-	    my $ipVersion;
-	    my $hasPrefix = 0;
-	    my $ipPattern;  # the pattern without IP prefix
-	    my $slashPrefix;
+	    my $ip_version;
+	    my $has_prefix = 0;
+	    my $ip_pattern;  # the pattern without IP prefix
+	    my $slash_prefix;
 	    my $lower;
 	    my $upper;
 	    $prefix =~ s/^\^//;
 	    if ( $prefix =~ /\/\d+$/ ) {  # if it has an IP prefix slash in it
-		$hasPrefix = 1;
-		($prefix, $slashPrefix) = split /\//, $prefix;
+		$has_prefix = 1;
+		($prefix, $slash_prefix) = split /\//, $prefix;
 	    }
-	    $ipPattern = $prefix;
+	    $ip_pattern = $prefix;
 	    if ( $prefix =~ /\./ ) {  # IPv4
-		$ipVersion = 4;
+		$ip_version = 4;
 		$prefix =~ s/^(.*)\\\.[^\.]*/$1/;
 		$lower = $prefix;
 		$upper = $prefix;
@@ -220,7 +220,7 @@ sub search_like {
 		$lower =~ s/\\\./\./g;
 		$upper =~ s/\\\./\./g;
 	    } elsif ( $prefix =~ /:/ ) {  #IPv6
-		$ipVersion = 6;
+		$ip_version = 6;
 		$prefix =~ s/^(.*):[^:]*/$1/;
 		$lower = $prefix;
 		$upper = $prefix;
@@ -267,9 +267,9 @@ sub search_like {
 			push @ipb, $ipb;
 		    }
 		    # an alternative matching method which also might help
-		    elsif ( defined($slashPrefix) && $slashPrefix ne "" && $ipbh =~ /$ipPattern/ && $prf eq $slashPrefix ){
+		    elsif ( defined($slash_prefix) && $slash_prefix ne "" && $ipbh =~ /$ip_pattern/ && $prf eq $slash_prefix ){
 			push @ipb, $ipb;
-		    } elsif ( (!defined($slashPrefix) || (defined($slashPrefix) && $slashPrefix eq "")) && $ipbh =~ /$ipPattern/ ) {
+		    } elsif ( (!defined($slash_prefix) || (defined($slash_prefix) && $slash_prefix eq "")) && $ipbh =~ /$ip_pattern/ ) {
 			# this case might be the same as the first 'if'
 			push @ipb, $ipb;
 		    }
