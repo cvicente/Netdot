@@ -85,9 +85,10 @@ BEGIN {
     }
 
 ###########################################################
-# Keep audit trail of DNS/DHCP changes.  The contents of the 
-# hostaudit table are flushed each time a new  zonefile 
-# or dhcp config is generated.  
+# Keep audit trail of DNS/DHCP changes.  
+# Each relevant record change inserts an entry in the 
+# houstaudit table.  Each time a new zonefile or dhcp config 
+# is generated, pending changes are unmarked. 
 # This avoids unnecessary work, and also logs record changes
 ###########################################################
     __PACKAGE__->add_trigger( after_update  => \&_host_audit_update );
@@ -102,7 +103,14 @@ BEGIN {
 	my $changed_columns = $args{discard_columns};
 	if ( defined $changed_columns && scalar(@$changed_columns) ){
 	    $args{fields} = join ',', @$changed_columns;
-	    my @values = map { $self->$_ } @$changed_columns;
+	    my @values;
+	    foreach my $col ( @$changed_columns ){
+		if ( $self->$col && ref($self->$col) ){
+		    push @values, $self->$col->get_label();
+		}else{
+		    push @values, $self->$col;
+		}
+	    }
 	    $args{values} = join ',', map { "'$_'" } @values;
 	    return $self->_host_audit(%args);
 	}
@@ -116,7 +124,11 @@ BEGIN {
 	foreach my $col ( $self->columns ){
 	    if ( defined $self->$col ){ 
 		push @fields, $col;
-		push @values, $self->$col;
+		if ( $self->$col && ref($self->$col) ){
+		    push @values, $self->$col->get_label();
+		}else{
+		    push @values, $self->$col;
+		}
 	    } 
 	}
 	$args{fields} = join ',', @fields;
@@ -128,6 +140,8 @@ BEGIN {
 	return unless ( $self->table =~ /^rr/ || $self->table eq 'zone' ||
 			$self->table eq 'dhcpscope' || $self->table eq 'dhcpattr');
 	$args{operation} = 'delete';
+	$args{fields} = 'all';
+	$args{values} = $self->get_label;
 	return $self->_host_audit(%args);
     }
     sub _host_audit {
