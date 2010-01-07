@@ -100,7 +100,7 @@ if ( @headers && @rows ) {
     # Create new session and get a new window for csv output
     $session = $ui->mk_session();
     $headers = $result->{headers};
-    @orderbrief = @$headers;
+    @orderbrief = @$headers if $headers;
     $session->{objindex}    = \%objindex;
     $session->{orderbrief}  = \@orderbrief;
     $session->{page}        = $result->{rows};
