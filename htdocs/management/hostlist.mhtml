@@ -129,7 +129,11 @@ if ( $view eq 'csv' ){
     #####################################################################
     # CSV format
     $m->clear_buffer; # We don't want headers
-    foreach my $row ( values %index ){
+    print "Name,IP,Ethernet<br>";
+    my $pos = 0;
+    while ( $pos < keys( %index ) ) {
+	my $row = $index{$pos};
+	$pos++;
 	my ($rrid, $name, $ipid, $ip, $version, $ethid, $eth) = @$row;
 	my @cols;
 	push @cols, $name;
@@ -244,7 +248,7 @@ if ( $view eq 'csv' ){
 %     }
 % }
 
-    <a href="hostlist.html?view=csv&osid=<% $osid %>">[csv]</a>
+    <a href="hostlist.html?view=csv&sort=<% $sort %>&osid=<% $osid %>">[csv]</a>
 
 % if ( $withedit ){
       <p>
