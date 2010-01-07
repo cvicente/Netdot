@@ -454,7 +454,12 @@ sub import_records {
     my $rrs;
 
     if ( $argv{text } ){
-	$rrs = Net::DNS::ZoneFile::Fast::parse(text=>$argv{text}, origin=>$domain);
+	eval {
+	    $rrs = Net::DNS::ZoneFile::Fast::parse(text=>$argv{text}, origin=>$domain);
+	};
+	if ( my $e = $@ ){
+	    $self->throw_user("Error parsing Zone data: $e")
+	}
     }else{
 	$self->throw_fatal("rrs parameter must be arrayref")
 	    unless ( ref($argv{rrs}) eq 'ARRAY' );
@@ -486,7 +491,7 @@ sub import_records {
 	}
 
 	my $nrr;
-	my $ttl = $rr->ttl;
+	my $ttl = $rr->ttl || $self->default_ttl;
 	if ( exists $nrrs{$name} ){
 	    $logger->debug("$domain: RR $name already exists in DB");
 	    $nrr = $nrrs{$name};
