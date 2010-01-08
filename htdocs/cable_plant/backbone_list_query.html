@@ -13,15 +13,20 @@ $caller => $ARGS{self};
 </%args>
 
 <%init>
-my $DEBUG = 1;
+my $DEBUG = 0;
 print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;
-my $MAX   = $ui->config->get('DEFAULT_SELECTMAX');
 </%init>
 
 <%perl>
 
-do "jsrsServer.pm";
-jsrsDispatch("backbone_search");
+if ( $DEBUG ){
+    use Data::Dumper;
+    print "<pre> ", Dumper(%ARGS), "</pre><br>";
+    print &backbone_search("end_id", "137");
+} else {
+    do "jsrsServer.pm";
+    jsrsDispatch("backbone_search");
+}
 
 </%perl>
 
@@ -92,6 +97,7 @@ sub backbone_search {
     
 # printf("var listdata = new Array();\n");
     
+    my $MAX_RESULTS   = $ui->config->get('DEFAULT_SELECTMAX');
     my $response = $field."&";
     
     if ( scalar(@results ) < $MAX_RESULTS) {
@@ -103,7 +109,8 @@ sub backbone_search {
 	    $response .= $end_site->id."=".$ui->url_encode($end_site->name)."&";
 	}
     }else{
-	$response .= "0=".$ui->url_encode("Too Many Results");
+	$response .= "0=".$ui->url_encode("More than ".$MAX_RESULTS." matches.")."&";
+	$response .= "0=".$ui->url_encode("Refine search.")."&";
     }
     
     return $response;    
