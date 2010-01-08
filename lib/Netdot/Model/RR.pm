@@ -330,7 +330,7 @@ sub get_label {
     my $self = shift;
     $self->isa_object_method('get_label');
     my $name = ($self->name eq '@')? "" : $self->name;
-    if ( $self->zone ){
+    if ( $self->zone && ref($self->zone) ){
 	if ( $name ){
 	    return sprintf("%s.%s", $name, $self->zone->name);
 	}else{
