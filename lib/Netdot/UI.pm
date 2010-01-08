@@ -1446,9 +1446,9 @@ sub build_backbone_graph {
     my ($self, %argv) = @_;
     my ($filename) = @argv{'filename'};
     
-    my $g = GraphViz->new(layout=>'dot', truecolor=>1, bgcolor=>"#ffffff00",ranksep=>2.0, rankdir=>"1", 
-			  node=>{shape=>'record', fillcolor=>'#ffffff88', style=>'filled', fontsize=>10, height=>.25},
-			  edge=>{dir=>'none', labelfontsize=>8} );
+    my $g = GraphViz->new(layout=>'dot', truecolor=>1, bgcolor=>"#ffffff00",ranksep=>2.0, rankdir=>"LR", 
+			  node=>{shape=>"house", fillcolor=>'#ffffff88', style=>'filled', fontsize=>10},
+			  edge=>{dir=>'none', fontsize=>10, labelfontsize=>8, arrowhead=>'none', arrowtail=>'none', color=>'black'});
     my %seen;
     my %site_closets;
     foreach my $bb ( BackboneCable->retrieve_all() ){
@@ -1480,9 +1480,9 @@ sub build_backbone_graph {
 		}
 
 		$g->add_node(
-		    name   => $site->get_label,
-		    label  => \@sclosets,
-		    shape  => "record",
+		    name     => $site->get_label,
+		    label    => $site->get_label,
+		    URL      => "view.html?table=Site&id=".$site->id,
 		    );
 		$seen{$site->id} = 1;
 	    }
@@ -1494,12 +1494,11 @@ sub build_backbone_graph {
 	    
 	    $g->add_edge($esites[0]->get_label => $esites[1]->get_label,
 			 label     => $bb->name." (".$used_strands."/".$num_strands.")",
-			 fontsize  => '10',
-                         arrowhead => 'normal',
-                         arrowtail => 'none',
+			 labelURL  => "cable_backbone.html?id=".$bb->id,
+			 edgeURL  => "cable_backbone.html?id=".$bb->id,
                          from_port => $site_closets{$esites[0]->id}{$eclosets[0]->name},
                          to_port   => $site_closets{$esites[1]->id}{$eclosets[1]->name},
-			 color     => 'black'
+			 
 		);
 	}
     }

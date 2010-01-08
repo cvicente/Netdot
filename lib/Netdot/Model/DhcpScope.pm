@@ -378,7 +378,8 @@ sub _objectify_args {
 	# Could be an ID or an actual address
 	my $phys;
 	$phys = PhysAddr->search(address=>$argv->{physaddr})->first ||
-	    PhysAddr->retrieve($argv->{physaddr});
+	    PhysAddr->retrieve($argv->{physaddr}) ||
+	    PhysAddr->insert({address=>$argv->{physaddr}});
 	if ( $phys ){
 	    $argv->{physaddr} = $phys;
 	}else{

@@ -316,12 +316,15 @@ sub keyword_search {
     map { $blocks{$_} = $_ } __PACKAGE__->search_like(description => $crit);
     map { $blocks{$_} = $_ } __PACKAGE__->search_like(info        => $crit);
 
+    # Use the SiteSubnet relationship if available
+    map { $blocks{$_->subnet} = $_->subnet } map { $_->subnets } @sites; 
+    
     # Add the entities related to the sites matching the criteria
-    map { push @ents, $_->entity } 
-    map { $_->entities } @sites; 
+    map { push @ents, $_->entity } map { $_->entities } @sites; 
     # Get the Ipblocks related to those entities
     map { $blocks{$_} = $_ } 
     map { $_->used_blocks, $_->owned_blocks } @ents;
+
     my @ipb;
     foreach ( keys %blocks ){
 	push @ipb, $blocks{$_};

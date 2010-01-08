@@ -249,9 +249,7 @@ if ( defined($ARGS{_action}) && $ARGS{_action} eq "ADD_PICTURE" && defined($ARGS
 %       my $site = $o->room->floor->site->id;
 %       my $room = $o->room->id;
 %       my @device_list = Device->search(site=>$site, room=>$room);
-%       foreach my $i (@device_list){
-%           print "<a href=\"../management/device.html?table=Device&id=$i\">".$i->fqdn()."</a><br/>";
-%       }
+        <& /generic/sortresults.mhtml, object=>\@device_list &>
     </div>
 </div>
 % }
