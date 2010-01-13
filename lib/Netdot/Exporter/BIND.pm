@@ -143,8 +143,8 @@ sub print_zone_to_file {
 
     # Print the SOA record
     print $fh $zone->soa_string . "\n";
-    
-    foreach my $name ( sort {$a cmp $b} keys %$rec ){
+
+    foreach my $name ( sort { $rec->{$a}->{order} <=> $rec->{$b}->{order} } keys %$rec ){
 	foreach my $type ( qw/A AAAA TXT HINFO NS MX CNAME PTR NAPTR SRV LOC/ ){
 	    if ( defined $rec->{$name}->{$type} ){
 		# Special cases.  These are relatively rare and hard to print.
