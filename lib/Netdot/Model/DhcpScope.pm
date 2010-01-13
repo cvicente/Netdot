@@ -377,9 +377,13 @@ sub _objectify_args {
     if ( $argv->{physaddr} && !ref($argv->{physaddr}) ){
 	# Could be an ID or an actual address
 	my $phys;
-	$phys = PhysAddr->search(address=>$argv->{physaddr})->first ||
-	    PhysAddr->retrieve($argv->{physaddr}) ||
-	    PhysAddr->insert({address=>$argv->{physaddr}});
+	if ( PhysAddr->validate($argv->{physaddr}) ){
+	    # It looks like an address
+	    $phys = PhysAddr->find_or_create({address=>$argv->{physaddr}});
+	}elsif ( $argv->{physaddr} !~ /\D/ ){
+	    # Does not contain non-digits, so it must be an ID
+	    $phys = PhysAddr->find_or_create({id=>$argv->{physaddr}});
+	}
 	if ( $phys ){
 	    $argv->{physaddr} = $phys;
 	}else{

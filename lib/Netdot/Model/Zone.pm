@@ -311,13 +311,14 @@ sub get_all_records {
     
     my $dbh = $self->db_Main;
     my $id = $self->id;
-    my $q = "SELECT   rr.name, zone.name, ipblock.version, ipblock.address, rrtxt.txtdata, rrhinfo.cpu, rrhinfo.os,
+    my $order_by = ($self->is_dot_arpa)? 'pip.address' : 'rr.name';
+    my $q = "SELECT   rr.name, zone.name, aip.version, aip.address, rrtxt.txtdata, rrhinfo.cpu, rrhinfo.os,
                       rrptr.ptrdname, rrns.nsdname, rrmx.preference, rrmx.exchange, rrcname.cname, rrloc.id, 
                       rrsrv.id, rrnaptr.id, rrds.algorithm, rrds.key_tag, rrds.digest_type, rrds.digest, rr.active,
                       rraddr.ttl, rrtxt.ttl, rrhinfo.ttl, rrns.ttl, rrds.ttl, rrmx.ttl, rrcname.ttl, rrptr.ttl
              FROM     zone, rr
-                      LEFT OUTER JOIN (ipblock, rraddr) ON (rr.id=rraddr.rr AND ipblock.id=rraddr.ipblock)
-                      LEFT OUTER JOIN rrptr   ON rr.id=rrptr.rr
+                      LEFT OUTER JOIN (ipblock aip, rraddr) ON (rr.id=rraddr.rr AND aip.id=rraddr.ipblock)
+                      LEFT OUTER JOIN (ipblock pip, rrptr)  ON (rr.id=rrptr.rr  AND pip.id=rrptr.ipblock)
                       LEFT OUTER JOIN rrtxt   ON rr.id=rrtxt.rr
                       LEFT OUTER JOIN rrhinfo ON rr.id=rrhinfo.rr
                       LEFT OUTER JOIN rrns    ON rr.id=rrns.rr
@@ -327,10 +328,12 @@ sub get_all_records {
                       LEFT OUTER JOIN rrnaptr ON rr.id=rrnaptr.rr
                       LEFT OUTER JOIN rrsrv   ON rr.id=rrsrv.rr
                       LEFT OUTER JOIN rrloc   ON rr.id=rrloc.rr
-             WHERE    rr.zone=zone.id AND zone.id=$id";
+             WHERE    rr.zone=zone.id AND zone.id=$id
+	     ORDER BY $order_by";
 
     my $results = $dbh->selectall_arrayref($q);
     my %rec;
+    my $count = 0;
     foreach my $r ( @$results ){
 	my ( $name, $zone, $ipversion, $ip, $txtdata, $cpu, $os, 
 	     $ptrdname, $nsdname, $mxpref, $exchange, $cname, $rrlocid, $rrsrvid, $rrnaptrid, 
@@ -338,8 +341,9 @@ sub get_all_records {
              $rraddrttl, $rrtxtttl, $rrhinfottl, $rrnsttl, $rrdsttl, $rrmxttl, $rrcnamettl, $rrptrttl ) = @$r;
 
 	next unless $active;
+	$count++;
+	$rec{$name}{order} = $count;
 
-	# Group them by name (aka 'owner')
 	if ( $ip ){
 	    if ( $ipversion == 4 ){
 		my $address = Ipblock->int2ip($ip, $ipversion);
@@ -348,12 +352,13 @@ sub get_all_records {
 		my $address = Ipblock->int2ip($ip, $ipversion);
 		$rec{$name}{AAAA}{$address} = $rraddrttl;
 	    }else{
-		$logger->warn("Zone::print_to_file: $ip has unknown version: $ipversion");
+		$logger->error("Zone::print_to_file: $ip has unknown version: $ipversion");
+		next;
 	    }
 	}
 	$rec{$name}{NS}{"$nsdname."}           = $rrnsttl    if ($nsdname);
 	$rec{$name}{DS}{"$dskeytag $dsalgorithm $dsdigesttype $dsdigest."}           
-                                               = $rrdsttl    if ($dskeytag && $dsalgorithm && 
+	                                       = $rrdsttl    if ($dskeytag && $dsalgorithm && 
 								 $dsdigesttype && $dsdigest);
 	$rec{$name}{MX}{"$mxpref $exchange."}  = $rrmxttl    if (defined($mxpref) && $exchange);
 	$rec{$name}{CNAME}{"$cname."}          = $rrcnamettl if ($cname);
@@ -363,6 +368,7 @@ sub get_all_records {
 	$rec{$name}{LOC}{id}                   = $rrlocid    if ($rrlocid);
 	$rec{$name}{SRV}{id}                   = $rrsrvid    if ($rrsrvid);
 	$rec{$name}{NAPTR}{id}                 = $rrnaptrid  if ($rrnaptrid);
+
     }
 
     return \%rec;
@@ -723,6 +729,24 @@ sub get_hosts {
     my $dbh  = $self->db_Main;
     my $rows = $dbh->selectall_arrayref($q);
     return $rows;
+}
+
+############################################################################
+=head2 - is_dot_arpa - Check if zone is in-addr.arpa or ip6.arpa
+
+  Args: 
+    None
+  Returns: 
+    0 or 1
+  Examples:
+    if ( $zone->is_dot_arpa() ) { }
+
+=cut
+sub is_dot_arpa {
+    my ($self) = @_;
+    $self->isa_object_method('is_dot_arpa');
+    return 1 if ( $self->name =~ /\.arpa$/ );
+    return 0;
 }
 
 ############################################################################

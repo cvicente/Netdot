@@ -2343,7 +2343,7 @@ sub info_update {
     
     ##############################################################
     # Update Device object
-    $self->update( \%devtmp );
+    $self->update(\%devtmp);
     
     ##############################################################
     $self->_update_modules($info);
@@ -4674,6 +4674,12 @@ sub _update_interfaces {
 	}
     }
     foreach my $newif ( sort keys %{ $info->{interface} } ) {
+
+	# Remove the new interface's ip addresses from list to delete
+	foreach my $newaddr ( keys %{$info->{interface}->{$newif}->{ips}} ){
+	    delete $oldips{$newaddr} if exists $oldips{$newaddr};
+	}
+
 	my $newname   = $info->{interface}->{$newif}->{name};
 	my $newnumber = $info->{interface}->{$newif}->{number};
 	my $oldif;
@@ -4704,10 +4710,6 @@ sub _update_interfaces {
 	}	    
 	my $if;
 	if ( $oldif ){
-	    # Remove the new interface's ip addresses from list to delete
-	    foreach my $newaddr ( keys %{$info->{interface}->{$newif}->{ips}} ){
-		delete $oldips{$newaddr} if exists $oldips{$newaddr};
-	    }
 	    $if = $oldif;
 	}else{
 	    # Interface does not exist.  Add it.
@@ -4718,7 +4720,7 @@ sub _update_interfaces {
 			doc_status  => 'snmp',
 		);
 	    # Make sure we can write to the description field when
-	    # device is is a router
+	    # device is a router
 	    $args{overwrite_descr} = 1 if $argv{overwrite_descr}; 
 
 	    ############################################

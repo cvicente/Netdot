@@ -569,13 +569,15 @@ sub update_ip {
 				    $label, $address, $prefix) });
 	
 	# Notice that this is basically to confirm that the IP belongs
-	# to this interface and that the status is set to Static.  
+	# to this interface.  
 	# Therefore, it's very unlikely that the object won't pass 
 	# validation, so we skip it to speed things up.
-	$ipobj->update({ status     => "Static",
-			 interface  => $self,
-			 validate   => 0,
-		       });
+	my %args = (interface => $self, validate => 0);
+	if ( !int($ipobj->status) || 
+	     ($ipobj->status->name ne 'Static' && $ipobj->status->name ne 'Dynamic') ){
+	    $args{status} = 'Static';
+	}
+	$ipobj->update(\%args);
     }else {
 	# Create a new Ip
 	# This could also go wrong, but we don't want to bail out
