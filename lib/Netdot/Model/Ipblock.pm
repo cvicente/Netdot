@@ -1013,49 +1013,45 @@ sub add_range{
 
     # We want this to happen atomically (all or nothing)
     my @newips;
-    eval {
-	Netdot::Model->do_transaction(sub {
-	    for ( my $i=$ipstart->numeric; $i<=$ipend->numeric; $i++ ){
-		my $ip = NetAddr::IP->new($i);
-		my $decimal = $ip->numeric;
-		my %args = (status      => $argv{status},
-			    used_by     => $argv{used_by},
-			    description => $argv{description},
-		    );
-		$args{parent} = $argv{parent} if defined $argv{parent};
-		if ( my $ipb = Ipblock->search(address=>$decimal)->first ){
-		    $ipb->update(\%args);
-		    push @newips, $ipb;
-		    
-		}else{
-		    $args{address} = $ip->addr;
-		    $args{no_update_tree} = 1 if $args{parent};
-		    push @newips, Ipblock->insert(\%args);
-		}
+    Netdot::Model->do_transaction(sub {
+	for ( my $i=$ipstart->numeric; $i<=$ipend->numeric; $i++ ){
+	    my $ip = NetAddr::IP->new($i);
+	    my $decimal = $ip->numeric;
+	    my %args = (status      => $argv{status},
+			used_by     => $argv{used_by},
+			description => $argv{description},
+		);
+	    $args{parent} = $argv{parent} if defined $argv{parent};
+	    if ( my $ipb = Ipblock->search(address=>$decimal)->first ){
+		$ipb->update(\%args);
+		push @newips, $ipb;
+		
+	    }else{
+		$args{address} = $ip->addr;
+		$args{no_update_tree} = 1 if $args{parent};
+		push @newips, Ipblock->insert(\%args);
 	    }
-				      });
-    };
-    if ( my $e = $@ ){
-	$class->throw_user($e);
-    }
+	}
+
+	#########################################
+	# Call the plugin that generates DNS records
+	if ( $argv{gen_dns} && $argv{fzone} && $argv{rzone} ){
+	    if ( $argv{status} ne 'Dynamic' && $argv{status} ne 'Static' ){
+		$class->throw_user("DNS records can only be auto-generated for Dynamic or Static IPs");
+	    }
+	    my $fzone = Zone->retrieve($argv{fzone});
+	    my $rzone = Zone->retrieve($argv{rzone});
+	    $logger->info("Ipblock::add_range: Generating DNS records: $argv{start} - $argv{end}");
+	    $range_dns_plugin->generate_records(prefix=>$argv{name_prefix}, 
+						suffix=>$argv{name_suffix}, 
+						start=>$ipstart, end=>$ipend, 
+						fzone=>$fzone, rzone=>$rzone );
+	}
+	
+				  });
+
     $logger->info("Ipblock::add_range: Did $argv{status} range: $argv{start} - $argv{end}");
 
-    #########################################
-    # Call the plugin that generates DNS records
-    #
-    if ( $argv{gen_dns} && $argv{fzone} && $argv{rzone} ){
-	if ( $argv{status} ne 'Dynamic' && $argv{status} ne 'Static' ){
-	    $class->throw_user("DNS records can only be auto-generated for Dynamic or Static IPs");
-	}
-	my $fzone = Zone->retrieve($argv{fzone});
-	my $rzone = Zone->retrieve($argv{rzone});
-	$logger->info("Ipblock::add_range: Generating DNS records: $argv{start} - $argv{end}");
-	$range_dns_plugin->generate_records(prefix=>$argv{name_prefix}, 
-					    suffix=>$argv{name_suffix}, 
-					    start=>$ipstart, end=>$ipend, 
-					    fzone=>$fzone, rzone=>$rzone );
-    }
-    
     if ( $argv{parent} ){
 	if ( ref($argv{parent}) ){
 	    return $argv{parent};
