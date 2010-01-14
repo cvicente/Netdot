@@ -11,12 +11,9 @@ $val => $ARGS{val};
 </%args>
 
 
-<%init>
-my ($ui, @terms, $DEBUG);
+<%shared>
 my $DEBUG = 0;
-
-print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;
-</%init>
+</%shared>
 
 <%perl>
 
@@ -24,17 +21,17 @@ print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 if ( $DEBUG ){
     use Data::Dumper;
     print "<pre> ", Dumper(%ARGS), "</pre><br>";
-    print &room_site_search("room_id", "1");
+    print &closet_floor_search("end_id", "14");
 } else {
     do "jsrsServer.pm";
-    jsrsDispatch("room_site_search");
+    jsrsDispatch("closet_floor_search");
 }
 
 
-sub room_site_search {
+sub closet_floor_search {
 # Arguments:
 # - field:  Form element to add the results into
-# - val:   Criteria.  The ID of the site to query for rooms
+# - val:   Criteria.  The ID of the floor to query for closets
 
 my $field = shift;
 my $val = shift;
@@ -49,19 +46,17 @@ if ($val =~ /\w+/) {
         $val =~ s/\s+//;
         push @terms, $val;
     }
-    
-    print "terms are: ",  join ', ', @terms, "<br>" if $DEBUG;
 }
 
 
 my @results = ();
-my $site_id = $terms[0];
-my $site;
+my $floor_id = $terms[0];
+my $floor;
 
-if ( $site = Site->retrieve($site_id) ){
-    foreach my $floor ($site->floors) {
-       	foreach my $room ($floor->rooms) {
-       	    push (@results, $room);
+if ( $floor = Floor->retrieve($floor_id) ){
+    foreach my $room ($floor->rooms) {
+       	foreach my $closet ($room->closets) {
+       	    push (@results, $closet);
         }
     }
 }
@@ -71,20 +66,22 @@ my $response = $field."&";
 
 if (scalar(@results) < $MAX_RESULTS) {
     @results = sort { $a->name cmp $b->name } @results;
+    @results = sort { $a->room->name cmp $b->room->name } @results;
 
     $response .= "0=".$ui->url_encode("No matches") unless (scalar(@results));
 
     if (scalar(@results)) {
         $response .= "0=-- Select --&";
-        foreach my $room (@results) {
-            $response .= $room->id."=".$ui->url_encode($room->name)."&";
+        foreach my $closet (@results) {
+            $response .= $closet->id."=".$ui->url_encode($closet->name." (Room ".$closet->room->name.")")."&";
         }
     }
 } else {
     $response .= "0=".$ui->url_encode("More than ".$MAX_RESULTS." matches.")."&";
-    $response .= "0=".$ui->url_encode("Refine search.")."&";}
+    $response .= "0=".$ui->url_encode("Refine search.")."&";
+}
 
-    return $response;    
+return $response;
 }
 
 </%perl>

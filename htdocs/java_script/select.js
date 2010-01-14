@@ -13,8 +13,15 @@
     }
 
     function jsrsSendqueryRM(form_field, val) {
-        //alert( "Form field: "+form_field.name+"; val:"+val );
+        // Room-Site relationship
+        // alert( "Form field: "+form_field.name+"; val:"+val );
         jsrsExecute( "../generic/room_site_query.html", jsrsParseresults, "room_site_search", Array(form_field.name, val) );
+    }
+
+    function jsrsSendqueryCL(form_field, val) {
+        // Closet-Floor relationship
+        // alert( "Form field: "+form_field.name+"; val:"+val );
+        jsrsExecute( "../generic/closet_floor_query.html", jsrsParseresults, "closet_floor_search", Array(form_field.name, val) );
     }
 
     function jsrsSendqueryBB(form_field, val) {
