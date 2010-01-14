@@ -40,7 +40,8 @@ sub insert {
     # Convert ipblock into object
     $argv->{ipblock} = $class->_convert_ipblock($argv->{ipblock});
     my $ipb = $argv->{ipblock};
-
+    
+    my $rr;
     if ( !defined $argv->{rr} ){
 	$class->throw_fatal("Figuring out the rr field requires passing zone")
 	    unless ( defined $argv->{zone} );
@@ -49,14 +50,14 @@ sub insert {
 
 	my $zone = ref($argv->{zone}) ? $argv->{zone} : Zone->retrieve($argv->{zone});
 	my $name = $class->get_name(ipblock=>$ipb, zone=>$zone);
-	my $rr = RR->find_or_create({zone=>$zone, name=>$name});
+	$rr = RR->find_or_create({zone=>$zone, name=>$name});
 	$logger->debug("Netdot::Model::RRPTR: Created owner RR for IP: ".
 		       $ipb->get_label." as: ".$rr->get_label);
 	$argv->{rr} = $rr;
+    }else{
+	$rr = (ref $argv->{rr})? $argv->{rr} : RR->retrieve($argv->{rr});
+	$class->throw_fatal("Invalid rr argument") unless $rr;
     }
-
-    my $rr = (ref $argv->{rr})? $argv->{rr} : RR->retrieve($argv->{rr});
-    $class->throw_fatal("Invalid rr argument") unless $rr;
     
     my %linksfrom = RR->meta_data->get_links_from;
     foreach my $i ( keys %linksfrom ){
@@ -70,7 +71,7 @@ sub insert {
     if ( defined $argv->{ttl} && length($argv->{ttl}) ){
 	$argv->{ttl} = $class->ttl_from_text($argv->{ttl});
     }else{
-	$argv->{ttl} = $argv->{rr}->zone->default_ttl;
+	$argv->{ttl} = $rr->zone->default_ttl;
     }
 
     $class->_sanitize_ptrdname($argv);
