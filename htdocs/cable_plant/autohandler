@@ -272,7 +272,7 @@ if( !$showheader ) {
  it was named "id", id.value returned an undefined value. not quite sure why this is, maybe
  javascript doens\'t allow fields to be named "id"?
 </%doc>
-                <select name="id" id="site_id" onChange="jsrsSendqueryTB('Floor', floor_id.name, site_id.value, 'site'); jsrsResetSelection('room_id'); jsrsResetSelection('closet_id');">
+                <select name="id" id="site_id" onChange="jsrsSendqueryTB('Floor', floor_id.name, site_id.value, 'site'); jsrsResetSelection('closet_id');">
                     <option value="0">-- Select --</option>
                     <%perl>
                     foreach my $site ( @closet_sites ) {
@@ -284,13 +284,7 @@ if( !$showheader ) {
 
                 <p>
                 <label for="search">Floor:</label>
-                <select name="floor_id" id="floor_id" onChange="jsrsSendqueryTB('Room', room_id.name, floor_id.value, 'floor'); jsrsResetSelection('closet_id');">
-                </select>
-                </p>
-
-                <p>
-                <label for="search">Room:</label>
-                <select name="room_id" id="room_id" onChange="jsrsSendqueryTB('Closet', closet_id.name, room_id.value, 'room');">
+                <select name="floor_id" id="floor_id" onChange="jsrsSendqueryCL(closet_id, floor_id.value);">
                 </select>
                 </p>
 
