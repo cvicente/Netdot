@@ -102,10 +102,16 @@ sub get_name {
     }
 
     my $p = $zone->name;
-    $p =~ s/(.*)\.in-addr.arpa$/$1/ || 
-	$p =~ s/(.*)\.ip6.arpa$/$1/ ||
-	$p =~ s/(.*)\.ip6.int$/$1/ ;
-    
+    if ( $p =~ /\.in-addr.arpa$/ ){
+	$p =~ s/(.*)\.in-addr.arpa$/$1/;
+    }elsif ( $p =~ /\.ip6.arpa$/ ){
+	$p =~ s/(.*)\.ip6.arpa$/$1/;     
+    }elsif ( $p =~ /\.ip6.int$/ ){
+	$p =~ s/(.*)\.ip6.int$/$1/;
+    }else{
+	$class->throw_user("Zone name $p is not valid for a reverse zone");
+    }
+
     my $name;
     if ( $ipblock->version eq '4' ){
 	$name = join('.', reverse split(/\./, $ipblock->address));
@@ -114,7 +120,7 @@ sub get_name {
 	$name =~ s/://g;
 	$name = join('.', reverse split(//, $name));
     }
-    $name =~ s/\.$p$//;
+    $name =~ s/\.$p$//i;
     return $name;
 }
 
