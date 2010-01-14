@@ -909,9 +909,12 @@ sub text_field($@){
 	    }
 	    $output .= '</select>';
 	}else{
+	    $value =~ s/"/'/g;
 	    $output .= sprintf("<input type=\"%s\" name=\"%s\" value=\"%s\" %s>\n", $input_type, $name, $value, $htmlExtra);
 	}
     }elsif ( $linkPage && $value ){
+	$value =~ s/</&lt;/g;
+	$value =~ s/>/&gt;/g;
 	if ( $linkPage eq "1" || $linkPage eq "view.html" ){
 	    $output .= sprintf("<a href=\"view.html?table=%s&id=%s\"> %s </a>\n", $table, $o->id, $value);
 	}else{
@@ -919,6 +922,8 @@ sub text_field($@){
 	}
     }else{
 	if ( $column ne 'password' ){
+	    $value =~ s/</&lt;/g;
+	    $value =~ s/>/&gt;/g;
 	    $output .= sprintf("%s", $value);
 	}
     }
@@ -972,11 +977,14 @@ sub date_field($@){
 	unless ($o || $table) ;
     
     if ( $args{edit} ){
+	$value =~ s/"/'/g;
         $output .= sprintf("<input id=\"%s\" type=\"text\" size=\"10\" name=\"%s\" value=\"%s\">", $name, $name, $value);
 	$output .= "<img src=\"../img/calendar.gif\" onclick=\"showChooser(this, '$name', 'chooserSpan', 1990, 2050, 'Y-m-d', false);\"/>
 <div id=\"chooserSpan\" class=\"dateChooser select-free\" style=\"display: none; visibility: hidden; width: 160px;\"></div>";
 
     }else{
+	$value =~ s/</&lt;/g;
+	$value =~ s/>/&gt;/g;
         $output .= sprintf("%s", $value);
     }
 
@@ -1034,6 +1042,8 @@ sub text_area($@){
     if ( $isEditing ){
         $output .= sprintf("<textarea name=\"%s\" %s>%s</textarea>\n", $name, $htmlExtra, $value);
     }else{
+	$value =~ s/</&lt;/g;
+	$value =~ s/>/&gt;/g;
         $output .= sprintf("<pre>%s</pre>\n", $value);
     }
     
