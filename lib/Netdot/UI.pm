@@ -245,10 +245,11 @@ sub form_to_db{
 		}
 		# Now update this object
 		if ( ! $act ) {
-		    my $o = $table->retrieve($id);
-		    $o->update(\%{ $objs{$table}{$id} });
-		    $ret{$table}{id}{$id}{action}  = "UPDATED";
-		    $ret{$table}{id}{$id}{columns} = \%{ $objs{$table}{$id} };
+		    if ( my $o = $table->retrieve($id) ){
+			$o->update(\%{ $objs{$table}{$id} });
+			$ret{$table}{id}{$id}{action}  = "UPDATED";
+			$ret{$table}{id}{$id}{columns} = \%{ $objs{$table}{$id} };
+		    }
 		}
 	    }
 	}
