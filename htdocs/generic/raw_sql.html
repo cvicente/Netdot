@@ -37,7 +37,7 @@ if ( $action eq "DO_SQL" ){
 }
 if($action eq "SAVE_QUERY"){
    if($sql_name && $sql){
-      SavedQueries->insert({name=>"$sql_name", querytext=>"$sql"});
+      SavedQueries->insert({name=>$sql_name, querytext=>$sql});
    }
 }
 
@@ -62,11 +62,17 @@ foreach (@saved_queries){
 
     <form name = "sql_form" action="<% $r->dir_config('NetdotPath') %>generic/" method="POST">
       <input type="hidden" name="action" value="DO_SQL">
+%     if ( $sql ) {
+%       $sql =~ s/</&lt;/g;
+%	$sql =~ s/>/&gt;/g;
+%     }
       SQL query: <br/><textarea type="text" cols = '80' rows='5' name="sql"><% $sql | h %></textarea><br/>
       <select name="saved_queries" onChange="document.forms['sql_form']['sql'].value = saved_queries.value">
         <option value="">Saved Queries</option>
 %           foreach (@saved_queries){
-                <option value="<% $_->querytext %>"><% $_->name  %></option>
+%               my $qt = $_->querytext;
+%               $qt =~ s/"/&quot;/g;
+                <option value="<% $qt %>"><% $_->name %></option>
 %           }                
       </select>
       <input name="submit" value="Go" type="submit">
@@ -74,6 +80,9 @@ foreach (@saved_queries){
 %   if($action eq "DO_SQL" && (! $sql_err) && $bool_unique_query){
         <form name = "save_query" method="POST">
             <input type="hidden" name="action" value="SAVE_QUERY">
+%     if ( $sql ) {
+%       $sql =~ s/"/&quot;/g;
+%     }
             <input type="hidden" name="sql" value="<% $sql %>">
             Save this query?  Name: <input type="text" name="sql_name" value=""> <input name = "submit" type="submit" value="Save Query">
         </form>
