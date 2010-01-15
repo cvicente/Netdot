@@ -909,7 +909,7 @@ sub text_field($@){
 	    }
 	    $output .= '</select>';
 	}else{
-	    $value =~ s/"/'/g;
+	    $value =~ s/"/&quot;/g;
 	    $output .= sprintf("<input type=\"%s\" name=\"%s\" value=\"%s\" %s>\n", $input_type, $name, $value, $htmlExtra);
 	}
     }elsif ( $linkPage && $value ){
@@ -977,7 +977,7 @@ sub date_field($@){
 	unless ($o || $table) ;
     
     if ( $args{edit} ){
-	$value =~ s/"/'/g;
+	$value =~ s/"/&quot;/g;
         $output .= sprintf("<input id=\"%s\" type=\"text\" size=\"10\" name=\"%s\" value=\"%s\">", $name, $name, $value);
 	$output .= "<img src=\"../img/calendar.gif\" onclick=\"showChooser(this, '$name', 'chooserSpan', 1990, 2050, 'Y-m-d', false);\"/>
 <div id=\"chooserSpan\" class=\"dateChooser select-free\" style=\"display: none; visibility: hidden; width: 160px;\"></div>";
@@ -1039,11 +1039,11 @@ sub text_area($@){
     $self->throw_fatal("Unable to determine table name. Please pass valid object and/or table name.\n")
 	unless ( $o || $table );
     
+    $value =~ s/</&lt;/g;
+    $value =~ s/>/&gt;/g;
     if ( $isEditing ){
         $output .= sprintf("<textarea name=\"%s\" %s>%s</textarea>\n", $name, $htmlExtra, $value);
     }else{
-	$value =~ s/</&lt;/g;
-	$value =~ s/>/&gt;/g;
         $output .= sprintf("<pre>%s</pre>\n", $value);
     }
     
