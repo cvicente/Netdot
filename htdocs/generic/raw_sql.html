@@ -81,8 +81,7 @@ foreach (@saved_queries){
         <form name = "save_query" method="POST">
             <input type="hidden" name="action" value="SAVE_QUERY">
 %     if ( $sql ) {
-%       $sql =~ s/</&lt;/g;
-%	$sql =~ s/>/&gt;/g;
+%       $sql =~ s/"/&quot;/g;
 %     }
             <input type="hidden" name="sql" value="<% $sql %>">
             Save this query?  Name: <input type="text" name="sql_name" value=""> <input name = "submit" type="submit" value="Save Query">
