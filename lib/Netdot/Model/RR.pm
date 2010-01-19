@@ -164,6 +164,13 @@ sub insert {
 	$zone = Zone->insert({ name => $argv->{zone} });
 	$logger->info(sprintf("Inserted new Zone: %s", $zone->get_label));
     }
+    
+    # If the RR name contains the zone name, let's assume that it was a mistake
+    # and remove it
+    my $domain = $zone->name;
+    if ( $argv->{name} =~ /\.$domain$/i ){
+	$argv->{name} =~ s/\.$domain$//i;
+    }
 
     my $rr;
 
