@@ -71,8 +71,11 @@ foreach (@saved_queries){
         <option value="">Saved Queries</option>
 %           foreach (@saved_queries){
 %               my $qt = $_->querytext;
+%               my $qn = $_->name;
 %               $qt =~ s/"/&quot;/g;
-                <option value="<% $qt %>"><% $_->name %></option>
+%               $qn =~ s/</&lt;/g;
+%               $qn =~ s/>/&gt;/g;
+                <option value="<% $qt %>"><% $qn %></option>
 %           }                
       </select>
       <input name="submit" value="Go" type="submit">
@@ -86,7 +89,7 @@ foreach (@saved_queries){
             <input type="hidden" name="sql" value="<% $sql %>">
             Save this query?  Name: <input type="text" name="sql_name" value=""> <input name = "submit" type="submit" value="Save Query">
         </form>
-%   }    
+%   }
     </div> <!-- close containerbody -->
 </div> <!-- close container -->
 % my @rows;
