@@ -10,6 +10,9 @@ $action =>         undef
 $sid    =>         undef
 $table  =>         undef
 $sql_name =>       undef
+$submit =>         undef
+$forget =>         undef
+$saved_queries =>  undef
 </%args>
 
 <%attr>
@@ -27,7 +30,7 @@ my @headers;
 my $headers;
 my $bool_unique_query = 1;
 
-if ( $action eq "DO_SQL" ){
+if ( $action eq "DO_SQL" && $submit ){
     eval {
 	$result = Netdot::Model->raw_sql($sql);
     };
@@ -35,7 +38,12 @@ if ( $action eq "DO_SQL" ){
 	$sql_err = $e;
     }
 }
-if($action eq "SAVE_QUERY"){
+if ( $action eq "DO_SQL" && $forget ){
+    if ( defined ($saved_queries) && $saved_queries ne "" ) {
+	SavedQueries->search(querytext=>$saved_queries)->first->delete;
+    }
+}
+if ( $action eq "SAVE_QUERY" ){
    if($sql_name && $sql){
       SavedQueries->insert({name=>$sql_name, querytext=>$sql});
    }
@@ -77,23 +85,24 @@ foreach (@saved_queries){
 %               $qn =~ s/>/&gt;/g;
                 <option value="<% $qt %>"><% $qn %></option>
 %           }                
-      </select>
-      <input name="submit" value="Go" type="submit">
+      </select><br>
+      <input name="submit" value="Go" type="submit"> &nbsp; or &nbsp;
+      <input name="forget" value="Forget This Query" type="submit">
     </form>
-%   if($action eq "DO_SQL" && (! $sql_err) && $bool_unique_query){
+%   if($action eq "DO_SQL" && $submit && (! $sql_err) && $bool_unique_query){
         <form name = "save_query" method="POST">
             <input type="hidden" name="action" value="SAVE_QUERY">
 %     if ( $sql ) {
 %       $sql =~ s/"/&quot;/g;
 %     }
             <input type="hidden" name="sql" value="<% $sql %>">
-            Save this query?  Name: <input type="text" name="sql_name" value=""> <input name = "submit" type="submit" value="Save Query">
+            Save this query?  Name: <input type="text" name="sql_name" value=""> <input name="submit" type="submit" value="Save Query">
         </form>
 %   }
     </div> <!-- close containerbody -->
 </div> <!-- close container -->
 % my @rows;
-% if ( $action eq "DO_SQL" ){
+% if ( $action eq "DO_SQL" && $submit ){
     <div class="container">
         <div class="containerhead">Query Results:</div>
         <div class="containerbody">
