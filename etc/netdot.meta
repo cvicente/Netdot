@@ -8168,12 +8168,12 @@ $meta = {
         description => '',
         length => '',
         nullable => 0,
-        tag => '',
+        tag => undef,
         type => 'integer'
       },
       name => {
         default => '',
-        description => 'Name',
+        description => 'Name of the SavedQuery',
         length => '255',
         nullable => 0,
         tag => 'Name',
@@ -8181,7 +8181,7 @@ $meta = {
       },
       querytext => {
         default => '',
-        description => 'Saved SQL',
+        description => 'Saved SQL query',
         length => '',
         nullable => 0,
         tag => 'Saved SQL',
@@ -8191,9 +8191,9 @@ $meta = {
     },
     description => 'Saved SQL queries',
     has_history => '0',
-    unique => [ [ ] ],
+    unique => [ ['name'] ],
     label => [ 'name', 'querytext'  ],
-    index => [],
+    index => [ ['name'] ],
     isjoin => '0',
     primary_key => 'id',
     views => { 

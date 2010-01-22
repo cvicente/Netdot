@@ -12,6 +12,7 @@ $table  =>         undef
 $sql_name =>       undef
 $submit =>         undef
 $forget =>         undef
+$forget_name   =>  undef
 $saved_queries =>  undef
 </%args>
 
@@ -38,9 +39,10 @@ if ( $action eq "DO_SQL" && $submit ){
 	$sql_err = $e;
     }
 }
-if ( $action eq "DO_SQL" && $forget ){
-    if ( defined ($saved_queries) && $saved_queries ne "" ) {
-	SavedQueries->search(querytext=>$saved_queries)->first->delete;
+if ( $action eq "DO_SQL" && $forget && $forget_name && $forget_name ne ""){
+    my $forget_query = SavedQueries->search(querytext=>$saved_queries)->first;
+    if ( defined ($forget_query) ) {
+	$forget_query->delete;
     }
 }
 if ( $action eq "SAVE_QUERY" ){
@@ -70,12 +72,13 @@ foreach (@saved_queries){
 
     <form name = "sql_form" action="<% $r->dir_config('NetdotPath') %>generic/" method="POST">
       <input type="hidden" name="action" value="DO_SQL">
+      <input type="hidden" name="forget_name" id="forget_name" value="">
 %     if ( $sql ) {
 %       $sql =~ s/</&lt;/g;
 %	$sql =~ s/>/&gt;/g;
 %     }
       SQL query: <br/><textarea type="text" cols = '80' rows='5' name="sql"><% $sql | h %></textarea><br/>
-      <select name="saved_queries" onChange="document.forms['sql_form']['sql'].value = saved_queries.value">
+      <select name="saved_queries" onChange="document.forms['sql_form']['sql'].value=saved_queries.value; document.getElementById('forget_name').value=saved_queries.value">
         <option value="">Saved Queries</option>
 %           foreach (@saved_queries){
 %               my $qt = $_->querytext;
