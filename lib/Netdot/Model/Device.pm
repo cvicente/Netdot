@@ -2392,14 +2392,14 @@ sub info_update {
     #id, the value will be a concatenation of all the data
     my %before_hash;
     my %after_hash;
-    while(my @row = $before_stmt->fetchrow_array()){
+    while( my @row = $before_stmt->fetchrow_array() ){
 	my $i;
 	for ($i=1; $i<5; $i++){
 	    $row[$i] ||= 0; # Avoid warnings about concatenation of uninitialized values
 	}
 	$before_hash{$row[0]} = $row[1].$row[2].$row[3].$row[4];
     }
-    while(my @row = $after_stmt->fetchrow_array()){
+    while( my @row = $after_stmt->fetchrow_array() ){
 	my $i;
 	for ($i=1; $i<5; $i++){
 	    $row[$i] ||= 0; # Avoid warnings about concatenation of uninitialized values
@@ -2409,27 +2409,27 @@ sub info_update {
 
     #we will have to loop through each hash, since before_hash might have some keys that after_hash doesn't, and visa versa
     #these checking operations should be very efficient however
-    foreach(keys %before_hash){
-        if($before_hash{$_} ne $after_hash{$_}){
+    foreach( keys %before_hash ){
+        if ( exists $before_hash{$_} && exists $after_hash{$_} && $before_hash{$_} ne $after_hash{$_} ){
             push(@interfaces_to_check, $_);
         }
     }
-    foreach(keys %after_hash){
-        if($before_hash{$_} ne $after_hash{$_}){
+    foreach( keys %after_hash ){
+        if ( exists $before_hash{$_} && exists $after_hash{$_} && $before_hash{$_} ne $after_hash{$_} ){
             push(@interfaces_to_check, $_);
         }
     }
     #now we'll put our findings in a hash to pass to Topology->discover.  We want to exclude all protocols except dp
     #print "So we're going to look at @interfaces_to_check <br/>";
     my %topo_argv = ();
-    if((scalar @interfaces_to_check) > 0 && (! $argv{pretend} )){
+    if( ( scalar @interfaces_to_check) && !$argv{pretend} ){
     	$topo_argv{'interfaces'} = (\@interfaces_to_check);
     	$topo_argv{'exclude_stp'} = 1;
     	$topo_argv{'exclude_fdb'} = 1;
     	$topo_argv{'exclude_p2p'} = 1;
     	Netdot::Topology->discover(%topo_argv);
     }	
-
+    
 
     return $self;
 }
