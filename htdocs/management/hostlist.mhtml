@@ -38,6 +38,7 @@ my $session;
 my $osession;
 my %index;
 my $caller_path;
+my $table = 'RR';
 my $user = $ui->get_current_user($r);
 
 my $user_per_page = $user->getAttribute("USER_PERPAGE");
@@ -187,7 +188,7 @@ if ( $view eq 'csv' ){
 
 %     if ( $withedit ) {
          <form name="host_list_form" method="POST" >
-         <input type="hidden" name="table" value="">
+         <input type="hidden" name="table" value=<% $table %> >
 
 %	 if ( $caller_path ){
 	     <input type="hidden" name="return_url" value="<% $caller_path %>">
