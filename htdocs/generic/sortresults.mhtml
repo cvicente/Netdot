@@ -103,6 +103,11 @@ if ( defined($object) && scalar @$object ){
     my $i = 0;
     ##############################################
     # Deal with sorting
+    if ( !defined($sort) && defined($table) ) {
+	# check for previously-stored sorting preference,
+	# if none exists then $sort remains undefined.
+	$sort = $user->getAttribute("USER_SORT_BY_COL_".$table);
+    }
     if ( defined $sort && ($sort eq '0' || $sort =~ /^no$/i ) ){
 	# We're told not to sort
 	map { $objindex{$i++} = $_ } @{ $object };
@@ -112,12 +117,14 @@ if ( defined($object) && scalar @$object ){
 	my $sort_field = $lblf;
 
 	# But maybe the sort field was specified
-	if ( $sort ){
+	if ( defined($sort) && $sort ne '' ){
 	    # Make sure it's a valid column
 	    my %col;
 	    map { $col{$_}++ } $table->columns;
 	    if( exists( $col{$sort} ) ) {
 		$sort_field = $sort;
+		# remember it in user variable
+		$user->setAttribute($r, "USER_SORT_BY_COL_".$table, $sort);
 	    }
 	}
 	print "Sorting by $sort_field<br/>" if $DEBUG;
@@ -386,7 +393,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
       </p>
 % }
 
-% if ( $session && ($total > $per_page) ){
+% if ( $session ){
     <form name="form_sortresults" method="POST" action="list.html">
       <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
       <input type="hidden" name="offset" value="<% $offset %>">
