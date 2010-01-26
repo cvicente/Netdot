@@ -3571,7 +3571,6 @@ sub snmp_update_parallel {
 		};
 		if ( my $e = $@ ){
 		    $logger->error($e);
-		    exit 1;
 		}
 	    }
 	}
