@@ -19,12 +19,12 @@ Supported arguments:
 <%args>
 $records     => undef
 $withedit    => 0
-$per_page    => 50
+$per_page    => undef
 $offset      => 0
 $total       => undef
 $sid         => undef
 $osid        => undef
-$sort        => 'Name'
+$sort        => undef
 $view        => 'html'
 $return_args => undef
 </%args>
@@ -38,6 +38,20 @@ my $session;
 my $osession;
 my %index;
 my $caller_path;
+my $user = $ui->get_current_user($r);
+
+my $user_per_page = $user->getAttribute("USER_PERPAGE");
+if ( !defined($per_page) ){
+    $per_page = $ui->config->get('DEFAULT_PERPAGE');
+    
+    #per user per_page preference takes precedence over global pref
+    if ( $user_per_page =~ /\d+/ && ($per_page != $user_per_page) ) {
+	$per_page = $user_per_page;
+    }
+} else {
+    #set the new one
+    $user->setAttribute($r, "USER_PERPAGE", $per_page);
+}
 
 print "<pre>", Dumper(%ARGS), "</pre>" if $DEBUG;
 
@@ -70,6 +84,19 @@ if ( $records && scalar @$records ){
     #  rr.id, rr.name, ip.id, ip.address, ip.version, pysaddr.id, physaddr.address
 
     my $i = 0;
+    if ( !defined($sort) ) {
+	# check for previously-stored sorting preference,
+	# if none exists then $sort remains undefined.
+	$sort = $user->getAttribute("USER_SORT_BY_COL_HOSTLIST");
+	if ( !defined($sort) ) {
+	    $sort = 'Name';
+	}
+    } elsif ( $sort eq 'Name' || $sort eq 'IP' || $sort eq 'Ethernet' ) {
+	$user->setAttribute($r, "USER_SORT_BY_COL_HOSTLIST", $sort);
+    } else {
+	$sort = 'Name';
+    }
+    
     if ( $sort eq 'Name' ){
 	map { $index{$i++} = $_ } sort { $a->[1] cmp $b->[1] } @$records;
     }elsif ( $sort eq 'IP' ){
@@ -259,7 +286,7 @@ if ( $view eq 'csv' ){
       </p>
 % }
 
-% if ( $session && ($total > $per_page) ){
+% if ( $session ){
     <form name="form_sortresults" method="POST" action="hostlist.html">
       <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
       <input type="hidden" name="offset" value="<% $offset %>">
