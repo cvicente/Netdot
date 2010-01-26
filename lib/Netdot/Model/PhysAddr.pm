@@ -269,6 +269,14 @@ sub validate {
 	 # Multicast addresses
 	$logger->debug(sub{ "PhysAddr::validate: address is Multicast: $addr" });
 	return 0;	
+
+    }elsif ( scalar(my @list = @{$self->config->get('IGNORE_MAC_PATTERNS')} ) ){
+	foreach my $ignored ( @list ){
+	    if ( $addr =~ /$ignored/i ){
+		$logger->debug(sub{"PhysAddr::validate: address matches configured pattern ($ignored): $addr"});
+		return 0;	
+	    }
+	}
     }
 	 
     return $addr;
