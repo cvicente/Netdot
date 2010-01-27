@@ -31,8 +31,9 @@ if(! $id){
 }
 
 my %explanation_hash = ( 
-    'templates' => 'When using a template, the scope will inherit all attributes of the template',
-    'contained_scopes' => 'Scopes that inherit attributes from this scope.');
+    'templates'        => 'When using a template, the scope will inherit all attributes of the template',
+    'contained_scopes' => 'Scopes that inherit attributes from this scope.'
+    );
 
 #@exclude is used to exclude certian fields from forms based on scope type.  
 #i.e Enable fallover only needs to be displayed if this is a global scope
@@ -143,16 +144,19 @@ if ( $submit ){
 		  <a href="scope.html?id=<% $obj %>&view=all">[all]</a>
 %             }
 %             foreach my $i ( sort keys %linksfrom ){
-%               next if($i eq 'derived_scopes' && $type ne 'template');
-%               next if($i eq 'contained_scopes' && ($type eq 'host' || $type eq 'subnet' || $type eq 'template'));
-%               next if($i eq 'audit_records' && $type ne 'global');
+%               next if ($i eq 'derived_scopes' && $type ne 'template');
+%               next if ($i eq 'contained_scopes' && ($type eq 'host' || $type eq 'subnet' || $type eq 'template'));
+%               next if ($i eq 'audit_records' && $type ne 'global');
+%               next if ($i eq 'templates' && $type eq 'template');
 %               if ( $view eq $i ){
                    [<% $i %>]
 %               }else{
                    <a href="scope.html?id=<% $obj %>&view=<% $i %>">[<% $i %>]</a>
 %               }   
 %             }
-              <a href="scope.html?id=<% $obj %>&view=bulk_import">[bulk import]</a>
+%             if ( $type eq 'global' || $type eq 'group' ){
+                  <a href="scope.html?id=<% $obj %>&view=bulk_import">[bulk import]</a>
+%             }
 	   </div>
 	</div>
   </div>
@@ -163,8 +167,9 @@ if ( $submit ){
 <%perl>
 foreach my $i ( keys %linksfrom ){
     next if ($i eq "derived_scopes" && $type ne "template");
-    next if($i eq 'contained_scopes' && ($type eq 'host' || $type eq 'subnet' || $type eq 'template'));
-    next if($i eq 'audit_records' && $type ne 'global');
+    next if ($i eq 'contained_scopes' && ($type eq 'host' || $type eq 'subnet' || $type eq 'template'));
+    next if ($i eq 'audit_records' && $type ne 'global');
+    next if ($i eq 'templates' && $type eq 'template');
 
     if ( ($view eq 'all' || $view eq $i ) ){
         
