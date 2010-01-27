@@ -451,22 +451,29 @@ sub add_host {
 	    
 	    # LOCATION
 	    if ( $argv{room_id} || $argv{site_id} || $argv{site_name} ){
-		my ($txtdata, $room);
-		if ( $argv{room_id} ){
-		    # Room label includes building name
-		    $room = Room->retrieve($argv{room_id})->get_label;
-		    $txtdata .= $room;
-		}elsif ( $argv{site_id} || $argv{site_name} ){
-		    my $sname = ($argv{site_id})? Site->retrieve($argv{site_id})->get_label : $argv{site_name};
-		    my $txtdata =  "LOC: $sname";
-		    if ( $argv{room_number} ){
-			$txtdata .= " ".$argv{room_number};
-		    }
+		my $txtdata;
+		if ( int($argv{room_id}) ){
+		    my $room = Room->retrieve($argv{room_id});
+		    $txtdata = "LOC: ".$room->get_label if $room;
+
+		}elsif ( $argv{room_number} ){
+		    $txtdata = "LOC: ".$argv{room_number};
 		}
-		RR->insert({rr      => $rr, 
-			    type    =>'TXT',
-			    txtdata => $txtdata,
-			   });
+
+		if ( int($argv{site_id}) ){
+		    my $site = Site->retrieve($argv{site_id});
+		    $txtdata .=  " ".$site->get_label if $site;
+		    
+		}elsif ( $argv{site_name} ){
+		    $txtdata .=  " ".$argv{site_name};
+		}
+
+		if ( $txtdata ){
+		    RR->insert({rr      => $rr, 
+				type    =>'TXT',
+				txtdata => $txtdata,
+			       });
+		}
 	    }
 	    
 	    # CONTACTS

@@ -301,7 +301,7 @@ foreach my $o ( values %rrs ) {
     my @ips;
     #####################################################################################################
     #RRADDR
-    if ( !$o->cnames && !$o->ptr_records && !$o->ns_records ){
+    if ( $o->name eq '@' || $o->name eq $o->zone->name || (!$o->cnames && !$o->ptr_records) ){
 	print '<div class="container" style="margin-left:10px">';
 	print '<div class="containerheadleft"><b>Address '.$ui->table_descr_link('RRADDR', '(A/AAAA)').'</b></div>';
 	print '<div class="containerheadright">';
@@ -703,7 +703,7 @@ foreach my $o ( values %rrs ) {
 
     #####################################################################################################
     #RRNS
-    if ( !$o->arecords && !$o->ptr_records  ){
+    if ( $o->name eq '@' || $o->name eq $o->zone->name || (!$o->arecords && !$o->ptr_records)  ){
 	print '<div class="container" style="margin-left:10px">';
 	print '<div class="containerheadleft"><b>Name Servers '.$ui->table_descr_link('RRNS', '(NS)').'</b></div>';
 	print '<div class="containerheadright">';
