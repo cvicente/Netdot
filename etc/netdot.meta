@@ -1185,18 +1185,11 @@ $meta = {
     },
     description => 'A Communications Closet.  A Closet is different from a normal Room in two ways: a) Backbone Cables (inter and intra building) terminate in Closets.  b) Horizontal Cables _start_ in Closets and _end_ in Rooms',
     has_history => 0,
-    index => [
-      [
-        'name'
-      ],
-      [
-        'room'
-      ],
-    ],
+    index => [ [ 'room' ] ],
     isjoin => '0',
     label => [ 'name', 'room' ],
     primary_key => 'id',
-    unique => [],
+    unique => [ ['name', 'room'] ],
     views => {
       all => [
         'name',
@@ -8193,7 +8186,7 @@ $meta = {
     has_history => '0',
     unique => [ ['name'] ],
     label => [ 'name', 'querytext'  ],
-    index => [ ['name'] ],
+    index => [ ],
     isjoin => '0',
     primary_key => 'id',
     views => { 

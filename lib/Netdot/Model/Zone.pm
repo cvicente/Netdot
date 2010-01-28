@@ -485,7 +485,7 @@ sub import_records {
 
     foreach my $rr ( @$rrs ){
 	my $name = $rr->name;
-	if ( $name eq $domain ){
+	if ( $name eq $domain || $name eq "$domain." ){
 	    $name = '@';
 	}else {
 	    if ( $name =~ /\.$domain/ ){
