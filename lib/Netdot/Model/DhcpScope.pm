@@ -468,6 +468,18 @@ sub _validate_args {
 	if ( !$fields{physaddr} || !$fields{ipblock} ){
 	    $self->throw_user("$fields{name}: a host scope requires IP and Ethernet");
 	}
+	if ( my @scopes = DhcpScope->search(physaddr=>$fields{physaddr}) ){
+	    if ( my $subnet = $fields{ipblock}->parent ){
+		foreach my $s ( @scopes ){
+		    next if ( ref($self) && $s->id == $self->id );
+		    if ( $s->ipblock && (my $osubnet = $s->ipblock->parent) ){
+			if ( $osubnet->id == $subnet->id ){
+			    $self->throw_user("$fields{name}: Duplicate MAC address in this subnet: ".$fields{physaddr}->address);
+			}
+		    }
+		}
+	    }
+	}
     }
 
     my $type = $fields{type}->name;
