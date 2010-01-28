@@ -29,13 +29,16 @@
         <para>IPv4 and IPv6 address space management (also referred to  as <emphasis role="italic">IPAM</emphasis>), including hierarchical organization, address block visualization and IP and MAC address location and tracking.</para>
       </listitem>
       <listitem>
-        <para>Cable plant information including: sites, rooms, jacks, closets, inter and intra-building wiring, circuits, etc.</para>
+        <para>Cable plant information including: sites, rooms, jacks, closets, inter and intra-building fiber and copper wiring, circuits, etc.</para>
       </listitem>
       <listitem>
-        <para>Contact information for related entities: departments, providers, vendors, etc.</para>
+        <para>Contact information for related entities: departments, providers, vendors, BGP peers,  etc.</para>
       </listitem>
       <listitem>
-        <para>Netdot can generate configuration files for various other tools, including: <ulink url="http://www.nagios.org">Nagios</ulink>, <ulink url="http://www.sysmon.org">Sysmon</ulink>, <ulink url="http://www.shrubbery.net/rancid">RANCID</ulink>, <ulink url="http://www.cacti.net">Cacti</ulink>.  Starting with version 0.9, Netdot  also generates configurations for ISC BIND and ISC DHCPD.</para>
+        <para>Netdot can generate configuration files for various other tools, including: <ulink url="http://www.nagios.org">Nagios</ulink>, <ulink url="http://www.sysmon.org">Sysmon</ulink>, <ulink url="http://www.shrubbery.net/rancid">RANCID</ulink>, <ulink url="http://www.cacti.net">Cacti</ulink>.  Starting with version 0.9, Netdot  also generates zone files for ISC BIND and ISC DHCPD configurations.</para>
+      </listitem>
+      <listitem>
+        <para>Starting with version 0.9, Netdot supports role-based access control, so tasks such as IP address management, switch port documentation and contact information maintenance can be delegated to specific groups with limited access to the web interface.</para>
       </listitem>
     </itemizedlist>
   </section>
@@ -45,19 +48,19 @@
     <orderedlist>
       <listitem>
         <para>The database</para>
-        <para>Our goal has been to make Netdot database-agnostic as much as possible.  In principle, it should be able to use any database supported by Perl DBI.  There are, however, some limitations to this, for example, schema migration scripts are db-specific and may not always be availab.e. Currently MySQL is fully supported.  There is currently partial support for PostgreSQL.</para>
+        <para>Our goal has been to make Netdot database-agnostic as much as possible.  In principle, it should be able to use any database supported by Perl DBI.  There are, however, some limitations to this, for example, schema migration scripts are db-specific and may not always be available. Currently MySQL is fully supported.  There is currently partial support for PostgreSQL.</para>
       </listitem>
       <listitem>
         <para>The libraries</para>
-        <para>The back-end code is a hierarchy of object-oriented Perl classes.  It can function as an API as well. One advantage of this model is that presentation, collection and database can be separated among different physical machines.</para>
+        <para>The back-end code is a hierarchy of object-oriented Perl classes.  It can function as an API as well. One advantage of this model is that presentation, collection and database can be distributed among different physical machines.</para>
       </listitem>
       <listitem>
         <para>User Interface (UI)</para>
-        <para>The web user interface is built on a templating system called HTML::Mason.</para>
+        <para>The web user interface is the main point of interaction with the tool.</para>
       </listitem>
       <listitem>
         <para>Command Line scripts (CLI)</para>
-        <para>Certain tasks, like device discovery, can be executed from the command line.  Therefore, these tasks can be automated by running them periodically via CRON.</para>
+        <para>Certain tasks, like device discovery, DB maintenance, export scripts, etc., can be executed from the command line.  Therefore, these tasks can be automated by running them periodically via CRON.</para>
       </listitem>
     </orderedlist>
   </section>
