@@ -548,6 +548,8 @@ push (@statements,
       "UPDATE device, closet SET device.room = closet.room
        WHERE device.closet = closet.id",
       "ALTER TABLE `device` DROP COLUMN `closet`"
+      "ALTER TABLE `closet` DROP INDEX `Closet1`";
+      "ALTER TABLE `closet` ADD UNIQUE INDEX Closet1  (`name`, `room`)";
      );
 
 foreach my $st ( @statements ) {
