@@ -101,13 +101,20 @@
         </listitem>
         <listitem>
           <para>Various Perl modules.  To test for missing modules in your system, run:</para>
-          <programlisting>%make tesdeps</programlisting>
+          <programlisting>%make testdeps</programlisting>
+        </listitem>
+        <listitem>
+          <para>There are two ways to install the missing modules: The first (and the recommended) way is through package managers of your distribution.</para>
+          <para>For systems with APT (e.g. Debian-based systems), run:</para>
+          <programlisting>%make installdeps-apt-get</programlisting>
+          <para>For systems with RPM (e.g. Red Hat), run:</para>
+          <programlisting>%make installdeps-rpm</programlisting>
           <tip>
-            <para>If any of these modules are provided by your distribution, we recommend installing those.</para>
+            <para>If you are still missing modules after running this step, you can complete the process by running the next step.</para>
           </tip>
         </listitem>
         <listitem>
-          <para>You can install any missing modules automatically using the CPAN, by running:</para>
+          <para>Alternatively, you can install any missing modules automatically using the CPAN, by running:</para>
           <programlisting>%make installdeps</programlisting>
           <para>If you want to install modules individually, you can do this instead:</para>
           <programlisting>%perl -MCPAN -e shell
