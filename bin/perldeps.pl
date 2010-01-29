@@ -117,8 +117,8 @@ elsif ( $action eq 'install' || $action eq 'apt-get-install' || $action eq 'rpm-
 
 	print " would you like to continue and install all modules through CPAN [y/n]? [y] ";
 	$a = <STDIN>;
-	if($a =~ /(Y|y)/){
-	    #we call this regardless beacuse it checks to see if a module is installed 
+	if($a =~ /(Y|y)/ || $a =~ /^\s*$/ ){
+	    #we call this regardless because it checks to see if a module is installed 
 	    #before trying anything, so lets just pass the whole hash in and if 
 	    #something didn't take for whatever reason, hopefully it will be fixed by CPAN 
 	    install_modules_cpan();
