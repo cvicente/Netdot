@@ -64,8 +64,8 @@ sub search {
 sub insert {
     my ($class, $argv) = @_;
     $class->isa_class_method('insert');
-    $class->throw_fatal('DhcpAttr::insert: Missing required parameters')
-	unless ( defined $argv->{name}  );
+    $class->throw_fatal('DhcpAttr::insert: Missing required parameters: name')
+	unless ( $argv->{name}  );
  
     $class->_objectify_args($argv);
 
