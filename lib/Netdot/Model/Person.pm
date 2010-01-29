@@ -41,7 +41,7 @@ sub insert {
     $class->throw_fatal('Missing required arguments')
 	unless ( $argv->{lastname} );
     
-    unless ( defined $argv->{user_type} ){
+    unless ( defined $argv->{user_type} && $argv->{user_type} ne '0' ){
 	if ( my $t = UserType->search(name=>'User')->first ){
 	    $argv->{user_type} = $t;
 	}
@@ -51,6 +51,37 @@ sub insert {
 
 =head1 INSTANCE METHODS
 =cut
+
+##################################################################
+=head2 delete - Delete Person object
+
+    We make sure the last admin is not deletable.
+    
+  Arguments: 
+    none
+   Returns:
+    True if successful
+  Examples:
+    $person->delete();
+
+=cut
+sub delete {
+    my ($self, %args) = @_;
+    $self->isa_object_method('delete');
+    
+    if ( $self->user_type == 1 ) {
+	# is an admin
+	my @no_of_admins = $self->search(user_type => 1);
+	if ( scalar @no_of_admins > 1 ) {
+	    $self->SUPER::delete();
+	} else {
+	    $self->throw_user("You cannot delete the last admin!");
+	}
+    } else {
+	# not an admin
+	$self->SUPER::delete();
+    }
+}
 
 ##################################################################
 =head2 verify_passwd - Verify password for this person
