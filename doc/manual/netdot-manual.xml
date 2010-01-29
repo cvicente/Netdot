@@ -79,7 +79,7 @@
           <para>MySQL (5.x preferred) or PostgreSQL (limited support)</para>
         </listitem>
         <listitem>
-          <para>Authentication Server.  Netdot supports both Radius and LDAP.</para>
+          <para>Authentication Server (optional).  Netdot supports local authentication, as well as Radius and LDAP.</para>
           <itemizedlist>
             <listitem>
               <para>For Radius, we recommend FreeRadius, available at:</para>
@@ -134,7 +134,7 @@ to your needs.    You need to:</para>
       <para>Then, modify Site.conf to reflect your specific options.  The original file contains descriptions of each configuration item.</para>
       <para><emphasis role="bold">Netdot will first read Default.conf and then Site.conf</emphasis></para>
       <para>The reason for keeping two files is that when an upgrade is performed, 
-the Default.conf can be re-written (to add new variables, etc.), without 
+the Default.conf file can be re-written (to add new variables, etc.), without 
 overwriting your site-specific configuration.</para>
     </section>
     <section>
@@ -168,13 +168,13 @@ DB_DBA_PASSWORD=DATABASE-ADMIN-PASSWORD</programlisting>
       </itemizedlist>
       <section>
         <title>Apache Configuration</title>
-        <para>Edit the supplied Apache config template for either Radius or LDAP,  copy it to
-  your Apache config dir and include it somewhere in your Apache config (e.g.):</para>
-        <programlisting>Include conf/netdot_apache2_&lt;radius|ldap&gt;.conf</programlisting>
+        <para>Edit the supplied Apache config template for either Local,  Radius or LDAP authentication,  copy it to
+  your Apache config directory and include it somewhere in your Apache configuration file (http.conf) (e.g.):</para>
+        <programlisting>Include conf/netdot_apache2_&lt;local|radius|ldap&gt;.conf</programlisting>
         <para>Alternatively, some Apache environments provide a directory from which files are included automatically when Apache starts.  In that case, it&apos;s sufficient to copy the file into that directory, for example:</para>
         <programlisting># cp /usr/local/netdot/etc/netdot_apache2_radius.conf /etc/apache2/conf.d/</programlisting>
         <tip>
-          <para>Make sure you use the version of the file that gets copied into your install directory by &apos;make install&apos;.  This file contains relevant path substitutions based on your chosen install prefix</para>
+          <para>Make sure you use the version of the file that gets copied into your install directory by &apos;make install&apos;, not from the source directory.  This file contains relevant path substitutions based on your chosen install prefix.</para>
         </tip>
       </section>
       <section>
@@ -196,7 +196,7 @@ DB_DBA_PASSWORD=DATABASE-ADMIN-PASSWORD</programlisting>
    With time, old history should be deleted from the database to save disk space.</para>
           </listitem>
           <listitem>
-            <para>Netdot can generate text documentation that is easy to find via simple
+            <para>Netdot can generate text documentation that is easy to find using simple
    grepping commands, for example, information about people, locations, 
    device port assignments, etc.  This documentation should be kept up to
    date by exporting it frequently.</para>
@@ -221,10 +221,10 @@ DB_DBA_PASSWORD=DATABASE-ADMIN-PASSWORD</programlisting>
       <para>Netdot can discover and maintain an extensive amount of information about network devices.  The easiest way to gather and store this information is by querying the devices using the Simple Network Management Protocol (SNMP).  Devices can be discovered individually, by subnet, or by providing a text file with a list of devices.</para>
       <section>
         <title>Device Discovery using the web UI</title>
-        <para> Go to Management -&gt; Devices.  In the Tasks section, type the hostname or IP address of the device in question, along with the SNMP community and click [discover].  Netdot will then query the device using SNMP and present a window where you can assign an owner entity (for example, your organization), the entity that uses the device (for example, your customer), the location and a contact list.</para>
-        <para>If you are discovering a layer 3 device with ip forwarding turned on (such as a router or firewall), Netdot will ask you if you would like to automatically create subnets, based on the IP configuration of the device interfaces.  This is a convenient way to add your subnets to Netdot.</para>
+        <para> Go to Management -&gt; Devices.  In the Tasks section, click on [new] and type the hostname or IP address of the device in question, along with the SNMP community and click [discover].  Netdot will then query the device using SNMP and present a window where you can assign an owner entity (for example, your organization), the entity that uses the device (for example, your customer), the location and a contact list.</para>
+        <para>If you are discovering a layer 3 device with IP forwarding turned on (such as a router or firewall), Netdot will ask you if you would like to automatically create subnets, based on the IP configuration of the device interfaces.  This is a convenient way to add all your subnets into Netdot.</para>
         <para>Another option is to specify whether Netdot should assign any newly created subnets the same owner and user entities assigned to the device.</para>
-        <para>Once you click the [update] button, Netdot will show the discovery information and a link to the device page at the button.</para>
+        <para>Once you click the on [update] button, Netdot will show the discovery information and a link to the device page at the button.</para>
         <para>You can always re-discover a device manually by using the [snmp-update] button on the top right corner of the device page. For example, if you have added a new port adapter, new interface cards, or if the device has been replaced with a different unit. </para>
       </section>
       <section>
@@ -253,7 +253,7 @@ device3 community2
       <section>
         <title>Device Documentation</title>
         <para>Once you have created a device, you can go ahead and add more information about it. </para>
-        <para>Going to Management -&gt; Devices  you can search a device based on its name, IP or MAC address.  </para>
+        <para>Going to Management -&gt; Devices  you can search for a device by name, IP or MAC address.  </para>
         <para>From the device page, you can navigate to the different sub-sections depending on the information you want to edit.  </para>
         <para> <emphasis role="underline">Interfaces</emphasis>:  Here you can edit interface descriptions, assign network jacks, etc. by clicking on the [edit] button.  You can also edit a specific interface by clicking on its number or on its name. If you are running topology discovery, you will probably see neighbor information.  If for some reason the topology discovery process cannot dectect a neighbor, you can add it manually by clicking on the [add] button in the neighbor column.  </para>
         <para>Manually adding a neighbor sets the &quot;Neighbor Fixed&quot; flag in the Interface object.  This flag prevents the topology discovery process from removing the neighbor relationship.</para>
@@ -267,7 +267,7 @@ device3 community2
       <para>Netdot is a useful tool for IP address space management (referred to as <emphasis role="italic">IPAM</emphasis> these days).  Some key features are:</para>
       <itemizedlist>
         <listitem>
-          <para>Address space is hierarchically organized through the use of a fast binary tree algorithm, which is the same technique used by routers for doing route lookups.</para>
+          <para>Address space is hierarchically organized through the use of a fast binary tree algorithm, which is the same technique used by routers when doing prefix lookups.</para>
         </listitem>
         <listitem>
           <para>New subnets can be automatically created based on the interface  information retrieved from routers and firewalls.  </para>
@@ -298,7 +298,7 @@ device3 community2
               <para><emphasis role="underline">Reserved</emphasis>: Addresses that should not be assigned</para>
             </listitem>
           </itemizedlist>
-          <para>On the other hand, the the status of an IP block can be one of:</para>
+          <para>On the other hand, the status of an IP block can be one of:</para>
           <itemizedlist>
             <listitem>
               <para><emphasis role="underline">Container</emphasis>: This kind of block is meant to group or contain other blocks, such as Subnet blocks or other Container blocks.  For example, let&apos;s say your whole IPv4 address space is 192.168.0.0/16.  You also have partitioned this space into two /17 blocks, and from these blocks, you allocate subnets that you configure in your routers.  In this case, you would have:</para>
@@ -324,7 +324,7 @@ device3 community2
       <title>DNS</title>
       <para>Netdot can maintain DNS zone data. Zones can be exported as text files to be used by DNS server software.  Currently, only ISC BIND zone file exporting is supported.  </para>
       <tip>
-        <para>The mechanisms by which zone files are transferred to and loaded by authoritative name servers are left to the administrator.  A simple way to do this is by running a name server locally in the machine that runs netdot, and saving those zone files in the location where the software can load them periodically. A more complex setup could involve saving these files into revision control systems (CVS, SVN, etc), which could then be used by system configuration engines like Puppet or CfEngine to run syntax checks and load them into the appropriate name servers.</para>
+        <para>The mechanisms by which zone files are transferred to and loaded by authoritative name servers are left to the administrator.  A simple way to do this is by running a name server locally in the machine that runs Netdot, and saving those zone files in the location where the software can load them periodically. A more complex setup could involve saving these files into revision control systems (CVS, SVN, etc), which could then be used by system configuration engines like Puppet or CfEngine to run syntax checks and load them into the appropriate name servers.</para>
       </tip>
       <para>Netdot supports the following DNS records: A, AAAA, CNAME, DS, HINFO, LOC, MX, NAPTR, SRV, and TXT.</para>
       <para>You can import your existing BIND zones into netdot with the help of the tool <emphasis role="italic">import_bind_zones.pl</emphasis> from the <emphasis role="italic">import</emphasis> subdirectory.  </para>
@@ -333,10 +333,10 @@ device3 community2
       <para>At this point, you can add new records by clicking on the [add] button on the Records section.  Records can also be added from other parts of the user interface, for example, from the IP address page, or the Hosts page.</para>
       <para>Records can also be imported in bulk into the zone by clicking on the [import] button of the Records section and pasting the text from a BIND zone file into the text box.</para>
       <para>Each time the zone or its contents are modified, the transaction is added to a list of &quot;pending changes&quot;.  This list is used to determine when a zone needs to be exported. Zones can be exported manually via the UI by going to the Export menu, or via cron jobs. When a zone is exported, its serial number is increased and its list of pending changes is flushed.</para>
-      <para>Netdot can auto-generate and maintain DNS records for IP address belonging to device interfaces, for example, routers.  The logic of how these names are generated is handed off to a plugin.  </para>
+      <para>Netdot can auto-generate and maintain DNS records for IP addresses belonging to device interfaces, for example, routers.  The logic of how these names are generated is handed off to a plugin. In order to have Netdot generate DNS names for device IPs, set the &quot;Auto DNS&quot; option to &quot;yes&quot;  in the management section of the Device page.  From here, go to the IP Info tab for the same device and for each IP address, make sure that the interface it belongs to has the &quot;Auto DNS&quot; option set to &quot;yes&quot;.</para>
       <section>
         <title>The &apos;@&apos; record</title>
-        <para>In netdot, as in BIND, the &apos;@&apos; record symbolizes the domain.  In order to add records that apply to the domain itself, such as NS records, you must add the &apos;@&apos; name first.  Once this name is created, you can add NS, MX and A records to it, which will apply to the domain that the zone represents.</para>
+        <para>In netdot, as in BIND, the &apos;@&apos; record symbolizes the domain.  In order to add records that apply to the domain itself, such as NS records, MX records, A records, etc. you must add the &apos;@&apos; name first.  Once this name is created, you can add NS, MX and A records to it, which will apply to the domain that the zone represents.</para>
       </section>
     </section>
     <section>
