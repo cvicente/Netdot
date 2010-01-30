@@ -5,10 +5,27 @@
   <articleinfo>
     <subtitle>Network Documentation Tool</subtitle>
     <releaseinfo>Version 0.9</releaseinfo>
-    <copyright>
-      <year>2009</year>
-      <holder>University of Oregon</holder>
-    </copyright>
+    <legalnotice>
+      <para>Copyright 2010 University of Oregon, all rights reserved.
+
+</para>
+      <para>This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+</para>
+      <para>This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTIBILITY
+or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+License for more details.
+
+</para>
+      <para>You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software Foundation,
+Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+</para>
+    </legalnotice>
   </articleinfo>
   <abstract>
     <para>This manual documents the installation, administration and operation of the Netdot application.  </para>
@@ -396,7 +413,38 @@ device3 community2
             <title>By Model/OS</title>
             <para>Lists devices by manufacturer, then model, showing each model&apos;s recommended OS version (which you would have had to previously specify) and all the other existing versions of that OS in your network, with counts.</para>
           </section>
+          <section>
+            <title>Device in Downtime</title>
+            <para>Since Netdot can be used to export configurations for monitoring tools (e.g. Nagios), particular devices can be assigned a downtime period, which will exclude them from the monitoring tool during the time frame specified.  This report shows you all the devices that are within a downtime period.</para>
+            <section>
+              <title>Duplex Mismatches</title>
+              <para>This report shows a list of neighboring device interfaces whose duplex settings are mismatched.</para>
+            </section>
+            <section>
+              <title>OS mismatches</title>
+              <para>This report lists devices whose operating system version differs from the recommended version.  The list is grouped by manufacturer, then model, then device name and it shows the current OS version.</para>
+            </section>
+          </section>
         </section>
+      </section>
+      <section>
+        <title>IP Reports</title>
+        <section>
+          <title>Unused Subnets</title>
+          <para>Here you will see a list of subnets that have no IP addresses.  You can select only IPv4 subnets or IPv6 subnets.</para>
+        </section>
+        <section>
+          <title>Maxed out Subnets</title>
+          <para>This report lists subnets that are used beyond a given threshold. This threshold is configurable by modifying  the SUBNET_USAGE_MINPERCENT item in the etc/Site.conf file</para>
+        </section>
+        <section>
+          <title>Unused Static Addresses</title>
+          <para>This report shows static addresses that have not been seen in the network for a given time.  This makes it easy to free up subnet address space.</para>
+        </section>
+      </section>
+      <section>
+        <title>MAC Addresses</title>
+        <para>This report shows a list of MAC address OUIs, sorted by number of addresses.  You have the option to include all addresses, only MAC addresses belonging to infrastructure devices or only MAC addresses found in ARP caches and forwarding tables.</para>
       </section>
     </section>
     <section>
