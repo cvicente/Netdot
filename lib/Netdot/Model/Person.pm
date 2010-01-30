@@ -68,20 +68,20 @@ sub insert {
 sub delete {
     my ($self, %args) = @_;
     $self->isa_object_method('delete');
-    
-    if ( $self->user_type == 1 ) {
-	# is an admin
-	my @no_of_admins = $self->search(user_type => 1);
+
+    if ( $self->user_type && $self->user_type->name eq 'Admin' ) {
+	my $admin_type = UserType->search(name=>"Admin")->first 
+	    || $self->throw_fatal("Can't retrieve Admin type");
+	my @no_of_admins = $self->search(user_type=>$admin_type);
 	if ( scalar @no_of_admins > 1 ) {
-	    $self->SUPER::delete();
+	    return $self->SUPER::delete();
 	} else {
-	    $self->throw_user("You cannot delete the last admin!");
+	    $self->throw_user("You cannot delete the last Admin user!");
 	}
     } else {
 	# not an admin
-	$self->SUPER::delete();
+	return $self->SUPER::delete();
     }
-    return 1;
 }
 
 ##################################################################
