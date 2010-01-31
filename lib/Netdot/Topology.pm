@@ -539,7 +539,9 @@ sub get_dp_links {
 			       "EXCLUDE_UNKNOWN_DP_DEVS_FROM_BLOCKS");
 	    }else{
 		$logger->info("Topology::get_dp_links: Discovering unknown neighbor: $ip");
-	        Device->discover(name=>$ip);
+		eval {
+		    Device->discover(name=>$ip);
+		};
             } 		
 	}
     }
