@@ -532,12 +532,12 @@ sub get_dp_links {
     $logger->debug(sprintf("Topology::get_dp_links: %d Links determined in %s", 
 			   scalar keys %links, $class->sec2dhms(time - $start)));
     
-    foreach my $ip ( keys %ips2discover ){
+    IPLOOP: foreach my $ip ( keys %ips2discover ){
 	foreach my $block ( keys %$excluded_blocks ){
 	    if ( Ipblock->within($ip, $block) ){
 		$logger->debug("Netdot::Topology::get_dp_links: $ip within $block in ".
 			       "EXCLUDE_UNKNOWN_DP_DEVS_FROM_BLOCKS");
-		next;
+		next IPLOOP;
 	    } 		
 	}
 	$logger->info("Topology::get_dp_links: Discovering unknown neighbor: $ip");
