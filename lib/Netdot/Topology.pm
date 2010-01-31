@@ -537,13 +537,13 @@ sub get_dp_links {
 	    if ( Ipblock->within($ip, $block) ){
 		$logger->debug("Netdot::Topology::get_dp_links: $ip within $block in ".
 			       "EXCLUDE_UNKNOWN_DP_DEVS_FROM_BLOCKS");
-	    }else{
-		$logger->info("Topology::get_dp_links: Discovering unknown neighbor: $ip");
-		eval {
-		    Device->discover(name=>$ip);
-		};
-            } 		
+		next;
+	    } 		
 	}
+	$logger->info("Topology::get_dp_links: Discovering unknown neighbor: $ip");
+	eval {
+	    Device->discover(name=>$ip);
+	};
     }
     return \%links;
 }
