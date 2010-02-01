@@ -328,7 +328,9 @@ foreach my $o ( values %rrs ) {
 
 	#display/edit rraddr
 	print '<div class="containerbody">';
-	foreach my $arecord (@arecs) {
+	foreach my $arecord (sort { $a->ipblock->address_numeric 
+	                            <=> 
+                                    $b->ipblock->address_numeric } @arecs) {
 	    my $ipblock = $arecord->ipblock;
 	    if ( int($ipblock) == 0 ){
 		# This record should not exist then
