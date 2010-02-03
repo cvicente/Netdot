@@ -532,19 +532,18 @@ sub get_dp_links {
     $logger->debug(sprintf("Topology::get_dp_links: %d Links determined in %s", 
 			   scalar keys %links, $class->sec2dhms(time - $start)));
     
-    foreach my $ip ( keys %ips2discover ){
+    IPLOOP: foreach my $ip ( keys %ips2discover ){
 	foreach my $block ( keys %$excluded_blocks ){
 	    if ( Ipblock->within($ip, $block) ){
 		$logger->debug("Netdot::Topology::get_dp_links: $ip within $block in ".
 			       "EXCLUDE_UNKNOWN_DP_DEVS_FROM_BLOCKS");
-		delete $ips2discover{$ip};
-	    }
+		next IPLOOP;
+	    } 		
 	}
-    }
-    if ( keys %ips2discover ){
-	$logger->info("Topology::get_dp_links: Discovering unknown neighbors");
-	Device->snmp_update_parallel(hosts=>\%ips2discover);
-	$logger->info("Topology::get_dp_links: You may have to discover topology again to make sure any newly added neighbors are linked");
+	$logger->info("Topology::get_dp_links: Discovering unknown neighbor: $ip");
+	eval {
+	    Device->discover(name=>$ip);
+	};
     }
     return \%links;
 }

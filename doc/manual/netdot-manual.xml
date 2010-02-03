@@ -5,10 +5,27 @@
   <articleinfo>
     <subtitle>Network Documentation Tool</subtitle>
     <releaseinfo>Version 0.9</releaseinfo>
-    <copyright>
-      <year>2009</year>
-      <holder>University of Oregon</holder>
-    </copyright>
+    <legalnotice>
+      <para>Copyright 2010 University of Oregon, all rights reserved.
+
+</para>
+      <para>This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+</para>
+      <para>This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTIBILITY
+or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+License for more details.
+
+</para>
+      <para>You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software Foundation,
+Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+</para>
+    </legalnotice>
   </articleinfo>
   <abstract>
     <para>This manual documents the installation, administration and operation of the Netdot application.  </para>
@@ -166,7 +183,7 @@ DB_DBA_PASSWORD=DATABASE-ADMIN-PASSWORD</programlisting>
       <section>
         <title>Apache Configuration</title>
         <para>Edit the supplied Apache config template for either Local,  Radius or LDAP authentication,  copy it to
-  your Apache config directory and include it somewhere in your Apache configuration file (http.conf) (e.g.):</para>
+  your Apache config directory and include it somewhere in your Apache configuration file (httpd.conf) (e.g.):</para>
         <programlisting>Include conf/netdot_apache2_&lt;local|radius|ldap&gt;.conf</programlisting>
         <para>Alternatively, some Apache environments provide a directory from which files are included automatically when Apache starts.  In that case, it&apos;s sufficient to copy the file into that directory, for example:</para>
         <programlisting># cp /usr/local/netdot/etc/netdot_apache2_radius.conf /etc/apache2/conf.d/</programlisting>
@@ -260,11 +277,14 @@ device3 community2
       </section>
     </section>
     <section>
-      <title>IP Address Space</title>
+      <title>IP Address Space Management</title>
       <para>Netdot is a useful tool for IP address space management (referred to as <emphasis role="italic">IPAM</emphasis> these days).  Some key features are:</para>
       <itemizedlist>
         <listitem>
           <para>Address space is hierarchically organized through the use of a fast binary tree algorithm, which is the same technique used by routers when doing prefix lookups.</para>
+        </listitem>
+        <listitem>
+          <para>IPv4 and IPv6 support</para>
         </listitem>
         <listitem>
           <para>New subnets can be automatically created based on the interface  information retrieved from routers and firewalls.  </para>
@@ -339,20 +359,90 @@ device3 community2
     <section>
       <title>DHCP</title>
       <para>Netdot can maintain DHCP information and generate configurations for ISC DHCPD.</para>
-      <para>DHCP information is organized hierarchically around the DHCP Scope object.  Netdot supports scope definitions of the following types: global, subnet, shared-subnet, group, and host. Each of these scopes can be assigned one or more attributes.  </para>
+      <para>DHCP information is organized hierarchically around the DHCP Scope object.  Netdot supports scopes of the following types: global, subnet, shared-subnet, group, and host. Each of these scopes can be assigned one or more attributes.  </para>
+    </section>
+    <section>
+      <title>Global Scopes</title>
+      <para>A global scope will represent a DHCP server (or a pair of failover servers).  Attributes in this scope are the default attributes inherited by all other scopes.  Attributes in more specific scopes override the global scope attributes.</para>
+      <para>To create a new global scope, go to Management-&gt;DHCP.  Click on the [new] button.  Assign the scope a name (for example, the host name of your DHCP server) and select type &quot;global&quot;.  Global scopes are not contained by any other scope, so leave the Container field unselected.</para>
+      <para>Once a scope is created, you can add attributes to it.  For example, click on the [attributes] button and then [add]. You will see a new page where you can create a new attribute.  Let&apos;s say, for example, that you want to add a list of name servers.  Type &quot;name-servers&quot; in the Name search box and click on &quot;List&quot;.  Select the &quot;domain-name-servers&quot; attribute name from the list and add a list of values.  Then click Insert.</para>
+      <section>
+        <title>Subnet Scopes</title>
+        <para>Subnet scopes contain attributes that apply to all hosts within a subnet.  Subnet scopes are contained by a global scope. </para>
+        <para>The easiest way to enable DHCP for a particular subnet is from within the Subnet page.  First, make sure that the subnet exists (you can create it manually or by discovering the router that serves that subnet). You can view the subnet by going to Management-&gt;Address Space and navigating to where the subnet is, or by simply searching for its address.</para>
+        <para>Once in the subnet page, look for the &quot;Dhcp Scope&quot; section and click on [enable].  This will bring an input section where you can select the global scope and the routers option. By default, Netdot shows the first address of the subnet as the routers option value.  You can change this value if your router interface has a different address. Click Save.     You will now see the subnet scope listed in the Subnet page.  You can click on the scope name and that will take you to the DHCP Scope page, from which you can add any other necessary attributes.</para>
+      </section>
+      <section>
+        <title>Host Scopes</title>
+        <para>Host scopes allow you to assign attributes that apply to particular hosts. Host scopes also link a host&apos;s Ethernet address with its IP address.  </para>
+        <para>You can create a new host scope from the host page.  First of all, a Static IP address object needs to exist.  You can create new static IP objects by selecting the desired address from the Subnet page.  Once the Static IP address is created, you need to give it name.  Look for the &quot;DNS A records&quot; section and click on [add].  Once you provide a name for the A record, you will be redirected to the host page.  Here, find the &quot;DHCP for &lt;IP address&gt;&quot; section and click on [add].  Type the Ethernet address and save your changes. When you click on the Ethernet address, you&apos;ll go to the MAC address page, which has a &quot;DHCP Scopes&quot; section.  Clicking on the IP address will take you to the DHCP scope page.  Here, you can add any specific attributes for that specific host.</para>
+      </section>
+      <section>
+        <title>Template Scopes</title>
+        <para>A template scope is not a real scope, but only a collection of attributes that you want to apply to things as a group.  For example, the DHCP host scope for an IP phone  may have one or more attributes that define where it should get its configuration from and other things.  You can create a template containing these attributes and then use that template each time you create a host scope for IP phones.</para>
+      </section>
     </section>
     <section>
       <title>Contact Information</title>
+      <para>Netdot uses the concept of &quot;Contact Lists&quot; to show contact information for different objects, for example devices, sites, entities (departments, providers, etc.). </para>
+      <para>A Person object in Netdot contains a person&apos;s information, including location, e-mail address, phone numbers, pager numbers, etc.  </para>
+      <para>Since a given person often times is the point of contact for different things, a person can have many &quot;roles&quot;, which link that person with a particular Contact List.</para>
+      <para>You can create new Person, Entity, Site and Contact List objects by going to the Contacts section.</para>
     </section>
     <section>
       <title>Cable Plant</title>
-      <para/>
+      <para>Netdot allows you to document inter-building and intra-building fiber and copper wiring, closets, jacks, etc.</para>
     </section>
     <section>
       <title>Advanced DB operations</title>
+      <para>The Advanced section of the top menu shows basic &quot;Browse&quot;, &quot;Search&quot; and &quot;Add&quot; operations on particular tables of the database.  This often requires certain familiarity with the database schema.  </para>
+      <para>In this section you can also write your own SQL queries, which can be saved for future use.  SQL query output can also be saved in comma-separated (CSV) format.</para>
     </section>
     <section>
       <title>Reports</title>
+      <para>The Reports section provides a number of useful types of reports.  </para>
+      <section>
+        <title>Device Reports</title>
+        <section>
+          <title>By Type/Model</title>
+          <para>Lists devices grouped by type (switches, routers, servers, etc), then by model, and gives a total count per type and model.  </para>
+          <section>
+            <title>By Model/OS</title>
+            <para>Lists devices by manufacturer, then model, showing each model&apos;s recommended OS version (which you would have had to previously specify) and all the other existing versions of that OS in your network, with counts.</para>
+          </section>
+          <section>
+            <title>Device in Downtime</title>
+            <para>Since Netdot can be used to export configurations for monitoring tools (e.g. Nagios), particular devices can be assigned a downtime period, which will exclude them from the monitoring tool during the time frame specified.  This report shows you all the devices that are within a downtime period.</para>
+            <section>
+              <title>Duplex Mismatches</title>
+              <para>This report shows a list of neighboring device interfaces whose duplex settings are mismatched.</para>
+            </section>
+            <section>
+              <title>OS mismatches</title>
+              <para>This report lists devices whose operating system version differs from the recommended version.  The list is grouped by manufacturer, then model, then device name and it shows the current OS version.</para>
+            </section>
+          </section>
+        </section>
+      </section>
+      <section>
+        <title>IP Reports</title>
+        <section>
+          <title>Unused Subnets</title>
+          <para>Here you will see a list of subnets that have no IP addresses.  You can select only IPv4 subnets or IPv6 subnets.</para>
+        </section>
+        <section>
+          <title>Maxed out Subnets</title>
+          <para>This report lists subnets that are used beyond a given threshold. This threshold is configurable by modifying  the SUBNET_USAGE_MINPERCENT item in the etc/Site.conf file</para>
+        </section>
+        <section>
+          <title>Unused Static Addresses</title>
+          <para>This report shows static addresses that have not been seen in the network for a given time.  This makes it easy to free up subnet address space.</para>
+        </section>
+      </section>
+      <section>
+        <title>MAC Addresses</title>
+        <para>This report shows a list of MAC address OUIs, sorted by number of addresses.  You have the option to include all addresses, only MAC addresses belonging to infrastructure devices or only MAC addresses found in ARP caches and forwarding tables.</para>
+      </section>
     </section>
     <section>
       <title>Exporting Configurations for External Programs</title>
