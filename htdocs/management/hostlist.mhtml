@@ -5,6 +5,7 @@ Performs paging by passing the sorted/indexed list to itself, together with the 
 
 Supported arguments:
    
+  dot_arpa:    Whether zone is a reverse zone
   records:     Arrayref of arrayrefs containing host info
   withedit:    Add checkboxes to allow user to edit or delete selected objects
   return_args: Caller arguments to pass to delete.html so user can return after deleting objects
@@ -17,6 +18,7 @@ Supported arguments:
 </%doc>
 
 <%args>
+$dot_arpa    => 0
 $records     => undef
 $withedit    => 0
 $per_page    => undef
@@ -64,7 +66,8 @@ if ( $return_args ){
 if ( $osid ){
     $osession = $ui->get_session($osid);
     print "<pre> Session $osid contains:", Dumper($osession), "</pre>" if $DEBUG;
-    $records = $osession->{records};
+    $records  = $osession->{records};
+    $dot_arpa = $osession->{dot_arpa};
 }
 
 #########################################################
@@ -77,34 +80,65 @@ if ( $records && scalar @$records ){
 
     if ( ! $osid ){
 	$osession = $ui->mk_session();
-	$osession->{records} = $records;
+	$osession->{records}  = $records;
+	$osession->{dot_arpa} = $dot_arpa;
 	$osid = $osession->{_session_id};
     }
 
-    #  The rows contain:
-    #  rr.id, rr.name, ip.id, ip.address, ip.version, pysaddr.id, physaddr.address
-
     my $i = 0;
-    if ( !defined($sort) ) {
-	# check for previously-stored sorting preference,
-	# if none exists then $sort remains undefined.
-	$sort = $user->getAttribute("USER_SORT_BY_COL_HOSTLIST");
+    if ( $dot_arpa ){
+
+	#  The rows contain:
+	#  rr.id, rr.name, ip.id, ip.address, ip.version, rrptr.ptrdname
+	
 	if ( !defined($sort) ) {
+	    # check for previously-stored sorting preference,
+	    # if none exists then $sort remains undefined.
+	    $sort = $user->getAttribute("USER_SORT_BY_COL_HOSTLIST");
+	    if ( !defined($sort) ) {
+		$sort = 'Name';
+	    }
+	} elsif ( $sort eq 'Name' || $sort eq 'IP' || $sort eq 'Domain' ) {
+	    $user->setAttribute($r, "USER_SORT_BY_COL_HOSTLIST", $sort);
+	} else {
 	    $sort = 'Name';
 	}
-    } elsif ( $sort eq 'Name' || $sort eq 'IP' || $sort eq 'Ethernet' ) {
-	$user->setAttribute($r, "USER_SORT_BY_COL_HOSTLIST", $sort);
-    } else {
-	$sort = 'Name';
-    }
-    
-    if ( $sort eq 'Name' ){
-	map { $index{$i++} = $_ } sort { $a->[1] cmp $b->[1] } @$records;
-    }elsif ( $sort eq 'IP' ){
-	# The values are decimal
-	map { $index{$i++} = $_ } sort { $a->[3] <=> $b->[3] } @$records;
-    }elsif ( $sort eq 'Ethernet' ){
-	map { $index{$i++} = $_ } sort { $a->[6] cmp $b->[6] } @$records;
+	
+	if ( $sort eq 'Name' ){
+	    map { $index{$i++} = $_ } sort { $a->[1] cmp $b->[1] } @$records;
+	}elsif ( $sort eq 'IP' ){
+	    # The values are decimal
+	    map { $index{$i++} = $_ } sort { $a->[3] <=> $b->[3] } @$records;
+	}elsif ( $sort eq 'Domain' ){
+	    map { $index{$i++} = $_ } sort { $a->[5] cmp $b->[5] } @$records;
+	}
+
+    }else{
+	
+	#  The rows contain:
+	#  rr.id, rr.name, ip.id, ip.address, ip.version, pysaddr.id, physaddr.address
+	
+	if ( !defined($sort) ) {
+	    # check for previously-stored sorting preference,
+	    # if none exists then $sort remains undefined.
+	    $sort = $user->getAttribute("USER_SORT_BY_COL_HOSTLIST");
+	    if ( !defined($sort) ) {
+		$sort = 'Name';
+	    }
+	} elsif ( $sort eq 'Name' || $sort eq 'IP' || $sort eq 'Ethernet' ) {
+	    $user->setAttribute($r, "USER_SORT_BY_COL_HOSTLIST", $sort);
+	} else {
+	    $sort = 'Name';
+	}
+	
+	if ( $sort eq 'Name' ){
+	    map { $index{$i++} = $_ } sort { $a->[1] cmp $b->[1] } @$records;
+	}elsif ( $sort eq 'IP' ){
+	    # The values are decimal
+	    map { $index{$i++} = $_ } sort { $a->[3] <=> $b->[3] } @$records;
+	}elsif ( $sort eq 'Ethernet' ){
+	    map { $index{$i++} = $_ } sort { $a->[6] cmp $b->[6] } @$records;
+	}
     }
 
     # Total number of items
@@ -157,24 +191,41 @@ if ( $view eq 'csv' ){
     #####################################################################
     # CSV format
     $m->clear_buffer; # We don't want headers
-    print "Name,IP,Ethernet<br>";
     my $pos = 0;
-    while ( $pos < keys( %index ) ) {
-	my $row = $index{$pos};
-	$pos++;
-	my ($rrid, $name, $ipid, $ip, $version, $ethid, $eth) = @$row;
-	my @cols;
-	push @cols, $name;
-	if ( $ip && $version ){
-	    $ip = Ipblock->int2ip($ip, $version);
-	    push @cols, $ip;
-	}else{
-	    push @cols, "";
+    my @cols;
+    if ( $dot_arpa ){
+	print "Name,IP,Domain<br>";
+	while ( $pos < keys( %index ) ) {
+	    my $row = $index{$pos};
+	    $pos++;
+	    my ($rrid, $name, $ipid, $ip, $version, $domain) = @$row;
+	    push @cols, $name;
+	    if ( $ip && $version ){
+		$ip = Ipblock->int2ip($ip, $version);
+		push @cols, $ip;
+	    }else{
+		push @cols, "";
+	    }
+	    push @cols, $domain;
 	}
-	push @cols, ($eth);
-	print join ',', @cols;
-	print "<br>";
+    }else{
+	print "Name,IP,Ethernet<br>";
+	while ( $pos < keys( %index ) ) {
+	    my $row = $index{$pos};
+	    $pos++;
+	    my ($rrid, $name, $ipid, $ip, $version, $ethid, $eth) = @$row;
+	    push @cols, $name;
+	    if ( $ip && $version ){
+		$ip = Ipblock->int2ip($ip, $version);
+		push @cols, $ip;
+	    }else{
+		push @cols, "";
+	    }
+	    push @cols, $eth;
+	}
     }
+    print join ',', @cols;
+    print "<br>";
     $m->abort; # We don't want footers either
 }else{
     #####################################################################
@@ -182,9 +233,15 @@ if ( $view eq 'csv' ){
 
 </%perl>
 
-% my @columns = qw(Name IP Ethernet);
-% my $numcols  = scalar(@columns);
-% $numcols++ if $withedit;
+%     my @columns;
+%     if ( $dot_arpa ){
+%         @columns = qw(Name IP Domain);
+%     }else{
+%         @columns = qw(Name IP Ethernet);
+%     }
+
+%     my $numcols  = scalar(@columns);
+%     $numcols++ if $withedit;
 
 %     if ( $withedit ) {
          <form name="host_list_form" method="POST" >
@@ -220,8 +277,27 @@ if ( $view eq 'csv' ){
 %         }
 %         $pos++;
 %         $ci = ($ci + 1) % 2;
-%         my ($rrid, $name, $ipid, $ip, $version, $ethid, $eth) = @$row;
-          <tr class="<% $cssitem{$ci} %>">
+%         if ( $dot_arpa ){
+%             my ($rrid, $name, $ipid, $ip, $version, $domain) = @$row;
+              <tr class="<% $cssitem{$ci} %>">
+              <td align="left" valign="middle"><a href="../management/host.html?id=<% $rrid %>"><% $name %></a></td>
+%             if ( $ip && $version ){
+%                 $ip = Ipblock->int2ip($ip, $version);
+                  <td align="left" valign="middle"><a href="../management/ip.html?id=<% $ipid %>"><% $ip %></a></td>
+%             }else{
+                  <td align="left" valign="middle">&nbsp;</td>
+%	      }
+              <td align="left" valign="middle"><% $domain %></td>
+
+%             if ( $withedit ){
+                  <td style="text-align:center" valign="middle" width="40">
+                     <input type="checkbox" name="RR__<% $rrid %>">
+                  </td>
+%             }
+              </tr>
+%         }else{
+%             my ($rrid, $name, $ipid, $ip, $version, $ethid, $eth) = @$row;
+              <tr class="<% $cssitem{$ci} %>">
               <td align="left" valign="middle"><a href="../management/host.html?id=<% $rrid %>"><% $name %></a></td>
 %             if ( $ip && $version ){
 %                 $ip = Ipblock->int2ip($ip, $version);
@@ -236,8 +312,8 @@ if ( $view eq 'csv' ){
                      <input type="checkbox" name="RR__<% $rrid %>">
                   </td>
 %             }
-          </tr>
-
+              </tr>
+%         }
 %     } # end while
 
 % ## Last row

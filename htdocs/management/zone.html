@@ -172,7 +172,7 @@ if ( $submit ){
 if ( $view eq 'records' || $edit eq 'records' ){
     my $records = $obj->get_hosts();
     print '<div class="containerbody">';
-    $m->comp('/management/hostlist.mhtml', records=>$records, withedit=>($edit eq 'records')? 1 : 0, return_args=>"?id=$id");
+    $m->comp('/management/hostlist.mhtml', records=>$records, withedit=>($edit eq 'records')? 1 : 0, return_args=>"?id=$id", dot_arpa=>$obj->is_dot_arpa);
     print '</div>';
     print '</div>';
 } 
