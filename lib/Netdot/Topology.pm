@@ -534,7 +534,7 @@ sub get_dp_links {
     
     IPLOOP: foreach my $ip ( keys %ips2discover ){
 	foreach my $block ( keys %$excluded_blocks ){
-	    if ( Ipblock->within($ip, $block) ){
+	    if ( $ip && $block && Ipblock->within($ip, $block) ){
 		$logger->debug("Netdot::Topology::get_dp_links: $ip within $block in ".
 			       "EXCLUDE_UNKNOWN_DP_DEVS_FROM_BLOCKS");
 		next IPLOOP;
