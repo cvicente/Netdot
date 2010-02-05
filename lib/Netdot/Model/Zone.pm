@@ -718,7 +718,7 @@ sub get_hosts {
              LEFT OUTER JOIN (physaddr, dhcpscope) 
                           ON (dhcpscope.ipblock=ip.id 
                               AND dhcpscope.physaddr=physaddr.id)
-             WHERE           zone=$id";
+             WHERE           zone.id=$id";
 
     if ( $ipblock ){
 	$q .=  " AND subnet.id=$ipblock";
