@@ -692,8 +692,11 @@ sub import_records {
 ############################################################################
 =head2 get_hosts - Retrieve a list of hosts in a given subnet or in all subnets.  
 
-    The rows contain:
+    For forward zones, the rows contain:
     rr.id, rr.name, ip.id, ip.address, ip.version, pysaddr.id, physaddr.address
+
+    For reverse (.arpa) zones, the rows contain:
+    rr.id, rr.name, ip.id, ip.address, ip.version, rrptr.ptrdname
 
   Args: 
     ipblock object or ID  (optional)
@@ -708,24 +711,33 @@ sub get_hosts {
     $self->isa_object_method('get_hosts');
 
     my $id = $self->id;
-    my $q = "SELECT          rr.id, rr.name, 
-                             ip.id, ip.address, ip.version, 
-                             physaddr.id, physaddr.address
-             FROM            zone, rr
-             LEFT OUTER JOIN (ipblock ip, rraddr) 
-                          ON (rr.id=rraddr.rr AND ip.id=rraddr.ipblock)
-             LEFT OUTER JOIN (ipblock subnet) ON ip.parent=subnet.id
-             LEFT OUTER JOIN (physaddr, dhcpscope) 
-                          ON (dhcpscope.ipblock=ip.id 
-                              AND dhcpscope.physaddr=physaddr.id)
-             WHERE           zone.id=$id";
+    my $q;
+    if ( $self->is_dot_arpa ){
+	$q = "SELECT          rr.id, rr.name, 
+                              ip.id, ip.address, ip.version, 
+                              rrptr.ptrdname
+              FROM            zone, rr
+              LEFT OUTER JOIN (ipblock ip, rrptr) ON (rr.id=rrptr.rr AND ip.id=rrptr.ipblock)
+              LEFT OUTER JOIN (ipblock subnet)    ON ip.parent=subnet.id
+              WHERE           rr.zone=zone.id AND zone.id=$id";
 
+    }else{
+	$q = "SELECT          rr.id, rr.name, 
+                              ip.id, ip.address, ip.version, 
+                              physaddr.id, physaddr.address
+              FROM            zone, rr
+              LEFT OUTER JOIN (ipblock ip, rraddr)  ON (rr.id=rraddr.rr AND ip.id=rraddr.ipblock)
+              LEFT OUTER JOIN (ipblock subnet)      ON ip.parent=subnet.id
+              LEFT OUTER JOIN (physaddr, dhcpscope) ON (dhcpscope.ipblock=ip.id AND dhcpscope.physaddr=physaddr.id)
+              WHERE           rr.zone=zone.id AND zone.id=$id";
+
+    }
+    
     if ( $ipblock ){
 	$q .=  " AND subnet.id=$ipblock";
     }
-    
-    $q .= ' GROUP BY rr.id';
-
+    $q .= ' GROUP BY rr.name';
+	
     my $dbh  = $self->db_Main;
     my $rows = $dbh->selectall_arrayref($q);
     return $rows;
