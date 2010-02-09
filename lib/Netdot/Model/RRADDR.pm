@@ -222,8 +222,6 @@ sub _update_rrptr {
 	    $logger->warn("Netdot::Model::RRADDR::_update_rrptr: Ipblock: "
 			  .$self->ipblock->get_label." reverse zone not found");
 	}
-    }elsif ( $rrptr->ptrdname ne $self->rr->get_label ){
-	$rrptr->update({ptrdname=>$self->rr->get_label});
     }
     return 1;
 }
