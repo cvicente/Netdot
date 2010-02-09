@@ -3549,7 +3549,6 @@ sub snmp_update_parallel {
 	    $do_devs{$dev->id} = $dev;
 	}
     }elsif ( $hosts ){
-	my %seen;
 	foreach my $host ( keys %$hosts ){
 	    # Give preference to the community associated with the host
 	    if ( my $commstr = $hosts->{$host} ){
@@ -3571,6 +3570,7 @@ sub snmp_update_parallel {
 		};
 		if ( my $e = $@ ){
 		    $logger->error($e);
+		    exit 1;
 		}
 	    }
 	}
