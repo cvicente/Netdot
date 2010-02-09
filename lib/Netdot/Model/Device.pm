@@ -3572,6 +3572,8 @@ sub snmp_update_parallel {
 		    $logger->error($e);
 		    exit 1;
 		}
+		# Make sure the child process ends
+		return;
 	    }
 	}
     }
@@ -3618,6 +3620,8 @@ sub snmp_update_parallel {
 	    $logger->error($e);
 	    exit 1;
 	}
+	# Make sure the child process ends
+	return;
     }
 
     # End forking state
