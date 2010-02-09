@@ -2488,6 +2488,14 @@ sub _validate {
 	unless ( $self->is_address($self) ){
 	    $self->throw_user($self->get_label.": Only addresses can be set to Static");
 	}
+
+    }elsif ( $statusname eq "Available" ) {
+	unless ( $self->is_address($self) ){
+	    $self->throw_user($self->get_label.": Only addresses can be set to Available");
+	}
+	if ( $self->arecords || $self->dhcp_scopes ){
+	    $self->throw_user($self->get_label.": Available addresses cannot have A records or DHCP scopes");
+	}
     }
     return 1;
 }
