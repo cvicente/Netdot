@@ -285,6 +285,7 @@ sub update {
 	if ( my @arecords = $self->arecords ){
 	    foreach my $rraddr ( @arecords ){
 		my $ip = $rraddr->ipblock;
+		next if ( scalar($ip->arecords) > 1 );
 		if ( my $ptr = ($ip->ptr_records)[0] ){
 		    $ptr->update({ptrdname=>$self->get_label})
 			if ( $ptr->ptrdname ne $self->get_label );

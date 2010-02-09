@@ -158,13 +158,14 @@ sub delete {
     
     if ( !$ipblock->arecords ){
 	# This IP has no more A records
-	if (int($ipblock->interface) == 0 ){
-	    # Not an interface IP, so it should be available
-	    $ipblock->update({status=>"Available"});
-	}
+
 	# Remove any dhcp host scopes
 	foreach my $host ( $ipblock->dhcp_scopes ){
 	    $host->delete();
+	}
+	if (int($ipblock->interface) == 0 ){
+	    # Not an interface IP, so it should be available
+	    $ipblock->update({status=>"Available"});
 	}
     }
     return 1;
@@ -222,8 +223,6 @@ sub _update_rrptr {
 	    $logger->warn("Netdot::Model::RRADDR::_update_rrptr: Ipblock: "
 			  .$self->ipblock->get_label." reverse zone not found");
 	}
-    }elsif ( $rrptr->ptrdname ne $self->rr->get_label ){
-	$rrptr->update({ptrdname=>$self->rr->get_label});
     }
     return 1;
 }
