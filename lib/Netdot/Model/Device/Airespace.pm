@@ -213,13 +213,11 @@ sub info_update {
     # We also inherit some values from the Controller
     $logger->debug("Creating any new Access Points");
     foreach my $ap ( keys %{ $dev{airespace} } ){
-	my @contacts = map { $_->contactlist } $self->contacts;
 	Netdot::Model::Device->discover(name          => $ap,
 					snmp_managed  => 0,
 					canautoupdate => 0,
 					owner         => $self->owner,
 					used_by       => $self->used_by,
-					contacts      => @contacts,
 					info          => \%{$dev{airespace}{$ap}},
 	    );
 	my $apmac = $dev{airespace}{$ap}{physaddr};
