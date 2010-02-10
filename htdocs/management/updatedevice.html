@@ -90,8 +90,7 @@ if ( $action eq "discover" ){
 	    $m->comp('/generic/error.mhtml', error=>$e);
 	}
 	
-    }
-    elsif ( $host ){
+    } elsif ( $host ){
 	$host =~ s/\s*//g;
 	
 	# Give preference to the community being passed
@@ -144,7 +143,7 @@ if ( $action eq "discover" ){
 	    }
 	}
     
-	else{
+	if ( !$argv{device} ) {
 	    # Looks like we have to create a new device
 	    $argv{name} = $host;
 	    
@@ -188,6 +187,7 @@ if ( $action eq "discover" ){
 	    # Get the default contactlist from config
 	    my $config_cl = $ui->config->get('DEFAULT_CONTACTLIST');
 	    $default_cl = ContactList->search(name=>$config_cl)->first;
+	    print $default_cl->name;
 	}
 
     }else{
