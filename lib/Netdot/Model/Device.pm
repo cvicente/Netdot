@@ -1175,6 +1175,7 @@ sub snmp_update_from_file {
   Arguments:
     Hash containing the following keys:
     name          Host name or ip address (required)
+    main_ip       Main IP address (optional)
     session       SNMP Session (optional)
     communities   Arrayref of SNMP communities
     version       SNMP version
@@ -1259,7 +1260,7 @@ sub discover {
     if(! $dev){ #still no dev! guess we better make it!
     	$logger->debug(sub{"Device::discover: Device $name does not yet exist"});
 	# Set some values in the new Device based on the SNMP info obtained
-	my $main_ip = $class->_get_main_ip($info);
+	my $main_ip = $argv{main_ip} || $class->_get_main_ip($info);
 	my $host    = $main_ip || $name;
 	my $newname = $class->assign_name(host=>$host);
 	my %devtmp = (snmp_managed  => 1,

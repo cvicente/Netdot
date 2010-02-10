@@ -214,6 +214,7 @@ sub info_update {
     $logger->debug("Creating any new Access Points");
     foreach my $ap ( keys %{ $dev{airespace} } ){
 	Netdot::Model::Device->discover(name          => $ap,
+					main_ip       => $dev{airespace}{$ap}{main_ip},
 					snmp_managed  => 0,
 					canautoupdate => 0,
 					owner         => $self->owner,
@@ -366,6 +367,7 @@ sub _get_ap_info {
 	if ( my $mask = $hashes->{'bsnAPNetmask'}->{$idx}  ){
 	    $info->{interface}{$bviidx}{ips}{$ip}{mask} = $mask;
 	}
+	$info->{main_ip} = $ip;
     }
     
     return 1;
