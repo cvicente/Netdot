@@ -427,11 +427,10 @@ foreach my $o ( values %rrs ) {
 	print '<div class="containerheadleft"><b>Hardware Information '.$ui->table_descr_link('RRHINFO', '(HINFO)').'</b></div>';
 	print '<div class="containerheadright">';
 
-	my $defaults = [ {'PC-INTEL'=>'PC-Intel' , 'MAC-INTEL'=>'Mac-Intel', 
-			  'MAC-PPC'=>'Mac-PowerPC', 'OTHER'=>'Other'}, 
-			 {'WINDOWS'=>'Windows', 'MACOS'=>'Mac OS', 
-			  'LINUX'=>'Linux', 'OTHER'=>'Other'} ];
-	
+	my $cpu_defaults = $ui->config->get('DEFAULT_HINFO_CPU_VALUES');
+	my $os_defaults  = $ui->config->get('DEFAULT_HINFO_OS_VALUES');
+	my $defaults     = [ $cpu_defaults, $os_defaults ];
+
 	if ( !$o->hinfo_records ){
 	    #new rrhinfo
 	    $ui->add_to_fields(table=>'RRHINFO', edit=>1, fields=>['cpu', 'os', 'ttl'],
