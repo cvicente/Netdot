@@ -1678,8 +1678,8 @@ sub build_ip_tree_graph_html {
 =cut
 sub build_device_topology_graph {
     my ($self, %argv) = @_;
-    my ($id, $depth, $view, $showvlans, $shownames, $filename, $vlans, $format, $direction) = 
-	@argv{'id', 'depth', 'view', 'show_vlans', 'show_names', 'filename', 'vlans', 'format', 'direction'};
+    my ($id, $depth, $view, $showvlans, $shownames, $filename, $vlans, $format, $direction, $specific_vlan) = 
+	@argv{'id', 'depth', 'view', 'show_vlans', 'show_names', 'filename', 'vlans', 'format', 'direction', 'specific_vlan'};
     
     # Guard against malicious input
     $depth = (int($depth) > 0) ? int($depth) : 0;
@@ -1687,6 +1687,10 @@ sub build_device_topology_graph {
     $shownames = ($shownames == 1) ? 1 : 0;
 
     $direction = ($direction eq 'up_down')? 0 : 1;
+
+    if ( $specific_vlan == 0 ) {
+	$specific_vlan = undef;
+    }
 
     # Declare some useful functions
     sub add_node {
@@ -1710,7 +1714,7 @@ sub build_device_topology_graph {
     }
 
     sub dfs { # DEPTH FIRST SEARCH - recursive
-        my ($g, $device, $hops, $seen, $vlans, $showvlans, $shownames, $view) = @_;
+        my ($g, $device, $hops, $seen, $vlans, $showvlans, $shownames, $view, $specific_vlan) = @_;
         return unless $hops;
 
         my @ifaces = $device->interfaces;
@@ -1728,13 +1732,7 @@ sub build_device_topology_graph {
                 next;
             }
 
-            # If we haven't seen this device before, add it to the graph
-            &add_node(graph      => $g, 
-		      device     => $nd, 
-		      view       => $view,
-		      show_names => $shownames, 
-		      show_vlans => $showvlans)
-		unless exists $seen->{'NODE'}{$nd->id};
+	    my $add_node = 0;
 
             # If we haven't seen this edge before, add it to the graph
             next if exists $seen->{'EDGE'}{$neighbor->id . " " . $iface->id};
@@ -1742,42 +1740,63 @@ sub build_device_topology_graph {
             $seen->{'EDGE'}{$iface->id . " " . $neighbor->id} = 1;
 
             my $color = 'black';
-            if ($showvlans && int($iface->vlans)) { 
+	    my $cont = 0;
+            if ($showvlans && int($iface->vlans)) {
                 foreach my $vlan ($iface->vlans) {
-                    my $style = 'solid';
-                    my $name = $vlan->vlan->name || $vlan->vlan->vid;
-                    if (!exists $vlans->{$name}) {
-                        $vlans->{$name} = { color=>&randomcolor, vlan=>$vlan->vlan->id };
-                    }
-                    $color = $vlans->{$name}{'color'};
-
-                    my $neighbor_vlan = InterfaceVlan->search(interface=>$neighbor->id, vlan=>$vlan->vlan->id)->first;
-                    if ($vlan->stp_state eq 'blocking' 
-			|| ($neighbor_vlan and $neighbor_vlan->stp_state eq 'blocking')) {
-                        $style='dashed';
-                    }   
-
-                    $g->add_edge($device->short_name => $nd->short_name,
-				 tailURL             => "view.html?table=Interface&id=".$iface->id,
-				 taillabel           => $name, 
-				 headURL             => "view.html?table=Interface&id=".$neighbor->id, 
-				 headlabel           => $neighbor_name,
-				 color               => $color,
-				 style               => $style,
-                        );
+		    if ( !defined($specific_vlan) || (defined($specific_vlan) && $specific_vlan == $vlan->vlan->vid) ) {
+			my $style = 'solid';
+			my $name = $vlan->vlan->name || $vlan->vlan->vid;
+			if (!exists $vlans->{$name}) {
+			    $vlans->{$name} = { color=>&randomcolor, vlan=>$vlan->vlan->id };
+			}
+			$color = $vlans->{$name}{'color'};
+			
+			my $neighbor_vlan = InterfaceVlan->search(interface=>$neighbor->id, vlan=>$vlan->vlan->id)->first;
+			if ($vlan->stp_state eq 'blocking' 
+			    || ($neighbor_vlan and $neighbor_vlan->stp_state eq 'blocking')) {
+			    $style='dashed';
+			}   
+			
+			$g->add_edge($device->short_name => $nd->short_name,
+				     tailURL             => "view.html?table=Interface&id=".$iface->id,
+				     taillabel           => $name, 
+				     headURL             => "view.html?table=Interface&id=".$neighbor->id, 
+				     headlabel           => $neighbor_name,
+				     color               => $color,
+				     style               => $style,
+			    );
+			$add_node = 1;
+			$cont = 1;
+		    }
                 }
             } else {
-                $g->add_edge($device->short_name => $nd->short_name,
-			     tailURL             => "view.html?table=Interface&id=".$iface->id,
-			     taillabel           => $name,
-			     headURL             => "view.html?table=Interface&id=".$neighbor->id, 
-			     headlabel           => $neighbor_name,
-			     color               => 'black',
-                    );
+		if ( !defined($specific_vlan) || defined($specific_vlan) && $specific_vlan == 0 ) {
+		    $g->add_edge($device->short_name => $nd->short_name,
+				 tailURL             => "view.html?table=Interface&id=".$iface->id,
+				 taillabel           => $name,
+				 headURL             => "view.html?table=Interface&id=".$neighbor->id, 
+				 headlabel           => $neighbor_name,
+				 color               => 'black',
+			);
+		    $add_node = 1;
+		    $cont = 1;
+		}
             }
-
+	    
+	    # also make sure we haven't seen this node before
+	    if ( $add_node == 1 && !(exists $seen->{'NODE'}{$nd->id}) ) {
+		&add_node(graph      => $g, 
+			  device     => $nd, 
+			  view       => $view,
+			  show_names => $shownames, 
+			  show_vlans => $showvlans);
+		$seen->{'NODE'}{$nd->id} = 1;
+	    }
+	    
             # If we haven't recursed across this edge before, then do so now.
-            &dfs($g, $nd, $hops-1, $seen, $vlans, $showvlans, $shownames, $view);
+	    if ( $cont == 1 ) {
+		&dfs($g, $nd, $hops-1, $seen, $vlans, $showvlans, $shownames, $view, $specific_vlan);
+	    }
         }
     }
     
@@ -1801,7 +1820,7 @@ sub build_device_topology_graph {
     my $seen = { NODE=>{}, EDGE=>{} };
     $seen->{'NODE'}{$start->id} = 1;
 
-    &dfs($g, $start, $depth, $seen, $vlans, $showvlans, $shownames, $view);
+    &dfs($g, $start, $depth, $seen, $vlans, $showvlans, $shownames, $view, $specific_vlan);
 
     $argv{format} ||= 'png';
     if ( $argv{format} =~ /^(text|ps|hpgl|gd|gd2|gif|jpeg|png|svg)$/){
@@ -1828,10 +1847,13 @@ sub build_device_topology_graph {
 =cut
 sub build_device_topology_graph_html {
     my ($self, %argv) = @_;
-    my ($id, $view, $depth, $web_path, $showvlans, $shownames, $filename) = 
-	@argv{'id', 'view', 'depth', 'web_path', 'show_vlans', 'show_names', 'filename'};
+    my ($id, $view, $depth, $web_path, $showvlans, $shownames, $filename, $specificvlan) = 
+	@argv{'id', 'view', 'depth', 'web_path', 'show_vlans', 'show_names', 'filename', 'specific_vlan'};
     
-    my $img_name      = $filename || "Device-$id-$depth-$showvlans-$shownames.png";
+    if ( !defined($specificvlan) ) {
+	$specificvlan = 0;
+    }
+    my $img_name      = $filename || "Device-$id-$depth-$showvlans-$shownames-$specificvlan.png";
     my $graph_path    = "img/graphs/$img_name";
     my $img           = $web_path . $graph_path;
     my $netdot_path   = Netdot->config->get('NETDOT_PATH');
