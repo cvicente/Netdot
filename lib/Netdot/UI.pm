@@ -1744,14 +1744,16 @@ sub build_device_topology_graph {
             if ($showvlans && int($iface->vlans)) {
                 foreach my $vlan ($iface->vlans) {
 		    if ( !defined($specific_vlan) || (defined($specific_vlan) && $specific_vlan == $vlan->vlan->vid) ) {
-			my $style = 'solid';
-			my $name = $vlan->vlan->name || $vlan->vlan->vid;
-			if (!exists $vlans->{$name}) {
-			    $vlans->{$name} = { color=>&randomcolor, vlan=>$vlan->vlan->id };
-			}
-			$color = $vlans->{$name}{'color'};
-			
 			my $neighbor_vlan = InterfaceVlan->search(interface=>$neighbor->id, vlan=>$vlan->vlan->id)->first;
+			next if ( defined($specific_vlan) && $specific_vlan != 0 && ( ($neighbor_vlan && $neighbor_vlan->vlan->vid != $specific_vlan) || !defined($neighbor_vlan) ) );
+
+			my $style = 'solid';
+			my $vname = $vlan->vlan->name || $vlan->vlan->vid;
+			if (!exists $vlans->{$vname}) {
+			    $vlans->{$vname} = { color=>&randomcolor, vlan=>$vlan->vlan->id };
+			}
+			$color = $vlans->{$vname}{'color'};
+			
 			if ($vlan->stp_state eq 'blocking' 
 			    || ($neighbor_vlan and $neighbor_vlan->stp_state eq 'blocking')) {
 			    $style='dashed';
@@ -1759,7 +1761,7 @@ sub build_device_topology_graph {
 			
 			$g->add_edge($device->short_name => $nd->short_name,
 				     tailURL             => "view.html?table=Interface&id=".$iface->id,
-				     taillabel           => $name, 
+				     taillabel           => ((defined($specific_vlan) && $specific_vlan != 0)?$name:$vname),
 				     headURL             => "view.html?table=Interface&id=".$neighbor->id, 
 				     headlabel           => $neighbor_name,
 				     color               => $color,
