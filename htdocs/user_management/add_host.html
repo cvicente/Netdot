@@ -161,6 +161,9 @@ if ( $submit ){
 % if ( !$submit ){
 %    my $subnet_description = $block->get_label;
 %    $subnet_description .= " (".$block->description.")" if $block->description;
+%
+%    my $cpu_defaults = $ui->config->get('DEFAULT_HINFO_CPU_VALUES');
+%    my $os_defaults  = $ui->config->get('DEFAULT_HINFO_OS_VALUES');
 
 <div id="sectiontools">
   <div class="container">
@@ -234,20 +237,18 @@ if ( $submit ){
         <label for="cpu"><% $ui->help_link('../user_help/hosts.html#CPU', '', '', 'CPU') %></label>
         <select name="cpu" id="cpu">
             <option value="0">-- Select --</option>
-            <option value="PC-INTEL">PC-Intel</option>
-            <option value="MAC-INTEL">Mac-Intel</option>
-            <option value="MAC-PPC">Mac-PowerPC</option>
-            <option value="OTHER">Other</option>
+%	while ( my ($key,$value) = each %$cpu_defaults ){
+            <option value="<% $key %>"><% $value %></option>
+%       }
         </select>
         </p>
         <p>
         <label for="os"><% $ui->help_link('../user_help/hosts.html#OS', '', '', 'Operating System') %></label>
         <select name="os" id="os">
             <option value="0">-- Select --</option>
-            <option value="WINDOWS">Windows</option>
-            <option value="MACOS">Mac OS</option>
-            <option value="LINUX">Linux</option>
-            <option value="OTHER">Other</option>
+%	while ( my ($key,$value) = each %$os_defaults ){
+            <option value="<% $key %>"><% $value %></option>
+%       }
         </select>
         </p>
     </fieldset>

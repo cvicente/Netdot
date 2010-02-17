@@ -1175,6 +1175,7 @@ sub snmp_update_from_file {
   Arguments:
     Hash containing the following keys:
     name          Host name or ip address (required)
+    main_ip       Main IP address (optional)
     session       SNMP Session (optional)
     communities   Arrayref of SNMP communities
     version       SNMP version
@@ -1259,7 +1260,7 @@ sub discover {
     if(! $dev){ #still no dev! guess we better make it!
     	$logger->debug(sub{"Device::discover: Device $name does not yet exist"});
 	# Set some values in the new Device based on the SNMP info obtained
-	my $main_ip = $class->_get_main_ip($info);
+	my $main_ip = $argv{main_ip} || $class->_get_main_ip($info);
 	my $host    = $main_ip || $name;
 	my $newname = $class->assign_name(host=>$host);
 	my %devtmp = (snmp_managed  => 1,
@@ -1830,7 +1831,6 @@ sub fwt_update {
     None
   Returns:
     True if successful
-
   Examples:
     $device->delete();
 
@@ -1839,15 +1839,25 @@ sub delete {
     my ($self) = @_;
     $self->isa_object_method('delete');
 
+    # We don't want to delete dynamic addresses
+    if ( my $ips = $self->get_ips ){
+	foreach my $ip ( @$ips ) {
+	    if ( $ip->status && $ip->status->name eq 'Dynamic' ){
+		$ip->update({interface=>0});
+	    }
+	}
+    }
+
+    # If the RR had a RRADDR, it was probably deleted.  
+    # Otherwise, we do it here.
     my $rrid = ( $self->name )? $self->name->id : "";
     
     $self->SUPER::delete();
 
-    # If the RR had a RRADDR, it was probably deleted.  
-    # Otherwise, we do it here.
     if ( my $rr = RR->retrieve($rrid) ){
 	$rr->delete() unless $rr->arecords;
     }
+    return 1;
 }
 
 ############################################################################
@@ -4796,7 +4806,10 @@ sub _update_interfaces {
 	# (could have been deleted if its interface was deleted)
 	next unless ( defined $obj );
 	next if ( ref($obj) =~ /deleted/i );
-	
+
+	# Leave dynamic addresses alone
+	next if ( $obj->status && $obj->status->name eq 'Dynamic' );
+
 	$logger->info(sprintf("%s: IP %s no longer exists.  Removing.", 
 			      $host, $obj->address));
 	$obj->delete(no_update_tree=>1);
