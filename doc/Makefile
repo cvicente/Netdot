@@ -1,13 +1,20 @@
+include $(SRCROOT)/etc/utility-Makefile
+
 #
 # makefile for doc
 
-FILES = ChangeLog INSTALL MILESTONES README TODO
+NDIR = manual
 
-all:
-	@echo
-	@echo "Preparing and installing $(DIR) files..."
-	for file in $(FILES); do \
-	    install -m $(FMOD) $$file $(PREFIX)/$(DIR)/$$file ; \
+FILES := `find -type f |egrep -v '\.svn|Makefile' |sed -e 's/\.\///'`
+
+all: dir
+	$(substitute)
+
+	for dir in $(NDIR); do \
+	  chown $(APACHEUSER):$(APACHEGROUP) $(PREFIX)/$(DIR)/$$dir; \
+	  chmod 0755 $(PREFIX)/$(DIR)/$$dir; \
 	done
-	@echo "Done."
 
+# This section creates the doc/ subdirs
+dir:
+	$(mkdirs)
