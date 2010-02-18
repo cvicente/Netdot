@@ -207,7 +207,10 @@ if ( $action eq "search" && $submit ){
 
     my %args;
     $args{block}    = $block;
-    $args{zone}     = $block->forward_zone();
+    unless ( $args{zone} = $block->forward_zone() ){
+	$m->comp("/generic/error.mhtml", error=>"Subnet ".$block->get_label." is not associated with a zone.");
+    }
+    
     $args{address}  = $address;
     $args{hostname} = $hostname;
     $args{ethernet} = $ethernet;
