@@ -2045,14 +2045,8 @@ sub update_bgp_peering {
 	 exists ($peer->{orgname})|| 
 	 exists ($peer->{asnumber}) ){
 	
-	# Build Entity info
-	#
 	my $entityname = $peer->{orgname} || $peer->{asname};
 	$entityname .= " ($peer->{asnumber})";
-	my %etmp = ( name     => $entityname,
-		     asname   => $peer->{asname},
-		     asnumber => $peer->{asnumber},
-		     );
 	
 	# Check if Entity exists
 	#
@@ -2060,11 +2054,19 @@ sub update_bgp_peering {
 	     Entity->search(asname => $peer->{asname})->first               ||
 	     Entity->search(name   => $peer->{orgname})->first
 	     ){
-	    # Update it
-	    $entity->update( \%etmp );
+	    # Update AS stuff
+	    $entity->update({asname   => $peer->{asname},
+			     asnumber => $peer->{asnumber}});
 	}else{
 	    # Doesn't exist. Create Entity
 	    #
+	    # Build Entity info
+	    #
+	    my %etmp = ( name     => $entityname,
+			 asname   => $peer->{asname},
+			 asnumber => $peer->{asnumber},
+		);
+	
 	    $logger->info(sprintf("%s: Peer Entity %s not found. Inserting", 
 				  $host, $entityname ));
 	    
