@@ -4813,6 +4813,7 @@ sub _update_interfaces {
 	# Don't delete dynamic addresses, just unset the interface
 	if ( $obj->status && $obj->status->name eq 'Dynamic' ){
 	    $obj->update({interface=>0});
+	    next;
 	}
 
 	$logger->info(sprintf("%s: IP %s no longer exists.  Removing.", 
