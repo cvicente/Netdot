@@ -2075,16 +2075,17 @@ sub update_bgp_peering {
 	}
 	
 	# Make sure Entity has role "peer"
-	my $type     = (EntityType->search(name => "Peer"))[0] || 0;
-	my %eroletmp = ( entity => $entity, type => $type );
-	my $erole;
-	if ( $erole = EntityRole->search(%eroletmp)->first ){
-	    $logger->debug(sub{ sprintf("%s: Entity %s already has 'Peer' role", 
-					$host, $entityname )});
-	}else{
-	    EntityRole->insert(\%eroletmp);
-	    $logger->info(sprintf("%s: Added 'Peer' role to Entity %s", 
-				  $host, $entityname ));
+	if ( my $type = (EntityType->search(name => "Peer"))[0] ){
+	    my %eroletmp = ( entity => $entity, type => $type );
+	    my $erole;
+	    if ( $erole = EntityRole->search(%eroletmp)->first ){
+		$logger->debug(sub{ sprintf("%s: Entity %s already has 'Peer' role", 
+					    $host, $entityname )});
+	    }else{
+		EntityRole->insert(\%eroletmp);
+		$logger->info(sprintf("%s: Added 'Peer' role to Entity %s", 
+				      $host, $entityname ));
+	    }
 	}
 	
     }else{
@@ -4809,8 +4810,10 @@ sub _update_interfaces {
 	next unless ( defined $obj );
 	next if ( ref($obj) =~ /deleted/i );
 
-	# Leave dynamic addresses alone
-	next if ( $obj->status && $obj->status->name eq 'Dynamic' );
+	# Don't delete dynamic addresses, just unset the interface
+	if ( $obj->status && $obj->status->name eq 'Dynamic' ){
+	    $obj->update({interface=>0});
+	}
 
 	$logger->info(sprintf("%s: IP %s no longer exists.  Removing.", 
 			      $host, $obj->address));
