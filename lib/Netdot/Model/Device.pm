@@ -1988,15 +1988,8 @@ sub update_bgp_peering {
 	 exists ($peer->{orgname})|| 
 	 exists ($peer->{asnumber}) ){
 	
-	# Build Entity info
-	#
 	my $entityname = $peer->{orgname} || $peer->{asname};
 	$entityname .= " ($peer->{asnumber})";
-	my $type = (EntityType->search(name => "Peer"))[0] || 0;
-	my %etmp = ( name     => $entityname,
-		     asname   => $peer->{asname},
-		     asnumber => $peer->{asnumber},
-		     );
 	
 	# Check if Entity exists
 	#
@@ -2004,11 +1997,19 @@ sub update_bgp_peering {
 	     Entity->search(asname => $peer->{asname})->first               ||
 	     Entity->search(name   => $peer->{orgname})->first
 	     ){
-	    # Update it
-	    $entity->update( \%etmp );
+	    # Update AS stuff
+	    $entity->update({asname   => $peer->{asname},
+			     asnumber => $peer->{asnumber}});
 	}else{
 	    # Doesn't exist. Create Entity
 	    #
+	    # Build Entity info
+	    #
+	    my %etmp = ( name     => $entityname,
+			 asname   => $peer->{asname},
+			 asnumber => $peer->{asnumber},
+		);
+	
 	    $logger->info(sprintf("%s: Peer Entity %s not found. Inserting", 
 				  $host, $entityname ));
 	    
@@ -2017,15 +2018,17 @@ sub update_bgp_peering {
 	}
 
 	# Make sure Entity has role "peer"
-	my %eroletmp = ( entity => $entity, type => $type );
-	my $erole;
-	if ( $erole = EntityRole->search(%eroletmp)->first ){
-	    $logger->debug(sub{ sprintf("%s: Entity %s already has 'Peer' role", 
-					$host, $entityname )});
-	}else{
-	    EntityRole->insert(\%eroletmp);
-	    $logger->info(sprintf("%s: Added 'Peer' role to Entity %s", 
-				  $host, $entityname ));
+	if ( my $type = (EntityType->search(name => "Peer"))[0] ){
+	    my %eroletmp = ( entity => $entity, type => $type );
+	    my $erole;
+	    if ( $erole = EntityRole->search(%eroletmp)->first ){
+		$logger->debug(sub{ sprintf("%s: Entity %s already has 'Peer' role", 
+					    $host, $entityname )});
+	    }else{
+		EntityRole->insert(\%eroletmp);
+		$logger->info(sprintf("%s: Added 'Peer' role to Entity %s", 
+				      $host, $entityname ));
+	    }
 	}
 
     }else{
