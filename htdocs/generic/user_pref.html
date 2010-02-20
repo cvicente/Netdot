@@ -13,13 +13,13 @@ inherit => undef
 
 <%perl>
 
-do "jsrsServer.pl";
+do "jsrsServer.pm";
 jsrsDispatch("set_value");
 
 sub set_value {
     my $attr = shift;
     my $value = shift;
-    my $user = Apache2::SiteControl->getCurrentUser($r);
+    my $user = $ui->get_current_user($r);
 
     $user->setAttribute($r, $attr, $value);
 }
