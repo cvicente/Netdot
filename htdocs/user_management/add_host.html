@@ -149,18 +149,8 @@ if ( $submit ){
     my @text_records;
 
     # Hardware Info
-    if ( $cpu ){
-	$args{cpu} = $cpu;
-    }elsif ( $other_cpu ){
-	$other_cpu =~ s/\s+//g; # Remove spaces
-	$args{cpu} = $other_cpu;
-    }
-    if ( $os ){
-	$args{os} = $os;
-    }elsif ( $other_os ){
-	$other_os =~ s/\s+//g; # Remove spaces
-	$args{os} = $other_os;
-    }
+    $args{cpu} = $cpu || $other_cpu;
+    $args{os}  = $os  || $other_os;
 
     # Location
     if ( $room_id || $site_id || $site_name ){

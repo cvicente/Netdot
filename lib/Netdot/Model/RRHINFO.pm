@@ -67,6 +67,11 @@ sub insert {
 	$class->throw_user($rr->name.": Cannot add more than one HINFO record");
     }
 
+    foreach my $field ( qw(cpu os) ){
+	# No spaces allowed
+	$argv->{$field} =~ s/\s+//g;
+    }
+
     return $class->SUPER::insert($argv);
     
 }
