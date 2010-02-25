@@ -22,7 +22,7 @@
 #
 # Report bugs to: cvicente(at)ns.uoregon.edu
 #
-# 08/05/2009 Version 1.0
+# 08/05/2009 Version 1.1
 #
 
 use SNMP;
@@ -153,7 +153,7 @@ if ( $stateval ){
     exit $ERRORS{$state};        
 }
 
-if ( $bgp_state eq 'established' || $bgp_state eq 'idle' ) { 
+if ( $bgp_state eq 'established' ) { 
     $state = 'OK';
     print "$state\n";
 }else { 
