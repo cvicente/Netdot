@@ -385,25 +385,24 @@ sub as_text {
 ##################################################################
 =head2 add_host - Add hostname and several other things
     
-    Combine 
+    Combine RR, RRADDR, RRCNAME, RRHINFO and DHCP scope creation
 
   Arguments:
     Hash with following keys:
-    address
-    hostname
-    expiration
-    aliases (array)
-    zone
-    block
-    ethernet
-    person
-    contact_name
-    contact_email
-    contact_phone
+    address      (required) Ipblock id or object
+    hostname     (required) RR name
+    zone         (required) Zone id or object
+    block        (required) subnet Ipblock object
+    expiration   Expiration date for RR
+    aliases      Array of strings for CNAMEs
+    ethernet     MAC address string 
+    cpu          cpu string for HINFO
+    os           os string for HINFO
+    text_records Array of strings for TXT records
   Returns:
     RR id
   Examples:
-    print RR->add_host();
+    print RR->add_host(%args);
 
 =cut
 
@@ -434,10 +433,10 @@ sub add_host {
 		foreach my $alias ( @{$argv{aliases}} ){
 		    $logger->debug("RR::add_host: Creating Alias $alias");
 		    RR->insert({name  => $alias,
-			       zone  => $argv{zone},
-			       type  => 'CNAME',
-			       cname => $rr->get_label,
-			});
+				zone  => $argv{zone},
+				type  => 'CNAME',
+				cname => $rr->get_label,
+			       });
 		}
 	    }
 
@@ -449,56 +448,15 @@ sub add_host {
 			     os  => $argv{os});
 		RR->insert(\%hinfo);
 	    }
-	    
-	    # LOCATION
-	    if ( $argv{room_id} || $argv{site_id} || $argv{site_name} ){
-		my $txtdata;
-		if ( int($argv{room_id}) ){
-		    my $room = Room->retrieve($argv{room_id});
-		    $txtdata = "LOC: ".$room->get_label if $room;
 
-		}elsif ( $argv{room_number} ){
-		    $txtdata = "LOC: ".$argv{room_number};
-		}
-
-		if ( int($argv{site_id}) ){
-		    my $site = Site->retrieve($argv{site_id});
-		    $txtdata .=  " ".$site->get_label if $site;
-		    
-		}elsif ( $argv{site_name} ){
-		    $txtdata .=  " ".$argv{site_name};
-		}
-
-		if ( $txtdata ){
+	    # RRTXT
+	    if ( exists $argv{text_records} && ref($argv{text_records}) eq 'ARRAY' ){
+		foreach my $txtdata ( @{$argv{text_records}} ){
 		    RR->insert({rr      => $rr, 
 				type    =>'TXT',
 				txtdata => $txtdata,
 			       });
 		}
-	    }
-	    
-	    # CONTACTS
-	    if ( $argv{person} ){
-		# Add the current user as a contact
-		my $txtdata = "CON: ".$argv{person}->get_label;
-		$txtdata .= " (".$argv{person}->email.")" if $argv{person}->email; 
-		$txtdata .= ", ".$argv{person}->office if $argv{person}->office;
-		RR->insert({rr      => $rr, 
-			    type    =>'TXT',
-			    txtdata => $txtdata,
-			   });
-	    }
-	    
-	    # Add additional contact info
-	    if ( $argv{contact_name} ){
-		my $txtdata = "";
-		$txtdata =  "CON: ".$argv{contact_name};
-		$txtdata .= " (".$argv{contact_email}.")" if $argv{contact_email}; 
-		$txtdata .= ", ".$argv{contact_phone} if $argv{contact_phone}; 
-		RR->insert({rr      => $rr, 
-			    type    =>'TXT',
-			    txtdata => $txtdata,
-			   });
 	    }
 	    
 	    # DHCP

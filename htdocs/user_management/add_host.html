@@ -136,14 +136,57 @@ if ( $submit ){
 	}
     }
     
-    foreach my $key qw(hostname expiration cpu os site_name site_id room_number room_id person 
-                       contact_name contact_email contact_phone ethernet) {
+    foreach my $key qw(hostname expiration cpu os ethernet) {
 	$args{$key} = $ARGS{$key};
     }
     $args{zone}    = $zone;
     $args{person}  = $person;
     $args{block}   = $block;
     $args{address} = $address;
+
+    my @text_records;
+
+    # Location
+    if ( $room_id || $site_id || $site_name ){
+	my $txtdata;
+	if ( my $room = Room->retrieve($room_id) ){
+	    $txtdata = "LOC: ".$room->get_label if $room;
+	    # the room label includes the site name
+	}elsif ( $room_number ){
+	    $txtdata = "LOC: ".$room_number;
+	    if ( my $site = Site->retrieve($site_id) ){
+		$txtdata .=  " ".$site->get_label;
+	    }elsif ( $site_name ){
+		$txtdata .=  " ".$site_name;
+	    }
+	}else{
+	    if ( my $site = Site->retrieve($site_id) ){
+		$txtdata =  $site->get_label;
+	    }elsif ( $site_name ){
+		$txtdata =  $site_name;
+	    }
+	}
+	push @text_records, $txtdata if ( $txtdata );
+    }
+    
+    # Contacts
+    if ( $person ){
+	# Add the current user as a contact
+	my $txtdata = "CON: ".$person->get_label;
+	$txtdata .= " (".$person->email.")" if $person->email; 
+	$txtdata .= ", ".$person->office if $person->office;
+	push @text_records, $txtdata if ( $txtdata );
+    }
+    
+    # Add additional contact info
+    if ( $contact_name ){
+	my $txtdata = "";
+	$txtdata =  "CON: ".$contact_name;
+	$txtdata .= " (".$contact_email.")" if $contact_email; 
+	$txtdata .= ", ".$contact_phone if $contact_phone; 
+	push @text_records, $txtdata if ( $txtdata );
+    }
+    $args{text_records} = \@text_records if @text_records;
     
     my $rr;
     eval {
