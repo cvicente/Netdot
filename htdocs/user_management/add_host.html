@@ -22,7 +22,9 @@ $hostname      => undef
 $aliases       => undef
 $expiration    => undef
 $cpu           => undef
+$other_cpu     => undef
 $os            => undef
+$other_os      => undef
 $site_id       => undef
 $site_name     => undef
 $room_id       => undef
@@ -136,7 +138,7 @@ if ( $submit ){
 	}
     }
     
-    foreach my $key qw(hostname expiration cpu os ethernet) {
+    foreach my $key qw(hostname expiration ethernet) {
 	$args{$key} = $ARGS{$key};
     }
     $args{zone}    = $zone;
@@ -145,6 +147,20 @@ if ( $submit ){
     $args{address} = $address;
 
     my @text_records;
+
+    # Hardware Info
+    if ( $cpu ){
+	$args{cpu} = $cpu;
+    }elsif ( $other_cpu ){
+	$other_cpu =~ s/\s+//g; # Remove spaces
+	$args{cpu} = $other_cpu;
+    }
+    if ( $os ){
+	$args{os} = $os;
+    }elsif ( $other_os ){
+	$other_os =~ s/\s+//g; # Remove spaces
+	$args{os} = $other_os;
+    }
 
     # Location
     if ( $room_id || $site_id || $site_name ){
@@ -223,7 +239,7 @@ if ( $submit ){
     <p>Required fields are marked with an asterisk (<font color="red">*</font>).<br>
     <p>Help is available for some fields by clicking on the field name.<br>
     <p><br>
-    <fieldset class="medium">
+    <fieldset class="large">
         <legend>Host Identification</legend>
         <p>
         <label for="domain">Domain <font color="red">*</font></label>
@@ -274,30 +290,42 @@ if ( $submit ){
     </fieldset>
 
     <p>
-    <fieldset class="medium">
+    <fieldset class="large">
         <legend>Hardware Information</legend>
         <p>
         <label for="cpu"><% $ui->help_link('../user_help/hosts.html#CPU', '', '', 'CPU') %></label>
         <select name="cpu" id="cpu">
             <option value="0">-- Select --</option>
-%	while ( my ($key,$value) = each %$cpu_defaults ){
+%	foreach my $key ( sort { $cpu_defaults->{$a} cmp $cpu_defaults->{$b} } keys %$cpu_defaults ){
+%           my $value = $cpu_defaults->{$key};
             <option value="<% $key %>"><% $value %></option>
 %       }
+            <option value="0">Other</option>
         </select>
+        </p>
+        <p>
+        <label for="other_cpu">&nbsp;</label>
+	<input type="text" name="other_cpu" class="txt" value=""> (if not listed)
         </p>
         <p>
         <label for="os"><% $ui->help_link('../user_help/hosts.html#OS', '', '', 'Operating System') %></label>
         <select name="os" id="os">
             <option value="0">-- Select --</option>
-%	while ( my ($key,$value) = each %$os_defaults ){
+%	foreach my $key ( sort { $os_defaults->{$a} cmp $os_defaults->{$b} } keys %$os_defaults ){
+%           my $value = $os_defaults->{$key};
             <option value="<% $key %>"><% $value %></option>
 %       }
+            <option value="0">Other</option>
         </select>
+        </p>
+        <p>
+        <label for="other_os">&nbsp;</label>
+	<input type="text" name="other_os" class="txt" value="">  (if not listed)
         </p>
     </fieldset>
 
     <p>
-    <fieldset class="medium">
+    <fieldset class="large">
         <legend>Location</legend>
         <p>
         <label for="site_id">Site</label>
@@ -310,7 +338,7 @@ if ( $submit ){
         </select>
         </p>
         <p>
-        <label for="site_name">Site Name</label>
+        <label for="site_name">&nbsp;</label>
         <input type="text" name="site_name" class="longtxt" value=""> (if not listed)
         </p>
         <p>
@@ -320,13 +348,13 @@ if ( $submit ){
         </select>
         </p>
         <p>
-        <label for="room_number">Room Number</label>
+        <label for="room_number">&nbsp;</label>
         <input type="text" name="room_number" class="shorttxt" value=""> (if not listed)
         </p>
     </fieldset>
 
     <p>
-    <fieldset class="medium">
+    <fieldset class="large">
         <legend>Contact (other than you)</legend>
         <p>
         <label for="contact_name">Name</label>
