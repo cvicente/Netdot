@@ -55,10 +55,12 @@ BEGIN {
 	my ($self, %args) = @_;
 	
 	my $changed_columns = $args{discard_columns};
-	if ( defined $changed_columns && 
-	     scalar(@$changed_columns) == 1  && 
-	     $changed_columns->[0] eq 'last_updated' ){
-	    return;
+	if ( defined $changed_columns ){ 
+	    if ( (scalar(@$changed_columns) == 1 && $changed_columns->[0] eq 'last_updated') ||
+		 scalar(@$changed_columns) == 2 && $changed_columns->[0] eq 'last_updated' && 
+		 ($changed_columns->[1] eq 'last_fwt' || $changed_columns->[1] eq 'last_arp') ){
+		return;
+	    }
 	}
 	my $table    = $self->table;
 	my $h_table  = $self->meta_data->get_history_table_name();
