@@ -180,9 +180,7 @@ sub _parser{
 	my $icount;
 
 	# Add Unique indexes. Skip history tables
-
-	my $hs = $self->get_history_suffix();
-	if ( $mtable->name !~ /$hs/ ) {
+	unless ( $mtable->is_history ) {
 	    foreach my $unique ( @{$mtable->get_unique_columns} ){
 		$icount++;
 		$table->add_index(name   => $table->name.$icount,
@@ -192,7 +190,6 @@ sub _parser{
 	    }
 	}
 	# Add normal indexes
-
 	foreach my $index ( @{$mtable->get_indexed_columns} ){
 	    $icount++;
 	    $table->add_index(name   => $mtable->name.$icount,
