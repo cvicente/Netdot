@@ -90,7 +90,8 @@ if ( $action eq "discover" ){
 	    $m->comp('/generic/error.mhtml', error=>$e);
 	}
 	
-    } elsif ( $host ){
+    }
+    elsif ( $host ){
 	$host =~ s/\s*//g;
 	
 	# Give preference to the community being passed
@@ -115,18 +116,24 @@ if ( $action eq "discover" ){
 	    $argv{device} = $o->id;
 	}
 	
-	# Make sure we don't have any devices with this SN already
+	# Make sure we don't have any assets with this SN already
 	elsif( !$o && $info->{serialnumber} ){
-	    my %search_args = (serialnumber=>$info->{serialnumber});
+	    my %search_args = (serial_number=>$info->{serialnumber});
 	    if ( $info->{sysobjectid} && 
 		 (my $product = Product->search(sysobjectid=>$info->{sysobjectid})->first) ){
-		$search_args{product} = $product;
+		$search_args{product_id} = $product;
 	    }
-	    if ( $o = Device->search(%search_args)->first ){
-		$dev_exists_notice = "Device SN ". $o->serialnumber.
-		    " exists in the DB, but its name has changed";
-		$argv{device} = $o->id;
-		$argv{name}   = $host;
+           
+	    if ( my $ao = Asset->search(%search_args)->first ){
+                if($o = Device->search(asset_id => $ao)){
+		    $dev_exists_notice = "Device SN ". $o->asset_id->serial_number.
+		        " exists in the DB, but its name has changed";
+		    $argv{device} = $o->id;
+	 	    $argv{name}   = $host;
+                }
+                else{
+                    $dev_exists_notice = "SN ". $ao->serial_number ."exists in the DB, but the device is not deployed.";
+                }
 	    }
 	}
 	

@@ -52,7 +52,7 @@ if ( $manager && $manager->can($user, "access_section", 'management') ){
     if( !$showheader ) {
 	$hideheader = 'style="display:none"';
     }
-    
+
     if ( ($page eq "DEVICE" || $page eq "") && $m->request_comp->name ne "device_tasks.html" ) {
 	$m->comp('device_tasks.html', user=>$user, showheader=>$showheader);
     } elsif ( $page eq "ADDRESS" && $m->request_comp->name ne "address_tasks.html" ) {
@@ -65,6 +65,8 @@ if ( $manager && $manager->can($user, "access_section", 'management') ){
 	$m->comp('zone_tasks.html', user=>$user, showheader=>$showheader);
     } elsif ($page eq "DHCP" && $m->request_comp->name ne "dhcp_tasks.html" ) {
 	$m->comp('dhcp_tasks.html', user=>$user, showheader=>$showheader);
+    } elsif ($page eq "ASSET" && $m->request_comp->name ne "asset.html"){
+        $m->comp('asset.html', user=>$user, showheader=>$showheader, %ARGS);	
     }
 }else{
     # We intentionally do not call the error page here so that some components
@@ -102,6 +104,7 @@ if ( my $next = $m->fetch_next ){
 		{ section => 'HOSTS',    title => 'Hosts' },
 		{ section => 'ZONES',    title => 'Zones' },
 		{ section => 'DHCP',     title => 'DHCP' },
+                { section => 'ASSET',    title => 'Assets' }
 	    ]
         };
     </%init>

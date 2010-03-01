@@ -130,6 +130,9 @@ sub search {
     }elsif ( exists $argv{producttype} ){
 	return $class->search_by_type($argv{producttype});
     }
+    elsif(exists $argv{product}){
+        return Asset->search({product_id=>$argv{product}});
+    }
 
     # Proceed as a regular search
     return $class->SUPER::search(%argv, $opts);
@@ -441,7 +444,7 @@ sub assign_name {
      - Assign contact lists
 
   Arguments:
-    Arrayref with Device fields and values, plus:
+    Hashref with Device fields and values, plus:
     contacts    - ContactList object(s) (array or scalar)
   Returns:
     New Device object
@@ -476,7 +479,7 @@ sub insert {
 		  monitored        => 1,
 		  monitorstatus    => 0,
 		  owner            => $default_owner,
-		  product          => 0,
+		  asset_id         => 0,
 		  snmp_bulk        => $class->config->get('DEFAULT_SNMPBULK'),
 		  snmp_managed     => 0,
 		  snmp_polling     => 0,
@@ -522,6 +525,10 @@ sub insert {
 	}else{
 	    $devtmp{name} = RR->insert({name=>$argv->{name}});
 	}
+    }
+    if(!$argv->{asset_id}){
+        #an asset_id was not passed in, we need to create a new asset record to associate with the device
+        $devtmp{asset_id} = Asset->insert({product_id=>0});
     }
     
     if ( my $dbdev = $class->search(name=>$devtmp{name})->first ){
@@ -1235,19 +1242,19 @@ sub discover {
 	}
 	
 	
-	if ( $info->{serialnumber} ){
-	    my %search_args = (serialnumber=>$info->{serialnumber});
+	if( $info->{serial_number} ){
+	    my %search_args = (serial_number=>$info->{serial_number});
 	    if ( $info->{sysobjectid} && 
 	         (my $product = Product->search(sysobjectid=>$info->{sysobjectid})->first) ){
 	        $search_args{product} = $product;
 	    }
-	    if ( $dev = Device->search(%search_args)->first ){
-	        $logger->info(sub{"Device::discover: Device already exists in db with serial number ".$info->{serialnumber}});
+	    if ( $dev = Device->asset_id->search(%search_args)->first ){
+	        $logger->info(sub{"Device::discover: Device already exists in db with serial number ".$info->{serial_number}});
 	        $device_changed_name = 1;
 	    }
 	}
 	
-	if ( $info->{physaddr} ){
+	if( $info->{physaddr}){
 	    if ( my $physaddr = PhysAddr->search(address=>($info->{physaddr}))->first ){
 	        if ( $dev = Device->search(physaddr=>$physaddr)->first ){
 		    $logger->info(sub{"Device::discover: Device already exists in db with physical address ".$physaddr->address});
@@ -1831,6 +1838,7 @@ sub fwt_update {
     None
   Returns:
     True if successful
+
   Examples:
     $device->delete();
 
@@ -1974,6 +1982,7 @@ sub is_in_downtime {
     We override the update method for extra functionality:
       - Update 'last_updated' field with current timestamp
       - snmp_managed flag turns off all other snmp access flags
+      - Modifying serialnumber & product, which used to be stored in Device, but are now located in Asset
 
   Arguments:
     Hash ref with Device fields
@@ -2001,6 +2010,9 @@ sub update {
 	}
     }
     $self->_validate_args($argv);
+    $self->asset_id->update(serial_number=>$argv->{'serialnumber'}, product_id=>$argv->{'product'});
+    delete $argv->{'serialnumber'};
+    delete $argv->{'product'};
     return $self->SUPER::update($argv);
     
 }
@@ -3074,18 +3086,26 @@ sub _validate_args {
     }
 
     # Serial number
+
     if ( my $sn = $args->{serialnumber} ){
-	if ( my $otherdev = $class->search(serialnumber=>$sn)->first ){
-	    if ( defined $self ){
-		if ( $self->id != $otherdev->id ){
-		    $self->throw_user( sprintf("%s: S/N %s belongs to existing device: %s.", 
-					       $self->fqdn, $sn, $otherdev->fqdn) ); 
-		}
-	    }else{
-		$class->throw_user( sprintf("S/N %s belongs to existing device: %s.", 
-					    $sn, $otherdev->fqdn) ); 
-	    }
-	}
+	if ( my $asset = Asset->search(serial_number=>$sn)->first ){
+
+            #is there a device attached to this asset number we've found?
+            my $otherdevice = Device->search(asset_id=>$asset)->first;
+
+	    if(defined $self){
+		if($self->asset_id != $asset->id){
+                    if($otherdevice){
+		        $self->throw_user( sprintf("%s: S/N %s belongs to existing device: %s.", 
+					       $self->fqdn, $sn, $otherdevice->fqdn) ); 
+                    }
+                    else{ #asset exists in DB, but is not assigned to device (not yet deployed)
+                        $self->throw_user( sprintf("%s: S/N %s belongs to existing Asset (Number %s)",
+                                               $self->fqdn, $sn, $asset));
+		    }
+               }
+	   }
+        }
     }
     
     # Base bridge MAC
@@ -4903,39 +4923,43 @@ sub _update_bgp_info {
 #
 __PACKAGE__->set_sql(by_type => qq{
     SELECT d.id
-	FROM device d, product p, producttype t, rr
-	WHERE d.product = p.id AND
-	p.type = t.id AND
-	rr.id = d.name AND
-	t.id = ?
-	ORDER BY rr.name
+        FROM device d, asset a, product p, producttype t, rr
+        WHERE d.asset_id = a.id AND
+        a.product_id = p.id AND
+        p.type = t.id AND
+        rr.id = d.name AND
+        t.id = ?
+        ORDER BY rr.name
     });
 
 __PACKAGE__->set_sql(no_type => qq{
     SELECT p.name, p.id, COUNT(d.id) AS numdevs
-        FROM device d, product p
-        WHERE d.product = p.id AND
+        FROM device d, asset a, product p
+       	WHERE d.asset_id = a.id AND
+        a.product_id = p.id AND
         p.type = 0
         GROUP BY p.name, p.id
         ORDER BY numdevs DESC
     });
 
 __PACKAGE__->set_sql(by_product_os => qq{
-    SELECT id,product,os
-        FROM device
-        WHERE os is NOT NULL 
-        AND os != '0'
-        ORDER BY product,os
+    SELECT d.id, a.product_id AS product, d.os
+        FROM device d, asset a
+        WHERE d.asset_id = a.id AND
+        os is NOT NULL AND
+        os != '0'
+        ORDER BY a.product_id, d.os
     });
 
 __PACKAGE__->set_sql(for_os_mismatches => qq{
-    SELECT device.id,device.product,device.os,device.name
-        FROM   device,product
-        WHERE  device.product=product.id
+    SELECT device.id, asset.product_id, device.os, device.name
+       	FROM   device, asset, product
+        WHERE device.asset_id = asset.id
+        AND asset.product_id = product.id
         AND device.os IS NOT NULL
         AND product.latest_os IS NOT NULL
-        AND device.os!=product.latest_os
-        ORDER BY device.product,device.os
+        AND device.os != product.latest_os
+        ORDER BY asset.product_id, device.os
     });
 
 =head1 AUTHOR

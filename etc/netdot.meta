@@ -1562,6 +1562,17 @@ $meta = {
   Device => {
     table_db_name => 'device',
     columns => {
+      asset_id => {
+        default => '',
+        description => 'asset fk',
+        length => '',
+        nullable => 0,
+        linksto => {
+          cascade => 'Delete',
+          table => 'Asset'
+        },
+        type => 'integer'
+      },
       aliases => {
         default => '',
         description => 'Other names by which this Device is known',
@@ -1690,14 +1701,6 @@ $meta = {
         tag => 'Comments',
         type => 'blob'
       },
-      inventorynumber => {
-        default => '',
-        description => 'A number given to this Device by the organization for accounting/inventory purposes',
-        length => '64',
-        nullable => 1,
-        tag => 'Inventory',
-        type => 'varchar'
-      },
       ipforwarding => {
         default => '',
         description => 'Whether this device has IP forwarding enabled (IP-MIB::ipForwarding.0)',
@@ -1737,35 +1740,6 @@ $meta = {
         nullable => 1,
         tag => 'Last Updated',
         type => 'timestamp'
-      },
-      maint_contract => {
-        default => '',
-        description => 'Reference to a maintenance or support contract with hardware vendor or third party.',
-        length => '',
-        linksto => {
-          cascade => 'Nullify',
-          method => 'devices',
-          table => 'MaintContract'
-        },
-        nullable => 0,
-        tag => 'Maint Contract',
-        type => 'integer'
-      },
-      maint_from => {
-        default => '',
-        description => 'Device covered in maintenance from this date (YYYY-MM-DD)',
-        length => '',
-        nullable => 1,
-        tag => 'Maint Start',
-        type => 'date'
-      },
-      maint_until => {
-        default => '',
-        description => 'Device covered in maintenance until this date (YYYY-MM-DD)',
-        length => '',
-        nullable => 1,
-        tag => 'Maint End',
-        type => 'date'
       },
       monitor_config => {
         default => '',
@@ -1875,19 +1849,6 @@ $meta = {
         tag => 'Base MAC',
         type => 'integer'
       },
-      product => {
-        default => '',
-        description => 'Reference to a Product record.  Products are usually determined via SNMP',
-        length => '',
-        linksto => {
-          cascade => 'Delete',
-          method => 'devices',
-          table => 'Product'
-        },
-        nullable => 0,
-        tag => 'Product Name',
-        type => 'integer'
-      },
       rack => {
         default => '',
         description => 'Rack ID where this Device is physically installed',
@@ -1908,14 +1869,6 @@ $meta = {
         nullable => 0,
         tag => 'Room',
         type => 'integer'
-      },
-      serialnumber => {
-        default => '',
-        description => 'Serial Number of the Device',
-        length => '64',
-        nullable => 1,
-        tag => 'S/N',
-        type => 'varchar'
       },
       site => {
         default => '',
@@ -2103,7 +2056,7 @@ $meta = {
     },
     description => 'A network device.  Particularly, Devices in Netdot are network infrastructure devices that network administrators care about for inventory, monitoring and management purposes.  Not to be confused with end nodes',
     has_history => 1,
-    index => [ ['physaddr'],  ['product'], ['used_by'],  ['inventorynumber'], ['owner'], ['os'], ['sysname'], ['down_from'], ['down_until'], ['serialnumber'] ],
+    index => [ ['physaddr'], ['used_by'], ['owner'], ['os'], ['sysname'], ['down_from'], ['down_until'] ],
     isjoin => '0',
     label => [
       'name'
@@ -2117,6 +2070,7 @@ $meta = {
     views => {
       all => [
         'name',
+        'asset_id',
         'aliases',
         'snmp_target',
         'sysname',
@@ -2138,13 +2092,7 @@ $meta = {
         'monitorstatus',
         'customer_managed',
         'community',
-        'serialnumber',
         'custom_serial',
-        'product',
-        'inventorynumber',
-        'maint_contract',
-        'maint_from',
-        'maint_until',
         'canautoupdate',
         'site',
         'monitor_config',
@@ -2177,7 +2125,7 @@ $meta = {
         'down_until',
         'info'
       ],
-      brief => ['name', 'product', 'site', 'serialnumber', 'inventorynumber', 'snmp_target' ]
+      brief => ['name', 'site', 'snmp_target' ]
     }
   },
   DeviceAttr => {
@@ -2316,6 +2264,16 @@ $meta = {
         tag => undef,
         type => 'integer'
       },
+      asset_id => {
+        default => '',
+        description => 'asset fk',
+        length => '',
+        nullable => 0,
+        linksto => {
+          table => 'Asset'
+        },
+        type => 'integer'
+      },
       class => {
         default => '',
         description => 'Module Class',
@@ -2418,51 +2376,6 @@ $meta = {
         tag => 'Position',
         type => 'integer'
       },
-      serialnumber => {
-        default => '',
-        description => 'The vendor-specific serial number string for the physical entity',
-        length => '128',
-        nullable => 1,
-        tag => 'S/N',
-        type => 'varchar'
-      },
-      inventorynumber => {
-        default => '',
-        description => 'A number given to this Module by the organization for accounting/inventory purposes',
-        length => '64',
-        nullable => 1,
-        tag => 'Inventory',
-        type => 'varchar'
-      },
-      maint_contract => {
-        default => '',
-        description => 'Reference to a maintenance or support contract with hardware vendor or third party.',
-        length => '',
-        linksto => {
-          cascade => 'Nullify',
-          method => 'modules',
-          table => 'MaintContract'
-        },
-        nullable => 0,
-        tag => 'Maint Contract',
-        type => 'integer'
-      },
-      maint_from => {
-        default => '',
-        description => 'Module covered in maintenance from this date (YYYY-MM-DD)',
-        length => '',
-        nullable => 1,
-        tag => 'Maint Start',
-        type => 'date'
-      },
-      maint_until => {
-        default => '',
-        description => 'Module covered in maintenance until this date (YYYY-MM-DD)',
-        length => '',
-        nullable => 1,
-        tag => 'Maint End',
-        type => 'date'
-      },
       sw_rev => {
         default => '',
         description => 'The vendor-specific software revision string for the physical entity',
@@ -2517,11 +2430,7 @@ $meta = {
       'fw_rev',
       'sw_rev',
       'fru',
-      'serialnumber',
-      'inventorynumber',
-      'maint_contract',
-      'maint_from',
-      'maint_until',
+      'asset_id',
       'date_installed',
       'last_updated',
       ],
@@ -2531,8 +2440,7 @@ $meta = {
         'class',
         'model',
         'description',
-        'serialnumber',
-        'inventorynumber',
+        'asset_id',
       ]
     }
   },
@@ -5451,6 +5359,14 @@ $meta = {
         tag => undef,
         type => 'integer'
       },
+      mfg_number => {
+        default => '',
+        description => 'manufacturers number',
+        length => '255',
+        nullable => 0,
+        type => 'varchar',
+        tag => 'mfg_number'
+      },
       info => {
         default => '',
         description => 'Comments',
@@ -8199,6 +8115,112 @@ $meta = {
       ]
     } 
        	   
-  },   
+  }, 
+
+ Asset => {
+    table_db_name => 'asset',
+    columns => {
+       id => {
+         default => '',
+         description => '',
+         length => '', 
+         nullable => 0,
+         tag => '',
+         type => 'integer'
+       },
+       serial_number => {
+         default => '',
+         description => 'asset serial number',
+         length => '255',
+         nullable => 1,
+         tag => 'S/N',
+         type => 'varchar'
+       },
+       inventory_number => {
+         default => '',
+         description => 'asset inventory number',
+         length => '255',
+         nullable => 1,
+         tag => 'Inventory',
+         type => 'varchar'
+       },
+       product_id => {
+         default => '',
+         description => 'product key',
+         length => '',
+         nullable => 1,
+         linksto => {
+           cascade => 'Delete',
+           method => 'assets',
+           table => 'Product'
+         },
+         type => 'integer'
+       },
+       date_purchased => {
+         default => '1970-01-01 00:00:01',
+         description => 'the date the asset was purchased',
+         length => '',
+         nullable => 1,
+         tag => 'Timestamp',
+         type => 'timestamp'
+       },
+       maint_contract => {
+         default => '',
+         description => 'Reference to a maintenance or support contract with hardware vendor or third party.',
+         length => '',
+         linksto => {
+           cascade => 'Nullify',
+           method => 'devices',
+           table => 'MaintContract'
+         },
+         nullable => 0,
+         tag => 'Maint Contract',
+         type => 'integer'
+       },
+       maint_from => {
+         default => '',
+         description => 'Device covered in maintenance from this date (YYYY-MM-DD)',
+         length => '',
+         nullable => 1,
+         tag => 'Maint Start',
+         type => 'date'
+        },
+       maint_until => {
+         default => '',
+         description => 'Device covered in maintenance until this date (YYYY-MM-DD)',
+          length => '',
+         nullable => 1,
+         tag => 'Maint End',
+         type => 'date'
+       }
+    },
+    views => {
+      'all' => [
+         'serial_number',
+         'inventory_number',
+         'date_purchased',
+         'maint_contract',
+         'maint_from',
+         'maint_until'
+      ],
+      brief => [
+         'serial_number',
+         'inventory_number'
+      ]
+    },
+
+    description => 'Assets',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    primary_key => 'id',
+    label => ['serial_number'],
+    unique => [
+      [
+        'serial_number'
+      ]
+    ]
+  }
+  
  }
 }

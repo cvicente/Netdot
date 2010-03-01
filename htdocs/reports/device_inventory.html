@@ -105,8 +105,8 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
     my %t;
     my @devs = Device->search_by_product_os();
     foreach my $dev (@devs){
-	my $prod  = ($dev->product) ? $dev->product->id : "Unknown";
-	my $manuf = ($dev->product && $dev->product->manufacturer) ? $dev->product->manufacturer->id : 'Unknown';
+	my $prod  = ($dev->asset_id->product_id) ? $dev->asset_id->product_id->id : "Unknown";
+	my $manuf = ($dev->asset_id->product_id && $dev->asset_id->product_id->manufacturer) ? $dev->asset_id->product_id->manufacturer->id : 'Unknown';
 	my $os    = $dev->os;
 	$t{$manuf}{total}++;
 	$t{$manuf}{product}{$prod}{total}++;

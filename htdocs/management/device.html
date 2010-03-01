@@ -77,7 +77,7 @@ my %ifacecolors = (
     removed => "ff8e8e",
     );
 
-print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+print '%ARGS is  <pre>', Dumper($ARGS), '</pre><br>' if $DEBUG;
 
 # Check if user can access this section
 # We don't want average users seeing this page, its only for admins and operators.
@@ -184,7 +184,7 @@ my $refresh_url = "device.html?id=$id&view=$view";
 %    if ( $manager && $manager->can($user, "delete", $o) ){
 %       my $default_inventory = Netdot->config->get("INVENTORY_WARNING");
 %       my $warning;
-%       if( $default_inventory && $o->inventorynumber != "" ){
+%       if( $default_inventory && $o->asset_id->inventory_number != "" ){
 %           $warning="This device is under inventory and other actions should be taken to make sure it gets removed from inventory.";
 %       }     
         <a href="delete.html?table=Device&id=<% $id %>&warning=<% $warning %>">[delete]</a>
@@ -332,28 +332,28 @@ $ui->add_to_fields(o=>$o, edit=>$editgen, fields=>['name'], field_headers=>\@fie
 push( @field_headers, $ui->col_descr_link('Product', 'type', 'Type:') );
 push( @cell_data, 
       &{sub{	
-	  if (($o->product) && ($o->product->type)){	 
-      '<a href="view.html?table=Product&id='.$o->product->id.'">'.$o->product->type->name."</a>";
+	  if (($o->asset_id->product_id) && ($o->asset_id->product_id->type)){	 
+      '<a href="view.html?table=Product&id='.$o->asset_id->product_id->id.'">'.$o->product->type->name."</a>";
 	  }
       }}
 );
 
 $ui->add_to_fields(o=>$o, edit=>$editgen, 
-		   fields=>['physaddr', 'serialnumber', 'custom_serial', 'inventorynumber', 'product', 'os'], 
+		   fields=>['physaddr', 'custom_serial', 'os'], 
 		   field_headers=>\@field_headers, cell_data=>\@cell_data, 
 		   linkpages=>['mac.html', '', '', '', 1, '']
     );
 
 my $os_used = pop @cell_data;
-my $latest_os = $o->product->latest_os;
+my $latest_os = $o->asset_id->product_id->latest_os;
 if ( !$editgen && $latest_os && ($os_used ne $latest_os) ){
     push (@cell_data, $os_used . " <span style=\"color:red;\">(Recommended OS: " . $latest_os . ")</span>");
 }else{
     push (@cell_data, $os_used);
 }
 
-$ui->add_to_fields(o=>$o, edit=>$editgen, 
-		   fields=>['maint_contract', 'maint_from', 'maint_until'], 
+$ui->add_to_fields(o=>$o->asset_id, edit=>$editgen, 
+		   fields=>['maint_contract', 'maint_from', 'maint_until', 'inventory_number', 'serial_number'], 
 		   linkpages=>[1, '', ''],
 		   field_headers=>\@field_headers, cell_data=>\@cell_data);
 
@@ -453,8 +453,8 @@ $ui->add_to_fields(o=>$o, edit=>$editloc, fields=>\@fields, field_headers=>\@fie
 $ui->add_to_fields(o=>$o, edit=>0, fields=>['date_installed', 'last_updated'], field_headers=>\@field_headers, cell_data=>\@cell_data);
 
 {
-    my @fields = ('oobname','oobnumber','monitored', 'customer_managed', 'monitor_config', 'monitor_config_group', 
-		  'down_from', 'down_until', 'monitoring_path_cost', 'snmp_managed', 'auto_dns' );
+    my @fields = ('oobname','oobnumber','monitored', 'monitoring_path_cost', 'customer_managed', 
+		  'monitor_config', 'monitor_config_group', 'down_from', 'down_until', 'snmp_managed', 'auto_dns');
     $ui->add_to_fields(o=>$o, edit=>$editmgmt, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
     
     push( @field_headers, $ui->col_descr_link('Device', 'layers', 'Layers:') );

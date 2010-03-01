@@ -1,0 +1,71 @@
+
+<%init>
+my $DEBUG = 0;
+my (@headers, @rows, @assets) = ();
+</%init>
+
+<div class="container">
+  <div class="containerhead">Asset Inventory</div>
+    <div class="containerbody">
+
+<%perl>
+my %t;
+my %product_type_hash;
+@assets = Asset->retrieve_all();
+my $grandtotal = scalar @assets;
+foreach my $pt ( sort { $a->name cmp $b->name } ProductType->retrieve_all ){
+    $product_type_hash{$pt} = $pt->name;
+    $t{$pt->name}{total} = 0;
+    $t{$pt->name}{id}    = $pt->id;
+}
+
+foreach my $o (@assets){
+    if((! $o->product_id) || (! $o->product_id->type)){
+        $t{'Unknown'}{prod}{'Unknown'}{num} += 1;
+        $t{'Unknown'}{total} += 1;
+    }
+    else{
+        $t{$product_type_hash{$o->product_id->type}}{prod}{$o->product_id->name} = $o->product_id;
+        $t{$product_type_hash{$o->product_id->type}}{prod}{$o->product_id->name}{num} += 1;
+        $t{$product_type_hash{$o->product_id->type}}{total} += 1;
+    }
+}
+
+@headers = ( 'Type', 'Model', 'Count', );
+my @row = ();
+push( @row, "Total Assets in Inventory:" );
+push( @row, "&nbsp;" );
+push( @row, $grandtotal );
+push( @rows, \@row );
+
+foreach my $pt ( sort keys %t ){
+    my @row = ();
+    push( @row, "<strong><a href=\"../generic/search_obj.html?table=Asset&producttype=$t{$pt}{id}&res=1\">" . $pt . "</a></strong>" );
+    push( @row, "" );
+    push( @row, '<strong>' . $t{$pt}{total} . '</strong>' );
+    push( @rows, \@row );
+
+    foreach my $product ( sort keys %{ $t{$pt}{prod} } ){
+        my @row = ();
+        push( @row, "" );
+        if ( $t{$pt}{prod}{$product}{id} ){
+            push( @row, '<a href="../generic/view.html?table=Product&id=' . $t{$pt}{prod}{$product}{id} . '">' . $product . '</a>' );
+        }
+        elsif ( $product eq "Unknown" ){
+            push( @row, '<a href="../generic/search_obj.html?table=Device&product=0&res=1">' . $product . '</a>' );
+        }
+
+        push( @row, $t{$pt}{prod}{$product}{num}  );
+        push( @rows, \@row );
+    }
+
+}
+
+$m->comp('/generic/data_table.mhtml', field_headers=>\@headers, data=>\@rows);
+</%perl>
+
+
+    </div>
+  </div>
+</div>
+
