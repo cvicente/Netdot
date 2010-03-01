@@ -18,7 +18,7 @@ function toggleTasks() {
     var display;
     display = toggleLayer('tasks');
     document.getElementById('tasks_link').innerHTML = (display=='none'?'[show]':'[hide]');
-    jsrsExecute( "user_pref.html", emptyfunction, "set_value", Array('SHOW_TASKS', (display=='none'?'hide':'show')) );
+    jsrsExecute( "../generic/user_pref.html", emptyfunction, "set_value", Array('SHOW_TASKS', (display=='none'?'hide':'show')) );
 }
 function emptyfunction() {
     // do nothing

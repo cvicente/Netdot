@@ -130,6 +130,9 @@ if( $deviceadd && $newhost ){
     if ( my $e = $@ ){
 	$m->comp('/generic/error.mhtml', error=>$e);
     }
+    # Re-read $o to avoid seeing the old values
+    $o = undef;
+    $o = Device->retrieve($id);
 }
 
 if ( $o && $o->name ){

@@ -12,14 +12,13 @@ use Getopt::Long qw(:config no_ignore_case bundling);
 use Log::Log4perl::Level;
 use strict;
 
-
-my ($HISTORY, $FWT, $ARP, $MACS, $IPS, $RR);
-my $_DEBUG      = 0;
-my $HELP        = 0;
-my $VERBOSE     = 0;
-my $NUM_DAYS    = 365;
-my $NUM_HISTORY = 100;
-my $ROTATE      = 0;
+my %self;
+$self{DEBUG}       = 0;
+$self{HELP}        = 0;
+$self{VERBOSE}     = 0;
+$self{NUM_DAYS}    = 365;
+$self{NUM_HISTORY} = 100;
+$self{ROTATE}      = 0;
 
 my $usage = <<EOF;
  usage: $0   -H|--history | -F|--fwt | -A|--arp | -M|--macs | -I|--ips
@@ -32,9 +31,10 @@ my $usage = <<EOF;
     -M, --macs                     MAC addresses
     -I, --ips                      IP addresses
     -R, --rr                       DNS Resource Records
-    -d, --num_days                 Number of days worth of items to keep (default: $NUM_DAYS);
-    -n, --num_history              Number of history items to keep for each record (default: $NUM_HISTORY);
+    -d, --num_days                 Number of days worth of items to keep (default: $self{NUM_DAYS});
+    -n, --num_history              Number of history items to keep for each record (default: $self{NUM_HISTORY});
     -r, --rotate                   Rotate forwarding tables and ARP caches (rather than delete records) 
+    -p, --pretend                  Show activity without actually deleting anything
     -g, --debug                    Print (lots of) debugging output
     -h, --help                     Print help
 
@@ -60,25 +60,26 @@ EOF
 
 # handle cmdline args
 my $result = GetOptions( 
-    "H|history"       => \$HISTORY,
-    "F|fwt"           => \$FWT,
-    "A|arp"           => \$ARP,
-    "M|macs"          => \$MACS,
-    "I|ips"           => \$IPS,
-    "R|rr"            => \$RR,
-    "d|num_days=i"    => \$NUM_DAYS,,
-    "n|num_history=i" => \$NUM_HISTORY,
-    "r|rotate"        => \$ROTATE,
-    "h|help"          => \$HELP,
-    "g|debug"         => \$_DEBUG,
+    "H|history"       => \$self{HISTORY},
+    "F|fwt"           => \$self{FWT},
+    "A|arp"           => \$self{ARP},
+    "M|macs"          => \$self{MACS},
+    "I|ips"           => \$self{IPS},
+    "R|rr"            => \$self{RR},
+    "d|num_days=i"    => \$self{NUM_DAYS},
+    "n|num_history=i" => \$self{NUM_HISTORY},
+    "r|rotate"        => \$self{ROTATE},
+    "p|pretend"       => \$self{PRETEND},
+    "h|help"          => \$self{HELP},
+    "g|debug"         => \$self{DEBUG},
     );
 
-if ( $HELP ) {
+if ( $self{HELP} ) {
     print $usage;
     exit;
 }
 
-if ( !$result || !($HISTORY || $FWT || $ARP || $MACS || $IPS || $RR) ){
+if ( !$result || !($self{HISTORY} || $self{FWT} || $self{ARP} || $self{MACS} || $self{IPS} || $self{RR}) ){
     print $usage;
     die "Error: Problem with cmdline args\n";
 }
@@ -90,28 +91,27 @@ $logger->add_appender($logscr);
 
 # Set logging level to debug
 # Notice that $DEBUG is imported from Log::Log4perl
-$logger->level($DEBUG) if ( $_DEBUG );
+$logger->level($DEBUG) if ( $self{DEBUG} );
 
 # Get DB handle 
-my $db_type = Netdot->config->get('DB_TYPE');
 my $dbh = Netdot::Model::db_Main();
+my $db_type = Netdot->config->get('DB_TYPE');
 
 # date NUM_DAYS ago
-my $sqldate = Netdot::Model->sqldate_days_ago($NUM_DAYS);
-$logger->debug(sprintf("NUM_DAYS(%d) ago was : %s", $NUM_DAYS, $sqldate));
-my $epochdate = time-($NUM_DAYS*24*60*60); 
+my $sqldate = Netdot::Model->sqldate_days_ago($self{NUM_DAYS});
+$logger->debug(sprintf("NUM_DAYS(%d) ago was : %s", $self{NUM_DAYS}, $sqldate));
 
 my $start = time;
 my %rows_deleted;
 
-if ( $HISTORY ){
+if ( $self{HISTORY} ){
     my @tables;
     map { push @tables, $_ if ( $_->is_history ) } Netdot->meta->get_tables(with_history=>1);
     
     foreach my $table ( @tables ) {
 	my $tablename = lc($table->name);
-	my $orig = $table->original_table;
-	die "Cannot determine table for history able $tablename\n" unless $orig;
+	my $orig = $table->original_table || 
+	    die "Cannot determine table for history able $tablename\n";
 	my $table_id_field = lc($orig)."_id";
 
 	$logger->debug("Checking in $tablename");
@@ -121,94 +121,106 @@ if ( $HISTORY ){
 	my $q = $dbh->prepare("SELECT $table_id_field, COUNT(id) FROM $tablename GROUP BY $table_id_field");
 	$q->execute();
 	while (my ($table_id, $count) = $q->fetchrow_array()) {
-	    if ( $count > $NUM_HISTORY ) {
-		$logger->info(sprintf("%s record %s has %s history items", $tablename, $table_id, $count));
+	    if ( $count > $self{NUM_HISTORY} ) {
+		$logger->debug(sprintf("%s record %d has %d history items. Deleting records from before %s", 
+				       $tablename, $table_id, $count, $sqldate));
 		###################################
 		# Deletes history items that are older than NUM_DAYS.
 		# Note that this is run inside an 'if' statement ($count > $NUM_HISTORY), so
 		# we will only delete history items older than NUM_DAYS IF there are more
 		# than NUM_HISTORY history items.
-		
-		$r = $dbh->do("DELETE FROM $tablename WHERE $table_id_field=$table_id AND modified < '$sqldate'");
+		$r = $dbh->do("DELETE FROM $tablename WHERE $table_id_field=$table_id AND modified < '$sqldate'") 
+		    unless $self{PRETEND};
+		$rows_deleted{$tablename} += $r;
 	    }
-	}
-	if ( $r ){
-	    $rows_deleted{$tablename} = $r;
 	}
     }
 }
     
-if ( $MACS ){
+if ( $self{MACS} ){
     ###########################################################################################
-    # Delete non-static MAC addresses
-    # Note: This will also delete FWTableEntry, ArpCacheEntry objects.
+    # Delete MAC addresses that don't belong to devices (static flag is off)
+    # Note: This will also delete FWTableEntry, ArpCacheEntry objects, DhcpScopes, etc.
     my @macs = PhysAddr->search_where(static=>0, last_seen=>{ '<', $sqldate } );
-    $rows_deleted{physaddr} = scalar @macs;
     foreach my $mac ( @macs ){
-	$logger->debug(sprintf("Deleting PhysAddr id %d", $mac->id));
-	$mac->delete;
+	$logger->debug(sprintf("Deleting PhysAddr %s", $mac->address));
+	unless ( $self{PRETEND} ){
+	    $mac->delete;
+	    $rows_deleted{physaddr}++;
+	}
     }
 }
-if ( $IPS ){
+if ( $self{IPS} ){
     ###########################################################################################
-    # Delete 'Discovered' IP addresses
-    # Note: This will also delete ArpCache entries, etc.
-    my $ip_status = IpblockStatus->search(name=>'Discovered')->first;
-    die "Can't retrieve IpblockStatus 'Discovered'" 
-	unless $ip_status;
-    my @ips = Ipblock->search_where(status=>$ip_status, last_seen=>{ '<', $sqldate });
-    $rows_deleted{ipblock} = scalar @ips;
-    foreach my $ip ( @ips ){
-	$logger->debug(sprintf("Deleting Ipblock id %d", $ip->id));
-	$ip->delete;
+    # Delete 'Discovered' and 'Static' IP addresses
+    # Note: This will also delete A/AAAA records, ArpCache entries, DhcpScopes, etc.
+    my $q = $dbh->prepare("SELECT ipblock.id 
+                           FROM   ipblock, ipblockstatus
+                           WHERE  (ipblockstatus.name='Dicovered'
+                              OR  ipblockstatus.name='Static')
+                             AND  ipblock.status=ipblockstatus.id
+                             AND  ipblock.last_seen < ?");
+    $q->execute($sqldate);
+    while ( my $id = $q->fetchrow_array() ) {
+	if ( my $ip = Ipblock->retrieve($id) ){
+	    $logger->debug(sprintf("Deleting IP %s", $ip->address));
+	    unless ( $self{PRETEND} ){
+		$ip->delete() ;
+		$rows_deleted{ipblock}++;
+	    }
+	}
     }
 }
 
-if($RR){
-    if($db_type eq 'mysql'){
-        $dbh->do("DELETE FROM rr WHERE expiration < CURDATE() AND expiration <> '0000-00-00'");
+if ( $self{RR} ){
+    my $r;
+    if ( $db_type eq 'mysql' ){
+	$logger->debug("Deleting expired resource records");
+	$r = $dbh->do("DELETE FROM rr WHERE expiration < CURDATE() AND expiration <> '0000-00-00'")
+	    unless $self{PRETEND};
+    }elsif( $db_type eq 'Pg' ){
+        $r = $dbh->do("DELETE FROM rr WHERE expiration < current_date AND expiration <> '1970-01-01'")
+	    unless $self{PRETEND};
+    }else{
+        die "Could not delete DNS Resource Records, database $db_type not supported\n";
     }
-    elsif($db_type eq 'Pg'){
-        $dbh->do("DELETE FROM rr WHERE expiration < current_date AND expiration <> '1970-01-01'");
-    }
-    else{
-        my $err = "Could not delete DNS Resource Records, database $db_type not supported";
-        $logger->fatal($err);
-        print $err;
-        exit(1);  
-    }
+    $rows_deleted{rr} = $r;
 }
 
-if ( $FWT ){
-    if ( $ROTATE ){
-	if ( Netdot->config->get('DB_TYPE') eq 'mysql' or Netdot->config->get('DB_TYPE') eq 'Pg' ){
-	    &rotate_table('fwtable');
-	    &rotate_table('fwtableentry');
+if ( $self{FWT} ){
+    if ( $self{ROTATE} ){
+	if ( $db_type eq 'mysql' || $db_type eq 'Pg' ){
+	    unless ( $self{PRETEND} ){
+		&rotate_table('fwtable');
+		&rotate_table('fwtableentry');
+	    }
 	}else{
 	    die "Rotate function only implemented in mysql and postgreSQL for now";
 	}
     }else{
 	###########################################################################################
-	# Delete FWTables
+	# Delete FWTables (also deletes FwtableEntry records)
 	$logger->info("Deleting Forwarding Tables older than $sqldate");
 	my @fwts = FWTable->search_where(tstamp=>{ '<', $sqldate });
 	foreach my $fwt ( @fwts ){
 	    $logger->debug("Deleting FWTable id ". $fwt->id);
-	    $fwt->delete;
+	    unless ( $self{PRETEND} ){
+		$fwt->delete;
+		$rows_deleted{fwtable}++;
+	    }
 	}
-	$logger->info("A total of ". scalar(@fwts) ." records deleted");
-	
-	foreach my $table ( qw (fwtable fwtableentry) ){
-	    $logger->debug("Freeing deleted space in $table");
-	    optimize_table($dbh, $table, $logger);
-	}
+	$logger->debug("Freeing deleted space in fwtableentry");
+	&optimize_table('fwtableentry') unless $self{PRETEND};
     }
 }
-if ( $ARP ){
-    if ( $ROTATE ){
-	if ( Netdot->config->get('DB_TYPE') eq 'mysql' or Netdot->config->get('DB_TYPE') eq 'Pg' ){
-	    &rotate_table('arpcache');
-	    &rotate_table('arpcacheentry');
+
+if ( $self{ARP} ){
+    if ( $self{ROTATE} ){
+	if ( $db_type eq 'mysql' or $db_type eq 'Pg' ){
+	    unless ( $self{PRETEND} ){
+		&rotate_table('arpcache');
+		&rotate_table('arpcacheentry');
+	    }
 	}else{
 	    die "Rotate function only implemented in mysql and postgreSQL for now";
 	}
@@ -221,17 +233,15 @@ if ( $ARP ){
 	my @arps = ArpCache->search_where(tstamp=>{ '<', $sqldate });
 	foreach my $arp ( @arps ){
 	    $logger->debug("Deleting ArpCache id ". $arp->id);
-	    $arp->delete;
+	    unless ( $self{PRETEND} ){
+		$arp->delete;
+		$rows_deleted{arpcache}++;
+	    }
 	}
-	$logger->info("A total of ". scalar(@arps) ." records deleted");
-	
-	foreach my $table ( qw (arpcache arpcacheentry) ){
-	    $logger->debug("Freeing deleted space in $table");
-	    optimize_table($dbh, $table, $logger);
-	}
+	$logger->debug("Freeing deleted space in arpcacheentry");
+	&optimize_table('arpcacheentry') unless $self{PRETEND};
     }
 }
-
 
 foreach my $table ( keys %rows_deleted ){
     if ( $rows_deleted{$table} ){
@@ -239,7 +249,7 @@ foreach my $table ( keys %rows_deleted ){
 			      $rows_deleted{$table}, $table));
 	# now optimize the table to free up the space from the deleted records
 	$logger->debug("Freeing deleted space in $table");
-	optimize_table($dbh, $table, $logger);
+	&optimize_table($table) unless $self{PRETEND};
     }
 }
 $logger->info(sprintf("$0 total runtime: %s\n", Netdot->sec2dhms(time-$start)));
@@ -250,23 +260,19 @@ $logger->info(sprintf("$0 total runtime: %s\n", Netdot->sec2dhms(time-$start)));
 # Subroutines
 ###########################################################################################
 
-#postgresql and mysql have different commands for cleaning up their tables after a large amount of deletes
+# postgresql and mysql have different commands for cleaning up 
+# their tables after a large amount of deletes
 sub optimize_table{
-    my ($dbh, $table, $logger) = @_;
+    my ($table) = @_;
 
-    my $database_type = Netdot->config->get('DB_TYPE');
-
-    if($database_type eq 'mysql'){
+    if ( $db_type eq 'mysql' ){
         $dbh->do("OPTIMIZE TABLE $table");    
-    }
-    elsif($database_type eq 'Pg'){
+    }elsif( $db_type eq 'Pg' ){
         $dbh->do("VACUUM $table");    
-    }
-    #otherwise we don't know how to optimize the table :(
-    else{
-        $logger->warn("didn't recognize the database we're using, so we could not optimize the table, database is  $database_type, it must be either 'mysql' or 'Pg'");
+    }else{
+        $logger->warn("Could not optimize table $table. Database $db_type not supported");
     }    
-
+    
     return;
 }
 
@@ -281,21 +287,20 @@ sub rotate_table{
     my $db_pass = Netdot->config->get('DB_DBA_PASSWORD');
     my $db_db   = Netdot->config->get('DB_DATABASE');
  
-    if($db_type ne 'mysql' and $db_type ne 'Pg'){
+    if ( $db_type ne 'mysql' and $db_type ne 'Pg' ){
         die("didn't recognize the database we're using ($db_type), could not rotate table $table");
     }
-
-    my $dbh = &dbconnect($db_type, $db_host, $db_port, $db_user, $db_pass, $db_db) 
-	        || die ("Cannot connect to database as root");
- 
     
-    $dbh->{AutoCommit} = 0; #make sure autocommit is off so we use transactions
-    $dbh->{RaiseError} = 1; #make sure we hear about any problems
-
-
+    my $dbh = &dbconnect($db_type, $db_host, $db_port, $db_user, $db_pass, $db_db) 
+	|| die ("Cannot connect to database as root");
+    
+    
+    $dbh->{AutoCommit} = 0; # make sure autocommit is off so we use transactions
+    $dbh->{RaiseError} = 1; # make sure we hear about any problems
+    
     my $timestamp = time;
 
-    if($db_type eq 'mysql'){
+    if ( $db_type eq 'mysql' ){
         eval{
             my $q = $dbh->selectall_arrayref("SHOW CREATE TABLE $table");
             my $create_query = $q->[0]->[1];
@@ -304,62 +309,56 @@ sub rotate_table{
             $dbh->do("RENAME TABLE $table TO $table\_$timestamp");
             $dbh->do("RENAME TABLE $1\_tmp TO $table");
         }
-    }
+    }elsif ( $db_type eq 'Pg' ){
+        # the procedure for rotating tables is a bit different for postgres, since it doesn't 
+        # recognize the SHOW command.  We instead use the CREATE TABLE AS function of postgres
+        # to create an exact copy of the original table, then we'll drop all the records from the original
 
-    else{ #postgre
-        #the procedure for rotating tables is a bit different for postgres, since it doesn't 
-        #recognize the SHOW command.  We instead use the CREATE TABLE AS function of postgres
-        #to create an exact copy of the original table, then we'll drop all the records from the origional
-        #$dbh = DBI->connect("DBI:Pg:dbname=$db_db; host=$db_host", "$db_user", "$db_pass");
-   
         my $new_table_name = $table."_".$timestamp;
-
         eval{
             $dbh->do("CREATE TABLE $new_table_name AS SELECT * FROM $table");
             $dbh->do("DELETE FROM $table");
         }
+    }else{
+	$logger->warn("Could not rotate table $table.  Database $db_type not supported");
     }
 
-    if($@){
-        my $kill_msg = "Error rotating table $table with database: $db_type, $db_host, $db_db, changes not commited";
+    if ( my $e = $@ ){
         $dbh->rollback;
-        $logger->fatal($kill_msg.$@);
-        die($kill_msg.$@);       
+        die "Error rotating table $table with database: $db_type, $db_host, $db_db, changes not commited: $e\n";
     }
     
     $dbh->commit;
-
     $logger->info("Table $table rotated successfully");
-    
-    $dbh->{AutoCommit} = 1; #we can turn back on autocommit since the rest of the transactions are basically atomic
-    
-    $logger->debug("Droping $table backups older than $NUM_DAYS days");    
+    $dbh->{AutoCommit} = 1; #we can turn autocommit back on since the rest of the transactions are basically atomic
+    $logger->debug("Droping $table backups older than $self{NUM_DAYS} days");    
     my $tables_q;
     
-    if($db_type eq 'mysql'){
+    if ( $db_type eq 'mysql' ){
         $tables_q = $dbh->selectall_arrayref("SHOW TABLES");
-    }
-    else{ #postgres
+    }elsif ( $db_type eq 'Pg' ){
         $tables_q = $dbh->selectall_arrayref("SELECT tablename FROM pg_tables");
     }
+
+    my $epochdate = time-($self{NUM_DAYS}*24*60*60); 
 
     foreach my $row ( @$tables_q ){
         my $tablename = $row->[0];
         if ( $tablename =~ /$table\_(\d+)/ ){
             my $tstamp = $1;
             if ( $tstamp < $epochdate ){
-	            $logger->debug("Droping $table\_$tstamp");
-	            $dbh->do("DROP TABLE $table\_$tstamp");
+		$logger->debug("Droping $table\_$tstamp");
+		$dbh->do("DROP TABLE $table\_$tstamp");
             }
         }
     }
-
-    if($db_type eq 'Pg'){ #since we just deleted every record from table during the copy, we need to clean up a bit
-        optimize_table($dbh, $table, $logger);
+    
+    if ( $db_type eq 'Pg' ){ 
+	# Since we just deleted every record from table during the copy, we need to clean up a bit
+        &optimize_table($table);
     }
-
+    
     &dbdisconnect($dbh);
-
     return 1;
 }
 

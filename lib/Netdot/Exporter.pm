@@ -260,19 +260,15 @@ sub get_device_graph {
 sub open_and_lock {
     my ($self, $filename) = @_;
 
-    eval {
-	sysopen(FH, $filename, O_WRONLY | O_CREAT)
-	    or $self->throw_user("Exporter::lock_file: Can't open $filename: $!");
-	flock(FH, LOCK_EX | LOCK_NB)
-	    or $self->throw_user("Exporter::lock_file: Can't lock $filename: $!");
-	truncate(FH, 0)
-	    or $self->throw_user("Exporter::lock_file: Can't truncate $filename: $!");
-    };
-    if ( my $e = $@ ){
-	$self->throw_fatal($e);
-    }else{
-	return \*FH;
-    }
+    sysopen(FH, $filename, O_WRONLY | O_CREAT)
+	or $self->throw_user("Can't open $filename: $!");
+    flock(FH, LOCK_EX | LOCK_NB)
+	or $self->throw_user("Can't lock $filename: $!");
+    truncate(FH, 0)
+	or $self->throw_user("Can't truncate $filename: $!");
+    
+    return \*FH;
+
 }
 
 ########################################################################
@@ -296,7 +292,7 @@ sub in_downtime{
 	my $time2 = Netdot::Model->sqldate2time($down_until);
 	my $now = time;
 	if ( $time1 < $now && $now < $time2 ){
-	    $logger->debug("Netdot::Exporter::is_in_downtime: Device $devid".
+	    $logger->debug("Netdot::Exporter::in_downtime: Device $devid".
 			   " within scheduled downtime period");
 	    return 1;
 	}

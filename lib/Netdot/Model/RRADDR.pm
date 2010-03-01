@@ -152,7 +152,7 @@ sub delete {
     my $rr_name = $rr->get_label;
     $self->SUPER::delete();
     $rr->delete() unless ( $rr->arecords || $rr->devices );
-    foreach my $ptr ( RRPTR->search(ipblock=>$ipblock) ){
+    foreach my $ptr ( RRPTR->search(ipblock=>$ipblock, ptrdname=>$rr_name) ){
 	$ptr->rr->delete();
     }
     

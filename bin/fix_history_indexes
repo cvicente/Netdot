@@ -1,0 +1,54 @@
+#
+# Remove unnecessary indexes from history tables and add two standard indexes:
+# the orignal table id and the modified date
+#
+use strict;
+use lib "../lib";
+use DBUTIL;
+use Netdot;
+use Netdot::Model;
+
+my %CONFIG;
+$CONFIG{debug}             = 1;
+$CONFIG{keep_history}      = 1;
+$CONFIG{keep_dependencies} = 0;
+
+foreach my $var ( qw /DB_TYPE DB_HOME DB_HOST DB_PORT DB_DBA DB_DBA_PASSWORD 
+		  DB_NETDOT_USER DB_NETDOT_PASS DB_DATABASE/ ){
+    $CONFIG{$var} = Netdot->config->get($var);
+}
+
+my $dbh = &dbconnect($CONFIG{DB_TYPE}, $CONFIG{DB_HOST}, $CONFIG{DB_PORT}, 
+		     $CONFIG{DB_DBA}, $CONFIG{DB_DBA_PASSWORD}, $CONFIG{DB_DATABASE});
+
+my @tables;
+map { push @tables, $_ if ( $_->is_history ) } Netdot->meta->get_tables(with_history=>1);
+
+if ( $CONFIG{DB_TYPE} eq 'mysql' ){
+    foreach my $t ( @tables ){
+	my $table = lc($t->name);
+	print "table: $table\n";
+	my $st = $dbh->prepare("SHOW INDEXES FROM $table");
+	$st->execute();
+	while ( my(undef, undef, $key_name) = $st->fetchrow_array()) {
+	    next if ( $key_name eq 'PRIMARY' );
+	    print "    Removing index $key_name\n";
+	    $dbh->do("ALTER TABLE $table DROP INDEX $key_name");
+	}
+	my $otable = $t->original_table;
+	my @col_names = (lc($otable.'_id'), 'modified');
+	my $count = 1;
+	foreach my $column ( @col_names ){
+	    my $index_name = $otable.'_history'.$count;
+	    $count++;
+	    print "    Adding index $index_name for column $column\n";
+	    $dbh->do("ALTER TABLE $table ADD INDEX $index_name ($column)");
+	}
+    }
+}
+
+&dbdisconnect($dbh);
+
+sub debug {
+    print STDERR "[DEBUG] Executing: ", @_, "\n" if $CONFIG{debug};
+}

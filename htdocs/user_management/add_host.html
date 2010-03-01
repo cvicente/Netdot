@@ -22,7 +22,9 @@ $hostname      => undef
 $aliases       => undef
 $expiration    => undef
 $cpu           => undef
+$other_cpu     => undef
 $os            => undef
+$other_os      => undef
 $site_id       => undef
 $site_name     => undef
 $room_id       => undef
@@ -136,14 +138,61 @@ if ( $submit ){
 	}
     }
     
-    foreach my $key qw(hostname expiration cpu os site_name site_id room_number room_id person 
-                       contact_name contact_email contact_phone ethernet) {
+    foreach my $key qw(hostname expiration ethernet) {
 	$args{$key} = $ARGS{$key};
     }
     $args{zone}    = $zone;
     $args{person}  = $person;
     $args{block}   = $block;
     $args{address} = $address;
+
+    my @text_records;
+
+    # Hardware Info
+    $args{cpu} = $cpu || $other_cpu;
+    $args{os}  = $os  || $other_os;
+
+    # Location
+    if ( $room_id || $site_id || $site_name ){
+	my $txtdata;
+	if ( my $room = Room->retrieve($room_id) ){
+	    $txtdata = "LOC: ".$room->get_label if $room;
+	    # the room label includes the site name
+	}elsif ( $room_number ){
+	    $txtdata = "LOC: ".$room_number;
+	    if ( my $site = Site->retrieve($site_id) ){
+		$txtdata .=  " ".$site->get_label;
+	    }elsif ( $site_name ){
+		$txtdata .=  " ".$site_name;
+	    }
+	}else{
+	    if ( my $site = Site->retrieve($site_id) ){
+		$txtdata =  $site->get_label;
+	    }elsif ( $site_name ){
+		$txtdata =  $site_name;
+	    }
+	}
+	push @text_records, $txtdata if ( $txtdata );
+    }
+    
+    # Contacts
+    if ( $person ){
+	# Add the current user as a contact
+	my $txtdata = "CON: ".$person->get_label;
+	$txtdata .= " (".$person->email.")" if $person->email; 
+	$txtdata .= ", ".$person->office if $person->office;
+	push @text_records, $txtdata if ( $txtdata );
+    }
+    
+    # Add additional contact info
+    if ( $contact_name ){
+	my $txtdata = "";
+	$txtdata =  "CON: ".$contact_name;
+	$txtdata .= " (".$contact_email.")" if $contact_email; 
+	$txtdata .= ", ".$contact_phone if $contact_phone; 
+	push @text_records, $txtdata if ( $txtdata );
+    }
+    $args{text_records} = \@text_records if @text_records;
     
     my $rr;
     eval {
@@ -180,7 +229,7 @@ if ( $submit ){
     <p>Required fields are marked with an asterisk (<font color="red">*</font>).<br>
     <p>Help is available for some fields by clicking on the field name.<br>
     <p><br>
-    <fieldset class="medium">
+    <fieldset class="large">
         <legend>Host Identification</legend>
         <p>
         <label for="domain">Domain <font color="red">*</font></label>
@@ -231,30 +280,42 @@ if ( $submit ){
     </fieldset>
 
     <p>
-    <fieldset class="medium">
+    <fieldset class="large">
         <legend>Hardware Information</legend>
         <p>
         <label for="cpu"><% $ui->help_link('../user_help/hosts.html#CPU', '', '', 'CPU') %></label>
         <select name="cpu" id="cpu">
             <option value="0">-- Select --</option>
-%	while ( my ($key,$value) = each %$cpu_defaults ){
+%	foreach my $key ( sort { $cpu_defaults->{$a} cmp $cpu_defaults->{$b} } keys %$cpu_defaults ){
+%           my $value = $cpu_defaults->{$key};
             <option value="<% $key %>"><% $value %></option>
 %       }
+            <option value="0">Other</option>
         </select>
+        </p>
+        <p>
+        <label for="other_cpu">&nbsp;</label>
+	<input type="text" name="other_cpu" class="txt" value=""> (if not listed)
         </p>
         <p>
         <label for="os"><% $ui->help_link('../user_help/hosts.html#OS', '', '', 'Operating System') %></label>
         <select name="os" id="os">
             <option value="0">-- Select --</option>
-%	while ( my ($key,$value) = each %$os_defaults ){
+%	foreach my $key ( sort { $os_defaults->{$a} cmp $os_defaults->{$b} } keys %$os_defaults ){
+%           my $value = $os_defaults->{$key};
             <option value="<% $key %>"><% $value %></option>
 %       }
+            <option value="0">Other</option>
         </select>
+        </p>
+        <p>
+        <label for="other_os">&nbsp;</label>
+	<input type="text" name="other_os" class="txt" value="">  (if not listed)
         </p>
     </fieldset>
 
     <p>
-    <fieldset class="medium">
+    <fieldset class="large">
         <legend>Location</legend>
         <p>
         <label for="site_id">Site</label>
@@ -267,7 +328,7 @@ if ( $submit ){
         </select>
         </p>
         <p>
-        <label for="site_name">Site Name</label>
+        <label for="site_name">&nbsp;</label>
         <input type="text" name="site_name" class="longtxt" value=""> (if not listed)
         </p>
         <p>
@@ -277,13 +338,13 @@ if ( $submit ){
         </select>
         </p>
         <p>
-        <label for="room_number">Room Number</label>
+        <label for="room_number">&nbsp;</label>
         <input type="text" name="room_number" class="shorttxt" value=""> (if not listed)
         </p>
     </fieldset>
 
     <p>
-    <fieldset class="medium">
+    <fieldset class="large">
         <legend>Contact (other than you)</legend>
         <p>
         <label for="contact_name">Name</label>

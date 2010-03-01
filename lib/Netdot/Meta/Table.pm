@@ -350,11 +350,16 @@ sub get_unique_columns {
 =cut
 sub get_indexed_columns {
     my $self = shift;
-    my $idx = $self->_get_attr('index');
+    my $idx = []; 
     if ( $self->is_history ){
-	# We index the id that points to the 
-	# real table
-	push @{$idx}, lc($self->original_table)."_id";
+	# History tables do not need the same indexes
+	# as their real counterpars.
+	# We index the id that points to the  real table
+	push @$idx, lc($self->original_table)."_id";
+	# Also, the modified date
+	push @$idx, 'modified';
+    }else{
+	$idx = $self->_get_attr('index');
     }
     return $idx;
 }

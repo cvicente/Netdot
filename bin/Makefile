@@ -21,10 +21,13 @@ installdb: _installdb oui
 _installdb:
 	$(PERL) initdb initdb
 
-updatedb: _updatedb
+updatedb: _updatedb _fix_history_indexes
 
 _updatedb:
 	$(PERL) updatedb 
+
+_fix_history_indexes:
+	$(PERL) fix_history_indexes
 
 genschema:
 	$(PERL) initdb generate
