@@ -34,7 +34,7 @@ my @DEPS = (
     {cpan=>'Apache::Session 1.6', apt=>'libapache-session-perl', rpm=>'perl-Apache-Session'},
     {cpan=>'URI::Escape', apt=>'liburi-perl', rpm=>'perl-URI'},
     {cpan=>'DBIx::DataSource', apt=> 'libdbix-datasource-perl', rpm=>''},
-    {cpan=>'GraphViz 2.02', apt=> 'graphviz', rpm=>'graphviz graphviz-devel perl-GraphViz'},
+    {cpan=>'GraphViz 2.02', apt=> 'graphviz', rpm=>'graphviz graphviz-devel libpng-devel graphviz-gd perl-GraphViz'},
     {cpan=>'SQL::Translator 0.07', apt=>'libsql-translator-perl', rpm=>'perl-SQL-Translator'},
     {cpan=>'SNMP::Info 2.01', apt=>'libsnmp-info-perl', rpm=>'perl-SNMP-Info'},
     {cpan=>'NetAddr::IP', apt=>'libnetaddr-ip-perl', rpm=>'perl-NetAddr-IP'},
