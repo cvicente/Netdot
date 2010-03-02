@@ -621,16 +621,39 @@ sub get_roots {
     $version ||= 4;
 
     my @ipb;
-    if ( $version =~ /^4|6$/ ){
-	@ipb = $class->search(version => $version, parent => 0, {order_by => 'address'});
+    if ( $version eq '4' ){
+	@ipb = $class->_get_v4_roots();
+    }elsif ( $version eq '6' ){
+	@ipb = $class->_get_v6_roots();
     }elsif ( $version eq "all" ){
-	@ipb = $class->search(parent => 0, {order_by => 'address'});
+	@ipb = $class->_get_v4_roots();
+	push @ipb, $class->_get_v6_roots();
     }else{
 	$class->throw_fatal("Unknown version: $version");
     }
-    @ipb = grep { !$_->is_address } @ipb;
     wantarray ? ( @ipb ) : $ipb[0]; 
+}
 
+##################################################################
+sub _get_v4_roots {
+    my ($class) = @_;
+    $class->isa_class_method('_get_v4_roots');
+    
+    return $class->search_where({ version  => 4, 
+				  parent   => 0,
+				  prefix   => { '!=', '32' } }, 
+				{ order_by => 'address' });
+}
+
+##################################################################
+sub _get_v6_roots {
+    my ($class) = @_;
+    $class->isa_class_method('_get_v6_roots');
+    
+    return $class->search_where({ version  => 6, 
+				  parent   => 0,
+				  prefix   => { '!=', '128' } }, 
+				{ order_by => 'address' });
 }
 
 ##################################################################
@@ -644,7 +667,6 @@ sub get_roots {
     a power of 2       
 
 =cut
-
 sub numhosts {
     ## include the network and broadcast address in this count.
     ## will return a power of 2.
