@@ -20,7 +20,7 @@ $serial_numbers => undef
 
 
 <%init>
-my $DEBUG = 1;
+my $DEBUG = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), $m->dhandler_arg,'</pre><br>' if $DEBUG;
 my @products = Product->retrieve_all();
 my @assets = Asset->retrieve_all();
@@ -56,18 +56,20 @@ if($submit){
     <div class="containerheadleft">
       Assets
     </div>
-    
+    <div class="containerheadright">&nbsp; </div>
     <div class="containerbody">
     <form name="asset_entry" method='POST'>
-   
-    Purchase Date:<input type='text' name='purchase_date' /><br/>
-    Maintenance Contract Number (optional): <input type='text' name='maint_contract_num' /><br/>
-    Product:<select name="product_type">
+    <table>  
+    <tr><td width=30%>Purchase Date:</td><td><input type='text' name='purchase_date' /></td></tr>
+    <tr><td>Maintenance Contract Number (optional):</td><td><input type='text' name='maint_contract_num' /></td></tr>
+    <tr><td>Product:</td><td><select name="product_type">
     <option name='0'>Select a product type</option>
 %   foreach my $type ( sort { $a->name cmp $b->name } @products ){
       <option name='<% $type->id %>'><% ProductType->search({id=>$type->type})->first->name.": ".$type->name %></option>	
 %   }
-   </select><br/>
+    </select></td></tr>
+    </table>
+    <br/>
     Serial Numbers:<br/> <textarea name = 'serial_numbers' rows='7' cols='60'></textarea><br/>
     <input type='submit' name='submit' value='Submit'/>
     </form>     
