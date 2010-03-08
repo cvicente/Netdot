@@ -744,7 +744,6 @@ sub get_fdb_links {
 		    foreach my $device ( keys %{$admap{$address2}} ){
 			next if exists $seen{$device};
 			push @dstack, $device;
-#			$logger->debug("$address2 -> ". $device_names->{$device});
 		    }
 		}
 		if ( @dstack ){
@@ -752,11 +751,9 @@ sub get_fdb_links {
 		    next if exists $seen{$device};
 		    $seen{$device} = 1;
 		    $group{$device} = 1;
-#		    $logger->debug("$address -> ". $device_names->{$device});
 		    foreach my $address3 ( keys %{$damap{$device}} ){
 			next if exists $seen{$address3};
 			push @astack, $address3;
-#			$logger->debug($device_names->{$device} . " -> $address3");
 		    }
 		}
 	    }
@@ -783,11 +780,6 @@ sub get_fdb_links {
         while ( $fdbstatement->fetch ){
 	    next if ( exists $excluded_devices{$device} );
 	    $d->{$device}{$ifaceid}{$address} = 1;
-	}
-
-	if ( 1 >= keys %$d ){
-	    $logger->debug("  Only one device on vlan $vid");
-	    next;
 	}
 
 	$logger->debug("vlan " . $vid . " has " . (scalar keys %$d) .  " devices at time $maxtstamp");
