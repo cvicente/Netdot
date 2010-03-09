@@ -1,7 +1,6 @@
 package Netdot::Model::Plugins::DeviceIpNamesFromDNS;
 
 use base 'Netdot::Model';
-use Netdot::Util::DNS;
 use warnings;
 use strict;
 
@@ -30,9 +29,10 @@ sub get_name {
     my ($self, $ip) = @_;
 
     my $name;
-    unless ( $name =  Netdot->dns->resolve_ip($ip) ){
+    unless ( $name = Netdot->dns->resolve_ip($ip->address) ){
 	$name = $ip->address;
     }
     return $name;    
 }
 
+1;
