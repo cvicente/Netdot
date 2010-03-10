@@ -7,7 +7,6 @@ use Net::Appliance::Session;
 
 my $logger = Netdot->log->get_logger('Netdot::Model::Device');
 
-
 =head1 NAME
 
 Netdot::Model::Device::CiscoFW - Cisco Firewall Class
@@ -150,11 +149,11 @@ sub _get_arp_from_cli {
 	    $iname       = $1;
 	    my $hostname = $2;
 	    $mac         = $3;
-	    if ( my @ips = Netdot->dns->resolve_name($hostname) ){
-		# Just grab the first one
+	    # Notice we only care about v4 here
+	    if ( my @ips = Netdot->dns->resolve_name($hostname, {v4_only=>1}) ){
 		$ip = $ips[0];
 	    }else{
-		$logger->debug(sub{"Device::CiscoFW::_get_arp_from_cli: Cannot get IP for $hostname" });
+		$logger->debug(sub{"Device::CiscoFW::_get_arp_from_cli: Cannot resolve $hostname" });
 		next;
 	    }
 	}else{

@@ -150,9 +150,10 @@ sub get_device_main_ip {
     my $ip;
     if ( $device_info->{$devid}->{ipaddr} && $device_info->{$devid}->{ipversion} ){
 	$ip = Ipblock->int2ip($device_info->{$devid}->{ipaddr}, $device_info->{$devid}->{ipversion});
-    }elsif ( $ip = (Netdot->dns->resolve_name($device_info->{$devid}->{hostname}))[0] ){
-	# we're done here
-    }else{
+    }elsif ( my @ips = Netdot->dns->resolve_name($device_info->{$devid}->{hostname}, {v4_only=>1}) ){
+	# Not sure how management tools will handle v6 addresses, so let's do v4 only for now
+	$ip = $ips[0];
+    }elsif ( !$ip ){
 	# Grab the first IP we can get
 	my $device = Device->retrieve($devid);
 	if ( my $ips = $device->get_ips() ){

@@ -87,11 +87,13 @@ if ( $address =~ /$MAC/ ){
     }
 }else{
     # Try to resolve
-    if ( my $ip = (Netdot->dns->resolve_name($address))[0] ){
-	if ( $self{FORCE_LIVE} ){
-	    &search_live(ip=>$ip, vlan=>$self{VLAN});
-	}else{
-	    &show_ip($ip, 1);
+    if ( my @ips = Netdot->dns->resolve_name($address) ){
+	foreach my $ip ( @ips ){
+	    if ( $self{FORCE_LIVE} ){
+		&search_live(ip=>$ip, vlan=>$self{VLAN});
+	    }else{
+		&show_ip($ip, 1);
+	    }
 	}
     }else{
 	die "$address not found\n"

@@ -105,18 +105,20 @@ sub search {
 		    }else{
 			# This means we have the same RR name on different zones
 			# Try to resolve the name and look up IP address
-			if ( my $ip = (Netdot->dns->resolve_name($argv{name}))[0] ){
-			    $logger->debug(sub{"Device::search: $argv{name} resolves to $ip"});
-			    if ( my $ip = Ipblock->search(address=>$ip)->first ){
-				if ( $ip->interface && ($dev = $ip->interface->device) ){
-				    $argv{name} = $dev->name;
-				}elsif ( my @arecords = $ip->arecords ){
-				    # The IP is not assigned to any device interfaces
-				    # but there might be a device with a name and A record
-				    # associated with this IP
-				    $argv{name} = $arecords[0]->rr;
-				}else{
-				    $argv{name} = 0;
+			if ( my @ips = Netdot->dns->resolve_name($argv{name}) ){
+			    foreach my $ip ( @ips ){
+				$logger->debug(sub{"Device::search: $argv{name} resolves to $ip"});
+				if ( my $ip = Ipblock->search(address=>$ip)->first ){
+				    if ( $ip->interface && ($dev = $ip->interface->device) ){
+					$argv{name} = $dev->name;
+				    }elsif ( my @arecords = $ip->arecords ){
+					# The IP is not assigned to any device interfaces
+					# but there might be a device with a name and A record
+					# associated with this IP
+					$argv{name} = $arecords[0]->rr;
+				    }else{
+					$argv{name} = 0;
+				    }
 				}
 			    }
 			}
@@ -335,19 +337,18 @@ sub search_like {
     This method will try to find or create an appropriate 
     Resource Record for a Device, given a hostname or ip address.
 
-  Arguments:  
-    host    - hostname or IP address (string)
+  Arguments: 
+    hash with following keys:
+        host - hostname or IP address (string)
   Returns:    
     RR object if successful
-
   Examples:
     my $rr = Device->assign_name($host)
-
 =cut
 sub assign_name {
     my ($class, %argv) = @_;
     $class->isa_class_method('assign_name');
-    my $host    = $argv{host};
+    my $host = $argv{host};
 
     $class->throw_fatal("Model::Device::assign_name: Missing arguments: host")
 	unless $host;
@@ -359,39 +360,47 @@ sub assign_name {
 	    return $rrs[0];
 	}
     }
-    # An RR matching $host does not exist
-    my $ip;
+    # An RR matching $host does not exist, or the name exists in 
+    # multiple zones
+    my @ips;
     if ( $host =~ /^($IPV4)|($IPV6)$/ ){
 	# we were given an IP address
-	$ip = $host;
-	if ( my $ipb = Ipblock->search(address=>$ip)->first ){
+	if ( my $ipb = Ipblock->search(address=>$host)->first ){
 	    if ( $ipb->interface && ( my $dev = $ipb->interface->device ) ){
-		$logger->debug("Device::assign_name: A Device with IP $ip already exists: " . $dev->get_label);
+		$logger->debug("Device::assign_name: A Device with IP $host already exists: " . $dev->get_label);
 		return $dev->name;
 	    }
 	}
+	push @ips, $host;
     }else{
 	# We were given a name (not an address)
 	# Resolve to an IP address
-	if ( defined $host && ($ip = (Netdot->dns->resolve_name($host))[0]) ){
-	    $logger->debug(sub{"Device::assign_name: $host resolves to $ip"});
+	if ( defined $host && (@ips = Netdot->dns->resolve_name($host)) ){
+	    my $str = join ', ', @ips;
+	    $logger->debug(sub{"Device::assign_name: $host resolves to $str"});
 	}else{
 	    $logger->debug(sub{"Device::assign_name: $host does not resolve"});
 	}
     }
     my $fqdn;
     my %args;
-    if ( $ip ){
+    my $ip;
+    if ( @ips ){
 	# At this point, we were either passed an IP
-	# or we got it from DNS.  The idea is to obtain a FQDN
-	if ( $fqdn = Netdot->dns->resolve_ip($ip) ){
-	    $logger->debug(sub{"Device::assign_name: $ip resolves to $fqdn"});
-	    if ( my $rr = RR->search(name=>$fqdn)->first ){
-		$logger->debug(sub{"Device::assign_name: RR $fqdn already exists in DB"});
-		return $rr;
+	# or we got one or more from DNS.  The idea is to obtain a FQDN
+	# We'll use the first IP that resolves
+	foreach my $i ( @ips ){
+	    if ( $fqdn = Netdot->dns->resolve_ip($i) ){
+		$logger->debug(sub{"Device::assign_name: $i resolves to $fqdn"});
+		if ( my $rr = RR->search(name=>$fqdn)->first ){
+		    $logger->debug(sub{"Device::assign_name: RR $fqdn already exists in DB"});
+		    return $rr;
+		}
+		$ip = $i; 
+		last;
+	    }else{
+		$logger->debug(sub{"Device::assign_name: $ip does not resolve"} );
 	    }
-	}else{
-	    $logger->debug(sub{"Device::assign_name: $ip does not resolve"} );
 	}
     }
     $fqdn ||= $host;
@@ -404,8 +413,8 @@ sub assign_name {
 	# will take care of that.
 	if ( my $zone = (Zone->search(name=>$fqdn))[0] ){
             $args{zone} = $zone->name;
-	    $args{name}  = $fqdn;
-	    $args{name}  =~ s/\.$args{zone}//;
+	    $args{name} = $fqdn;
+	    $args{name} =~ s/\.$args{zone}//;
         }else{
 	    $logger->debug(sub{"Device::assign_name: $fqdn not found" });
 	    # Assume the zone to be everything to the right
@@ -600,9 +609,11 @@ sub get_snmp_info {
 
     $dev{_sclass} = $sinfo->class();
 
-    # Get both name and IP for better error reporting
-    my ($ip, $name)   = Netdot->dns->resolve_any($args{host});
-    $dev{snmp_target} = $ip if defined $ip;
+    # Assign the snmp_target by resolving the name
+    # SNMP::Info still does not support IPv6, so for now...
+    my @ips = Netdot->dns->resolve_name($args{host}, {v4_only=>1});
+    $dev{snmp_target} = $ips[0] if defined $ips[0];
+
     $logger->debug("Device::get_snmp_info: SNMP target is $dev{snmp_target}");
     
     $dev{community}    = $sinfo->snmp_comm;
@@ -642,8 +653,8 @@ sub get_snmp_info {
 	my %IGNORED;
 	map { $IGNORED{$_}++ }  @{ $self->config->get('IGNOREDEVS') };
 	if ( exists($IGNORED{$dev{sysobjectid}}) ){
-	    $self->throw_user(sprintf("%s (%s) Product id %s ignored per configuration option (IGNOREDEVS)", 
-				      $name, $ip, $dev{sysobjectid}));
+	    $self->throw_user(sprintf("%s Product id %s ignored per configuration option (IGNOREDEVS)", 
+				      $args{host}, $dev{sysobjectid}));
 	}
     }
 
@@ -705,7 +716,7 @@ sub get_snmp_info {
 			$dev{stp_vlan2inst} = $sinfo->mst_vlan2instance();
 			my $mapping = join ', ', 
 			map { sprintf("%s=>%s", $_, $dev{stp_vlan2inst}->{$_}) } keys %{$dev{stp_vlan2inst}};
-			$logger->debug(sub{"Device::get_snmp_info: $name ($ip) MST VLAN mapping: $mapping"});
+			$logger->debug(sub{"Device::get_snmp_info: $args{host} MST VLAN mapping: $mapping"});
 			
 			# Get a list of vlans per instance
 			my %mst_inst_vlans;
@@ -766,7 +777,7 @@ sub get_snmp_info {
     # Try to guess product type based on name
     if ( my $NAME2TYPE = $self->config->get('DEV_NAME2TYPE') ){
 	foreach my $str ( keys %$NAME2TYPE ){
-	    if ( $name =~ /$str/ ){
+	    if ( $args{host} =~ /$str/ ){
 		$dev{type} = $NAME2TYPE->{$str};
 		last;
 	    }
@@ -782,7 +793,7 @@ sub get_snmp_info {
 	$dev{type}  = "Unknown" unless defined $dev{type};
     }
     
-    $logger->debug(sub{"$name ($ip) type is $dev{type}"});
+    $logger->debug(sub{"$args{host} type is $dev{type}"});
 
     # Set some defaults specific to device types
     if ( $dev{ipforwarding} ){
@@ -875,7 +886,7 @@ sub get_snmp_info {
     my $ifreserved = $self->config->get('IFRESERVED');
 
     unless ( scalar keys %{ $hashes{interfaces} } ){
-	$logger->debug(sub{"$name ($ip) did not return any interfaces"});
+	$logger->debug(sub{"$args{host} did not return any interfaces"});
     }
 
     foreach my $iid ( keys %{ $hashes{interfaces} } ){
@@ -884,7 +895,7 @@ sub get_snmp_info {
 	if ( $name ){
 	    if ( defined $ifreserved ){
 		if ( $name =~ /$ifreserved/i ){
-		    $logger->debug(sub{"Device::get_snmp_info: $name ($ip): Interface $name ignored per config option (IFRESERVED)"});
+		    $logger->debug(sub{"Device::get_snmp_info: $args{host}: Interface $name ignored per config option (IFRESERVED)"});
 		    next;
 		}
 	    }
@@ -1020,7 +1031,7 @@ sub get_snmp_info {
 	$dev{$key} = $val;
     }
 
-    $logger->debug(sub{"Device::get_snmp_info: Finished getting SNMP info from $name ($ip)"});
+    $logger->debug(sub{"Device::get_snmp_info: Finished getting SNMP info from $args{host}"});
     return \%dev;
 }
 
@@ -3199,11 +3210,6 @@ sub _get_snmp_session {
 	    unless $argv{host};
     }
 
-    # Get both name and IP for better error reporting
-    my ($ip, $name) = Netdot->dns->resolve_any($argv{host});
-    $ip   ||= '?';
-    $name ||= '?';
-
     # If we still don't have any communities, get defaults from config file
     $argv{communities} = $self->config->get('DEFAULT_SNMPCOMMUNITIES')
 	unless defined $argv{communities};
@@ -3234,8 +3240,8 @@ sub _get_snmp_session {
     foreach my $community ( @{$argv{communities}} ){
 	$sinfoargs{Community} = $community;
 	
-	$logger->debug(sub{ sprintf("Device::get_snmp_session: Trying SNMPv%d session with %s (%s), community %s",
-				    $sinfoargs{Version}, $name, $ip, $sinfoargs{Community})});
+	$logger->debug(sub{ sprintf("Device::get_snmp_session: Trying SNMPv%d session with %s, community %s",
+				    $sinfoargs{Version}, $argv{host}, $sinfoargs{Community})});
 	
 	$sinfo = $sclass->new( %sinfoargs );
 	
@@ -3244,8 +3250,8 @@ sub _get_snmp_session {
 	
 	# Try Version 1 if we haven't already
 	if ( !defined $sinfo && !defined $layers && $sinfoargs{Version} != 1 ){
-	    $logger->debug(sub{ sprintf("Device::get_snmp_session: %s (%s): SNMPv%d failed. Trying SNMPv1", 
-					$name, $ip, $sinfoargs{Version})});
+	    $logger->debug(sub{ sprintf("Device::get_snmp_session: %s: SNMPv%d failed. Trying SNMPv1", 
+					$argv{host}, $sinfoargs{Version})});
 	    $sinfoargs{Version} = 1;
 	    $sinfo = $sclass->new( %sinfoargs );
 	}
@@ -3253,23 +3259,23 @@ sub _get_snmp_session {
 	if ( defined $sinfo ){
 	    # Check for errors
 	    if ( my $err = $sinfo->error ){
-		$self->throw_user(sprintf("Device::get_snmp_session: SNMPv%d error: device %s (%s), community '%s': %s", 
-					  $sinfoargs{Version}, $name, $ip, $sinfoargs{Community}, $err));
+		$self->throw_user(sprintf("Device::get_snmp_session: SNMPv%d error: device %s, community '%s': %s", 
+					  $sinfoargs{Version}, $argv{host}, $sinfoargs{Community}, $err));
 	    }
 	    last; # If we made it here, we are fine.  Stop trying communities
 	}else{
-	    $logger->debug(sub{ sprintf("Device::get_snmp_session: Failed SNMPv%s session with %s (%s) community '%s'", 
-					$sinfoargs{Version}, $name, $ip, $sinfoargs{Community})});
+	    $logger->debug(sub{ sprintf("Device::get_snmp_session: Failed SNMPv%s session with %s community '%s'", 
+					$sinfoargs{Version}, $argv{host}, $sinfoargs{Community})});
 	}
     }
     
     unless ( defined $sinfo ){
-	$self->throw_user(sprintf("Device::get_snmp_session: Cannot connect to %s (%s).  Tried communities: %s", 
-				  $name, $ip, (join ', ', @{$argv{communities}}) ));
+	$self->throw_user(sprintf("Device::get_snmp_session: Cannot connect to %s.  Tried communities: %s", 
+				  $argv{host}, (join ', ', @{$argv{communities}}) ));
     }
 
     # Save SNMP::Info class if we are an object
-    $logger->debug(sub{"Device::get_snmp_session: $ip ($name) is: ", $sinfo->class() });
+    $logger->debug(sub{"Device::get_snmp_session: $argv{host} is: ", $sinfo->class() });
     if ( $class ){
 	$self->{_sclass} = $sinfo->class();
     }
@@ -3285,8 +3291,8 @@ sub _get_snmp_session {
 	if ( !$self->community || $self->community ne $sinfoargs{Community} );
 	$self->update(\%uargs) if ( keys %uargs );
     }
-    $logger->debug(sub{ sprintf("SNMPv%d session with host %s (%s), community '%s' established",
-				$sinfoargs{Version}, $name, $ip, $sinfoargs{Community}) });
+    $logger->debug(sub{ sprintf("SNMPv%d session with host %s, community '%s' established",
+				$sinfoargs{Version}, $argv{host}, $sinfoargs{Community}) });
 
     # We want to do our own 'munging' for certain things
     my $munge = $sinfo->munge();
@@ -3325,9 +3331,12 @@ sub _get_main_ip {
     foreach my $method ( @methods ){
 	$logger->debug(sub{"Device::_get_main_ip: Trying method $method" });
 	if ( $method eq 'sysname' && $info->{sysname} ){
-	    my $resip = (Netdot->dns->resolve_name($info->{sysname}))[0];
-	    if ( defined $resip && exists $allips{$resip} ){
-		$ip = $resip;
+	    my @resips = Netdot->dns->resolve_name($info->{sysname});
+	    foreach my $resip ( @resips ){
+		if ( defined $resip && exists $allips{$resip} ){
+		    $ip = $resip;
+		    last;
+		}
 	    }
 	}elsif ( $method eq 'highest_ip' ){
 	    my %dec;
