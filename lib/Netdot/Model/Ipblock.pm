@@ -2318,8 +2318,8 @@ sub get_next_free {
 	my $address = $class->int2ip($numeric, $version);
 	$used{$address} = $status;
     }
-    
-    my $strategy = $argv{strategy} || 'first';
+
+    my $strategy = $argv{strategy} || Netdot->config->get("IP_ALLOCATION_STRATEGY");
 
     my @host_addrs = @{$self->get_host_addrs};
     if ( $strategy eq 'first'){
