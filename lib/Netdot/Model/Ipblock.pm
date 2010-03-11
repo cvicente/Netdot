@@ -2502,7 +2502,10 @@ sub _validate {
 	    $self->throw_user($self->get_label.": Only addresses can be set to Dynamic");
 	}
 	unless ( $pstatus eq "Subnet" ){
-		$self->throw_user($self->get_label.": Dynamic addresses must be within Subnet blocks");
+	    $self->throw_user($self->get_label.": Dynamic addresses must be within Subnet blocks");
+	}
+	unless ( $parent->dhcp_scopes ){
+	    $self->throw_user($self->get_label.": You need to enable DHCP in this subnet before adding any dynamic addresses");
 	}
 
     }elsif ( $statusname eq "Static" ) {
