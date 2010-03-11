@@ -757,7 +757,7 @@ if ( $edit ){
     my @fields;
     my @data;     
     push @fields,'IP Range:';
-    push @data, '<input type="text" name="add_range_start" class="txt" value=""> - <input type="text" name="add_range_end" class="txt" value="">';
+    push @data, '<input type="text" name="add_range_start" class="txt" value="'.$o->_netaddr->first->addr.'"> - <input type="text" name="add_range_end" class="txt" value="'.$o->_netaddr->last->addr.'">';
     
     push @fields, 'Status:';
     push (@data, &{sub{ 
@@ -891,7 +891,7 @@ if ( $edit ){
 	push @fields, "Subnet:";
 	push @data,   $s->get_label();
 	push @fields, 'Option routers:';
-	push @data,   '<input type="text" name="dhcp_option_routers_'.$s->id.'" class="txt" value="'.($s->_netaddr->network+1)->addr().'">';
+	push @data,   '<input type="text" name="dhcp_option_routers_'.$s->id.'" class="txt" value="'.$s->_netaddr->first->addr.'">';
     }
 
 </%perl>	
