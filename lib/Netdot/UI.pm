@@ -1688,8 +1688,12 @@ sub build_device_topology_graph {
 
     $direction = ($direction eq 'up_down')? 0 : 1;
 
-    if ( $specific_vlan == 0 ) {
+    if ( $specific_vlan == 0 || $showvlans == 0 ) {
 	$specific_vlan = undef;
+    }
+    
+    if ( defined($specific_vlan) && $specific_vlan != 0 ) {
+	$showvlans = 1;
     }
 
     # Declare some useful functions
