@@ -2001,15 +2001,17 @@ sub update {
     # Update the timestamp
     $argv->{last_updated} = $self->timestamp;
 
-    if ( exists $argv->{snmp_managed} ){
-	if ( !$argv->{snmp_managed} ){
-	    # Means it's being set to 0 or undef
-	    # Turn off other flags
-	    $argv->{canautoupdate} = 0;
-	    $argv->{snmp_polling}  = 0;
-	    $argv->{collect_arp}   = 0;
-	    $argv->{collect_fwt}   = 0;
-	}
+    if ( exists $argv->{snmp_managed} && !($argv->{snmp_managed}) ){
+	# Means it's being set to 0 or undef
+	# Turn off other flags
+	$argv->{canautoupdate} = 0;
+	$argv->{snmp_polling}  = 0;
+	$argv->{collect_arp}   = 0;
+	$argv->{collect_fwt}   = 0;
+    }
+    # Disable monitor_config flag if monitored flag is turned off
+    if ( exists $argv->{monitored} && !($argv->{monitored}) ){
+	$argv->{monitor_config} = 0;
     }
     $self->_validate_args($argv);
     return $self->SUPER::update($argv);
