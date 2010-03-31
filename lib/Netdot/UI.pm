@@ -878,7 +878,7 @@ sub text_field($@){
 	 $args{linkPage}, $args{defaults}, $args{default}, $args{returnAsVar}, $args{shortFieldName} );
     my $output;
 
-    $table  = ($o ? $o->short_class : $table);
+    $table     = ($o ? $o->short_class : $table);
     my $id     = ($o ? $o->id : "NEW");
     my $value  = ($o ? $o->$column : $default);
     my $name   = ( $shortFieldName ? $column : $table . "__" . $id . "__" . $column );
@@ -887,7 +887,7 @@ sub text_field($@){
     $self->throw_fatal("Unable to determine table name. Please pass valid object and/or table name.\n")
 	unless ($o || $table) ;
 
-    my $input_type = ($column eq 'password')? 'password' : 'text';
+    my $input_type = ($column =~ /^password|snmp_authkey|snmp_privkey$/)? 'password' : 'text';
 
     if ( $isEditing ){
 	if ( $defaults && ref($defaults) eq "HASH" ){
@@ -921,7 +921,7 @@ sub text_field($@){
     	    $output .= sprintf("<a href=\"$linkPage?id=%s\"> %s </a>\n", $o->id, $value);
 	}
     }else{
-	if ( $column ne 'password' ){
+	if ( $input_type ne 'password' ){
 	    $value =~ s/</&lt;/g;
 	    $value =~ s/>/&gt;/g;
 	    $output .= sprintf("%s", $value);

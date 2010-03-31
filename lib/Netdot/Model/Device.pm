@@ -563,6 +563,12 @@ sub insert {
      session      - SNMP Session (optional)
      communities  - SNMP communities
      version      - SNMP version
+     sec_name     - SNMP Security Name
+     sec_level    - SNMP Security Level
+     auth_proto   - SNMP Authentication Protocol
+     auth_pass    - SNMP Auth Key
+     priv_proto   - SNMP Privacy Protocol
+     priv_pass    - SNMP Privacy Key
      timeout      - SNMP timeout
      retries      - SNMP retries
      bgp_peers    - (flag) Retrieve bgp peer info
@@ -601,7 +607,8 @@ sub get_snmp_info {
 	# Get SNMP session
 	my %sess_args;
 	$sess_args{host} = $args{host};
-	foreach my $arg ( qw( communities version timeout retries ) ){
+	foreach my $arg ( qw( communities version timeout retries sec_name sec_level
+                              auth_proto auth_pass priv_proto priv_pass) ){
 	    $sess_args{$arg} = $args{$arg} if defined $args{$arg};
 	}
 	$sinfo = $self->_get_snmp_session(%sess_args);
@@ -1192,6 +1199,12 @@ sub snmp_update_from_file {
     version       SNMP version
     timeout       SNMP timeout
     retries       SNMP retries
+    sec_name      SNMP Security Name
+    sec_level     SNMP Security Level
+    auth_proto    SNMP Authentication Protocol
+    auth_pass     SNMP Auth Key
+    priv_proto    SNMP Privacy Protocol
+    priv_pass     SNMP Privacy Key
     do_info       Update device info
     do_fwt        Update forwarding tables
     do_arp        Update ARP cache
@@ -1237,6 +1250,12 @@ sub discover {
 						   version     => $argv{version},
 						   timeout     => $argv{timeout},
 						   retries     => $argv{retries},
+						   sec_name    => $argv{sec_name},
+						   sec_level   => $argv{sec_level},
+						   auth_proto  => $argv{auth_proto},
+						   auth_pass   => $argv{auth_pass},
+						   priv_proto  => $argv{priv_proto},
+						   priv_pass   => $argv{priv_pass},
 		    );
 	    }
 	    $info = $class->_exec_timeout($name, 
@@ -1268,7 +1287,7 @@ sub discover {
 	}
     }
     
-    if(! $dev){ #still no dev! guess we better make it!
+    unless ( $dev ){ #still no dev! guess we better make it!
     	$logger->debug(sub{"Device::discover: Device $name does not yet exist"});
 	# Set some values in the new Device based on the SNMP info obtained
 	my $main_ip = $argv{main_ip} || $class->_get_main_ip($info);
@@ -1329,8 +1348,8 @@ sub discover {
 
     # Get relevant snmp_update args
     my %uargs;
-    foreach my $field ( qw(communities timeout retries add_subnets subs_inherit 
-                           bgp_peers pretend do_info do_fwt do_arp timestamp) ){
+    foreach my $field ( qw(communities timeout retries sec_name sec_level auth_proto auth_pass priv_proto priv_pass
+                           add_subnets subs_inherit bgp_peers pretend do_info do_fwt do_arp timestamp) ){
 	$uargs{$field} = $argv{$field} if defined ($argv{$field});
     }
     $uargs{session} = $sinfo if $sinfo;
@@ -2192,6 +2211,12 @@ sub snmp_update {
 					  version     => $argv{version},
 					  timeout     => $argv{timeout},
 					  retries     => $argv{retries},
+					  sec_name    => $argv{sec_name},
+					  sec_level   => $argv{sec_level},
+					  auth_proto  => $argv{auth_proto},
+					  auth_pass   => $argv{auth_pass},
+					  priv_proto  => $argv{priv_proto},
+					  priv_pass   => $argv{priv_pass},
 	    );
     }
     
@@ -2258,6 +2283,12 @@ sub snmp_update {
     version       SNMP Version [1|2|3]
     timeout       SNMP Timeout
     retries       SNMP Retries
+    sec_name      SNMP Security Name
+    sec_level     SNMP Security Level
+    auth_proto    SNMP Authentication Protocol
+    auth_pass     SNMP Auth Key
+    priv_proto    SNMP Privacy Protocol
+    priv_pass     SNMP Privacy Key
     add_subnets   Flag. When discovering routers, add subnets to database if they do not exist
     subs_inherit  Flag. When adding subnets, have them inherit information from the Device
     bgp_peers     Flag. When discovering routers, update bgp_peers
@@ -2303,11 +2334,24 @@ sub info_update {
 	    my $communities = $argv{communities} || [$self->community] || $self->config->get('DEFAULT_SNMPCOMMUNITIES');
 	    my $timeout     = $argv{timeout}     || $self->config->get('DEFAULT_SNMPTIMEOUT');
 	    my $retries     = $argv{retries}     || $self->config->get('DEFAULT_SNMPRETRIES');
+	    my $sec_name    = $argv{sec_name}    || $self->snmp_securityname;
+	    my $sec_level   = $argv{sec_level}   || $self->snmp_securitylevel;
+	    my $auth_proto  = $argv{auth_proto}  || $self->snmp_authprotocol;
+	    my $auth_pass   = $argv{auth_pass}   || $self->snmp_authkey;
+	    my $priv_proto  = $argv{priv_proto}  || $self->snmp_privprotocol;
+	    my $priv_pass   = $argv{priv_pass}   || $self->snmp_privkey;
+
 	    $info = $class->_exec_timeout($host, 
 					  sub{ return $self->get_snmp_info(communities => $communities, 
 									   version     => $version,
 									   timeout     => $timeout,
 									   retries     => $retries,
+									   sec_name    => $sec_name,
+									   sec_level   => $sec_level,
+									   auth_proto  => $auth_proto,
+									   auth_pass   => $auth_pass,
+									   priv_proto  => $priv_proto,
+									   priv_pass   => $priv_pass,
 									   bgp_peers   => $argv{bgp_peers},
 						   ) });
 	}
@@ -3155,6 +3199,12 @@ sub _layer_active {
 #      host         IP or hostname (required unless called as instance method)
 #      communities  Arrayref of SNMP Community strings
 #      version      SNMP version
+#      sec_name     SNMP Security Name
+#      sec_level    SNMP Security Level
+#      auth_proto   SNMP Authentication Protocol
+#      auth_pass    SNMP Auth Key
+#      priv_proto   SNMP Privacy Protocol
+#      priv_pass    SNMP Privacy Key
 #      bulkwalk     Whether to use SNMP BULK
 #      timeout      SNMP Timeout
 #      retries      Number of retries after Timeout
@@ -3185,9 +3235,19 @@ sub _get_snmp_session {
 	$self->throw_user(sprintf("Device %s not SNMP-managed. Aborting.", $self->fqdn))
 	    unless $self->snmp_managed;
 
-	# Fill up communities argument from object if it wasn't passed to us
+	# Fill up SNMP arguments from object if it wasn't passed to us
 	if ( !defined $argv{communities} && $self->community ){
 	    push @{$argv{communities}}, $self->community;
+	}
+	$argv{bulkwalk} ||= $self->snmp_bulk;
+	$argv{version}  ||= $self->snmp_version;
+	if ( $argv{version} == 3 ){
+	    $argv{sec_name}   ||= $self->snmp_securityname;
+	    $argv{sec_level}  ||= $self->snmp_securitylevel;
+	    $argv{auth_proto} ||= $self->snmp_authprotocol;
+	    $argv{auth_pass}  ||= $self->snmp_authkey;
+	    $argv{priv_proto} ||= $self->snmp_privprotocol;
+	    $argv{priv_pass}  ||= $self->snmp_privkey;
 	}
 
 	# We might already have a SNMP::Info class
@@ -3204,8 +3264,6 @@ sub _get_snmp_session {
 	$self->throw_user(sprintf("Could not determine IP nor hostname for Device id: %d", $self->id))
 	    unless $argv{host};
 
-	$argv{version}  ||= $self->snmp_version;
-	$argv{bulkwalk} ||= $self->snmp_bulk;
 	
     }else{
 	$self->throw_fatal("Model::Device::_get_snmp_session: Missing required arguments: host")
@@ -3229,51 +3287,79 @@ sub _get_snmp_session {
 		      BulkRepeaters => 20,
 		      MibDirs       => \@MIBDIRS,
 		      );
-    
+
     # Turn off bulkwalk if we're using Net-SNMP 5.2.3 or 5.3.1.
     if ( $sinfoargs{BulkWalk} == 1  && ($SNMP::VERSION eq '5.0203' || $SNMP::VERSION eq '5.0301') 
 	&& !$self->config->get('IGNORE_BUGGY_SNMP_CHECK')) {
 	$logger->info("Turning off bulkwalk due to buggy Net-SNMP $SNMP::VERSION");
 	$sinfoargs{BulkWalk} = 0;
     }
+
     my ($sinfo, $layers);
 
-    # Try each community
-    foreach my $community ( @{$argv{communities}} ){
-	$sinfoargs{Community} = $community;
-	
-	$logger->debug(sub{ sprintf("Device::get_snmp_session: Trying SNMPv%d session with %s, community %s",
-				    $sinfoargs{Version}, $argv{host}, $sinfoargs{Community})});
+    if ( $sinfoargs{Version} == 3 ){
+	$sinfoargs{SecName}   = $argv{sec_name}   if $argv{sec_name};
+	$sinfoargs{SecLevel}  = $argv{sec_level}  if $argv{sec_level};
+	$sinfoargs{AuthProto} = $argv{auth_proto} if $argv{auth_proto};
+	$sinfoargs{AuthPass}  = $argv{auth_pass}  if $argv{auth_pass};
+	$sinfoargs{PrivProto} = $argv{priv_proto} if $argv{priv_proto};
+	$sinfoargs{PrivPass}  = $argv{priv_pass}  if $argv{priv_pass};
+
+	$logger->debug(sub{ sprintf("Device::get_snmp_session: Trying SNMPv%d session with %s",
+				    $sinfoargs{Version}, $argv{host})});
 	
 	$sinfo = $sclass->new( %sinfoargs );
-	
-	# Test for connectivity
-	$layers = $sinfo->layers() if defined $sinfo;
-	
-	# Try Version 1 if we haven't already
-	if ( !defined $sinfo && !defined $layers && $sinfoargs{Version} != 1 ){
-	    $logger->debug(sub{ sprintf("Device::get_snmp_session: %s: SNMPv%d failed. Trying SNMPv1", 
-					$argv{host}, $sinfoargs{Version})});
-	    $sinfoargs{Version} = 1;
-	    $sinfo = $sclass->new( %sinfoargs );
-	}
-	
-	if ( defined $sinfo ){
+
+	if ( !defined $sinfo && !defined $layers ){
+	    $self->throw_user(sprintf("Device::get_snmp_session: %s: SNMPv%d failed", 
+				      $argv{host}, $sinfoargs{Version}));
+	}elsif ( defined $sinfo ){
 	    # Check for errors
 	    if ( my $err = $sinfo->error ){
-		$self->throw_user(sprintf("Device::get_snmp_session: SNMPv%d error: device %s, community '%s': %s", 
-					  $sinfoargs{Version}, $argv{host}, $sinfoargs{Community}, $err));
+		$self->throw_user(sprintf("Device::get_snmp_session: SNMPv%d error: device %s: %s", 
+					  $sinfoargs{Version}, $argv{host}, $err));
 	    }
-	    last; # If we made it here, we are fine.  Stop trying communities
-	}else{
-	    $logger->debug(sub{ sprintf("Device::get_snmp_session: Failed SNMPv%s session with %s community '%s'", 
-					$sinfoargs{Version}, $argv{host}, $sinfoargs{Community})});
 	}
-    }
-    
-    unless ( defined $sinfo ){
-	$self->throw_user(sprintf("Device::get_snmp_session: Cannot connect to %s.  Tried communities: %s", 
-				  $argv{host}, (join ', ', @{$argv{communities}}) ));
+   
+    }else{
+	# Try each community
+	foreach my $community ( @{$argv{communities}} ){
+	    $sinfoargs{Community} = $community;
+	    
+	    $logger->debug(sub{ sprintf("Device::get_snmp_session: Trying SNMPv%d session with %s, community %s",
+					$sinfoargs{Version}, $argv{host}, $sinfoargs{Community})});
+	    
+	    $sinfo = $sclass->new( %sinfoargs );
+	    
+	    # Test for connectivity
+	    $layers = $sinfo->layers() if defined $sinfo;
+	    
+	    # If v2 failed, try v1
+	    if ( !defined $sinfo && !defined $layers && $sinfoargs{Version} == 2 ){
+		$logger->debug(sub{ sprintf("Device::get_snmp_session: %s: SNMPv%d failed. Trying SNMPv1", 
+					    $argv{host}, $sinfoargs{Version})});
+		$sinfoargs{Version} = 1;
+		$sinfo = $sclass->new( %sinfoargs );
+	    }
+	    
+	    if ( defined $sinfo ){
+		# Check for errors
+		if ( my $err = $sinfo->error ){
+		    $self->throw_user(sprintf("Device::get_snmp_session: SNMPv%d error: device %s, community '%s': %s", 
+					      $sinfoargs{Version}, $argv{host}, $sinfoargs{Community}, $err));
+		}
+		last; # If we made it here, we are fine.  Stop trying communities
+	    }else{
+		$logger->debug(sub{ sprintf("Device::get_snmp_session: Failed SNMPv%s session with %s community '%s'", 
+					    $sinfoargs{Version}, $argv{host}, $sinfoargs{Community})});
+	    }
+	} #end foreach community
+
+	unless ( defined $sinfo ){
+	    $self->throw_user(sprintf("Device::get_snmp_session: Cannot connect to %s.  Tried communities: %s", 
+				      $argv{host}, (join ', ', @{$argv{communities}}) ));
+	}
+
     }
 
     # Save SNMP::Info class if we are an object
@@ -3285,16 +3371,22 @@ sub _get_snmp_session {
     # We might have tried a different SNMP version and community above. Rectify DB if necessary
     if ( $class ){
 	my %uargs;
-	$uargs{snmp_version} = $sinfoargs{Version}   
-	if ( !$self->snmp_version || $self->snmp_version ne $sinfoargs{Version} );
-	$uargs{snmp_bulk} = $sinfoargs{BulkWalk}  
-	if ( !$self->snmp_bulk || $self->snmp_bulk ne $sinfoargs{BulkWalk} );
-	$uargs{community} = $sinfoargs{Community} 
-	if ( !$self->community || $self->community ne $sinfoargs{Community} );
+	$uargs{snmp_version} = $sinfoargs{Version}   if ( !$self->snmp_version || $self->snmp_version ne $sinfoargs{Version}  );
+	$uargs{snmp_bulk}    = $sinfoargs{BulkWalk}  if ( !$self->snmp_bulk    || $self->snmp_bulk    ne $sinfoargs{BulkWalk} );
+	if ( $sinfoargs{Version} == 3 ){
+	    # Store v3 parameters
+	    $uargs{snmp_securityname}  = $sinfoargs{SecName}   if (!$self->snmp_securityname  || $self->snmp_securityname  ne $sinfoargs{SecName});
+	    $uargs{snmp_securitylevel} = $sinfoargs{SecLevel}  if (!$self->snmp_securitylevel || $self->snmp_securitylevel ne $sinfoargs{SecLevel});
+	    $uargs{snmp_authprotocol}  = $sinfoargs{AuthProto} if (!$self->snmp_authprotocol  || $self->snmp_authprotocol  ne $sinfoargs{AuthProto});
+	    $uargs{snmp_authkey}       = $sinfoargs{AuthPass}  if (!$self->snmp_authkey       || $self->snmp_authkey       ne $sinfoargs{AuthPass});
+	    $uargs{snmp_privprotocol}  = $sinfoargs{PrivProto} if (!$self->snmp_privprotocol  || $self->snmp_privprotocol  ne $sinfoargs{PrivProto});
+	    $uargs{snmp_privkey}       = $sinfoargs{PrivPass}  if (!$self->snmp_privkey       || $self->snmp_privkey       ne $sinfoargs{PrivPass});
+	}else{
+	    $uargs{community} = $sinfoargs{Community} if (!$self->community || $self->community ne $sinfoargs{Community});
+	}
 	$self->update(\%uargs) if ( keys %uargs );
     }
-    $logger->debug(sub{ sprintf("SNMPv%d session with host %s, community '%s' established",
-				$sinfoargs{Version}, $argv{host}, $sinfoargs{Community}) });
+    $logger->debug(sub{ sprintf("SNMPv%d session with host %s established", $sinfoargs{Version}, $argv{host}) });
 
     # We want to do our own 'munging' for certain things
     my $munge = $sinfo->munge();

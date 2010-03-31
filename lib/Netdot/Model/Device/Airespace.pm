@@ -43,6 +43,12 @@ Netdot::Model::Device::Airespace - Cisco Wireless Controller Class
     version       SNMP Version [1|2|3]
     timeout       SNMP Timeout
     retries       SNMP Retries
+    sec_name      SNMP Security Name
+    sec_level     SNMP Security Level
+    auth_proto    SNMP Authentication Protocol
+    auth_pass     SNMP Auth Key
+    priv_proto    SNMP Privacy Protocol
+    priv_pass     SNMP Privacy Key
     add_subnets   Flag. When discovering routers, add subnets to database if they do not exist
     subs_inherit  Flag. When adding subnets, have them inherit information from the Device
     bgp_peers     Flag. When discovering routers, update bgp_peers
@@ -67,22 +73,35 @@ sub info_update {
     
     my $sinfo = $argv{session};
 
-    if ( !$sinfo || ref($sinfo) ne 'SNMP::Info' ){
+    if ( !$sinfo ){
 	my $version     = $argv{snmp_version} || $self->snmp_version || $self->config->get('DEFAULT_SNMPVERSION');
 	my $communities = $argv{communities}  || [$self->community]  || $self->config->get('DEFAULT_SNMPCOMMUNITIES');
 	my $timeout     = $argv{timeout}      || $self->config->get('DEFAULT_SNMPTIMEOUT');
 	my $retries     = $argv{retries}      || $self->config->get('DEFAULT_SNMPRETRIES');
+	my $sec_name    = $argv{sec_name}     || $self->snmp_securityname;
+	my $sec_level   = $argv{sec_level}    || $self->snmp_securitylevel;
+	my $auth_proto  = $argv{auth_proto}   || $self->snmp_authprotocol;
+	my $auth_pass   = $argv{auth_pass}    || $self->snmp_authkey;
+	my $priv_proto  = $argv{priv_proto}   || $self->snmp_privprotocol;
+	my $priv_pass   = $argv{priv_pass}    || $self->snmp_privkey;
 	
 	$sinfo = $self->_get_snmp_session(communities => $communities,
 					  version     => $version,
 					  timeout     => $timeout,
-					  retries     => $retries);
+					  retries     => $retries,
+					  sec_name    => $sec_name,
+					  sec_level   => $sec_level,
+					  auth_proto  => $auth_proto,
+					  auth_pass   => $auth_pass,
+					  priv_proto  => $priv_proto,
+					  priv_pass   => $priv_pass,
+	    );
     }
 
-    my $info = $argv{info} ||Netdot::Model::Device->_exec_timeout($host, 
-								  sub{ return $self->get_snmp_info(bgp_peers => 0,
-												   session   => $sinfo,
-									   ) });
+    my $info = $argv{info} || Netdot::Model::Device->_exec_timeout($host, 
+								   sub{ return $self->get_snmp_info(bgp_peers => 0,
+												    session   => $sinfo,
+									    ) });
     unless ( $info ){
 	$logger->error("$host: No SNMP info received");
 	return;	
