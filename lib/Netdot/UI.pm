@@ -2039,10 +2039,25 @@ sub get_user_person {
 	$self->throw_user("Cannot get username for given user object");
 
     my $person;
-    $person = Person->search(username=>$username)->first ||
-	$self->throw_user("Username $username not found in Person table");
+    if ( $person = Person->search(username=>$username)->first ){
+	return $person;
+    }elsif ( my $default_user_type = $self->config->get('DEFAULT_REMOTE_AUTHED_USER_TYPE') ){
 
-    return $person;
+	# If it's "none", do not attempt to create a Person
+	$self->throw_user("Username $username not found in Person table")
+	    if ( $default_user_type =~ /^none$/i );
+
+	if ( $default_user_type =~ /^User|Operator|Admin$/i ){
+	    if ( my $type = UserType->search(name=>$default_user_type)->first ){
+		$person = Person->insert({lastname=>$username, username=>$username, user_type=>$type});
+		return $person;
+	    }
+	}else{
+	    $self->throw_user("Unrecognized value for DEFAULT_REMOTE_AUTHED_USER_TYPE config option");
+	}
+    }
+    $self->throw_user("Username $username not found in Person table");
+    
 }
 
 ############################################################################
