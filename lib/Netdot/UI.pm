@@ -878,7 +878,7 @@ sub text_field($@){
 	 $args{linkPage}, $args{defaults}, $args{default}, $args{returnAsVar}, $args{shortFieldName} );
     my $output;
 
-    $table  = ($o ? $o->short_class : $table);
+    $table     = ($o ? $o->short_class : $table);
     my $id     = ($o ? $o->id : "NEW");
     my $value  = ($o ? $o->$column : $default);
     my $name   = ( $shortFieldName ? $column : $table . "__" . $id . "__" . $column );
@@ -887,7 +887,7 @@ sub text_field($@){
     $self->throw_fatal("Unable to determine table name. Please pass valid object and/or table name.\n")
 	unless ($o || $table) ;
 
-    my $input_type = ($column eq 'password')? 'password' : 'text';
+    my $input_type = ($column =~ /^password|snmp_authkey|snmp_privkey$/)? 'password' : 'text';
 
     if ( $isEditing ){
 	if ( $defaults && ref($defaults) eq "HASH" ){
@@ -921,7 +921,7 @@ sub text_field($@){
     	    $output .= sprintf("<a href=\"$linkPage?id=%s\"> %s </a>\n", $o->id, $value);
 	}
     }else{
-	if ( $column ne 'password' ){
+	if ( $input_type ne 'password' ){
 	    $value =~ s/</&lt;/g;
 	    $value =~ s/>/&gt;/g;
 	    $output .= sprintf("%s", $value);
@@ -1688,8 +1688,12 @@ sub build_device_topology_graph {
 
     $direction = ($direction eq 'up_down')? 0 : 1;
 
-    if ( $specific_vlan == 0 ) {
+    if ( $specific_vlan == 0 || $showvlans == 0 ) {
 	$specific_vlan = undef;
+    }
+    
+    if ( defined($specific_vlan) && $specific_vlan != 0 ) {
+	$showvlans = 1;
     }
 
     # Declare some useful functions
@@ -2035,10 +2039,25 @@ sub get_user_person {
 	$self->throw_user("Cannot get username for given user object");
 
     my $person;
-    $person = Person->search(username=>$username)->first ||
-	$self->throw_user("Username $username not found in Person table");
+    if ( $person = Person->search(username=>$username)->first ){
+	return $person;
+    }elsif ( my $default_user_type = $self->config->get('DEFAULT_REMOTE_AUTHED_USER_TYPE') ){
 
-    return $person;
+	# If it's "none", do not attempt to create a Person
+	$self->throw_user("Username $username not found in Person table")
+	    if ( $default_user_type =~ /^none$/i );
+
+	if ( $default_user_type =~ /^User|Operator|Admin$/i ){
+	    if ( my $type = UserType->search(name=>$default_user_type)->first ){
+		$person = Person->insert({lastname=>$username, username=>$username, user_type=>$type});
+		return $person;
+	    }
+	}else{
+	    $self->throw_user("Unrecognized value for DEFAULT_REMOTE_AUTHED_USER_TYPE config option");
+	}
+    }
+    $self->throw_user("Username $username not found in Person table");
+    
 }
 
 ############################################################################

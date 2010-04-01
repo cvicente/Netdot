@@ -131,11 +131,12 @@ sub get_device_info {
 =head2 get_device_main_ip 
 
   Arguments:
-    devicd id
+    device id
   Returns:
     IP address string
   Examples:
-    
+    my $ip = Netdot::Exporter->get_device_main_ip($devid);
+
 =cut
 sub get_device_main_ip {
     my ($self, $devid) = @_;
@@ -147,11 +148,12 @@ sub get_device_main_ip {
     return unless exists $device_info->{$devid};
 
     my $ip;
-    if ( $device_info->{$devid}->{ipaddr} && $device_info->{$devid}->{version} ){
+    if ( $device_info->{$devid}->{ipaddr} && $device_info->{$devid}->{ipversion} ){
 	$ip = Ipblock->int2ip($device_info->{$devid}->{ipaddr}, $device_info->{$devid}->{ipversion});
-    }elsif ( $ip = (Netdot->dns->resolve_name($device_info->{$devid}->{hostname}))[0] ){
-	# we're done here
-    }else{
+    }elsif ( my @ips = Netdot->dns->resolve_name($device_info->{$devid}->{hostname}, {v4_only=>1}) ){
+	# Not sure how management tools will handle v6 addresses, so let's do v4 only for now
+	$ip = $ips[0];
+    }elsif ( !$ip ){
 	# Grab the first IP we can get
 	my $device = Device->retrieve($devid);
 	if ( my $ips = $device->get_ips() ){

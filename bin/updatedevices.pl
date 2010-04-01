@@ -15,7 +15,7 @@ use Log::Log4perl::Level;
 #use Devel::Profiler bad_pkgs => [qw(UNIVERSAL Time::HiRes B Carp Exporter Cwd Config CORE DynaLoader XSLoader AutoLoader DBD::_::st DBD::_::db DBD::st DBD::db DBI::st DBI::db DBI::dr)];
 
 # Variables that will hold given values
-my ($host, $blocks, $db, $file, $commstrs);
+my ($host, $blocks, $db, $file, $commstrs, $sec_name, $sec_level, $auth_proto, $auth_pass, $priv_proto, $priv_pass);
 
 # Default values
 my $retries         = Netdot->config->get('DEFAULT_SNMPRETRIES');
@@ -50,6 +50,12 @@ my $USAGE = <<EOF;
     -r, --retries <integer >             SNMP retries (default: $retries)
     -o, --timeout <secs>                 SNMP timeout in seconds (default: $timeout)
     -v, --version <integer>              SNMP version [1|2|3] (default: $version)
+    --sec-name <string>                  SNMP security name
+    --sec-level <string>                 SNMP security level [noAuthNoPriv|authNoPriv|authPriv]
+    --auth-proto <string>                SNMP authentication protocol [MD5|SHA]
+    --auth-pass <string>                 SNMP authentication key
+    --priv-proto <string>                SNMP privacy protocol [DES|AES]
+    --priv-pass <string>                 SNMP privacy key
     -I, --info                           Get device info
     -F, --fwt                            Get forwarding tables
     -T, --topology                       Update Topology
@@ -79,6 +85,12 @@ my $result = GetOptions( "H|host=s"          => \$host,
 			 "r|retries:s"       => \$retries,
 			 "o|timeout:s"       => \$timeout,
 			 "v|version:s"       => \$version,
+			 "sec-name:s"        => \$sec_name,
+			 "sec-level:s"       => \$sec_level,
+			 "auth-proto:s"      => \$auth_proto,
+			 "auth-pass:s"       => \$auth_pass,
+			 "priv-proto:s"      => \$priv_proto,
+			 "priv-pass:s"       => \$priv_pass,
 			 "atomic"            => \$ATOMIC,
 			 "add-subnets"       => \$ADDSUBNETS,
 			 "subs-inherit"      => \$SUBSINHERIT,
@@ -140,6 +152,12 @@ if ( $INFO || $FWT || $ARP ){
     my %uargs = (version      => $version,
 		 timeout      => $timeout,
 		 retries      => $retries,
+		 sec_name     => $sec_name,
+		 sec_level    => $sec_level,
+		 auth_proto   => $auth_proto,
+		 auth_pass    => $auth_pass,
+		 priv_proto   => $priv_proto,
+		 priv_pass    => $priv_pass,
 		 pretend      => $PRETEND,
 		 atomic       => $ATOMIC,
 		 add_subnets  => $ADDSUBNETS,

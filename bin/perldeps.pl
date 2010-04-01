@@ -24,8 +24,8 @@ Arguments:
 #same idea as apt, but refers to the module name in the rpm repository.
 
 my @DEPS = (
-    {cpan=> 'Module::Build' , apt=> 'libmodule-build-perl', rpm=>'perl-Module-Build'},
-    {cpan=> 'CGI 3.20' , apt=> '', rpm=>''},
+    {cpan=>'Module::Build' , apt=> 'libmodule-build-perl', rpm=>'perl-Module-Build'},
+    {cpan=>'CGI 3.20' , apt=> 'libcgi-pm-perl', rpm=>''},
     {cpan=>'Ima::DBI 0.35', apt=> 'libima-dbi-perl', rpm=>'perl-Ima-DBI'},
     {cpan=>'Class::DBI 3.0.10', apt=> 'libclass-dbi-perl', rpm=>'perl-Class-DBI'},
     {cpan=>'Class::DBI::AbstractSearch', apt=> 'libclass-dbi-abstractsearch-perl', rpm=> 'perl-Class-DBI-AbstractSearch'},
@@ -57,7 +57,8 @@ my @DEPS = (
     {cpan=>'Text::ParseWords', apt=>'', rpm=>''},
     {cpan=>'Carp::Assert', apt=>'libcarp-assert-perl', rpm=>'perl-Carp-Assert'},
     {cpan=>'Digest::SHA', apt=> 'libdigest-sha-perl', rpm=>'perl-Digest-SHA1'},
-    {cpan=>'Net::DNS::ZoneFile::Fast 1.12', apt=> 'libnet-dns-sec-perl', rpm=>'perl-Net-DNS-SEC'}
+    {cpan=>'Net::DNS::ZoneFile::Fast 1.12', apt=> 'libnet-dns-sec-perl', rpm=>'perl-Net-DNS-SEC'},
+    {cpan=>'Socket6', apt=> 'libsocket6-perl', rpm=>'perl-Socket6'},
     ) ;
 
 if ( $action eq 'test' ){

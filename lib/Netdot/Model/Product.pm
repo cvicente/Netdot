@@ -144,6 +144,9 @@ sub find_or_create {
 		$ptype = ProductType->search(name=>$typename)->first;
 	    }
 	}	
+	
+	$class->throw_fatal("Product::find_or_create: A product type could not be determined.  Aborting")
+	    unless $ptype;
 
 	###############################################
 	# Insert New product
@@ -154,7 +157,7 @@ sub find_or_create {
 					   sysobjectid  => $sysobjectid,
 					   type         => $ptype,
 					   manufacturer => $ent,
-				       });
+					 });
 	
 	$logger->info(sprintf("Inserted new product: %s", $newproduct->name));
 	return $newproduct;

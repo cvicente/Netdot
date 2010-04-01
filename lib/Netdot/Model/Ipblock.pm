@@ -686,16 +686,20 @@ sub numhosts {
 }
 
 ##################################################################
-=head2 numhosts_v6
+=head2 numhosts_v6 - Number of hosts (/128s) in a v6 block. 
 
-IPv6 version of numhosts
+
+  Arguments:
+    x: the mask length (i.e. 64)
+  Returns:
+    a power of 2       
 
 =cut
 
 sub numhosts_v6 {
     my ($class, $x) = @_;
     $class->isa_class_method('numhosts');
-    return 2**(128-$x);
+    return Math::BigInt->new(2)->bpow(128-$x);
 }
 
 ##################################################################
@@ -1028,6 +1032,8 @@ sub add_range{
     unless ( $ipstart <= $ipend ){
 	$class->throw_user("Invalid range: $argv{start} - $argv{end}");
     }
+    my $version = $ipstart->version;
+    my $prefix  = ($version == 4)? 32 : 128;
     
     # Validate parent argument
     if ( $argv{parent} ){
@@ -1046,18 +1052,22 @@ sub add_range{
     # We want this to happen atomically (all or nothing)
     my @newips;
     Netdot::Model->do_transaction(sub {
-	for ( my $i=$ipstart->numeric; $i<=$ipend->numeric; $i++ ){
-	    my $ip = NetAddr::IP->new($i);
-	    my $decimal = $ip->numeric;
+	for ( my $i = Math::BigInt->new($ipstart->numeric); $i <= Math::BigInt->new($ipend->numeric); $i++ ){
+	    my $ip;
+	    if ( $version == 4 ){
+		$ip = NetAddr::IP->new($i) || $class->throw_fatal("Problem creating NetAddr::IP object from $i");
+	    }elsif ( $version == 6 ){
+		$ip = NetAddr::IP->new6($i) || $class->throw_fatal("Problem creating v6 NetAddr::IP object from $i");
+	    }
+	    my $decimal = $ip->numeric; # Do not remove.  We need the method value as a scalar
 	    my %args = (status      => $argv{status},
 			used_by     => $argv{used_by},
 			description => $argv{description},
 		);
 	    $args{parent} = $argv{parent} if defined $argv{parent};
-	    if ( my $ipb = Ipblock->search(address=>$decimal)->first ){
+	    if ( my $ipb = Ipblock->search(address=>$decimal, prefix=>$prefix)->first ){
 		$ipb->update(\%args);
 		push @newips, $ipb;
-		
 	    }else{
 		$args{address} = $ip->addr;
 		$args{no_update_tree} = 1 if $args{parent};
@@ -1515,12 +1525,15 @@ sub num_addr {
     
     if ( $self->version == 4 ) {
 	if ( $self->prefix < 31 ){
+	    # Subtract network and broadcast addresses
 	    return $class->numhosts($self->prefix) - 2;
 	}else{
 	    return $class->numhosts($self->prefix);
 	}
     }elsif ( $self->version == 6 ) {
-        return $class->numhosts_v6($self->prefix) - 2;
+	# Notice that the first (subnet-router anycast) and last address 
+	# are valid in IPv6
+        return $class->numhosts_v6($self->prefix);
     }
 }
 
@@ -2328,8 +2341,8 @@ sub get_next_free {
 	my $address = $class->int2ip($numeric, $version);
 	$used{$address} = $status;
     }
-    
-    my $strategy = $argv{strategy} || 'first';
+
+    my $strategy = $argv{strategy} || Netdot->config->get("IP_ALLOCATION_STRATEGY");
 
     my @host_addrs = @{$self->get_host_addrs};
     if ( $strategy eq 'first'){
@@ -2424,10 +2437,8 @@ sub _prevalidate {
 	$class->throw_user("IP: $address does not match valid patterns");
     }
     my $ip;
-    my $str;
-    if ( !($ip = NetAddr::IP->new($address, $prefix)) ||
-	 $ip->numeric == 0 ){
-	$str = ( $address && $prefix ) ? (join '/', $address, $prefix) : $address;
+    my $str = ( $address && $prefix ) ? (join('/', $address, $prefix)) : $address;
+    if ( !($ip = NetAddr::IP->new($address, $prefix)) || $ip->numeric == 0 ){
 	$class->throw_user("Invalid IP: $str");
     }
 
@@ -2470,7 +2481,7 @@ sub _validate {
 	if ( $self->is_address() ){
 	    if ( $pstatus eq "Reserved" ){
 		$self->throw_user($self->get_label.": Address allocations not allowed under Reserved blocks");
-	    }elsif ( $pstatus eq 'Subnet' && !($self->version == 4 && $parent->prefix == 31) ){
+	    }elsif ( $pstatus eq 'Subnet' && $self->version == 4 && $parent->prefix != 31 ){
 		if ( $self->address eq $parent->address ){
 		    $self->throw_user(sprintf("IP cannot have same address as its subnet: %s == %s", 
 					      $self->address, $parent->address));
@@ -2486,21 +2497,12 @@ sub _validate {
 	$logger->debug("Ipblock::_validate: " . $self->get_label . " does not have parent");
     }
     if ( $statusname eq "Subnet" ){
-	# We only want addresses inside a subnet.  If any blocks within this subnet
-	# are containers, we'll just remove them.
+	# We only want addresses inside a subnet. 
 	foreach my $ch ( $self->children ){
-	    unless ( $ch->is_address() || $ch->status->name eq "Container" ){
+	    unless ( $ch->is_address() ){
 		my $err = sprintf("%s %s cannot exist within Subnet %s", 
-				  $ch->status->name, $ch->cidr, 
-				  $self->cidr);
+				  $ch->status->name, $ch->get_label, $self->get_label);
 		$self->throw_user($err);
-	    }
-	    if ( $ch->status->name eq "Container" ){
-		my ($addr, $prefix) = ($ch->address, $ch->prefix);
-		$ch->delete();
-		$logger->warn(sprintf("_validate: Container %s/%s has been deleted because "
-                                      . "it fell within a subnet block",
-				      $addr, $prefix));
 	    }
 	}
     }elsif ( $statusname eq "Reserved" ){
@@ -2512,7 +2514,10 @@ sub _validate {
 	    $self->throw_user($self->get_label.": Only addresses can be set to Dynamic");
 	}
 	unless ( $pstatus eq "Subnet" ){
-		$self->throw_user($self->get_label.": Dynamic addresses must be within Subnet blocks");
+	    $self->throw_user($self->get_label.": Dynamic addresses must be within Subnet blocks");
+	}
+	unless ( $parent->dhcp_scopes ){
+	    $self->throw_user($self->get_label.": You need to enable DHCP in this subnet before adding any dynamic addresses");
 	}
 
     }elsif ( $statusname eq "Static" ) {
