@@ -2427,10 +2427,8 @@ sub _prevalidate {
 	$class->throw_user("IP: $address does not match valid patterns");
     }
     my $ip;
-    my $str;
-    if ( !($ip = NetAddr::IP->new($address, $prefix)) ||
-	 $ip->numeric == 0 ){
-	$str = ( $address && $prefix ) ? (join '/', $address, $prefix) : $address;
+    my $str = ( $address && $prefix ) ? (join('/', $address, $prefix)) : $address;
+    if ( !($ip = NetAddr::IP->new($address, $prefix)) || $ip->numeric == 0 ){
 	$class->throw_user("Invalid IP: $str");
     }
 
@@ -2489,21 +2487,12 @@ sub _validate {
 	$logger->debug("Ipblock::_validate: " . $self->get_label . " does not have parent");
     }
     if ( $statusname eq "Subnet" ){
-	# We only want addresses inside a subnet.  If any blocks within this subnet
-	# are containers, we'll just remove them.
+	# We only want addresses inside a subnet. 
 	foreach my $ch ( $self->children ){
-	    unless ( $ch->is_address() || $ch->status->name eq "Container" ){
+	    unless ( $ch->is_address() ){
 		my $err = sprintf("%s %s cannot exist within Subnet %s", 
-				  $ch->status->name, $ch->cidr, 
-				  $self->cidr);
+				  $ch->status->name, $ch->get_label, $self->get_label);
 		$self->throw_user($err);
-	    }
-	    if ( $ch->status->name eq "Container" ){
-		my ($addr, $prefix) = ($ch->address, $ch->prefix);
-		$ch->delete();
-		$logger->warn(sprintf("_validate: Container %s/%s has been deleted because "
-                                      . "it fell within a subnet block",
-				      $addr, $prefix));
 	    }
 	}
     }elsif ( $statusname eq "Reserved" ){
