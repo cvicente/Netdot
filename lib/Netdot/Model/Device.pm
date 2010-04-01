@@ -2254,6 +2254,9 @@ sub snmp_update {
 			      timestamp => $timestamp,
 			      atomic    => $atomic,
 		);
+	}else{
+	    $logger->debug(sub{"Device::snmp_update: $host excluded from FWT collection. Skipping"});
+	    return;
 	}
     }
     if ( $argv{do_arp} ){
@@ -2263,6 +2266,9 @@ sub snmp_update {
 			      no_update_tree => $argv{no_update_tree},
 			      atomic         => $atomic,
 		);
+	}else{
+	    $logger->debug(sub{"Device::snmp_update: $host excluded from ARP collection. Skipping"});
+	    return;
 	}
     }
 }
