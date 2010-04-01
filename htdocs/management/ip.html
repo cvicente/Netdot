@@ -757,7 +757,13 @@ if ( $edit ){
     my @fields;
     my @data;     
     push @fields,'IP Range:';
-    push @data, '<input type="text" name="add_range_start" class="txt" value="'.$o->_netaddr->first->addr.'"> - <input type="text" name="add_range_end" class="txt" value="'.$o->_netaddr->last->addr.'">';
+    if ( $o->version == 4 ){
+        push @data, '<input type="text" name="add_range_start" class="txt" value="'.$o->_netaddr->first->addr.
+	    '"> - <input type="text" name="add_range_end" class="txt" value="'.$o->_netaddr->last->addr.'">';
+    }elsif ( $o->version == 6 ){
+	push @data, '<input type="text" name="add_range_start" class="longtxt" value="'.$o->_netaddr->addr.
+	    '"> - <input type="text" name="add_range_end" class="longtxt" value="'.$o->_netaddr->broadcast->addr.'">';
+    }
     
     push @fields, 'Status:';
     push (@data, &{sub{ 
@@ -986,7 +992,7 @@ my $ip = new NetAddr::IP($o->address, $o->prefix);
 
 push( @field_headers, "Netmask:", "Broadcast:" );
 push( @cell_data, $ip->mask);
-push( @cell_data, ($ip->version == 6?$ip->broadcast->short:$ip->broadcast->addr) );
+push( @cell_data, ($ip->version == 4 ? $ip->broadcast->addr : "n/a") );
 
 ################
 # Usable address range
@@ -1004,15 +1010,15 @@ if ( $o->version == 4 ){
 	$last_address  = $ip->last->addr;
     }
 }else{
-    $num_addresses = $ip->num;
-    $first_address = $ip->first->short;
-    $last_address  = $ip->last->short;
+    $num_addresses = $o->num_addr;
+    $first_address = $ip->network->addr;
+    $last_address  = $ip->broadcast->addr;
 }
-push( @cell_data, ($num_addresses." (". $first_address."-".$last_address.")") );
+push( @cell_data, ($num_addresses." (". $first_address." - ".$last_address.")") );
 	
 if ($o->status->name eq "Subnet") {
       my $used  = new Math::BigInt($o->num_children);
-      my $total = new Math::BigInt($o->num_addr);
+      my $total = $o->num_addr;
       my $avail = $total - $used;
       my $avail_percent = $ui->friendly_percent(value=>$avail,total=>$total);
       my $used_percent  = $ui->friendly_percent(value=>$used,total=>$total);
