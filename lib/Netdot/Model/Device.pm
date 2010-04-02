@@ -1296,10 +1296,26 @@ sub discover {
 	my %devtmp = (snmp_managed  => 1,
 		      snmp_polling  => 1,
 		      canautoupdate => 1,
+		      # These following two could have changed in get_snmp_session
+		      # so we grab them from %info instead of directly from %argv
 		      community     => $info->{community},
 		      snmp_version  => $info->{snmp_version},
 		      );
-	
+
+	if ( $devtmp{snmp_version} == 3 ){
+	    my %arg2field = (sec_name   => 'snmp_securityname',
+			     sec_level  => 'snmp_securitylevel',
+			     auth_proto => 'snmp_authprotocol',
+			     auth_pass  => 'snmp_authkey',
+			     priv_proto => 'snmp_privprotocol',
+			     priv_pass  => 'snmp_privkey',
+		);
+
+	    foreach my $arg ( keys %arg2field ){
+		$devtmp{$arg2field{$arg}} = $argv{$arg} if defined $argv{$arg};
+	    }
+	}
+
 	if ( $info->{layers} ){
 	    # We collect rptrAddrTrackNewLastSrcAddress from hubs
 	    if ( $class->_layer_active($info->{layers}, 1) ){
