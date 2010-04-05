@@ -3332,53 +3332,62 @@ sub _get_snmp_session {
 	
 	$sinfo = $sclass->new( %sinfoargs );
 
-	if ( !defined $sinfo && !defined $layers ){
-	    $self->throw_user(sprintf("Device::get_snmp_session: %s: SNMPv%d failed", 
-				      $argv{host}, $sinfoargs{Version}));
-	}elsif ( defined $sinfo ){
+	if ( defined $sinfo ){
 	    # Check for errors
 	    if ( my $err = $sinfo->error ){
-		$self->throw_user(sprintf("Device::get_snmp_session: SNMPv%d error: device %s: %s", 
+		$self->throw_user(sprintf("Device::_get_snmp_session: SNMPv%d error: device %s: %s", 
 					  $sinfoargs{Version}, $argv{host}, $err));
 	    }
+	    
+	    # Test for connectivity
+	    $layers = $sinfo->layers() || 
+		$self->throw_user(sprintf("Device::_get_snmp_session: %s: SNMPv%d failed: No sysServices", 
+					  $argv{host}, $sinfoargs{Version}));
+	    
+	}else {
+	    $self->throw_user(sprintf("Device::get_snmp_session: %s: SNMPv%d failed", 
+				      $argv{host}, $sinfoargs{Version}));
 	}
    
     }else{
 	# Try each community
 	foreach my $community ( @{$argv{communities}} ){
+
 	    $sinfoargs{Community} = $community;
-	    
-	    $logger->debug(sub{ sprintf("Device::get_snmp_session: Trying SNMPv%d session with %s, community %s",
+	    $logger->debug(sub{ sprintf("Device::_get_snmp_session: Trying SNMPv%d session with %s, community %s",
 					$sinfoargs{Version}, $argv{host}, $sinfoargs{Community})});
-	    
 	    $sinfo = $sclass->new( %sinfoargs );
 	    
-	    # Test for connectivity
-	    $layers = $sinfo->layers() if defined $sinfo;
-	    
 	    # If v2 failed, try v1
-	    if ( !defined $sinfo && !defined $layers && $sinfoargs{Version} == 2 ){
-		$logger->debug(sub{ sprintf("Device::get_snmp_session: %s: SNMPv%d failed. Trying SNMPv1", 
-					    $argv{host}, $sinfoargs{Version})});
-		$sinfoargs{Version} = 1;
-		$sinfo = $sclass->new( %sinfoargs );
-	    }
+ 	    if ( !defined $sinfo && $sinfoargs{Version} == 2 ){
+ 		$logger->debug(sub{ sprintf("Device::_get_snmp_session: %s: SNMPv%d failed. Trying SNMPv1", 
+ 					    $argv{host}, $sinfoargs{Version})});
+ 		$sinfoargs{Version} = 1;
+ 		$sinfo = $sclass->new( %sinfoargs );
+ 	    }
 	    
 	    if ( defined $sinfo ){
 		# Check for errors
 		if ( my $err = $sinfo->error ){
-		    $self->throw_user(sprintf("Device::get_snmp_session: SNMPv%d error: device %s, community '%s': %s", 
+		    $self->throw_user(sprintf("Device::_get_snmp_session: SNMPv%d error: device %s, community '%s': %s", 
 					      $sinfoargs{Version}, $argv{host}, $sinfoargs{Community}, $err));
 		}
+		# Test for connectivity
+		$layers = $sinfo->layers() || 
+		    $self->throw_user(sprintf("Device::_get_snmp_session: %s: SNMPv%d failed: No sysServices", 
+					      $argv{host}, $sinfoargs{Version}));
+
 		last; # If we made it here, we are fine.  Stop trying communities
+
 	    }else{
-		$logger->debug(sub{ sprintf("Device::get_snmp_session: Failed SNMPv%s session with %s community '%s'", 
+		$logger->debug(sub{ sprintf("Device::_get_snmp_session: Failed SNMPv%s session with %s community '%s'", 
 					    $sinfoargs{Version}, $argv{host}, $sinfoargs{Community})});
 	    }
+
 	} #end foreach community
 
 	unless ( defined $sinfo ){
-	    $self->throw_user(sprintf("Device::get_snmp_session: Cannot connect to %s.  Tried communities: %s", 
+	    $self->throw_user(sprintf("Device::_get_snmp_session: Cannot connect to %s.  Tried communities: %s", 
 				      $argv{host}, (join ', ', @{$argv{communities}}) ));
 	}
 

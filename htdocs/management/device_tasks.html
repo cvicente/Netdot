@@ -124,28 +124,91 @@ my @communities = @{Netdot->config->get('DEFAULT_SNMPCOMMUNITIES')};
         </fieldset>
 %   }elsif ( $view eq 'new' ){
         <fieldset class="medium">
-            <legend>Discover/Add a Device</legend>
+            <legend>Discover Device</legend>
             <form action="updatedevice.html" method="POST">
                 <p>
                 <label for="host">Name/IP:</label>
                 <input type="text" name="host" class="longtxt" value="">
                 </p>
                 <p>
-                <label for="comstr">Community:</label>
-                <select name="comstr" id="comstr" onChange="otherOption('comstr','back','otherComstr');">
+                <label for="version">SNMP Version:</label>
+                <select name="version" id="version" onChange="showSnmpV3Args('version', 'v3args', 'v2args')">
+%               foreach my $version ( qw(1 2 3) ){
+%                   if ( $version eq $ui->config->get('DEFAULT_SNMPVERSION') ){
+ 	                <option value="<% $version %>" SELECTED><% $version %></option>
+%                   }else{
+ 	                <option value="<% $version %>"><% $version %></option>
+%  		    }
+%               }
+                </select>
+                </p>
+%		if ( $ui->config->get('DEFAULT_SNMPVERSION') == 3 ){
+                    <div id="v3args" style="display:block">
+%               }else{
+                    <div id="v3args" style="display:none">
+%               }
+                <p>
+                <label for="sec_name">Sec Name:</label>
+                <input type="text" name="sec_name" class="txt">
+                </p>
+                <p>
+                <label for="sec_level">Sec Level:</label>
+                <select name="sec_level">
+		    <option value="noAuthNoPriv">noAuthNoPriv</option>
+		    <option value="authNoPriv">authNoPriv</option>
+		    <option value="authPriv">authPriv</option>
+		</select>
+                </p>
+                <p>
+                <label for="auth_proto">Auth Proto:</label>
+                <select name="auth_proto">
+		    <option value="MD5">MD5</option>
+		    <option value="SHA">SHA</option>
+		</select>
+                </p>
+                <p>
+                <label for="auth_pass">Auth Pass:</label>
+                <input type="password" name="auth_pass" class="txt">
+                </p>
+                <p>
+                <label for="">Priv Proto:</label>
+                <select name="priv_proto">
+		    <option value="DES">DES</option>
+		    <option value="AES">AES</option>
+		</select>
+                </p>
+                <p>
+                <label for="priv_pass">Priv Pass:</label>
+                <input type="password" name="priv_pass" class="txt">
+                </p>
+                <p>
+                </div>
+%		if ( $ui->config->get('DEFAULT_SNMPVERSION') == 3 ){
+		    <div id="v2args" style="display:none">
+%	        }else{
+		    <div id="v2args" style="display:block">
+%	        }
+                <p>
+                <label for="comstr">SNMP Community:</label>
+                <select name="comstr" id="comstr" onChange="otherOption('comstr','back','other_comstr');">
 %               foreach my $comm ( @communities ){
  	            <option name="<% $comm %>"><% $comm %></option>
 %               }
                 <option name="Other" id="Other" value="Other">Other</option>
                 </select>
-
-                <input type="hidden" name="back" id="back" value="<" onClick="backSelectOpt('comstr','back','otherComstr');">
-                <label for="otherComstr"></label>
-                <input type="hidden" name="otherComstr" id="otherComstr" value="Other" size="13" onFocus="if( this.value == 'Other' ){this.value = '';} return true;">
+                <input type="hidden" name="back" id="back" value="<" onClick="backSelectOpt('comstr','back','other_comstr');">
+                <label for="other_comstr"></label>
+                <input type="hidden" name="other_comstr" id="other_comstr" value="Other" size="13" onFocus="if( this.value == 'Other' ){this.value = '';} return true;">
+                </p>
+		</div>
+		<p><br>
                 <input type="hidden" name="action" value="discover">
                 <input type="submit" name="submit" class="btn" value="discover">
-                </p>
             </form>    
+        </fieldset>
+
+        <fieldset class="medium">
+            <legend>Add Device manually</legend>
             <form action="device.html" method="POST">
                 <p>
                 <label for="newhost">Name:&nbsp;&nbsp;&nbsp;&nbsp;</label>
