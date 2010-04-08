@@ -1753,6 +1753,7 @@ sub get_arp {
 	'1.3.6.1.4.1.9.1.672' => 'Netdot::Model::Device::CiscoFW', 
 	'1.3.6.1.4.1.9.1.745' => 'Netdot::Model::Device::CiscoFW', 
 	'1.3.6.1.4.1.9.1.753' => 'Netdot::Model::Device::CiscoFW',
+        '1.3.6.1.4.1.9.1.915' => 'Netdot::Model::Device::CiscoFW',
 	);
 
     my $start     = time;
@@ -3945,7 +3946,7 @@ sub _get_arp_from_snmp {
     # atPhysAddress is used.
     my $use_shortcut = 1;
     my @paddr_keys = keys %$at_paddr;
-    if ( $paddr_keys[0] =~ /^(\d+)(\.1)?\.($IPV4)$/ ){
+    if ( $paddr_keys[0] && $paddr_keys[0] =~ /^(\d+)(\.1)?\.($IPV4)$/ ){
 	my $idx = $1;
 	if ( !exists $devints{$idx} ){
 	    $use_shortcut = 0;
