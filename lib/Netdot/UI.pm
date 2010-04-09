@@ -1883,6 +1883,170 @@ sub build_device_topology_graph_html {
 
 
 ############################################################################
+=head2 build_device_stp_graph
+
+  Arguments:
+
+  Returns:
+    GraphViz object
+  Examples:
+    print $ui->build_device_stp_graph(%argv);
+
+=cut
+sub build_device_stp_graph {
+    my ($self, %argv) = @_;
+    my ($id, $number, $view, $web_path, $shownames, $filename, $format, $direction) = 
+	@argv{'id', 'number', 'view', 'web_path', 'show_names', 'filename', 'format', 'direction'};
+    
+    $shownames = ($shownames == 1) ? 1 : 0;
+    $direction = ($direction eq 'up_down')? 0 : 1;
+    
+    my %links;
+    my %graph_args = (layout=>'dot', truecolor=>1, bgcolor=>"#ffffff00",ranksep=>2.0,
+		node=>{shape=>'record', fillcolor=>'#ffffff88', style=>'filled', 
+		       fontsize=>10, height=>.25},
+		edge=>{dir=>'none', labelfontsize=>8}, rankdir=>$direction );
+    my $g = GraphViz->new(%graph_args);
+    my $start = Device->retrieve($id);
+    my $stp_inst = STPInstance->search(device=>$id, number=>$number)->first;
+    return $g unless defined($stp_inst);
+    my $start_root = $stp_inst->root_bridge;
+    return $g unless defined($start_root);
+    
+    my $devicemacs = Device->get_macs_from_all();
+
+    my $links = Netdot::Topology->get_tree_stp_links(root=>$start_root, devicemacs=>$devicemacs);
+    map { $links{$_} = $links->{$_} } keys %$links;
+    
+    
+    sub add_node{
+	my (%argv) = @_;
+	my ($g, $device, $view, $shownames, $nodeoptions, $customlabel) =
+	    @argv{'graph', 'device', 'view', 'show_names', 'nodeoptions', 'custom_label'};
+	
+	$view ||= "view";
+	$customlabel ||= $device->short_name;
+	my $nodename = $g->add_node($device->id,
+				    label => $customlabel,
+				    shape => "record",
+				    URL   => "device.html?id=".$device->id."&view=$view&toponames=$shownames",
+				    %$nodeoptions
+            );
+	
+	return $nodename;
+    }
+    
+    
+    my $out = "";
+    my $seen = { NODE=>{}, EDGE=>{} };
+    foreach my $key (keys %links) {
+	#add from device to graph
+	my $from_int   = Interface->search(id=>$key)->first;
+	my $from_dev   = Device->search(id=>$from_int->device)->first;
+	my $from_label = "<here> " . $from_dev->short_name
+	                 . "|{Base\ Mac:\ ".$from_dev->physaddr->address
+	                 . "|STP\ Bridge\ Priority:\ ".$stp_inst->bridge_priority
+	                 . "}|Interface\ Name:\ ".$from_int->name;
+	if ( !exists $seen->{'NODE'}{$from_dev->id} ) {
+	    my $nodename = &add_node(graph        => $g,
+				     device       => $from_dev,
+				     view         => $view,
+				     show_names   => $shownames,
+				     custom_label => $from_label
+		);
+	    $seen->{'NODE'}{$from_dev->id} = $nodename;
+	}
+	
+	#add to device to graph
+	my $to_int   = Interface->search(id=>$links{$key})->first;
+	my $to_dev   = Device->search(id=>$to_int->device)->first;
+	my $to_label = "<here> " . $to_dev->short_name
+	               . "|{Base\ Mac:\ ".$to_dev->physaddr->address
+		       . "|STP\ Bridge\ Priority:\ ".$stp_inst->bridge_priority
+	               . "}|Interface\ Name:\ ".$to_int->name;
+	if ( !exists $seen->{'NODE'}{$to_dev->id} ) {
+	    my $nodename = &add_node(graph        => $g,
+				     device       => $to_dev,
+				     view         => $view,
+				     show_names   => $shownames,
+				     custom_label => $to_label
+		);
+	    $seen->{'NODE'}{$to_dev->id} = $nodename;
+	}
+	
+	#add the connection to graph
+	my $color = 'black';
+	my $style = 'solid';
+	if ( !exists $seen->{'EDGE'}{$key . " " . $links{$key}} ) {
+	    $g->add_edge($from_dev->id => $to_dev->id,
+			 tailURL       => "view.html?table=Interface&id=".$key,
+			 taillabel     => "",
+			 headURL       => "view.html?table=Interface&id=".$links{$key}, 
+			 headlabel     => "",
+			 color         => $color,
+			 style         => $style,
+		);
+            $seen->{'EDGE'}{$key . " " . $links{$key}} = 1;
+            $seen->{'EDGE'}{$links{$key} . " " . $key} = 1;
+	}
+	
+    }
+    
+    #output the graph to file
+    $argv{format} ||= 'png';
+    if ( $argv{format} =~ /^(text|ps|hpgl|gd|gd2|gif|jpeg|png|svg)$/){
+	my $method = 'as_'.$argv{format};
+	$g->$method($filename);
+    }else{
+	$self->throw_user("Unrecognized format: $argv{format}");
+    }
+    
+    return $g;
+}
+
+
+############################################################################
+=head2 build_device_stp_graph_html
+
+  Arguments:
+
+  Returns:
+    A string containing an img tag and a cmap (similar to build_device_topology_graph_html)
+  Examples:
+    print $ui->build_device_stp_graph_html(id=>$id, number=>$stp_number, view=>$view,
+                                           web_path=>$r->dir_config('NetdotPath'),
+                                           show_names=>1);
+
+=cut
+sub build_device_stp_graph_html {
+    my ($self, %argv) = @_;
+    my ($id, $number, $view, $web_path, $shownames, $filename) = 
+	@argv{'id', 'number', 'view', 'web_path', 'show_names', 'filename'};
+    
+    my $img_name      = $filename || "DeviceSTP-$id-$number-$shownames.png";
+    my $graph_path    = "img/graphs/$img_name";
+    my $img           = $web_path . $graph_path;
+    my $netdot_path   = Netdot->config->get('NETDOT_PATH');
+    $argv{filename}   = "$netdot_path/htdocs/" . $graph_path;
+
+    #my $vlans    = { 1=>{color=>'#000000', vlan=>Vlan->search(id=>1)->first} };
+    #$argv{vlans} = $vlans;
+
+    my $g = $self->build_device_stp_graph(%argv);
+
+    my  $vlanlist = "";
+#     foreach my $vlan (keys %$vlans) {
+# 	$vlanlist .= '<a href="view.html?table=Vlan&id=' . $vlans->{$vlan}{'vlan'} . '"><font color="' . $vlans->{$vlan}{'color'} . "\">$vlan</font></a> ";
+#     }
+    return "<img src=\"$img\" usemap=\"#test\" border=\"0\">" 
+	. $g->as_cmapx;
+#	. ($showvlans ? '<br><b>List of vlans and their colors:</b><br>'
+#	   . '<b>' . $vlanlist . '</b>'
+#	   : "");
+}
+
+
+############################################################################
 =head2 rrd_graph - Create RRD graphs
 
   Arguments:
