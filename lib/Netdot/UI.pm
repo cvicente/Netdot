@@ -1943,9 +1943,10 @@ sub build_device_stp_graph {
 	#add from device to graph
 	my $from_int   = Interface->search(id=>$key)->first;
 	my $from_dev   = Device->search(id=>$from_int->device)->first;
+	my $from_stp_inst = STPInstance->search(device=>$from_dev->id, number=>$number)->first;
 	my $from_label = "<here> " . $from_dev->short_name
 	                 . "|{Base\ Mac:\ ".$from_dev->physaddr->address
-	                 . "|STP\ Bridge\ Priority:\ ".$stp_inst->bridge_priority
+	                 . "|STP\ Bridge\ Priority:\ ".$from_stp_inst->bridge_priority
 	                 . "}|Interface\ Name:\ ".$from_int->name;
 	if ( !exists $seen->{'NODE'}{$from_dev->id} ) {
 	    my $nodename = &add_node(graph        => $g,
@@ -1960,9 +1961,10 @@ sub build_device_stp_graph {
 	#add to device to graph
 	my $to_int   = Interface->search(id=>$links{$key})->first;
 	my $to_dev   = Device->search(id=>$to_int->device)->first;
+	my $to_stp_inst = STPInstance->search(device=>$to_dev->id, number=>$number)->first;
 	my $to_label = "<here> " . $to_dev->short_name
 	               . "|{Base\ Mac:\ ".$to_dev->physaddr->address
-		       . "|STP\ Bridge\ Priority:\ ".$stp_inst->bridge_priority
+		       . "|STP\ Bridge\ Priority:\ ".$to_stp_inst->bridge_priority
 	               . "}|Interface\ Name:\ ".$to_int->name;
 	if ( !exists $seen->{'NODE'}{$to_dev->id} ) {
 	    my $nodename = &add_node(graph        => $g,
