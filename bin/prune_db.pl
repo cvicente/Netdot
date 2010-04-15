@@ -21,9 +21,9 @@ $self{NUM_HISTORY} = 100;
 $self{ROTATE}      = 0;
 
 my $usage = <<EOF;
- usage: $0   -H|--history | -F|--fwt | -A|--arp | -M|--macs | -I|--ips
-    [ -d|--num_days <number> ] [ -n|--num_history <number> ] [ -r|--rotate ]
-    [ -g|--debug ] [-h|--help]
+ usage: $0  -H, --history | -F, --fwt | -A, --arp | -M, --macs | -I, --ips | -R, rr | -t, --hostaudit
+    [ -d, --num_days <number> ] [ -n, --num_history <number> ] [ -r, --rotate ]
+    [ -g, --debug ] [-h, --help]
     
     -H, --history                  History tables
     -F, --fwt                      Forwarding Tables
@@ -31,6 +31,7 @@ my $usage = <<EOF;
     -M, --macs                     MAC addresses
     -I, --ips                      IP addresses
     -R, --rr                       DNS Resource Records
+    -t, --hostaudit                Host Audit records
     -d, --num_days                 Number of days worth of items to keep (default: $self{NUM_DAYS});
     -n, --num_history              Number of history items to keep for each record (default: $self{NUM_HISTORY});
     -r, --rotate                   Rotate forwarding tables and ARP caches (rather than delete records) 
@@ -66,6 +67,7 @@ my $result = GetOptions(
     "M|macs"          => \$self{MACS},
     "I|ips"           => \$self{IPS},
     "R|rr"            => \$self{RR},
+    "t|hostaudit"     => \$self{HOSTAUDIT},
     "d|num_days=i"    => \$self{NUM_DAYS},
     "n|num_history=i" => \$self{NUM_HISTORY},
     "r|rotate"        => \$self{ROTATE},
@@ -79,9 +81,14 @@ if ( $self{HELP} ) {
     exit;
 }
 
-if ( !$result || !($self{HISTORY} || $self{FWT} || $self{ARP} || $self{MACS} || $self{IPS} || $self{RR}) ){
+if ( !$result ){
     print $usage;
     die "Error: Problem with cmdline args\n";
+}
+
+unless  ( $self{HISTORY} || $self{FWT} || $self{ARP} || $self{MACS} || $self{IPS} || $self{RR} || $self{HOSTAUDIT} ){
+    print $usage;
+    die "Error: Missing required args\n";
 }
 
 # Add a log appender depending on the output type requested
@@ -185,6 +192,14 @@ if ( $self{RR} ){
         die "Could not delete DNS Resource Records, database $db_type not supported\n";
     }
     $rows_deleted{rr} = $r;
+}
+
+if ( $self{HOSTAUDIT} ){
+    my $r;
+    $logger->debug("Deleting hostaudit records");
+    $r = $dbh->do("DELETE FROM hostaudit WHERE tstamp < '$sqldate'")
+	unless $self{PRETEND};
+    $rows_deleted{hostaudit} = $r;
 }
 
 if ( $self{FWT} ){
