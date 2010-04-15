@@ -1921,15 +1921,17 @@ sub build_device_stp_graph {
     
     sub add_node{
 	my (%argv) = @_;
-	my ($g, $device, $view, $shownames, $nodeoptions, $customlabel) =
-	    @argv{'graph', 'device', 'view', 'show_names', 'nodeoptions', 'custom_label'};
+	my ($g, $device_id, $view, $shownames, $nodeoptions, $customlabel) =
+	    @argv{'graph', 'device_id', 'view', 'show_names', 'nodeoptions', 'custom_label'};
 	
 	$view ||= "view";
-	$customlabel ||= $device->short_name;
-	my $nodename = $g->add_node($device->id,
+	if ( !defined($customlabel) || $customlabel eq "" ) {
+	    $customlabel = Device->search(id=>$device_id)->first->short_name;
+	}
+	my $nodename = $g->add_node(name  => $device_id,
 				    label => $customlabel,
 				    shape => "record",
-				    URL   => "device.html?id=".$device->id."&view=$view&toponames=$shownames",
+				    URL   => "device.html?id=".$device_id."&view=$view&toponames=$shownames",
 				    %$nodeoptions
             );
 	
@@ -1940,58 +1942,99 @@ sub build_device_stp_graph {
     my $out = "";
     my $seen = { NODE=>{}, EDGE=>{} };
     foreach my $key (keys %links) {
+	# Note: I am not sure how much of the 'from' and 'to' mean directionally,
+	# but they are just two ends of a connection -DY
+	
 	#add from device to graph
-	my $from_int   = Interface->search(id=>$key)->first;
+	my $from_int   = Interface->search(id=>$links{$key})->first;
 	my $from_dev   = Device->search(id=>$from_int->device)->first;
 	my $from_stp_inst = STPInstance->search(device=>$from_dev->id, number=>$number)->first;
-	my $from_label = "<here> " . $from_dev->short_name
-	                 . "|{Base\ Mac:\ ".$from_dev->physaddr->address
-	                 . "|STP\ Bridge\ Priority:\ ".$from_stp_inst->bridge_priority
-	                 . "}|Interface\ Name:\ ".$from_int->name;
 	if ( !exists $seen->{'NODE'}{$from_dev->id} ) {
-	    my $nodename = &add_node(graph        => $g,
-				     device       => $from_dev,
-				     view         => $view,
-				     show_names   => $shownames,
-				     custom_label => $from_label
-		);
-	    $seen->{'NODE'}{$from_dev->id} = $nodename;
+	    my $from_label = $from_dev->short_name
+		             . "|Mac:\\ ".$from_dev->physaddr->address
+	                     . "|Priority:\\ ".$from_stp_inst->bridge_priority
+	                     . "|<port".$links{$key}."> Interface\\ Name:\\ ".$from_int->name;
+#	if ( !exists $seen->{'NODE'}{$from_dev->id} ) {
+#	    my $nodename = &add_node(graph        => $g,
+#				     device       => $from_dev,
+#				     view         => $view,
+#				     show_names   => $shownames,
+#				     custom_label => $from_label
+#		);
+#	    $seen->{'NODE'}{$from_dev->id} = $nodename;
+	    $seen->{'NODE'}{$from_dev->id} = $from_label;
+	} else {
+	    $seen->{'NODE'}{$from_dev->id} .= "|<port".$links{$key}."> Interface\\ Name:\\ ".$from_int->name;
 	}
 	
 	#add to device to graph
-	my $to_int   = Interface->search(id=>$links{$key})->first;
+	my $to_int   = Interface->search(id=>$key)->first;
 	my $to_dev   = Device->search(id=>$to_int->device)->first;
 	my $to_stp_inst = STPInstance->search(device=>$to_dev->id, number=>$number)->first;
-	my $to_label = "<here> " . $to_dev->short_name
-	               . "|{Base\ Mac:\ ".$to_dev->physaddr->address
-		       . "|STP\ Bridge\ Priority:\ ".$to_stp_inst->bridge_priority
-	               . "}|Interface\ Name:\ ".$to_int->name;
 	if ( !exists $seen->{'NODE'}{$to_dev->id} ) {
-	    my $nodename = &add_node(graph        => $g,
-				     device       => $to_dev,
-				     view         => $view,
-				     show_names   => $shownames,
-				     custom_label => $to_label
-		);
-	    $seen->{'NODE'}{$to_dev->id} = $nodename;
+	    my $to_label = $to_dev->short_name
+	                   . "|Mac:\\ ".$to_dev->physaddr->address
+		           . "|Priority:\\ ".$to_stp_inst->bridge_priority
+	                   . "|<port".$key."> Interface\\ Name:\\ ".$to_int->name;
+#	if ( !exists $seen->{'NODE'}{$to_dev->id} ) {
+#	    my $nodename = &add_node(graph        => $g,
+#				     device       => $to_dev,
+#				     view         => $view,
+#				     show_names   => $shownames,
+#				     custom_label => $to_label
+#		);
+#	    $seen->{'NODE'}{$to_dev->id} = $nodename;
+	    $seen->{'NODE'}{$to_dev->id} = $to_label;
+	} else {
+	    $seen->{'NODE'}{$to_dev->id} .= "|<port".$key."> Interface\\ Name:\\ ".$to_int->name;
 	}
 	
 	#add the connection to graph
-	my $color = 'black';
-	my $style = 'solid';
-	if ( !exists $seen->{'EDGE'}{$key . " " . $links{$key}} ) {
-	    $g->add_edge($from_dev->id => $to_dev->id,
-			 tailURL       => "view.html?table=Interface&id=".$key,
-			 taillabel     => "",
-			 headURL       => "view.html?table=Interface&id=".$links{$key}, 
-			 headlabel     => "",
-			 color         => $color,
-			 style         => $style,
-		);
+#	my $color = 'black';
+#	my $style = 'solid';
+	if ( !exists $seen->{'EDGE'}{$links{$key} . " " . $key} ) {
+#	    $g->add_edge($from_dev->id => $to_dev->id,
+#			 tailURL       => "view.html?table=Interface&id=".$links{$key},
+#			 taillabel     => "",
+#			 headURL       => "view.html?table=Interface&id=".$key, 
+#			 headlabel     => "",
+#			 color         => $color,
+#			 style         => $style,
+#		);
             $seen->{'EDGE'}{$key . " " . $links{$key}} = 1;
-            $seen->{'EDGE'}{$links{$key} . " " . $key} = 1;
+            $seen->{'EDGE'}{$links{$key} . " " . $key} = $from_dev->id . " " . $to_dev->id;
 	}
-	
+    }
+    
+    # add the nodes to the graph
+    foreach my $dev_id (keys %{$seen->{'NODE'}}) {
+	&add_node(graph        => $g,
+		  device_id    => $dev_id,
+		  view         => $view,
+		  show_names   => $shownames,
+		  custom_label => $seen->{'NODE'}{$dev_id}
+	    );
+    }
+    
+    # add the edges to the graph
+    my $color = 'black';
+    my $style = 'solid';
+    foreach my $edge (keys %{$seen->{'EDGE'}}) {
+        next if $seen->{'EDGE'}{$edge} == 1;
+	my ($tail_int, $head_int) = split(/ /, $edge);
+	my ($tail_dev, $head_dev) = split(/ /, $seen->{'EDGE'}{$edge});
+	# tail == from == $links{$key} previously
+	# head == to == $key previously
+	$g->add_edge($tail_dev => $head_dev,
+		     tailURL   => "view.html?table=Interface&id=".$tail_int,
+		     taillabel => "",
+		     headURL   => "view.html?table=Interface&id=".$head_int,
+		     headlabel => "",
+		     color     => $color,
+		     style     => $style,
+		     from_port => $tail_int,
+		     to_port   => $head_int
+	    );
     }
     
     #output the graph to file
@@ -2031,20 +2074,10 @@ sub build_device_stp_graph_html {
     my $netdot_path   = Netdot->config->get('NETDOT_PATH');
     $argv{filename}   = "$netdot_path/htdocs/" . $graph_path;
 
-    #my $vlans    = { 1=>{color=>'#000000', vlan=>Vlan->search(id=>1)->first} };
-    #$argv{vlans} = $vlans;
-
     my $g = $self->build_device_stp_graph(%argv);
 
-    my  $vlanlist = "";
-#     foreach my $vlan (keys %$vlans) {
-# 	$vlanlist .= '<a href="view.html?table=Vlan&id=' . $vlans->{$vlan}{'vlan'} . '"><font color="' . $vlans->{$vlan}{'color'} . "\">$vlan</font></a> ";
-#     }
     return "<img src=\"$img\" usemap=\"#test\" border=\"0\">" 
 	. $g->as_cmapx;
-#	. ($showvlans ? '<br><b>List of vlans and their colors:</b><br>'
-#	   . '<b>' . $vlanlist . '</b>'
-#	   : "");
 }
 
 
