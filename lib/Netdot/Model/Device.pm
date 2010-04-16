@@ -482,7 +482,7 @@ sub insert {
 		  canautoupdate    => 0,
 		  date_installed   => $class->timestamp,
 		  monitor_config   => $class->config->get('DEV_MONITOR_CONFIG'),
-		  monitored        => 1,
+		  monitored        => 0,
 		  monitorstatus    => 0,
 		  owner            => $default_owner,
 		  product          => 0,
@@ -1287,6 +1287,8 @@ sub discover {
 	}
     }
     
+    my $device_is_new = 0;
+
     unless ( $dev ){ #still no dev! guess we better make it!
     	$logger->debug(sub{"Device::discover: Device $name does not yet exist"});
 	# Set some values in the new Device based on the SNMP info obtained
@@ -1350,6 +1352,7 @@ sub discover {
 	# Insert the new Device
 	$devtmp{name} = $newname;
 	$dev = $class->insert(\%devtmp);
+	$device_is_new = 1;
     }
     
     if( $device_changed_name ){
@@ -1368,8 +1371,9 @@ sub discover {
                            add_subnets subs_inherit bgp_peers pretend do_info do_fwt do_arp timestamp) ){
 	$uargs{$field} = $argv{$field} if defined ($argv{$field});
     }
-    $uargs{session} = $sinfo if $sinfo;
-    $uargs{info}    = $info;
+    $uargs{session}       = $sinfo if $sinfo;
+    $uargs{info}          = $info;
+    $uargs{device_is_new} = $device_is_new;
 
     # Update Device with SNMP info obtained
     $dev->snmp_update(%uargs);
@@ -2202,6 +2206,8 @@ sub update_bgp_peering {
     timestamp      Time Stamp (optional)
     no_update_tree Flag. Do not update IP tree.
     atomic         Flag. Perform atomic updates.
+    device_is_new  Flag. Specifies that device was just created.
+
   Returns:
     Updated Device object
 
@@ -2249,19 +2255,21 @@ sub snmp_update {
 	}
 	
 	if ( $atomic && !$argv{pretend} ){
-	    Netdot::Model->do_transaction( sub{ return $self->info_update(add_subnets  => $argv{add_subnets},
-									  subs_inherit => $argv{subs_inherit},
-									  bgp_peers    => $argv{bgp_peers},
-									  session      => $sinfo,
-									  info         => $info,
+	    Netdot::Model->do_transaction( sub{ return $self->info_update(add_subnets   => $argv{add_subnets},
+									  subs_inherit  => $argv{subs_inherit},
+									  bgp_peers     => $argv{bgp_peers},
+									  session       => $sinfo,
+									  info          => $info,
+									  device_is_new => $argv{device_is_new},
 						    ) } );
 	}else{
-	    $self->info_update(add_subnets  => $argv{add_subnets},
-			       subs_inherit => $argv{subs_inherit},
-			       bgp_peers    => $argv{bgp_peers},
-			       pretend      => $argv{pretend},
-			       session      => $sinfo,
-			       info         => $info,
+	    $self->info_update(add_subnets   => $argv{add_subnets},
+			       subs_inherit  => $argv{subs_inherit},
+			       bgp_peers     => $argv{bgp_peers},
+			       pretend       => $argv{pretend},
+			       session       => $sinfo,
+			       info          => $info,
+			       device_is_new => $argv{device_is_new},
 		);
 	}
     }
@@ -2316,6 +2324,7 @@ sub snmp_update {
     subs_inherit  Flag. When adding subnets, have them inherit information from the Device
     bgp_peers     Flag. When discovering routers, update bgp_peers
     pretend       Flag. Do not commit changes to the database
+    device_is_new Flag. Specifies that device was just created.
 
   Returns:
     Updated Device object
@@ -2425,6 +2434,11 @@ sub info_update {
     ##############################################################
     $devtmp{product} = $self->_assign_product($info);
     
+    ##############################################################
+    if ( $devtmp{product} && $argv{device_is_new} ){
+	$devtmp{monitored} = $self->_assign_device_monitored($devtmp{product});
+    }
+
     ##############################################################
     if ( my $g = $self->_assign_monitor_config_group($info) ){
 	$devtmp{monitor_config_group} = $g;
@@ -4570,6 +4584,27 @@ sub _assign_product {
     $args{hostname}      = $host;
     
     return Product->find_or_create(%args);
+}
+    
+
+##############################################################
+# Assign monitored flag based on device type
+#
+# Arguments
+#   Product object
+# Returns
+#   1 or 0
+#
+sub _assign_device_monitored {
+    my ($self, $product) = @_;
+    return unless $product;
+    if ( my $ptype = $product->type->name ){
+	if ( my $default = $self->config->get('DEFAULT_DEV_MONITORED') ){
+	    if ( exists $default->{$ptype} ){
+		return $default->{$ptype};
+	    }
+	}
+    }
 }
     
 
