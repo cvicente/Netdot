@@ -53,6 +53,7 @@ Netdot::Model::Device::Airespace - Cisco Wireless Controller Class
     subs_inherit  Flag. When adding subnets, have them inherit information from the Device
     bgp_peers     Flag. When discovering routers, update bgp_peers
     pretend       Flag. Do not commit changes to the database
+    device_is_new Flag. Specifies that device was just created.
 
   Returns:
     Updated Device object
@@ -168,6 +169,11 @@ sub info_update {
     ##############################################################
     $dev{product} = $self->_assign_product($info);
     
+    ##############################################################
+    if ( $dev{product} && $argv{device_is_new} ){
+	$dev{monitored} = $self->_assign_device_monitored($dev{product});
+    }
+
     ##############################################################
     if ( my $g = $self->_assign_monitor_config_group($info) ){
 	$dev{monitor_config_group} = $g;
