@@ -1083,7 +1083,7 @@ sub get_p2p_links {
 	my @ips = $block->children;
 	my @ints;
 	foreach my $ip ( @ips ){
-	    if ( $ip->interface ){
+	    if ( int($ip->interface) == 0 ){
 		my $type = $ip->interface->type || 'unknown';
 		# Ignore 'propVirtual' interfaces, sice most likely these
 		# are not where the actual physical connection happens
