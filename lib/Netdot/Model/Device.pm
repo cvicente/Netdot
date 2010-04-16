@@ -435,7 +435,7 @@ sub assign_name {
     # Make sure name has an associated IP and A record
     if ( $ip ){
 	my $ipb = Ipblock->search(address=>$ip)->first ||
-	    Ipblock->insert({address=>$ip, status=>'Static'});
+	    Ipblock->insert({address=>$ip, status=>'Static', no_update_tree=>1});
 	my $rraddr = RRADDR->find_or_create({ipblock=>$ipb, rr=>$rr});
     }
     return $rr;
@@ -481,7 +481,7 @@ sub insert {
 		  collect_fwt      => 0,
 		  canautoupdate    => 0,
 		  date_installed   => $class->timestamp,
-		  monitor_config   => $class->config->get('DEV_MONITOR_CONFIG'),
+		  monitor_config   => 0,
 		  monitored        => 0,
 		  monitorstatus    => 0,
 		  owner            => $default_owner,
@@ -2440,7 +2440,8 @@ sub info_update {
     }
 
     ##############################################################
-    if ( my $g = $self->_assign_monitor_config_group($info) ){
+    if ( $argv{device_is_new} && (my $g = $self->_assign_monitor_config_group($info)) ){
+	$devtmp{monitor_config}       = 1;
 	$devtmp{monitor_config_group} = $g;
     }
 
@@ -4618,7 +4619,8 @@ sub _assign_device_monitored {
 #
 sub _assign_monitor_config_group{
     my ($self, $info) = @_;
-    if ( $self->monitor_config && (!$self->monitor_config_group || $self->monitor_config_group eq "") ){
+    if ( $self->config->get('DEV_MONITOR_CONFIG') && 
+	 (!$self->monitor_config_group || $self->monitor_config_group eq "") ){
 	my $monitor_config_map = $self->config->get('DEV_MONITOR_CONFIG_GROUP_MAP') || {};
 	my $config_group;
 	if ( my $type = $info->{type} ){

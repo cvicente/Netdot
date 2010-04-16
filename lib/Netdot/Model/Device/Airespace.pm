@@ -175,7 +175,7 @@ sub info_update {
     }
 
     ##############################################################
-    if ( my $g = $self->_assign_monitor_config_group($info) ){
+    if ( $argv{device_is_new} && (my $g = $self->_assign_monitor_config_group($info)) ){
 	$dev{monitor_config_group} = $g;
     }
 
