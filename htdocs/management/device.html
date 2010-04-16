@@ -409,7 +409,7 @@ push( @cell_data, &{sub{
     }} );
 
 
-my @rooms = $o->site->rooms;
+my @rooms = sort { $a->name cmp $b->name } $o->site->rooms;
 push( @field_headers, $ui->col_descr_link('Device', 'room', 'Room:') );
 push( @cell_data, &{sub{
     my $room_js = sprintf("onChange=\"setNull(document.netdotform.Device__%d__closet);\"", $id);
