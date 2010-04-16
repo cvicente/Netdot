@@ -1081,21 +1081,19 @@ sub get_p2p_links {
 	$logger->debug(sprintf("Topology::get_p2p_links: Checking Subnet %s",
 			       $block->get_label));
 	my @ips = $block->children;
-	if ( scalar(@ips) == 2 ){
-	    my @ints;
-	    foreach my $ip ( @ips ){
-		if ( $ip->interface ){
-		    my $type = $ip->interface->type || 'unknown';
-		    # Ignore 'propVirtual' interfaces, sice most likely these
-		    # are not where the actual physical connection happens
-		    push @ints, $ip->interface if ( $type ne 'propVirtual' );
-		}
+	my @ints;
+	foreach my $ip ( @ips ){
+	    if ( $ip->interface ){
+		my $type = $ip->interface->type || 'unknown';
+		# Ignore 'propVirtual' interfaces, sice most likely these
+		# are not where the actual physical connection happens
+		push @ints, $ip->interface if ( $type ne 'propVirtual' );
 	    }
-	    if ( scalar(@ints) == 2 ){
-		$logger->debug(sprintf("Topology::get_p2p_links: Found link: %d -> %d", 
-				       $ints[0], $ints[1]));
-		$links{$ints[0]} = $ints[1];
-	    }
+	}
+	if ( scalar(@ints) == 2 ){
+	    $logger->debug(sprintf("Topology::get_p2p_links: Found link: %d -> %d", 
+				   $ints[0], $ints[1]));
+	    $links{$ints[0]} = $ints[1];
 	}
     }
     $logger->debug(sprintf("Topology::get_p2p_links: %d Links determined in %s", 
