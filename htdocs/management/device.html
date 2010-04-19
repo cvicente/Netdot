@@ -403,7 +403,7 @@ push( @cell_data, $ui->select_multiple(object=>$o, joins=>\@devcontacts, join_ta
 
 push( @field_headers, $ui->col_descr_link('Device', 'site', 'Site:')  );
 push( @cell_data, &{sub{
-    my $js = sprintf("onChange=\"jsrsSendquery('Room', 'Device__%d__room', this.options[selectedIndex].text);jsrsSendquery('Closet', 'Device__%d__closet', this.options[selectedIndex].text);\"", $o->id, $o->id);
+    my $js = sprintf("onChange=\"jsrsSendqueryNM('Room', 'Device__%d__room', this.options[selectedIndex].text);\"", $o->id);
     $ui->select_lookup(object=>$o, column=>"site", lookup=>"Site",
 		       edit=>$editloc, linkPage=>"view.html", htmlExtra=>$js, returnAsVar=>1)
     }} );
@@ -412,10 +412,9 @@ push( @cell_data, &{sub{
 my @rooms = sort { $a->name cmp $b->name } $o->site->rooms;
 push( @field_headers, $ui->col_descr_link('Device', 'room', 'Room:') );
 push( @cell_data, &{sub{
-    my $room_js = sprintf("onChange=\"setNull(document.netdotform.Device__%d__closet);\"", $id);
     $ui->select_lookup(object=>$o, column=>"room", lookup=>"Room", 
 		       edit=>$editloc, defaults=>\@rooms,
-		       makeLink=>1, linkPage=>"view.html", htmlExtra=>$room_js, returnAsVar=>1)
+		       makeLink=>1, linkPage=>"view.html", returnAsVar=>1)
     }} );
 
 {

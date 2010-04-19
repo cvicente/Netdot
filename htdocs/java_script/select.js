@@ -2,20 +2,18 @@
 
     function jsrsSendquery(tablename, form_field, val ) {
         // alert( "tablename: "+tablename+"; form_field: "+form_field+"; val: "+val );
-        // got rid of form_field.name because of 'name' conflict with js; now form_field is a string, and we use form_field directly as opposed to form_field.name. The 3 other jsrsSendquery{TB|RM|BB} below methods are unchanged/unaffected.
         jsrsExecute( "../generic/jsrs_netdot.html", jsrsParseresults, "keyword_search", Array(tablename, form_field, val) );
     }
 
-    function jsrsSendqueryTB(tablename, form_field, val, column) {
-	// form_field.name changed to form_field for same reasons as above.
-	// alert( "tablename: "+tablename+"; form_field: "+form_field+"; Field (Column): "+column+"; val: "+val );
-        jsrsExecute( "../generic/jsrs_netdot.html", jsrsParseresults, "keyword_search", Array(tablename, form_field, val, column ) );
+// Use this one when you want no limits imposed on the number of items returned
+    function jsrsSendqueryNM(tablename, form_field, val) {
+        // alert( "tablename: "+tablename+"; form_field: "+form_field+"; val: "+val );
+        jsrsExecute( "../generic/jsrs_netdot.html", jsrsParseresults, "keyword_search", Array(tablename, form_field, val, 'null', '1') );
     }
 
-    function jsrsSendqueryRM(form_field, val) {
-        // Room-Site relationship
-        // alert( "Form field: "+form_field.name+"; val:"+val );
-        jsrsExecute( "../generic/room_site_query.html", jsrsParseresults, "room_site_search", Array(form_field.name, val) );
+    function jsrsSendqueryTB(tablename, form_field, val, column) {
+	// alert( "tablename: "+tablename+"; form_field: "+form_field+"; Field (Column): "+column+"; val: "+val );
+        jsrsExecute( "../generic/jsrs_netdot.html", jsrsParseresults, "keyword_search", Array(tablename, form_field, val, column ) );
     }
 
     function jsrsSendqueryCL(form_field, val) {
