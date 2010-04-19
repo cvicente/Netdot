@@ -110,7 +110,7 @@ sub keyword_search {
             foreach my $o ( @objs ){
                 my $lbl = $o->get_label();
                 $response .= $o->id."=".$ui->url_encode($lbl)."&";
-                last if ($count++) == $MAX;
+                last if (!$nomax && $count++) == $MAX;
             }
         }
     }else{
