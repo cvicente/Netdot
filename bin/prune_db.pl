@@ -180,18 +180,23 @@ if ( $self{IPS} ){
 }
 
 if ( $self{RR} ){
-    my $r;
-    if ( $db_type eq 'mysql' ){
-	$logger->debug("Deleting expired resource records");
-	$r = $dbh->do("DELETE FROM rr WHERE expiration < CURDATE() AND expiration <> '0000-00-00'")
-	    unless $self{PRETEND};
-    }elsif( $db_type eq 'Pg' ){
-        $r = $dbh->do("DELETE FROM rr WHERE expiration < current_date AND expiration <> '1970-01-01'")
-	    unless $self{PRETEND};
-    }else{
-        die "Could not delete DNS Resource Records, database $db_type not supported\n";
+    my $today = Netdot::Model->sqldate_today();
+    $logger->debug("Deleting resource records expiring today or before today ($today)");
+    my @where = (-and => [expiration => {'<=', $today},
+			  expiration => {'<>', '0000-00-00'},
+			  expiration => {'<>', '1970-01-01'}]
+	);
+    
+    my @rrs = RR->search_where(@where);
+
+    unless ( $self{PRETEND} ){
+	foreach my $rr ( @rrs ){
+	    $logger->debug("Deleting RR: ".$rr->get_label);
+	    $rr->delete();
+	}
     }
-    $rows_deleted{rr} = $r;
+    
+    $rows_deleted{rr} = scalar(@rrs);
 }
 
 if ( $self{HOSTAUDIT} ){
