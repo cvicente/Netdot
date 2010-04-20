@@ -623,9 +623,10 @@ function showVlan(){
     if ( exists $intinfo{jack} || $editints ){
       push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=jack">Jack(cable)</a>';
       my @closets = $o->room->closets if ( int($o->room) != 0 );
-      foreach my $cl (@closets) {
-	  push @closet_jacks, $cl->horizontalcables;
+      foreach my $cl ( @closets ) {
+	  push @closet_jacks,  $cl->horizontalcables;
       }
+      @closet_jacks = sort { $a->get_label cmp $b->get_label } @closet_jacks;
     }
     if ( exists $intinfo{room_char} || $editints ){
       push @headers, 'Room';
@@ -674,19 +675,17 @@ function showVlan(){
 		  }
 		  $ac;
 		}};
-     }
+      }
       
-     push @row, $ui->form_field(object=>$if, column=>"monitored", edit=>$editints, returnValOnly=>1);
-     push @row, $ui->form_field(object=>$if, column=>"snmp_managed", edit=>$editints, returnValOnly=>1);
+      push @row, $ui->form_field(object=>$if, column=>"monitored", edit=>$editints, returnValOnly=>1);
+      push @row, $ui->form_field(object=>$if, column=>"snmp_managed", edit=>$editints, returnValOnly=>1);
       
       if ( exists $intinfo{jack} || $editints ){
-	  if ( @closet_jacks ){
-	      push @row, $ui->form_field(object=>$if, table=>"Interface", column=>"jack", defaults=>\@closet_jacks, 
-					  linkPage=>"view.html", edit=>$editints, returnValOnly=>1);
-	  }else{
-	      push @row, $ui->form_field(object=>$if, table=>"Interface", column=>"jack", linkPage=>1, 
-					  edit=>$editints, returnValOnly=>1);
+	  my %args = (object=>$if, column=>"jack", linkPage=>"view.html", edit=>$editints, returnValOnly=>1);
+	  if ( @closet_jacks && (scalar(@closet_jacks) <= $ui->config->get('DEFAULT_SELECTMAX')) ){
+	      $args{defaults} = \@closet_jacks;
 	  }
+	  push @row, $ui->form_field(%args);      
       }
       if ( exists $intinfo{room_char} || $editints ){
           push @row, $ui->form_field(object=>$if, column=>"room_char", edit=>$editints, htmlExtra =>"style=\"width: 4em;\"", 
