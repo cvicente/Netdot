@@ -61,24 +61,18 @@ if ( $floor = Floor->retrieve($floor_id) ){
     }
 }
 
-my $MAX_RESULTS   = $ui->config->get('DEFAULT_SELECTMAX');
 my $response = $field."&";
 
-if (scalar(@results) < $MAX_RESULTS) {
-    @results = sort { $a->name cmp $b->name } @results;
-    @results = sort { $a->room->name cmp $b->room->name } @results;
+@results = sort { $a->name cmp $b->name } @results;
+@results = sort { $a->room->name cmp $b->room->name } @results;
 
-    $response .= "0=".$ui->url_encode("No matches") unless (scalar(@results));
+$response .= "0=".$ui->url_encode("No matches") unless (scalar(@results));
 
-    if (scalar(@results)) {
-        $response .= "0=-- Select --&";
-        foreach my $closet (@results) {
-            $response .= $closet->id."=".$ui->url_encode($closet->name." (Room ".$closet->room->name.")")."&";
-        }
+if (scalar(@results)) {
+    $response .= "0=-- Select --&";
+    foreach my $closet (@results) {
+	$response .= $closet->id."=".$ui->url_encode($closet->name." (Room ".$closet->room->name.")")."&";
     }
-} else {
-    $response .= "0=".$ui->url_encode("More than ".$MAX_RESULTS." matches.")."&";
-    $response .= "0=".$ui->url_encode("Refine search.")."&";
 }
 
 return $response;

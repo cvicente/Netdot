@@ -13,7 +13,7 @@
 
     function jsrsSendqueryTB(tablename, form_field, val, column) {
 	// alert( "tablename: "+tablename+"; form_field: "+form_field+"; Field (Column): "+column+"; val: "+val );
-        jsrsExecute( "../generic/jsrs_netdot.html", jsrsParseresults, "keyword_search", Array(tablename, form_field, val, column ) );
+        jsrsExecute( "../generic/jsrs_netdot.html", jsrsParseresults, "keyword_search", Array(tablename, form_field, val, column, '1' ) );
     }
 
     function jsrsSendqueryCL(form_field, val) {
