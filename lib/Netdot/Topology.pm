@@ -401,7 +401,7 @@ sub get_dp_links {
 			    # this means that this mac is also a base_mac 
 			    # don't set rem_int because it would most likely be wrong
 			    $rem_dev = $dev;
-			}elsif ( $ints[0]->type eq 'propVirtual' ){
+			}elsif ( $ints[0]->type eq 'propVirtual' || $ints[0]->type eq 'l2vlan' ){
 			    # Ignore virtual interfaces
 			    $rem_dev = $ints[0]->device;
 			}else{
@@ -582,14 +582,7 @@ sub get_fdb_links {
 
     my %infrastructure_macs = %{ PhysAddr->infrastructure() };
 
-    my $int_macs_q = $dbh->selectall_arrayref("SELECT physaddr.address, interface.id 
-                                               FROM   physaddr, interface
-                                               WHERE  interface.physaddr=physaddr.id");
-    my %interface_macs;
-    foreach my $row ( @$int_macs_q ){
-	my ( $address, $interface ) = @$row;
-	$interface_macs{$address} = $interface;
-    }
+    my $interface_macs = PhysAddr->from_interfaces();
 
     my $layer1_devs_q = $dbh->selectall_arrayref("SELECT physaddr.address, interface.id 
                                                   FROM   physaddr, interface, device
@@ -798,8 +791,15 @@ sub get_fdb_links {
 		my $num_addresses = scalar keys %{$d->{$device}{$interface}};
 		if ( 1 == $num_addresses ){
 		    my $address = (keys %{$d->{$device}{$interface}})[0];
-		    if ( my $neighbor = $interface_macs{$address} ){
-			push @other_links, ['single-entry', $interface, $neighbor];
+		    if ( my $mac_id = $interface_macs->{$address} ){
+			my $physaddr = PhysAddr->retrieve($mac_id) || next;
+			foreach my $int ( $physaddr->interfaces() ){
+			    # The idea is that there could be multiple interfaces using the same
+			    # MAC address.  Our goal is to ignore the vitual ones.
+			    next if ( $int->type eq 'propVirtual' || $int->type eq 'l2vlan' );
+			    push @other_links, ['single-entry', $interface, $int];
+			    last;
+			}
 		    }
 		}elsif ( $num_addresses ){
 		    my $intersection = &hash_intersection($d->{$device}{$interface},
@@ -1089,9 +1089,9 @@ sub get_p2p_links {
 	foreach my $ip ( @ips ){
 	    if ( int($ip->interface) ){
 		my $type = $ip->interface->type || 'unknown';
-		# Ignore 'propVirtual' interfaces, sice most likely these
+		# Ignore virtual interfaces, sice most likely these
 		# are not where the actual physical connection happens
-		push @ints, $ip->interface if ( $type ne 'propVirtual' );
+		push @ints, $ip->interface if ( $type ne 'propVirtual' && $type ne 'l2vlan' );
 	    }
 	}
 	if ( scalar(@ints) == 2 ){
