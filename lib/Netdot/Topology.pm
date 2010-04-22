@@ -401,8 +401,8 @@ sub get_dp_links {
 			    # this means that this mac is also a base_mac 
 			    # don't set rem_int because it would most likely be wrong
 			}else{
-			    my $int = $ints[0];
-			    $rem_dev = $int->device;
+			    $rem_int = $ints[0];
+			    $rem_dev = $rem_int->device;
 			    $links{$iid} = $rem_int;
 			    $links{$rem_int} = $iid;
 			    $logger->debug(sprintf("Topology::get_dp_links: Found link: %d -> %d", 
