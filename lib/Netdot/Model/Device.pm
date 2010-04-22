@@ -438,7 +438,7 @@ sub assign_name {
     # Make sure name has an associated IP and A record
     if ( $ip ){
 	my $ipb = Ipblock->search(address=>$ip)->first ||
-	    Ipblock->insert({address=>$ip, status=>'Static'});
+	    Ipblock->insert({address=>$ip, status=>'Static', no_update_tree=>1});
 	my $rraddr = RRADDR->find_or_create({ipblock=>$ipb, rr=>$rr});
     }
     return $rr;
@@ -484,8 +484,8 @@ sub insert {
 		  collect_fwt      => 0,
 		  canautoupdate    => 0,
 		  date_installed   => $class->timestamp,
-		  monitor_config   => $class->config->get('DEV_MONITOR_CONFIG'),
-		  monitored        => 1,
+		  monitor_config   => 0,
+		  monitored        => 0,
 		  monitorstatus    => 0,
 		  owner            => $default_owner,
 		  asset_id         => 0,
@@ -1294,6 +1294,8 @@ sub discover {
 	}
     }
     
+    my $device_is_new = 0;
+
     unless ( $dev ){ #still no dev! guess we better make it!
     	$logger->debug(sub{"Device::discover: Device $name does not yet exist"});
 	# Set some values in the new Device based on the SNMP info obtained
@@ -1303,10 +1305,26 @@ sub discover {
 	my %devtmp = (snmp_managed  => 1,
 		      snmp_polling  => 1,
 		      canautoupdate => 1,
+		      # These following two could have changed in get_snmp_session
+		      # so we grab them from %info instead of directly from %argv
 		      community     => $info->{community},
 		      snmp_version  => $info->{snmp_version},
 		      );
-	
+
+	if ( $devtmp{snmp_version} == 3 ){
+	    my %arg2field = (sec_name   => 'snmp_securityname',
+			     sec_level  => 'snmp_securitylevel',
+			     auth_proto => 'snmp_authprotocol',
+			     auth_pass  => 'snmp_authkey',
+			     priv_proto => 'snmp_privprotocol',
+			     priv_pass  => 'snmp_privkey',
+		);
+
+	    foreach my $arg ( keys %arg2field ){
+		$devtmp{$arg2field{$arg}} = $argv{$arg} if defined $argv{$arg};
+	    }
+	}
+
 	if ( $info->{layers} ){
 	    # We collect rptrAddrTrackNewLastSrcAddress from hubs
 	    if ( $class->_layer_active($info->{layers}, 1) ){
@@ -1341,6 +1359,7 @@ sub discover {
 	# Insert the new Device
 	$devtmp{name} = $newname;
 	$dev = $class->insert(\%devtmp);
+	$device_is_new = 1;
     }
     
     if( $device_changed_name ){
@@ -1359,8 +1378,9 @@ sub discover {
                            add_subnets subs_inherit bgp_peers pretend do_info do_fwt do_arp timestamp) ){
 	$uargs{$field} = $argv{$field} if defined ($argv{$field});
     }
-    $uargs{session} = $sinfo if $sinfo;
-    $uargs{info}    = $info;
+    $uargs{session}       = $sinfo if $sinfo;
+    $uargs{info}          = $info;
+    $uargs{device_is_new} = $device_is_new;
 
     # Update Device with SNMP info obtained
     $dev->snmp_update(%uargs);
@@ -1744,6 +1764,7 @@ sub get_arp {
 	'1.3.6.1.4.1.9.1.672' => 'Netdot::Model::Device::CiscoFW', 
 	'1.3.6.1.4.1.9.1.745' => 'Netdot::Model::Device::CiscoFW', 
 	'1.3.6.1.4.1.9.1.753' => 'Netdot::Model::Device::CiscoFW',
+        '1.3.6.1.4.1.9.1.915' => 'Netdot::Model::Device::CiscoFW',
 	);
 
     my $start     = time;
@@ -2197,6 +2218,8 @@ sub update_bgp_peering {
     timestamp      Time Stamp (optional)
     no_update_tree Flag. Do not update IP tree.
     atomic         Flag. Perform atomic updates.
+    device_is_new  Flag. Specifies that device was just created.
+
   Returns:
     Updated Device object
 
@@ -2244,19 +2267,21 @@ sub snmp_update {
 	}
 	
 	if ( $atomic && !$argv{pretend} ){
-	    Netdot::Model->do_transaction( sub{ return $self->info_update(add_subnets  => $argv{add_subnets},
-									  subs_inherit => $argv{subs_inherit},
-									  bgp_peers    => $argv{bgp_peers},
-									  session      => $sinfo,
-									  info         => $info,
+	    Netdot::Model->do_transaction( sub{ return $self->info_update(add_subnets   => $argv{add_subnets},
+									  subs_inherit  => $argv{subs_inherit},
+									  bgp_peers     => $argv{bgp_peers},
+									  session       => $sinfo,
+									  info          => $info,
+									  device_is_new => $argv{device_is_new},
 						    ) } );
 	}else{
-	    $self->info_update(add_subnets  => $argv{add_subnets},
-			       subs_inherit => $argv{subs_inherit},
-			       bgp_peers    => $argv{bgp_peers},
-			       pretend      => $argv{pretend},
-			       session      => $sinfo,
-			       info         => $info,
+	    $self->info_update(add_subnets   => $argv{add_subnets},
+			       subs_inherit  => $argv{subs_inherit},
+			       bgp_peers     => $argv{bgp_peers},
+			       pretend       => $argv{pretend},
+			       session       => $sinfo,
+			       info          => $info,
+			       device_is_new => $argv{device_is_new},
 		);
 	}
     }
@@ -2311,6 +2336,7 @@ sub snmp_update {
     subs_inherit  Flag. When adding subnets, have them inherit information from the Device
     bgp_peers     Flag. When discovering routers, update bgp_peers
     pretend       Flag. Do not commit changes to the database
+    device_is_new Flag. Specifies that device was just created.
 
   Returns:
     Updated Device object
@@ -2421,7 +2447,13 @@ sub info_update {
     $devtmp{product} = $self->_assign_product($info);
     
     ##############################################################
-    if ( my $g = $self->_assign_monitor_config_group($info) ){
+    if ( $devtmp{product} && $argv{device_is_new} ){
+	$devtmp{monitored} = $self->_assign_device_monitored($devtmp{product});
+    }
+
+    ##############################################################
+    if ( $argv{device_is_new} && (my $g = $self->_assign_monitor_config_group($info)) ){
+	$devtmp{monitor_config}       = 1;
 	$devtmp{monitor_config_group} = $g;
     }
 
@@ -3336,53 +3368,62 @@ sub _get_snmp_session {
 	
 	$sinfo = $sclass->new( %sinfoargs );
 
-	if ( !defined $sinfo && !defined $layers ){
-	    $self->throw_user(sprintf("Device::get_snmp_session: %s: SNMPv%d failed", 
-				      $argv{host}, $sinfoargs{Version}));
-	}elsif ( defined $sinfo ){
+	if ( defined $sinfo ){
 	    # Check for errors
 	    if ( my $err = $sinfo->error ){
-		$self->throw_user(sprintf("Device::get_snmp_session: SNMPv%d error: device %s: %s", 
+		$self->throw_user(sprintf("Device::_get_snmp_session: SNMPv%d error: device %s: %s", 
 					  $sinfoargs{Version}, $argv{host}, $err));
 	    }
+	    
+	    # Test for connectivity
+	    $layers = $sinfo->layers() || 
+		$self->throw_user(sprintf("Device::_get_snmp_session: %s: SNMPv%d failed: No sysServices", 
+					  $argv{host}, $sinfoargs{Version}));
+	    
+	}else {
+	    $self->throw_user(sprintf("Device::get_snmp_session: %s: SNMPv%d failed", 
+				      $argv{host}, $sinfoargs{Version}));
 	}
    
     }else{
 	# Try each community
 	foreach my $community ( @{$argv{communities}} ){
+
 	    $sinfoargs{Community} = $community;
-	    
-	    $logger->debug(sub{ sprintf("Device::get_snmp_session: Trying SNMPv%d session with %s, community %s",
+	    $logger->debug(sub{ sprintf("Device::_get_snmp_session: Trying SNMPv%d session with %s, community %s",
 					$sinfoargs{Version}, $argv{host}, $sinfoargs{Community})});
-	    
 	    $sinfo = $sclass->new( %sinfoargs );
 	    
-	    # Test for connectivity
-	    $layers = $sinfo->layers() if defined $sinfo;
-	    
 	    # If v2 failed, try v1
-	    if ( !defined $sinfo && !defined $layers && $sinfoargs{Version} == 2 ){
-		$logger->debug(sub{ sprintf("Device::get_snmp_session: %s: SNMPv%d failed. Trying SNMPv1", 
-					    $argv{host}, $sinfoargs{Version})});
-		$sinfoargs{Version} = 1;
-		$sinfo = $sclass->new( %sinfoargs );
-	    }
+ 	    if ( !defined $sinfo && $sinfoargs{Version} == 2 ){
+ 		$logger->debug(sub{ sprintf("Device::_get_snmp_session: %s: SNMPv%d failed. Trying SNMPv1", 
+ 					    $argv{host}, $sinfoargs{Version})});
+ 		$sinfoargs{Version} = 1;
+ 		$sinfo = $sclass->new( %sinfoargs );
+ 	    }
 	    
 	    if ( defined $sinfo ){
 		# Check for errors
 		if ( my $err = $sinfo->error ){
-		    $self->throw_user(sprintf("Device::get_snmp_session: SNMPv%d error: device %s, community '%s': %s", 
+		    $self->throw_user(sprintf("Device::_get_snmp_session: SNMPv%d error: device %s, community '%s': %s", 
 					      $sinfoargs{Version}, $argv{host}, $sinfoargs{Community}, $err));
 		}
+		# Test for connectivity
+		$layers = $sinfo->layers() || 
+		    $self->throw_user(sprintf("Device::_get_snmp_session: %s: SNMPv%d failed: No sysServices", 
+					      $argv{host}, $sinfoargs{Version}));
+
 		last; # If we made it here, we are fine.  Stop trying communities
+
 	    }else{
-		$logger->debug(sub{ sprintf("Device::get_snmp_session: Failed SNMPv%s session with %s community '%s'", 
+		$logger->debug(sub{ sprintf("Device::_get_snmp_session: Failed SNMPv%s session with %s community '%s'", 
 					    $sinfoargs{Version}, $argv{host}, $sinfoargs{Community})});
 	    }
+
 	} #end foreach community
 
 	unless ( defined $sinfo ){
-	    $self->throw_user(sprintf("Device::get_snmp_session: Cannot connect to %s.  Tried communities: %s", 
+	    $self->throw_user(sprintf("Device::_get_snmp_session: Cannot connect to %s.  Tried communities: %s", 
 				      $argv{host}, (join ', ', @{$argv{communities}}) ));
 	}
 
@@ -3940,7 +3981,7 @@ sub _get_arp_from_snmp {
     # atPhysAddress is used.
     my $use_shortcut = 1;
     my @paddr_keys = keys %$at_paddr;
-    if ( $paddr_keys[0] =~ /^(\d+)(\.1)?\.($IPV4)$/ ){
+    if ( $paddr_keys[0] && $paddr_keys[0] =~ /^(\d+)(\.1)?\.($IPV4)$/ ){
 	my $idx = $1;
 	if ( !exists $devints{$idx} ){
 	    $use_shortcut = 0;
@@ -4568,6 +4609,27 @@ sub _assign_product {
     
 
 ##############################################################
+# Assign monitored flag based on device type
+#
+# Arguments
+#   Product object
+# Returns
+#   1 or 0
+#
+sub _assign_device_monitored {
+    my ($self, $product) = @_;
+    return unless $product;
+    if ( my $ptype = $product->type->name ){
+	if ( my $default = $self->config->get('DEFAULT_DEV_MONITORED') ){
+	    if ( exists $default->{$ptype} ){
+		return $default->{$ptype};
+	    }
+	}
+    }
+}
+    
+
+##############################################################
 # Assign monitor_config_group
 #
 # Arguments
@@ -4577,7 +4639,8 @@ sub _assign_product {
 #
 sub _assign_monitor_config_group{
     my ($self, $info) = @_;
-    if ( $self->monitor_config && (!$self->monitor_config_group || $self->monitor_config_group eq "") ){
+    if ( $self->config->get('DEV_MONITOR_CONFIG') && 
+	 (!$self->monitor_config_group || $self->monitor_config_group eq "") ){
 	my $monitor_config_map = $self->config->get('DEV_MONITOR_CONFIG_GROUP_MAP') || {};
 	my $config_group;
 	if ( my $type = $info->{type} ){
@@ -4926,7 +4989,11 @@ sub _update_interfaces {
 	if ( $iface->doc_status eq "snmp" ){
 	    $logger->info(sprintf("%s: Interface %s no longer exists.  Marking as removed.", 
 				  $host, $iface->get_label));
-	    $iface->update({doc_status=>'removed'});
+	    # Also, remove any cdp/lldp info from that interface to avoid confusion
+	    # while discovering topology
+	    $iface->update({doc_status=>'removed', 
+			    dp_remote_id=>"", dp_remote_ip=>"", 
+			    dp_remote_port=>"", dp_remote_type=>""});
 	    $iface->remove_neighbor() if $iface->neighbor();
 	}
     }

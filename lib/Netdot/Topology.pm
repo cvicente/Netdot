@@ -397,14 +397,18 @@ sub get_dp_links {
 			    $logger->debug("Topology::get_dp_links: Cannot find Interface using $mac");
 			}elsif ( scalar(@ints) > 1 ){
 			    $logger->debug("Topology::get_dp_links: There are multiple interfaces using $mac. Ignoring.");
-			}elsif ( Device->search(physaddr=>$mac_id) ){
+			}elsif ( my $dev = Device->search(physaddr=>$mac_id)->first ){
 			    # this means that this mac is also a base_mac 
 			    # don't set rem_int because it would most likely be wrong
+			    $rem_dev = $dev;
+			}elsif ( $ints[0]->type eq 'propVirtual' || $ints[0]->type eq 'l2vlan' ){
+			    # Ignore virtual interfaces
+			    $rem_dev = $ints[0]->device;
 			}else{
-			    my $int = $ints[0];
-			    $rem_dev = $int->device;
-			    $links{$iid} = $rem_int;
-			    $links{$rem_int} = $iid;
+			    $rem_int = $ints[0];
+			    $rem_dev = $rem_int->device;
+			    $links{$iid} = $rem_int->id;
+			    $links{$rem_int->id} = $iid;
 			    $logger->debug(sprintf("Topology::get_dp_links: Found link: %d -> %d", 
 					       $iid, $rem_int));
 			    last;
@@ -578,14 +582,7 @@ sub get_fdb_links {
 
     my %infrastructure_macs = %{ PhysAddr->infrastructure() };
 
-    my $int_macs_q = $dbh->selectall_arrayref("SELECT physaddr.address, interface.id 
-                                               FROM   physaddr, interface
-                                               WHERE  interface.physaddr=physaddr.id");
-    my %interface_macs;
-    foreach my $row ( @$int_macs_q ){
-	my ( $address, $interface ) = @$row;
-	$interface_macs{$address} = $interface;
-    }
+    my $interface_macs = PhysAddr->from_interfaces();
 
     my $layer1_devs_q = $dbh->selectall_arrayref("SELECT physaddr.address, interface.id 
                                                   FROM   physaddr, interface, device
@@ -794,8 +791,15 @@ sub get_fdb_links {
 		my $num_addresses = scalar keys %{$d->{$device}{$interface}};
 		if ( 1 == $num_addresses ){
 		    my $address = (keys %{$d->{$device}{$interface}})[0];
-		    if ( my $neighbor = $interface_macs{$address} ){
-			push @other_links, ['single-entry', $interface, $neighbor];
+		    if ( my $mac_id = $interface_macs->{$address} ){
+			my $physaddr = PhysAddr->retrieve($mac_id) || next;
+			foreach my $int ( $physaddr->interfaces() ){
+			    # The idea is that there could be multiple interfaces using the same
+			    # MAC address.  Our goal is to ignore the vitual ones.
+			    next if ( $int->type eq 'propVirtual' || $int->type eq 'l2vlan' );
+			    push @other_links, ['single-entry', $interface, $int];
+			    last;
+			}
 		    }
 		}elsif ( $num_addresses ){
 		    my $intersection = &hash_intersection($d->{$device}{$interface},
@@ -1081,21 +1085,19 @@ sub get_p2p_links {
 	$logger->debug(sprintf("Topology::get_p2p_links: Checking Subnet %s",
 			       $block->get_label));
 	my @ips = $block->children;
-	if ( scalar(@ips) == 2 ){
-	    my @ints;
-	    foreach my $ip ( @ips ){
-		if ( $ip->interface ){
-		    my $type = $ip->interface->type || 'unknown';
-		    # Ignore 'propVirtual' interfaces, sice most likely these
-		    # are not where the actual physical connection happens
-		    push @ints, $ip->interface if ( $type ne 'propVirtual' );
-		}
+	my @ints;
+	foreach my $ip ( @ips ){
+	    if ( int($ip->interface) ){
+		my $type = $ip->interface->type || 'unknown';
+		# Ignore virtual interfaces, sice most likely these
+		# are not where the actual physical connection happens
+		push @ints, $ip->interface if ( $type ne 'propVirtual' && $type ne 'l2vlan' );
 	    }
-	    if ( scalar(@ints) == 2 ){
-		$logger->debug(sprintf("Topology::get_p2p_links: Found link: %d -> %d", 
-				       $ints[0], $ints[1]));
-		$links{$ints[0]} = $ints[1];
-	    }
+	}
+	if ( scalar(@ints) == 2 ){
+	    $logger->debug(sprintf("Topology::get_p2p_links: Found link: %d -> %d", 
+				   $ints[0], $ints[1]));
+	    $links{$ints[0]} = $ints[1];
 	}
     }
     $logger->debug(sprintf("Topology::get_p2p_links: %d Links determined in %s", 

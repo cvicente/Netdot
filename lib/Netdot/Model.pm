@@ -882,6 +882,23 @@ sub sqldate_days_ago {
 }
 
 ############################################################################
+=head2 sqldate_today
+
+  Arguments:  
+    None
+  Returns:    
+    Today's date in SQL format
+
+=cut
+sub sqldate_today {
+    my ($self) = @_;
+    my $epochdate = time;
+    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime $epochdate;
+    $year += 1900; $mon += 1;
+    return sprintf("%4d-%02d-%02d",$year,$mon,$mday);
+}
+
+############################################################################
 =head2 time2sqldate
 
   Arguments:  

@@ -271,6 +271,10 @@ sub update {
     my ($self, $argv) = @_;
     $self->isa_object_method('update');
     
+    # Get CNAMEs that point to me
+    my $old_fqdn = $self->get_label;
+    my @cnames = RRCNAME->search(cname=>$self->get_label);
+
     my $update_ptr = 1; # On by default
     if ( defined $argv->{update_ptr} && $argv->{update_ptr} == 0 ){
 	$update_ptr = 0;
@@ -293,7 +297,14 @@ sub update {
 	    }
 	}
     }
-    
+
+    # Update those CNAMEs if needed
+    if ( $self->get_label ne $old_fqdn ){
+	foreach my $cname ( @cnames ){
+	    $cname->update({cname=>$self->get_label});
+	}
+    }
+
     return @res;
 }
 

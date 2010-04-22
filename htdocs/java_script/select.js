@@ -2,20 +2,18 @@
 
     function jsrsSendquery(tablename, form_field, val ) {
         // alert( "tablename: "+tablename+"; form_field: "+form_field+"; val: "+val );
-        // got rid of form_field.name because of 'name' conflict with js; now form_field is a string, and we use form_field directly as opposed to form_field.name. The 3 other jsrsSendquery{TB|RM|BB} below methods are unchanged/unaffected.
         jsrsExecute( "../generic/jsrs_netdot.html", jsrsParseresults, "keyword_search", Array(tablename, form_field, val) );
     }
 
-    function jsrsSendqueryTB(tablename, form_field, val, column) {
-	// form_field.name changed to form_field for same reasons as above.
-	// alert( "tablename: "+tablename+"; form_field: "+form_field+"; Field (Column): "+column+"; val: "+val );
-        jsrsExecute( "../generic/jsrs_netdot.html", jsrsParseresults, "keyword_search", Array(tablename, form_field, val, column ) );
+// Use this one when you want no limits imposed on the number of items returned
+    function jsrsSendqueryNM(tablename, form_field, val) {
+        // alert( "tablename: "+tablename+"; form_field: "+form_field+"; val: "+val );
+        jsrsExecute( "../generic/jsrs_netdot.html", jsrsParseresults, "keyword_search", Array(tablename, form_field, val, 'null', '1') );
     }
 
-    function jsrsSendqueryRM(form_field, val) {
-        // Room-Site relationship
-        // alert( "Form field: "+form_field.name+"; val:"+val );
-        jsrsExecute( "../generic/room_site_query.html", jsrsParseresults, "room_site_search", Array(form_field.name, val) );
+    function jsrsSendqueryTB(tablename, form_field, val, column) {
+	// alert( "tablename: "+tablename+"; form_field: "+form_field+"; Field (Column): "+column+"; val: "+val );
+        jsrsExecute( "../generic/jsrs_netdot.html", jsrsParseresults, "keyword_search", Array(tablename, form_field, val, column, '1' ) );
     }
 
     function jsrsSendqueryCL(form_field, val) {
@@ -137,19 +135,3 @@
 	}  
     }  
 
-
-// this code converts an select box into a text box with a backward button if the option for selection is "Others"
-    function otherOption(select_id, back_id, text_id){
-	if( document.getElementById(select_id).value == "Other"){
-	    document.getElementById(select_id).style.visibility = "hidden";
-            document.getElementById(back_id).type = "button";
-	    document.getElementById(text_id).type = "text";
-        }
-    }
-
-// this code changes the text box for other option back to the select box if the users press "<" button
-    function backSelectOpt(select_id, back_id, text_id){
-         document.getElementById(select_id).style.visibility = "visible";
-         document.getElementById(back_id).type = "hidden";
-	 document.getElementById(text_id).type = "hidden";
-    }

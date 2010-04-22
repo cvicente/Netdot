@@ -31,7 +31,7 @@ if ( $DEBUG ){
     use Data::Dumper;
     print "<pre> ", Dumper(%ARGS), "</pre><br>";
     print &keyword_search($ARGS{table}, $ARGS{form_field}, 
-			  $ARGS{keywords}, $ARGS{field});
+			  $ARGS{keywords}, $ARGS{field}, $ARGS{nomax});
 }else{
     # Do not use 'require' here.  
     # We need to make sure the file is read *each time*
@@ -46,8 +46,9 @@ if ( $DEBUG ){
 # - field:      Name of the field for which we\'re searching foreign values
 #               if undefined, search will be performed recursively on the 
 #               "label" fields of the table, as defined in metadata
+# - nomax:      Do not limit the results
 sub keyword_search {
-    my ( $table, $form_field, $keywords, $field ) = @_;
+    my ( $table, $form_field, $keywords, $field, $nomax ) = @_;
     my $r;
     my @terms;
     my $MAX   = $ui->config->get('DEFAULT_SELECTMAX');
@@ -71,7 +72,7 @@ sub keyword_search {
 	    map { $r->{$_->id} = $_ } @r;     
         }
     }else{
-	if ( $field ){
+	if ( $field && $field ne "null" ){
 	    my @r = $table->search($field=>$terms[0]);
 	    map { $r->{$_->id} = $_ } @r;
             if ( !(scalar (keys %$r)) ){
@@ -84,10 +85,10 @@ sub keyword_search {
     }
     
 
-    if (my $n = scalar (keys %$r) ){
+    if ( my $n = scalar (keys %$r) ){
         my $count = 0;
 
-        if ($n >= $MAX){
+        if ( !$nomax && $n >= $MAX ){
             $response .= "0=".$ui->url_encode("More than ".$MAX." matches.")."&";
 	    $response .= "0=".$ui->url_encode("Refine search.")."&";
         }else{
@@ -109,7 +110,7 @@ sub keyword_search {
             foreach my $o ( @objs ){
                 my $lbl = $o->get_label();
                 $response .= $o->id."=".$ui->url_encode($lbl)."&";
-                last if ($count++) == $MAX;
+                last if (!$nomax && $count++) == $MAX;
             }
         }
     }else{

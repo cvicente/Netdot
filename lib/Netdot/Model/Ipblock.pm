@@ -1143,7 +1143,7 @@ sub remove_range{
 	    for ( my $i=$ipstart->numeric; $i<=$ipend->numeric; $i++ ){
 		my $ip = NetAddr::IP->new($i);
 		my $ipb = Ipblock->search(address=>$ip)->first;
-		$ipb->delete();
+		$ipb->delete() if $ipb;
 	    }
 				      });
     };

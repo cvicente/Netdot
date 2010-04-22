@@ -15,8 +15,15 @@ section => 'Management'
 $action
 $device          => undef
 $host            => undef
+$version         => undef
 $comstr          => undef
-$otherComstr     => undef
+$other_comstr     => undef
+$sec_name        => undef
+$sec_level       => undef
+$auth_proto      => undef
+$auth_pass       => undef
+$priv_proto      => undef
+$priv_pass       => undef
 $id              => undef
 $sid             => undef
 $insert          => undef
@@ -94,17 +101,24 @@ if ( $action eq "discover" ){
     elsif ( $host ){
 	$host =~ s/\s*//g;
 	
-	# Give preference to the community being passed
-	my $communities; 
-	if ($comstr eq "Other"){
-	    $communities = [$otherComstr] if defined $otherComstr;
+	$argv{version} = $version;
+
+	if ( $version == 3 ){
+	    foreach my $key ( qw(sec_name sec_level auth_proto auth_pass priv_proto priv_pass) ){
+		$argv{$key} = $ARGS{$key} if defined $ARGS{$key};
+	    }
 	}else{
-	    $communities = [$comstr] if defined $comstr;
+	    # Give preference to the community being passed
+	    if ( $comstr eq "Other" ){
+		$argv{communities} = [$other_comstr] if defined $other_comstr;
+	    }else{
+		$argv{communities} = [$comstr] if defined $comstr;
+	    }
 	}
 	
 	# Fetch SNMP info
 	eval {
-	    $info = Device->get_snmp_info(host=>$host, communities=>$communities, %argv);
+	    $info = Device->get_snmp_info(host=>$host, %argv);
 	};
 	if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>$e);
@@ -246,8 +260,8 @@ if ( $action eq "discover" ){
 	if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>$e);
 	}
-    }
-    else{
+
+    }else{
         $argv{name}         = $host           || "";
 	$argv{owner}        = $owner          ||  0;
 	$argv{used_by}      = $used_by        ||  0;
