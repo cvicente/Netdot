@@ -4969,7 +4969,11 @@ sub _update_interfaces {
 	if ( $iface->doc_status eq "snmp" ){
 	    $logger->info(sprintf("%s: Interface %s no longer exists.  Marking as removed.", 
 				  $host, $iface->get_label));
-	    $iface->update({doc_status=>'removed'});
+	    # Also, remove any cdp/lldp info from that interface to avoid confusion
+	    # while discovering topology
+	    $iface->update({doc_status=>'removed', 
+			    dp_remote_id=>"", dp_remote_ip=>"", 
+			    dp_remote_port=>"", dp_remote_type=>""});
 	    $iface->remove_neighbor() if $iface->neighbor();
 	}
     }
