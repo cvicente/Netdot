@@ -238,8 +238,10 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
     
     if ( $add_range_start && $add_range_end ){
 	if ( $range_status eq 'Available' ){
-	    Ipblock->remove_range(start => $add_range_start, 
-				  end   => $add_range_end);
+	    eval {
+		Ipblock->remove_range(start => $add_range_start, 
+				      end   => $add_range_end);
+	    };
 	}else{
 	    eval {
 		$o = Ipblock->add_range(start       => $add_range_start, 
