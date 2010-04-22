@@ -397,14 +397,18 @@ sub get_dp_links {
 			    $logger->debug("Topology::get_dp_links: Cannot find Interface using $mac");
 			}elsif ( scalar(@ints) > 1 ){
 			    $logger->debug("Topology::get_dp_links: There are multiple interfaces using $mac. Ignoring.");
-			}elsif ( Device->search(physaddr=>$mac_id) ){
+			}elsif ( my $dev = Device->search(physaddr=>$mac_id)->first ){
 			    # this means that this mac is also a base_mac 
 			    # don't set rem_int because it would most likely be wrong
+			    $rem_dev = $dev;
+			}elsif ( $ints[0]->type eq 'propVirtual' ){
+			    # Ignore virtual interfaces
+			    $rem_dev = $ints[0]->device;
 			}else{
 			    $rem_int = $ints[0];
 			    $rem_dev = $rem_int->device;
-			    $links{$iid} = $rem_int;
-			    $links{$rem_int} = $iid;
+			    $links{$iid} = $rem_int->id;
+			    $links{$rem_int->id} = $iid;
 			    $logger->debug(sprintf("Topology::get_dp_links: Found link: %d -> %d", 
 					       $iid, $rem_int));
 			    last;
