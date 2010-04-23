@@ -1945,62 +1945,40 @@ sub build_device_stp_graph {
 	# Note: I am not sure how much of the 'from' and 'to' mean directionally,
 	# but they are just two ends of a connection -DY
 	
-	#add from device to graph
+	#add 'from' device to graph
 	my $from_int   = Interface->search(id=>$links{$key})->first;
 	my $from_dev   = Device->search(id=>$from_int->device)->first;
 	my $from_stp_inst = STPInstance->search(device=>$from_dev->id, number=>$number)->first;
-	if ( !exists $seen->{'NODE'}{$from_dev->id} ) {
-	    my $from_label = $from_dev->short_name
-		             . "|Mac:\\ ".$from_dev->physaddr->address
-	                     . "|Priority:\\ ".$from_stp_inst->bridge_priority
-	                     . "|<port".$links{$key}."> Interface\\ Name:\\ ".$from_int->name;
-#	if ( !exists $seen->{'NODE'}{$from_dev->id} ) {
-#	    my $nodename = &add_node(graph        => $g,
-#				     device       => $from_dev,
-#				     view         => $view,
-#				     show_names   => $shownames,
-#				     custom_label => $from_label
-#		);
-#	    $seen->{'NODE'}{$from_dev->id} = $nodename;
-	    $seen->{'NODE'}{$from_dev->id} = $from_label;
-	} else {
-	    $seen->{'NODE'}{$from_dev->id} .= "|<port".$links{$key}."> Interface\\ Name:\\ ".$from_int->name;
+	if ( defined($from_stp_inst) ) {
+	    if ( !exists $seen->{'NODE'}{$from_dev->id} && defined($from_stp_inst) ) {
+		my $from_label = $from_dev->short_name
+	 	                 . "|Mac:\\ ".$from_dev->physaddr->address
+	                         . "|Priority:\\ ".$from_stp_inst->bridge_priority
+	                         . "|<port".$links{$key}."> Int:\\ ".$from_int->name;
+		$seen->{'NODE'}{$from_dev->id} = $from_label;
+	    } else {
+		$seen->{'NODE'}{$from_dev->id} .= "|<port".$links{$key}."> Int:\\ ".$from_int->name;
+	    }
 	}
 	
-	#add to device to graph
+	#add 'to' device to graph
 	my $to_int   = Interface->search(id=>$key)->first;
 	my $to_dev   = Device->search(id=>$to_int->device)->first;
 	my $to_stp_inst = STPInstance->search(device=>$to_dev->id, number=>$number)->first;
-	if ( !exists $seen->{'NODE'}{$to_dev->id} ) {
-	    my $to_label = $to_dev->short_name
-	                   . "|Mac:\\ ".$to_dev->physaddr->address
-		           . "|Priority:\\ ".$to_stp_inst->bridge_priority
-	                   . "|<port".$key."> Interface\\ Name:\\ ".$to_int->name;
-#	if ( !exists $seen->{'NODE'}{$to_dev->id} ) {
-#	    my $nodename = &add_node(graph        => $g,
-#				     device       => $to_dev,
-#				     view         => $view,
-#				     show_names   => $shownames,
-#				     custom_label => $to_label
-#		);
-#	    $seen->{'NODE'}{$to_dev->id} = $nodename;
-	    $seen->{'NODE'}{$to_dev->id} = $to_label;
-	} else {
-	    $seen->{'NODE'}{$to_dev->id} .= "|<port".$key."> Interface\\ Name:\\ ".$to_int->name;
+	if ( defined($to_stp_inst) ) {
+	    if ( !exists $seen->{'NODE'}{$to_dev->id} ) {
+		my $to_label = $to_dev->short_name
+   		               . "|Mac:\\ ".$to_dev->physaddr->address
+		               . "|Priority:\\ ".$to_stp_inst->bridge_priority
+	                       . "|<port".$key."> Int:\\ ".$to_int->name;
+		$seen->{'NODE'}{$to_dev->id} = $to_label;
+	    } else {
+		$seen->{'NODE'}{$to_dev->id} .= "|<port".$key."> Int:\\ ".$to_int->name;
+	    }
 	}
 	
-	#add the connection to graph
-#	my $color = 'black';
-#	my $style = 'solid';
+	# note the connection to graph
 	if ( !exists $seen->{'EDGE'}{$links{$key} . " " . $key} ) {
-#	    $g->add_edge($from_dev->id => $to_dev->id,
-#			 tailURL       => "view.html?table=Interface&id=".$links{$key},
-#			 taillabel     => "",
-#			 headURL       => "view.html?table=Interface&id=".$key, 
-#			 headlabel     => "",
-#			 color         => $color,
-#			 style         => $style,
-#		);
             $seen->{'EDGE'}{$key . " " . $links{$key}} = 1;
             $seen->{'EDGE'}{$links{$key} . " " . $key} = $from_dev->id . " " . $to_dev->id;
 	}
@@ -2023,6 +2001,8 @@ sub build_device_stp_graph {
         next if $seen->{'EDGE'}{$edge} == 1;
 	my ($tail_int, $head_int) = split(/ /, $edge);
 	my ($tail_dev, $head_dev) = split(/ /, $seen->{'EDGE'}{$edge});
+	next if ( !exists $seen->{'NODE'}{$tail_dev} );
+	next if ( !exists $seen->{'NODE'}{$head_dev} );
 	# tail == from == $links{$key} previously
 	# head == to == $key previously
 	$g->add_edge($tail_dev => $head_dev,
