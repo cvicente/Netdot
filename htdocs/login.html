@@ -22,7 +22,7 @@ if (defined $r->prev) {
     #really were just logging in they probably don't want to continue
     #to login ad nauseum. Also, logging in to logout page redirects to
     #index.
-    unless ($r->prev->uri =~ m{/log(in|out).html}) {
+    unless ($r->prev->uri =~ m{/log(in|out).html} || $r->prev->uri =~ /NetdotLogin/ ) {
 	$redirect_path = $r->prev->uri . ( $r->prev->args ? "?" . $r->prev->args : "");
     }
 } 
