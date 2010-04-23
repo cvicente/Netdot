@@ -1697,7 +1697,7 @@ sub build_device_topology_graph {
     }
 
     # Declare some useful functions
-    sub add_node {
+    sub add_topo_node {
         my (%argv) = @_;
 	my ($g, $device, $view, $shownames, $showvlans, $nodeoptions) = 
 	    @argv{'graph', 'device', 'view', 'show_names', 'show_vlans', 'nodeoptions'};
@@ -1791,11 +1791,11 @@ sub build_device_topology_graph {
 	    
 	    # also make sure we haven't seen this node before
 	    if ( $add_node == 1 && !(exists $seen->{'NODE'}{$nd->id}) ) {
-		&add_node(graph      => $g, 
-			  device     => $nd, 
-			  view       => $view,
-			  show_names => $shownames, 
-			  show_vlans => $showvlans);
+		&add_topo_node(graph      => $g, 
+			       device     => $nd, 
+			       view       => $view,
+			       show_names => $shownames, 
+			       show_vlans => $showvlans);
 		$seen->{'NODE'}{$nd->id} = 1;
 	    }
 	    
@@ -1815,12 +1815,12 @@ sub build_device_topology_graph {
     my $g = GraphViz->new(%args);
     
     my $start = Device->retrieve($id);
-    &add_node(graph       => $g,
-	      device      => $start, 
-	      show_vlans  => $showvlans,
-	      show_names  => $shownames, 
-	      view        => $view,
-	      nodeoptions => { color=>'red'},
+    &add_topo_node(graph       => $g,
+		   device      => $start, 
+		   show_vlans  => $showvlans,
+		   show_names  => $shownames, 
+		   view        => $view,
+		   nodeoptions => { color=>'red'},
 	);
 
     my $seen = { NODE=>{}, EDGE=>{} };
@@ -1838,6 +1838,8 @@ sub build_device_topology_graph {
 
     return $g;
 }
+
+
 ############################################################################
 =head2 build_device_topology_graph_html
 
@@ -1895,10 +1897,9 @@ sub build_device_topology_graph_html {
 =cut
 sub build_device_stp_graph {
     my ($self, %argv) = @_;
-    my ($id, $number, $view, $web_path, $shownames, $filename, $format, $direction) = 
-	@argv{'id', 'number', 'view', 'web_path', 'show_names', 'filename', 'format', 'direction'};
+    my ($id, $number, $view, $web_path, $filename, $format, $direction) = 
+	@argv{'id', 'number', 'view', 'web_path', 'filename', 'format', 'direction'};
     
-    $shownames = ($shownames == 1) ? 1 : 0;
     $direction = ($direction eq 'up_down')? 0 : 1;
     
     my %links;
@@ -1915,14 +1916,14 @@ sub build_device_stp_graph {
     
     my $devicemacs = Device->get_macs_from_all();
 
-    my $links = Netdot::Topology->get_tree_stp_links(root=>$start_root, devicemacs=>$devicemacs);
+    my $links = Netdot::Topology->get_tree_stp_links(root=>$start_root, devicemacs=>$devicemacs);  # these links contain STP graphs for all numbers
     map { $links{$_} = $links->{$_} } keys %$links;
     
     
-    sub add_node{
+    sub add_stp_node{
 	my (%argv) = @_;
-	my ($g, $device_id, $view, $shownames, $nodeoptions, $customlabel) =
-	    @argv{'graph', 'device_id', 'view', 'show_names', 'nodeoptions', 'custom_label'};
+	my ($g, $device_id, $view, $nodeoptions, $customlabel) =
+	    @argv{'graph', 'device_id', 'view', 'nodeoptions', 'custom_label'};
 	
 	$view ||= "view";
 	if ( !defined($customlabel) || $customlabel eq "" ) {
@@ -1931,7 +1932,7 @@ sub build_device_stp_graph {
 	my $nodename = $g->add_node(name  => $device_id,
 				    label => $customlabel,
 				    shape => "record",
-				    URL   => "device.html?id=".$device_id."&view=$view&toponames=$shownames",
+				    URL   => "device.html?id=".$device_id."&view=$view",
 				    %$nodeoptions
             );
 	
@@ -1986,11 +1987,10 @@ sub build_device_stp_graph {
     
     # add the nodes to the graph
     foreach my $dev_id (keys %{$seen->{'NODE'}}) {
-	&add_node(graph        => $g,
-		  device_id    => $dev_id,
-		  view         => $view,
-		  show_names   => $shownames,
-		  custom_label => $seen->{'NODE'}{$dev_id}
+	&add_stp_node(graph        => $g,
+		      device_id    => $dev_id,
+		      view         => $view,
+		      custom_label => $seen->{'NODE'}{$dev_id}
 	    );
     }
     
@@ -2040,15 +2040,15 @@ sub build_device_stp_graph {
   Examples:
     print $ui->build_device_stp_graph_html(id=>$id, number=>$stp_number, view=>$view,
                                            web_path=>$r->dir_config('NetdotPath'),
-                                           show_names=>1);
+                                           );
 
 =cut
 sub build_device_stp_graph_html {
     my ($self, %argv) = @_;
-    my ($id, $number, $view, $web_path, $shownames, $filename) = 
-	@argv{'id', 'number', 'view', 'web_path', 'show_names', 'filename'};
+    my ($id, $number, $view, $web_path, $filename) = 
+	@argv{'id', 'number', 'view', 'web_path', 'filename'};
     
-    my $img_name      = $filename || "DeviceSTP-$id-$number-$shownames.png";
+    my $img_name      = $filename || "DeviceSTP-$id-$number.png";
     my $graph_path    = "img/graphs/$img_name";
     my $img           = $web_path . $graph_path;
     my $netdot_path   = Netdot->config->get('NETDOT_PATH');

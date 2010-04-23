@@ -1224,7 +1224,44 @@ if ( $ipeers ){
         STP Instances
     </div>
     <div class="containerbody">
-        <& /generic/sortresults.mhtml, object => \@instances , view => "row" , sort=>0 &>
+
+        <table border="0" cellspacing="0" cellpadding="0" class="tablebackground">
+        <tr class="rowtitle2">
+            <th>Number</th>
+            <th>Device</th>
+            <th>Root Port</th>
+            <th>Root Bridge</th>
+            <th>Bridge Priority</th>
+            <th>STP Graph</th>
+        </tr>
+        
+%   foreach my $stp_inst ( sort { $a->number <=> $b->number } @instances) {
+        <tr>
+	    <td align="left" valign="middle">
+	        &nbsp;
+	        <a href="view.html?table=STPInstance&id=<% $stp_inst->id %>"><% $stp_inst->number %></a>
+	    </td>
+	    <td align="left" valign="middle">
+    	        &nbsp;
+	        <a href="../management/device.html?table=Device&id=<% $id %>"><% $fqdn %></a>
+	    </td>
+	    <td align="left" valign="middle">
+	        <% $stp_inst->root_port %>
+	    </td>
+	    <td align="left" valign="middle">
+	        <% $stp_inst->root_bridge %>
+	    </td>
+	    <td align="left" valign="middle">
+	        <% $stp_inst->bridge_priority %>
+	    </td>
+	    <td align="left" valign="middle">
+	        &nbsp;
+	        <a href="device.html?id=<% $id %>&view=<% $view %>&stp_number=<% $stp_inst->number %>">[Graph It]</a>
+	    </td>
+	</tr>
+%   }
+        </table>
+
     </div>
 </div>
 
@@ -1234,33 +1271,11 @@ if ( $ipeers ){
 <div class="container">
     <div class="containerhead">Spanning Tree Graph</div>
     <div class="containerbody">
-            Select an STP Instance Number: 
-            <form name="graph_stp_form" action="device.html" method="GET">
-              <input type="hidden" name="id" value="<% $id %>">
-              <input type="hidden" name="view" value="<% $view %>">
-
-              <select name="stp_number">
-%               if (defined($stp_number)) {
-                  <option value="-1">--Select--</option>
-%               } else {
-                  <option value="-1" SELECTED>--Select--</option>
-%               }
-%               foreach my $stp_inst ( sort { $a->number <=> $b->number } @instances) {
-%                   if ( defined($stp_number) && $stp_number == $stp_inst->number ) {
-                        <option value="<% $stp_inst->number %>" SELECTED><% $stp_inst->number %></option>
-%                   } else {
-                        <option value="<% $stp_inst->number %>"><% $stp_inst->number %></option>
-%                   }
-%               }
-              </select>
-              <input type="submit" value="Graph this STP">
-            </form>
 
         <center>
 %         if (defined($stp_number) && $stp_number != -1) {
 %           print $ui->build_device_stp_graph_html(id=>$id, number=>$stp_number, view=>$view,
-%                                                  web_path=>$r->dir_config('NetdotPath'),
-%                                                  show_names=>1);
+%                                                  web_path=>$r->dir_config('NetdotPath') );
 %         }
         <center>
    </div>
