@@ -1326,7 +1326,6 @@ sub update {
 
     my %state = %$argv;
     $state{status}    = $self->_get_status_id($argv->{status});
-    $state{last_seen} = $self->timestamp;
 
     # We might need to discard changes.
     # Class::DBI's 'discard_changes' method won't work

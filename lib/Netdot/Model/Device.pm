@@ -4507,7 +4507,7 @@ sub _assign_base_mac {
 	if ( $mac = PhysAddr->search(address=>$address)->first ){
 	    # The address exists
 	    # (may have been discovered in fw tables/arp cache)
-	    $mac->update({static=>1});
+	    $mac->update({static=>1, last_seen=>$self->timestamp});
 	    $logger->debug(sub{"$host: Using existing $address as base bridge address"});
 	    return $mac;
 	}else{

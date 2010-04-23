@@ -572,7 +572,7 @@ sub update_ip {
 	# to this interface.  
 	# Therefore, it's very unlikely that the object won't pass 
 	# validation, so we skip it to speed things up.
-	my %args = (interface => $self, validate => 0);
+	my %args = (interface => $self, validate => 0, last_seen=>$self->timestamp);
 	if ( !int($ipobj->status) || 
 	     ($ipobj->status->name ne 'Static' && $ipobj->status->name ne 'Dynamic') ){
 	    $args{status} = 'Static';

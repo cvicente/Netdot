@@ -465,27 +465,6 @@ sub is_broad_multi {
 =cut
 
 ################################################################
-=head2 update - Update PhysAddr object
-
-    We override the update method for extra functionality
-
-  Arguments: 
-    Hashref with PhysAddr fields
-  Returns:   
-    Updated PhysAddr object
-  Examples:
-    
-=cut
-sub update {
-    my ($self, $argv) = @_;
-    
-    $argv->{last_seen} = $self->timestamp()
-	unless exists ( $argv->{last_seen} );
-
-    return $self->SUPER::update( $argv );
-}
-
-################################################################
 =head2 colon_address - Return address with octets separated by colons
 
     This can be either an instance method or class method
