@@ -1946,36 +1946,37 @@ sub build_device_stp_graph {
 	# Note: I am not sure how much of the 'from' and 'to' mean directionally,
 	# but they are just two ends of a connection -DY
 	
-	#add 'from' device to graph
+	# first get relevant objects
 	my $from_int   = Interface->search(id=>$links{$key})->first;
 	my $from_dev   = Device->search(id=>$from_int->device)->first;
 	my $from_stp_inst = STPInstance->search(device=>$from_dev->id, number=>$number)->first;
-	if ( defined($from_stp_inst) ) {
-	    if ( !exists $seen->{'NODE'}{$from_dev->id} && defined($from_stp_inst) ) {
-		my $from_label = $from_dev->short_name
-	 	                 . "|Mac:\\ ".$from_dev->physaddr->address
-	                         . "|Priority:\\ ".$from_stp_inst->bridge_priority
-	                         . "|<port".$links{$key}."> Int:\\ ".$from_int->name;
-		$seen->{'NODE'}{$from_dev->id} = $from_label;
-	    } else {
-		$seen->{'NODE'}{$from_dev->id} .= "|<port".$links{$key}."> Int:\\ ".$from_int->name;
-	    }
-	}
 	
-	#add 'to' device to graph
 	my $to_int   = Interface->search(id=>$key)->first;
 	my $to_dev   = Device->search(id=>$to_int->device)->first;
 	my $to_stp_inst = STPInstance->search(device=>$to_dev->id, number=>$number)->first;
-	if ( defined($to_stp_inst) ) {
-	    if ( !exists $seen->{'NODE'}{$to_dev->id} ) {
-		my $to_label = $to_dev->short_name
-   		               . "|Mac:\\ ".$to_dev->physaddr->address
-		               . "|Priority:\\ ".$to_stp_inst->bridge_priority
-	                       . "|<port".$key."> Int:\\ ".$to_int->name;
-		$seen->{'NODE'}{$to_dev->id} = $to_label;
-	    } else {
-		$seen->{'NODE'}{$to_dev->id} .= "|<port".$key."> Int:\\ ".$to_int->name;
-	    }
+	
+	next unless ( defined($from_stp_inst) && defined($to_stp_inst) );
+	
+	#add 'from' device to graph
+	if ( !exists $seen->{'NODE'}{$from_dev->id} && defined($from_stp_inst) ) {
+	    my $from_label = $from_dev->short_name
+	 	             . "|Mac:\\ ".$from_dev->physaddr->address
+	                     . "|Priority:\\ ".$from_stp_inst->bridge_priority
+	                     . "|<port".$links{$key}."> Int:\\ ".$from_int->name;
+	    $seen->{'NODE'}{$from_dev->id} = $from_label;
+	} else {
+	    $seen->{'NODE'}{$from_dev->id} .= "|<port".$links{$key}."> Int:\\ ".$from_int->name;
+	}
+	
+	#add 'to' device to graph
+	if ( !exists $seen->{'NODE'}{$to_dev->id} ) {
+	    my $to_label = $to_dev->short_name
+   		           . "|Mac:\\ ".$to_dev->physaddr->address
+		           . "|Priority:\\ ".$to_stp_inst->bridge_priority
+	                   . "|<port".$key."> Int:\\ ".$to_int->name;
+	    $seen->{'NODE'}{$to_dev->id} = $to_label;
+	} else {
+	    $seen->{'NODE'}{$to_dev->id} .= "|<port".$key."> Int:\\ ".$to_int->name;
 	}
 	
 	# note the connection to graph
