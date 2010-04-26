@@ -17,7 +17,8 @@ my $USAGE = <<EOF;
  Build Network Topology Graph
 
  Usage: $0 [-r|--root <device>] [-d|--depth <integer>] 
-           [-v|--vlans] [-n|names] [-F|--format] [-d|--direction]
+           [-V|--specificvlan <vlanid>] [-v|--vlans] [-n|names] 
+           [-F|--format] [-D|--direction <up_down|left_right>]
            -f|--filename <name>
 
     Argument Detail: 
@@ -25,21 +26,23 @@ my $USAGE = <<EOF;
     -d, --depth <integer>                Graph depth. How many hops away from root? (default: $self{depth})
     -f, --filename <name>                File name for image
     -F, --format <format>                Graphic file format (text|ps|hpgl|gd|gd2|gif|jpeg|png|svg)
-    -d, --direction <up_down|left_right> Direction in which graph will be rendered
+    -D, --direction <up_down|left_right> Direction in which graph will be rendered
+    -V, --specificvlan <vlanid>          The vlan ID of the specific vlan to display
     -v, --vlans                          Show vlans with lines in different colors
     -n, --names                          Show interface names instead of index numbers
 
 EOF
     
 # handle cmdline args
-my $result = GetOptions( "r|root=s"      => \$self{root},
-			 "d|depth=s"     => \$self{depth},
-			 "f|filename=s"  => \$self{filename},
-			 "F|format=s"    => \$self{format},
-			 "d|direction=s" => \$self{direction},
-			 "v|vlans"       => \$self{vlans},
-			 "n|names"       => \$self{names},
-			 "h|help"        => \$self{help},
+my $result = GetOptions( "r|root=s"         => \$self{root},
+			 "d|depth=s"        => \$self{depth},
+			 "f|filename=s"     => \$self{filename},
+			 "F|format=s"       => \$self{format},
+			 "D|direction=s"    => \$self{direction},
+			 "V|specificvlan=s" => \$self{specific},
+			 "v|vlans"          => \$self{vlans},
+			 "n|names"          => \$self{names},
+			 "h|help"           => \$self{help},
     );
 
 if ( !$result ) {
@@ -58,13 +61,14 @@ my $device_obj  = Device->search(name=>$self{root})->first
 
 my $id    = $device_obj->id;
 my $start = time;
-$ui->build_device_topology_graph(id         => $id, 
-				 depth      => $self{depth}, 
-				 show_vlans => $self{vlans}, 
-				 show_names => $self{names},
-				 filename   => $self{filename},
-				 format     => $self{format},
-                                 direction  => $self{direction},
+$ui->build_device_topology_graph(id            => $id, 
+				 depth         => $self{depth}, 
+				 show_vlans    => $self{vlans}, 
+				 specific_vlan => $self{specific}, 
+				 show_names    => $self{names},
+				 filename      => $self{filename},
+				 format        => $self{format},
+                                 direction     => $self{direction},
     );
 
 printf("$0 Done building %s. Runtime: %s\n", $self{filename}, Netdot->sec2dhms(time-$start));
