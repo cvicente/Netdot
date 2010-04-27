@@ -391,9 +391,14 @@ sub snmp_update {
 
 	    # Insert STP information for this interface on this vlan
 	    my $stpinst = $newif->{vlans}->{$newvlan}->{stp_instance};
-	    next unless defined $stpinst;
+	    unless ( defined $stpinst ){
+		$logger->debug(sub{sprintf("%s: VLAN %s not mapped to any STP instance", 
+					   $label, $newvlan)});
+		next;
+	    }
+
 	    my $instobj;
-		# In theory, this happens after the STP instances have been updated on this device
+	    # In theory, this happens after the STP instances have been updated on this device
 	    $instobj = STPInstance->search(device=>$self->device, number=>$stpinst)->first;
 	    unless ( $instobj ){
 		$logger->warn("$label: Cannot find STP instance $stpinst");
