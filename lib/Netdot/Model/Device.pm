@@ -300,8 +300,9 @@ sub search_address_live {
 ############################################################################
 =head2 search_like -  Search for device objects.  Allow substrings
 
-    We override the base class to allow 'name' to be searched as 
-    part of a hostname
+    We override the base class to:
+     - allow 'name' to be searched as part of a hostname
+     - search 'name' in aliases field if a RR is not found
 
   Arguments: 
     Hash with key/value pairs
@@ -320,13 +321,15 @@ sub search_like {
     if ( exists $argv{name} ){
 	if ( my @rrs = RR->search_like(name=>$argv{name}) ){
 	    return map { $class->search(name=>$_) } @rrs;
+	}elsif ( $class->SUPER::search_like(aliases=>$argv{name}) ){
+	    return $class->SUPER::search_like(aliases=>$argv{name});
 	}
 	$logger->debug(sub{"Device::search_like: $argv{name} not found"});
 	return;
     }elsif ( exists $argv{producttype} ){
 	return $class->search_by_type($argv{producttype});
     }else{
-	return $class->SUPER::search(%argv);
+	return $class->SUPER::search_like(%argv);
     }
 }
 
