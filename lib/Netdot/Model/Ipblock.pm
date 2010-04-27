@@ -1336,7 +1336,6 @@ sub update {
 
     my %state = %$argv;
     $state{status}    = $self->_get_status_id($argv->{status});
-    $state{last_seen} = $self->timestamp;
 
     # We might need to discard changes.
     # Class::DBI's 'discard_changes' method won't work
@@ -2358,7 +2357,18 @@ sub get_next_free {
 	next if ( $addr eq $self->address || $addr eq $self->_netaddr->broadcast );
 	# Ignore anything that exists, unless it's marked as available
 	next if (exists $used{$addr} && $used{$addr} ne 'Available');
-	return $addr;	     
+	if ( my $ipb = Ipblock->search(address=>$addr)->first ){
+	    # IP may have been incorrectly set as Available
+	    # Correct and move on
+	    if ( $ipb->arecords || $ipb->dhcp_scopes ){
+		$ipb->update({status=>'Static'});
+		next;
+	    }else{
+		return $addr;
+	    }
+	}else{
+	    return $addr;
+	}
     }
 }
 

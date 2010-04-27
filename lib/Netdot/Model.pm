@@ -157,9 +157,18 @@ BEGIN {
 	    $zone = $self->zone;
 	}elsif ( $table =~ /^rr/ ){
 	    if ( defined $self->rr && int($self->rr) != 0 ){
-		$zone = $self->rr->zone;
+		if ( ref($self->rr) ){
+		    $zone = $self->rr->zone;
+		}else{
+		    if ( my $rr = RR->retrieve($self->rr) ){
+			$zone = $rr->zone;
+		    }else{
+			$logger->error("Netdot::Model::_host_audit: $table id ".$self->id." has invalid rr: ".$self->rr);
+			return;
+		    }
+		}
 	    }else{
-		$logger->error("Netdot::Model::_host_audit: $table id ".$self->id." has invalid rr");
+		$logger->error("Netdot::Model::_host_audit: $table id ".$self->id." has no rr");
 		return;
 	    }
 	}elsif ( $table eq 'dhcpscope' ){

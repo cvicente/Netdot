@@ -503,7 +503,7 @@ sub import_records {
 	    $nrr = $nrrs{$name};
 	    if ( $argv{overwrite} ){
 		$logger->debug("$domain: $name: Overwriting current records");
-		$nrr->delete;
+		$nrr->delete unless ref($nrr) eq "Class::DBI::Object::Has::Been::Deleted";
 		delete $nrrs{$name};
 	    }
 	}
@@ -525,7 +525,7 @@ sub import_records {
 	    }else{
 		$logger->debug("$domain: Inserting Ipblock $address");
 		$ipb = Ipblock->insert({ address        => $address,
-					 status         => 'static',
+					 status         => 'Static',
 					 no_update_tree => 1});
 		$new_ips++;
 	    }

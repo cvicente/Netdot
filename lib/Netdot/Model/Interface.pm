@@ -391,9 +391,14 @@ sub snmp_update {
 
 	    # Insert STP information for this interface on this vlan
 	    my $stpinst = $newif->{vlans}->{$newvlan}->{stp_instance};
-	    next unless defined $stpinst;
+	    unless ( defined $stpinst ){
+		$logger->debug(sub{sprintf("%s: VLAN %s not mapped to any STP instance", 
+					   $label, $newvlan)});
+		next;
+	    }
+
 	    my $instobj;
-		# In theory, this happens after the STP instances have been updated on this device
+	    # In theory, this happens after the STP instances have been updated on this device
 	    $instobj = STPInstance->search(device=>$self->device, number=>$stpinst)->first;
 	    unless ( $instobj ){
 		$logger->warn("$label: Cannot find STP instance $stpinst");
@@ -572,7 +577,7 @@ sub update_ip {
 	# to this interface.  
 	# Therefore, it's very unlikely that the object won't pass 
 	# validation, so we skip it to speed things up.
-	my %args = (interface => $self, validate => 0);
+	my %args = (interface => $self, validate => 0, last_seen=>$self->timestamp);
 	if ( !int($ipobj->status) || 
 	     ($ipobj->status->name ne 'Static' && $ipobj->status->name ne 'Dynamic') ){
 	    $args{status} = 'Static';

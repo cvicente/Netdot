@@ -732,28 +732,22 @@ sub get_snmp_info {
 			map { sprintf("%s=>%s", $_, $dev{stp_vlan2inst}->{$_}) } keys %{$dev{stp_vlan2inst}};
 			$logger->debug(sub{"Device::get_snmp_info: $args{host} MST VLAN mapping: $mapping"});
 			
-			# Get a list of vlans per instance
-			my %mst_inst_vlans;
-			foreach my $vlan ( keys %{$dev{stp_vlan2inst}} ){
-			    my $inst = $dev{stp_vlan2inst}->{$vlan};
-			    push @{$mst_inst_vlans{$inst}}, $vlan;
-			}
-			
 			# Now, if there's more than one instance, we need to get
 			# the STP standard info for at least one vlan on that instance.
+
 			# Cisco case: query repeatedly for each "community@vlan_id"
+			# Notice that we query every vlan on purpose. I have seen cases
+			# where even though a vlan is mapped to a particular instance, the query
+			# will not return the necessary values, but other querying other vlans mapped to the same instance does
 			if ( $sinfo->cisco_comm_indexing() ){
-			    foreach my $mst_inst ( keys %mst_inst_vlans ){
-				# Skip instance 0
-				next if ( $mst_inst == 0 );
-				my $vid = $mst_inst_vlans{$mst_inst}->[0];
-				next if ( $vid == 0 );
+			    foreach my $vid ( keys %{$dev{stp_vlan2inst}} ){
+				my $mst_inst = $dev{stp_vlan2inst}->{$vid};
 				my $vsinfo = $class->_get_snmp_session('host'        => $args{host},
 								       'communities' => [$sinfo->snmp_comm . '@' . $vid],
 								       'version'     => $sinfo->snmp_ver,
 								       'sclass'      => $sinfo->class);
 				my $stp_p_info = $class->_exec_timeout( $args{host}, 
-								       sub{  return $self->_get_stp_info(sinfo=>$vsinfo) } );
+									sub{  return $self->_get_stp_info(sinfo=>$vsinfo) } );
 				foreach my $method ( keys %$stp_p_info ){
 				    $dev{stp_instances}{$mst_inst}{$method} = $stp_p_info->{$method};
 				}
@@ -4527,7 +4521,7 @@ sub _assign_base_mac {
 	if ( $mac = PhysAddr->search(address=>$address)->first ){
 	    # The address exists
 	    # (may have been discovered in fw tables/arp cache)
-	    $mac->update({static=>1});
+	    $mac->update({static=>1, last_seen=>$self->timestamp});
 	    $logger->debug(sub{"$host: Using existing $address as base bridge address"});
 	    return $mac;
 	}else{
