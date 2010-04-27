@@ -54,9 +54,11 @@ if ( $self{help} ) {
     exit;
 }
 
+$self{vlans} = 1 if $self{specific};
+
 my $ui = Netdot::UI->new();
 
-my $device_obj  = Device->search(name=>$self{root})->first
+my $device_obj = Device->search(name=>$self{root})->first
     || die "Cannot find root device: $self{root}";
 
 my $id    = $device_obj->id;
