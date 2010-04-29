@@ -33,11 +33,16 @@ if ($id) {
     $rr = RR->retrieve($id);
     $m->comp('/generic/error.mhtml', error=>"Could not retrieve RR id $id")
 	unless $id;
-}elsif ($rr && !ref $rr) {
-    $rr = RR->retrieve($rr);
-    $m->comp('/generic/error.mhtml', error=>"Could not retrieve RR id $rr")
-	unless $rr;
-    $id = $rr->id;
+}elsif ( $rr ){
+    if ( ref($rr) eq 'ARRAY' ){
+	# We somehow got an arrayref.  Ignore this.
+	undef($rr);
+    }elsif ( !ref($rr) ) {
+	$rr = RR->retrieve($rr);
+	$m->comp('/generic/error.mhtml', error=>"Could not retrieve RR id $rr")
+	    unless $rr;
+	$id = $rr->id;
+    }
 }
 
 # Check if user can view this object 
