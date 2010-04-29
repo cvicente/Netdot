@@ -1465,7 +1465,7 @@ sub get_ancestors {
 }
 
 ##################################################################
-=head2 get_descendants - Get parents recursively
+=head2 get_descendants - Get children recursively
     
  Arguments: 
     None

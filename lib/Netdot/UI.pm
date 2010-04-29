@@ -1550,8 +1550,9 @@ sub build_backbone_graph_html {
 =head2 build_ip_tree_graph
 
   Arguments:
-    ipblock descendants hashref
-    filename
+    Hash with following keys:
+       list       - arrayref of Ipblock descendants
+       filename   - Name of file to save the graph to
   Returns:
     GraphViz object
   Examples:
@@ -1591,15 +1592,14 @@ sub build_ip_tree_graph {
 	my $lbl = join '\n', @lbls;
 	
 	$g->add_node(
-	    name   => $ip->get_label,
-	    label  => $lbl,
-	    shape  => "record",
+	    name      => $ip->get_label,
+	    label     => $lbl,
+	    shape     => "record",
 	    fillcolor => $colors{$ip->status->name},
-	    URL    => "ip.html?id=".$ip->id,
+	    URL       => "ip.html?id=".$ip->id,
 	    );
 	
-	if ( $n->parent ){
-	    my $parent = Ipblock->retrieve($n->parent->data);
+	if ( $n->parent && (my $parent = Ipblock->retrieve($n->parent->data)) ){
 	    
 	    my @lbls;
 	    push @lbls, $parent->get_label;
