@@ -2046,10 +2046,6 @@ sub update {
 	$argv->{collect_arp}   = 0;
 	$argv->{collect_fwt}   = 0;
     }
-    # Disable monitor_config flag if monitored flag is turned off
-    if ( exists $argv->{monitored} && !($argv->{monitored}) ){
-	$argv->{monitor_config} = 0;
-    }
     $self->_validate_args($argv);
     return $self->SUPER::update($argv);
     
