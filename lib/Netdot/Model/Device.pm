@@ -3116,7 +3116,7 @@ sub set_overwrite_if_descr {
     $self->isa_object_method("set_overwrite_if_descr");
     
     $self->throw_fatal("Model::Device::set_overwrite_if_descr: Invalid value: $value.  Should be 0|1")
-	unless ( $value =~ /0|1/ );
+	unless ( $value =~ /^0|1$/ );
 
     foreach my $int ( $self->interfaces ){
 	$int->update({overwrite_descr=>$value});
@@ -3124,6 +3124,34 @@ sub set_overwrite_if_descr {
     
     return 1;
 }
+
+###################################################################################################
+=head2 set_interfaces_auto_dns - Sets auto_dns flag on all IP interfaces of this device
+
+  Arguments:  
+    0 or 1 (true or false)
+  Returns:    
+    True if successful
+  Example:
+    $device->set_interfaces_auto_dns(1);
+$logger->info
+=cut
+sub set_interfaces_auto_dns {
+    my ($self, $value) = @_;
+    $self->isa_object_method("set_interfaces_auto_dns");
+    
+    $self->throw_fatal("Model::Device::set_interfaces_auto_dns: Invalid value: $value. Should be 0|1")
+	unless ( $value =~ /^0|1$/ );
+
+    foreach my $int ( $self->interfaces ){
+	# Ony interfaces with IP addresses
+	next unless int($int->ips);
+	$int->update({auto_dns=>$value});
+    }
+    
+    return 1;
+}
+
 
 #####################################################################
 #

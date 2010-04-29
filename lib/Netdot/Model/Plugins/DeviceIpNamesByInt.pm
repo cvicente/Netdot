@@ -109,7 +109,13 @@ sub get_name_from_interface {
 	    last;
 	}
     }
-    $name =~ s/\/|\.|:|_|\s+/-/g;
+    # Make sub-interface number resemble a sub-domain
+    if ( $name =~ s/\.(\d+)$// ){
+	$name = $1.'.'.$name;
+    }elsif ( $name =~ s/:(\d+)$// ){
+	$name = $1.'.'.$name;
+    }
+    $name =~ s/\/|_|\s+/-/g;
     $name =~ s/\'//g;
     $name = lc( $name );
     

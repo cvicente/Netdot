@@ -40,6 +40,7 @@ $showvlan   => "all"
 $intadd     => undef
 $intaddnum  => undef
 $overwrite_if_descr => undef
+$if_auto_dns => undef
 $submit     => undef
 $view       => "Basics"
 $deviceadd  => undef
@@ -101,6 +102,11 @@ if ( $o ){
 	}	
     }elsif( defined $overwrite_if_descr ){
 	eval { $o->set_overwrite_if_descr($overwrite_if_descr); };
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);	
+	}
+    }elsif ( defined $if_auto_dns ){
+	eval { $o->set_interfaces_auto_dns($if_auto_dns); };
 	if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>$e);	
 	}
@@ -1045,6 +1051,30 @@ if ( !$editips ){
 
     </div>
 </div>
+% if ( !$editips ){
+<div class="container">
+    <div class="containerheadleft">
+        Options
+    </div>
+    <div class="containerheadright">&nbsp;</div>
+    <div class="containerbody">
+    <p>
+    <form name="if_auto_dns_form" action="device.html" method="POST">
+      <input type="hidden" name="id" value="<% $id %>">
+      <input type="hidden" name="view" value="<% $view %>">
+      Set Auto DNS on all IP interfaces to:
+      <select name="if_auto_dns">
+          <option value="" selected>--Select--</option>
+          <option value="0">No</option>
+          <option value="1">Yes</option>
+      </select>
+      <input type="submit" name="Set" value="Set">
+    </form>
+    </p>
+    </div>
+% }
+</div>
+
 % }
 
 <!-- End IPs Section -->
