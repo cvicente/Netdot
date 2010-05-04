@@ -27,6 +27,7 @@ $ipblock_id     => undef
 $ip             => undef
 $add_host_block => undef
 $ethernet       => undef
+$zone_id        => undef
 </%args>
 %
 %
@@ -54,6 +55,8 @@ my $IPV6 = Netdot->get_ipv6_regex();
 my $MAC  = Netdot->get_mac_regex();
 my @list;
 
+my @all_zones = Zone->retrieve_all();
+
 </%init>
 
 <div id="sectiontools" <% $hideheader %>>
@@ -78,6 +81,19 @@ my @list;
                 <label for="Find">Name/IP/MAC:</label>
                 <input type="hidden" name="action" value="search">
                 <input type="text" name="search" class="longtxt" value="<% $search %>"> 
+                </p>
+                <p>
+                <label for="Select">Names within:</label>
+                <select name="zone_id">
+		<option value="0">All Zones</option>
+%               foreach my $zone ( sort { $a->name cmp $b->name } @all_zones ){
+%                   if ( $zone->id eq $zone_id ){
+                        <option value="<% $zone->id %>" SELECTED><% $zone->get_label %></option>
+%                   }else{
+                        <option value="<% $zone->id %>"><% $zone->get_label %></option>
+%                   }
+%               }
+                </select>
                 <input name="submit" value="Find" class="btn" type="submit">
                 </p>
             </form>
@@ -142,7 +158,9 @@ if ( $action eq "search" && $submit ){
 	}elsif ( $search =~ /$IPV4|$IPV6/ ){
 	    @list = Ipblock->search(address=>$search);
 	}else{
-	    @list = RR->search_like(name=>$search);
+	    my %args = (name=>$search);
+	    $args{zone} = $zone_id if ( $zone_id );
+	    @list = RR->search_like(%args);
 	}
 	# Display search results
 	if ( @list ){

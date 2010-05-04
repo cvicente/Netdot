@@ -303,6 +303,7 @@ sub search_address_live {
     We override the base class to:
      - allow 'name' to be searched as part of a hostname
      - search 'name' in aliases field if a RR is not found
+     - add 'zone' to the list of arguments
 
   Arguments: 
     Hash with key/value pairs
@@ -319,7 +320,9 @@ sub search_like {
     $class->isa_class_method('search_like');
 
     if ( exists $argv{name} ){
-	if ( my @rrs = RR->search_like(name=>$argv{name}) ){
+	my %args = (name=>$argv{name});
+	$args{zone} = $argv{zone} if $argv{zone};
+	if ( my @rrs = RR->search_like(%args) ){
 	    return map { $class->search(name=>$_) } @rrs;
 	}elsif ( $class->SUPER::search_like(aliases=>$argv{name}) ){
 	    return $class->SUPER::search_like(aliases=>$argv{name});
