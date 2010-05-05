@@ -156,8 +156,13 @@ overwriting your site-specific configuration.</para>
       <para>Netdot&apos;s database schema only changes between major versions.
 For example, if upgrading from 0.8.x to 0.9.x, you will need to run an
 upgrade script to adapt your current database to the new schema.  This can be usually accomplished by running this  command:</para>
-      <programlisting>% make upgrade</programlisting>
-      <para>  However, if upgrading from 0.8.X to 0.8.Y, it should suffice to run <emphasis role="italic">make install</emphasis> and restart Apache.  </para>
+      <programlisting># example: upgrading 0.8.X -&gt; 0.9.Y
+% make upgrade
+% /etc/init.d/httpd restart</programlisting>
+      <para>  However, if upgrading within the same major revision, e.g. from 0.8.X to 0.8.Y, it should suffice to run <emphasis role="italic">make install</emphasis> and restart Apache.  </para>
+      <programlisting># example: upgrading 0.9.X -&gt; 0.9.Y
+% make install
+% /etc/init.d/httpd restart</programlisting>
     </section>
     <section>
       <title>Installing the package for the first time</title>

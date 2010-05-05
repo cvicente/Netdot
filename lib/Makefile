@@ -6,7 +6,7 @@ include $(SRCROOT)/etc/utility-Makefile
 
 NDIR = Netdot Netdot/Manual Netdot/Meta Netdot/Meta/Table Netdot/Model Netdot/Model/Plugins Netdot/Model/Device Netdot/UI Netdot/Util Netdot/Exporter
 
-FILES := `find -name "*.pm" | grep -v snmp-info | sed -e 's/\.\///'`
+FILES := `find . -name "*.pm" | grep -v snmp-info | sed -e 's/\.\///'`
 
 all: wipedir dir
 	$(substitute)

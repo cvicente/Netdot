@@ -1006,8 +1006,10 @@ sub _adjust_vals{
 
 sub _convert_search_keyword {
     my ($self, $keyword) = @_;
-    my $new;
     $self->isa_class_method("_convert_search_keyword");
+
+    my ($old, $new);
+    $old = $keyword;
 
     # Remove leading and trailing spaces
     $keyword =~ s/^\s*(.*)\s*$/$1/;
@@ -1024,7 +1026,7 @@ sub _convert_search_keyword {
 	# Add wildcards at beginning and end
 	$new =  "%" . $keyword . "%";
     }
-    $logger->debug(sub{"Model::_convert_search_keyword: Converted $keyword into $new"});
+    $logger->debug(sub{"Model::_convert_search_keyword: Converted $old into $new"});
     return $new;
 }
 

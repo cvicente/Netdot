@@ -37,7 +37,7 @@ define substitute
 @echo
 @echo "Preparing and installing $(DIR) files..."
 for file in $(FILES); do\
-  sed -r $(REPLACEMENT_EXPRESSIONS) $$file\
+  $(SED) -r $(REPLACEMENT_EXPRESSIONS) $$file\
     > $$file.tmp;\
   install -m $(FMOD) $$file.tmp $(PREFIX)/$(DIR)/$$file;\
   rm -rf $$file.tmp;\

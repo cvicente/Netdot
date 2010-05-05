@@ -303,8 +303,10 @@ sub search_address_live {
 ############################################################################
 =head2 search_like -  Search for device objects.  Allow substrings
 
-    We override the base class to allow 'name' to be searched as 
-    part of a hostname
+    We override the base class to:
+     - allow 'name' to be searched as part of a hostname
+     - search 'name' in aliases field if a RR is not found
+     - add 'zone' to the list of arguments
 
   Arguments: 
     Hash with key/value pairs
@@ -321,15 +323,19 @@ sub search_like {
     $class->isa_class_method('search_like');
 
     if ( exists $argv{name} ){
-	if ( my @rrs = RR->search_like(name=>$argv{name}) ){
+	my %args = (name=>$argv{name});
+	$args{zone} = $argv{zone} if $argv{zone};
+	if ( my @rrs = RR->search_like(%args) ){
 	    return map { $class->search(name=>$_) } @rrs;
+	}elsif ( $class->SUPER::search_like(aliases=>$argv{name}) ){
+	    return $class->SUPER::search_like(aliases=>$argv{name});
 	}
 	$logger->debug(sub{"Device::search_like: $argv{name} not found"});
 	return;
     }elsif ( exists $argv{producttype} ){
 	return $class->search_by_type($argv{producttype});
     }else{
-	return $class->SUPER::search(%argv);
+	return $class->SUPER::search_like(%argv);
     }
 }
 
@@ -2052,10 +2058,6 @@ sub update {
 	$argv->{collect_arp}   = 0;
 	$argv->{collect_fwt}   = 0;
     }
-    # Disable monitor_config flag if monitored flag is turned off
-    if ( exists $argv->{monitored} && !($argv->{monitored}) ){
-	$argv->{monitor_config} = 0;
-    }
     $self->_validate_args($argv);
     $self->asset_id->update(serial_number=>$argv->{'serialnumber'}, product_id=>$argv->{'product'});
     delete $argv->{'serialnumber'};
@@ -3129,7 +3131,7 @@ sub set_overwrite_if_descr {
     $self->isa_object_method("set_overwrite_if_descr");
     
     $self->throw_fatal("Model::Device::set_overwrite_if_descr: Invalid value: $value.  Should be 0|1")
-	unless ( $value =~ /0|1/ );
+	unless ( $value =~ /^0|1$/ );
 
     foreach my $int ( $self->interfaces ){
 	$int->update({overwrite_descr=>$value});
@@ -3137,6 +3139,34 @@ sub set_overwrite_if_descr {
     
     return 1;
 }
+
+###################################################################################################
+=head2 set_interfaces_auto_dns - Sets auto_dns flag on all IP interfaces of this device
+
+  Arguments:  
+    0 or 1 (true or false)
+  Returns:    
+    True if successful
+  Example:
+    $device->set_interfaces_auto_dns(1);
+$logger->info
+=cut
+sub set_interfaces_auto_dns {
+    my ($self, $value) = @_;
+    $self->isa_object_method("set_interfaces_auto_dns");
+    
+    $self->throw_fatal("Model::Device::set_interfaces_auto_dns: Invalid value: $value. Should be 0|1")
+	unless ( $value =~ /^0|1$/ );
+
+    foreach my $int ( $self->interfaces ){
+	# Ony interfaces with IP addresses
+	next unless int($int->ips);
+	$int->update({auto_dns=>$value});
+    }
+    
+    return 1;
+}
+
 
 #####################################################################
 #

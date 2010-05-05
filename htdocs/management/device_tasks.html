@@ -16,6 +16,7 @@ title => 'Device Tasks'
 %#######################################################################
 <%args>
 $device_search  => undef
+$zone_id        => undef
 $ip_search      => undef
 $mac_search     => undef
 $user           => undef
@@ -39,6 +40,7 @@ my $IPV4 = Netdot->get_ipv4_regex();
 my $IPV6 = Netdot->get_ipv6_regex();
 my $MAC  = Netdot->get_mac_regex();
 my @list;
+
 $show_tasks = $show_tasks || $user->getAttribute("SHOW_TASKS");
 if ( $show_tasks eq "" ) {
     $user->setAttribute($r, "SHOW_TASKS", "show");
@@ -62,7 +64,9 @@ if ( $device_search ){
 	    $m->comp('/management/address_tasks.html', submit=>1, search_address=>$device_search, user=>$user, dowindow=>1 );
 	}else{
 	    $m->comp('.show_tasks', %ARGS);
-	    unless ( (@list = Device->search_like(name=>$device_search)) ){
+	    my %args = (name=>$device_search);
+	    $args{zone} = $zone_id if $zone_id;
+	    unless ( (@list = Device->search_like(%args)) ){
 		$m->comp('/generic/no_search_results.html', search=>$device_search);
 	    }
 	    if ( scalar(@list) == 1 ){
@@ -91,10 +95,12 @@ $device_search  => undef
 $ip_search      => undef
 $mac_search     => undef
 $view           => 'search'
+$zone_id        => undef
 </%args>
 
 <%init>
 my @communities = @{Netdot->config->get('DEFAULT_SNMPCOMMUNITIES')};
+my @all_zones = Zone->retrieve_all();
 </%init>
 
 <div id="sectiontools" <% $hideheader %>>
@@ -117,9 +123,24 @@ my @communities = @{Netdot->config->get('DEFAULT_SNMPCOMMUNITIES')};
         <fieldset class="medium">
             <legend>Find Devices</legend>
             <form action="device_tasks.html" method="POST">
+                <p>
                 <label for="search">Name/IP/MAC:</label>
                 <input type="text" name="device_search" class="longtxt" value="<% $device_search %>"> 
-                <input type="submit" name="submit" class="btn" value="search" >
+                </p>
+                <p>
+                <label for="Select">Names within:</label>
+                <select name="zone_id">
+		<option value="0">All Zones</option>
+%               foreach my $zone ( sort { $a->name cmp $b->name } @all_zones ){
+%                   if ( $zone->id eq $zone_id ){
+                        <option value="<% $zone->id %>" SELECTED><% $zone->get_label %></option>
+%                   }else{
+                        <option value="<% $zone->id %>"><% $zone->get_label %></option>
+%                   }
+%               }
+                </select>
+                <input name="submit" value="Find" class="btn" type="submit">
+                </p>
             </form>
         </fieldset>
 %   }elsif ( $view eq 'new' ){

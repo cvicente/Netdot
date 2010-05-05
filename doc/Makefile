@@ -5,7 +5,7 @@ include $(SRCROOT)/etc/utility-Makefile
 
 NDIR = manual
 
-FILES := `find -type f |egrep -v '\.svn|Makefile' |sed -e 's/\.\///'`
+FILES := `find . -type f |egrep -v '\.svn|Makefile' |sed -e 's/\.\///'`
 
 all: dir
 	$(substitute)
