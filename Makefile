@@ -6,10 +6,12 @@ export SRCROOT := $(shell pwd)
 
 # Netdot Makefile
 #
-PERL = /usr/bin/perl
-PREFIX = /usr/local/netdot
-APACHEUSER = apache
+PERL        = /usr/bin/perl
+PREFIX      = /usr/local/netdot
+APACHEUSER  = apache
 APACHEGROUP = apache
+MAKE        = make
+SED         = sed
 usage:
 	@echo 
 	@echo "usage: make install|installdb|upgrade [ PARAMETER=value ]"
@@ -19,10 +21,12 @@ usage:
 	@echo 
 	@echo "Current defaults are:"
 	@echo 
-	@echo "   PERL          = $(PERL) "
-	@echo "   PREFIX        = $(PREFIX) "
-	@echo "   APACHEUSER    = $(APACHEUSER) "
-	@echo "   APACHEGROUP   = $(APACHEGROUP) "
+	@echo "   PERL          = $(PERL)"
+	@echo "   PREFIX        = $(PREFIX)"
+	@echo "   APACHEUSER    = $(APACHEUSER)"
+	@echo "   APACHEGROUP   = $(APACHEGROUP)"
+	@echo "   MAKE          = $(MAKE)"
+	@echo "   SED           = $(SED)"
 	@echo 
 	@echo "For the defaults used in database installation/upgrade, please see "	
 	@echo "bin/Makefile.  In particular, these variables may be of interest: "
@@ -44,6 +48,11 @@ usage:
 DMOD = 0775
 FMOD = 0644
 XMOD = 0744
+
+# This adds all previously defined variables to the shell environment
+# which makes them available in children makefiles
+export
+
 # If mason ever decides to use different directories in its data_dir there will
 # be trouble.
 DIR = bin doc htdocs tmp tmp/sessions /tmp/sessions/locks lib etc var import export mibs
@@ -68,7 +77,7 @@ upgrade: updatedb
 updatedb:
 	@echo
 	@echo "Upgrading schema and data..."
-	cd bin ; make updatedb FMOD=$(FMOD) 
+	cd bin ; $(MAKE) updatedb
 
 testdeps:
 	@echo "Testing for required Perl modules"
@@ -104,48 +113,45 @@ dir:
 	chmod 750 $(PREFIX)/tmp
 
 htdocs:
-	cd $@ ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DMOD=$(DMOD) \
-	APACHEUSER=$(APACHEUSER) APACHEGROUP=$(APACHEGROUP) DIR=$@ 
+	cd $@ ; $(MAKE) all DIR=$@ 
 
 doc:
-	cd $@ ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DMOD=$(DMOD) DIR=$@ \
-	APACHEUSER=$(APACHEUSER) APACHEGROUP=$(APACHEGROUP) 
+	cd $@ ; $(MAKE) all DIR=$@
 
 lib:
-	cd $@ ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DMOD=$(DMOD) DIR=$@
+	cd $@ ; $(MAKE) all DIR=$@
 
 var:
-	cd $@ ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DMOD=$(DMOD) DIR=$@
+	cd $@ ; $(MAKE) all DIR=$@
 
 _mibs:
-	cd mibs ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DMOD=$(DMOD) DIR=mibs
+	cd mibs ; $(MAKE) all DIR=mibs
 
 bin:
-	cd $@; make install PREFIX=$(PREFIX) PERL=$(PERL) DIR=$@
+	cd $@; $(MAKE) install DIR=$@
 
 etc:
-	cd $@; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DMOD=$(DMOD) DIR=$@
+	cd $@; $(MAKE) all DIR=$@
 
 _import:
 	@echo "Going into $@..."
-	cd import ; make install PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DIR=import
+	cd import ; $(MAKE) install DIR=import
 
 _export:
 	@echo "Going into $@..."
-	cd export ; make all PREFIX=$(PREFIX) PERL=$(PERL) FMOD=$(FMOD) DMOD=$(DMOD) DIR=export \
-	APACHEUSER=$(APACHEUSER) APACHEGROUP=$(APACHEGROUP) 
+	cd export ; $(MAKE) all DIR=export
 dropdb: 
 	@echo "WARNING:  This will erase all data in the database!"
-	cd bin ; make dropdb FMOD=$(FMOD) 
+	cd bin ; $(MAKE) dropdb
 
 genschema: 
 	@echo "Generating Database Schema"
-	cd bin ; make genschema FMOD=$(FMOD) 
+	cd bin ; $(MAKE) genschema
 
 installdb: 
 	echo $(PREFIX) > ./.prefix
 	@echo "Preparing to create netdot database"
-	cd bin ; make installdb FMOD=$(FMOD) 
+	cd bin ; $(MAKE) installdb
 
 oui:
-	cd bin ; make oui
+	cd bin ; $(MAKE) oui

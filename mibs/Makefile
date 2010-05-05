@@ -4,8 +4,8 @@ include $(SRCROOT)/etc/utility-Makefile
 # makefile for mibs/
 
 
-NDIR  := `find -maxdepth 1 -type d  | sed -e 's/[\.\/]//g' | sed -e 's/svn.*//'`
-FILES := `find -mindepth 2 -maxdepth 2 -type f  | sed -e 's/\.\///' | sed -e 's/\.svn.*//'`
+NDIR  := `find . -maxdepth 1 -type d  | sed -e 's/[\.\/]//g' | sed -e 's/svn.*//'`
+FILES := `find . -mindepth 2 -maxdepth 2 -type f  | sed -e 's/\.\///' | sed -e 's/\.svn.*//'`
 
 all: wipedir dir
 
