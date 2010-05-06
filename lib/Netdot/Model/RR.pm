@@ -150,7 +150,7 @@ sub insert {
 	unless ( defined $argv->{name} || defined $argv->{rr} );
 
     # Set default zone if needed
-    $argv->{zone} = $class->config->get('DEFAULT_DNSDOMAIN') 
+    $argv->{zone} = $class->config->get('DEFAULT_DNSDOMAIN') || 'localdomain'
 	unless ($argv->{zone});
     
     # Insert zone if necessary;
