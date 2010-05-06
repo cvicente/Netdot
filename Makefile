@@ -2,16 +2,16 @@
 # Specify where the toplevel make file was called so that that
 # recursively called makefiles have a point of reference for relative
 # paths.  Is there a built in way to do this?
-export SRCROOT := $(shell pwd)
+SRCROOT := $(shell pwd)
 
 # Netdot Makefile
 #
-PERL        = /usr/bin/perl
-PREFIX      = /usr/local/netdot
-APACHEUSER  = apache
-APACHEGROUP = apache
-MAKE        = make
-SED         = sed
+PERL        ?= /usr/bin/perl
+PREFIX      ?= /usr/local/netdot
+APACHEUSER  ?= apache
+APACHEGROUP ?= apache
+MAKE        ?= make
+SED         ?= sed
 usage:
 	@echo 
 	@echo "usage: make install|installdb|upgrade [ PARAMETER=value ]"
@@ -45,9 +45,9 @@ usage:
 # You really don't want to muck with anything below.  
 # You're responsible if you do.
 #
-DMOD = 0775
-FMOD = 0644
-XMOD = 0744
+DMOD ?= 0775
+FMOD ?= 0644
+XMOD ?= 0744
 
 # This adds all previously defined variables to the shell environment
 # which makes them available in children makefiles
