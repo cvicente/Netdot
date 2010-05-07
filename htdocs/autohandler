@@ -31,11 +31,18 @@ $meta_refresh = $m->base_comp->attr_if_exists('meta_refresh');
 
 print "base comp: ", $m->base_comp->name, "<br>"  if $DEBUG;
 print "req comp: ", $m->request_comp->name, "<br>"  if $DEBUG;
+
+
+my $rest_page = 0;
+if($m->request_comp->dir_path eq '/rest'){
+	$rest_page = 1;
+}
+
 </%init>
 
-%# Always show the header
-<& header.mhtml,   title => $title, section => $section, user => $user, showheader=>$showheader, onload=>$onload, meta_refresh=>$meta_refresh &>
-
+%if(!$rest_page){
+	<& header.mhtml,   title => $title, section => $section, user => $user, showheader=>$showheader, onload=>$onload, meta_refresh=>$meta_refresh &>
+%}
 <%perl>
 # Set user type if needed
 if ( defined $user && !defined $user->getAttribute('USER_TYPE') ){
@@ -56,7 +63,7 @@ if ( defined $user && !defined $user->getAttribute('USER_TYPE') ){
 </%perl>
 
 %# Admin/Operator menu
-% if ( defined $user ){
+% if ( defined $user && (! $rest_page)){
 %     if ( $user->getAttribute('USER_TYPE') eq 'Admin' || $user->getAttribute('USER_TYPE') eq 'Operator') {
           <& menu_admin.mhtml, title => $title, section => $section, user => $user, showheader=>$showheader &>
 
@@ -66,13 +73,16 @@ if ( defined $user && !defined $user->getAttribute('USER_TYPE') ){
 %        #error here    
 %     }
 % }
-
-<div id="content">
+%if(! $rest_page){
+	<div id="content">
+%}
 % $m->call_next(user => $user, showheader => $showheader);
-</div> <!-- close content -->
-<& footer.mhtml &>
-
-
+%if(! $rest_page){
+	</div> <!-- close content -->
+%}
+%if(! $rest_page){
+	<& footer.mhtml &>
+%}
 <%method .section_dhandler>
     <%doc>
     Defines how section (e.g. /management) dhandlers dhandle.
