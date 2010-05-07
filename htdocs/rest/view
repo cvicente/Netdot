@@ -1,0 +1,17 @@
+<%args>
+$table
+$id
+</%args>
+
+<%perl>
+
+use XML::Simple;
+use Netdot::REST;
+$r->content_type('text/xml');
+
+my $xs = XML::Simple->new(KeyAttr=>["I Don't Know Why I need this"]);
+my $x = Netdot::REST->view_obj($table, $id, 1);
+my $xml = XMLout($x);
+print $xml;
+
+</%perl>
