@@ -59,7 +59,7 @@ my @DEPS = (
     {cpan=>'Digest::SHA', apt=> 'libdigest-sha-perl', rpm=>'perl-Digest-SHA1'},
     {cpan=>'Net::DNS::ZoneFile::Fast 1.12', apt=> 'libnet-dns-sec-perl', rpm=>'perl-Net-DNS-SEC'},
     {cpan=>'Socket6', apt=> 'libsocket6-perl', rpm=>'perl-Socket6'},
-    {cpan=>'XML::Simple', apt=>'libxml-simple-perl', rpm=>''}
+    {cpan=>'XML::Simple', apt=>'libxml-simple-perl', rpm=>'perl-XML-Simple'}
     ) ;
 
 if ( $action eq 'test' ){
