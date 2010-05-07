@@ -1,6 +1,5 @@
 package Netdot::REST;
 
-use lib "/usr/local/netdot/lib";
 use base qw( Netdot );
 use Netdot::Model;
 use Data::Dumper;
