@@ -5045,6 +5045,13 @@ sub _update_interfaces {
 	    next;
 	}
 
+	# If interface is set to "Ignore IP", don't delete existing IP
+	if ( $obj->interface && $obj->interface->ignore_ip ){
+	    $logger->debug(sub{sprintf("%s: IP %s not deleted: %s set to Ignore IP", 
+				       $host, $obj->address, $obj->interface->get_label)});
+	    next;
+	}
+
 	$logger->info(sprintf("%s: IP %s no longer exists.  Removing.", 
 			      $host, $obj->address));
 	$obj->delete(no_update_tree=>1);
