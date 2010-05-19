@@ -154,8 +154,13 @@ sub print_zone_to_file {
 		    my $rr = $rrclass->retrieve($id);
 		    print $fh $rr->as_text, "\n";
 		}else{
-		    next if ( $type =~ /^(HINFO|TXT)$/ && $argv{nopriv} );
 		    foreach my $data ( keys %{$rec->{$name}->{$type}} ){
+			if ( $argv{nopriv} && $type =~ /^(HINFO|TXT)$/ ){
+			    # Let SPF/Domainkey stuff pass
+			    unless ( $name =~ /\._domainkey\./ || $data =~ /v=spf/ ){
+				next;
+			    }
+			}
 			my $ttl = $rec->{$name}->{$type}->{$data};
 			if ( !defined $ttl || $ttl !~ /\d+/ ){
 			    $logger->debug("$name $type: TTL not defined or invalid. Using Zone default");
