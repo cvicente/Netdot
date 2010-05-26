@@ -622,6 +622,7 @@ function showVlan(){
     if ( ! $editints ){
       push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=speed">Speed</a>';
       push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=vlan">VLAN</a>';
+      push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=status">Status</a>';
     }
     push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=monitored">Mon?</a>';
     push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=snmp">SNMP?</a>';
@@ -683,6 +684,7 @@ function showVlan(){
 		}};
       }
       
+      push @row, $ui->form_field(object=>$if, column=>"oper_status", edit=>$editints, returnValOnly=>1);
       push @row, $ui->form_field(object=>$if, column=>"monitored", edit=>$editints, returnValOnly=>1);
       push @row, $ui->form_field(object=>$if, column=>"snmp_managed", edit=>$editints, returnValOnly=>1);
       
