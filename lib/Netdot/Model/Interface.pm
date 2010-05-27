@@ -35,28 +35,28 @@ Netdot::Model::Interface
 
 =cut
 sub insert {
-    my ($self, $argv) = @_;
-    $self->isa_class_method('insert');
+    my ($class, $argv) = @_;
+    $class->isa_class_method('insert');
     
     # Set some defaults
     $argv->{speed}       ||= 0;
     $argv->{doc_status}  ||= 'manual';
 
-    $argv->{snmp_managed} = $self->config->get('IF_SNMP') 
+    $argv->{snmp_managed} = $class->config->get('IF_SNMP') 
 	unless defined $argv->{snmp_managed};
     
-    $argv->{overwrite_descr} = $self->config->get('IF_OVERWRITE_DESCR') 
+    $argv->{overwrite_descr} = $class->config->get('IF_OVERWRITE_DESCR') 
 	unless defined $argv->{overwrite_descr};
     
     $argv->{monitored} = 0 unless defined $argv->{monitored};
     
-    $argv->{auto_dns} = $self->config->get('UPDATE_DEVICE_IP_NAMES') 
+    $argv->{auto_dns} = $class->config->get('UPDATE_DEVICE_IP_NAMES') 
 	unless defined $argv->{auto_dns};
     
     my $unknown_status = (MonitorStatus->search(name=>"Unknown"))[0];
     $argv->{monitorstatus} = ($unknown_status)? $unknown_status->id : 0;
     
-    return $self->SUPER::insert( $argv );
+    return $class->SUPER::insert( $argv );
 }
 
 ################################################################

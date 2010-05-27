@@ -4959,6 +4959,7 @@ sub _update_interfaces {
 			number      => $newif, 
 			name        => $ifname,
 			doc_status  => 'snmp',
+			auto_dns    => $self->auto_dns,
 		);
 	    # Make sure we can write to the description field when
 	    # device is a router
