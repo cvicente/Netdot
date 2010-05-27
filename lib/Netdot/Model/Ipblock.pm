@@ -1799,7 +1799,7 @@ sub update_a_records {
 	    # This ip is not associated with the Device name.
 	    # Insert and/or assign necessary records
 	    my $rr;
-	    if ( $rr = RR->search(%rrstate)->first ){
+	    if ( $rr = RR->search(name=>$name, zone=>$zone)->first ){
 		$logger->debug(sub{ sprintf("Ipblock::update_a_records: %s: Name %s: %s already exists.", 
 					    $host, $self->address, $name) });
 	    }else{

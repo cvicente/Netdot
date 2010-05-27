@@ -5080,7 +5080,14 @@ sub _update_interfaces {
 	my $my_ips = $self->get_ips();
 	my $num_ips = scalar(@$my_ips);
 	foreach my $ip ( @$my_ips ){
-	    $ip->update_a_records(hostname_ips=>\@hostnameips, num_ips=>$num_ips);
+	    # We do not want to stop the process if a name update fails
+	    eval {
+		$ip->update_a_records(hostname_ips=>\@hostnameips, num_ips=>$num_ips);
+	    };
+	    if ( my $e = $@ ){
+		$logger->error(sprintf("Error updating A record for IP %s: %s",
+				       $ip->address, $e));
+	    }
 	}
     }
 }
