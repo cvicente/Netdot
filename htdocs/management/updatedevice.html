@@ -55,7 +55,6 @@ my $guessed_cl;
 my $info;
 my $default_owner;
 my $default_cl;
-my $logger;
 my $logstr;
 my $dev_exists_notice = 0;
 
@@ -148,7 +147,7 @@ if ( $action eq "discover" ){
 	elsif( !$o && $info->{physaddr} ){
 	    if ( my $physaddr = PhysAddr->search(address=>$info->{physaddr})->first ){
 		if ( $o = Device->search(physaddr=>$physaddr)->first ){
-		    $logger->info(sub{"Device::discover: Device already exists in DB with physical address ".$physaddr->address});
+		    print "Device::discover: Device already exists in DB with physical address ", $physaddr->address ;
 		    $dev_exists_notice = "Device with physical address ". $physaddr->address. 
 			" exists in the DB, but its name has changed";
 		    $argv{device} = $o->id;
@@ -218,14 +217,19 @@ if ( $action eq "discover" ){
     # Notice that we intentionally "eradicate" the appender and make sure the string
     # is not being used (wasting memory) except when this component is called.
     # We look it up before creating it in case this process ended abruptly earlier.
-    $logger = Netdot->log->get_logger('Netdot::Model::Device');
-    
     if ( $logstr = Log::Log4perl::appender_by_name('updatedevice.html') ){
 	    Log::Log4perl->eradicate_appender('updatedevice.html');
     }
-
     $logstr = Netdot::Util::Log->new_appender('String', name=>'updatedevice.html');
+
+    my $logger = Netdot->log->get_logger('Netdot::Model::Device');
     $logger->add_appender($logstr);
+    
+    my $dns_logger = Netdot->log->get_logger('Netdot::Model::DNS');
+    $dns_logger->add_appender($logstr);
+    
+    my $ip_logger = Netdot->log->get_logger('Netdot::Model::Ipblock');
+    $ip_logger->add_appender($logstr);
     
     %argv = %{$session->{argv}};
     print "argv contains: <pre>",  Dumper(%argv), "</pre>" if $DEBUG;
