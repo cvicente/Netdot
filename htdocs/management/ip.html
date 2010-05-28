@@ -1270,23 +1270,21 @@ if ($o->status->name eq "Subnet") {
 %      }
           </div>
           <div class="containerheadright">
+%	     if ( $edit_children ){
+	         <input type="hidden" name="id" value="<% $id %>">
+		 <input type="hidden" name="_action" value="UPDATE_CHILDREN">
+		 <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+		 <input type="submit" name="submit" value="save">
+%	      }else{
+%                 if ( $manager && $manager->can($user, 'access_section', 'ip.html:edit_children') ){
+%		      print '<a href="ip.html?id='.$id.'&edit_children=1&view_format=list&sort=&ip_list_sort='.$ip_list_sort.'">[edit]</a>&nbsp;';
+%                 }
+%             }
 %             if( $o->version == 4 ) {
-%		 if ( $edit_children ){
-			 <input type="hidden" name="id" value="<% $id %>">
-			 <input type="hidden" name="_action" value="UPDATE_CHILDREN">
-			 <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
-			 <input type="submit" name="submit" value="save">
-%		 }else{
-%                    if ( $manager && $manager->can($user, 'access_section', 'ip.html:edit_children') ){
-%		         print '<a href="ip.html?id='.$id.'&edit_children=1&view_format=list&sort=&ip_list_sort='.$ip_list_sort.'">[edit]</a>&nbsp;';
-%                    }
-%                    print '<a href="ip.html?id='.$id.'&view_format=block">[Block View]</a>';
-%                    if ( $o->status->name eq 'Container' ){
-                         <a href="ip.html?id=<% $id %>&view_format=tree">[Tree View]</a>
-%                    }
-%		 }
-%             } else {
-%	            print '<a href="ip.html?id='.$id.'&view_format=tree">[Tree View]</a>';
+%                 print '<a href="ip.html?id='.$id.'&view_format=block">[Block View]</a>';
+%             } 
+%             if ( $o->status->name eq 'Container' ){
+                  <a href="ip.html?id=<% $id %>&view_format=tree">[Tree View]</a>
 %             }
           </div>
           <div class="containerbody">
