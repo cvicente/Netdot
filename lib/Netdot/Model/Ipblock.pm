@@ -1080,7 +1080,7 @@ sub add_range{
 						fzone=>$fzone, rzone=>$rzone );
 	}
 	
-				  });
+				  }); # end of transaction
 
     $logger->info("Ipblock::add_range: Did $argv{status} range: $argv{start} - $argv{end}");
 
