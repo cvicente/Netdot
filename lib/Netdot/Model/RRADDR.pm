@@ -155,7 +155,6 @@ sub delete {
     my $rr = $self->rr;
     my $rr_name = $rr->get_label;
     $self->SUPER::delete();
-    $rr->delete() unless ( $rr->arecords || $rr->devices );
     foreach my $ptr ( RRPTR->search(ipblock=>$ipblock, ptrdname=>$rr_name) ){
 	$ptr->rr->delete();
     }
@@ -172,6 +171,17 @@ sub delete {
 	    $ipblock->update({status=>"Available"});
 	}
     }
+
+    # If RR has no more records, it should be deleted
+    my %linksfrom = RR->meta_data->get_links_from;
+    my $rr_has_other_records = 0;
+    foreach my $i ( keys %linksfrom ){
+	if ( $rr->$i ){
+	    $rr_has_other_records = 1;
+	}
+    }
+    $rr->delete() unless ( $rr_has_other_records );
+
     return 1;
 }
 
