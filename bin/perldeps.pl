@@ -45,7 +45,7 @@ my @DEPS = (
     {cpan=>'Parallel::ForkManager', apt=>'libparallel-forkmanager-perl', rpm=>'perl-Parallel-ForkManager'},
     {cpan=>'Net::IPTrie', apt=> '', rpm=>''},
     {cpan=>'Authen::Radius', apt=>'libauthen-radius-perl', rpm=>'perl-Authen-Radius'},
-    {cpan=>'RRDs' , apt=>'librrds-perl', rpm=>''},
+    {cpan=>'RRDs' , apt=>'librrds-perl', rpm=>'rrdtool-perl'},
     {cpan=>'Test::Simple' , apt=> 'libtest-simple-perl', rpm=>''},
     {cpan=>'Net::IRR', apt=> '', rpm=>''},
     {cpan=>'Time::Local', apt=> 'libtime-local-perl', rpm=>''},
