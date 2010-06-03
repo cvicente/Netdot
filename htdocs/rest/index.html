@@ -1,5 +1,9 @@
 <%doc>
-    Intentionally empty.  Just triggers the autohandler.  This file
-    could be eliminated by setting up HTML::Mason to handle directory
-    requests, I think.
+Load the REST class to verify that it is operational
 </%doc>
+
+<%init>
+use Netdot::REST;
+my $rest = Netdot::REST->new();
+print "Netdot/$Netdot::VERSION REST OK.  " if defined $rest;
+</%init>
