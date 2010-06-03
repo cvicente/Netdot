@@ -12,19 +12,24 @@ Netdot::Util::Exception
 
 =cut
     
-use Exception::Class 
-    ( 'Netdot::Util::Exception' =>
-      { description => 'Generic Netdot Exception',
+use Exception::Class ( 
+    'Netdot::Util::Exception' =>
+    { description => 'Generic Netdot Exception',
     },
-      'Netdot::Util::Exception::Fatal' =>
-      { isa         => 'Netdot::Util::Exception',
-	description => 'Fatal Netdot Exception',
+    'Netdot::Util::Exception::Fatal' =>
+    { isa         => 'Netdot::Util::Exception',
+      description => 'Fatal Netdot Exception',
     },
-      'Netdot::Util::Exception::User' =>
-      { isa         => 'Netdot::Util::Exception',
-	description => 'User Netdot Exception',
+    'Netdot::Util::Exception::User' =>
+    { isa         => 'Netdot::Util::Exception',
+      description => 'User Netdot Exception',
     },
-      );
+    'Netdot::Util::Exception::REST' =>
+    { isa         => 'Netdot::Util::Exception',
+      description => 'REST Exception',
+      fields      => [ 'code' ],
+    },
+    );
 
 
 # $err->as_string() will include the stack trace
@@ -32,6 +37,7 @@ Netdot::Util::Exception::Fatal->Trace(1);
 
 # $err->as_string() will not include the stack trace
 Netdot::Util::Exception::User->Trace(0);
+Netdot::Util::Exception::REST->Trace(0);
 
 # Make sure to return 1
 1;
@@ -54,6 +60,16 @@ sub isa_netdot_exception{
     }else{
 	return $self->isa('Netdot::Util::Exception');
     }
+}
+
+=head2 caught - Returns an exception object if the last thrown exception is of the given class, or a subclass of that class
+
+    See Exception::Class::caught
+
+=cut
+sub caught{
+    my ($self) = shift;
+    return Exception::Class->caught(@_);
 }
 
 =head2 Also, See Exception::Class

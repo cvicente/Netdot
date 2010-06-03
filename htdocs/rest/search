@@ -1,0 +1,32 @@
+<%args>
+$table
+$col
+$val
+</%args>
+
+<%perl>
+
+use XML::Simple;
+use Netdot::REST;
+use Data::Dumper;
+$r->content_type('text/xml');
+
+$table .= "";
+$col .= "";
+$val .= "";
+
+my $results = $table->search($col => $val);
+my %result_hash;
+my @r = ();
+
+while(my $i = $results->next){
+	push(@r, Netdot::REST->view_obj($table, $i, 1));
+}
+$result_hash{"result"} = \@r;
+
+my $xs = XML::Simple->new(KeyAttr=>["I Don't Know Why I need this"]);
+
+my $xml = XMLout(\%result_hash);
+print $xml;
+
+</%perl>

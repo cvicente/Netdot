@@ -80,6 +80,13 @@ sub throw_fatal {
     return Netdot::Util::Exception::Fatal->throw(message=>$msg);
 }
 
+sub throw_rest {
+    my ($self, %argv) = @_;
+    my $logger = $class->{_log}->get_logger('Netdot');
+    $logger->error($argv{msg});
+    return Netdot::Util::Exception::REST->throw(code=>$argv{code}, message=>$argv{msg});
+}
+
 sub isa_class_method {
     my ($class, $method) = @_;
     if ( my $classname = ref($class) ){
