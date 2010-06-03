@@ -1,0 +1,44 @@
+<%doc>
+This Mason default handler component handles requests for RESTful resources
+</%doc>
+
+<%init>
+
+delete $ARGS{user};
+delete $ARGS{showheader};
+
+my $resource = $m->dhandler_arg;
+
+my $DEBUG = 0;
+if ( $DEBUG ){
+    $r->content_type('text/html');
+    print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>';
+    print "req comp: ", $m->request_comp->name, "<br>";
+    print "URI: ", $r->uri, "<br>";
+    print "METHOD: ", $r->method, "<br>";
+    print "content_type : ", $r->content_type, "<br>";
+    print "resource: ", $resource, "<br>";
+    $m->abort;
+}
+
+
+if ( $m->comp_exists($resource) ){
+    # If there is a specific component with this name, call it
+    $m->comp( $resource, %ARGS );
+
+}else{
+    # Otherwise, use the request to determine what to do
+    use Netdot::REST;
+    my $nr = Netdot::REST->new();
+    eval {
+	$nr->handle_resource(resource=>$resource, r=>$r, args=>\%ARGS);
+    };
+    
+    my $e;
+    if ( $e = Netdot::Util::Exception->caught('Netdot::Util::Exception::REST') ){
+ 	$m->clear_and_abort($e->code);
+    }elsif ( $e = $@ ){
+ 	die $e;
+    }
+}
+</%init>

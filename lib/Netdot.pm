@@ -37,11 +37,11 @@ Netdot - Network Documentation Tool
 
 =head1 VERSION
 
-Version 0.9
+Version 1.0
 
 =cut
 
-our $VERSION = "0.9";
+our $VERSION = "1.0";
 
 =head1 SYNOPSIS
 
@@ -78,6 +78,13 @@ sub throw_fatal {
     my $logger = $class->{_log}->get_logger('Netdot');
     $logger->fatal($msg);
     return Netdot::Util::Exception::Fatal->throw(message=>$msg);
+}
+
+sub throw_rest {
+    my ($self, %argv) = @_;
+    my $logger = $class->{_log}->get_logger('Netdot');
+    $logger->error($argv{msg});
+    return Netdot::Util::Exception::REST->throw(code=>$argv{code}, message=>$argv{msg});
 }
 
 sub isa_class_method {
