@@ -85,6 +85,8 @@ sub new {
 
             http://netdot.localdomain/rest/person/?firstname=John&lastname=Doe
 
+    Lastly, objects can be deleted by using the 'DELETE' HTTP method.  
+
   Arguments:
     Hash with following keys:
        resource    - resource string from URI
