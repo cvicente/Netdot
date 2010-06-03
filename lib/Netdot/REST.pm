@@ -75,6 +75,16 @@ sub new {
 
             http://netdot.localdomain/rest/device/meta_data
 
+    An existing resource can be updated by using the 'POST' method with relevant parameters.  
+    For example, a POST request to the following URI:
+
+            http://netdot.localdomain/rest/device/1?sysname=newhostname
+
+    will update the 'sysname' field of the Device object with id 1.  Similarly, a new object
+    can be created with a POST request.  However, in this case the object id must be left out:
+
+            http://netdot.localdomain/rest/person/?firstname=John&lastname=Doe
+
   Arguments:
     Hash with following keys:
        resource    - resource string from URI
