@@ -148,18 +148,27 @@ sub print_zone_to_file {
 	foreach my $type ( qw/A AAAA TXT HINFO NS MX CNAME PTR NAPTR SRV LOC/ ){
 	    if ( defined $rec->{$name}->{$type} ){
 		# Special cases.  These are relatively rare and hard to print.
-		if ( $type =~ /(LOC|SRV|NAPTR)/ ){
+		if ( $type =~ /^(LOC|SRV|NAPTR)$/ ){
 		    my $rrclass = 'RR'.$type;
 		    my $id = $rec->{$name}->{$type}->{id};
 		    my $rr = $rrclass->retrieve($id);
 		    print $fh $rr->as_text, "\n";
 		}else{
-		    next if ( $type =~ /(HINFO|TXT)/ && $argv{nopriv} );
 		    foreach my $data ( keys %{$rec->{$name}->{$type}} ){
+			if ( $argv{nopriv} && $type =~ /^(HINFO|TXT)$/ ){
+			    # Let SPF/Domainkey stuff pass
+			    unless ( $name =~ /\._domainkey\./ || $data =~ /v=spf/ ){
+				next;
+			    }
+			}
 			my $ttl = $rec->{$name}->{$type}->{$data};
 			if ( !defined $ttl || $ttl !~ /\d+/ ){
 			    $logger->debug("$name $type: TTL not defined or invalid. Using Zone default");
 			    $ttl = $zone->default_ttl;
+			}
+			if ( $type =~ /^(MX|NS|CNAME|PTR)$/ ){
+			    # Add the final dot if necessary
+			    $data .= '.' unless $data =~ /\.$/;
 			}
 			print $fh "$name\t$ttl\tIN\t$type\t$data\n";
 		    }

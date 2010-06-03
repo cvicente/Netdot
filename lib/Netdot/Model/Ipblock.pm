@@ -1090,7 +1090,7 @@ sub add_range{
 						fzone=>$fzone, rzone=>$rzone );
 	}
 	
-				  });
+				  }); # end of transaction
 
     $logger->info("Ipblock::add_range: Did $argv{status} range: $argv{start} - $argv{end}");
 
@@ -1631,7 +1631,7 @@ sub free_space {
         # The block will INCLUDE the first address and EXCLUDE the final block
         my ($from, $to) = @_;
 
-        if ($from->within($to) || $from->numeric >= $to->numeric ) {  
+        if ( $from->within($to) || $from->numeric >= $to->numeric ) {  
             # Base case
             return ();
         }
@@ -1647,13 +1647,12 @@ sub free_space {
         while ($subnet->contains($to)) {
             $subnet = NetAddr::IP->new($curr_addr, ++$mask);
         }
-
-
+	
         my $newfrom = NetAddr::IP->new(
-                $subnet->broadcast->numeric + 1,
-                $max_masklen
+	    $subnet->broadcast->numeric + 1,
+	    $max_masklen
             );
-
+	
         return ($subnet, fill($newfrom, $to));
     }
 
@@ -1661,20 +1660,21 @@ sub free_space {
     my $curr = $self->_netaddr->numeric;
     my @freespace = ();
     foreach my $kid (sort { $a->numeric <=> $b->numeric } @kids) {
-        my $curr_addr = NetAddr::IP->new($curr, 32);
-        die "$curr_addr $kid" unless ($kid->numeric >= $curr_addr->numeric);
-
-        if (!$kid->contains($curr_addr)) {
-            foreach my $space (&fill($curr_addr, $kid)) {
-                push @freespace, $space;
-            }
-        }
-
+        my $curr_addr = NetAddr::IP->new($curr);
+        $self->throw_user("child >= parent: $kid >= $curr_addr. IP hierarchy may need to be rebuilt") 
+	    unless ($kid->numeric >= $curr_addr->numeric);
+	
+	if (!$kid->contains($curr_addr)) {
+	    foreach my $space (&fill($curr_addr, $kid)) {
+				  push @freespace, $space;
+	    }
+	}
+	
         $curr = $kid->broadcast->numeric + 1;
     }
 
-    my $end = NetAddr::IP->new($self->_netaddr->broadcast->numeric + 1, 32);
-    my $curr_addr = NetAddr::IP->new($curr, 32);
+    my $end = NetAddr::IP->new($self->_netaddr->broadcast->numeric + 1);
+    my $curr_addr = NetAddr::IP->new($curr);
     map { push @freespace, $_ } &fill($curr_addr, $end);
 
     return @freespace;
@@ -1809,7 +1809,7 @@ sub update_a_records {
 	    # This ip is not associated with the Device name.
 	    # Insert and/or assign necessary records
 	    my $rr;
-	    if ( $rr = RR->search(%rrstate)->first ){
+	    if ( $rr = RR->search(name=>$name, zone=>$zone)->first ){
 		$logger->debug(sub{ sprintf("Ipblock::update_a_records: %s: Name %s: %s already exists.", 
 					    $host, $self->address, $name) });
 	    }else{

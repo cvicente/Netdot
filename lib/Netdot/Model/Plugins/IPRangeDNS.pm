@@ -3,6 +3,7 @@ package Netdot::Model::Plugins::IPRangeDNS;
 use base 'Netdot::Model';
 use warnings;
 use strict;
+use Math::BigInt;
 
 
 ############################################################################
@@ -33,8 +34,8 @@ sub new{
   Arguments:
     prefix  -  String to prepend to host part of IP address
     suffix  -  String to append to host part of IP address
-    ipstart -  First IP in range
-    ipend   -  Last IP in range
+    ipstart -  First IP in range (NetAddr::IP object)
+    ipend   -  Last IP in range (NetAddr::IP object)
     fzone   -  Forward zone (for A records)
     rzone   -  Reverse zone (for PTR records)
   Returns:
@@ -60,53 +61,64 @@ sub generate_records {
 
     my @rrs;
     my $zname = $rzone->name;
-    $zname =~ s/(.*)\.in-addr.arpa/$1/ || 
-	$zname =~ s/(.*)\.ip6.arpa/$1/ ||
-	$zname =~ s/(.*)\.ip6.int/$1/ ;
+    $zname =~ s/^(.*)\.in-addr.arpa$/$1/ || 
+	$zname =~ s/^(.*)\.ip6.arpa$/$1/ ||
+	$zname =~ s/^(.*)\.ip6.int$/$1/ ;
 
-    my ($name, $ptrdname);
-    for ( my $i=$ipstart->numeric; $i<=$ipend->numeric; $i++ ){
-	my $ip = NetAddr::IP->new($i);
-	if ( $ip->version eq '4' ){
-	    my @octs = split(/\./, $zname);
-	    my $p = join '.', reverse @octs;
+    my $p = join('.', (reverse split(/\./, $zname)));
+
+    my ($ipb, $name, $ptrdname);
+    my $version = $ipstart->version;
+   
+    for ( my $i=Math::BigInt->new($ipstart->numeric); $i<=$ipend->numeric; $i++ ){
+
+	if ( $version == 4 ){
+	    my $ip = NetAddr::IP->new($i) || $self->throw_fatal("Cannot create v4 NetAddr obj from $i");
+
+	    $ipb = Ipblock->search(address=>$ip->addr)->first
+		|| $self->throw_fatal("Cannot find Ipblock: ".$ip->addr);
+
 	    $name = $ip->addr;
-	    $name =~ s/$p\.//;
-	    $name =~ s/\./-/;
-	    $name = $prefix.$name if ( defined $prefix );
-	    $name .= $suffix if ( defined $suffix );
-	    $ptrdname = "$name.".$fzone->name;
 
-	    my $ipb = Ipblock->search(address=>$ip->addr)->first;
+	}elsif ( $version == 6 ){
+	    my $ip = NetAddr::IP->new6($i) || $self->throw_fatal("Cannot create v6 NetAddr obj from $i");
 
-	    # We'll wipe out whatever records were there
-	    # We do it after we add the names to avoid the IPs
-	    # being set as availble
-	    my @to_delete;
-	    foreach my $r ( $ipb->ptr_records ){
-		push @to_delete, $r;
-	    }
-	    foreach my $r ( $ipb->arecords ){
-		push @to_delete, $r;
-	    }
-	    
-	    my $ptr = Netdot::Model::RRPTR->insert({ptrdname => $ptrdname, 
-						    ipblock  => $ipb, 
-						    zone     => $rzone});
-	    push @rrs, $ptr;
-	    
-	    my $rraddr = Netdot::Model::RR->insert({type    => 'A',
-						    name    => $name, 
-						    ipblock => $ipb, 
-						    zone    => $fzone});
-	    push @rrs, $rraddr;
+	    $ipb = Ipblock->search(address=>$ip->addr)->first
+		|| $self->throw_fatal("Cannot find Ipblock: ".$ip->addr);
 
-	    map { $_->delete } @to_delete;
-	    
-	}elsif ( $ip->version eq '6' ){
-	    # Pending
+	    $name = $ipb->full_address;
+	    $name =~ s/://g;
+	    $name = join('.', split(//, $name));
 	}
-
+	$name =~ s/^$p\.//i;
+	$name =~ s/\./-/g;
+	$name = $prefix.$name if ( defined $prefix );
+	$name .= $suffix if ( defined $suffix );
+	$ptrdname = "$name.".$fzone->name;
+	
+	# We'll wipe out whatever records were there
+	# We do it after we add the names to avoid the IPs
+	# being set as availble
+	my @to_delete;
+	foreach my $r ( $ipb->ptr_records ){
+	    push @to_delete, $r;
+	}
+	foreach my $r ( $ipb->arecords ){
+	    push @to_delete, $r;
+	}
+	
+	my $ptr = Netdot::Model::RRPTR->insert({ptrdname => $ptrdname, 
+						ipblock  => $ipb, 
+						zone     => $rzone});
+	push @rrs, $ptr;
+	
+	my $rraddr = Netdot::Model::RR->insert({type    => 'A',
+						name    => $name, 
+						ipblock => $ipb, 
+						zone    => $fzone});
+	push @rrs, $rraddr;
+	
+	map { $_->delete } @to_delete;
     }
     return \@rrs;
 }

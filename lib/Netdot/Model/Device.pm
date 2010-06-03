@@ -645,7 +645,7 @@ sub get_snmp_info {
 		       interfaces i_index i_name i_type i_alias i_description 
 		       i_speed i_up i_up_admin i_duplex i_duplex_admin 
 		       ip_index ip_netmask i_mac
-		       i_vlan_membership qb_v_name v_name
+		       i_vlan_membership qb_v_name v_name v_state
 		       );
 
     if ( $self->config->get('GET_DEVICE_MODULE_INFO') ){
@@ -717,6 +717,14 @@ sub get_snmp_info {
 		    $hashes{$method} = $sinfo->$method;
 		}
 		
+		# Store the vlan status
+		my %vlan_status;
+		foreach my $vlan ( keys %{$hashes{v_state}} ){
+		    my $vid = $vlan;
+		    $vid =~ s/^1\.//;
+		    $vlan_status{$vid} = $hashes{v_state}->{$vlan}; 
+		}
+
 		if ( $dev{stp_type} eq 'ieee8021d' || $dev{stp_type} eq 'mst' ){
 		    
 		    # Standard values (make it instance 0)
@@ -744,18 +752,30 @@ sub get_snmp_info {
 			# Cisco case: query repeatedly for each "community@vlan_id"
 			# Notice that we query every vlan on purpose. I have seen cases
 			# where even though a vlan is mapped to a particular instance, the query
-			# will not return the necessary values, but other querying other vlans mapped to the same instance does
+			# will not return the necessary values, but querying other vlans mapped to the same instance does
+
+			
 			if ( $sinfo->cisco_comm_indexing() ){
 			    foreach my $vid ( keys %{$dev{stp_vlan2inst}} ){
+				next if ( exists $IGNOREDVLANS{$vid} );
+				next unless $vlan_status{$vid} eq 'operational';
 				my $mst_inst = $dev{stp_vlan2inst}->{$vid};
-				my $vsinfo = $class->_get_snmp_session('host'        => $args{host},
-								       'communities' => [$sinfo->snmp_comm . '@' . $vid],
-								       'version'     => $sinfo->snmp_ver,
-								       'sclass'      => $sinfo->class);
-				my $stp_p_info = $class->_exec_timeout( $args{host}, 
-									sub{  return $self->_get_stp_info(sinfo=>$vsinfo) } );
-				foreach my $method ( keys %$stp_p_info ){
-				    $dev{stp_instances}{$mst_inst}{$method} = $stp_p_info->{$method};
+				my $comm = $sinfo->snmp_comm . '@' . $vid;
+				eval {
+				    my $vsinfo = $class->_get_snmp_session('host'        => $args{host},
+									   'communities' => [$comm],
+									   'version'     => $sinfo->snmp_ver,
+									   'sclass'      => $sinfo->class);
+				    my $stp_p_info = $class->_exec_timeout( $args{host}, 
+									    sub{  return $self->_get_stp_info(sinfo=>$vsinfo) } );
+				    foreach my $method ( keys %$stp_p_info ){
+					$dev{stp_instances}{$mst_inst}{$method} = $stp_p_info->{$method};
+				    }
+				};
+				if ( my $e = $@ ){
+				    $logger->error(sprintf("Could not get SNMP session for %s with community %s",
+							   $args{host}, $comm));
+				    next;
 				}
 			    }
 			}
@@ -771,14 +791,23 @@ sub get_snmp_info {
 			}
 			foreach my $vid ( keys %vlans ){
 			    next if ( exists $IGNOREDVLANS{$vid} );
-			    my $vsinfo = $class->_get_snmp_session('host'        => $args{host},
-								   'communities' => [$sinfo->snmp_comm . '@' . $vid],
-								   'version'     => $sinfo->snmp_ver,
-								   'sclass'      => $sinfo->class);
-			    my $stp_p_info = $class->_exec_timeout( $args{host}, 
-								   sub{  return $self->_get_stp_info(sinfo=>$vsinfo) } );
-			    foreach my $method ( keys %$stp_p_info ){
-				$dev{stp_instances}{$vid}{$method} = $stp_p_info->{$method};
+			    next unless $vlan_status{$vid} eq 'operational';
+			    my $comm = $sinfo->snmp_comm . '@' . $vid;
+			    eval {
+				my $vsinfo = $class->_get_snmp_session('host'        => $args{host},
+								       'communities' => [$comm],
+								       'version'     => $sinfo->snmp_ver,
+								       'sclass'      => $sinfo->class);
+				my $stp_p_info = $class->_exec_timeout( $args{host}, 
+									sub{  return $self->_get_stp_info(sinfo=>$vsinfo) } );
+				foreach my $method ( keys %$stp_p_info ){
+				    $dev{stp_instances}{$vid}{$method} = $stp_p_info->{$method};
+				}
+			    };
+			    if ( my $e = $@ ){
+				$logger->error(sprintf("Could not get SNMP session for %s with community %s",
+						       $args{host}, $comm));
+				next;
 			    }
 			}
 		    }
@@ -4950,6 +4979,7 @@ sub _update_interfaces {
 			number      => $newif, 
 			name        => $ifname,
 			doc_status  => 'snmp',
+			auto_dns    => $self->auto_dns,
 		);
 	    # Make sure we can write to the description field when
 	    # device is a router
@@ -5036,6 +5066,13 @@ sub _update_interfaces {
 	    next;
 	}
 
+	# If interface is set to "Ignore IP", don't delete existing IP
+	if ( $obj->interface && $obj->interface->ignore_ip ){
+	    $logger->debug(sub{sprintf("%s: IP %s not deleted: %s set to Ignore IP", 
+				       $host, $obj->address, $obj->interface->get_label)});
+	    next;
+	}
+
 	$logger->info(sprintf("%s: IP %s no longer exists.  Removing.", 
 			      $host, $obj->address));
 	$obj->delete(no_update_tree=>1);
@@ -5063,7 +5100,14 @@ sub _update_interfaces {
 	my $my_ips = $self->get_ips();
 	my $num_ips = scalar(@$my_ips);
 	foreach my $ip ( @$my_ips ){
-	    $ip->update_a_records(hostname_ips=>\@hostnameips, num_ips=>$num_ips);
+	    # We do not want to stop the process if a name update fails
+	    eval {
+		$ip->update_a_records(hostname_ips=>\@hostnameips, num_ips=>$num_ips);
+	    };
+	    if ( my $e = $@ ){
+		$logger->error(sprintf("Error updating A record for IP %s: %s",
+				       $ip->address, $e));
+	    }
 	}
     }
 }

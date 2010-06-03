@@ -30,18 +30,19 @@ function emptyfunction() {
 
 // this code converts an select box into a text box with a backward button if the option for selection is "Others"
     function otherOption(select_id, back_id, text_id){
-	if( document.getElementById(select_id).value == "Other"){
-	    document.getElementById(select_id).style.visibility = "hidden";
-            document.getElementById(back_id).type = "button";
-	    document.getElementById(text_id).type = "text";
+	var select = document.getElementById(select_id);
+	if( select.value == "Other"){
+	    select.style.visibility = "hidden";
+	    document.getElementById(back_id).style.visibility = "visible";
+	    document.getElementById(text_id).style.visibility="visible";
         }
     }
 
 // this code changes the text box for other option back to the select box if the users press "<" button
     function backSelectOpt(select_id, back_id, text_id){
          document.getElementById(select_id).style.visibility = "visible";
-         document.getElementById(back_id).type = "hidden";
-	 document.getElementById(text_id).type = "hidden";
+	 document.getElementById(back_id).style.visibility = "hidden";
+	 document.getElementById(text_id).style.visibility = "hidden";
     }
 
 

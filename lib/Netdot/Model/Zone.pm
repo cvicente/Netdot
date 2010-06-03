@@ -356,13 +356,13 @@ sub get_all_records {
 		next;
 	    }
 	}
-	$rec{$name}{NS}{"$nsdname."}           = $rrnsttl    if ($nsdname);
+	$rec{$name}{NS}{"$nsdname"}            = $rrnsttl    if ($nsdname);
 	$rec{$name}{DS}{"$dskeytag $dsalgorithm $dsdigesttype $dsdigest."}           
 	                                       = $rrdsttl    if ($dskeytag && $dsalgorithm && 
 								 $dsdigesttype && $dsdigest);
-	$rec{$name}{MX}{"$mxpref $exchange."}  = $rrmxttl    if (defined($mxpref) && $exchange);
-	$rec{$name}{CNAME}{"$cname."}          = $rrcnamettl if ($cname);
-	$rec{$name}{PTR}{"$ptrdname."}         = $rrptrttl   if ($ptrdname);
+	$rec{$name}{MX}{"$mxpref $exchange"}   = $rrmxttl    if (defined($mxpref) && $exchange);
+	$rec{$name}{CNAME}{"$cname"}           = $rrcnamettl if ($cname);
+	$rec{$name}{PTR}{"$ptrdname"}          = $rrptrttl   if ($ptrdname);
 	$rec{$name}{TXT}{"\"$txtdata\""}       = $rrtxtttl   if ($txtdata);
 	$rec{$name}{HINFO}{"\"$cpu\" \"$os\""} = $rrhinfottl if ($cpu && $os);
 	$rec{$name}{LOC}{id}                   = $rrlocid    if ($rrlocid);
