@@ -3,7 +3,9 @@ Fetch DNS and contact information for a given IP address
 </%doc>
 
 <%args>
-$ip  => undef
+$ip       => undef
+$dns      => undef
+$contacts => undef
 </%args>
 
 <%init>
@@ -22,66 +24,69 @@ if ( $ip ){
 	Netdot->throw_rest(code=>Apache2::Const::NOT_FOUND, msg=>"/rest/host: $ip not found"); 
     }
     $res{address} = $ipb->address;
-    foreach my $ar ( $ipb->arecords ){
-	my $fqdn = $ar->rr->get_label;
-	if ( $ar->rr->txt_records ){
-	    push @{$res{name}{$fqdn}{txt}}, map { $_->txtdata } $ar->rr->txt_records;
-	}
-	if ( my $hinfo = $ar->rr->hinfo_records->first ){
-	    $res{name}{$fqdn}{hinfo}{cpu} = $hinfo->cpu;
-	    $res{name}{$fqdn}{hinfo}{os}  = $hinfo->os;
-	}
-	if ( my @cnames = RRCNAME->search(cname=>$fqdn) ){
-	    foreach my $cname ( @cnames ){
-		push @{$res{name}{$fqdn}{cname}}, $cname->rr->get_label;
+
+    if ( $dns ){
+	foreach my $ar ( $ipb->arecords ){
+	    my $fqdn = $ar->rr->get_label;
+	    if ( $ar->rr->txt_records ){
+		push @{$res{name}{$fqdn}{txt}}, map { $_->txtdata } $ar->rr->txt_records;
+	    }
+	    if ( my $hinfo = $ar->rr->hinfo_records->first ){
+		$res{name}{$fqdn}{hinfo}{cpu} = $hinfo->cpu;
+		$res{name}{$fqdn}{hinfo}{os}  = $hinfo->os;
+	    }
+	    if ( my @cnames = RRCNAME->search(cname=>$fqdn) ){
+		foreach my $cname ( @cnames ){
+		    push @{$res{name}{$fqdn}{cname}}, $cname->rr->get_label;
+		}
 	    }
 	}
-    }
-    if ( my $dhcp = $ipb->dhcp_scopes->first ){
-	$res{ether}     = $dhcp->physaddr->address;
-	$res{ethertype} = $dhcp->physaddr->vendor;
+	if ( my $dhcp = $ipb->dhcp_scopes->first ){
+	    $res{ether}     = $dhcp->physaddr->address;
+	    $res{ethertype} = $dhcp->physaddr->vendor;
+	}
     }
 
-    # Contact info
-    my %clists;
-    if ( my $subnet = $ipb->parent ){
-	$res{subnet} = $subnet->get_label;
-	if ( $subnet->used_by && (my $cl = $subnet->used_by->contactlist) ){
-	    $clists{$cl->id} = $cl;
-	}
-	if ( my @ss = $subnet->sites ){
-	    foreach my $ss ( @ss ){
-		my $site = $ss->site;
-		if ( my $scl = $site->contactlist ){
-		    $clists{$scl->id} = $scl;
-		}
-		foreach my $ents ( $site->entities ){
-		    my $e = $ents->entity;
-		    foreach my $key ( qw(name aliases) ){
-			$res{entities}{$e->id}{$key} = $e->$key;
+    if ( $contacts ){
+	my %clists;
+	if ( my $subnet = $ipb->parent ){
+	    $res{subnet} = $subnet->get_label;
+	    if ( $subnet->used_by && (my $cl = $subnet->used_by->contactlist) ){
+		$clists{$cl->id} = $cl;
+	    }
+	    if ( my @ss = $subnet->sites ){
+		foreach my $ss ( @ss ){
+		    my $site = $ss->site;
+		    if ( my $scl = $site->contactlist ){
+			$clists{$scl->id} = $scl;
 		    }
-		    if ( $e->availability ){
-			$res{entities}{$e->id}{availability} = $e->availability->name;
-		    }
-		    if ( my $ecl = $e->contactlist ){
-			$clists{$ecl->id} = $ecl;
+		    foreach my $ents ( $site->entities ){
+			my $e = $ents->entity;
+			foreach my $key ( qw(name aliases) ){
+			    $res{entities}{$e->id}{$key} = $e->$key;
+			}
+			if ( $e->availability ){
+			    $res{entities}{$e->id}{availability} = $e->availability->name;
+			}
+			if ( my $ecl = $e->contactlist ){
+			    $clists{$ecl->id} = $ecl;
+			}
 		    }
 		}
 	    }
-	}
-	foreach my $cl ( values %clists ){
-	    $res{contact_list}{$cl->id}{name} = $cl->name;
-	    foreach my $con ( $cl->contacts ){
-		my $person = $con->person;
-		foreach my $key ( qw(lastname firstname aliases position email office cell home pager ) ){
-		    $res{contact_list}{$cl->id}{contacts}{$con->id}{$key} = $person->$key;
+	    foreach my $cl ( values %clists ){
+		$res{contact_list}{$cl->id}{name} = $cl->name;
+		foreach my $con ( $cl->contacts ){
+		    my $person = $con->person;
+		    foreach my $key ( qw(lastname firstname aliases position email office cell home pager ) ){
+			$res{contact_list}{$cl->id}{contacts}{$con->id}{$key} = $person->$key;
+		    }
+		    $res{contact_list}{$cl->id}{contacts}{$con->id}{type} = $con->contacttype->name;
+		    $res{contact_list}{$cl->id}{contacts}{$con->id}{employer} = $person->entity->name if $person->entity;
 		}
-		$res{contact_list}{$cl->id}{contacts}{$con->id}{type} = $con->contacttype->name;
-		$res{contact_list}{$cl->id}{contacts}{$con->id}{employer} = $person->entity->name if $person->entity;
 	    }
 	}
     }
-    
 }
 
 $m->clear_buffer;
