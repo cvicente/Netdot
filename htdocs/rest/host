@@ -1,0 +1,77 @@
+<%doc>
+Fetch DNS and contact information for a given IP address
+</%doc>
+
+<%args>
+$ip  => undef
+</%args>
+
+<%init>
+use Netdot::REST;
+my $rest = Netdot::REST->new();
+$rest->request($r);
+use Apache2::Const -compile => qw(FORBIDDEN HTTP_UNAUTHORIZED OK NOT_FOUND HTTP_BAD_REQUEST HTTP_NOT_ACCEPTABLE);
+my %res;
+</%init>
+
+<%perl>
+
+if ( $ip ){
+    my $ipb = Ipblock->search(address=>$ip)->first;
+    unless ( $ipb ) {
+	Netdot->throw_rest(code=>Apache2::Const::NOT_FOUND, msg=>"/rest/host: $ip not found"); 
+    }
+    $res{address} = $ipb->address;
+    foreach my $ar ( $ipb->arecords ){
+	my $fqdn = $ar->rr->get_label;
+	if ( $ar->rr->txt_records ){
+	    push @{$res{$fqdn}{txt}}, map { $_->txtdata } $ar->rr->txt_records;
+	}
+	if ( my $hinfo = $ar->rr->hinfo_records->first ){
+	    $res{$fqdn}{hinfo}{cpu} = $hinfo->cpu;
+	    $res{$fqdn}{hinfo}{os}  = $hinfo->os;
+	}
+	if ( my @cnames = RRCNAME->search(cname=>$fqdn) ){
+	    foreach my $cname ( @cnames ){
+		push @{$res{$fqdn}{cname}}, $cname->rr->get_label;
+	    }
+	}
+    }
+    if ( my $dhcp = $ipb->dhcp_scopes->first ){
+	$res{ether} = $dhcp->physaddr->address;
+	$res{ethertype} = $dhcp->physaddr->vendor;
+    }
+
+    # Contact info
+    my @clists;
+    if ( my $subnet = $ipb->parent ){
+	$res{subnet} = $subnet->get_label;
+	if ( $subnet->used_by && (my $cl = $subnet->used_by->contactlist) ){
+	    push @clists, $cl;
+	}
+	if ( my @ss = $subnet->sites ){
+	    foreach my $ss ( @ss ){
+		my $site = $ss->site;
+		if ( my $scl = $site->contactlist ){
+		    push @clists, $scl;
+		}
+	    }
+	}
+	foreach my $cl ( @clists ){
+	    foreach my $con ( $cl->contacts ){
+		my $person = $con->person;
+		foreach my $key ( qw(lastname firstname aliases position email office cell home pager ) ){
+		    $res{contacts}{$con->id}{$key} = $person->$key;
+		}
+		$res{contacts}{$con->id}{type} = $con->contacttype->name;
+		$res{contacts}{$con->id}{employer} = $person->entity->name if $person->entity;
+	    }
+	}
+    }
+    
+}
+
+$m->clear_buffer;
+$rest->print_formatted(\%res) if %res;
+
+</%perl>

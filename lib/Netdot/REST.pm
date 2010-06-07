@@ -134,7 +134,8 @@ sub handle_resource {
 	}
 	# At this point, if we haven't found any supported media types, give up
 	unless ( $self->{media_type} ){
-	    $self->throw_rest(code=>Apache2::Const::HTTP_NOT_ACCEPTABLE, msg=>'Not Acceptable'); 
+	    $self->throw_rest(code=>Apache2::Const::HTTP_NOT_ACCEPTABLE, 
+			      msg=>'Netdot::REST::handle_resource: no acceptable media type found'); 
 	}
     }
 
@@ -177,7 +178,7 @@ sub handle_resource {
 		}
 	    }else{
 		# Invalid ID
-		$self->throw_rest(code=>Apache2::Const::HTTP_BAD_REQUEST, msg=>'Bad request'); 
+		$self->throw_rest(code=>Apache2::Const::HTTP_BAD_REQUEST, msg=>'Netdot::REST::handle_resource: Bad request'); 
 	    }
 	}else{
 	    if ( $self->{request}->method eq 'GET' ){
@@ -211,7 +212,7 @@ sub handle_resource {
 	    }
 	}
     }else{
-	$self->throw_rest(code=>Apache2::Const::HTTP_BAD_REQUEST, msg=>"Bad request"); 
+	$self->throw_rest(code=>Apache2::Const::HTTP_BAD_REQUEST, msg=>'Netdot::REST::handle_resource: Bad request'); 
     }
 }
 
@@ -255,7 +256,8 @@ sub get{
 
     my $obj = $argv{obj} || $argv{table}->retrieve($argv{id});
     unless ( $obj ) {
-	$self->throw_rest(code=>Apache2::Const::NOT_FOUND, msg=>"Not found"); 
+	my $msg = sprintf("Netdot::REST::get: %s/%s not found", $argv{table}, $argv{id});
+	$self->throw_rest(code=>Apache2::Const::NOT_FOUND, msg=>$msg); 
     }
     $argv{depth} ||= 0;
     $argv{depth} = 0 if ( $argv{depth} < 0 );
@@ -321,13 +323,14 @@ sub post{
 	# We are updating an existing object
 	$obj = $argv{table}->retrieve($argv{id});
 	unless ( $obj ) {
-	    $self->throw_rest(code=>Apache2::Const::NOT_FOUND, msg=>"Not found"); 
+	    my $msg = sprintf("Netdot::REST::post: %s/%s not found", $argv{table}, $argv{id});
+	    $self->throw_rest(code=>Apache2::Const::NOT_FOUND, msg=>$msg); 
 	}
 	eval {
 	    $obj->update($argv{data});
 	};
 	if ( my $e = $@ ){
-	    $self->throw_rest(code=>Apache2::Const::HTTP_BAD_REQUEST, msg=>'Bad request');
+	    $self->throw_rest(code=>Apache2::Const::HTTP_BAD_REQUEST, msg=>'Netdot::REST::post Bad request');
 	}
 	return $self->get(obj=>$obj);
     }else{
@@ -379,28 +382,57 @@ sub delete{
 
 
 ##################################################################
-#
-# Private Methods
-#
-##################################################################
+=head2 request - Get/Set request attribute
 
-# print_formatted
-#
-#  Arguments: 
-#    hashref with data to format
-#  Returns:
-#    formatted data
-#  Examples:
-#
+  Arguments: 
+    Apache request object (optional)
+  Returns:
+    Apache request object
+  Examples:
+    $rest->request($r);
+=cut
+sub request {
+    my ($self, $r) = @_;
+    $self->{request} = $r if $r;
+    return $self->{request};
+}
+
+##################################################################
+=head2 media_type - Get/Set media_type attribute
+
+  Arguments: 
+    string
+  Returns:
+    media_type attribute
+  Examples:
+    $rest->media_type('xml');
+=cut
+sub media_type {
+    my ($self, $r) = @_;
+    $self->{request} = $r if $r;
+    return $self->{request};
+}
+
+
+##################################################################
+=head2 print_formatted - Print formatted data to stdout
+
+  Arguments: 
+    hashref with data to format
+  Returns:
+    formatted data
+  Examples:
+    $rest->print_formatted(\%hash);
+=cut
 sub print_formatted {
     my ($self, $data) = @_;
     
     $self->throw_fatal("Missing required arguments") 
 	unless ( $data );
     
-    defined $self->{media_type} || $self->throw_fatal("media_type not defined");
+    my $mtype = $self->{media_type} || 'xml';
     
-    if ( $self->{media_type} eq 'xml' ){
+    if ( $mtype eq 'xml' ){
 	unless ( $self->{xs} ){
 	    # Instantiate the XML::Simple class
 	    $self->{xs} = XML::Simple->new(
@@ -414,6 +446,12 @@ sub print_formatted {
 	print $xml;
     }
 }
+
+##################################################################
+#
+# Private Methods
+#
+##################################################################
 
 # _get_linked_from - Get list of objects that point to us
 #    
