@@ -115,23 +115,23 @@ Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
         </listitem>
         <listitem>
           <para>Various Perl modules.  To test for missing modules in your system, run:</para>
-          <programlisting>%make testdeps</programlisting>
+          <programlisting>#make testdeps</programlisting>
         </listitem>
         <listitem>
           <para>There are two ways to install the missing modules: The first (and the recommended) way is through package managers of your distribution.</para>
           <para>For systems with APT (e.g. Debian-based systems), run:</para>
-          <programlisting>%make installdeps-apt-get</programlisting>
+          <programlisting>#make installdeps-apt-get</programlisting>
           <para>For systems with RPM (e.g. Red Hat), run:</para>
-          <programlisting>%make installdeps-rpm</programlisting>
+          <programlisting>#make installdeps-rpm</programlisting>
           <tip>
             <para>If you are still missing modules after running this step, you can complete the process by running the next step.</para>
           </tip>
         </listitem>
         <listitem>
           <para>Alternatively, you can install any missing modules automatically using the CPAN, by running:</para>
-          <programlisting>%make installdeps</programlisting>
+          <programlisting>#make installdeps</programlisting>
           <para>If you want to install modules individually, you can do this instead:</para>
-          <programlisting>%perl -MCPAN -e shell
+          <programlisting>#cpan
 &gt;install Module::Blah</programlisting>
           <tip>
             <para>If you have problems installing Net::IRR, it is possible that the Net::TCP module cannot be installed.  There is an open bug and patch available at:</para>
@@ -144,7 +144,7 @@ Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
       <title>Configuration</title>
       <para>Netdot comes with a configuration file that you need to customize
 to your needs.    You need to:</para>
-      <programlisting>% cp etc/Default.conf etc/Site.conf</programlisting>
+      <programlisting>#cp etc/Default.conf etc/Site.conf</programlisting>
       <para>Then, modify Site.conf to reflect your specific options.  The original file contains descriptions of each configuration item.</para>
       <para><emphasis role="bold">Netdot will first read Default.conf and then Site.conf</emphasis></para>
       <para>The reason for keeping two files is that when an upgrade is performed, 
@@ -159,13 +159,13 @@ overwriting your site-specific configuration.</para>
       <para>Netdot&apos;s database schema only changes between major versions.
 For example, if upgrading from 0.8.x to 0.9.x, you will need to run an
 upgrade script to adapt your current database to the new schema.  This can be usually accomplished by running this  command:</para>
-      <programlisting># example: upgrading 0.8.X -&gt; 0.9.Y
-% make upgrade
-% /etc/init.d/httpd restart</programlisting>
+      <programlisting> example: upgrading 0.8.X -&gt; 0.9.Y
+#make upgrade
+#/etc/init.d/httpd restart</programlisting>
       <para>  However, if upgrading within the same major revision, e.g. from 0.8.X to 0.8.Y, it should suffice to run <emphasis role="italic">make install</emphasis> and restart Apache.  </para>
-      <programlisting># example: upgrading 0.9.X -&gt; 0.9.Y
-% make install
-% /etc/init.d/httpd restart</programlisting>
+      <programlisting> example: upgrading 0.9.X -&gt; 0.9.Y
+#make install
+#/etc/init.d/httpd restart</programlisting>
     </section>
     <section>
       <title>Installing the package for the first time</title>
@@ -175,7 +175,7 @@ upgrade script to adapt your current database to the new schema.  This can be us
         </listitem>
         <listitem>
           <para>From the top directory in the package, do:</para>
-          <programlisting>%make install [parameters]</programlisting>
+          <programlisting>#make install [parameters]</programlisting>
           <para>Possible parameters include:</para>
           <programlisting>PREFIX=YOUR-PREFIX (default: /usr/local/netdot) 
 APACHEUSER=USER-YOUR-APACHE-RUNS-AS (default: apache)
@@ -184,7 +184,7 @@ APACHEGROUP=GROUP-YOUR-APACHE-RUNS-AS (default: apache)
         </listitem>
         <listitem>
           <para>You will then be ready to initialize the database. </para>
-          <programlisting>%make installdb [parameters]</programlisting>
+          <programlisting>#make installdb [parameters]</programlisting>
           <para>Remember you need to set <emphasis role="italic">DB_DBA</emphasis> and <emphasis role="italic">DB_DBA_PASSWORD</emphasis> to your database&apos;s admin username/password in <emphasis role="italic">etc/Site.conf</emphasis> before running this command.  Or if you prefer, you can specify the <emphasis role="italic">DB_DBA</emphasis> and <emphasis role="italic">DB_DBA_PASSWORD</emphasis> values as parameters (these are used by many functions in Netdot, they will need to be set to the correct value in <emphasis role="italic">etc/Site.conf</emphasis> eventually)</para>
           <programlisting>DB_DBA=DATABASE-ADMIN-ACCOUNT
 DB_DBA_PASSWORD=DATABASE-ADMIN-PASSWORD</programlisting>
@@ -196,7 +196,7 @@ DB_DBA_PASSWORD=DATABASE-ADMIN-PASSWORD</programlisting>
   your Apache config directory and include it somewhere in your Apache configuration file (httpd.conf) (e.g.):</para>
         <programlisting>Include conf/netdot_apache2_&lt;local|radius|ldap&gt;.conf</programlisting>
         <para>Alternatively, some Apache environments provide a directory from which files are included automatically when Apache starts.  In that case, it&apos;s sufficient to copy the file into that directory, for example:</para>
-        <programlisting># cp /usr/local/netdot/etc/netdot_apache2_radius.conf /etc/apache2/conf.d/</programlisting>
+        <programlisting>#cp /usr/local/netdot/etc/netdot_apache2_radius.conf /etc/apache2/conf.d/</programlisting>
         <tip>
           <para>Make sure you use the version of the file that gets copied into your install directory by <emphasis role="italic">make install</emphasis>, not from the source directory.  This file contains relevant path substitutions based on your chosen install prefix.</para>
         </tip>
@@ -243,7 +243,7 @@ password: &quot;admin&quot;</programlisting>
           <listitem>
             <para>The netdot.cron file included in the package is a sample crontab containing 
    recommended periodic jobs.  You should customize it to your liking and copy it to your cron directory, for example:</para>
-            <programlisting># cp etc/netdot.cron /etc/cron.d/netdot</programlisting>
+            <programlisting>#cp etc/netdot.cron /etc/cron.d/netdot</programlisting>
           </listitem>
         </itemizedlist>
       </section>
@@ -266,21 +266,21 @@ password: &quot;admin&quot;</programlisting>
         <title>Device discovery using the command line interface (CLI)</title>
         <para>For brevity, let&apos;s assume you are located at the Netdot installation prefix, for example, <emphasis role="italic">/usr/local/netdot</emphasis>.</para>
         <para>You can discover a single device by executing:</para>
-        <programlisting>bin/updatedevices.pl -H &lt;device-name&gt; -I -c &lt;community&gt;</programlisting>
+        <programlisting>#bin/updatedevices.pl -H &lt;device-name&gt; -I -c &lt;community&gt;</programlisting>
         <para>You can also try discovering a whole subnet like this:</para>
-        <programlisting>bin/updatedevices.pl -B 192.168.1.0/24 -I -c &lt;community&gt;</programlisting>
+        <programlisting>#bin/updatedevices.pl -B 192.168.1.0/24 -I -c &lt;community&gt;</programlisting>
         <para>In addition, you can give Netdot a specific list of devices you would like to discover:</para>
-        <programlisting>bin/updatedevices.pl -F &lt;text-file&gt; -I -c &lt;community&gt;</programlisting>
+        <programlisting>#bin/updatedevices.pl -F &lt;text-file&gt; -I -c &lt;community&gt;</programlisting>
         <para>The file should contain a list of devices and their communities, separated by spaces, one device/community per line, for example:</para>
         <programlisting>device1 community1
 device2 community1
 device3 community2
 ...</programlisting>
         <para>Netdot can retrieve ARP caches and bridge forwarding tables.  You will probably want to fetch ARP caches from your layer 3 devices (i.e. routers and firewalls), and forwarding tables from your layer 2 devices (switches).  Examples:</para>
-        <programlisting>bin/updatedevices.pl -H &lt;router&gt; -A -c &lt;community&gt;</programlisting>
-        <programlisting>bin/updatedevices.pl -H &lt;switch&gt; -F -c &lt;community&gt;</programlisting>
+        <programlisting>#bin/updatedevices.pl -H &lt;router&gt; -A -c &lt;community&gt;</programlisting>
+        <programlisting>#bin/updatedevices.pl -H &lt;switch&gt; -F -c &lt;community&gt;</programlisting>
         <para>Netdot can also try to discover the network topology.  For that, you need to run:</para>
-        <programlisting>bin/updatedevices.pl -T</programlisting>
+        <programlisting>#bin/updatedevices.pl -T</programlisting>
         <para>Ideally, once you have discovered all your devices, you should combine all this functionality and have it run periodically (e.g. every hour) via CRON.   A sample crontab entry would be:</para>
         <programlisting>0 * * * * root /usr/local/netdot/bin/updatedevices.pl -I -A -F -T</programlisting>
         <para>You will find some examples of cron jobs in the file named <emphasis role="italic">netdot.cron</emphasis></para>
@@ -470,9 +470,9 @@ device3 community2
       <para>You can use the exporter tool to generate text files that can be used as configurations for third-party tools and programs.</para>
       <para>The exporter tool is available in the web UI, under the <emphasis role="italic">Export</emphasis> tab.  Simply select one or more programs and click on the [submit] button.  Netdot will show some output from the exporter tool, including the paths to the new files.</para>
       <para>Additionally, the exporter can be called from the command line.  For example, to generate Nagios configurations:</para>
-      <programlisting>bin/exporter.pl -t Nagios</programlisting>
+      <programlisting>#bin/exporter.pl -t Nagios</programlisting>
       <para>Or you can export several in one call:</para>
-      <programlisting>bin/exporter.pl -t Nagios,Sysmon,Rancid,BIND,DHCPD</programlisting>
+      <programlisting>#bin/exporter.pl -t Nagios,Sysmon,Rancid,BIND,DHCPD</programlisting>
       <para>There are specific export parameters for each of these which you can customize by editing your Site.conf file.</para>
     </section>
     <section>
@@ -543,6 +543,48 @@ contact lists.  </para>
             <para>On the UserRight window, select the Object Class, the specific object or objects, and one or more access rights (view, edit, delete).  Only select the &apos;none&apos; right to revoke all permissions inherited from a group.  Click on &apos;Insert&apos;.</para>
           </listitem>
         </itemizedlist>
+      </section>
+    </section>
+    <section>
+      <title>RESTful Interface</title>
+      <para>The RESTful interface allows  programmatic access to the Netdot database over the HTTP/HTTPS protocol.  At this moment, all objects are formatted in XML using the XML::Simple Perl module.  In the future, Netdot may support other formats, such as YAML.</para>
+      <section>
+        <title>RESTful resources</title>
+        <para>The REST interface is available using the following URL (or similar, depending on your Apache configuration):</para>
+        <programlisting>
+https://myserver.mydomain.com/netdot/rest/</programlisting>
+        <para>This should load the Netdot::REST class and return something like:</para>
+        <programlisting>
+Netdot/0.9 REST OK. </programlisting>
+        <para>RESTful resources to be acted upon represent Netdot objects and are part of the request URI. For example, in this URI:  </para>
+        <programlisting>
+http://myserver.mydomain.com/netdot/rest/device/1</programlisting>
+        <para>the resource is &quot;device/1&quot;, which for a GET request, will return the contents of Device id 1. </para>
+        <para>Using the following URI with a GET request:</para>
+        <programlisting>http://myserver.mydomain.com/netdot/rest/device</programlisting>
+        <para>this interface will return the contents of all Device objects in the database. You can also specify certain search filters to limit the scope of a GET request:</para>
+        <programlisting>http://myserver.mydomain.com/netdot/rest/device?sysname=host1</programlisting>
+        <para>This will perform a search and return all devices whose sysname field is &apos;host1&apos;.  </para>
+        <para>The special keyword &apos;meta_data&apos;  instead of an object ID will provide information
+    about the object&apos;s class:</para>
+        <programlisting>http://myserver.mydomain.com/netdot/rest/device/meta_data</programlisting>
+        <para>An existing resource can be updated by using the &apos;POST&apos; method with relevant parameters.  
+    For example, a POST request to the following URI:</para>
+        <programlisting>http://netdot.localdomain/rest/device/1?sysname=newhostname
+</programlisting>
+        <para>will update the &apos;sysname&apos; field of the Device object with id 1 to be &quot;newhostname&quot;. Similarly, a new object
+    can be created with a POST request.  However, in this case the object id must be left out:
+
+            </para>
+        <programlisting>http://netdot.localdomain/rest/person/?firstname=John&amp;lastname=Doe</programlisting>
+        <para>Lastly, specific objects can be deleted by using the &apos;DELETE&apos; HTTP method.  
+</para>
+      </section>
+      <section>
+        <title>Client module on CPAN</title>
+        <para>A convenient module is provided via CPAN for use in Perl scripts that need to access Netdot&apos;s REST interface.  The module name is Netdot::Client::REST.  It can be installed by doing something like this:</para>
+        <programlisting>#cpan
+&gt;install Netdot::Client::REST</programlisting>
       </section>
     </section>
   </section>
