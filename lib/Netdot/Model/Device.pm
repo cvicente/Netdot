@@ -711,12 +711,6 @@ sub get_snmp_info {
 		# Get STP port id
 		$hashes{'i_stp_id'} = $sinfo->i_stp_id;
 		
-		# Get all the 'guards and 'filters (where available)
-		foreach my $method ( 'i_rootguard_enabled', 'i_loopguard_enabled', 
-				     'i_bpduguard_enabled', 'i_bpdufilter_enabled' ){
-		    $hashes{$method} = $sinfo->$method;
-		}
-		
 		# Store the vlan status
 		my %vlan_status;
 		foreach my $vlan ( keys %{$hashes{v_state}} ){
@@ -771,6 +765,14 @@ sub get_snmp_info {
 				    foreach my $method ( keys %$stp_p_info ){
 					$dev{stp_instances}{$mst_inst}{$method} = $stp_p_info->{$method};
 				    }
+
+				    my $i_stp_info = $class->_exec_timeout( $args{host}, 
+									    sub{  return $self->_get_i_stp_info(sinfo=>$vsinfo) } );
+				    foreach my $field ( keys %$i_stp_info ){
+					foreach my $i ( keys %{$i_stp_info->{$field}} ){
+					    $dev{interface}{$i}{$field} = $i_stp_info->{$field}->{$i};
+					}
+				    }
 				};
 				if ( my $e = $@ ){
 				    $logger->error(sprintf("Could not get SNMP session for %s with community %s",
@@ -802,6 +804,14 @@ sub get_snmp_info {
 									sub{  return $self->_get_stp_info(sinfo=>$vsinfo) } );
 				foreach my $method ( keys %$stp_p_info ){
 				    $dev{stp_instances}{$vid}{$method} = $stp_p_info->{$method};
+				}
+
+				my $i_stp_info = $class->_exec_timeout( $args{host}, 
+									sub{  return $self->_get_i_stp_info(sinfo=>$vsinfo) } );
+				foreach my $field ( keys %$i_stp_info ){
+				    foreach my $i ( keys %{$i_stp_info->{$field}} ){
+					$dev{interface}{$i}{$field} = $i_stp_info->{$field}->{$i};
+				    }
 				}
 			    };
 			    if ( my $e = $@ ){
@@ -917,8 +927,6 @@ sub get_snmp_info {
 		     admin_status        => 'i_up_admin',	     oper_status         => 'i_up', 
 		     physaddr            => 'i_mac', 		     oper_duplex         => 'i_duplex',
 		     admin_duplex        => 'i_duplex_admin',	     stp_id              => 'i_stp_id',
-		     bpdu_guard_enabled  => 'i_bpduguard_enabled',   bpdu_filter_enabled => 'i_bpdufilter_enabled',
-		     loop_guard_enabled  => 'i_loopguard_enabled',   root_guard_enabled  => 'i_rootguard_enabled',
 		     dp_remote_id        => 'c_id',		     dp_remote_ip        => 'c_ip',
 		     dp_remote_port      => 'c_port',		     dp_remote_type      => 'c_platform',
 		     );
@@ -3600,15 +3608,45 @@ sub _get_main_ip {
 }
 
 #########################################################################
-# Retrieve standard STP info
+# Retrieve STP info
 sub _get_stp_info {
     my ($self, %argv) = @_;
-    
+
+   my $sinfo = $argv{sinfo};
+    my %res;
+    foreach my $method ( 
+	'stp_root', 'stp_root_port', 'stp_priority', 
+	'i_stp_bridge', 'i_stp_port', 'i_stp_state', 
+	){
+	$res{$method} = $sinfo->$method;
+    }
+    return \%res;
+}
+
+#########################################################################
+# Retrieve STP interface info
+sub _get_i_stp_info {
+    my ($self, %argv) = @_;
+
+    # Map method name to interface field name
+    my %STPFIELDS = (
+	'i_bpdufilter_enabled' => 'bpdu_filter_enabled',
+	'i_bpduguard_enabled'  => 'bpdu_guard_enabled',
+	'i_rootguard_enabled'  => 'root_guard_enabled',
+	'i_loopguard_enabled'  => 'loop_guard_enabled',
+	);
+
     my $sinfo = $argv{sinfo};
     my %res;
-    foreach my $method ( 'stp_root', 'stp_root_port', 'stp_priority', 
-			 'i_stp_bridge', 'i_stp_port', 'i_stp_state' ){
-	$res{$method} = $sinfo->$method;
+    foreach my $method ( 
+	'i_rootguard_enabled', 'i_loopguard_enabled', 
+	'i_bpduguard_enabled', 'i_bpdufilter_enabled' 
+	){
+	$res{$STPFIELDS{$method}} = $sinfo->$method;
+	foreach my $i ( keys %{$res{$STPFIELDS{$method}}} ){
+	    $res{$STPFIELDS{$method}}->{$i} = ($res{$STPFIELDS{$method}}->{$i} eq 'true' || 
+					       $res{$STPFIELDS{$method}}->{$i} eq 'enable' )? 1 : 0;
+	}
     }
     return \%res;
 }
