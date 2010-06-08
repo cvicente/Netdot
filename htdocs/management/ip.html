@@ -47,6 +47,7 @@ $rowsize           => 22
 $dividefreespace   => 'max'
 $arp_limit         => 10
 $ip_list_sort      => 'Address'
+$show_ch_util      => 0
 </%args>
 %
 %
@@ -147,6 +148,8 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
           <div class="containerheadright">
 	    <form name="netdotform" action="ip.html" method="POST">
 	      <input type="hidden" name="_action" value="SHOW_ROOTS">
+%             my $show_checked = ($show_ch_util)? 'CHECKED' : "";
+              Show Utilization: <input type="checkbox" name="show_ch_util" onChange="submit();" <% $show_checked %>>
 	      Version: <select name="rootversion" onChange="submit();">
 %	      foreach my $version ('4', '6', 'all'){
 %	        if ( $version eq $rootversion ){
@@ -160,7 +163,7 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 	  </div>
           <div class="containerbody">
 %             if ( @list ){
-                  <& ipblock_list.mhtml, parent=>0, objects => \@list, type => "block"  &>
+                  <& ipblock_list.mhtml, parent=>0, objects=>\@list, type=>"block", show_utilization=>$show_ch_util &>
 %             }
           </div>
        </div>
@@ -954,10 +957,13 @@ push( @cell_data, $createdtmp{'value'}, $modtmp{'value'} );
 ################
 # Vlan
 
-{
+if ( $o->status->name eq 'Subnet' ){
     my %tmp = $ui->form_field(object=>$o, column=>'vlan', edit=>$edit_block, linkPage=>'view.html');
     push( @field_headers, $tmp{'label'} );
     push( @cell_data, $tmp{'value'} );
+}else{
+    push( @field_headers, '&nbsp;');
+    push( @cell_data, '&nbsp;');
 }
 
 ################
@@ -1279,12 +1285,12 @@ if ($o->status->name eq "Subnet") {
 %                 if ( $manager && $manager->can($user, 'access_section', 'ip.html:edit_children') ){
 %		      print '<a href="ip.html?id='.$id.'&edit_children=1&view_format=list&sort=&ip_list_sort='.$ip_list_sort.'">[edit]</a>&nbsp;';
 %                 }
-%             }
-%             if( $o->version == 4 ) {
-%                 print '<a href="ip.html?id='.$id.'&view_format=block">[Block View]</a>';
-%             } 
-%             if ( $o->status->name eq 'Container' ){
-                  <a href="ip.html?id=<% $id %>&view_format=tree">[Tree View]</a>
+%                 if( $o->version == 4 ) {
+%                     print '<a href="ip.html?id='.$id.'&view_format=block">[Block View]</a>';
+%                 } 
+%                 if ( $o->status->name eq 'Container' ){
+                      <a href="ip.html?id=<% $id %>&view_format=tree">[Tree View]</a>
+%                 }
 %             }
           </div>
           <div class="containerbody">
