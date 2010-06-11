@@ -38,14 +38,14 @@ open(OUTFILE, ">$OUTFILE") or die "Cannot write to $OUTFILE: $!\n";
 
 my $dbh = Netdot::Model->db_Main();
 
-# Find the most recent poll
+# Find the most recent FWT poll
 my $st = $dbh->prepare("
         SELECT  MAX(fwtable.tstamp)
         FROM    fwtable, device, interface
         WHERE   fwtable.device = device.id
             AND interface.device = device.id");
 $st->execute();
-my $last_tstamp = $st->fetchrow_array();
+my $last_fwt_tstamp = $st->fetchrow_array();
 
 my $st2 = $dbh->prepare("
    SELECT p.address, i.number, rr.name
@@ -58,8 +58,10 @@ my $st2 = $dbh->prepare("
       AND ft.tstamp=?;
 ");
 
-$st2->execute($last_tstamp);
+$st2->execute($last_fwt_tstamp);
 my $frows = $st2->fetchall_arrayref();
+
+die "No rows in fwtable query\n" unless ( scalar (@$frows) );
 
 my (%macs, %ports);
 foreach my $row (@$frows){
@@ -70,6 +72,15 @@ foreach my $row (@$frows){
 
 print "macs hash contains: ", Dumper(%macs), "\n" if $DEBUG;
 print "ports hash contains:  ", Dumper(%ports), "\n" if $DEBUG;
+
+# Find the most recent ARP poll
+my $st = $dbh->prepare("
+        SELECT  MAX(arpcache.tstamp)
+        FROM    arpcache, device, interface
+        WHERE   arpcache.device = device.id
+            AND interface.device = device.id");
+$st->execute();
+my $last_arp_tstamp = $st->fetchrow_array();
 
 my $st3 = $dbh->prepare("
    SELECT p.address, ip.address, i.number, rr.name
@@ -83,8 +94,10 @@ my $st3 = $dbh->prepare("
       AND d.name=rr.id
       AND arp.tstamp=?
 ");
-$st3->execute($last_tstamp);
+$st3->execute($last_arp_tstamp);
 my $arows = $st3->fetchall_arrayref();
+
+die "No rows in arp cache query\n" unless ( scalar (@$arows) );
 
 my %arp;
 foreach my $row (@$arows){
