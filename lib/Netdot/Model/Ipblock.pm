@@ -1604,7 +1604,7 @@ sub address_usage {
 =cut
 
 sub free_space {
-    my $self = shift;
+    my ($self, $divide) = @_;
     $self->isa_object_method('free_space');
 
     sub find_first_one {
@@ -1619,7 +1619,7 @@ sub free_space {
     sub fill { 
         # Fill from the given address to the beginning of the given netblock
         # The block will INCLUDE the first address and EXCLUDE the final block
-        my ($from, $to) = @_;
+        my ($from, $to, $divide) = @_;
 
         if ( $from->within($to) || $from->numeric >= $to->numeric ) {  
             # Base case
@@ -1632,6 +1632,7 @@ sub free_space {
         my $numbits = find_first_one($curr_addr);
 
         my $mask = $max_masklen - $numbits;
+        $mask = $divide if ( $divide && $divide =~ /\d+/ && $divide > $mask );
 
         my $subnet = NetAddr::IP->new($curr_addr, $mask);
         while ($subnet->contains($to)) {
@@ -1643,7 +1644,7 @@ sub free_space {
 	    $max_masklen
             );
 	
-        return ($subnet, fill($newfrom, $to));
+        return ($subnet, fill($newfrom, $to, $divide));
     }
 
     my @kids = map { $_->_netaddr } $self->children;
@@ -1655,7 +1656,7 @@ sub free_space {
 	    unless ($kid->numeric >= $curr_addr->numeric);
 	
 	if (!$kid->contains($curr_addr)) {
-	    foreach my $space (&fill($curr_addr, $kid)) {
+	    foreach my $space (&fill($curr_addr, $kid, $divide)) {
 				  push @freespace, $space;
 	    }
 	}

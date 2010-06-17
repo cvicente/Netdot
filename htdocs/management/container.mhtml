@@ -33,7 +33,7 @@ if ( $network->version == 6 ){
     $maxmask = $maxmask > 32 ? 32 : $maxmask;
 
     my @children = sort { $a->address_numeric <=> $b->address_numeric } $network->children;
-    my @freespace = sort $network->free_space;
+    my @freespace = sort $network->free_space($dividefreespace);
 
     ######################################################################
     ## Now output the HTML
@@ -67,6 +67,15 @@ EOF
     for( my $i=$minrowsize; $i<=$maxrowsize; $i++ ) {
         my $link = 'ip.html?id='.$network->id.'&view_availability=1&rowsize='.$i.'&dividefreespace='.$dividefreespace;
         print '<option onclick="window.location=\''.$link.'\'" value="'.$i.'"'.($rowsize==$i?' selected':'').'>/'.$i.'</option>';
+    }
+    print '</select><br>';
+    print 'Partition: Set max free space size to ';
+    print '<select name="rowsize" class="small">';
+    my $link = 'ip.html?id='.$network->id.'&view_availability=1&rowsize='.$rowsize.'&dividefreespace=max';
+    print '<option onclick="window.location=\''.$link.'\'" value="max">unlimited</option>';
+    for( my $i=$minrowsize; $i<=$maxrowsize; $i++ ) {
+        my $link = 'ip.html?id='.$network->id.'&view_availability=1&rowsize='.$rowsize.'&dividefreespace='.$i;
+        print '<option onclick="window.location=\''.$link.'\'" value="'.$i.'"'.($dividefreespace==$i?' selected':'').'>/'.$i.'</option>';
     }
     print '</select>';
     print "</center>";
