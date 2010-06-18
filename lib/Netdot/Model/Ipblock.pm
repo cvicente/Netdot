@@ -1606,7 +1606,7 @@ sub address_usage {
 sub free_space {
     my ($self, $divide) = @_;
     $self->isa_object_method('free_space');
-
+    
     sub find_first_one {
         my $num = shift;
         if ($num & 1 || $num == 0) { 
@@ -1652,12 +1652,15 @@ sub free_space {
     my @freespace = ();
     foreach my $kid (sort { $a->numeric <=> $b->numeric } @kids) {
         my $curr_addr = NetAddr::IP->new($curr);
-        $self->throw_user("child >= parent: $kid >= $curr_addr. IP hierarchy may need to be rebuilt") 
-	    unless ($kid->numeric >= $curr_addr->numeric);
+	unless ( $kid->numeric >= $curr_addr->numeric ){
+	    my $class = ref($self);
+	    $class->build_tree($self->version);
+	    $self->throw_user("child >= parent: $kid >= $curr_addr. IP hierarchy had to be rebuilt. Go back and try again."); 
+	}
 	
 	if (!$kid->contains($curr_addr)) {
 	    foreach my $space (&fill($curr_addr, $kid, $divide)) {
-				  push @freespace, $space;
+		push @freespace, $space;
 	    }
 	}
 	
