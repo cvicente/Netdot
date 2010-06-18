@@ -1632,7 +1632,7 @@ sub free_space {
         my $numbits = find_first_one($curr_addr);
 
         my $mask = $max_masklen - $numbits;
-        $mask = $divide if ( $divide && $divide =~ /\d+/ && $divide > $mask );
+        $mask = $divide if ( $divide && $divide =~ /\d+/ && $divide > $mask && ( ( $from->version == 4 && $divide <= 32 ) || ( $from->version == 6 && $divide <= 128 ) ) );
 
         my $subnet = NetAddr::IP->new($curr_addr, $mask);
         while ($subnet->contains($to)) {
@@ -1669,7 +1669,7 @@ sub free_space {
 
     my $end = NetAddr::IP->new($self->_netaddr->broadcast->numeric + 1);
     my $curr_addr = NetAddr::IP->new($curr);
-    map { push @freespace, $_ } &fill($curr_addr, $end);
+    map { push @freespace, $_ } &fill($curr_addr, $end, $divide);
 
     return @freespace;
 }

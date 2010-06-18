@@ -20,10 +20,14 @@ if ( $network->version == 6 ){
     my $network_addr = NetAddr::IP->new($network->address,$network->prefix); # the address of the start of the subnet
 
     my $minrowsize = $mask;
-    my $maxrowsize = 128;
+    my $maxrowsize = ($network->version == 4)?32:128;
+    my $minpartitionsize = $mask;
+    my $maxpartitionsize = ($network->version == 4)?32:128;
 
     # set the visual size of the table on the screen:
     $rowsize = int($rowsize);
+    $rowsize = 32 if ($rowsize > 32 && $network->version == 4);
+    $rowsize = 128 if ($rowsize > 128 && $network->version == 6);
 
     # there should never be more /32's in the row than there are in the subnet
     $rowsize = ($rowsize>$mask?$rowsize:$mask);
@@ -62,22 +66,25 @@ EOF
     print "<br>";
 
     print "<center>";
-    print 'Zoom: Set one row equal to ';
-    print '<select name="rowsize" class="small">';
+    print "<table style='width:20em'><tr>";
+    print '<td style="text-align:right;vertical-align:middle;padding-right:0.7em">Zoom: Set one row equal to </td>';
+    print '<td style="text-align:left;vertical-align:middle"><select name="rowsize" class="small">';
     for( my $i=$minrowsize; $i<=$maxrowsize; $i++ ) {
         my $link = 'ip.html?id='.$network->id.'&view_availability=1&rowsize='.$i.'&dividefreespace='.$dividefreespace;
         print '<option onclick="window.location=\''.$link.'\'" value="'.$i.'"'.($rowsize==$i?' selected':'').'>/'.$i.'</option>';
     }
-    print '</select><br>';
-    print 'Partition: Set max free space size to ';
-    print '<select name="rowsize" class="small">';
+    print '</select>';
+    print "</td></tr><tr>";
+    print '<td style="text-align:right;vertical-align:middle;padding-right:0.7em">Partition: Set max free space size to </td>';
+    print '<td style="text-align:left;vertical-align:middle"><select name="partitionsize" class="small">';
     my $link = 'ip.html?id='.$network->id.'&view_availability=1&rowsize='.$rowsize.'&dividefreespace=max';
     print '<option onclick="window.location=\''.$link.'\'" value="max">unlimited</option>';
-    for( my $i=$minrowsize; $i<=$maxrowsize; $i++ ) {
-        my $link = 'ip.html?id='.$network->id.'&view_availability=1&rowsize='.$rowsize.'&dividefreespace='.$i;
+    for( my $i=$minpartitionsize; $i<=$maxpartitionsize; $i++ ) {
+        $link = 'ip.html?id='.$network->id.'&view_availability=1&rowsize='.$rowsize.'&dividefreespace='.$i;
         print '<option onclick="window.location=\''.$link.'\'" value="'.$i.'"'.($dividefreespace==$i?' selected':'').'>/'.$i.'</option>';
     }
     print '</select>';
+    print "</td></tr></table>";
     print "</center>";
 
     print "<br>";
