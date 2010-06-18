@@ -66,17 +66,17 @@ EOF
     print "<br>";
 
     print "<center>";
-    print "<table style='width:20em'><tr>";
-    print '<td style="text-align:right;vertical-align:middle;padding-right:0.7em">Zoom: Set one row equal to </td>';
-    print '<td style="text-align:left;vertical-align:middle"><select name="rowsize" class="small">';
+    print "<table style='width:45em'><tr>";
+    print '<td style="text-align:right;vertical-align:middle;">Zoom: Set one row equal to ';
+    print '<select name="rowsize" class="small">';
     for( my $i=$minrowsize; $i<=$maxrowsize; $i++ ) {
         my $link = 'ip.html?id='.$network->id.'&view_availability=1&rowsize='.$i.'&dividefreespace='.$dividefreespace;
         print '<option onclick="window.location=\''.$link.'\'" value="'.$i.'"'.($rowsize==$i?' selected':'').'>/'.$i.'</option>';
     }
     print '</select>';
-    print "</td></tr><tr>";
-    print '<td style="text-align:right;vertical-align:middle;padding-right:0.7em">Partition: Set max free space size to </td>';
-    print '<td style="text-align:left;vertical-align:middle"><select name="partitionsize" class="small">';
+    print "</td>";
+    print '<td style="text-align:right;vertical-align:middle;">Partition: Set max free space size to ';
+    print '<select name="partitionsize" class="small">';
     my $link = 'ip.html?id='.$network->id.'&view_availability=1&rowsize='.$rowsize.'&dividefreespace=max';
     print '<option onclick="window.location=\''.$link.'\'" value="max">unlimited</option>';
     for( my $i=$minpartitionsize; $i<=$maxpartitionsize; $i++ ) {
