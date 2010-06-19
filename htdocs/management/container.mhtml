@@ -31,7 +31,7 @@ if ( $network->version == 6 ){
 
     # there should never be more /32's in the row than there are in the subnet
     $rowsize = ($rowsize>$mask?$rowsize:$mask);
-    my $cellsperrow = 2**(32-$rowsize);
+    my $cellsperrow = ($rowsize >= 22)?1024:2**(32-$rowsize);
 
     my $maxmask = $rowsize + 10;
     $maxmask = $maxmask > 32 ? 32 : $maxmask;
@@ -103,7 +103,7 @@ EOF
             $rowtitle = $child->addr;
             $title = $child;
             $link = "ip.html?add_block_prefix=$child&add_block_parent=".$network->id."&_action=ADD_BLOCK";
-            $width = 2**(32-$child->masklen);
+            $width = ($rowsize >= 22)?(2**(32-$child->masklen))*(2**($rowsize-22)):2**(32-$child->masklen);
             $count += $width;
             $prevclass = $class;
         } elsif (!@freespace || $freespace[0]->numeric > $children[0]->address_numeric) {
@@ -116,7 +116,7 @@ EOF
 	    if ( $child->description ){
 		$title .= " (". $child->description() .")" ;
 	    }
-            $width = 2**(32-$child->prefix);
+            $width = ($rowsize >= 22)?(2**(32-$child->prefix))*(2**($rowsize-22)):2**(32-$child->prefix);
             $count += $width;
             $link = "ip.html?id=$child";
             $prevclass = $class;
