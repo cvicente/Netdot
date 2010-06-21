@@ -10,7 +10,6 @@ section => 'Advanced'
 </%attr>
 
 <%args>
-$user
 $showheader => 1
 $sql        => undef
 $action     => undef
@@ -22,6 +21,7 @@ $saved_queries => undef
 </%args>
 
 <%init>
+my $user = $ui->get_current_user($r);
 my @t;
 
 my $hideheader;
@@ -127,7 +127,7 @@ Only Administrators should have access to the direct SQL functionality.
 
 % }
 
-% if ( $m->fetch_next ){
-%  $m->call_next();
-% }
+%if ( $m->fetch_next ){
+%    $m->call_next();
+%}
 
