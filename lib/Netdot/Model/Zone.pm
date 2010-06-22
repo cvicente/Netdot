@@ -715,7 +715,7 @@ sub get_hosts {
     if ( $self->is_dot_arpa ){
 	$q = "SELECT          rr.id, rr.name, 
                               ip.id, ip.address, ip.version, 
-                              rrptr.ptrdname
+                              rrptr.ptrdname, zone.name, zone.id
               FROM            zone, rr
               LEFT OUTER JOIN (ipblock ip, rrptr) ON (rr.id=rrptr.rr AND ip.id=rrptr.ipblock)
               LEFT OUTER JOIN (ipblock subnet)    ON ip.parent=subnet.id
@@ -724,7 +724,7 @@ sub get_hosts {
     }else{
 	$q = "SELECT          rr.id, rr.name, 
                               ip.id, ip.address, ip.version, 
-                              physaddr.id, physaddr.address
+                              physaddr.id, physaddr.address, zone.name, zone.id
               FROM            zone, rr
               LEFT OUTER JOIN (ipblock ip, rraddr)  ON (rr.id=rraddr.rr AND ip.id=rraddr.ipblock)
               LEFT OUTER JOIN (ipblock subnet)      ON ip.parent=subnet.id
