@@ -365,9 +365,9 @@ sub get_all_records {
 	$rec{$name}{PTR}{"$ptrdname"}          = $rrptrttl   if ($ptrdname);
 	$rec{$name}{TXT}{"\"$txtdata\""}       = $rrtxtttl   if ($txtdata);
 	$rec{$name}{HINFO}{"\"$cpu\" \"$os\""} = $rrhinfottl if ($cpu && $os);
-	$rec{$name}{LOC}{id}                   = $rrlocid    if ($rrlocid);
-	$rec{$name}{SRV}{id}                   = $rrsrvid    if ($rrsrvid);
-	$rec{$name}{NAPTR}{id}                 = $rrnaptrid  if ($rrnaptrid);
+	$rec{$name}{LOC}{id}{$rrlocid}         = $rrlocid    if ($rrlocid);
+	$rec{$name}{SRV}{id}{$rrsrvid}         = $rrsrvid    if ($rrsrvid);
+	$rec{$name}{NAPTR}{id}{$rrnaptrid}     = $rrnaptrid  if ($rrnaptrid);
 
     }
 
@@ -650,13 +650,14 @@ sub import_records {
 	    }
 	}elsif ( $rr->type eq 'SRV' ){
 	    my $rrsrv;
-	    my %args = (rr=>$nrr);
+	    my %args = (rr       => $nrr,
+			port     => $rr->port,
+			target   => $rr->target,
+		);
 	    if ( $argv{overwrite} || !($rrsrv = RRSRV->search(%args)->first) ){
-		$args{priority} = $rr->priority;
-		$args{weight}   = $rr->weight;
-		$args{port}     = $rr->port;
-		$args{target}   = $rr->target;
-		$args{ttl} = $ttl;
+		$args{priority} = $rr->priority,
+		$args{weight}   = $rr->weight,
+		$args{ttl}      = $ttl;
 		$logger->debug("$domain: Inserting RRSRV $name, $args{port}, $args{target}, ttl: $ttl");
 		$rrsrv = RRSRV->insert(\%args);
 	    }

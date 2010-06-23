@@ -150,12 +150,13 @@ sub print_zone_to_file {
     foreach my $name ( sort { $rec->{$a}->{order} <=> $rec->{$b}->{order} } keys %$rec ){
 	foreach my $type ( qw/A AAAA TXT HINFO NS MX CNAME PTR NAPTR SRV LOC/ ){
 	    if ( defined $rec->{$name}->{$type} ){
-		# Special cases.  These are relatively rare and hard to print.
+		# Special cases.  These are relatively rare and harder to print.
 		if ( $type =~ /^(LOC|SRV|NAPTR)$/ ){
 		    my $rrclass = 'RR'.$type;
-		    my $id = $rec->{$name}->{$type}->{id};
-		    my $rr = $rrclass->retrieve($id);
-		    print $fh $rr->as_text, "\n";
+		    foreach my $id ( sort keys %{$rec->{$name}->{$type}->{id}} ){
+			my $rr = $rrclass->retrieve($id);
+			print $fh $rr->as_text, "\n";
+		    }
 		}else{
 		    foreach my $data ( keys %{$rec->{$name}->{$type}} ){
 			if ( $argv{nopriv} && $type =~ /^(HINFO|TXT)$/ ){
