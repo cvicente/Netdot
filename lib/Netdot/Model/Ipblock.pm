@@ -1572,9 +1572,10 @@ sub address_usage {
     my $q;
     my $dbh = $self->db_Main;
     eval {
-	$q = $dbh->prepare_cached("SELECT id, address, prefix, version 
-                                   FROM   ipblock 
-                                   WHERE  ? <= address AND address <= ?");
+	$q = $dbh->prepare_cached("SELECT ipblock.prefix, ipblock.version, ipblockstatus.name 
+                                   FROM   ipblock, ipblockstatus 
+                                   WHERE  ipblock.status=ipblockstatus.id 
+                                     AND  ? <= address AND address <= ?");
 	
 	$q->execute(scalar($start->numeric), scalar($end->numeric));
     };
@@ -1582,8 +1583,9 @@ sub address_usage {
 	$self->throw_fatal( $e );
     }
     
-    while ( my ($id, $address, $prefix, $version) = $q->fetchrow_array() ) {
+    while ( my ($prefix, $version, $status) = $q->fetchrow_array() ) {
         if( ( $version == 4 && $prefix == 32 ) || ( $version == 6 && $prefix == 128 ) ) {
+	    next if $status eq 'Available';
             $count++;
         }
     }
