@@ -2292,6 +2292,11 @@ sub get_host_addrs {
     unless( $s = NetAddr::IP->new($subnet) ){
 	$class->throw_fatal("Invalid Subnet: $subnet");
     }
+    # Populating an array with all addresses in most IPv6 blocks
+    # will likely break
+    if ( $s->version != 4 ){
+	$class->throw_user('This method only supports IPv4 blocks');
+    }
     my $hosts = $s->hostenumref();
 
     # Remove the prefix.  We just want the addresses
@@ -2323,7 +2328,7 @@ sub get_next_free {
     my $dbh  = $self->db_Main();
     my $id   = $self->id;
     my $rows = $dbh->selectall_arrayref("
-               SELECT   ipblock.address, ipblock.version, ipblockstatus.name
+               SELECT   ipblock.address, ipblockstatus.name
                FROM     ipblock, ipblockstatus
                WHERE    ipblock.status=ipblockstatus.id
                  AND    ipblock.parent=$id
@@ -2331,28 +2336,30 @@ sub get_next_free {
 
     my %used;
     foreach my $row ( @$rows ){
-	my ($numeric, $version, $status) = @$row;
-	next unless ( $numeric && $version && $status );
-	my $address = $class->int2ip($numeric, $version);
-	$used{$address} = $status;
+	my ($numeric, $status) = @$row;
+	next unless ( $numeric && $status );
+	$used{$numeric} = $status;
     }
 
-    my $strategy = $argv{strategy} || Netdot->config->get("IP_ALLOCATION_STRATEGY");
+    my $strategy = $argv{strategy} || Netdot->config->get('IP_ALLOCATION_STRATEGY');
 
-    my @host_addrs = @{$self->get_host_addrs};
-    if ( $strategy eq 'first'){
-	# do nothing
-    }elsif  ( $strategy eq 'last' ){
-	@host_addrs = reverse @host_addrs;
+    my $s = $self->_netaddr;
+    if ( $strategy eq 'first' ){
+	for ( my $addr=Math::BigInt->new($s->first->numeric); $addr <= $s->last->numeric; $addr++ ){
+	    return &_do_addr($class, $addr, \%used, $self->version);
+	}
+    }elsif ( $strategy eq 'last' ){
+	for ( my $addr=Math::BigInt->new($s->last->numeric); $addr >= $s->first->numeric; $addr-- ){
+	    return &_do_addr($class, $addr, \%used, $self->version);
+	}	
     }else{
 	$self->throw_fatal("Ipblock::get_next_free: Invalid strategy: $strategy");
     }
 
-    foreach my $addr ( @host_addrs ){
-	# Ignore subnet and broadcast addresses
-	next if ( $addr eq $self->address || $addr eq $self->_netaddr->broadcast );
+    sub _do_addr(){
+	my ($class, $addr, $used, $version) = @_;
 	# Ignore anything that exists, unless it's marked as available
-	next if (exists $used{$addr} && $used{$addr} ne 'Available');
+	next if (exists $used->{$addr} && $used->{$addr} ne 'Available');
 	if ( my $ipb = Ipblock->search(address=>$addr)->first ){
 	    # IP may have been incorrectly set as Available
 	    # Correct and move on
@@ -2360,10 +2367,10 @@ sub get_next_free {
 		$ipb->update({status=>'Static'});
 		next;
 	    }else{
-		return $addr;
+		return $class->int2ip($addr, $version);
 	    }
 	}else{
-	    return $addr;
+	    return $class->int2ip($addr, $version);
 	}
     }
 }
