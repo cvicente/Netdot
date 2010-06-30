@@ -161,10 +161,13 @@ sub _parser{
 	    $field_args{default_value} = $mcol->default 
 		if ( (defined $mcol->default) && ($mcol->default ne '') );
 
-	    $field_args{is_auto_increment} = 1 
-		if ($mcol->name eq "id");
+	    if ( $mcol->name eq 'id' ){
+		$field_args{is_auto_increment} = 1;
+		$field_args{extra}             = { unsigned => 1 };
+	    }
 	    
 	    $table->add_field(%field_args) or croak $table->error;
+	   
 	    
 	    # Add Foreign key constraints
 	    if ( my $ft = $mcol->links_to() ){

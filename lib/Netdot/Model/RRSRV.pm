@@ -51,7 +51,7 @@ sub insert {
 
 
     # Make sure name is valid
-    unless ( $rr->name =~ /^_\w+\._\w+/ ){
+    unless ( $rr->name =~ /^_.+\._.+/ ){
 	$class->throw_user("Owner name must be of the form _Service._Proto");
     }
 

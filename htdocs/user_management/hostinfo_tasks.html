@@ -17,7 +17,7 @@ title => 'Host Tasks'
 <%args>
 $action          => undef
 $search          => undef
-$user            => undef
+$user            => $ui->get_current_user($r)
 $submit          => undef
 $show_tasks      => undef
 $ipblock         => undef
@@ -189,7 +189,14 @@ if ( $submit && $ipblock ){
 	}
     
     }
-    # Allrecords contains arrayrefs containing:
+    # If user has permissions on whole zones, add those records
+    if ( @zones ){
+	foreach my $z ( @zones ){
+	    my $records = $z->get_hosts();
+	    push @allrecords, @$records;
+	}
+    }
+    # @allrecords contains arrayrefs containing:
     # rr.id, rr.name, ip.id, ip.address, ip.version, physaddr.id, physaddr.address
     
     foreach my $row ( @allrecords ){

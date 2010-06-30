@@ -89,7 +89,7 @@ if ( $records && scalar @$records ){
     if ( $dot_arpa ){
 
 	#  The rows contain:
-	#  rr.id, rr.name, ip.id, ip.address, ip.version, rrptr.ptrdname
+	#  rr.id, rr.name, ip.id, ip.address, ip.version, rrptr.ptrdname, zone, zoneid
 	
 	if ( !defined($sort) ) {
 	    # check for previously-stored sorting preference,
@@ -98,7 +98,7 @@ if ( $records && scalar @$records ){
 	    if ( !defined($sort) ) {
 		$sort = 'Name';
 	    }
-	} elsif ( $sort eq 'Name' || $sort eq 'IP' || $sort eq 'Domain' ) {
+	} elsif ( $sort eq 'Name' || $sort eq 'IP' || $sort eq 'Domain' || $sort eq 'Zone') {
 	    $user->setAttribute($r, "USER_SORT_BY_COL_HOSTLIST", $sort);
 	} else {
 	    $sort = 'Name';
@@ -111,12 +111,14 @@ if ( $records && scalar @$records ){
 	    map { $index{$i++} = $_ } sort { $a->[3] <=> $b->[3] } @$records;
 	}elsif ( $sort eq 'Domain' ){
 	    map { $index{$i++} = $_ } sort { $a->[5] cmp $b->[5] } @$records;
+	}elsif ( $sort eq 'Zone' ){
+	    map { $index{$i++} = $_ } sort { $a->[6] cmp $b->[6] } @$records;
 	}
 
     }else{
 	
 	#  The rows contain:
-	#  rr.id, rr.name, ip.id, ip.address, ip.version, pysaddr.id, physaddr.address
+	#  rr.id, rr.name, ip.id, ip.address, ip.version, pysaddr.id, physaddr.address, zone, zoneid
 	
 	if ( !defined($sort) ) {
 	    # check for previously-stored sorting preference,
@@ -125,7 +127,7 @@ if ( $records && scalar @$records ){
 	    if ( !defined($sort) ) {
 		$sort = 'Name';
 	    }
-	} elsif ( $sort eq 'Name' || $sort eq 'IP' || $sort eq 'Ethernet' ) {
+	} elsif ( $sort eq 'Name' || $sort eq 'IP' || $sort eq 'Ethernet' || $sort eq 'Zone' ) {
 	    $user->setAttribute($r, "USER_SORT_BY_COL_HOSTLIST", $sort);
 	} else {
 	    $sort = 'Name';
@@ -138,6 +140,8 @@ if ( $records && scalar @$records ){
 	    map { $index{$i++} = $_ } sort { $a->[3] <=> $b->[3] } @$records;
 	}elsif ( $sort eq 'Ethernet' ){
 	    map { $index{$i++} = $_ } sort { $a->[6] cmp $b->[6] } @$records;
+	}elsif ( $sort eq 'Zone' ){
+	    map { $index{$i++} = $_ } sort { $a->[7] cmp $b->[7] } @$records;
 	}
     }
 
@@ -192,14 +196,14 @@ if ( $view eq 'csv' ){
     # CSV format
     $m->clear_buffer; # We don't want headers
     my $pos = 0;
-    my @cols;
     if ( $dot_arpa ){
-	print "Name,IP,Domain<br>";
+	print "Name,Zone,IP,Domain<br>";
 	while ( $pos < keys( %index ) ) {
+	    my @cols;
 	    my $row = $index{$pos};
 	    $pos++;
-	    my ($rrid, $name, $ipid, $ip, $version, $domain) = @$row;
-	    push @cols, $name;
+	    my ($rrid, $name, $ipid, $ip, $version, $domain, $zone, $zoneid) = @$row;
+	    push @cols, ($name, $zone);
 	    if ( $ip && $version ){
 		$ip = Ipblock->int2ip($ip, $version);
 		push @cols, $ip;
@@ -207,14 +211,17 @@ if ( $view eq 'csv' ){
 		push @cols, "";
 	    }
 	    push @cols, $domain;
+	    print join ',', @cols;
+	    print "<br>";
 	}
     }else{
-	print "Name,IP,Ethernet<br>";
+	print "Name,Zone,IP,Ethernet<br>";
 	while ( $pos < keys( %index ) ) {
+	    my @cols;
 	    my $row = $index{$pos};
 	    $pos++;
-	    my ($rrid, $name, $ipid, $ip, $version, $ethid, $eth) = @$row;
-	    push @cols, $name;
+	    my ($rrid, $name, $ipid, $ip, $version, $ethid, $eth, $zone, $zoneid) = @$row;
+	    push @cols, ($name, $zone);
 	    if ( $ip && $version ){
 		$ip = Ipblock->int2ip($ip, $version);
 		push @cols, $ip;
@@ -222,10 +229,10 @@ if ( $view eq 'csv' ){
 		push @cols, "";
 	    }
 	    push @cols, $eth;
+	    print join ',', @cols;
+	    print "<br>";
 	}
     }
-    print join ',', @cols;
-    print "<br>";
     $m->abort; # We don't want footers either
 }else{
     #####################################################################
@@ -235,9 +242,9 @@ if ( $view eq 'csv' ){
 
 %     my @columns;
 %     if ( $dot_arpa ){
-%         @columns = qw(Name IP Domain);
+%         @columns = qw(Name Zone IP Domain);
 %     }else{
-%         @columns = qw(Name IP Ethernet);
+%         @columns = qw(Name Zone IP Ethernet);
 %     }
 
 %     my $numcols  = scalar(@columns);
@@ -278,9 +285,10 @@ if ( $view eq 'csv' ){
 %         $pos++;
 %         $ci = ($ci + 1) % 2;
 %         if ( $dot_arpa ){
-%             my ($rrid, $name, $ipid, $ip, $version, $domain) = @$row;
+%             my ($rrid, $name, $ipid, $ip, $version, $domain, $zone, $zoneid) = @$row;
               <tr class="<% $cssitem{$ci} %>">
               <td align="left" valign="middle"><a href="../management/host.html?id=<% $rrid %>"><% $name %></a></td>
+              <td align="left" valign="middle"><a href="../management/zone.html?id=<% $zoneid %>"><% $zone %></a></td>
 %             if ( $ip && $version ){
 %                 $ip = Ipblock->int2ip($ip, $version);
                   <td align="left" valign="middle"><a href="../management/ip.html?id=<% $ipid %>"><% $ip %></a></td>
@@ -296,9 +304,10 @@ if ( $view eq 'csv' ){
 %             }
               </tr>
 %         }else{
-%             my ($rrid, $name, $ipid, $ip, $version, $ethid, $eth) = @$row;
+%             my ($rrid, $name, $ipid, $ip, $version, $ethid, $eth, $zone, $zoneid) = @$row;
               <tr class="<% $cssitem{$ci} %>">
               <td align="left" valign="middle"><a href="../management/host.html?id=<% $rrid %>"><% $name %></a></td>
+              <td align="left" valign="middle"><a href="../management/zone.html?id=<% $zoneid %>"><% $zone %></a></td>
 %             if ( $ip && $version ){
 %                 $ip = Ipblock->int2ip($ip, $version);
                   <td align="left" valign="middle"><a href="../management/ip.html?id=<% $ipid %>"><% $ip %></a></td>

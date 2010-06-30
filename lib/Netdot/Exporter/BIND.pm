@@ -85,15 +85,18 @@ sub generate_configs {
     foreach my $zone ( @zones ){
 	if ( HostAudit->search(zone=>$zone, pending=>1) || $argv{force} ){
 	    if ( $zone->active ){
-		my $path = $self->print_zone_to_file(zone=>$zone, nopriv=>$argv{nopriv});
-		$logger->info("Zone ".$zone->name." written to file: $path");
-	    }
-	    # Notice that we intentionally search again, or we would miss the 
-	    # SOA serial update
-	    my @pending = HostAudit->search(zone=>$zone, pending=>1);
-	    foreach my $record ( @pending ){
-		# Un-mark audit records as pending
-		$record->update({pending=>0});
+		Netdot::Model->do_transaction(sub{
+		    my $path = $self->print_zone_to_file(zone=>$zone, nopriv=>$argv{nopriv});
+		    $logger->info("Zone ".$zone->name." written to file: $path");
+		    
+		    # Notice that we intentionally search again, or we would miss the 
+		    # SOA serial update
+		    my @pending = HostAudit->search(zone=>$zone, pending=>1);
+		    foreach my $record ( @pending ){
+			# Un-mark audit records as pending
+			$record->update({pending=>0});
+		    }
+				      });
 	    }
 	}else{
 	    $logger->debug("Exporter::BIND::generate_configs: ".$zone->name.": No pending changes.  Use -f to force.");
@@ -147,12 +150,13 @@ sub print_zone_to_file {
     foreach my $name ( sort { $rec->{$a}->{order} <=> $rec->{$b}->{order} } keys %$rec ){
 	foreach my $type ( qw/A AAAA TXT HINFO NS MX CNAME PTR NAPTR SRV LOC/ ){
 	    if ( defined $rec->{$name}->{$type} ){
-		# Special cases.  These are relatively rare and hard to print.
+		# Special cases.  These are relatively rare and harder to print.
 		if ( $type =~ /^(LOC|SRV|NAPTR)$/ ){
 		    my $rrclass = 'RR'.$type;
-		    my $id = $rec->{$name}->{$type}->{id};
-		    my $rr = $rrclass->retrieve($id);
-		    print $fh $rr->as_text, "\n";
+		    foreach my $id ( sort keys %{$rec->{$name}->{$type}->{id}} ){
+			my $rr = $rrclass->retrieve($id);
+			print $fh $rr->as_text, "\n";
+		    }
 		}else{
 		    foreach my $data ( keys %{$rec->{$name}->{$type}} ){
 			if ( $argv{nopriv} && $type =~ /^(HINFO|TXT)$/ ){

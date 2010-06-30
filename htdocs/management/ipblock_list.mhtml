@@ -99,12 +99,26 @@ if ( $type eq "address" ){
         push( @$page, \@text_row);
     }
 } elsif( $type eq "block" ) {
+
+    $show_utilization = 0 if $edit;
+
     my @text_row = ();
-    @headers = ( 'Address/Prefix', 'Status', 'Utilization', 'Owner', 'Used by', 'Description' );
-    @text_headers = ( 'Address/Prefix', 'Status', 'Utilization(Address Usage/Subnet Usage)', 'Owner', 'Used by', 'Description' );
+    if ( $show_utilization ){
+	@headers = ( 'Address/Prefix', 'Status', 'Utilization', 'Owner', 'Used by', 'Description' );
+	@text_headers = ( 'Address/Prefix', 'Status', 'Utilization(Address Usage/Subnet Usage)', 'Owner', 'Used by', 'Description' );
+    }else{
+	if ( $edit ){
+	    push @headers, '[del]';
+	}
+	push @headers, ( 'Address/Prefix', 'Status', 'Owner', 'Used by', 'Description' );
+	@text_headers = @headers;
+    }
     foreach my $o ( @{ $objects } ) {
 	my @row = ();
         my @text_row = ();
+	if ( $edit ){	 
+	    push @row, '<input type="checkbox" name="' . "Ipblock__" . $o->id . "__delete" . '" >';
+	}
 	push( @row, '<a href="ip.html?id=' . $o->id . '">' . $o->get_label . '</a>' );
         push( @text_row, $o->get_label );
 

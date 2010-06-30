@@ -1582,9 +1582,10 @@ sub address_usage {
     my $q;
     my $dbh = $self->db_Main;
     eval {
-	$q = $dbh->prepare_cached("SELECT id, address, prefix, version 
-                                   FROM   ipblock 
-                                   WHERE  ? <= address AND address <= ?");
+	$q = $dbh->prepare_cached("SELECT ipblock.prefix, ipblock.version, ipblockstatus.name 
+                                   FROM   ipblock, ipblockstatus 
+                                   WHERE  ipblock.status=ipblockstatus.id 
+                                     AND  ? <= address AND address <= ?");
 	
 	$q->execute(scalar($start->numeric), scalar($end->numeric));
     };
@@ -1592,8 +1593,9 @@ sub address_usage {
 	$self->throw_fatal( $e );
     }
     
-    while ( my ($id, $address, $prefix, $version) = $q->fetchrow_array() ) {
+    while ( my ($prefix, $version, $status) = $q->fetchrow_array() ) {
         if( ( $version == 4 && $prefix == 32 ) || ( $version == 6 && $prefix == 128 ) ) {
+	    next if $status eq 'Available';
             $count++;
         }
     }
@@ -1614,9 +1616,9 @@ sub address_usage {
 =cut
 
 sub free_space {
-    my $self = shift;
+    my ($self, $divide) = @_;
     $self->isa_object_method('free_space');
-
+    
     sub find_first_one {
         my $num = shift;
         if ($num & 1 || $num == 0) { 
@@ -1629,7 +1631,7 @@ sub free_space {
     sub fill { 
         # Fill from the given address to the beginning of the given netblock
         # The block will INCLUDE the first address and EXCLUDE the final block
-        my ($from, $to) = @_;
+        my ($from, $to, $divide) = @_;
 
         if ( $from->within($to) || $from->numeric >= $to->numeric ) {  
             # Base case
@@ -1642,6 +1644,7 @@ sub free_space {
         my $numbits = find_first_one($curr_addr);
 
         my $mask = $max_masklen - $numbits;
+        $mask = $divide if ( $divide && $divide =~ /\d+/ && $divide > $mask && ( ( $from->version == 4 && $divide <= 32 ) || ( $from->version == 6 && $divide <= 128 ) ) );
 
         my $subnet = NetAddr::IP->new($curr_addr, $mask);
         while ($subnet->contains($to)) {
@@ -1653,7 +1656,7 @@ sub free_space {
 	    $max_masklen
             );
 	
-        return ($subnet, fill($newfrom, $to));
+        return ($subnet, fill($newfrom, $to, $divide));
     }
 
     my @kids = map { $_->_netaddr } $self->children;
@@ -1661,12 +1664,15 @@ sub free_space {
     my @freespace = ();
     foreach my $kid (sort { $a->numeric <=> $b->numeric } @kids) {
         my $curr_addr = NetAddr::IP->new($curr);
-        $self->throw_user("child >= parent: $kid >= $curr_addr. IP hierarchy may need to be rebuilt") 
-	    unless ($kid->numeric >= $curr_addr->numeric);
+	unless ( $kid->numeric >= $curr_addr->numeric ){
+	    my $class = ref($self);
+	    $class->build_tree($self->version);
+	    $self->throw_user("child >= parent: $kid >= $curr_addr. IP hierarchy had to be rebuilt. Go back and try again."); 
+	}
 	
 	if (!$kid->contains($curr_addr)) {
-	    foreach my $space (&fill($curr_addr, $kid)) {
-				  push @freespace, $space;
+	    foreach my $space (&fill($curr_addr, $kid, $divide)) {
+		push @freespace, $space;
 	    }
 	}
 	
@@ -1675,7 +1681,7 @@ sub free_space {
 
     my $end = NetAddr::IP->new($self->_netaddr->broadcast->numeric + 1);
     my $curr_addr = NetAddr::IP->new($curr);
-    map { push @freespace, $_ } &fill($curr_addr, $end);
+    map { push @freespace, $_ } &fill($curr_addr, $end, $divide);
 
     return @freespace;
 }
@@ -2296,6 +2302,11 @@ sub get_host_addrs {
     unless( $s = NetAddr::IP->new($subnet) ){
 	$class->throw_fatal("Invalid Subnet: $subnet");
     }
+    # Populating an array with all addresses in most IPv6 blocks
+    # will likely break
+    if ( $s->version != 4 ){
+	$class->throw_user('This method only supports IPv4 blocks');
+    }
     my $hosts = $s->hostenumref();
 
     # Remove the prefix.  We just want the addresses
@@ -2327,7 +2338,7 @@ sub get_next_free {
     my $dbh  = $self->db_Main();
     my $id   = $self->id;
     my $rows = $dbh->selectall_arrayref("
-               SELECT   ipblock.address, ipblock.version, ipblockstatus.name
+               SELECT   ipblock.address, ipblockstatus.name
                FROM     ipblock, ipblockstatus
                WHERE    ipblock.status=ipblockstatus.id
                  AND    ipblock.parent=$id
@@ -2335,28 +2346,30 @@ sub get_next_free {
 
     my %used;
     foreach my $row ( @$rows ){
-	my ($numeric, $version, $status) = @$row;
-	next unless ( $numeric && $version && $status );
-	my $address = $class->int2ip($numeric, $version);
-	$used{$address} = $status;
+	my ($numeric, $status) = @$row;
+	next unless ( $numeric && $status );
+	$used{$numeric} = $status;
     }
 
-    my $strategy = $argv{strategy} || Netdot->config->get("IP_ALLOCATION_STRATEGY");
+    my $strategy = $argv{strategy} || Netdot->config->get('IP_ALLOCATION_STRATEGY');
 
-    my @host_addrs = @{$self->get_host_addrs};
-    if ( $strategy eq 'first'){
-	# do nothing
-    }elsif  ( $strategy eq 'last' ){
-	@host_addrs = reverse @host_addrs;
+    my $s = $self->_netaddr;
+    if ( $strategy eq 'first' ){
+	for ( my $addr=Math::BigInt->new($s->first->numeric); $addr <= $s->last->numeric; $addr++ ){
+	    return &_do_addr($class, $addr, \%used, $self->version);
+	}
+    }elsif ( $strategy eq 'last' ){
+	for ( my $addr=Math::BigInt->new($s->last->numeric); $addr >= $s->first->numeric; $addr-- ){
+	    return &_do_addr($class, $addr, \%used, $self->version);
+	}	
     }else{
 	$self->throw_fatal("Ipblock::get_next_free: Invalid strategy: $strategy");
     }
 
-    foreach my $addr ( @host_addrs ){
-	# Ignore subnet and broadcast addresses
-	next if ( $addr eq $self->address || $addr eq $self->_netaddr->broadcast );
+    sub _do_addr(){
+	my ($class, $addr, $used, $version) = @_;
 	# Ignore anything that exists, unless it's marked as available
-	next if (exists $used{$addr} && $used{$addr} ne 'Available');
+	next if (exists $used->{$addr} && $used->{$addr} ne 'Available');
 	if ( my $ipb = Ipblock->search(address=>$addr)->first ){
 	    # IP may have been incorrectly set as Available
 	    # Correct and move on
@@ -2364,10 +2377,10 @@ sub get_next_free {
 		$ipb->update({status=>'Static'});
 		next;
 	    }else{
-		return $addr;
+		return $class->int2ip($addr, $version);
 	    }
 	}else{
-	    return $addr;
+	    return $class->int2ip($addr, $version);
 	}
     }
 }
