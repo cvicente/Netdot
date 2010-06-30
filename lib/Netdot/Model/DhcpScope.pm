@@ -199,6 +199,44 @@ sub update{
 }
 
 ############################################################################
+=head2 delete 
+    
+    Override parent method to:
+    - Remove shared-network scope when deleting its last subnet
+
+  Args: 
+    None
+  Returns: 
+    True if successful
+  Examples:
+    $dhcp_scope->delete();
+=cut
+sub delete{
+    my ($self, $argv) = @_;
+    $self->isa_object_method('delete');
+    my $class = ref($self);
+    
+    my $type = $self->type;
+    my $shared_network;
+    if ( $type && $type->name eq 'subnet' ){
+	if ( my $container = $self->container ){
+	    if ( $container->type && 
+		 $container->type->name eq 'shared-network' ){
+		$shared_network = $container;
+	    }
+	}
+    }
+    my @ret = $self->SUPER::delete();
+    if ( $shared_network ){
+	if ( scalar($shared_network->contained_scopes) == 0 ){
+	    $shared_network->delete();
+	}
+    }
+
+    return @ret;
+}
+
+############################################################################
 =head2 print_to_file -  Print the config file as text (ISC DHCPD format)
 
   Args: 
