@@ -110,8 +110,9 @@ sub _get_arp_from_cli {
 		    Password  => $password,
 		    SHKC      => 0,
 		    Opts      => [
-			'-o', "ConnectTimeout=$timeout",
-			'-o', 'CheckHostIP=no',
+			'-o', "ConnectTimeout $timeout",
+			'-o', 'CheckHostIP no',
+			'-o', 'StrictHostKeyChecking no',
 		    ],
 	    );
 	
