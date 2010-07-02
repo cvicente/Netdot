@@ -4,6 +4,7 @@ use base qw ( Class::DBI  Netdot );
 use Netdot::Model::Nullify;
 use Time::Local;
 use Net::DNS;
+use Digest::MD5 qw(md5_hex);
 
 =head1 NAME
 
@@ -733,7 +734,7 @@ sub delete {
 
 =cut
 sub get_state {
-    my ($self, $obj) = @_;
+    my ($self) = @_;
     $self->isa_object_method('get_state');
 
     my %bak;
@@ -745,6 +746,22 @@ sub get_state {
 	$bak{$col} = $values[$n++];
     }
     return %bak;
+}
+
+############################################################################
+=head2 get_digest - Calculate MD5 digest of object's current data
+
+  Arguments:
+    None
+  Returns:
+    MD5 digest of object's data
+  Examples:
+    my %digest = $obj->get_state_digest;
+
+=cut
+sub get_digest {
+    my ($self) = @_;
+    return md5_hex($self->get_state);
 }
 
 ##################################################################

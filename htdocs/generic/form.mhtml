@@ -67,10 +67,17 @@ my %linksto = $table->meta_data->get_links_to();
 
 my (@headers, @data) = ();
 my (@comments_header, @comments_data) = ();
-print "<input type=\"hidden\" name=\"table\" value=\"$table\">";
-if( $id ) {
-    if ( $short_field_names ){
-	print "<input type=\"hidden\" name=\"id\" value=\"$id\">";
+
+if ( $edit ){
+    print "<input type=\"hidden\" name=\"table\" value=\"$table\">";
+    if( $id ) {
+	if ( $short_field_names ){
+	    print "<input type=\"hidden\" name=\"id\" value=\"$id\">";
+	}
+    }
+    if ( $obj ){
+	my $digest = $obj->get_digest();
+	print "<input type=\"hidden\" name=\"state_digest\" value=\"$digest\">";
     }
 }
 

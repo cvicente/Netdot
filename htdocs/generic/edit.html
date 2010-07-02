@@ -40,22 +40,24 @@ $showheader  => 1
 $select_id   => undef
 $selected    => undef
 $dowindow    => undef
+$state_digest => undef
 </%args>
 
 <%init>
 my %args;
 my $DEBUG = 0;
-my %reserved = (submit     => '',
-		commit     => '',
-		table      => '',
-		showheader => '',
-		user       => '',
-		select_id  => '',
-		selected   => '',
-		onload     => '',
-		dowindow   => '',
-		request    => '',
-		page       => '',
+my %reserved = (submit       => '',
+		commit       => '',
+		table        => '',
+		showheader   => '',
+		user         => '',
+		select_id    => '',
+		selected     => '',
+		onload       => '',
+		dowindow     => '',
+		request      => '',
+		page         => '',
+		state_digest => '',
 		);
 
 my $manager = $ui->get_permission_manager($r);
@@ -124,21 +126,28 @@ if ( $table ){
     }
 
     if ( $id ){
-	    my $obj = $table->retrieve($id);
-	    unless ( $manager && $manager->can($user, "edit", $obj) ){
-	        $m->comp('/generic/error.mhtml', error=>"You don't have permission to edit this object");
+	my $obj = $table->retrieve($id);
+	unless ( $manager && $manager->can($user, "edit", $obj) ){
+	    $m->comp('/generic/error.mhtml', error=>"You don't have permission to edit this object");
+	}
+	
+	if ( $submit eq "Update" ){
+	    my $new_digest = $obj->get_digest();
+	    eval {
+		Netdot::Model->do_transaction( sub{
+		    if ( $state_digest && ($state_digest ne $new_digest) ){
+			$ui->throw_user('This object changed while you were editing!');
+		    }
+		    $obj->update(\%args);
+					       });
+	    };
+	    if ( my $e = $@ ){
+		$m->comp('error.mhtml', error=>$e);
 	    }
-
-	    if ( $submit eq "Update" ){
-	        eval{
-		        $obj->update(\%args);
-	        };
-	        if ( my $e = $@ ){
-		        $m->comp('error.mhtml', error=>$e);
-	        }
-	        $m->comp($page, table=>$table, id=>$id, dowindow=>$dowindow );
-        }
-        else{
+	    
+	    $m->comp($page, table=>$table, id=>$id, dowindow=>$dowindow );
+        
+        }else{
             $m->comp('.show_form', table=>$table, id=>$id, 
                  showheader=>$showheader, select_id=>$select_id, selected=>$selected, dowindow=>$dowindow );
         }
