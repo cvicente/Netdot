@@ -35,6 +35,11 @@ genschema:
 dropdb:
 	$(PERL) initdb dropdb
 
+defragdb: _defragdb
+
+_defragdb:
+	$(PERL) defragdb
+
 oui:
 	rm -f oui.txt
 	wget http://standards.ieee.org/regauth/oui/oui.txt

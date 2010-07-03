@@ -184,7 +184,8 @@ if ( $self{RR} ){
     $logger->debug("Deleting resource records expiring today or before today ($today)");
     my @where = (-and => [expiration => {'<=', $today},
 			  expiration => {'<>', '0000-00-00'},
-			  expiration => {'<>', '1970-01-01'}]
+			  expiration => {'<>', '1970-01-01'},
+			  expiration => {'<>', '1970-01-02'}]
 	);
     
     my @rrs = RR->search_where(@where);
@@ -324,6 +325,7 @@ sub rotate_table{
         eval{
             my $q = $dbh->selectall_arrayref("SHOW CREATE TABLE $table");
             my $create_query = $q->[0]->[1];
+            $create_query =~ s/AUTO_INCREMENT=[0-9]+/AUTO_INCREMENT=1/;
             $create_query =~ s/CREATE TABLE `(.*)`/CREATE TABLE `$1\_tmp`/;
             $dbh->do($create_query);
             $dbh->do("RENAME TABLE $table TO $table\_$timestamp");
@@ -338,6 +340,7 @@ sub rotate_table{
         eval{
             $dbh->do("CREATE TABLE $new_table_name AS SELECT * FROM $table");
             $dbh->do("DELETE FROM $table");
+	    $dbh->do("SELECT setval('".$table."_id_seq', 1, false"); #reset auto_increment
         }
     }else{
 	$logger->warn("Could not rotate table $table.  Database $db_type not supported");

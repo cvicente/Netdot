@@ -153,5 +153,9 @@ installdb:
 	@echo "Preparing to create netdot database"
 	cd bin ; $(MAKE) installdb
 
+defragdb: 
+	@echo "Defragmenting the Database"
+	cd bin ; $(MAKE) defragdb
+
 oui:
 	cd bin ; $(MAKE) oui
