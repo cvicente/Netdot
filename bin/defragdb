@@ -78,6 +78,7 @@ if ( $CONFIG{DB_TYPE} eq 'mysql' ){
 	
 	# before locking tables, check if we need to do transactions
 	# i.e. we need transactions if this table is referenced by other tables
+	# mysql suggests to use "SET autocommit=0" rather than "START TRANSACTION"
 	if ( (scalar keys %from) > 0 ){
 	    $dbh->{AutoCommit} = 0 if $real_run;
 	}
@@ -143,7 +144,18 @@ if ( $CONFIG{DB_TYPE} eq 'mysql' ){
 	print $table.": ".1.0*$max_id/$mysql_uint_max."\n\n" if $CONFIG{debug};
     }
 } elsif ( $CONFIG{DB_TYPE} =~ /^pg$/i ) {
-# SELECT setval('tbl_id_seq', current_max); #nextval() will return current_max+1
+    # The only two things that are different is table locking
+    # and modifying the auto increment index.
+    # 
+    # For the table locking part, 
+    # the idea is to write (exclusive) lock the table so that the new value of auto_increment at the end is valid (nobody can generate a new id during this update)
+    # make sure transactions (AutoCommit set to 0) play well with locks (although the use of AutoCommit = 0 rather than explicit transactions should be ok for Pg as well)
+    # 
+    # For the auto increment part, the SQL query is:
+    # $dbh->do("SELECT setval('" . $table . "_id_seq', $new_index, false)"); #nextval() will return new_index
+    print "Pg currently not supported.\n";
+} else {
+    print "Database type $CONFIG{db_type} is not supported.\n";
 }
 
 &dbdisconnect($dbh);
