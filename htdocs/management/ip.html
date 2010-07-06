@@ -311,7 +311,11 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 			description => $block_description,
 		);
 	    if ( $block = Ipblock->search(address=>$address, prefix=>$prefix)->first ){
-		$block->update(\%args);
+		if ( $add_block_parent ) {
+		    $ui->throw_user("This IP has already been set to '" . $block->status->name . "', possibly by someone else.");
+		}else{
+		    $block->update(\%args);
+		}
 	    }else{
 		$args{address} = $address;
 		$args{prefix}  = $prefix;
