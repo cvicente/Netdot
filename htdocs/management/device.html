@@ -64,7 +64,7 @@ $state_digest   => undef
 %#######################################################################
 %
 <%init>
-my $DEBUG      = 0;
+my $DEBUG      = 1;
 my %cssitem    = ( 0 => "formtablec1", 1 => "formtablec2" );
 my $maxselect  = 100;
 my $o          = undef;
@@ -133,13 +133,13 @@ if( $deviceadd && $newhost ){
 
     # insert/update
     my $new_digest;
-    if ( $o = Device->retrieve($id) ){
+    if ( $o ){
 	$new_digest = $o->get_digest();
     }
     eval {
 	Netdot::Model->do_transaction( sub{ 
 	    if ( $state_digest && $new_digest && ($state_digest ne $new_digest) ){
-		$ui->throw_user("This device changed while you were editing!");
+		$ui->throw_user("This device changed while you were editing");
 	    }
 	    $ui->form_to_db(%ARGS); 
 				       });
