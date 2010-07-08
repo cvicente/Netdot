@@ -210,9 +210,6 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
         if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>$e);
         }else{
-	    # Commit changes
-	    Netdot::Model->dbi_commit();
-	    
 	    # Do this to 'flush' the values associated with the object
 	    # before redisplaying
 	    $o = undef;
