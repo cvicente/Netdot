@@ -774,7 +774,7 @@ sub build_tree {
     my ($class, $version) = @_;
     $class->isa_class_method('build_tree');
 
-    my $parents = $class->_build_tree_mem($version);
+    my ($parents, $current_parents) = $class->_build_tree_mem($version);
 
     # Reflect changes in db
     my $dbh = $class->db_Main;
@@ -782,7 +782,8 @@ sub build_tree {
     eval {
 	$sth = $dbh->prepare_cached("UPDATE ipblock SET parent = ? WHERE id = ?");
 	foreach ( keys %$parents ){
-	    $sth->execute($parents->{$_}, $_);
+	    $sth->execute($parents->{$_}, $_)
+		unless $parents->{$_} == $current_parents->{$_};
 	}
     };
     if ( my $e = $@ ){
@@ -2558,7 +2559,9 @@ sub _validate {
 #   Arguments: 
 #     IP version [4|6]
 #   Returns:
-#     Hashref with parent data
+#     Array with:
+#     - Hashref with current parent data
+#     - Hashref with new parent data
 #   Examples:
 #     Ipblock->_build_tree_mem('4');
 #
@@ -2597,8 +2600,11 @@ sub _build_tree_mem {
                                  ORDER BY prefix");	
     $sth->execute();
 
+    my %current_parents;
+    
     my %parents;
     while ( my ($id, $address, $prefix, $parent) = $sth->fetchrow_array ){
+	$current_parents{$id} = $parent;
 	my $node =  $class->_tree_insert(address => $address, 
 					 prefix  => $prefix, 
 					 version => $version,
@@ -2615,6 +2621,7 @@ sub _build_tree_mem {
     $sth->execute();
 
     while ( my ($id, $address, $prefix, $parent) = $sth->fetchrow_array ){
+	$current_parents{$id} = $parent;
 	my $node =  $class->_tree_find(address => $address, 
 				       version => $version,
 				       prefix  => $prefix);
@@ -2622,7 +2629,7 @@ sub _build_tree_mem {
 	$parents{$id} = $node->data if ( defined $node && $node->data );
     }
     
-    return \%parents;
+    return (\%parents, \%current_parents);
 }
 
 
