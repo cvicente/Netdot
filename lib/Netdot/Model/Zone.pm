@@ -216,13 +216,17 @@ sub soa_string{
     $self->isa_object_method('soa_string');
 
     my %args = (type=>'SOA');
-    my @fields = qw(name mname rname serial refresh retry expire minimum);
+    my @fields = qw(name mname serial refresh retry expire minimum);
     foreach my $field ( @fields ){
 	$self->throw_user($self->get_label. ": Missing required field: '$field' in the SOA record")
 	    unless (defined $self->$field && $self->$field ne "");
+
 	$args{$field} = $self->$field;
     }
 
+    # Fix mailbox if needed
+    $args{rname} = $self->_encode_rname();
+	
     my $soa = Net::DNS::RR->new(%args);
     my $string = $soa->string;
 
@@ -814,6 +818,29 @@ sub _fix_child_names{
 	}
     }
 }
+
+############################################################################
+# _encode_rname
+# 
+#  Make sure rname uses '.' instead of '@' as a separator
+#
+#  Arguments: 
+#    None
+#  Returns: 
+#    String
+#  Examples:
+#    $zone->_encode_rname($rname)
+#
+
+sub _encode_rname {
+    my ($self) = @_;
+    return $self->rname unless ($self->rname =~ /\@/); # already encoded
+    
+    my ($first,$last) = split(/\@/, $self->rname, 2);
+    $first =~ s/\./\\./;
+    return $first . '.' . $last;
+}
+
 
 =head1 AUTHOR
 
