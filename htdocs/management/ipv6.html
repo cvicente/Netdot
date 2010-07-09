@@ -1,0 +1,172 @@
+<%attr>
+title        => 'ipv6 visualization'
+section      => 'Management'
+</%attr>
+%
+%
+%#######################################################################
+%#
+%# Args section
+%#
+%#######################################################################
+<%args>
+$input_addrs => undef
+$parent_addr_id => 0
+$old_prefix => 0
+$prefix => 0
+$new_addr => undef
+$new_prefix => undef
+$new_parent => undef
+</%args>
+
+<%init>
+use Data::Dumper;
+use Netdot::IPVisual;
+use bigint;
+
+my @ipblock_array;
+my @input_addresses = ();
+my @input_sub = ();
+my $min_prefix = 0;
+my $prefix_addr = 0;
+my $n_addr_bits = 128;
+
+if($new_addr){
+	#we are inserting a new address block
+	Ipblock->insert({address=>$new_addr, prefix=>$new_prefix, parent=>$new_parent});
+}
+
+#we're displaying only the root addresses in this case, which means we look at the entire address range
+if(!$input_addrs){
+	print "<b>Displaying Addresses ".Ipblock->int2ip(0,6)." to ".Ipblock->int2ip(2 ** 16 -1 << (128-16),6)."</b><br/>";
+	@ipblock_array = Ipblock->get_roots(6);
+}
+
+#we have input address(es)
+else{
+	my @parent_array = split(" ", $input_addrs);
+	foreach my $p (@parent_array){
+		push(@input_addresses, Ipblock->retrieve(id => $p));	
+	}
+
+	#If we only have 1 parent_address, we can look at its children
+	if(scalar @parent_array == 1){
+		#we just have 1 parent.  This means we clicked on a section of the tree that contained
+		#a single subnet.  We will get all of the children in this subnet and display them
+	
+
+		#we should set the prefix address to the parent
+		$prefix_addr = ($input_addresses[0]->address_numeric+0);
+		$prefix = ($input_addresses[0]->prefix+0);
+
+		my $child_iter = Ipblock->search(parent => $parent_array[0]);
+
+		#ipblock_array will hold the children we want to display
+		while(my $c = $child_iter->next){
+			push(@ipblock_array, $c);
+		}
+
+		#if we only have 1 input address, then we want to look at its children
+		$parent_addr_id = $input_addresses[0]->id + 0;
+	}
+
+	#if we have two parent addresses, that means the user clicked on a section of the quad
+	#tree that contained two subnets.  We must "drill down" into the quad tree before the subnets
+	#can be distinguished.  This can be overridden by supplying a prefix value in the url argument
+	else{
+		foreach my $i (@input_addresses){
+			push(@ipblock_array, $i);
+		}
+
+		my $temp_prefix = 0;
+		for(my $i = 1; $i < 128; $i++){
+			
+			if($prefix){
+				last;
+			}
+			
+			my $temp = 1 << (128 - $i);
+			my $all_zeros = 1;
+			my $all_ones = 1;
+			foreach my $addr (@input_addresses){
+				if(($addr->address_numeric + 0) & $temp){
+					#the bit we are at is a '1', this means we flip off the all_zeros
+					#variable since it can't possibly be all zeros
+					$all_zeros = 0;
+				}
+				else{
+					#the bit we are at is a '0', this means we flip off the all_ones 
+					#variable since it can't possibly be all ones
+					$all_ones = 0;
+				}	
+			}
+			if(!($all_zeros | $all_ones)){
+				last;
+			}
+			else{
+				$temp_prefix += 1;
+			}
+		}
+
+		if(!$prefix){
+			$prefix = $temp_prefix;
+		}
+
+		#since the prefix must be even we need to do a bit of formatting here
+		if($prefix == 1){
+			$prefix = 0;
+		}
+		elsif($prefix % 2 != 0){
+			$prefix -= 1;
+		}
+
+		#since we're positive that the first $prefix number of bits in all of the addresses
+		#we are considering are the same, we can just take the first $prefix number of bits
+		#from the first address in @input_addresses.
+		$prefix_addr = (($input_addresses[0]->address_numeric+0) >> (128-$prefix) << (128-$prefix));
+	
+	}#end else
+
+
+        #(currently 16) to show the range of addresses were displaying in the tree
+        #my $lower_range = $prefix_addr << 16;
+        #my $upper_range = $prefix_addr << 16;
+	#my $upper_range_bit_mask = 65535 << (128 - $prefix - 16);
+        #$upper_range = $upper_range | 2 ** 16-1;
+	
+	my $lower_range = $prefix_addr;
+	my $upper_range_bit_mask = 65535 << (128 - $prefix - 16);
+	my $upper_range = $lower_range | $upper_range_bit_mask;
+        
+
+	#now we need to pad the right side of both numbers with 0s so they will be displayed properly
+        #my $n_range_bits = num_bits($upper_range); #they should have the same length
+        #$upper_range = $upper_range << ($n_addr_bits-$n_range_bits);
+        #$lower_range = $lower_range << ($n_addr_bits-$n_range_bits);
+        print "<br/><b>Displaying Addresses ".Ipblock->int2ip($lower_range,6)." to ".Ipblock->int2ip($upper_range, 6)."</b><br/>";
+}
+
+my $htmlz = Netdot::IPVisual->create_tree(	\@ipblock_array, 
+						16, 
+						1024, 
+						$prefix, 
+						$prefix_addr, 
+						$n_addr_bits, 
+						$parent_addr_id, 
+						"http://127.0.0.1/netdot/management/ipv6.html"
+					);
+
+
+print $htmlz;
+
+
+sub num_bits{
+	my ($num) = @_;
+	my $b = 0;
+	while($num > (2 ** $b)){
+		$b++;
+	}
+	return $b;
+}
+</%init>
+
