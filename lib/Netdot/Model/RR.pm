@@ -557,6 +557,9 @@ sub _validate_args {
 	my $name = lc($argv->{name});
 	$argv->{name} = $name;
 
+	# Remove whitespace
+	$argv->{name} =~ s/\s+//g;
+
 	# Length restrictions
 	unless ( length($name) >= 1 && length($name) < 64 ){
 	    $self->throw_user("Invalid name: $name. Length must be between 1 and 63 characters");
