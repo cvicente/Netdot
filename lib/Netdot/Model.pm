@@ -737,15 +737,19 @@ sub get_state {
     my ($self) = @_;
     $self->isa_object_method('get_state');
 
-    my %bak;
-    my $class  = $self->short_class;
+    # Make sure we're working with an fresh object
+    my $id    = $self->id;
+    my $class = ref($self);
+    $self     = $class->retrieve($id);
+    
+    my %state;
     my @cols   = $class->columns();
-    my @values = $self->get( @cols );
+    my @values = $self->get(@cols);
     my $n = 0;
     foreach my $col ( @cols ){
-	$bak{$col} = $values[$n++];
+	$state{$col} = $values[$n++];
     }
-    return %bak;
+    return %state;
 }
 
 ############################################################################
