@@ -33,7 +33,13 @@ my $n_addr_bits = 128;
 
 if($new_addr){
 	#we are inserting a new address block
-	Ipblock->insert({address=>$new_addr, prefix=>$new_prefix, parent=>$new_parent});
+        eval{ 
+                Ipblock->insert({address=>$new_addr, prefix=>$new_prefix, parent=>$new_parent});
+        };
+        if($@ && $@ != "Error while inserting Ipblock: Some values are duplicated."){
+                print "$@";
+		return;
+        }
 }
 
 #we're displaying only the root addresses in this case, which means we look at the entire address range
