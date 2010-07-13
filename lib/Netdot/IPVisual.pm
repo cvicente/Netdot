@@ -5,11 +5,9 @@ package Netdot::IPVisual;
 
 use base 'Netdot';
 use bigint;
-#use Model::Ipblock;
 use warnings;
 use strict;
 use Data::Dumper;
-#my $logger = Netdot->log->get_logger('Netdot::Model::IPVisual');
 
 sub create_tree{
 	my ($class, $input_ids_ref, $C, $GD, $CC, $Chunk_Value, $n_addr_bits, $parent_addr_id, $return_lnk) = @_;
@@ -40,6 +38,9 @@ sub create_tree{
 	#at a /20 subnet, but we're already "zoomed in" 18 bits, only 2 bits of that address would be signifgant
 	for (my $i = 0; $i < scalar @create_tree::input_addr; $i++){
 		my ($t, $s) = $class->ipv6_to_bin_and_sub($create_tree::input_addr[$i], $create_tree::input_sub[$i], $CC);
+		if($s <= 0){
+			return "Error: cannot display zero bits"; #there is a problem with the data, this shouldn't happen
+		}
 		push(@create_tree::ta, $t);
 		push(@create_tree::sub, $s); 
 	}
