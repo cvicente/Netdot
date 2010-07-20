@@ -765,7 +765,15 @@ sub get_state {
 =cut
 sub get_digest {
     my ($self) = @_;
-    return md5_hex($self->get_state);
+    
+    my %state = $self->get_state();
+    my @data;
+    foreach my $col ( sort keys %state ){
+	my $val = $state{$col};
+	push @data, "$col:$val";
+    }
+    use Data::Dumper;
+    return md5_hex(Dumper(@data));
 }
 
 ##################################################################
