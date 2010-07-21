@@ -66,20 +66,18 @@ sub generate_configs {
 	}
     }
     foreach my $s ( @gscopes ){
-	if ( (my @pending = HostAudit->search(scope=>$s, pending=>1)) || $argv{force} ){
-
-	    # Either there are pending changes or we were told to force
-	    Netdot::Model->do_transaction(sub{
-		$s->print_to_file();
+	Netdot::Model->do_transaction(sub{
+	    if ( (my @pending = HostAudit->search(scope=>$s, pending=>1)) || $argv{force} ){
+		# Either there are pending changes or we were told to force
 		foreach my $record ( @pending ){
 		    # Un-mark audit records as pending
 		    $record->update({pending=>0});
 		}
-					  });
-	}else{
-	    $logger->debug("Exporter::DHCPD::generate_configs: ".$s->name.": No pending changes.  Use -f to force.");
-	}
-
+		$s->print_to_file();
+	    }else{
+		$logger->debug("Exporter::DHCPD::generate_configs: ".$s->name.": No pending changes.  Use -f to force.");
+	    }
+				      });
     }
 }
 

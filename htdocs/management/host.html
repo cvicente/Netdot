@@ -72,62 +72,67 @@ if ( $submit ){
 	unless ( $manager && $manager->can($user, "delete", $rr) ){
 	    $m->comp('/generic/error.mhtml', error=>"You don't have permission to delete this object");
 	}
-	my @ips = map { $_->ipblock } $rr->arecords();
-	$deleted_label = $rr->get_label();
-	delete $rrs{$rr->id};
-	$rr->delete();
-	undef $rr;
-	$action = 'deleted';
-
-    }elsif ($rr || $id || $ipblock || $action eq 'new') {
-	# insert/update
 	eval {
-	    my $user_type = $user->getAttribute('USER_TYPE');
-	    # For unprivileged users, we apply restrictions
-	    # on RR names
-	    if ( $user_type eq 'user' ){
-		foreach my $key ( %ARGS ){
-		    if ( $key =~ /RR__(?:NEW|\d+)__(.*)$/ ){
-			my $name = $1;
-			RR->validate_name($name);
-		    }
-		}
-	    }
-	    
-	    my %ret = $ui->form_to_db(%ARGS);
-	    print 'form_to_db returned: <pre>', Dumper(%ret), '</pre><br>' if $DEBUG;    
-	    
-	    if ( exists $ret{RR} ) {
-		my $newid = (keys %{$ret{RR}{id}})[0];
-		defined $newid || die "Could not get record ID";
-
-		if ( $ret{RR}{id}{$newid}{action} eq 'INSERTED' ){
-		    if(! $id){
-			$id = $newid;
-		    }
-		    if(! $rr){
-			$rr = $newid;            
-		    }
-		    
-		    if (defined $ipblock) {
-			RRADDR->insert({rr=>$newid, ipblock=>$ipblock});
-		    }
-		}
-		# Add new RR to %rrs hash 
-		# Also, if RR was just updated, this re-reads it from the DB
-		# to avoid the old values from showing up
-		my $newrr = RR->retrieve($id);
-		defined $newrr ||  $m->comp('/generic/error.mhtml', error=>"Could not retrieve RR id $id"); ;
-		$rrs{$newrr->id} = $newrr;
-		
-	    }
+	    Netdot::Model->do_transaction(sub{
+		my @ips = map { $_->ipblock } $rr->arecords();
+		$deleted_label = $rr->get_label();
+		delete $rrs{$rr->id};
+		$rr->delete();
+		undef $rr;
+		$action = 'deleted';
+					  });
 	};
 	if ( my $e = $@ ){
-	    if($e =~ /Error while inserting RRCNAME: Some values are duplicated./){
-		#Doing a search with RR->search(name=>$name) wasn't working (it was returning an iterator), so 
-		#I'm just displaying the name provided by the user
-		my $name = $ARGS{'RR__NEW__name'};
+	    $m->comp('/generic/error.mhtml', error=>"$e");
+	}
+    }elsif ($rr || $id || $ipblock || $action eq 'new') {
+	# insert/update
+	eval{
+	    Netdot::Model->do_transaction(sub{
+		my $user_type = $user->getAttribute('USER_TYPE');
+		# For unprivileged users, we apply restrictions
+		# on RR names
+		if ( $user_type eq 'user' ){
+		    foreach my $key ( %ARGS ){
+			if ( $key =~ /RR__(?:NEW|\d+)__(.*)$/ ){
+			    my $name = $1;
+			    RR->validate_name($name);
+			}
+		    }
+		}
 		
+		my %ret = $ui->form_to_db(%ARGS);
+		print 'form_to_db returned: <pre>', Dumper(%ret), '</pre><br>' if $DEBUG;    
+		
+		if ( exists $ret{RR} ) {
+		    my $newid = (keys %{$ret{RR}{id}})[0];
+		    defined $newid || die "Could not get record ID";
+
+		    if ( $ret{RR}{id}{$newid}{action} eq 'INSERTED' ){
+			if(! $id){
+			    $id = $newid;
+			}
+			if(! $rr){
+			    $rr = $newid;            
+			}
+			
+			if (defined $ipblock) {
+			    RRADDR->insert({rr=>$newid, ipblock=>$ipblock});
+			}
+		    }
+		    # Add new RR to %rrs hash 
+		    # Also, if RR was just updated, this re-reads it from the DB
+		    # to avoid the old values from showing up
+		    my $newrr = RR->retrieve($id);
+		    defined $newrr ||  $m->comp('/generic/error.mhtml', error=>"Could not retrieve RR id $id"); ;
+		    $rrs{$newrr->id} = $newrr;
+		    
+		}
+					  })
+	};
+	if ( my $e = $@ ){
+	    if ($e =~ /Error while inserting RRCNAME: Some values are duplicated./ ){
+		my $name = $ARGS{'RR__NEW__name'};
 		$e = "Alias ". $name . " already exists in the database.";  
 	    }
 	    $m->comp('/generic/error.mhtml', error=>"$e");

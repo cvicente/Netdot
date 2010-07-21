@@ -83,24 +83,21 @@ sub generate_configs {
     }
     
     foreach my $zone ( @zones ){
-	if ( HostAudit->search(zone=>$zone, pending=>1) || $argv{force} ){
-	    if ( $zone->active ){
-		Netdot::Model->do_transaction(sub{
+	Netdot::Model->do_transaction(sub{
+	    if ( HostAudit->search(zone=>$zone, pending=>1) || $argv{force} ){
+		if ( $zone->active ){
 		    my $path = $self->print_zone_to_file(zone=>$zone, nopriv=>$argv{nopriv});
-		    $logger->info("Zone ".$zone->name." written to file: $path");
-		    
-		    # Notice that we intentionally search again, or we would miss the 
-		    # SOA serial update
 		    my @pending = HostAudit->search(zone=>$zone, pending=>1);
 		    foreach my $record ( @pending ){
 			# Un-mark audit records as pending
 			$record->update({pending=>0});
 		    }
-				      });
+		    $logger->info("Zone ".$zone->name." written to file: $path");
+		}
+	    }else{
+		$logger->debug("Exporter::BIND::generate_configs: ".$zone->name.": No pending changes.  Use -f to force.");
 	    }
-	}else{
-	    $logger->debug("Exporter::BIND::generate_configs: ".$zone->name.": No pending changes.  Use -f to force.");
-	}
+				      });
     }
 }
 
