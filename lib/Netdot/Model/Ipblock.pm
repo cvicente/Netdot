@@ -6,6 +6,7 @@ use strict;
 use Math::BigInt;
 use NetAddr::IP;
 use Net::IPTrie;
+use Storable qw(freeze thaw);
 
 =head1 NAME
 
@@ -53,10 +54,6 @@ my $IPV6 = Netdot->get_ipv6_regex();
 
 my $ip_name_plugin   = __PACKAGE__->load_ip_name_plugin();
 my $range_dns_plugin = __PACKAGE__->load_range_dns_plugin();
-
-# The binary tree will reside in memory to speed things up 
-# when inserting/deleting individual objects
-my ($tree4, $tree6);
 
 =head1 CLASS METHODS
 =cut
@@ -524,8 +521,7 @@ sub insert {
     
     # Update tree unless we're told not to do so for speed reasons
     # (usually because it will be rebuilt at the end of a device update)
-    # or if we already have the parent
-    unless ( $argv->{parent} || $no_update_tree ){
+    unless ( $no_update_tree ){
 	$newblock->_update_tree();
     }
     
@@ -589,10 +585,13 @@ sub get_covering_block {
     my $ip = NetAddr::IP->new(@ipargs);
     return unless defined $ip;
 
+    my $tree = $class->_tree_get($ip->version);
+
     # Search for this IP in the tree.  We should get the parent node
-    my $n = $class->_tree_find(version => $ip->version, 
-			       address => $ip->numeric, 
-			       prefix  => $ip->masklen);
+    my $n = $class->_tree_find(address => $ip->numeric, 
+			       prefix  => $ip->masklen,
+			       tree    => $tree,
+	);
 
     if ( $n && $n->data ){
 	return Ipblock->retrieve($n->data);
@@ -779,17 +778,11 @@ sub build_tree {
     # Reflect changes in db
     my $dbh = $class->db_Main;
     my $sth;
-    eval {
-	$sth = $dbh->prepare_cached("UPDATE ipblock SET parent = ? WHERE id = ?");
-	foreach ( keys %$parents ){
-	    $sth->execute($parents->{$_}, $_)
-		unless $parents->{$_} == $current_parents->{$_};
-	}
-    };
-    if ( my $e = $@ ){
-	$class->throw_fatal( $e );
+    $sth = $dbh->prepare_cached("UPDATE ipblock SET parent = ? WHERE id = ?");
+    foreach ( keys %$parents ){
+	$sth->execute($parents->{$_}, $_)
+	    unless $parents->{$_} == $current_parents->{$_};
     }
-    
     return 1;
 }
 
@@ -1061,7 +1054,6 @@ sub add_range{
 		push @newips, $ipb;
 	    }else{
 		$args{address} = $ip->addr;
-		$args{no_update_tree} = 1 if $args{parent};
 		push @newips, Ipblock->insert(\%args);
 	    }
 	}
@@ -1428,7 +1420,7 @@ sub delete {
 	}
     }else{
 	unless ( $args{no_update_tree} ){
-	    $self->_delete_from_tree();
+	    $self->_tree_delete();
 	}
 	$self->SUPER::delete();
     }    
@@ -1481,19 +1473,21 @@ sub get_descendants {
     $self->isa_object_method('get_descendants');
     my $class = ref($self);
    
-    my $n = $class->_tree_find(version  => $self->version, 
-			       address  => $self->address_numeric,
-			       prefix   => $self->prefix);
+    my $tree = $self->_tree_get($self->version);
+
+    my $n = $class->_tree_find(address  => $self->address_numeric,
+			       prefix   => $self->prefix,
+			       tree     => $tree,
+	);
     my $list = ();
     my $code = sub { 
 	my $node = shift @_; 
 	push @$list, $node; 
     };
-    if ( $self->version == 4 ){
-	$tree4->traverse(root=>$n, code=>$code);
-    }elsif ( $self->version == 6 ){
-	$tree6->traverse(root=>$n, code=>$code);
-    }
+
+    my $tr = $self->_tree_get($self->version);
+    $class->_tree_traverse(root=>$n, code=>$code, tree=>$tree);
+
     return $list;
 }
 
@@ -2572,16 +2566,11 @@ sub _build_tree_mem {
     unless ( $version =~ /^4|6$/ ){
 	$class->throw_user("Invalid IP version: $version");
     }
-    my $tr = Net::IPTrie->new(version=>$version);
-    $class->throw_fatal("Error initializing IP Trie") unless defined $tr;
+    my $tree = Net::IPTrie->new(version=>$version);
+    $class->throw_fatal("Error initializing IP Trie") unless defined $tree;
 
     $logger->debug(sub{ sprintf("Ipblock::_build_tree_mem: Building hierarchy for IPv%d space", 
 				$version) });
-
-    # keep tree handy in global vars for faster operations
-    # on individual nodes
-    $tree4 = $tr if $version == 4;
-    $tree6 = $tr if $version == 6;
 
     # We override Class::DBI for speed.
     # The other trick is to insert all the non-addresses in the tree first,
@@ -2596,7 +2585,6 @@ sub _build_tree_mem {
     $sth = $dbh->prepare_cached("SELECT   id,address,prefix,parent 
                                  FROM     ipblock 
                                  WHERE    version = $version
-                                   AND    prefix < $size
                                  ORDER BY prefix");	
     $sth->execute();
 
@@ -2605,30 +2593,26 @@ sub _build_tree_mem {
     my %parents;
     while ( my ($id, $address, $prefix, $parent) = $sth->fetchrow_array ){
 	$current_parents{$id} = $parent;
-	my $node =  $class->_tree_insert(address => $address, 
-					 prefix  => $prefix, 
-					 version => $version,
-					 data    => $id);
-	$parents{$id} = $node->parent->data if ( defined $node && $node->parent );
+	if ( $prefix == $size ){
+	    my $node =  $class->_tree_find(address => $address, 
+					   prefix  => $prefix,
+					   tree    => $tree,
+		);
+	    
+	    $parents{$id} = $node->data if ( defined $node && $node->data );
+	}else{
+	    my $node =  $class->_tree_insert(address => $address, 
+					     prefix  => $prefix, 
+					     data    => $id,
+					     tree    => $tree,
+		);
+	    $parents{$id} = $node->parent->data if ( defined $node && $node->parent );
+	}
     }
 
-    # Now the addresses
-    $sth = $dbh->prepare_cached("SELECT   id,address,prefix,parent 
-                                 FROM     ipblock 
-                                 WHERE    version = $version
-                                   AND    prefix = $size
-                                 ORDER BY prefix");	
-    $sth->execute();
-
-    while ( my ($id, $address, $prefix, $parent) = $sth->fetchrow_array ){
-	$current_parents{$id} = $parent;
-	my $node =  $class->_tree_find(address => $address, 
-				       version => $version,
-				       prefix  => $prefix);
-	
-	$parents{$id} = $node->data if ( defined $node && $node->data );
-    }
     
+    $class->_tree_save(version=>$version, tree=>$tree);
+
     return (\%parents, \%current_parents);
 }
 
@@ -2650,21 +2634,22 @@ sub _update_tree{
     $self->isa_object_method('_update_tree');
     my $class = ref($self);
 
+    my $tree = $self->_tree_get($self->version);
+
+    $logger->debug('Ipblock::_update_tree: Updating tree for '. $self->get_label);
+
     if ( $self->is_address ){
 
-	$logger->debug("Ipblock::_update_tree: Searching v". $self->version .
-		       " tree for " . $self->get_label);
 	# Search the tree.  
-	my $n = $class->_tree_find(version => $self->version, 
-				   address => $self->address_numeric,
-				   prefix  => $self->prefix);
+	my $n = $class->_tree_find(address => $self->address_numeric,
+				   prefix  => $self->prefix,
+				   tree    => $tree,
+	    );
 	
 	# Get parent id
-	my $parent;
 	if ( $n ){
-	    my $a = Math::BigInt->new($n->iaddress);
-	    my $b = Math::BigInt->new($self->address_numeric);
-	    if ( $a == $b && $self->prefix == $n->prefix ) {
+	    my $parent;
+	    if ( $n->data == $self->id ) {
 		$parent = $n->parent->data if ( $n && $n->parent );
 		$logger->debug("Ipblock::_update_tree: ". $self->get_label ." is in tree");
 	    }else{
@@ -2675,9 +2660,67 @@ sub _update_tree{
 	    $self->SUPER::update({parent=>$parent}) if $parent;
 	}
    }else{
-	# This is a block (subnet, container, etc)
-	$class->build_tree($self->version);
-    }
+       # This is a new block (subnet, container, etc)
+       # Insert it in the tree
+       my $n =  $class->_tree_insert(address => $self->address_numeric,
+				     prefix  => $self->prefix, 
+				     data    => $self->id,
+				     tree    => $tree,
+	   );
+
+       if ( defined $n && $n->parent && $n->parent->data ){
+	   my $parent_id = $n->parent->data;
+	   $logger->debug("Ipblock::_update_tree: ". $self->get_label ." within: $parent_id");
+	   my %parents;
+	   $parents{$self->id} = $parent_id;
+	   
+	   # Now, deal with my parent's children
+	   # They could be my children or my siblings, so
+	   # we need to rebuild this section of the tree
+	   
+	   my $dbh = $class->db_Main;
+	   my $sth1 = $dbh->prepare_cached("SELECT   id,address,prefix,parent 
+                                            FROM     ipblock 
+                                            WHERE    parent=?
+					    ORDER BY prefix"
+	       );
+	   $sth1->execute($parent_id);
+	   while ( my ($id,$address,$prefix,$par) = $sth1->fetchrow_array ){
+	       my $node = $class->_tree_find(address  => $address,
+					     prefix   => $prefix,
+					     tree     => $tree,
+		   );
+	       if ( $node && $node->data == $id ){
+		   $node->delete();
+	       }
+	       # Insert again
+	       $node =  $class->_tree_insert(address => $address, 
+					     prefix  => $prefix, 
+					     data    => $id,
+					     tree    => $tree,
+		   );
+	       if ( defined $node && $node->parent 
+		    && $node->parent->data != $par ){
+		   $logger->debug("Ipblock::_update_tree: node $id has new parent");
+		   $parents{$id} = $node->parent->data;
+	       }
+	   }
+
+	   # Now update the DB
+	   my $sth2;
+	   $sth2 = $dbh->prepare_cached("UPDATE ipblock SET parent = ? WHERE id = ?");
+	   foreach ( keys %parents ){
+	       $sth2->execute($parents{$_}, $_);
+	   }
+       }else{
+	   # This could be a root covering other blocks, so we 
+	   # need to build the whole tree
+	   $logger->debug("Ipblock::_update_tree: ". $self->get_label ." not within any known blocks");
+	   $class->build_tree($self->version);
+       }
+   }
+    
+    $class->_tree_save(version=>$self->version, tree=>$tree);
     return 1;
 }
 
@@ -2689,12 +2732,14 @@ sub _update_tree{
 #   Returns:
 #     True
 #   Examples:
-#     $ip->_delete_from_tree();
+#     $ip->_tree_delete();
 #
-sub _delete_from_tree{
+sub _tree_delete{
     my ($self) = @_;
-    $self->isa_object_method('_delete_from_tree');
+    $self->isa_object_method('_tree_delete');
     my $class = ref($self);
+
+    my $tree = $self->_tree_get($self->version);
 
     if ( ! $self->is_address ){
 	# This is a block (subnet, container, etc)
@@ -2705,11 +2750,13 @@ sub _delete_from_tree{
 	    $sth->execute($parent->id, $self->id);
 	}
 	# Remove this node from the trie
-	my $n = $class->_tree_find(version  => $self->version, 
-				   address  => $self->address_numeric,
-				   prefix   => $self->prefix);
-	if ( $n && ($n->iaddress == $self->address_numeric  && $n->prefix == $self->prefix ) ){
+	my $n = $class->_tree_find(address  => $self->address_numeric,
+				   prefix   => $self->prefix,
+				   tree     => $tree,
+	    );
+	if ( $n && ($n->data == $self->id) ){
 	    $n->delete();
+	    $class->_tree_save(version=>$self->version, tree=>$tree);
 	}
     }
     return 1;
@@ -2723,6 +2770,7 @@ sub _delete_from_tree{
 #     address - IP address (numeric)
 #     prefix  - IP mask length (optional - defaults to host mask)
 #     data    - user data (optional)
+#     tree    - Net::IPTrie object
 #   Returns:
 #     Tree node
 #   Examples:
@@ -2731,21 +2779,16 @@ sub _delete_from_tree{
 sub _tree_insert{
     my ($class, %argv) = @_;
     $class->isa_class_method('_tree_insert');
-    $class->throw_user("Missing required arguments: version")
-	unless ( $argv{version} );
-    $class->throw_user("Missing required arguments: address")
-	unless ( $argv{address} );
-    my $n;
+    $class->throw_fatal("Missing required arguments")
+	unless ( $argv{address} && $argv{tree} );
 
     my %args = ( iaddress=>$argv{address} );
     $args{prefix} = $argv{prefix} if $argv{prefix};
     $args{data}   = $argv{data}   if $argv{data};
 
-    if ( $argv{version} == 4 ){
-	$n = $tree4->add(%args);
-    }else{
-	$n = $tree6->add(%args);
-    }
+    my $tree = $argv{tree}; 
+    
+    my $n = $tree->add(%args);
     return $n;
 }
 
@@ -2753,9 +2796,9 @@ sub _tree_insert{
 # Find a node in the memory tree
 #
 #   Arguments:
-#     version
 #     address (numeric)
 #     prefix (optional - defaults to host mask)
+#     tree - Net::IPTrie object
 #   Returns:
 #     Tree node
 #   Examples:
@@ -2764,30 +2807,91 @@ sub _tree_insert{
 sub _tree_find{
     my ($class, %argv) = @_;
     $class->isa_class_method('_tree_find');
-    $class->throw_fatal("Ipblock::_tree_find: Missing required arguments: version")
-	unless ( $argv{version} );
-    $class->throw_fatal("Ipblock::_tree_find: Missing required arguments: address")
-	unless ( $argv{address} );
+    $class->throw_fatal("Ipblock::_tree_find: Missing required arguments")
+	unless ( $argv{address} && $argv{tree} );
+
     my $n;
     my %args = ( iaddress=>$argv{address} );
     $args{prefix} = $argv{prefix} if defined $argv{prefix};
 
-    if ( $argv{version} == 4 ){
-	if ( defined $tree4 ){
-	    $n = $tree4->find(%args);
-	}else{
-	    $class->_build_tree_mem(4);
-	    $n = $tree4->find(%args);
-	}
+    my $tree = $argv{tree};
+    $n = $tree->find(%args);
+    
+    return $n;
+}
+
+##################################################################
+# Traverse tree starting at given node
+#
+#   Arguments:
+#     tree - Net::IPTrie object
+#     root
+#     coderef
+#   Returns:
+#     Nothing
+#   Examples:
+#    
+#
+sub _tree_traverse{
+    my ($class, %argv) = @_;
+    $class->isa_class_method('_tree_traverse');
+    $class->throw_fatal("Ipblock::_tree_traverse: Missing required arguments")
+	unless ( $argv{root} && $argv{tree} );
+
+    my $tree = $argv{tree};
+    $tree->traverse(root=>$argv{root}, code=>$argv{code});
+    
+    return 1;
+}
+
+##################################################################
+#
+sub _tree_save {
+    my ($class, %argv) = @_;
+    $class->throw_fatal("Ipblock::_tree_save: Missing required arguments")
+	unless ( $argv{version} && $argv{tree} );
+
+    my $frozen = freeze $argv{tree};
+    my $name = 'iptree'.$argv{version};
+    my $store = DataCache->find_or_create(name=>$name);
+    $store->update({data=>$frozen, tstamp=>$class->timestamp});
+    $logger->debug('Ipblock::_tree_save: Saved IPv'.$argv{version}.' tree');
+    return 1;
+}
+
+##################################################################
+#
+sub _tree_get {
+    my ($self, $version) = @_;
+    my $class = ref($self) || $self;
+    
+    if ( ref($self) ){
+	$version = $self->version;
     }else{
-	if ( defined $tree6 ){
-	    $n = $tree6->find(%args);
+	$class->throw_fatal("Ipblock::_tree_get: Missing required".
+			    " arg: 'version' when called as class method")
+	    unless ($version);
+    }
+    
+    my $tree;
+    my $name = 'iptree'.$version;
+    my $TTL = $self->config->get('IP_TREE_TTL');
+    for ( 1..2 ){
+	my $store = DataCache->search(name=>$name)->first;
+	if ( $store && ($self->timestamp - $store->tstamp) < $TTL ){ 
+	    $tree = thaw $store->data;
 	}else{
-	    $class->_build_tree_mem(6);
-	    $n = $tree6->find(%args);
+	    $class->_build_tree_mem($version);
+	    next;
+	}
+	if ( ref($tree) eq 'Net::IPTrie' ){
+	    last;
+	}else{
+	    $self->throw_fatal("Not a valid tree in cache after rebuilding");
 	}
     }
-    return $n;
+    $logger->debug('Ipblock::_tree_get: Retrieved IPv'.$version.' tree');
+    return $tree;
 }
 
 ##################################################################
@@ -2871,6 +2975,7 @@ sub _get_status_id {
     }
     return $id;
 }
+
 
 
 ##################################################################
