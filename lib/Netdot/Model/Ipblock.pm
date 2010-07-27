@@ -588,7 +588,7 @@ sub get_covering_block {
     my $tree = $class->_tree_get($ip->version);
 
     # Search for this IP in the tree.  We should get the parent node
-    my $n = $class->_tree_find(address => $ip->numeric, 
+    my $n = $class->_tree_find(address => ($ip->numeric)[0], 
 			       prefix  => $ip->masklen,
 			       tree    => $tree,
 	);
