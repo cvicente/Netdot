@@ -1387,7 +1387,6 @@ sub update {
     
   Arguments: 
     recursive      - Remove blocks recursively (default is false)
-    stack          - stack level (for recursiveness control)
     no_update_tree - Do not update IP tree
    Returns:
     True if successful
@@ -1399,31 +1398,21 @@ sub delete {
     my ($self, %args) = @_;
     $self->isa_object_method('delete');
     my $class = ref($self);
-    my $stack = $args{stack} || 0;
      
     if ( $args{recursive} ){
 	foreach my $ch ( $self->children ){
 	    if ( $ch->id == $self->id ){
 		$logger->warn("Ipblock::delete: ".$self->get_label()." is parent of itself!. Removing parent.");
 		$self->update({parent=>0});
-		return;
 	    }
-	    $ch->delete(recursive=>1, stack=>$stack+1);
+	    $ch->delete(recursive=>1);
 	}
-	my $version = $self->version;
-	$self->SUPER::delete();
-	# We check if this is the first call in the stack
-	# to avoid rebuilding the tree unnecessarily for
-	# each child
-	unless ( $args{no_update_tree} ){
-	    $class->build_tree($version) if ( $stack == 0 );
-	}
-    }else{
-	unless ( $args{no_update_tree} ){
-	    $self->_tree_delete();
-	}
-	$self->SUPER::delete();
     }    
+    unless ( $args{no_update_tree} ){
+	$self->_tree_delete();
+    }
+    $self->SUPER::delete();
+
     return 1;
 }
 ##################################################################
@@ -1473,8 +1462,7 @@ sub get_descendants {
     $self->isa_object_method('get_descendants');
     my $class = ref($self);
    
-    my $tree = $self->_tree_get($self->version);
-
+    my $tree = $self->_tree_get();
     my $n = $class->_tree_find(address  => $self->address_numeric,
 			       prefix   => $self->prefix,
 			       tree     => $tree,
@@ -1485,7 +1473,6 @@ sub get_descendants {
 	push @$list, $node; 
     };
 
-    my $tr = $self->_tree_get($self->version);
     $class->_tree_traverse(root=>$n, code=>$code, tree=>$tree);
 
     return $list;
@@ -2634,7 +2621,7 @@ sub _update_tree{
     $self->isa_object_method('_update_tree');
     my $class = ref($self);
 
-    my $tree = $self->_tree_get($self->version);
+    my $tree = $self->_tree_get();
 
     $logger->debug('Ipblock::_update_tree: Updating tree for '. $self->get_label);
 
@@ -2739,7 +2726,7 @@ sub _tree_delete{
     $self->isa_object_method('_tree_delete');
     my $class = ref($self);
 
-    my $tree = $self->_tree_get($self->version);
+    my $tree = $self->_tree_get();
 
     if ( ! $self->is_address ){
 	# This is a block (subnet, container, etc)
@@ -2853,8 +2840,11 @@ sub _tree_save {
 
     my $frozen = freeze $argv{tree};
     my $name = 'iptree'.$argv{version};
-    my $store = DataCache->find_or_create(name=>$name);
-    $store->update({data=>$frozen, tstamp=>$class->timestamp});
+    my $cache;
+    unless ( $cache = DataCache->find_or_create({name=>$name}) ){
+	$class->throw_fatal("Could not find or create cache entry for IP tree: $name");
+    }
+    $cache->update({data=>$frozen, tstamp=>$class->timestamp});
     $logger->debug('Ipblock::_tree_save: Saved IPv'.$argv{version}.' tree');
     return 1;
 }
@@ -2877,17 +2867,18 @@ sub _tree_get {
     my $name = 'iptree'.$version;
     my $TTL = $self->config->get('IP_TREE_TTL');
     for ( 1..2 ){
-	my $store = DataCache->search(name=>$name)->first;
-	if ( $store && ($self->timestamp - $store->tstamp) < $TTL ){ 
-	    $tree = thaw $store->data;
+	my $cache = DataCache->search(name=>$name)->first;
+	if ( $cache && ($self->timestamp - $cache->tstamp) < $TTL ){ 
+	    $tree = thaw $cache->data;
 	}else{
+	    $logger->debug('Ipblock::_tree_get: IPv'.$version.' tree expired or not yet built.');
 	    $class->_build_tree_mem($version);
 	    next;
 	}
 	if ( ref($tree) eq 'Net::IPTrie' ){
 	    last;
 	}else{
-	    $self->throw_fatal("Not a valid tree in cache after rebuilding");
+	    $self->throw_fatal('Not a valid tree in cache after rebuilding: (ref: '.ref($tree).')');
 	}
     }
     $logger->debug('Ipblock::_tree_get: Retrieved IPv'.$version.' tree');
