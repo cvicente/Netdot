@@ -301,6 +301,13 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 	    $m->comp('/generic/error.mhtml', error=>"IP block cannot be 'Dynamic' or 'Static'.  Specify IP Range instead.");
         }
 	my $block;
+	# This has happened. Can't figure out why, but this should avoid errors
+	if ( defined $block_owner && ref($block_owner) eq 'ARRAY' ){
+	    $block_owner = $block_owner->[0];
+	} 
+	if ( defined $block_used_by && ref($block_used_by) eq 'ARRAY' ){
+	    $block_used_by = $block_used_by->[0];
+	} 
 	eval {
 	    my %args = (status      => $block_status,
 			owner       => $block_owner,
