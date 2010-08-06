@@ -2842,15 +2842,13 @@ sub _tree_save {
 	$class->throw_fatal("Ipblock::_tree_save: invalid tree object");
     }
     my $frozen = freeze($argv{tree});
-    my $blen = length($frozen);
     my $name = 'iptree'.$argv{version};
     my $cache;
     unless ( $cache = DataCache->find_or_create({name=>$name}) ){
 	$class->throw_fatal("Could not find or create cache entry for IP tree: $name");
     }
     $cache->update({data=>$frozen, tstamp=>$class->timestamp});
-    my $alen = length($cache->data);
-    $logger->debug("Ipblock::_tree_save: Saved $name. Length before: $blen, after: $alen");
+    $logger->debug("Ipblock::_tree_save: Saved $name");
     return 1;
 }
 
@@ -2874,9 +2872,8 @@ sub _tree_get {
     for ( 1..2 ){
 	my $cache = DataCache->search(name=>$name)->first;
 	if ( defined $cache && ($self->timestamp - $cache->tstamp) < $TTL ){ 
-	    my $len = length($cache->data);
 	    $tree = thaw $cache->data;
-	    $logger->debug("Ipblock::_tree_get: $name thawed from cache. Length $len");
+	    $logger->debug("Ipblock::_tree_get: $name thawed from cache");
 	    my $tree_class = ref($tree);
 	    if ( $tree_class eq 'Net::IPTrie' ){
 		$logger->debug("Ipblock::_tree_get: Retrieved $name");
