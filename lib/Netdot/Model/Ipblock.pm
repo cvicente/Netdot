@@ -2838,14 +2838,19 @@ sub _tree_save {
     $class->throw_fatal("Ipblock::_tree_save: Missing required arguments")
 	unless ( $argv{version} && $argv{tree} );
 
-    my $frozen = freeze $argv{tree};
+    unless ( ref($argv{tree}) eq 'Net::IPTrie' ){
+	$class->throw_fatal("Ipblock::_tree_save: invalid tree object");
+    }
+    my $frozen = freeze($argv{tree});
+    my $blen = length($frozen);
     my $name = 'iptree'.$argv{version};
     my $cache;
     unless ( $cache = DataCache->find_or_create({name=>$name}) ){
 	$class->throw_fatal("Could not find or create cache entry for IP tree: $name");
     }
     $cache->update({data=>$frozen, tstamp=>$class->timestamp});
-    $logger->debug('Ipblock::_tree_save: Saved IPv'.$argv{version}.' tree');
+    my $alen = length($cache->data);
+    $logger->debug("Ipblock::_tree_save: Saved $name. Length before: $blen, after: $alen");
     return 1;
 }
 
@@ -2868,21 +2873,24 @@ sub _tree_get {
     my $TTL = $self->config->get('IP_TREE_TTL');
     for ( 1..2 ){
 	my $cache = DataCache->search(name=>$name)->first;
-	if ( $cache && ($self->timestamp - $cache->tstamp) < $TTL ){ 
+	if ( defined $cache && ($self->timestamp - $cache->tstamp) < $TTL ){ 
+	    my $len = length($cache->data);
 	    $tree = thaw $cache->data;
+	    $logger->debug("Ipblock::_tree_get: $name thawed from cache. Length $len");
+	    my $tree_class = ref($tree);
+	    if ( $tree_class eq 'Net::IPTrie' ){
+		$logger->debug("Ipblock::_tree_get: Retrieved $name");
+		return $tree;
+	    }else{
+		$logger->debug("Not a valid ($name) in cache: ($tree_class). Rebuilding");
+		$class->_build_tree_mem($version);
+	    }
 	}else{
-	    $logger->debug('Ipblock::_tree_get: IPv'.$version.' tree expired or not yet built.');
+	    $logger->debug("Ipblock::_tree_get: $name expired or not yet built");
 	    $class->_build_tree_mem($version);
-	    next;
-	}
-	if ( ref($tree) eq 'Net::IPTrie' ){
-	    last;
-	}else{
-	    $self->throw_fatal('Not a valid tree in cache after rebuilding: (ref: '.ref($tree).')');
 	}
     }
-    $logger->debug('Ipblock::_tree_get: Retrieved IPv'.$version.' tree');
-    return $tree;
+    $self->throw_fatal("Could not get a valid $name from cache");
 }
 
 ##################################################################
