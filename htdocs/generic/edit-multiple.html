@@ -67,6 +67,9 @@ if ( $submit eq 'Edit' ) {
 	    my ($table, $id) = split /__/, $arg;
 	    push @{$objs{$table}}, $id;
 	}
+	unless ( defined $objs{$table} && scalar(@{$objs{$table}}) ){
+	    $m->comp('/generic/error.mhtml', error=>"No records selected!");
+	}
 	# Sort
 	foreach my $table ( keys %objs ){
 	    my $lblf = ($table->meta_data->get_labels)[0];
@@ -139,14 +142,13 @@ if ( $submit eq 'Edit' ) {
     %objs = %{ $session->{objs} };
     
     print "<pre>", Dumper(%objs), "</pre>" if $DEBUG;
+    unless ( defined $objs{$table} && scalar(@{$objs{$table}}) ){
+	$m->comp('/generic/error.mhtml', error=>"Could not retrieve object list from session data");
+    }
     my $numobjs = scalar @{$objs{$table}};
 
     my (@headers, @rows);
     my $showeditbuttons;
-
-#    if ( !ref($tablefields) ) {
-#        tablefields = [$ARGS{'tablefields'}];
-#    }
 
      if ( @tablefields ) {
 	 
@@ -180,7 +182,6 @@ if ( $submit eq 'Edit' ) {
 	 } else {
 	     
 	     foreach my $obj ( @{$objs{$table}} ) {
-#		 my $obj = $table->retrieve($id);
 		 my @row = ();
 		 push( @row, $obj->get_label );
 		 foreach my $field ( @tablefields ) {
