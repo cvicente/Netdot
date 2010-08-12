@@ -2657,6 +2657,12 @@ sub _update_tree{
 
        if ( defined $n && $n->parent && $n->parent->data ){
 	   my $parent_id = $n->parent->data;
+	   if ( $parent_id == $self->id ){
+	       $logger->debug("Ipblock::_update_tree: mask probably changed. Deleting parent node.");
+	       $parent_id = $n->parent->parent->data;
+	       $n->parent->delete();
+	   }
+	   
 	   $logger->debug("Ipblock::_update_tree: ". $self->get_label ." within: $parent_id");
 	   my %parents;
 	   $parents{$self->id} = $parent_id;
