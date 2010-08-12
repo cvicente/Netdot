@@ -172,8 +172,11 @@ if ( $submit ){
 	    $covering_block = Ipblock->get_covering_block(address=>$search);
 	}
     }elsif ( $search_regex ){
-	$search = $search_regex;
-	$search =~ s/s+//g;
+	$search_regex =~ s/\s+//g; # Remove spaces
+	$search = eval { qr/$search_regex/i };
+	unless ( defined $search ){
+	    $m->comp('/generic/error.mhtml', error=>"Invalid regular expression: $search_regex");	    
+	}
 	@list = Ipblock->search_like(address=>$search);
     }elsif ( $search_other ){
 	$search = $search_other;
