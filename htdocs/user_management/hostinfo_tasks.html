@@ -98,7 +98,7 @@ my %ipb_actions = (
  <tr>
   <td>
     <fieldset class="small">
-        <legend>Search</legend>
+        <legend>Search (regular expression)</legend>
         <form action="hostinfo_tasks.html" method="POST">
         <label for="Find">Name/IP/MAC:</label>
         <input type="text" name="search" class="longtxt" value="<% $search %>"> 
@@ -201,15 +201,20 @@ if ( $submit && $ipblock ){
     
     foreach my $row ( @allrecords ){
 	my ($rrid, $rrname, $ipid, $ipaddr, $ipver, undef, $physaddr) = @$row;
-	if ( $rrname =~ /$search/i ){
-	    $rrids{$rrid} = $row
-	}elsif ( $physaddr =~ /$search/i ){
-	    $rrids{$rrid} = $row;
-	}elsif ( $ipaddr && $ipver ){
-	    my $ip = Ipblock->int2ip($ipaddr, $ipver);
-	    if ( $ip =~ /$search/i ){
+	my $regex = eval { qr/$search/i };
+	if ( defined $regex ){
+	    if ( $rrname =~ /$regex/ ){
 		$rrids{$rrid} = $row;
+	    }elsif ( $physaddr =~ /$regex/ ){
+		$rrids{$rrid} = $row;
+	    }elsif ( $ipaddr && $ipver ){
+		my $ip = Ipblock->int2ip($ipaddr, $ipver);
+		if ( $ip =~ /$regex/ ){
+		    $rrids{$rrid} = $row;
+		}
 	    }
+	}else{
+	    $m->comp('/generic/error.mhtml', error=>"Invalid regular expression: $search");
 	}
     }
     # Display search results
