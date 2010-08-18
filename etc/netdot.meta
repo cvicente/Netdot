@@ -2406,7 +2406,7 @@ $meta = {
     index => [],
     isjoin => '0',
     label => [
-	'name',
+	'name', 'model', 'device'
     ],
     primary_key => 'id',
     unique => [
@@ -8114,6 +8114,7 @@ $meta = {
          'name'
       ]
     } 
+<<<<<<< .working
        	   
   }, 
 
@@ -8222,5 +8223,61 @@ $meta = {
     ]
   }
   
+=======
+  },
+  DataCache => { 
+    table_db_name => 'datacache',
+    columns => { 
+      id => { 
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      name => {
+        default => '',
+        description => 'Name of the data',
+        length => '255',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      },
+      data => {
+        default => '',
+        description => 'binary data',
+        length => '',
+        nullable => 0,
+        tag => 'Binary Data',
+        nullable => 0,
+        type => 'longblob'
+      },    
+      tstamp => {
+        default => '1970-01-02 00:00:01',
+        description => 'When this data was cached',
+        length => '',
+        nullable => 0,
+        tag => 'Timestamp',
+        type => 'timestamp'
+      }
+    },
+    description => 'Cached data',
+    has_history => '0',
+    unique => [ ['name'] ],
+    label => [ 'name' ],
+    index => [ ],
+    isjoin => '0',
+    primary_key => 'id',
+    views => { 
+      'all' => [
+         'name',
+      ],
+      brief => [
+         'name', 'data',
+      ]
+    } 
+  }   
+>>>>>>> .merge-right.r3142
  }
 }

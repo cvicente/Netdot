@@ -52,6 +52,7 @@ $toponames  => 0
 $topodirection  => 'left_right'
 $specific_vlan  => 0
 $stp_number     => undef
+$state_digest   => undef
 </%args>
 %
 %
@@ -129,10 +130,19 @@ if( $deviceadd && $newhost ){
 	}
     }
 }elsif( $submit ){
+
     # insert/update
+    my $new_digest;
+    if ( $o ){
+	$new_digest = $o->get_digest();
+    }
     eval {
-	my %ret = $ui->form_to_db(%ARGS);
-	print 'form_to_db returned: <pre>', Dumper(%ret), '</pre><br>' if $DEBUG;    
+	Netdot::Model->do_transaction( sub{ 
+	    if ( $state_digest && $new_digest && ($state_digest ne $new_digest) ){
+		$ui->throw_user("This device changed while you were editing");
+	    }
+	    $ui->form_to_db(%ARGS); 
+				       });
     };
     if ( my $e = $@ ){
 	$m->comp('/generic/error.mhtml', error=>$e);
@@ -321,6 +331,9 @@ function setNull(select){
 % if ($editgen) {
 	    <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
 	    <input type="submit" name="submit" value="save" >
+%           my $digest = $o->get_digest();
+            <input type="hidden" name="state_digest" value="<% $digest %>">
+
 % }else{
 %    if ( $manager && $manager->can($user, "edit", $o) ){
             <a href="device.html?id=<% $id %>&view=<% $view %>&editgen=1">[edit]</a>
@@ -622,7 +635,7 @@ function showVlan(){
     if ( ! $editints ){
       push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=speed">Speed</a>';
       push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=vlan">VLAN</a>';
-      push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=status">Status</a>';
+      push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=oper_status">Status</a>';
     }
     push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=monitored">Mon?</a>';
     push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=snmp">SNMP?</a>';

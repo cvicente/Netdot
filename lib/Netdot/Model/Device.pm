@@ -2953,6 +2953,23 @@ sub ints_by_monitored {
 }
 
 ############################################################################
+=head2 ints_by_status - Retrieve interfaces from a Device and sort by 'status' field
+
+Arguments:  None
+Returns:    Sorted arrayref of interface objects
+
+=cut
+
+sub ints_by_status {
+    my ( $self, $o ) = @_;
+    $self->isa_object_method('ints_by_status');
+
+    my @ifs = Interface->search( device => $self->id, {order_by => 'oper_status'});
+
+    return \@ifs;
+}
+
+############################################################################
 =head2 ints_by_snmp - Retrieve interfaces from a Device and sort by 'snmp_managed' field
 
 Arguments:  None
@@ -3006,6 +3023,8 @@ sub interfaces_by {
 	return $self->ints_by_monitored;
     }elsif( $sort eq "snmp"){
 	return $self->ints_by_snmp;
+    }elsif( $sort eq "oper_status"){
+	return $self->ints_by_status;
     }else{
 	$self->throw_fatal("Model::Device::interfaces_by: Unknown sort field: $sort");
     }

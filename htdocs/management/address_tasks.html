@@ -128,7 +128,7 @@ my $live_info;
                 </p>
                 <p>
                 <label for="block_status">Status:</label>
-                <select name="block_status" id="block_used_by">
+                <select name="block_status" id="block_status">
                 <option value="0">-- Select --</option>
 %               my @allstatus = qw( Subnet Container Static Reserved ); 
 %               foreach my $status ( @allstatus ){
@@ -172,8 +172,11 @@ if ( $submit ){
 	    $covering_block = Ipblock->get_covering_block(address=>$search);
 	}
     }elsif ( $search_regex ){
-	$search = $search_regex;
-	$search =~ s/s+//g;
+	$search_regex =~ s/\s+//g; # Remove spaces
+	$search = eval { qr/$search_regex/i };
+	unless ( defined $search ){
+	    $m->comp('/generic/error.mhtml', error=>"Invalid regular expression: $search_regex");	    
+	}
 	@list = Ipblock->search_like(address=>$search);
     }elsif ( $search_other ){
 	$search = $search_other;

@@ -172,15 +172,9 @@ sub delete {
 	}
     }
 
-    # If RR has no more records, it should be deleted
-    my %linksfrom = RR->meta_data->get_links_from;
-    my $rr_has_other_records = 0;
-    foreach my $i ( keys %linksfrom ){
-	if ( $rr->$i ){
-	    $rr_has_other_records = 1;
-	}
-    }
-    $rr->delete() unless ( $rr_has_other_records );
+    # If RR has no more A/AAAA records, MX records, or devices
+    # it should be deleted
+    $rr->delete() unless ( $rr->arecords || $rr->mx_records || $rr->devices);
 
     return 1;
 }

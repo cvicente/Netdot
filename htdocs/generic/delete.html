@@ -97,17 +97,20 @@ my $manager = $ui->get_permission_manager($r);
 	push @objs, $table->retrieve($id);
     }
     my @lbls = map { "$table " . $_->get_label } @objs;
-    foreach my $obj ( @objs ){
-	unless ( $manager && $manager->can($user, "delete", $obj) ){
-	    $m->comp('/generic/error.mhtml', error=>"You don't have permission to delete this object");
-	}
-	eval {
-	    $obj->delete();
-	};
-	if ( my $e = $@ ){
-	    $m->comp('error.mhtml', error=>$e);
-	} 
-    }
+    eval {
+	Netdot::Model->do_transaction(sub{
+	    foreach my $obj ( @objs ){
+		unless ( $manager && $manager->can($user, "delete", $obj) ){
+		    $ui->throw_user("You don't have permission to delete this object");
+		}
+		$obj->delete();
+	    }
+				      });
+    };
+    if ( my $e = $@ ){
+	$m->comp('error.mhtml', error=>$e);
+    } 
+
     print "<ul>\n";
     foreach my $lbl ( @lbls ){
 	print "<li>$lbl has been deleted</li>";

@@ -48,6 +48,7 @@ $dividefreespace   => 'max'
 $arp_limit         => 10
 $ip_list_sort      => 'Address'
 $show_ch_util      => 0
+$state_digest      => undef
 </%args>
 %
 %
@@ -197,17 +198,25 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
         }
 
     } else {
-	eval {  $ui->form_to_db(%ARGS)	};
-        if ( my $e = $@  ){
+	my $new_digest = $o->get_digest();
+	eval {
+	    Netdot::Model->do_transaction( sub{ 
+		if ( $state_digest && ($state_digest ne $new_digest) ){
+		    $ui->throw_user("This IP changed while you were editing!");
+		}
+		$ui->form_to_db(%ARGS); 
+					   });
+	};
+        if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>$e);
         }else{
 	    # Do this to 'flush' the values associated with the object
 	    # before redisplaying
 	    $o = undef;
-            if ( $id ){
+	    if ( $id ){
 		$o = Ipblock->retrieve($id);
 	    }
-       }
+	}
     }
 
 #######################################################################################
@@ -292,6 +301,13 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 	    $m->comp('/generic/error.mhtml', error=>"IP block cannot be 'Dynamic' or 'Static'.  Specify IP Range instead.");
         }
 	my $block;
+	# This has happened. Can't figure out why, but this should avoid errors
+	if ( defined $block_owner && ref($block_owner) eq 'ARRAY' ){
+	    $block_owner = $block_owner->[0];
+	} 
+	if ( defined $block_used_by && ref($block_used_by) eq 'ARRAY' ){
+	    $block_used_by = $block_used_by->[0];
+	} 
 	eval {
 	    my %args = (status      => $block_status,
 			owner       => $block_owner,
@@ -299,7 +315,11 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 			description => $block_description,
 		);
 	    if ( $block = Ipblock->search(address=>$address, prefix=>$prefix)->first ){
-		$block->update(\%args);
+		if ( $add_block_parent ) {
+		    $ui->throw_user("This IP has already been set to '" . $block->status->name . "', possibly by someone else.");
+		}else{
+		    $block->update(\%args);
+		}
 	    }else{
 		$args{address} = $address;
 		$args{prefix}  = $prefix;
@@ -452,6 +472,10 @@ if ( $id && $view ){
 
     <form name="netdotform" action="ip.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
+
+%   my $digest = $o->get_digest();
+    <input type="hidden" name="state_digest" value="<% $digest %>">
+
 %      if ( $edit_ip || $edit_block ){
 	 <input type="hidden" name="_action" value="UPDATE">
 %      }

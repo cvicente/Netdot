@@ -119,19 +119,23 @@
 // this code inserts an element into the select box in the  
 // calling page form, and selects the new element if needed  
 //  
-    function insertOption(id, text, value, sel) {  
-	var select_box = opener.document.getElementById(id);  
-	var elOptNew = document.createElement('option');  
-	elOptNew.text = text;  
-	elOptNew.value = value;  
-	try {  
-	    select_box.add(elOptNew, null); // standards compliant; does not work in IE  
-	    }  
-	catch(ex) {  
-	    select_box.add(elOptNew); // IE only  
-	    }  
-	if (sel == 1){  
-	    select_box.selectedIndex = select_box.length-1;  
-	}  
+    function insertOption(id, txt, val, sel) {  
+	var myselect = opener.document.getElementById(id);  
+	try {
+	    var opt = document.createElement('OPTION');  
+	    opt.text = txt;  
+	    opt.value = val;  
+	    if ( sel == 1 ){
+		opt.selected = true;
+	    }
+	    myselect.options.add(opt);
+	}
+	catch(e) {
+	    myselect.options[0].text = txt;
+	    myselect.options[0].value = val;
+	    if ( sel == 1 ){
+		myselect.options[0].selected = true;
+	    }
+	}
     }  
 

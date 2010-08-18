@@ -1,6 +1,6 @@
 <%doc>
 
-Add an IP service object from device worksheet
+Add an IP service object from device page
 
 </%doc>
 %
@@ -18,9 +18,11 @@ inherit => undef
 <%args>
 $ip
 $url
-$service =>  undef
-$Add     =>  undef
-$Cancel  =>  undef
+$service     =>  undef
+$monitored   => undef
+$contactlist => undef
+$Add         =>  undef
+$Cancel      =>  undef
 </%args>
 %
 %
@@ -81,6 +83,8 @@ if ( $Add ){
     if ( IpService->search( %state ) ){
 	print ("Service already exists <br>");
     }else {
+	$state{monitored} = 1 if ( defined($monitored) && $monitored eq 'on' );
+	$state{contactlist} = $contactlist if defined $contactlist;
 	eval{
 	    IpService->insert(\%state);
 	};

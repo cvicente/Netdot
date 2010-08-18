@@ -10,9 +10,10 @@ title   => 'Netdot Login'
 
 <%init>
 my $message;
-my $main_page = $r->dir_config('NetdotPath') . "index.html";
+my $netdot_path = $r->dir_config('NetdotPath');
+my $main_page = $netdot_path . "index.html";
 my $redirect_path = $main_page;
-my $submit_target = $r->dir_config('NetdotPath') . "NetdotLogin";
+my $submit_target = $netdot_path . "NetdotLogin";
 
 # Unless they requested the login page directly while not logged in
 # (in which case prev isn't defined) they will have probably been
@@ -25,12 +26,19 @@ if (defined $r->prev) {
     unless ($r->prev->uri =~ m{/log(in|out).html} || $r->prev->uri =~ /NetdotLogin/ ) {
 	$redirect_path = $r->prev->uri . ( $r->prev->args ? "?" . $r->prev->args : "");
     }
+    # We're assuming that NetdotPath contains a '/' at the end
+    # but the URI in the query may or may not have it, so we try to catch that here
+    my $path_wo_slash = $netdot_path;
+    $path_wo_slash =~ s/\/$//;
+    if ( $r->prev->uri eq $path_wo_slash ){
+	$redirect_path = $path_wo_slash . '/' . ( $r->prev->args ? "?" . $r->prev->args : "");
+    }
 } 
 </%init>
 
 
 
-<div class="sectiondetail">
+<div class="sectiondetail" align="center">
 
 <!-- 
 Use the path as set in the Apache conf for the netdot root so the user
@@ -43,23 +51,17 @@ translated to /netdot/ before AuthCookie takes over anyway).
 
 <div id="loginform" align="center" style="margin:0 auto;">
 
-
 <div class="container">
     <div class="containerhead">
         Please enter your login and password to authenticate.
     </div>
     <div class="containerbody">
-
       <fieldset class="medium" id="sectiontools" style="border: none">
-	
 	<form method="post" action="<% $submit_target %>" name="login">
 	<input type="hidden" name="destination" value="<% $redirect_path %>" />
-
 	<p>
 	  <label for="credential_0">Login:</label>
 	  <input type="text" name="credential_0" size="15" />
-      
-
 	</p>
 	<p>
 	  <label for="credential_1">Password:</label>
@@ -72,8 +74,6 @@ translated to /netdot/ before AuthCookie takes over anyway).
 	<p>
           <input type="submit" value="Continue" />
 	</p>
-
-     
     </form>
     </fieldset>	
   </div>

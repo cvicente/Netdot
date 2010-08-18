@@ -21,19 +21,21 @@ installdb: _installdb oui
 _installdb:
 	$(PERL) initdb initdb
 
-updatedb: _updatedb _fix_history_indexes
+updatedb: _updatedb
 
 _updatedb:
 	$(PERL) updatedb 
-
-_fix_history_indexes:
-	$(PERL) fix_history_indexes
 
 genschema:
 	$(PERL) initdb generate
 
 dropdb:
 	$(PERL) initdb dropdb
+
+defragdb: _defragdb
+
+_defragdb:
+	$(PERL) defragdb
 
 oui:
 	rm -f oui.txt

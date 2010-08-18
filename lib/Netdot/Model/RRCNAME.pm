@@ -55,7 +55,21 @@ sub insert {
 	}
     }
 
-    return $class->SUPER::insert($argv);
+    my $newcname = $class->SUPER::insert($argv);
+    
+    # If the record we're pointing to is in this zone, and it doesn't exist
+    # insert it.
+    unless ( RR->search(name=>$newcname->cname)->first ){
+	my $zone = $rr->zone;
+	my $zone_name = $zone->name;
+	if ( $newcname->cname =~ /\.$zone_name$/ ){
+	    my $owner = $newcname->cname;
+	    $owner =~ s/\.$zone_name$//;
+	    RR->insert({name=>$owner, zone=>$zone});
+	}
+    }
+    
+    return $newcname;
     
 }
 
