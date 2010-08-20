@@ -17,6 +17,10 @@ $prefix => 0
 $new_addr => undef
 $new_prefix => undef
 $new_parent => undef
+$create_addr => undef
+$create_prefix => undef
+$create_parent => undef
+@old_ipblock_array => undef
 </%args>
 
 <%init>
@@ -31,21 +35,40 @@ my $min_prefix = 0;
 my $prefix_addr = 0;
 my $n_addr_bits = 128;
 
-if($new_addr){
+if($create_addr){
+	my $new_parent_id;
 	#we are inserting a new address block
         eval{ 
-                Ipblock->insert({address=>$new_addr, prefix=>$new_prefix, parent=>$new_parent});
-        };
-        if($@ && $@ != "Error while inserting Ipblock: Some values are duplicated."){
+                $new_parent_id = Ipblock->insert({address=>Ipblock->int2ip($create_addr,6), prefix=>$create_prefix, parent=>$create_parent});
+	};
+        if($@){ # && $@ != "Error while inserting Ipblock: Some values are duplicated."){
                 print "$@";
 		return;
         }
-}
+#	else{  #actually it looks like all of this is handled already by netdot, how convient!
+#		#since we can assume the new block was sucessfully made, we'll now need to update the parent fields
+#		#of all of the containers in @old_ipblock_array, since we've inserted a container infront of them and their 
+#		#old parent
+#		if(scalar @old_ipblock_array > 0){
+#			for my $ip (@old_ipblock_array){
+#				#Ipblock->retrieve({id => $ip})->parent = $new_parent_id;
+#			}
+#		}
+#	}
 
+}
 #we're displaying only the root addresses in this case, which means we look at the entire address range
-if(!$input_addrs){
+if(!$input_addrs && !$new_addr){
 	print "<b>Displaying Addresses ".Ipblock->int2ip(0,6)." to ".Ipblock->int2ip(2 ** 16 -1 << (128-16),6)."</b><br/>";
 	@ipblock_array = Ipblock->get_roots(6);
+}
+
+#we're displaying a specific address and prefix
+elsif($new_addr && $new_prefix){
+	$prefix_addr = Ipblock->ip2int($new_addr, 6);
+	$prefix = $new_prefix;
+	$parent_addr_id = $new_parent;
+	print generate_addr_range($prefix, $prefix_addr, $n_addr_bits);
 }
 
 #we have input address(es)
@@ -132,24 +155,22 @@ else{
 		$prefix_addr = (($input_addresses[0]->address_numeric+0) >> (128-$prefix) << (128-$prefix));
 	
 	}#end else
+	print generate_addr_range($prefix, $prefix_addr, $n_addr_bits);
+}
 
 
-        #(currently 16) to show the range of addresses were displaying in the tree
-        #my $lower_range = $prefix_addr << 16;
-        #my $upper_range = $prefix_addr << 16;
-	#my $upper_range_bit_mask = 65535 << (128 - $prefix - 16);
-        #$upper_range = $upper_range | 2 ** 16-1;
-	
-	my $lower_range = $prefix_addr;
-	my $upper_range_bit_mask = 65535 << (128 - $prefix - 16);
-	my $upper_range = $lower_range | $upper_range_bit_mask;
-        
-
-	#now we need to pad the right side of both numbers with 0s so they will be displayed properly
-        #my $n_range_bits = num_bits($upper_range); #they should have the same length
-        #$upper_range = $upper_range << ($n_addr_bits-$n_range_bits);
-        #$lower_range = $lower_range << ($n_addr_bits-$n_range_bits);
-        print "<br/><b>Displaying Addresses ".Ipblock->int2ip($lower_range,6)." to ".Ipblock->int2ip($upper_range, 6)."</b><br/>";
+if($prefix_addr && !Ipblock->search({address=>$prefix_addr, prefix=>$prefix})->first){
+	my $subnet_name = get_subnet_name($prefix, $prefix_addr, $n_addr_bits);
+	print qq[
+		<form method=post name=make_new_subnet>
+			<input type=hidden name=create_addr value=$prefix_addr>
+			<input type=hidden name=create_prefix value=$prefix>
+			<input type=hidden name=create_parent value=$parent_addr_id>
+			<input type=hidden name=old_ipblock_array value="@ipblock_array">
+			<input type=submit name=create_subnet value="Create Container $subnet_name">
+		</form>
+		
+	];
 }
 
 my $htmlz = Netdot::IPVisual->create_tree(	\@ipblock_array, 
@@ -165,6 +186,26 @@ my $htmlz = Netdot::IPVisual->create_tree(	\@ipblock_array,
 
 print $htmlz;
 
+sub get_subnet_name{
+	my ($prefix, $prefix_addr, $n_addr_bits) = @_;
+
+	my $subnet_size = 128 - $n_addr_bits + $prefix;
+        my $current_subnet = Ipblock->int2ip($prefix_addr,6)."/".$subnet_size;
+	return $current_subnet;
+}
+
+sub generate_addr_range{
+	my ($prefix, $prefix_addr, $n_addr_bits) = @_;
+        
+        my $lower_range = $prefix_addr;
+        my $upper_range_bit_mask = 65535 << (128 - $prefix - 16);
+        my $upper_range = $lower_range | $upper_range_bit_mask;
+
+        my $subnet_size = 128 - $n_addr_bits + $prefix;
+        my $current_subnet = get_subnet_name($prefix, $prefix_addr, $n_addr_bits);
+        return "<br/><b>Displaying $current_subnet 
+                <br/>Addresses ".Ipblock->int2ip($lower_range,6)." to ".Ipblock->int2ip($upper_range, 6)."</b><br/>";	
+}
 
 sub num_bits{
 	my ($num) = @_;

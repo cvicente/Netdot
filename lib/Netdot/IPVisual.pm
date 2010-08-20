@@ -169,7 +169,7 @@ sub build_graph{
                                         border-collapse:collapse; 
 					background-color:#bbddbb;
 					}'
-					title=\"Create Container $CIDR_val\"; 
+					title=\"Zoom into $CIDR_val\"; 
 					onclick=\"location.href='$create_tree::RETURN_LINK?new_addr=$ipaddr&new_prefix=$total_prefix&new_parent=$create_tree::PARENT_ADDR_ID';\"'
 			";
 
