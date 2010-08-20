@@ -136,10 +136,6 @@ Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
           <para>If you want to install modules individually, you can do this instead:</para>
           <programlisting>#cpan
 &gt;install Module::Blah</programlisting>
-          <tip>
-            <para>If you have problems installing Net::IRR, it is possible that the Net::TCP module cannot be installed.  There is an open bug and patch available at:</para>
-            <para><ulink url="http://rt.cpan.org/Public/Bug/Display.html?id=43071"/></para>
-          </tip>
         </listitem>
       </itemizedlist>
     </section>
@@ -159,15 +155,17 @@ overwriting your site-specific configuration.</para>
     </section>
     <section>
       <title>Upgrading</title>
-      <para>Netdot&apos;s database schema only changes between major versions.
+      <para>You should check if the version you are installing has any new requirements that need to be satisfied:</para>
+      <programlisting>#make testdeps
+#make installdeps (or installdeps-rpm, installdeps-apt-get)</programlisting>
+      <para>Netdot&apos;s database schema <emphasis role="bold">usually</emphasis> only changes between major versions.
 For example, if upgrading from 0.8.x to 0.9.x, you will need to run an
-upgrade script to adapt your current database to the new schema.  This can be usually accomplished by running this  command:</para>
-      <programlisting> example: upgrading 0.8.X -&gt; 0.9.Y
-#make upgrade
-#/etc/init.d/httpd restart</programlisting>
-      <para>  However, if upgrading within the same major revision, e.g. from 0.8.X to 0.8.Y, it should suffice to run <emphasis role="italic">make install</emphasis> and restart Apache.  </para>
-      <programlisting> example: upgrading 0.9.X -&gt; 0.9.Y
-#make install
+upgrade script to adapt your current database to the new schema.  </para>
+      <para>Look for a file called doc/UPGRADE for upgrade notes in a particular distribution.</para>
+      <para>If you are supposed to upgrade, this can be  accomplished by running this  command:</para>
+      <programlisting>#make upgrade</programlisting>
+      <para>Finally, install the Netdot code and restart Apache:</para>
+      <programlisting>#make install
 #/etc/init.d/httpd restart</programlisting>
     </section>
     <section>
@@ -186,9 +184,14 @@ APACHEGROUP=GROUP-YOUR-APACHE-RUNS-AS (default: apache)
 </programlisting>
         </listitem>
         <listitem>
+          <tip>
+            <para>Ubuntu users: will probably need to set the APACHEUSER and APACHEGROUP variables to &quot;www-data&quot;, which is the user that Apache runs as.</para>
+          </tip>
+        </listitem>
+        <listitem>
           <para>You will then be ready to initialize the database. </para>
           <programlisting>#make installdb [parameters]</programlisting>
-          <para>Remember you need to set <emphasis role="italic">DB_DBA</emphasis> and <emphasis role="italic">DB_DBA_PASSWORD</emphasis> to your database&apos;s admin username/password in <emphasis role="italic">etc/Site.conf</emphasis> before running this command.  Or if you prefer, you can specify the <emphasis role="italic">DB_DBA</emphasis> and <emphasis role="italic">DB_DBA_PASSWORD</emphasis> values as parameters (these are used by many functions in Netdot, they will need to be set to the correct value in <emphasis role="italic">etc/Site.conf</emphasis> eventually)</para>
+          <para>Remember you need to set <emphasis role="italic">DB_DBA</emphasis> and <emphasis role="italic">DB_DBA_PASSWORD</emphasis> to your database&apos;s admin username/password in <emphasis role="italic">etc/Site.conf</emphasis> before running this command.  Or if you prefer, you can specify the <emphasis role="italic">DB_DBA</emphasis> and <emphasis role="italic">DB_DBA_PASSWORD</emphasis> values as parameters (however, these are used by many functions in Netdot, they will need to be set to the correct value in <emphasis role="italic">etc/Site.conf</emphasis> eventually)</para>
           <programlisting>DB_DBA=DATABASE-ADMIN-ACCOUNT
 DB_DBA_PASSWORD=DATABASE-ADMIN-PASSWORD</programlisting>
         </listitem>
@@ -477,6 +480,10 @@ device3 community2
       <para>Or you can export several in one call:</para>
       <programlisting>#bin/exporter.pl -t Nagios,Sysmon,Rancid,BIND,DHCPD</programlisting>
       <para>There are specific export parameters for each of these which you can customize by editing your Site.conf file.</para>
+      <section>
+        <title>Cacti Integration</title>
+        <para>Cacti integration is done a little differently (it&apos;s more of an &quot;import&quot;than an &quot;export&quot;.  You will find a script called &quot;netdot_to_cacti.php&quot;under export/cacti in the Netdot package.  This script should be placed(together with its configuration file) in your Cacti&apos;s cli directory(it doesn&apos;t need to be the same machine running Netdot, but you need to make sure that the script can connect to Mysql on the Netdot machine).You will then need to run it periodically via CRON, say, once a day.</para>
+      </section>
     </section>
     <section>
       <title>Authorization</title>
