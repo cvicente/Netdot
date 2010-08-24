@@ -26,8 +26,8 @@ Arguments:
 my @DEPS = (
     {cpan=>'Module::Build' , apt=> 'libmodule-build-perl', rpm=>'perl-Module-Build'},
     {cpan=>'CGI 3.20' , apt=> 'libcgi-pm-perl', rpm=>''},
-    {cpan=>'Ima::DBI 0.35', apt=> 'libima-dbi-perl', rpm=>'perl-Ima-DBI'},
-    {cpan=>'Class::DBI 3.0.10', apt=> 'libclass-dbi-perl', rpm=>'perl-Class-DBI'},
+    {cpan=>'DBD::mysql', apt=> 'libdbd-mysql-perl', rpm=>'perl-DBD-MySQL'},
+    {cpan=>'Class::DBI 3.0.17', apt=> 'libclass-dbi-perl', rpm=>'perl-Class-DBI'},
     {cpan=>'Class::DBI::AbstractSearch', apt=> 'libclass-dbi-abstractsearch-perl', rpm=> 'perl-Class-DBI-AbstractSearch'},
     {cpan=>'Apache2::Request', apt=>'libapache2-request-perl', rpm=>'libapreq2 libapreq2-devel perl-libapreq2'},
     {cpan=>'HTML::Mason 1.31',apt=>'libhtml-mason-perl',rpm=>'perl-HTML-Mason'},
@@ -43,7 +43,7 @@ my @DEPS = (
     {cpan=>'Log::Dispatch', apt=>'liblog-dispatch-perl', rpm=>'perl-Log-Dispatch'},
     {cpan=>'Log::Log4perl', apt=>'liblog-log4perl-perl', rpm=>'perl-Log-Log4perl'},
     {cpan=>'Parallel::ForkManager', apt=>'libparallel-forkmanager-perl', rpm=>'perl-Parallel-ForkManager'},
-    {cpan=>'Net::IPTrie', apt=> '', rpm=>''},
+    {cpan=>'Net::IPTrie 0.7', apt=> '', rpm=>''},
     {cpan=>'Authen::Radius', apt=>'libauthen-radius-perl', rpm=>'perl-Authen-Radius'},
     {cpan=>'RRDs' , apt=>'librrds-perl', rpm=>'rrdtool-perl'},
     {cpan=>'Test::Simple' , apt=> 'libtest-simple-perl', rpm=>''},
@@ -56,7 +56,7 @@ my @DEPS = (
     {cpan=>'Text::ParseWords', apt=>'', rpm=>''},
     {cpan=>'Carp::Assert', apt=>'libcarp-assert-perl', rpm=>'perl-Carp-Assert'},
     {cpan=>'Digest::SHA', apt=> 'libdigest-sha-perl', rpm=>'perl-Digest-SHA1'},
-    {cpan=>'Net::DNS::ZoneFile::Fast 1.12', apt=> 'libnet-dns-sec-perl', rpm=>'perl-Net-DNS-SEC'},
+    {cpan=>'Net::DNS::ZoneFile::Fast 1.12', apt=> '', rpm=>''},
     {cpan=>'Socket6', apt=> 'libsocket6-perl', rpm=>'perl-Socket6'},
     {cpan=>'XML::Simple', apt=>'libxml-simple-perl', rpm=>'perl-XML-Simple'}
     ) ;
@@ -140,6 +140,7 @@ elsif ( $action eq 'install' || $action eq 'apt-get-install' || $action eq 'rpm-
 
 sub install_modules_cpan{
 	$CPAN::Config->{prerequisites_policy} = 'follow';
+	$ENV{FTP_PASSIVE} = 1;
 	foreach my $anon_hash (@DEPS){
 		my $module = $anon_hash->{'cpan'};
 		eval "use $module";
