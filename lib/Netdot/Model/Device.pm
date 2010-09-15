@@ -1411,7 +1411,7 @@ sub discover {
 
     # Get relevant snmp_update args
     my %uargs;
-    foreach my $field ( qw(communities timeout retries sec_name sec_level auth_proto auth_pass priv_proto priv_pass
+    foreach my $field ( qw(communities version timeout retries sec_name sec_level auth_proto auth_pass priv_proto priv_pass
                            add_subnets subs_inherit bgp_peers pretend do_info do_fwt do_arp timestamp) ){
 	$uargs{$field} = $argv{$field} if defined ($argv{$field});
     }
