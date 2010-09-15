@@ -15,12 +15,11 @@ use Log::Log4perl::Level;
 #use Devel::Profiler bad_pkgs => [qw(UNIVERSAL Time::HiRes B Carp Exporter Cwd Config CORE DynaLoader XSLoader AutoLoader DBD::_::st DBD::_::db DBD::st DBD::db DBI::st DBI::db DBI::dr)];
 
 # Variables that will hold given values
-my ($host, $blocks, $db, $file, $commstrs, $sec_name, $sec_level, $auth_proto, $auth_pass, $priv_proto, $priv_pass);
+my ($host, $blocks, $db, $file, $commstrs, $version, $sec_name, $sec_level, $auth_proto, $auth_pass, $priv_proto, $priv_pass);
 
 # Default values
 my $retries         = Netdot->config->get('DEFAULT_SNMPRETRIES');
 my $timeout         = Netdot->config->get('DEFAULT_SNMPTIMEOUT');
-my $version         = Netdot->config->get('DEFAULT_SNMPVERSION');
 
 # Flags
 my ($ATOMIC, $ADDSUBNETS, $SUBSINHERIT, $BGPPEERS, $INFO, $FWT, $TOPO, $ARP, $PRETEND, $HELP, $_DEBUG);
@@ -49,7 +48,7 @@ my $USAGE = <<EOF;
     -c, --community <string>             SNMP community string(s)
     -r, --retries <integer >             SNMP retries (default: $retries)
     -o, --timeout <secs>                 SNMP timeout in seconds (default: $timeout)
-    -v, --version <integer>              SNMP version [1|2|3] (default: $version)
+    -v, --version <integer>              SNMP version [1|2|3]
     --sec-name <string>                  SNMP security name
     --sec-level <string>                 SNMP security level [noAuthNoPriv|authNoPriv|authPriv]
     --auth-proto <string>                SNMP authentication protocol [MD5|SHA]
