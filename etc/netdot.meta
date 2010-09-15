@@ -262,6 +262,110 @@ $meta = {
       ]
     }
   },
+  Asset => {
+    table_db_name => 'asset',
+    columns => {
+       id => {
+         default => '',
+         description => '',
+         length => '', 
+         nullable => 0,
+         tag => '',
+         type => 'integer'
+       },
+       serial_number => {
+         default => '',
+         description => 'asset serial number',
+         length => '255',
+         nullable => 1,
+         tag => 'S/N',
+         type => 'varchar'
+       },
+       inventory_number => {
+         default => '',
+         description => 'asset inventory number',
+         length => '255',
+         nullable => 1,
+         tag => 'Inventory',
+         type => 'varchar'
+       },
+       product_id => {
+         default => '',
+         description => 'product key',
+         length => '',
+         nullable => 1,
+         linksto => {
+           cascade => 'Delete',
+           method => 'assets',
+           table => 'Product'
+         },
+         type => 'integer'
+       },
+       date_purchased => {
+         default => '1970-01-01 00:00:01',
+         description => 'the date the asset was purchased',
+         length => '',
+         nullable => 1,
+         tag => 'Timestamp',
+         type => 'timestamp'
+       },
+       maint_contract => {
+         default => '',
+         description => 'Reference to a maintenance or support contract with hardware vendor or third party.',
+         length => '',
+         linksto => {
+           cascade => 'Nullify',
+           method => 'devices',
+           table => 'MaintContract'
+         },
+         nullable => 0,
+         tag => 'Maint Contract',
+         type => 'integer'
+       },
+       maint_from => {
+         default => '',
+         description => 'Device covered in maintenance from this date (YYYY-MM-DD)',
+         length => '',
+         nullable => 1,
+         tag => 'Maint Start',
+         type => 'date'
+        },
+       maint_until => {
+         default => '',
+         description => 'Device covered in maintenance until this date (YYYY-MM-DD)',
+          length => '',
+         nullable => 1,
+         tag => 'Maint End',
+         type => 'date'
+       }
+    },
+    views => {
+      'all' => [
+         'serial_number',
+         'inventory_number',
+         'date_purchased',
+         'maint_contract',
+         'maint_from',
+         'maint_until'
+      ],
+      brief => [
+         'serial_number',
+         'inventory_number'
+      ]
+    },
+
+    description => 'Assets',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    primary_key => 'id',
+    label => ['serial_number'],
+    unique => [
+      [
+        'serial_number'
+      ]
+    ]
+  },
   Availability => {
     table_db_name => 'availability',
     columns => {
@@ -1559,6 +1663,59 @@ $meta = {
       ]
     }
   },
+  DataCache => { 
+    table_db_name => 'datacache',
+    columns => { 
+      id => { 
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'integer'
+      },
+      name => {
+        default => '',
+        description => 'Name of the data',
+        length => '255',
+        nullable => 0,
+        tag => 'Name',
+        type => 'varchar'
+      },
+      data => {
+        default => '',
+        description => 'binary data',
+        length => '',
+        nullable => 0,
+        tag => 'Binary Data',
+        nullable => 0,
+        type => 'longblob'
+      },    
+      tstamp => {
+        default => '1970-01-02 00:00:01',
+        description => 'When this data was cached',
+        length => '',
+        nullable => 0,
+        tag => 'Timestamp',
+        type => 'timestamp'
+      }
+    },
+    description => 'Cached data',
+    has_history => '0',
+    unique => [ ['name'] ],
+    label => [ 'name' ],
+    index => [ ],
+    isjoin => '0',
+    primary_key => 'id',
+    views => { 
+      'all' => [
+         'name',
+      ],
+      brief => [
+         'name', 'data',
+      ]
+    } 
+  },   
   Device => {
     table_db_name => 'device',
     columns => {
@@ -8114,170 +8271,6 @@ $meta = {
          'name'
       ]
     } 
-<<<<<<< .working
-       	   
   }, 
-
- Asset => {
-    table_db_name => 'asset',
-    columns => {
-       id => {
-         default => '',
-         description => '',
-         length => '', 
-         nullable => 0,
-         tag => '',
-         type => 'integer'
-       },
-       serial_number => {
-         default => '',
-         description => 'asset serial number',
-         length => '255',
-         nullable => 1,
-         tag => 'S/N',
-         type => 'varchar'
-       },
-       inventory_number => {
-         default => '',
-         description => 'asset inventory number',
-         length => '255',
-         nullable => 1,
-         tag => 'Inventory',
-         type => 'varchar'
-       },
-       product_id => {
-         default => '',
-         description => 'product key',
-         length => '',
-         nullable => 1,
-         linksto => {
-           cascade => 'Delete',
-           method => 'assets',
-           table => 'Product'
-         },
-         type => 'integer'
-       },
-       date_purchased => {
-         default => '1970-01-01 00:00:01',
-         description => 'the date the asset was purchased',
-         length => '',
-         nullable => 1,
-         tag => 'Timestamp',
-         type => 'timestamp'
-       },
-       maint_contract => {
-         default => '',
-         description => 'Reference to a maintenance or support contract with hardware vendor or third party.',
-         length => '',
-         linksto => {
-           cascade => 'Nullify',
-           method => 'devices',
-           table => 'MaintContract'
-         },
-         nullable => 0,
-         tag => 'Maint Contract',
-         type => 'integer'
-       },
-       maint_from => {
-         default => '',
-         description => 'Device covered in maintenance from this date (YYYY-MM-DD)',
-         length => '',
-         nullable => 1,
-         tag => 'Maint Start',
-         type => 'date'
-        },
-       maint_until => {
-         default => '',
-         description => 'Device covered in maintenance until this date (YYYY-MM-DD)',
-          length => '',
-         nullable => 1,
-         tag => 'Maint End',
-         type => 'date'
-       }
-    },
-    views => {
-      'all' => [
-         'serial_number',
-         'inventory_number',
-         'date_purchased',
-         'maint_contract',
-         'maint_from',
-         'maint_until'
-      ],
-      brief => [
-         'serial_number',
-         'inventory_number'
-      ]
-    },
-
-    description => 'Assets',
-    has_history => 0,
-    index => [],
-    isjoin => '0',
-    primary_key => 'id',
-    label => ['serial_number'],
-    unique => [
-      [
-        'serial_number'
-      ]
-    ]
-  }
-  
-=======
-  },
-  DataCache => { 
-    table_db_name => 'datacache',
-    columns => { 
-      id => { 
-        default => '',
-        description => '',
-        length => '',
-        nullable => 0,
-        tag => undef,
-        type => 'integer'
-      },
-      name => {
-        default => '',
-        description => 'Name of the data',
-        length => '255',
-        nullable => 0,
-        tag => 'Name',
-        type => 'varchar'
-      },
-      data => {
-        default => '',
-        description => 'binary data',
-        length => '',
-        nullable => 0,
-        tag => 'Binary Data',
-        nullable => 0,
-        type => 'longblob'
-      },    
-      tstamp => {
-        default => '1970-01-02 00:00:01',
-        description => 'When this data was cached',
-        length => '',
-        nullable => 0,
-        tag => 'Timestamp',
-        type => 'timestamp'
-      }
-    },
-    description => 'Cached data',
-    has_history => '0',
-    unique => [ ['name'] ],
-    label => [ 'name' ],
-    index => [ ],
-    isjoin => '0',
-    primary_key => 'id',
-    views => { 
-      'all' => [
-         'name',
-      ],
-      brief => [
-         'name', 'data',
-      ]
-    } 
-  }   
->>>>>>> .merge-right.r3142
  }
 }
