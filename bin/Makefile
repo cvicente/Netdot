@@ -39,5 +39,5 @@ _defragdb:
 
 oui:
 	rm -f oui.txt
-	wget http://standards.ieee.org/regauth/oui/oui.txt
+	wget -t 1 http://standards.ieee.org/regauth/oui/oui.txt || cp oui.txt.default oui.txt
 	$(PERL) initdb oui
