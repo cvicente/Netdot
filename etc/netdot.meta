@@ -265,6 +265,14 @@ $meta = {
   Asset => {
     table_db_name => 'asset',
     columns => {
+       date_purchased => {
+         default => '1970-01-01 00:00:01',
+         description => 'the date the asset was purchased',
+         length => '',
+         nullable => 1,
+         tag => 'Date Purchased',
+         type => 'timestamp'
+       },
        id => {
          default => '',
          description => '',
@@ -273,41 +281,13 @@ $meta = {
          tag => '',
          type => 'integer'
        },
-       serial_number => {
-         default => '',
-         description => 'asset serial number',
-         length => '255',
-         nullable => 1,
-         tag => 'S/N',
-         type => 'varchar'
-       },
        inventory_number => {
          default => '',
-         description => 'asset inventory number',
+         description => 'Asset inventory number',
          length => '255',
          nullable => 1,
          tag => 'Inventory',
          type => 'varchar'
-       },
-       product_id => {
-         default => '',
-         description => 'product key',
-         length => '',
-         nullable => 1,
-         linksto => {
-           cascade => 'Delete',
-           method => 'assets',
-           table => 'Product'
-         },
-         type => 'integer'
-       },
-       date_purchased => {
-         default => '1970-01-01 00:00:01',
-         description => 'the date the asset was purchased',
-         length => '',
-         nullable => 1,
-         tag => 'Timestamp',
-         type => 'timestamp'
        },
        maint_contract => {
          default => '',
@@ -315,7 +295,7 @@ $meta = {
          length => '',
          linksto => {
            cascade => 'Nullify',
-           method => 'devices',
+           method => 'assets',
            table => 'MaintContract'
          },
          nullable => 0,
@@ -333,16 +313,38 @@ $meta = {
        maint_until => {
          default => '',
          description => 'Device covered in maintenance until this date (YYYY-MM-DD)',
-          length => '',
+         length => '',
          nullable => 1,
          tag => 'Maint End',
          type => 'date'
-       }
+       },
+       product_id => {
+         default => '',
+         description => 'product key',
+         length => '',
+         nullable => 0,
+         linksto => {
+           cascade => 'Delete',
+           method => 'assets',
+           table => 'Product'
+         },
+	 tag => 'Product',
+         type => 'integer'
+       },
+       serial_number => {
+         default => '',
+         description => 'Asset serial number',
+         length => '255',
+         nullable => 1,
+         tag => 'S/N',
+         type => 'varchar'
+       },
     },
     views => {
       'all' => [
          'serial_number',
          'inventory_number',
+	 'product_id',
          'date_purchased',
          'maint_contract',
          'maint_from',
@@ -353,7 +355,6 @@ $meta = {
          'inventory_number'
       ]
     },
-
     description => 'Assets',
     has_history => 0,
     index => [],
