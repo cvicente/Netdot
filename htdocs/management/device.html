@@ -199,11 +199,13 @@ my $refresh_url = "device.html?id=$id&view=$view";
 	<a href="updatedevice.html?device=<% $id %>&action=discover">[snmp-update]</a>
 %    }
 %    if ( $manager && $manager->can($user, "delete", $o) ){
-%       my $default_inventory = Netdot->config->get("INVENTORY_WARNING");
 %       my $warning;
-%       if( $default_inventory && $o->asset_id->inventory_number != "" ){
-%           $warning="This device is under inventory and other actions should be taken to make sure it gets removed from inventory.";
-%       }     
+%       if ( $o->asset_id && $o->asset_id->inventory_number ne "" ){
+%           if ( Netdot->config->get('INVENTORY_WARNING') ){
+%               $warning = 'This asset is under inventory and other actions should be taken '.
+%                          'to make sure it gets removed from inventory.';
+%           }     
+%	}
         <a href="delete.html?table=Device&id=<% $id %>&warning=<% $warning %>">[delete]</a>
 %    }
  </div> <!-- close containerheadrightoutside -->
@@ -320,7 +322,6 @@ function setNull(select){
 
 % if ( $editgen || $editloc || $editcomments || $editmgmt ) {
         <form name="netdotform" action="device.html" method="POST">
-            <script language="javascript" src="../java_script/datechooser.js"></script>
 	    <input type="hidden" name="id" value="<% $id %>">
 	    <input type="hidden" name="view" value="<% $view %>">
 % }
@@ -352,29 +353,29 @@ $ui->add_to_fields(o=>$o, edit=>$editgen, fields=>['name', 'aliases'], field_hea
 push( @field_headers, $ui->col_descr_link('Product', 'type', 'Type:') );
 push( @cell_data, 
       &{sub{	
-	  if (($o->asset_id->product_id) && ($o->asset_id->product_id->type)){	 
-      '<a href="view.html?table=Product&id='.$o->asset_id->product_id->id.'">'.$o->product->type->name."</a>";
+	  if (($o->product) && ($o->product->type)){	 
+      '<a href="view.html?table=Product&id='.$o->product->id.'">'.$o->product->type->name."</a>";
 	  }
       }}
 );
 
 $ui->add_to_fields(o=>$o, edit=>$editgen, 
-		   fields=>['physaddr', 'custom_serial', 'os'], 
+		   fields=>['physaddr', 'os', 'product'], 
 		   field_headers=>\@field_headers, cell_data=>\@cell_data, 
-		   linkpages=>['mac.html', '', '', '', 1, '']
+		   linkpages=>['mac.html', '', 'view.html']
     );
 
 my $os_used = pop @cell_data;
-my $latest_os = $o->asset_id->product_id->latest_os;
+my $latest_os = $o->product->latest_os;
 if ( !$editgen && $latest_os && ($os_used ne $latest_os) ){
     push (@cell_data, $os_used . " <span style=\"color:red;\">(Recommended OS: " . $latest_os . ")</span>");
 }else{
     push (@cell_data, $os_used);
 }
 
-$ui->add_to_fields(o=>$o->asset_id, edit=>$editgen, 
-		   fields=>['maint_contract', 'maint_from', 'maint_until', 'inventory_number', 'serial_number'], 
-		   linkpages=>[1, '', ''],
+$ui->add_to_fields(o=>$o, edit=>$editgen, 
+		   fields=>['asset_id'], 
+		   linkpages=>['view.html'],
 		   field_headers=>\@field_headers, cell_data=>\@cell_data);
 
 

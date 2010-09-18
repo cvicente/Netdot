@@ -35,9 +35,6 @@ sub insert {
     my ($class, $argv) = @_;
     $argv->{date_installed} = $class->timestamp();
     $argv->{last_updated}   = $class->timestamp();
-    $argv->{asset_id} = Asset->insert({product_id=>0, serial_number=>$argv->{serialnumber}});
-    delete $argv->{'serialnumber'};
-    print "<pre>".Dumper($argv)."</pre>";
     return $class->SUPER::insert( $argv );
 }
 
@@ -60,10 +57,38 @@ sub insert {
 
 sub update {
     my ($self, $argv) = @_;
-    $self->asset_id->update({serial_number=>$argv->{'serialnumber'}});
-    delete $argv->{'serialnumber'};
     $argv->{last_updated} = $self->timestamp();
     return $self->SUPER::update( $argv );
+}
+
+############################################################################
+=head2 delete - Delete DeviceModule object
+    
+    We override the insert method for extra functionality:
+     - Remove orphaned Asset records if necessary
+
+  Arguments:
+    None
+  Returns:
+    True if successful
+
+  Examples:
+    $devicemodule->delete();
+
+=cut
+sub delete {
+    my ($self) = @_;
+    $self->isa_object_method('delete');
+
+    my $asset = $self->asset_id;
+
+    $self->SUPER::delete();
+
+    if ( $asset && !($asset->devices || $asset->device_modules) ){
+	$asset->delete();
+    }
+
+    return 1;
 }
 
 =head1 AUTHOR

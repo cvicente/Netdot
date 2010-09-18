@@ -150,7 +150,9 @@ sub info_update {
 
     ##############################################################
     # Serial Number
-    unless ( $dev{serialnumber} = $info->{serialnumber} ){
+    if ( my $sn = $info->{serial_number} ){
+	$dev{asset_id} = Asset->find_or_create({serial_number=>$sn, product_id=>$dev{product}});
+    }else{
     	$logger->debug(sub{"$host did not return serial number" });
     }
     
@@ -314,7 +316,7 @@ sub _get_ap_info {
 	$info->{os} = $os;
     }
     if ( defined(my $serial = $hashes->{'airespace_ap_serial'}->{$idx}) ){
-	$info->{serialnumber} = $serial;
+	$info->{serial_number} = $serial;
     }
     if ( defined(my $sysname = $hashes->{'airespace_ap_name'}->{$idx}) ){
 	$info->{sysname} = $sysname;

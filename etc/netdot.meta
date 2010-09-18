@@ -281,6 +281,14 @@ $meta = {
          tag => '',
          type => 'integer'
        },
+       info => {
+         default => '',
+         description => 'Comments',
+         length => '',
+         nullable => 1,
+         tag => 'Comments',
+         type => 'blob'
+       },
        inventory_number => {
          default => '',
          description => 'Asset inventory number',
@@ -339,16 +347,26 @@ $meta = {
          tag => 'S/N',
          type => 'varchar'
        },
+       custom_serial => {
+         default => '',
+         description => 'Custom (human-set) serial number of this asset',
+         length => '255',
+         nullable => 1,
+         tag => 'Custom S/N',
+         type => 'varchar'
+       },
     },
     views => {
       'all' => [
          'serial_number',
+	 'custom_serial',
          'inventory_number',
 	 'product_id',
          'date_purchased',
          'maint_contract',
          'maint_from',
-         'maint_until'
+         'maint_until',
+	 'info',
       ],
       brief => [
          'serial_number',
@@ -357,7 +375,7 @@ $meta = {
     },
     description => 'Assets',
     has_history => 0,
-    index => [],
+    index => [ ['product_id'], ['inventory_number'] ],
     isjoin => '0',
     primary_key => 'id',
     label => ['serial_number'],
@@ -1727,9 +1745,11 @@ $meta = {
         nullable => 0,
         linksto => {
           cascade => 'Delete',
-          table => 'Asset'
+          table => 'Asset',
+          method => 'devices',
         },
-        type => 'integer'
+        type => 'integer',
+	tag => 'Asset',
       },
       aliases => {
         default => '',
@@ -1810,14 +1830,6 @@ $meta = {
         nullable => 0,
         tag => 'Managed by Customer?',
         type => 'bool'
-      },
-      custom_serial => {
-        default => '',
-        description => 'Custom (human-set) serial number of the Device',
-        length => '64',
-        nullable => 1,
-        tag => 'Custom S/N',
-        type => 'varchar'
       },
       date_installed => {
         default => '1970-01-02 00:00:01',
@@ -2005,6 +2017,19 @@ $meta = {
         },
         nullable => 0,
         tag => 'Base MAC',
+        type => 'integer'
+      },
+      product => {
+        default => '',
+        description => 'Reference to a Product record.  Products are usually determined via SNMP',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'devices',
+          table => 'Product'
+        },
+        nullable => 0,
+        tag => 'Product Name',
         type => 'integer'
       },
       rack => {
@@ -2214,7 +2239,7 @@ $meta = {
     },
     description => 'A network device.  Particularly, Devices in Netdot are network infrastructure devices that network administrators care about for inventory, monitoring and management purposes.  Not to be confused with end nodes',
     has_history => 1,
-    index => [ ['physaddr'], ['used_by'], ['owner'], ['os'], ['sysname'], ['down_from'], ['down_until'] ],
+    index => [ ['physaddr'],  ['product'], ['used_by'], ['owner'], ['os'], ['sysname'], ['down_from'], ['down_until'], ['asset_id'] ],
     isjoin => '0',
     label => [
       'name'
@@ -2250,7 +2275,7 @@ $meta = {
         'monitorstatus',
         'customer_managed',
         'community',
-        'custom_serial',
+        'product',
         'canautoupdate',
         'site',
         'monitor_config',
@@ -2283,7 +2308,7 @@ $meta = {
         'down_until',
         'info'
       ],
-      brief => ['name', 'site', 'snmp_target' ]
+      brief => ['name', 'product', 'site', 'snmp_target' ]
     }
   },
   DeviceAttr => {
@@ -2428,9 +2453,12 @@ $meta = {
         length => '',
         nullable => 0,
         linksto => {
-          table => 'Asset'
+	    table => 'Asset',
+	    method => 'device_modules',
+	    cascade => 'Delete',
         },
-        type => 'integer'
+        type => 'integer',
+	tag => 'Asset',
       },
       class => {
         default => '',
@@ -2561,7 +2589,7 @@ $meta = {
     },
     description => 'A Device Physical Entity',
     has_history => 0,
-    index => [],
+    index => [['asset_id']],
     isjoin => '0',
     label => [
 	'name', 'model', 'device'
@@ -5519,11 +5547,11 @@ $meta = {
       },
       mfg_number => {
         default => '',
-        description => 'manufacturers number',
+        description => 'Manufacturers number',
         length => '255',
         nullable => 0,
         type => 'varchar',
-        tag => 'mfg_number'
+        tag => 'Manufacturers Number',
       },
       info => {
         default => '',
@@ -5613,6 +5641,7 @@ $meta = {
         'description',
         'sysobjectid',
         'manufacturer',
+        'mfg_number',
         'latest_os',
         'info'
       ],

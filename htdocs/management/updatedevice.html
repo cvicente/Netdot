@@ -56,7 +56,6 @@ my $info;
 my $default_owner;
 my $default_cl;
 my $logstr;
-my $dev_exists_notice = 0;
 
 print "ARGS contains: <pre>", Dumper(%ARGS), "</pre>" if $DEBUG;
 
@@ -129,40 +128,6 @@ if ( $action eq "discover" ){
 	    $argv{device} = $o->id;
 	}
 	
-	# Make sure we don't have any assets with this SN already
-	elsif( !$o && $info->{serialnumber} ){
-	    my %search_args = (serial_number=>$info->{serialnumber});
-	    if ( $info->{sysobjectid} && 
-		 (my $product = Product->search(sysobjectid=>$info->{sysobjectid})->first) ){
-		$search_args{product_id} = $product;
-	    }
-           
-	    if ( my $ao = Asset->search(%search_args)->first ){
-                if($o = Device->search(asset_id => $ao)){
-		    $dev_exists_notice = "Device SN ". $o->asset_id->serial_number.
-		        " exists in the DB, but its name has changed";
-		    $argv{device} = $o->id;
-	 	    $argv{name}   = $host;
-                }
-                else{
-                    $dev_exists_notice = "SN ". $ao->serial_number ."exists in the DB, but the device is not deployed.";
-                }
-	    }
-	}
-	
-	# Make sure we don't have any devices with this PhysAddr already
-	elsif( !$o && $info->{physaddr} ){
-	    if ( my $physaddr = PhysAddr->search(address=>$info->{physaddr})->first ){
-		if ( $o = Device->search(physaddr=>$physaddr)->first ){
-		    print "Device::discover: Device already exists in DB with physical address ", $physaddr->address ;
-		    $dev_exists_notice = "Device with physical address ". $physaddr->address. 
-			" exists in the DB, but its name has changed";
-		    $argv{device} = $o->id;
-		    $argv{name}   = $host;
-		}
-	    }
-	}
-    
 	if ( !$argv{device} ) {
 	    # Looks like we have to create a new device
 	    $argv{name} = $host;
@@ -306,12 +271,8 @@ else{
 
 %   my @allcls = ContactList->retrieve_all; 
 
-%if($dev_exists_notice){
-    <& /generic/attribute_table.mhtml, field_headers=>["Notice:", "Description" ], data=>[$dev_exists_notice, $info->{sysdescription}] &>
-%}
-%else{
     <& /generic/attribute_table.mhtml, field_headers=>["Description"], data=>[ $info->{sysdescription} ] &>
-%}
+
     <form name="netdotform" action="updatedevice.html" method="POST">
     <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
     <input type="hidden" name="host" value="<% $host %>">

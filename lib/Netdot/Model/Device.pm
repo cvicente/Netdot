@@ -72,7 +72,7 @@ sub search {
     # field/value hash first.
     my $opts = @args % 2 ? pop @args : {}; 
     my %argv = @args;
-
+    
     my $dev;
     
     if ( exists $argv{name} ){
@@ -131,9 +131,6 @@ sub search {
 	}
     }elsif ( exists $argv{producttype} ){
 	return $class->search_by_type($argv{producttype});
-    }
-    elsif(exists $argv{product}){
-        return Asset->search({product_id=>$argv{product}});
     }
 
     # Proceed as a regular search
@@ -541,11 +538,6 @@ sub insert {
 	    $devtmp{name} = RR->insert({name=>$argv->{name}});
 	}
     }
-    if(!$argv->{asset_id}){
-        #an asset_id was not passed in, we need to create a new asset record to associate with the device
-        $devtmp{asset_id} = Asset->insert({product_id=>0});
-    }
-    
     if ( my $dbdev = $class->search(name=>$devtmp{name})->first ){
 	$logger->debug(sprintf("Device::insert: Device %s already exists in DB as %s",
 			       $argv->{name}, $dbdev->fqdn));
@@ -687,7 +679,7 @@ sub get_snmp_info {
     $dev{syscontact}     = $sinfo->contact();
     $dev{productname}    = $hashes{'e_descr'}->{1};
     $dev{manufacturer}   = $sinfo->vendor();
-    $dev{serialnumber}   = $sinfo->serial();
+    $dev{serial_number}  = $sinfo->serial();
 
     $dev{syslocation}    = $sinfo->location();
     # Remove leading and trailing white space
@@ -897,7 +889,7 @@ sub get_snmp_info {
 			contained_in => 'e_parent',  class        => 'e_class',    
 			pos          => 'e_pos',     hw_rev       => 'e_hwver',
 			fw_rev       => 'e_fwver',   sw_rev       => 'e_swver',
-			model        => 'e_model',   serialnumber => 'e_serial',
+			model        => 'e_model',   serial_number => 'e_serial',
 			fru          => 'e_fru',     description  => 'e_descr',
 	    );
 	    
@@ -1277,7 +1269,6 @@ sub discover {
     my $sinfo = $argv{session} || 0;
     my $dev;
     my $ip;
-    my $device_changed_name;
 
     if ( $dev = Device->search(name=>$name)->first ){
         $logger->debug(sub{"Device::discover: Device $name already exists in DB"});
@@ -1307,32 +1298,10 @@ sub discover {
 									    bgp_peers => $argv{bgp_peers},
 						   ) });
 	}
-	
-	
-	if( $info->{serial_number} ){
-	    my %search_args = (serial_number=>$info->{serial_number});
-	    if ( $info->{sysobjectid} && 
-	         (my $product = Product->search(sysobjectid=>$info->{sysobjectid})->first) ){
-	        $search_args{product} = $product;
-	    }
-	    if ( $dev = Device->asset_id->search(%search_args)->first ){
-	        $logger->info(sub{"Device::discover: Device already exists in db with serial number ".$info->{serial_number}});
-	        $device_changed_name = 1;
-	    }
-	}
-	
-	if( $info->{physaddr}){
-	    if ( my $physaddr = PhysAddr->search(address=>($info->{physaddr}))->first ){
-	        if ( $dev = Device->search(physaddr=>$physaddr)->first ){
-		    $logger->info(sub{"Device::discover: Device already exists in db with physical address ".$physaddr->address});
-		    $device_changed_name = 1; #using this to indicate this device exists with another name in the DB
-	        }
-	    }
-	}
     }
     
     my $device_is_new = 0;
-
+	
     unless ( $dev ){ #still no dev! guess we better make it!
     	$logger->debug(sub{"Device::discover: Device $name does not yet exist"});
 	# Set some values in the new Device based on the SNMP info obtained
@@ -1399,16 +1368,6 @@ sub discover {
 	$device_is_new = 1;
     }
     
-    if( $device_changed_name ){
-        #We can update the resource record now, since the device has likely moved
-        my $old_rr = $dev->name;
-	my $new_rr = $class->assign_name(host=>$argv{name});
-        if(!$argv{pretend}){
-	    $dev->update({name=>$new_rr})
-        }
-        $logger->info("Device::discover: ".$old_rr->get_label.": hostname updated to ".$dev->get_label);
-    }   
-
     # Get relevant snmp_update args
     my %uargs;
     foreach my $field ( qw(communities version timeout retries sec_name sec_level auth_proto auth_pass priv_proto priv_pass
@@ -1921,6 +1880,7 @@ sub fwt_update {
     
     We override the insert method for extra functionality:
      - Remove orphaned Resource Records if necessary
+     - Remove orphaned Asset records if necessary
 
   Arguments:
     None
@@ -1934,7 +1894,9 @@ sub fwt_update {
 sub delete {
     my ($self) = @_;
     $self->isa_object_method('delete');
-
+    
+    my $asset = $self->asset_id;
+    
     # We don't want to delete dynamic addresses
     if ( my $ips = $self->get_ips ){
 	foreach my $ip ( @$ips ) {
@@ -1943,16 +1905,21 @@ sub delete {
 	    }
 	}
     }
-
+    
     # If the RR had a RRADDR, it was probably deleted.  
     # Otherwise, we do it here.
     my $rrid = ( $self->name )? $self->name->id : "";
     
     $self->SUPER::delete();
-
+    
     if ( my $rr = RR->retrieve($rrid) ){
 	$rr->delete() unless $rr->arecords;
     }
+    
+    if ( $asset && !($asset->devices || $asset->device_modules) ){
+	$asset->delete();
+    }
+    
     return 1;
 }
 
@@ -2070,7 +2037,7 @@ sub is_in_downtime {
     We override the update method for extra functionality:
       - Update 'last_updated' field with current timestamp
       - snmp_managed flag turns off all other snmp access flags
-      - Modifying serialnumber & product, which used to be stored in Device, but are now located in Asset
+      - Update asset product if necessary
 
   Arguments:
     Hash ref with Device fields
@@ -2096,11 +2063,12 @@ sub update {
 	$argv->{collect_fwt}   = 0;
     }
     $self->_validate_args($argv);
-    $self->asset_id->update(serial_number=>$argv->{'serialnumber'}, product_id=>$argv->{'product'});
-    delete $argv->{'serialnumber'};
-    delete $argv->{'product'};
+
+    if ( $argv->{product} && int($self->asset_id) ){
+	$self->asset_id->update({product_id=>$argv->{product}});
+    }
+
     return $self->SUPER::update($argv);
-    
 }
 
 ############################################################################
@@ -2459,12 +2427,6 @@ sub info_update {
     }
 
     ##############################################################
-    # Serial Number
-    unless ( $devtmp{serialnumber} = $info->{serialnumber} ){
-    	$logger->debug(sub{"$host did not return serial number" });
-   }
-    
-    ##############################################################
     # Fill in some basic device info
     foreach my $field ( qw( community snmp_version layers ipforwarding sysname 
                             sysdescription syslocation os collect_arp collect_fwt ) ){
@@ -2478,6 +2440,14 @@ sub info_update {
 
     ##############################################################
     $devtmp{product} = $self->_assign_product($info);
+    
+    ##############################################################
+    # Serial Number
+    if ( my $sn = $info->{serial_number} ){
+	$devtmp{asset_id} = Asset->find_or_create({serial_number=>$sn, product_id=>$devtmp{product}});
+    }else{
+    	$logger->debug(sub{"$host did not return serial number" });
+    }
     
     ##############################################################
     if ( $devtmp{product} && $argv{device_is_new} ){
@@ -3260,27 +3230,21 @@ sub _validate_args {
 	}
     }
 
-    # Serial number
-
-    if ( my $sn = $args->{serialnumber} ){
-	if ( my $asset = Asset->search(serial_number=>$sn)->first ){
-
-            #is there a device attached to this asset number we've found?
-            my $otherdevice = Device->search(asset_id=>$asset)->first;
-
-	    if(defined $self){
-		if($self->asset_id != $asset->id){
-                    if($otherdevice){
-		        $self->throw_user( sprintf("%s: S/N %s belongs to existing device: %s.", 
-					       $self->fqdn, $sn, $otherdevice->fqdn) ); 
-                    }
-                    else{ #asset exists in DB, but is not assigned to device (not yet deployed)
-                        $self->throw_user( sprintf("%s: S/N %s belongs to existing Asset (Number %s)",
-                                               $self->fqdn, $sn, $asset));
-		    }
-               }
-	   }
-        }
+    # Asset
+    if ( $args->{asset_id} && (my $asset = Asset->retrieve(int($args->{asset_id}))) ){
+	
+	# is there a device attached to this asset number we're given?
+	if ( my $otherdev = ($asset->devices)[0] ){
+	    if ( defined $self ){
+		if ( $self->id != $otherdev->id ){
+		    $self->throw_user(sprintf("%s: S/N %s belongs to existing device: %s", 
+					      $self->fqdn, $asset->serial_number, $otherdev->fqdn)); 
+		}
+	    }else{
+		$class->throw_user(sprintf("S/N %s belongs to existing device: %s",
+					   $asset->serial_number, $otherdev->fqdn));
+	    }
+	}
     }
     
     # Base bridge MAC
@@ -4716,7 +4680,6 @@ sub _assign_product {
     
     return Product->find_or_create(%args);
 }
-    
 
 ##############################################################
 # Assign monitored flag based on device type
@@ -4889,6 +4852,13 @@ sub _update_modules {
 	my %args = %{$info->{module}->{$number}};
 	$args{device} = $self->id;
 	my $name = $args{name} || $args{description};
+
+	# find or create asset object for given serial number
+	if ( my $serial = delete $args{serial_number} ){
+	    if ( my $asset = Asset->find_or_create({serial_number=>$serial}) ){
+		$args{asset_id} = $asset->id;
+	    }
+	}
 	# See if it exists
 	my $module;
 	if ( exists $oldmodules{$number} ){
@@ -5215,8 +5185,6 @@ sub _update_bgp_info {
     }
 }
     
-
-
 ############################################################################
 #
 # search_by_type - Get a list of Device objects by type
@@ -5224,43 +5192,39 @@ sub _update_bgp_info {
 #
 __PACKAGE__->set_sql(by_type => qq{
     SELECT d.id
-        FROM device d, asset a, product p, producttype t, rr
-        WHERE d.asset_id = a.id AND
-        a.product_id = p.id AND
-        p.type = t.id AND
-        rr.id = d.name AND
-        t.id = ?
-        ORDER BY rr.name
+	FROM device d, product p, producttype t, rr
+	WHERE d.product = p.id AND
+	p.type = t.id AND
+	rr.id = d.name AND
+	t.id = ?
+	ORDER BY rr.name
     });
 
 __PACKAGE__->set_sql(no_type => qq{
     SELECT p.name, p.id, COUNT(d.id) AS numdevs
-        FROM device d, asset a, product p
-       	WHERE d.asset_id = a.id AND
-        a.product_id = p.id AND
+        FROM device d, product p
+        WHERE d.product = p.id AND
         p.type = 0
         GROUP BY p.name, p.id
         ORDER BY numdevs DESC
     });
 
 __PACKAGE__->set_sql(by_product_os => qq{
-    SELECT d.id, a.product_id AS product, d.os
-        FROM device d, asset a
-        WHERE d.asset_id = a.id AND
-        os is NOT NULL AND
-        os != '0'
-        ORDER BY a.product_id, d.os
+    SELECT id,product,os
+        FROM device
+        WHERE os is NOT NULL 
+        AND os != '0'
+        ORDER BY product,os
     });
 
 __PACKAGE__->set_sql(for_os_mismatches => qq{
-    SELECT device.id, asset.product_id, device.os, device.name
-       	FROM   device, asset, product
-        WHERE device.asset_id = asset.id
-        AND asset.product_id = product.id
+    SELECT device.id,device.product,device.os,device.name
+        FROM   device,product
+        WHERE  device.product=product.id
         AND device.os IS NOT NULL
         AND product.latest_os IS NOT NULL
-        AND device.os != product.latest_os
-        ORDER BY asset.product_id, device.os
+        AND device.os!=product.latest_os
+        ORDER BY device.product,device.os
     });
 
 =head1 AUTHOR

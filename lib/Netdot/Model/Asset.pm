@@ -12,27 +12,23 @@ use strict;
 
   Arguments: 
     Hash with key/value pairs
-
   Returns: 
-    Array of Device objects or iterator
+    Array of Asset objects or iterator
 
 =cut
-
 
 sub search_like{
     my ($class, %argv) = @_;
     $class->isa_class_method('search_like');
 
-    if($argv{'producttype'}){
-        if($argv{'producttype'} == 11){
-		return $class->search_by_type_unknown($argv{producttype});
+    if ( $argv{producttype} ){
+        if( $argv{producttype} == 11 ){
+	    return $class->search_by_type_unknown($argv{producttype});
 	}
         return $class->search_by_type($argv{producttype});
+    }else{
+        return $class->SUPER::search_like(%argv);
     }
-    else{
-        return $class->SUPER::search(%argv);
-    }
-
 }
 
 __PACKAGE__->set_sql(by_type => qq{
