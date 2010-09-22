@@ -79,6 +79,8 @@ sub find_duplex_mismatches {
                                                  AND   i.neighbor=r.id  
                                                  AND   i.oper_status='up'
                                                  AND   r.oper_status='up'
+                                                 AND   i.oper_duplex!=''
+                                                 AND   r.oper_duplex!=''
                                                  AND   i.oper_duplex!=r.oper_duplex");
 
     if ( $mismatches ){
