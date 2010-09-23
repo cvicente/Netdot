@@ -2586,14 +2586,14 @@ sub _build_tree_mem {
 					   tree    => $tree,
 		);
 	    
-	    $parents{$id} = $node->data if ( defined $node && $node->data );
+	    $parents{$id} = (defined $node && $node->data)? $node->data : 0;
 	}else{
 	    my $node =  $class->_tree_insert(address => $address, 
 					     prefix  => $prefix, 
 					     data    => $id,
 					     tree    => $tree,
 		);
-	    $parents{$id} = $node->parent->data if ( defined $node && $node->parent );
+	    $parents{$id} = (defined $node && $node->parent)? $node->parent->data : 0
 	}
     }
 
@@ -2620,13 +2620,13 @@ sub _update_tree{
     my ($self) = @_;
     $self->isa_object_method('_update_tree');
     my $class = ref($self);
-
+    
     my $tree = $self->_tree_get();
-
+    
     $logger->debug('Ipblock::_update_tree: Updating tree for '. $self->get_label);
-
+    
     if ( $self->is_address ){
-
+	
 	# Search the tree.  
 	my $n = $class->_tree_find(address => $self->address_numeric,
 				   prefix  => $self->prefix,
@@ -2642,76 +2642,80 @@ sub _update_tree{
 	    }else{
 		$parent = $n->data if ( $n->data );
 		$logger->debug("Ipblock::_update_tree: ". $self->get_label ." not in tree");
-		
 	    }
 	    $self->SUPER::update({parent=>$parent}) if $parent;
 	}
-   }else{
-       # This is a new block (subnet, container, etc)
-       # Insert it in the tree
-       my $n =  $class->_tree_insert(address => $self->address_numeric,
-				     prefix  => $self->prefix, 
-				     data    => $self->id,
-				     tree    => $tree,
-	   );
-
-       if ( defined $n && $n->parent && $n->parent->data ){
-	   my $parent_id = $n->parent->data;
-	   if ( $parent_id == $self->id ){
-	       $logger->debug("Ipblock::_update_tree: mask probably changed. Deleting parent node.");
-	       $parent_id = $n->parent->parent->data;
-	       $n->parent->delete();
-	   }
-	   
-	   $logger->debug("Ipblock::_update_tree: ". $self->get_label ." within: $parent_id");
-	   my %parents;
-	   $parents{$self->id} = $parent_id;
-	   
-	   # Now, deal with my parent's children
-	   # They could be my children or my siblings, so
-	   # we need to rebuild this section of the tree
-	   
-	   my $dbh = $class->db_Main;
-	   my $sth1 = $dbh->prepare_cached("SELECT   id,address,prefix,parent 
+    }else{
+	# This is a new block (subnet, container, etc)
+	# Insert it in the tree
+	my $n =  $class->_tree_insert(address => $self->address_numeric,
+				      prefix  => $self->prefix, 
+				      data    => $self->id,
+				      tree    => $tree,
+	    );
+	
+	if ( defined $n && $n->parent && $n->parent->data ){
+	    my $parent_id = $n->parent->data;
+	    if ( $parent_id == $self->id ){
+		$logger->debug("Ipblock::_update_tree: mask probably changed. Deleting parent node.");
+		if ( $n->parent->parent ){
+		    $parent_id = $n->parent->parent->data;
+		}else{ 
+		    $parent_id = 0;
+		}
+		$n->parent->delete();
+	    }
+	    
+	    $logger->debug("Ipblock::_update_tree: ". $self->get_label ." within: $parent_id");
+	    my %parents;
+	    $parents{$self->id} = $parent_id;
+	    
+	    # Now, deal with my children and my parent's children
+	    # They could be my children or my siblings, so
+	    # we need to rebuild this section of the tree
+	    
+	    my $dbh = $class->db_Main;
+	    my $sth1 = $dbh->prepare_cached("SELECT   id,address,prefix,parent 
                                             FROM     ipblock 
                                             WHERE    parent=?
+                                               OR    parent=?
 					    ORDER BY prefix"
-	       );
-	   $sth1->execute($parent_id);
-	   while ( my ($id,$address,$prefix,$par) = $sth1->fetchrow_array ){
-	       my $node = $class->_tree_find(address  => $address,
-					     prefix   => $prefix,
-					     tree     => $tree,
-		   );
-	       if ( $node && $node->data == $id ){
-		   $node->delete();
-	       }
-	       # Insert again
-	       $node =  $class->_tree_insert(address => $address, 
-					     prefix  => $prefix, 
-					     data    => $id,
-					     tree    => $tree,
-		   );
-	       if ( defined $node && $node->parent 
-		    && $node->parent->data != $par ){
-		   $logger->debug("Ipblock::_update_tree: node $id has new parent");
-		   $parents{$id} = $node->parent->data;
-	       }
-	   }
-
-	   # Now update the DB
-	   my $sth2;
-	   $sth2 = $dbh->prepare_cached("UPDATE ipblock SET parent = ? WHERE id = ?");
-	   foreach ( keys %parents ){
-	       $sth2->execute($parents{$_}, $_);
-	   }
-       }else{
-	   # This could be a root covering other blocks, so we 
-	   # need to build the whole tree
-	   $logger->debug("Ipblock::_update_tree: ". $self->get_label ." not within any known blocks");
-	   $class->build_tree($self->version);
-       }
-   }
+		);
+	    $sth1->execute($parent_id, $self->id);
+	    while ( my ($id,$address,$prefix,$par) = $sth1->fetchrow_array ){
+		my $node = $class->_tree_find(address  => $address,
+					      prefix   => $prefix,
+					      tree     => $tree,
+		    );
+		if ( $node && $node->data == $id ){
+		    $node->delete();
+		}
+		# Insert again
+		$node =  $class->_tree_insert(address => $address, 
+					      prefix  => $prefix, 
+					      data    => $id,
+					      tree    => $tree,
+		    );
+		if ( defined $node && $node->parent 
+		     && $node->parent->data != $par ){
+		    $logger->debug("Ipblock::_update_tree: node $id has new parent");
+		    $parents{$id} = $node->parent->data;
+		}
+	    }
+	    
+	    # Now update the DB
+	    my $sth2;
+	    $sth2 = $dbh->prepare_cached("UPDATE ipblock SET parent = ? WHERE id = ?");
+	    foreach ( keys %parents ){
+		$sth2->execute($parents{$_}, $_);
+	    }
+	}else{
+	    # This could be a root covering other blocks, so we 
+	    # need to build the whole tree
+	    $logger->debug("Ipblock::_update_tree: ". $self->get_label ." not within any known blocks");
+	    $class->build_tree($self->version);
+	}
+    }
     
     $class->_tree_save(version=>$self->version, tree=>$tree);
     return 1;
