@@ -126,39 +126,40 @@ if ( $type eq "address" ){
 	push @row, $ui->form_field(object=>$o, column=>"status", edit=>$edit, returnValOnly=>1);
         push( @text_row, $o->status->get_label );
 
-	if ( $o->status->name eq "Subnet") {
-            my $title;
-
-	    push( @row, $ui->percent_bar(percent => (($o->num_children)/($o->num_addr)*100) ) );
-            $title = int(($o->num_children)/($o->num_addr)*1000)/10;
-            push( @text_row , $title."%" );
-	} elsif ($o->status->name eq "Container") {
-	    my $title1;
-            my $title2;
-	    my $total = new Math::BigInt($o->num_addr);
-	    my $used1 = new Math::BigInt($o->address_usage);
-	    my $used2 = new Math::BigInt($o->subnet_usage);
-	    my $percent1 = ($used1*100/$total);
-	    my $percent2 = ($used2*100/$total);
-	   
-	    push( @row, $ui->percent_bar2( title1=>"Address Usage: ", title2=>"Subnet Usage: ", percent1=>$percent1, percent2=>$percent2 ) );
-            $title1 = int($percent1*10)/10;
-            $title2 = int($percent2*10)/10;
-  
-            push( @text_row, $title1."%/".$title2."%" );
-	} else {
-	    push( @row, "" );
-            push( @text_row, "" );
+	if ( $show_utilization ){
+	    if ( $o->status->name eq "Subnet") {
+		my $title;
+		push( @row, $ui->percent_bar(percent => (($o->num_children)/($o->num_addr)*100) ) );
+		$title = int(($o->num_children)/($o->num_addr)*1000)/10;
+		push( @text_row , $title."%" );
+	    } elsif ($o->status->name eq "Container") {
+		my $title1;
+		my $title2;
+		my $total = new Math::BigInt($o->num_addr);
+		my $used1 = new Math::BigInt($o->address_usage);
+		my $used2 = new Math::BigInt($o->subnet_usage);
+		my $percent1 = ($used1*100/$total);
+		my $percent2 = ($used2*100/$total);
+		
+		push( @row, $ui->percent_bar2( title1=>"Address Usage: ", title2=>"Subnet Usage: ", percent1=>$percent1, percent2=>$percent2 ) );
+		$title1 = int($percent1*10)/10;
+		$title2 = int($percent2*10)/10;
+		
+		push( @text_row, $title1."%/".$title2."%" );
+	    } else {
+		push( @row, "" );
+		push( @text_row, "" );
+	    }
 	}
 	$ui->add_to_fields(o=>$o, edit=>$edit, fields=>['owner', 'used_by', 'description'],
 			   cell_data=>\@row, linkpages=>['view.html', 'view.html', '']);
-        push( @text_row, $o->owner->get_label );
-        push( @text_row, $o->used_by->get_label );
-        push( @text_row, $o->description );
-        
+	push( @text_row, $o->owner->get_label );
+	push( @text_row, $o->used_by->get_label );
+	push( @text_row, $o->description );
+	
 	push( @rows, \@row );
         push( @$page, \@text_row);
-     }
+    }
 }
 
 # Create new session and get a new window for csv2 output
