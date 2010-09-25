@@ -69,17 +69,26 @@ elsif ( $action eq 'install' || $action eq 'apt-get-install' || $action eq 'rpm-
     	my $installed_epel = 0;
 	my $uid = `id -u`;
 	if($uid && $uid != 0){
-		print "You must be root to install the required dependencies\n";
-		exit(1);
+	    print "You must be root to install the required dependencies\n";
+	    exit(1);
 	}
-
+	
 	if($action eq 'rpm-install'){
-		print "If you are using Red Hat Enterprise Linux (RHEL), be aware that the official repository does not include many of the perl packages that Netdot requires.  Would you like to use the EPEL (Extra Packages for Enterprise Linux) repository to help install these packages? [y/n]";
-		my $ans = <STDIN>;
-		if($ans =~ /(Y|y)/){
-			$installed_epel = 1;
-			system("rpm -Uvh http://download.fedora.redhat.com/pub/epel/5/i386/epel-release-5-3.noarch.rpm");	
+	    print "If you are using Red Hat Enterprise Linux (RHEL), be aware that the official repository does not include many of the perl packages that Netdot requires.  Would you like to use the EPEL (Extra Packages for Enterprise Linux) repository to help install these packages? [y/n]";
+	    my $ans = <STDIN>;
+	    if($ans =~ /(Y|y)/){
+		my $arch = `uname -i`;
+		chomp $arch;
+		if ( $arch eq 'x86_64' ){
+		    system("rpm -Uvh http://download.fedora.redhat.com/pub/epel/5/x86_64/epel-release-5-4.noarch.rpm");
+		}elsif ( $arch eq 'i386' ){
+		    system("rpm -Uvh http://download.fedora.redhat.com/pub/epel/5/i386/epel-release-5-4.noarch.rpm");
+		}else{
+		    print "Unrecognized architecture: $arch";
+		    exit(1);
 		}
+		$installed_epel = 1;
+	    }
 	}
 
 
