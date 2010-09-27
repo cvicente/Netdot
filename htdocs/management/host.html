@@ -593,9 +593,12 @@ foreach my $o ( values %rrs ) {
 	print '<div class="containerbody">';
 	if ( my @cnames = RRCNAME->search(cname=>$o->get_label) ){
 	    foreach my $cname ( sort { $a->rr->name cmp $b->rr->name } @cnames ) {
-		$ui->add_to_fields(o=>$cname, edit=>$edit, fields=>['rr', 'ttl'],
+		$ui->add_to_fields(o=>$cname, edit=>0, fields=>['rr'],
 				   field_headers=>\@field_headers, cell_data=>\@cell_data,
-				   linkpages=>['host.html',''], with_delete=>1);
+				   linkpages=>['host.html']);
+		$ui->add_to_fields(o=>$cname, edit=>$edit, fields=>['ttl'],
+				   field_headers=>\@field_headers, cell_data=>\@cell_data,
+				   with_delete=>1);
 		$m->comp('/generic/attribute_table.mhtml', %comphash, width=>2);
 		(@field_headers, @cell_data) = ((),());
 	    }
