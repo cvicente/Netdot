@@ -116,7 +116,8 @@ my $vars = new SNMP::VarList([$admin_status_oid,$self{IFINDEX}], [$oper_status_o
 			     [$descr_oid,$self{IFINDEX}], [$alias_oid,$self{IFINDEX}]);
 my ($admin_status, $oper_status, $descr, $alias) = $sess->get($vars);
 
-if ( !(defined $admin_status) || !(defined $oper_status) ){
+if ( !(defined $admin_status) || $admin_status eq "" ||
+     !(defined $oper_status)  || $oper_status eq "" ){
     $state = 'UNKNOWN';
     print "$state: Missing data\n";
     exit $ERRORS{$state};    
