@@ -167,17 +167,19 @@ sub install_modules_cpan{
 }
 
 sub run_test{
-	foreach my $anon_hash (@DEPS){
-		my $module = $anon_hash->{'cpan'};
-		eval "use $module";
-		print $module, "................";
-		if ( $@ ){
-			print "MISSING";
-		}
-		else{
-			print "installed";
-		}
-		print "\n";
+    foreach my $anon_hash ( @DEPS ){
+	my $module = $anon_hash->{'cpan'};
+	eval "use $module";
+	my $len = 50 - length($module);
+	my $sep = '.' x $len;
+	print $module."$sep";
+	if ( $@ ){
+	    print "MISSING";
 	}
+	else{
+	    print "ok";
+	}
+	print "\n";
+    }
 }
 
