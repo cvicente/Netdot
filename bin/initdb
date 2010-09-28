@@ -262,17 +262,26 @@ sub insert_oui{
     }
     close (OUI);
 
-    my $oui_count = 0;
-    @data = ();
+    @data = (); 
+    $oui_file = "/tmp/oui.txt";
+    open (OUI, ">:encoding(iso-8859-1)",$oui_file) or die "Can't open $oui_file: $!\n";
     foreach my $oui ( keys %oui ){
         my $vendor = $oui{$oui};
-	$vendor =~ s/\'/''/g;
+        $vendor =~ s/\'/''/g;
         $oui = uc($oui);
         print "$oui : $vendor\n" if $config{DEBUG};
-	push @data, "INSERT INTO oui (oui, vendor) VALUES ('$oui', '$vendor');";
-        $oui_count++;
-    }
+        print OUI "$oui\t$vendor\n";
+    }   
+    close(OUI);
+
+    if (lc($config{DB_TYPE}) eq 'mysql') {
+        push @data, "LOAD DATA LOCAL INFILE '$oui_file' INTO TABLE oui (oui, vendor);";
+    } elsif (lc($config{DB_TYPE}) eq 'postgres') {
+        push @data, "COPY oui(oui, vendor) FROM '$oui_file';"
+    }   
     &db_query(\@data);
+    unlink($oui_file);
+    my $oui_count = scalar keys %oui;
     print "Inserted $oui_count entries from oui.txt\n";
 
 }
