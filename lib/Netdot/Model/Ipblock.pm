@@ -104,6 +104,9 @@ sub int2ip {
 	# Use the compressed version
 	$val = (new NetAddr::IP $ipv6)->short();
 
+	# Per RFC 5952 recommendation
+	$val = lc($val);
+
     }else{
 	$class->throw_fatal(sprintf("Invalid IP version: %s", $version));
     }
