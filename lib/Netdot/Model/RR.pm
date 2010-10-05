@@ -559,6 +559,9 @@ sub _validate_args {
 
 	# Remove whitespace
 	$argv->{name} =~ s/\s+//g;
+	
+	# Remove trailing dots, if any
+	$argv->{name} =~ s/\.$//;
 
 	# Length restrictions
 	unless ( length($name) >= 1 && length($name) < 64 ){
