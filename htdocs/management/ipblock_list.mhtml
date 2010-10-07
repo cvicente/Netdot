@@ -115,6 +115,7 @@ if ( $type eq "address" ){
 	@text_headers = @headers;
     }
     foreach my $o ( @{ $objects } ) {
+	my $status = ($o->status)? $o->status->get_label: "";
 	my @row = ();
         my @text_row = ();
 	if ( $edit ){	 
@@ -124,15 +125,15 @@ if ( $type eq "address" ){
         push( @text_row, $o->get_label );
 
 	push @row, $ui->form_field(object=>$o, column=>"status", edit=>$edit, returnValOnly=>1);
-        push( @text_row, $o->status->get_label );
+        push( @text_row, $status );
 
 	if ( $show_utilization ){
-	    if ( $o->status->name eq "Subnet") {
+	    if ( $status eq "Subnet") {
 		my $title;
 		push( @row, $ui->percent_bar(percent => (($o->num_children)/($o->num_addr)*100) ) );
 		$title = int(($o->num_children)/($o->num_addr)*1000)/10;
 		push( @text_row , $title."%" );
-	    } elsif ($o->status->name eq "Container") {
+	    } elsif ( $status eq "Container" ) {
 		my $title1;
 		my $title2;
 		my $total = new Math::BigInt($o->num_addr);
