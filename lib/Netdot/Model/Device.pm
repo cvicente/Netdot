@@ -4853,9 +4853,9 @@ sub _update_modules {
 	$args{device} = $self->id;
 	my $name = $args{name} || $args{description};
 
-	# find or create asset object for given serial number
+	# find or create asset object for given serial number and product
 	if ( my $serial = delete $args{serial_number} ){
-	    if ( my $asset = Asset->find_or_create({serial_number=>$serial}) ){
+	    if ( my $asset = Asset->find_or_create({serial_number=>$serial, product_id=>$self->product}) ){
 		$args{asset_id} = $asset->id;
 	    }
 	}

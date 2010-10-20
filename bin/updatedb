@@ -38,7 +38,7 @@ my @statements = (
   `product_id` integer NOT NULL,
   `serial_number` varchar(255),
   `custom_serial` varchar(255),
-  UNIQUE INDEX asset1 (`serial_number`),
+  UNIQUE INDEX asset1 (`serial_number`, `product_id`),
   INDEX Asset2 (`product_id`),
   INDEX Asset3 (`inventory_number`),
   PRIMARY KEY (`id`)
@@ -60,6 +60,7 @@ my $devices = $d->fetchall_arrayref();
 
 foreach my $row ( @$devices ){
     my $sn = $row->[0];
+    $sn =~ s/^\s*(\w+)\s*$/$1/;
     my $i = 1;
     foreach my $v (qw/cs in mc mf mu pr/){
 	$assets{$sn}{$v} = $row->[$i];
@@ -75,8 +76,9 @@ $dm->execute();
 my $device_modules = $dm->fetchall_arrayref();
 
 foreach my $row ( @$device_modules ){
-    next if exists $assets{$row->[0]};
     my $sn = $row->[0];
+    $sn =~ s/^\s*(\w+)\s*$/$1/;
+    next if exists $assets{$sn};
     my $i = 1;
     foreach my $v (qw/in mc mf mu/){
 	$assets{$sn}{v} = $row->[$i];
@@ -99,6 +101,7 @@ foreach my $sn ( keys %assets ){
 "ALTER TABLE devicemodule ADD COLUMN `asset_id` integer NOT NULL FIRST",
 "UPDATE device,asset SET device.asset_id=asset.id WHERE asset.serial_number=device.serialnumber",
 "UPDATE devicemodule,asset SET devicemodule.asset_id=asset.id WHERE asset.serial_number=devicemodule.serialnumber",
+"UPDATE asset,device,devicemodule SET asset.product_id=device.product WHERE devicemodule.device=device.id AND devicemodule.asset_id=asset.id",
 "ALTER TABLE `device` DROP COLUMN `serialnumber`",
 "ALTER TABLE `device` DROP COLUMN `inventorynumber`",
 "ALTER TABLE `device` DROP COLUMN `maint_contract`",
