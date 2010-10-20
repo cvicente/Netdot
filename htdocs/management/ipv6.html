@@ -39,7 +39,7 @@ if($create_addr){
 	my $new_parent_id;
 	#we are inserting a new address block
         eval{ 
-                $new_parent_id = Ipblock->insert({address=>Ipblock->int2ip($create_addr,6), prefix=>$create_prefix, parent=>$create_parent});
+                $new_parent_id = Ipblock->insert({address=>$create_addr, prefix=>$create_prefix, parent=>$create_parent});
 	};
         if($@){ # && $@ != "Error while inserting Ipblock: Some values are duplicated."){
                 print "$@";
