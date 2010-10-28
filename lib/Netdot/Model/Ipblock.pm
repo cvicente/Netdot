@@ -2431,6 +2431,11 @@ sub _prevalidate {
     unless ( $address =~ /^$IPV4$/ || $address =~ /^$IPV6$/ ) {
 	$class->throw_user("IP: $address does not match valid patterns");
     }
+
+    if ( $address eq '0.0.0.0' || $address eq '::' ){
+	$class->throw_user("The unspecified IP: $address is not valid");
+    }
+
     my $ip;
     my $str = ( $address && $prefix ) ? (join('/', $address, $prefix)) : $address;
     if ( !($ip = NetAddr::IP->new($address, $prefix)) || $ip->numeric == 0 ){
