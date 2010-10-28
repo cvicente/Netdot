@@ -4216,10 +4216,13 @@ sub _get_fwt_from_snmp {
 			'version'     => $self->snmp_version,
 			'sclass'      => $sclass,
 		);
-            my $vlan_sinfo = $class->_get_snmp_session(%args);
 	    
-            unless ( defined $vlan_sinfo ){
-                $logger->error("$host: Error getting SNMP session for VLAN: $vlan");
+	    my $vlan_sinfo;
+	    eval {
+		$vlan_sinfo = $class->_get_snmp_session(%args);
+	    };
+	    if ( my $e = $@ ){ 
+                $logger->error("$host: SNMP error for VLAN $vlan: $e");
                 next;
             }
             $class->_exec_timeout($host, sub{ return $self->_walk_fwt(sinfo   => $vlan_sinfo,
