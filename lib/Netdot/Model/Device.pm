@@ -973,6 +973,8 @@ sub get_snmp_info {
 	}else{
 	    foreach my $ip ( keys %{ $hashes{'ip_index'} } ){
 		if ( $hashes{'ip_index'}->{$ip} eq $iid ){
+		    next if Ipblock->is_loopback($ip);
+		    next if ( $ip eq '0.0.0.0' || $ip eq '255.255.255.255' );
 		    $dev{interface}{$iid}{ips}{$ip}{address} = $ip;
 		    if ( my $mask = $hashes{'ip_netmask'}->{$ip} ){
 			$dev{interface}{$iid}{ips}{$ip}{mask} = $mask;
