@@ -77,7 +77,8 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 	$m->comp('../generic/error.mhtml', error=>"Please select a VLAN ID");
     }
     my $info;
-    eval { $info = Device->search_address_live(mac=>$search_live, vlan=>$vlan) };
+    my $address = PhysAddr->format_address($search_live);
+    eval { $info = Device->search_address_live(mac=>$address, vlan=>$vlan) };
     if ( my $e = $@ ){
 	$m->comp('/generic/error.mhtml', error=>$e);
     }
