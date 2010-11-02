@@ -2256,6 +2256,54 @@ sub reverse_zone {
     }
 }
 
+############################################################################
+=head2 - get_dot_arpa_name
+
+    Return the corresponding in-addr.arpa or ip6.arpa zone name. 
+    Supports RFC2317 (Classless IN-ADDR.ARPA delegation) notation
+
+  Args: 
+    delim (optional) - Delimiter to separate address and mask in RFC2317 cases
+  Returns: 
+    string
+  Examples:
+    my $name = $block->get_dot_arpa_name()
+
+=cut
+sub get_dot_arpa_name {
+    my ($self, %argv) = @_;
+    $self->isa_object_method('get_dot_arpa_name');
+    my $delim = $argv{delim} || '-';
+    my $dot_arpa;
+    if ( $self->version == 4 ){
+	my $name;
+	my @octets = split('\.', $self->address);
+	if ( $self->prefix < 8 ){
+	    $self->throw_user("Cannot create a single reverse zone for this prefix length");
+	}elsif ( $self->prefix == 8 ){
+	    $name = $octets[0];
+	}elsif ( $self->prefix == 16 ){
+	    $name = "$octets[1].$octets[0]";
+	}elsif ( $self->prefix == 24 ){
+	    $name = "$octets[2].$octets[1].$octets[0]";
+	}elsif ( $self->prefix > 24 ){
+	    # RFC 2317 case
+	    $name = $octets[3].$delim.$self->prefix.".$octets[2].$octets[1].$octets[0]";
+	}else {
+	    $self->throw_user('Cannot create a single reverse zone for this prefix length:'.$self->prefix);
+	}
+	$dot_arpa = "$name.in-addr.arpa";
+    }elsif ( $self->version == 6 ){
+	my $name = $self->full_address();
+	$name =~ s/://g;
+	my @nibbles = split(//, $name);
+	@nibbles = @nibbles[0..($self->prefix/4)-1];
+	$name = join('.', reverse @nibbles);
+	$dot_arpa = "$name.ip6.arpa";
+    }
+    return $dot_arpa;
+}
+
 ##################################################################
 =head2 get_host_addrs - Get host addresses for a given block
 
@@ -2444,6 +2492,11 @@ sub _prevalidate {
     unless ( $address =~ /^$IPV4$/ || $address =~ /^$IPV6$/ ) {
 	$class->throw_user("IP: $address does not match valid patterns");
     }
+
+    if ( $address eq '0.0.0.0' || $address eq '::' ){
+	$class->throw_user("The unspecified IP: $address is not valid");
+    }
+
     my $ip;
     my $str = ( $address && $prefix ) ? (join('/', $address, $prefix)) : $address;
     if ( !($ip = NetAddr::IP->new($address, $prefix)) || $ip->numeric == 0 ){

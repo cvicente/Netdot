@@ -380,12 +380,7 @@ sub as_text {
     my $text = "";
     my @records;
 
-    foreach my $m ( qw/arecords txt_records hinfo_records cnames ns_records 
-                     mx_records ptr_records naptr_records srv_records/ ){
-	push @records, $self->$m;
-    }
-    
-    foreach my $record ( @records ){
+    foreach my $record ( $self->sub_records ){
 	$text .= $record->as_text;
 	$text .= "\n";
     }
@@ -521,6 +516,30 @@ sub validate_name {
     1;
 }
 
+
+############################################################################
+=head2 sub_records - Returns all subrecords pointing to this RR
+    
+  Args: 
+    None
+  Returns: 
+    Array of subrecord objects
+  Examples:
+    my @subrecs = $rr->sub_records()
+
+=cut
+sub sub_records {
+    my ($self) = @_;
+
+    my @records;
+
+    foreach my $m ( qw/arecords txt_records hinfo_records cnames ns_records 
+                     mx_records ptr_records naptr_records srv_records ds_records/ ){
+	push @records, $self->$m;
+    }
+
+    return @records;
+}
 
 ############################################################################
 # PRIVATE METHODS

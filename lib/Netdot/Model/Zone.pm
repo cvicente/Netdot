@@ -124,7 +124,7 @@ sub search_like {
 #########################################################################
 =head2 insert - Insert a new DNS Zone (SOA Record)
 
-    We override the insert method for extra functionality
+    We override the insert method for extra functionality.
 
  Args: 
     name      domain name *(required)
@@ -135,13 +135,11 @@ sub search_like {
     retry     time before a failed refresh should be retried
     expire    max time before zone no longer authoritative
     minimum   default TTL that should be exported with any RR from this zone
-
-    If not defined, these fields will default to the values specified in the
-    config file.
+    template  (optional) Name or ID of another zone to clone from
   Returns: 
     Zone object
   Examples:
-    Zone->insert( { name=>{'newzone.domain'} } );
+    my $zone = Zone->insert({name=>'newzone.domain'});
 
 =cut
 sub insert {
@@ -149,24 +147,79 @@ sub insert {
     $class->throw_fatal("Model::Zone::insert: Missing required arguments")
 	unless ( $argv->{name} );
 
-    # Some defaults
-    my %state = (
-	name        => $argv->{name},
-	mname       => $argv->{mname}       || 'localhost',
-	rname       => $argv->{rname}       || "hostmaster.".$argv->{name},
-	refresh     => $argv->{refresh}     || $class->config->get('DEFAULT_DNSREFRESH'),
-	retry       => $argv->{retry}       || $class->config->get('DEFAULT_DNSRETRY'),
-	expire      => $argv->{expire}      || $class->config->get('DEFAULT_DNSEXPIRE'),
-	minimum     => $argv->{minimum}     || $class->config->get('DEFAULT_DNSMINIMUM'),
-	active      => $argv->{active}      || 1,
-	export_file => $argv->{export_file} || $argv->{name},
-	default_ttl => $argv->{default_ttl} || $class->config->get('ZONE_DEFAULT_TTL'),
-	);
+    my $newzone;
+    if ( $argv->{template} ){
+	my $tzone; # For template zone object
+	
+	if ( ref($argv->{template}) eq 'Netdot::Model::Zone' ){
+	    $tzone = $argv->{template};
+	}elsif ( $argv->{template} =~ /\D+/ ){
+	    # Probably a name
+	    $tzone = Zone->search(name=>$argv->{template}) ||
+		$class->throw_user("Cannot find Zone called ".$argv->{template});
+	}else{
+	    # Probably an ID
+	    $tzone = Zone->retrieve($argv->{template}) ||
+		$class->throw_user("Cannot retrieve Zone id: ".$argv->{template});
+	}
+	
+	my %state = (
+	    name        => $argv->{name},
+	    export_file => $argv->{export_file} || $argv->{name},
+	    active      => $argv->{active}      || 1,
+	    );
 
-    my $newzone = $class->SUPER::insert( \%state );
+	# Copy values from template zone
+	foreach my $field ( qw(mname rname refresh retry expire minimum default_ttl) ){
+	    $state{$field} = $tzone->$field;
+	}
+	$newzone = $class->SUPER::insert( \%state );
+
+	# Clone records from template zone
+	my $import_txt;
+	foreach my $rr ( $tzone->records ){
+	    my %rr_state = $rr->get_state();
+	    delete $rr_state{id};
+	    $rr_state{zone} = $newzone; 
+	    my $new_rr = RR->insert(\%rr_state);
+	    foreach my $sr ( $rr->sub_records ){
+		my %sr_state = $sr->get_state();
+		delete $sr_state{id};
+		$sr_state{rr} = $new_rr;
+		my $rclass = ref($sr);
+		$rclass->insert(\%sr_state);
+	    }
+	}
+	
+    }else{
+	# Some defaults
+	my %state = (
+	    name        => $argv->{name},
+	    mname       => $argv->{mname}       || 'localhost',
+	    rname       => $argv->{rname}       || "hostmaster.".$argv->{name},
+	    refresh     => $argv->{refresh}     || $class->config->get('DEFAULT_DNSREFRESH'),
+	    retry       => $argv->{retry}       || $class->config->get('DEFAULT_DNSRETRY'),
+	    expire      => $argv->{expire}      || $class->config->get('DEFAULT_DNSEXPIRE'),
+	    minimum     => $argv->{minimum}     || $class->config->get('DEFAULT_DNSMINIMUM'),
+	    active      => $argv->{active}      || 1,
+	    export_file => $argv->{export_file} || $argv->{name},
+	    default_ttl => $argv->{default_ttl} || $class->config->get('ZONE_DEFAULT_TTL'),
+	    );
+
+	$newzone = $class->SUPER::insert( \%state );
+    }
+
+    # Create '@' record if not already there
+    my $apex = RR->find_or_create({name=>'@', zone=>$newzone});
+    
+    # Add Two NS records if there aren't any yet
+    # Ideally the user should have a template zone to clone these from
+    unless ( $apex->ns_records ){
+	RRNS->insert({rr=>$apex, nsdname=>'ns1.'.$newzone->get_label});
+	RRNS->insert({rr=>$apex, nsdname=>'ns2.'.$newzone->get_label});
+    }
 
     $newzone->update_serial();
-
     return $newzone;
 }
 

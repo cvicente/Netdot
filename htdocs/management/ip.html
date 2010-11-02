@@ -49,6 +49,9 @@ $arp_limit         => 10
 $ip_list_sort      => 'Address'
 $show_ch_util      => 0
 $state_digest      => undef
+@link_zones        => undef
+$new_rev_zone      => undef
+$template_zone_for_rev => undef
 </%args>
 %
 %
@@ -454,6 +457,47 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 	unless ( $o = Ipblock->retrieve($id) ){
 	    $m->comp('/generic/error.mhtml', error => "Can't retrieve Ipblock id $id");
 	}
+    }
+
+#######################################################################################
+# LINK ZONES
+#
+#######################################################################################
+}elsif ( $_action eq 'LINK_ZONES' ){
+    if ( scalar @link_zones && $link_zones[0] ne "" ){
+	foreach my $z ( @link_zones ){
+	    eval {
+		SubnetZone->insert({subnet=>$o, zone=>$z});
+	    };
+	    if ( my $e = $@ ){
+		$m->comp('/generic/error.mhtml', error=>"Problem linking zones to this subnet: $e");
+	    }else{
+		$m->comp('.show_message', title=>"Action Message", msg=>"<p><strong>Zone(s) linked successfully</strong>");
+	    }
+	}
+    }else{
+	$m->comp('/generic/error.mhtml', error=>"Please select one or more zones to link to this subnet");
+    }
+
+#######################################################################################
+# ADD_REV_ZONE
+#
+#######################################################################################
+}elsif ( $_action eq 'ADD_REV_ZONE' ){
+    if ( $new_rev_zone ){
+	my %args = (name=>$new_rev_zone);
+	$args{template} = $template_zone_for_rev if ( $template_zone_for_rev );
+	eval {
+	    my $z = Zone->insert(\%args);
+	    SubnetZone->insert({subnet=>$o, zone=>$z});
+	};
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>"Problem creating new reverse zone: $e");
+	}else{
+	    $m->comp('.show_message', title=>"Action Message", msg=>"<p><strong>Reverse zone created successfully</strong>");
+	}
+    }else{
+	$m->comp('/generic/error.mhtml', error=>"Please provide a name for the reverse zone");
     }
 }
 
@@ -1171,7 +1215,9 @@ if ($o->status->name eq "Subnet") {
 %          if ( $edit eq 'edit_sites' ){
                &nbsp;
 %          }else{
-               <a href="ip.html?id=<% $o %>&edit=edit_sites">[edit]</a>
+%              if ( @ss ){
+                   <a href="ip.html?id=<% $o %>&edit=edit_sites">[edit]</a>
+%              }
                <a href="edit.html?table=SiteSubnet&subnet=<% $o %>">[add]</a>
 %          }
 %       }
@@ -1193,15 +1239,63 @@ if ($o->status->name eq "Subnet") {
       <div class="container">
       <div class="containerheadleft">DNS Zones</div>
       <div class="containerheadright">
-%     if ( $edit eq 'edit_zones' ){
-        &nbsp;
-%     }else{
-        <a href="ip.html?id=<% $o %>&edit=edit_zones">[edit]</a>
-        <a href="edit.html?table=SubnetZone&subnet=<% $o %>">[add]</a>
-%     }
+%         if ( $edit eq 'edit_zones' ){
+              &nbsp;
+%         }else{
+%             if ( @sz ){
+                  <a href="ip.html?id=<% $o %>&edit=edit_zones">[edit]</a>
+%             }
+              <a href="ip.html?id=<% $o %>&_action=VIEW_ADD_ZONES">[add]</a>
+%         }
       </div>
       <div class="containerbody">
-         <& /generic/sortresults.mhtml, object=>\@sz, withedit=>($edit eq 'edit_zones')? 1 : 0 &>
+%     if ( $_action eq 'VIEW_ADD_ZONES' ){
+%         my @all_zones = sort { $a->name cmp $b->name } Zone->retrieve_all;
+%         my %cur_zones;
+%         map { $cur_zones{$_->zone->id} = 1 } @sz; 
+	  <form name="netdotform" action="ip.html" method="POST">
+	  <input type="hidden" name="id" value="<% $o->id %>">
+	  <input type="hidden" name="_action" value="LINK_ZONES">
+	  <table><tr>
+          <td width="50%">
+          Link this block with existing forward and reverse zones:
+	  <p><select name="link_zones" multiple="multiple">
+%	  foreach my $zone ( grep { $_->active == 1 } @all_zones ){
+%             next if exists $cur_zones{$zone->id};
+              <option value="<% $zone->id %>"><% $zone->get_label %></option>
+%	  }
+          </select>
+          <p>
+          <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+          <input type="submit" name="submit" value="save">
+          </td><td>
+	  </form>
+	  <form name="netdotform" action="ip.html" method="POST">
+	  <input type="hidden" name="id" value="<% $o->id %>">
+	  <input type="hidden" name="_action" value="ADD_REV_ZONE">
+%	  my $new_rev_zone_name = $o->get_dot_arpa_name();
+%	  if ( Zone->search(name=>$new_rev_zone_name ) ){
+%	     # it already exists, don't show next block
+%	  }else{
+              Create a reverse zone for this block:
+              <p><input type="text" size="50" name="new_rev_zone" value=<% $new_rev_zone_name %>>
+              <p>Use template zone (optional):
+	      <p><select name="template_zone_for_rev">
+	      <option value="0">-- Select --</option>
+%	      foreach my $zone ( @all_zones ){
+                  <option value="<% $zone->id %>"><% $zone->get_label %></option>
+%	      }
+              </select>
+	      <p>
+              <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+              <input type="submit" name="submit" value="create">
+%	  }
+          <p>
+	  </tr></table>
+	  </form>
+%     }else{
+             <& /generic/sortresults.mhtml, object=>\@sz, withedit=>($edit eq 'edit_zones')? 1 : 0 &>
+%     }
       </div>
       </div>
 % }

@@ -20,6 +20,7 @@ $action         => undef
 $search         => undef
 $zone_id        => undef
 $zone_name      => undef
+$template_zone  => undef
 $submit         => undef
 $show_tasks     => undef
 $showheader     => 1
@@ -46,7 +47,7 @@ if ( $show_tasks eq "" ) {
 *print_showtaskslink = $m->comp('SELF:.sub_print_showtaskslink'); 
 my $hideheader = 'style="display:none"' if ( !$showheader );
 
-my @all_zones = Zone->retrieve_all();
+my @all_zones = sort { $a->name cmp $b->name } Zone->retrieve_all();
 
 </%init>
 
@@ -73,7 +74,7 @@ my @all_zones = Zone->retrieve_all();
                 <label for="Select">Zone:</label>
                 <select name="zone_id" onChange="document.zone_select_form.submit();">
                 <option value="0">-- Select --</option>
-%               foreach my $zone ( sort { $a->name cmp $b->name } @all_zones ){
+%               foreach my $zone ( @all_zones ){
 %                   if ( $zone->id eq $zone_id ){
                         <option value="<% $zone->id %>" SELECTED><% $zone->get_label %></option>
 %                   }else{
@@ -96,9 +97,22 @@ my @all_zones = Zone->retrieve_all();
             <legend>Add New Zone</legend>
             <form name="zone_add_form" action="zone_tasks.html" method="POST">
                 <input type="hidden" name="action" value="new">
+                <p>
                 <label for="Name">Name:</label>
                 <input name="zone_name" type="text" class="longtxt" value="">
+		</p>
+                <p>
+                <label for="Template">Use template (optional):</label>
+	        <select name="template_zone">
+                <option value="0">-- Select --</option>
+%	        foreach my $zone ( @all_zones ){
+                    <option value="<% $zone->id %>"><% $zone->get_label %></option>
+%	        }
+                </select>
+		</p>
+		<p>
                 <input name="submit" value="Add" class="btn" type="submit">
+		</p>
             </form>
         </fieldset>
 %    } 
@@ -146,8 +160,10 @@ elsif ( $action eq "new" ) {
     }
 
     my $zone;
+    my %args = (name=>$zone_name);
+    $args{template} = $template_zone if $template_zone;
     eval {
-	$zone = Zone->insert({name=>$zone_name});
+	$zone = Zone->insert(\%args);
     };
     if ( my $e = $@ ){
 	$m->comp("/generic/error.mhtml", error=>$e);

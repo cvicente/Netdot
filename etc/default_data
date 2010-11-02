@@ -261,7 +261,6 @@ INSERT INTO dhcpattrname (name, code, format) VALUES ('option fqdn.fqdn', '', 't
 INSERT INTO dhcpattrname (name, code, format) VALUES ('option agent.circuit-id', '1', 'string' );
 INSERT INTO dhcpattrname (name, code, format) VALUES ('option agent.remote-id', '2', 'string' );
 
-
 INSERT INTO usertype (name, info) VALUES ('Admin', 'An Admin user has full access to Netdot');
 INSERT INTO usertype (name, info) VALUES ('Operator', 'Operators have the same view as Admins, but have read-only access');
 INSERT INTO usertype (name, info) VALUES ('User', 'Regular users have a restricted view of objects in Netdot, and can only read and/or write objects depending on the permissions assigned to them.');
@@ -273,3 +272,8 @@ INSERT INTO person (lastname, username, user_type, password) VALUES ('Guest', 'g
 INSERT INTO ipblock (address, prefix, version, status, owner, used_by, description) VALUES ('3232235520', '16', '4', '1', '1', '1', 'RFC-1918');
 INSERT INTO ipblock (address, prefix, version, status, owner, used_by, description) VALUES ('2886729728', '12', '4', '1', '1', '1', 'RFC-1918');
 INSERT INTO ipblock (address, prefix, version, status, owner, used_by, description) VALUES ('167772160', '8', '4', '1', '1', '1', 'RFC-1918');
+
+INSERT INTO zone (name, active, default_ttl, info, minimum, mname, refresh, retry, rname, serial) VALUES ('defaultdomain', '0', '86400', 'Default Zone', '86400', 'localhost.defaultdomain', '7200', '900', 'hostmaster.defaultdomain', '0');
+INSERT INTO rr (name, active, zone) VALUES ('@', '0', '1');
+INSERT INTO rrns (rr, nsdname, ttl) VALUES ('1', 'ns1.defaultdomain', '86400');
+INSERT INTO rrns (rr, nsdname, ttl) VALUES ('1', 'ns2.defaultdomain', '86400');
