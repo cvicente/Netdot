@@ -368,16 +368,25 @@ device3 community2
         <para>The mechanisms by which zone files are transferred to and loaded by authoritative name servers are left to the administrator.  A simple way to do this is by running a name server locally in the machine that runs Netdot, and saving those zone files in the location where the software can load them periodically. A more complex setup could involve saving these files into revision control systems (CVS, SVN, etc), which could then be used by system configuration engines like Puppet or CfEngine to run syntax checks and load them into the appropriate name servers.</para>
       </tip>
       <para>Netdot supports the following DNS records: A, AAAA, CNAME, DS, HINFO, LOC, MX, NAPTR, SRV, and TXT.</para>
-      <para>You can import your existing BIND zones into netdot with the help of the tool <emphasis role="italic">import_bind_zones.pl</emphasis> from the <emphasis role="italic">import</emphasis> subdirectory.  </para>
-      <para>To add a new zone manually, go to <emphasis role="italic">Management -&gt; DNS Zones</emphasis> and click on [add].  You will see a new zone created with default values extracted from the configuration file.  </para>
-      <para>Once a zone is created, it must be linked to an IP block (Subnet or Container).  You can do this by clicking on the [add] button of the IP blocks section in the zone page.  </para>
+      <para>You can import your existing BIND zones into netdot with the help of the tool <emphasis role="italic">import_bind_zones.pl</emphasis> from the <emphasis role="italic">import</emphasis> subdirectory<programlisting> usage: import/import_bind_zones.pl     
+  [ -n|domain &lt;name&gt;, -f|file &lt;path&gt; ] (for single zone)       [ -c|config &lt;path&gt;, -d|dir &lt;path&gt;  ] (for multiple zones)    [ -g|--debug ] [-h|--help]        
+
+  -c  --config &lt;path&gt;   Bind config file containing zone definitions    
+  -d, --dir &lt;path&gt;      Directory where zone files are found    
+  -n, --domain &lt;name&gt;   Domain or Zone name    
+  -f, --zonefile &lt;path&gt; Zone file    
+  -w, --wipe            Wipe out existing zone data            -g, --debug           Print debugging output    
+  -h, --help            Print help</programlisting></para>
+      <para>To add a new zone manually, go to <emphasis role="italic">Management -&gt; DNS Zones</emphasis> and provide a name for the zone.  Optionally, select an existing zone which you would like to use as a template. This will tell Netdot to basically clone this template zone and all its records, but saving it with the name you provide. This is useful in cases when multiple zones share the same information, such as NS records, MX records, etc. Click on [add]. You will see a new zone created using the values from the template zone, or  with default values extracted from the configuration file.  </para>
+      <para>Once a zone is created, it should be linked to an IP block (Subnet or Container).  You can do this by clicking on the [add] button of the IP blocks section in the zone page. </para>
+      <para>The most convenient way to create reverse zones (in-addr.arpa or ip6.arpa) is to go to the corresponding IP block page, <emphasis role="italic">DNS Zones</emphasis> section,  and click on [add]. If the corresponding reverse zone does not exist, Netdot will present the user with the appropriate zone name and an option to create it. This is especially useful with IPv6 blocks, which tend to require very long reverse zone names.  </para>
       <para>At this point, you can add new records by clicking on the [add] button on the Records section.  Records can also be added from other parts of the user interface, for example, from the IP address page, or the <emphasis role="italic">DNS Records</emphasis> page.</para>
-      <para>Records can also be imported in bulk into the zone by clicking on the [import] button of the Records section and pasting the text from a BIND zone file into the text box.</para>
-      <para>Each time the zone or its contents are modified, the transaction is added to a list of &quot;pending changes&quot;.  This list is used to determine when a zone needs to be exported. Zones can be exported manually via the UI by going to the Export menu, or via cron jobs. When a zone is exported, its serial number is increased and its list of pending changes is flushed.</para>
+      <para>Records can also be imported in bulk into the zone by going to the Zone page, clicking on the [import] button of the <emphasis role="italic">Records</emphasis> section and pasting the text from a BIND zone file into the text box.</para>
+      <para>Each time the zone or its contents are modified, the transaction is added to a list of &quot;pending changes&quot;.  This list is used to determine when a zone needs to be exported. Zones can be exported manually via the UI by going to the <emphasis role="italic">Export</emphasis> menu, or via cron jobs. When a zone is exported, its serial number is increased and its list of pending changes is flushed.</para>
       <para>Netdot can auto-generate and maintain DNS records for IP addresses belonging to device interfaces, for example, routers.  The logic of how these names are generated is handed off to a plugin. In order to have Netdot generate DNS names for device IPs, set the &quot;Auto DNS&quot; option to &quot;yes&quot;  in the management section of the Device page.  From here, go to the IP Info tab for the same device and for each IP address, make sure that the interface it belongs to has the &quot;Auto DNS&quot; option set to &quot;yes&quot;.</para>
       <section>
         <title>The &apos;@&apos; record</title>
-        <para>In Netdot, as in BIND, the &apos;@&apos; record symbolizes the domain.  In order to add records that apply to the domain itself, such as NS records, MX records, A records, etc. you must add the &apos;@&apos; name first.  Once this name is created, you can add NS, MX and A records to it, which will apply to the domain that the zone represents.</para>
+        <para>In Netdot, as in BIND, the &apos;@&apos; record symbolizes the domain (a.k.a &quot;zone apex&quot;).   In order to add records that apply to the domain itself, such as NS records, MX records, A records, etc. this record must exist. At zone creation time, Netdot automatically adds this record, together with two NS records for the zone, with the names (ns1.zone.name and ns2.zone.name).  </para>
       </section>
     </section>
     <section>
@@ -594,5 +603,17 @@ http://myserver.mydomain.com/netdot/rest/device/1</programlisting>
 &gt;install Netdot::Client::REST</programlisting>
       </section>
     </section>
+  </section>
+  <section>
+    <title>FAQ</title>
+    <itemizedlist>
+      <listitem>
+        <para>Q: Why can&apos;t Netdot discover my device using SNMP? I can see it responds when using snmpwalk.</para>
+        <para>A: If your device is a Linux server or any other device using the SNMP agent from Net-SNMP, you need to add the following to /etc/snmpd.conf (or wherever it exists):</para>
+        <programlisting>sysservices 72</programlisting>
+        <para>Then, restart your snmpd process.</para>
+        <para>The reason for this is that sysservices is essential to Netdot&apos;s device discovery. Most network devices implement this OID in their SNMP agents.</para>
+      </listitem>
+    </itemizedlist>
   </section>
 </article>

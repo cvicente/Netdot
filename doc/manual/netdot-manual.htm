@@ -8,11 +8,11 @@
 <div class="titlepage">
 <div>
 <div><h2 class="title">
-<a name="id387188"></a>The Netdot Manual</h2></div>
+<a name="id387187"></a>The Netdot Manual</h2></div>
 <div><h3 class="subtitle"><i>Network Documentation Tool</i></h3></div>
 <div><p class="releaseinfo">Version 0.9</p></div>
 <div><div class="legalnotice">
-<a name="id387202"></a><p>Copyright 2010 University of Oregon, all rights reserved.
+<a name="id387201"></a><p>Copyright 2010 University of Oregon, all rights reserved.
 
 </p>
 <p>This program is free software; you can redistribute it and/or modify
@@ -38,30 +38,31 @@ Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 <div class="toc">
 <p><b>Table of Contents</b></p>
 <dl>
-<dt><span class="section"><a href="#id387240">The Network Documentation Tool</a></span></dt>
-<dt><span class="section"><a href="#id387369">Structure</a></span></dt>
-<dt><span class="section"><a href="#id387434">Installation</a></span></dt>
+<dt><span class="section"><a href="#id387239">The Network Documentation Tool</a></span></dt>
+<dt><span class="section"><a href="#id387356">Structure</a></span></dt>
+<dt><span class="section"><a href="#id387426">Installation</a></span></dt>
 <dd><dl>
-<dt><span class="section"><a href="#id387439">Requirements</a></span></dt>
-<dt><span class="section"><a href="#id387603">Configuration</a></span></dt>
-<dt><span class="section"><a href="#id387648">Upgrading</a></span></dt>
-<dt><span class="section"><a href="#id387704">Installing the package for the first time</a></span></dt>
+<dt><span class="section"><a href="#id387432">Requirements</a></span></dt>
+<dt><span class="section"><a href="#id387595">Configuration</a></span></dt>
+<dt><span class="section"><a href="#id387640">Upgrading</a></span></dt>
+<dt><span class="section"><a href="#id387695">Installing the package for the first time</a></span></dt>
 </dl></dd>
-<dt><span class="section"><a href="#id387999">Operation</a></span></dt>
+<dt><span class="section"><a href="#id387992">Operation</a></span></dt>
 <dd><dl>
-<dt><span class="section"><a href="#id388005">Device Management</a></span></dt>
-<dt><span class="section"><a href="#id388250">IP Address Space Management</a></span></dt>
-<dt><span class="section"><a href="#id388449">DNS</a></span></dt>
-<dt><span class="section"><a href="#id388549">DHCP</a></span></dt>
-<dt><span class="section"><a href="#id388568">Global Scopes</a></span></dt>
-<dt><span class="section"><a href="#id388690">Contact Information</a></span></dt>
-<dt><span class="section"><a href="#id388725">Cable Plant</a></span></dt>
-<dt><span class="section"><a href="#id388737">Advanced DB operations</a></span></dt>
-<dt><span class="section"><a href="#id388772">Reports</a></span></dt>
-<dt><span class="section"><a href="#id388911">Exporting Configurations for External Programs</a></span></dt>
-<dt><span class="section"><a href="#id388975">Authorization</a></span></dt>
-<dt><span class="section"><a href="#id389120">RESTful Interface</a></span></dt>
+<dt><span class="section"><a href="#id387997">Device Management</a></span></dt>
+<dt><span class="section"><a href="#id388249">IP Address Space Management</a></span></dt>
+<dt><span class="section"><a href="#id388448">DNS</a></span></dt>
+<dt><span class="section"><a href="#id388576">DHCP</a></span></dt>
+<dt><span class="section"><a href="#id388594">Global Scopes</a></span></dt>
+<dt><span class="section"><a href="#id388713">Contact Information</a></span></dt>
+<dt><span class="section"><a href="#id388748">Cable Plant</a></span></dt>
+<dt><span class="section"><a href="#id388760">Advanced DB operations</a></span></dt>
+<dt><span class="section"><a href="#id388795">Reports</a></span></dt>
+<dt><span class="section"><a href="#id388934">Exporting Configurations for External Programs</a></span></dt>
+<dt><span class="section"><a href="#id388998">Authorization</a></span></dt>
+<dt><span class="section"><a href="#id389144">RESTful Interface</a></span></dt>
 </dl></dd>
+<dt><span class="section"><a href="#id389292">FAQ</a></span></dt>
 </dl>
 </div>
 <div class="abstract">
@@ -70,7 +71,7 @@ Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h2 class="title" style="clear: both">
-<a name="id387240"></a>The Network Documentation Tool</h2></div></div></div>
+<a name="id387239"></a>The Network Documentation Tool</h2></div></div></div>
 <p><a href="http://netdot.uoregon.edu" target="_top">Netdot</a> is an open source tool designed to help network administrators collect, organize and maintain network documentation.</p>
 <p>Netdot is actively developed by the <a href="http://ns.uoregon.edu" target="_top">Network and Telecommunication Services</a> group of the <a href="http://www.uoregon.edu" target="_top">University of Oregon</a>. </p>
 <p>Netdot features include:</p>
@@ -78,41 +79,40 @@ Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 <li><p>Device discovery via SNMP</p></li>
 <li><p>Layer 2 topology discovery and graphing, using multiple sources of information: CDP+LLDP, Spanning Tree Protocol, switch forwarding tables, router point-to-point subnets.</p></li>
 <li><p>IPv4 and IPv6 address space management (also referred to  as <span class="italic">IPAM</span>), including hierarchical organization, address block visualization and IP and MAC address location and tracking.</p></li>
-<li><p>Cable plant information including: sites, rooms, jacks, closets, inter and intra-building fiber and copper wiring, circuits, etc.</p></li>
-<li><p>Contact information for related entities: departments, providers, vendors, BGP peers,  etc.</p></li>
-<li><p>Netdot can generate configuration files for various other tools, including: <a href="http://www.nagios.org" target="_top">Nagios</a>, <a href="http://www.sysmon.org" target="_top">Sysmon</a>, <a href="http://www.shrubbery.net/rancid" target="_top">RANCID</a>, <a href="http://www.cacti.net" target="_top">Cacti</a>.  Starting with version 0.9, Netdot  also generates zone files for ISC BIND and ISC DHCPD configurations.</p></li>
-<li><p>Starting with version 0.9, Netdot supports role-based access control, so tasks such as IP address management, switch port documentation and contact information maintenance can be delegated to specific groups with limited access to the web interface.</p></li>
+<li><p>Cable plant information including: sites, rooms, jacks, closets, inter and intra-building wiring, circuits, etc.</p></li>
+<li><p>Contact information for related entities: departments, providers, vendors, etc.</p></li>
+<li><p>Netdot can generate configuration files for various other tools, including: <a href="http://www.nagios.org" target="_top">Nagios</a>, <a href="http://www.sysmon.org" target="_top">Sysmon</a>, <a href="http://www.shrubbery.net/rancid" target="_top">RANCID</a>, <a href="http://www.cacti.net" target="_top">Cacti</a>.  Starting with version 0.9, Netdot  also generates configurations for ISC BIND and ISC DHCPD.</p></li>
 </ul></div>
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h2 class="title" style="clear: both">
-<a name="id387369"></a>Structure</h2></div></div></div>
+<a name="id387356"></a>Structure</h2></div></div></div>
 <p>Netdot consists of several components:</p>
 <div class="orderedlist"><ol type="1">
 <li>
 <p>The database</p>
-<p>Our goal has been to make Netdot database-agnostic as much as possible.  In principle, it should be able to use any database supported by Perl DBI.  There are, however, some limitations to this, for example, schema migration scripts are db-specific and may not always be available. Currently MySQL is fully supported.  There is currently partial support for PostgreSQL.</p>
+<p>Our goal has been to make Netdot database-agnostic as much as possible.  In principle, it should be able to use any database supported by Perl DBI.  There are, however, some limitations to this, for example, schema migration scripts are db-specific and may not always be availab.e. Currently MySQL is fully supported.  There is currently partial support for PostgreSQL.</p>
 </li>
 <li>
 <p>The libraries</p>
-<p>The back-end code is a hierarchy of object-oriented Perl classes.  It can function as an API as well. One advantage of this model is that presentation, collection and database can be distributed among different physical machines.</p>
+<p>The back-end code is a hierarchy of object-oriented Perl classes.  It can function as an API as well. One advantage of this model is that presentation, collection and database can be separated among different physical machines.</p>
 </li>
 <li>
 <p>User Interface (UI)</p>
-<p>The web user interface is the main point of interaction with the tool.</p>
+<p>The web user interface is built on a templating system called HTML::Mason.</p>
 </li>
 <li>
 <p>Command Line scripts (CLI)</p>
-<p>Certain tasks, like device discovery, DB maintenance, export scripts, etc., can be executed from the command line.  Therefore, these tasks can be automated by running them periodically via CRON.</p>
+<p>Certain tasks, like device discovery, can be executed from the command line.  Therefore, these tasks can be automated by running them periodically via CRON.</p>
 </li>
 </ol></div>
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h2 class="title" style="clear: both">
-<a name="id387434"></a>Installation</h2></div></div></div>
+<a name="id387426"></a>Installation</h2></div></div></div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h3 class="title">
-<a name="id387439"></a>Requirements</h3></div></div></div>
+<a name="id387432"></a>Requirements</h3></div></div></div>
 <div class="itemizedlist"><ul type="disc">
 <li><p>Perl 5.6.1 or later</p></li>
 <li><p>Apache2 with mod_perl2</p></li>
@@ -164,7 +164,7 @@ Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h3 class="title">
-<a name="id387603"></a>Configuration</h3></div></div></div>
+<a name="id387595"></a>Configuration</h3></div></div></div>
 <p>Netdot comes with a configuration file that you need to customize
 to your needs.    You need to:</p>
 <pre class="programlisting">#cp etc/Default.conf etc/Site.conf</pre>
@@ -180,7 +180,7 @@ overwriting your site-specific configuration.</p>
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h3 class="title">
-<a name="id387648"></a>Upgrading</h3></div></div></div>
+<a name="id387640"></a>Upgrading</h3></div></div></div>
 <p>You should check if the version you are installing has any new requirements that need to be satisfied:</p>
 <pre class="programlisting">#make testdeps
 #make installdeps (or installdeps-rpm, installdeps-apt-get)</pre>
@@ -196,7 +196,7 @@ upgrade script to adapt your current database to the new schema.  </p>
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h3 class="title">
-<a name="id387704"></a>Installing the package for the first time</h3></div></div></div>
+<a name="id387695"></a>Installing the package for the first time</h3></div></div></div>
 <div class="itemizedlist"><ul type="disc">
 <li><p>Make sure you have created the file <span class="italic">etc/Site.conf</span> with your configurations (See above).</p></li>
 <li>
@@ -222,7 +222,7 @@ DB_DBA_PASSWORD=DATABASE-ADMIN-PASSWORD</pre>
 </ul></div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h4 class="title">
-<a name="id387824"></a>Apache Configuration</h4></div></div></div>
+<a name="id387817"></a>Apache Configuration</h4></div></div></div>
 <p>Edit the supplied Apache config template for either Local,  Radius or LDAP authentication,  copy it to
   your Apache config directory and include it somewhere in your Apache configuration file (httpd.conf) (e.g.):</p>
 <pre class="programlisting">Include conf/netdot_apache2_&lt;local|radius|ldap&gt;.conf</pre>
@@ -248,7 +248,7 @@ password: "admin"</pre>
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h4 class="title">
-<a name="id387916"></a>CRON jobs</h4></div></div></div>
+<a name="id387909"></a>CRON jobs</h4></div></div></div>
 <p>Netdot comes with a few scripts that should be run periodically as cron jobs.</p>
 <div class="itemizedlist"><ul type="disc">
 <li><p>Retrieval of forwarding tables and ARP caches for IP/MAC address tracking</p></li>
@@ -274,14 +274,14 @@ password: "admin"</pre>
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h2 class="title" style="clear: both">
-<a name="id387999"></a>Operation</h2></div></div></div>
+<a name="id387992"></a>Operation</h2></div></div></div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h3 class="title">
-<a name="id388005"></a>Device Management</h3></div></div></div>
+<a name="id387997"></a>Device Management</h3></div></div></div>
 <p>Netdot can discover and maintain an extensive amount of information about network devices.  The easiest way to gather and store this information is by querying the devices using the Simple Network Management Protocol (SNMP).  Devices can be discovered individually, by subnet, or by providing a text file with a list of devices.</p>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h4 class="title">
-<a name="id388020"></a>Device Discovery using the web UI</h4></div></div></div>
+<a name="id388012"></a>Device Discovery using the web UI</h4></div></div></div>
 <p> Go to <span class="italic">Management -&gt; Devices</span>.  In the Tasks section, click on [new] and type the hostname or IP address of the device in question, along with the SNMP community and click [discover].  Netdot will then query the device using SNMP and present a window where you can assign an owner entity (for example, your organization), the entity that uses the device (for example, your customer), the location and a contact list.</p>
 <p>If you are discovering a layer 3 device with IP forwarding turned on (such as a router or firewall), Netdot will ask you if you would like to automatically create subnets, based on the IP configuration of the device interfaces.  This is a convenient way to add all your subnets into Netdot.</p>
 <p>Another option is to specify whether Netdot should assign any newly created subnets the same owner and user entities assigned to the device.</p>
@@ -290,7 +290,7 @@ password: "admin"</pre>
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h4 class="title">
-<a name="id388063"></a>Device discovery using the command line interface (CLI)</h4></div></div></div>
+<a name="id388062"></a>Device discovery using the command line interface (CLI)</h4></div></div></div>
 <p>For brevity, let's assume you are located at the Netdot installation prefix, for example, <span class="italic">/usr/local/netdot</span>.</p>
 <p>You can discover a single device by executing:</p>
 <pre class="programlisting">#bin/updatedevices.pl -H &lt;device-name&gt; -I -c &lt;community&gt;</pre>
@@ -328,7 +328,7 @@ device3 community2
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h3 class="title">
-<a name="id388250"></a>IP Address Space Management</h3></div></div></div>
+<a name="id388249"></a>IP Address Space Management</h3></div></div></div>
 <p>Netdot is a useful tool for IP address space management (referred to as <span class="italic">IPAM</span> these days).  Some key features are:</p>
 <div class="itemizedlist"><ul type="disc">
 <li><p>Address space is hierarchically organized through the use of a fast binary tree algorithm, which is the same technique used by routers when doing prefix lookups.</p></li>
@@ -338,12 +338,12 @@ device3 community2
 </ul></div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h4 class="title">
-<a name="id388300"></a>IP blocks</h4></div></div></div>
+<a name="id388299"></a>IP blocks</h4></div></div></div>
 <p>IP objects are called IP blocks.  These objects can represent individual end-node addresses, as well as groups of addresses.  The distinguishing characteristic is the prefix attribute.  For example, an IPv4 block with a 32 bit prefix is an end-node address, while a block with a 24 prefix represents a group of 254 end-node addresses.</p>
 <p>Each address or block has a corresponding status.  Let's see those in detail.</p>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h5 class="title">
-<a name="id388319"></a>IP block Status</h5></div></div></div>
+<a name="id388318"></a>IP block Status</h5></div></div></div>
 <p>IP objects are assigned a status to better represent their nature.  Depending on whether the IP is an end address or a block, different status values can be assigned.</p>
 <p>The status of an end-node address can be one of:</p>
 <div class="itemizedlist"><ul type="disc">
@@ -372,60 +372,70 @@ device3 community2
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h3 class="title">
-<a name="id388449"></a>DNS</h3></div></div></div>
+<a name="id388448"></a>DNS</h3></div></div></div>
 <p>Netdot can maintain DNS zone data. Zones can be exported as text files to be used by DNS server software.  Currently, only ISC BIND zone file exporting is supported.  </p>
 <div class="tip" style="margin-left: 0.5in; margin-right: 0.5in;">
 <h3 class="title">Tip</h3>
 <p>The mechanisms by which zone files are transferred to and loaded by authoritative name servers are left to the administrator.  A simple way to do this is by running a name server locally in the machine that runs Netdot, and saving those zone files in the location where the software can load them periodically. A more complex setup could involve saving these files into revision control systems (CVS, SVN, etc), which could then be used by system configuration engines like Puppet or CfEngine to run syntax checks and load them into the appropriate name servers.</p>
 </div>
 <p>Netdot supports the following DNS records: A, AAAA, CNAME, DS, HINFO, LOC, MX, NAPTR, SRV, and TXT.</p>
-<p>You can import your existing BIND zones into netdot with the help of the tool <span class="italic">import_bind_zones.pl</span> from the <span class="italic">import</span> subdirectory.  </p>
-<p>To add a new zone manually, go to <span class="italic">Management -&gt; DNS Zones</span> and click on [add].  You will see a new zone created with default values extracted from the configuration file.  </p>
-<p>Once a zone is created, it must be linked to an IP block (Subnet or Container).  You can do this by clicking on the [add] button of the IP blocks section in the zone page.  </p>
+<p>You can import your existing BIND zones into netdot with the help of the tool <span class="italic">import_bind_zones.pl</span> from the <span class="italic">import</span> subdirectory</p>
+<pre class="programlisting"> usage: import/import_bind_zones.pl     
+  [ -n|domain &lt;name&gt;, -f|file &lt;path&gt; ] (for single zone)       [ -c|config &lt;path&gt;, -d|dir &lt;path&gt;  ] (for multiple zones)    [ -g|--debug ] [-h|--help]        
+
+  -c  --config &lt;path&gt;   Bind config file containing zone definitions    
+  -d, --dir &lt;path&gt;      Directory where zone files are found    
+  -n, --domain &lt;name&gt;   Domain or Zone name    
+  -f, --zonefile &lt;path&gt; Zone file    
+  -w, --wipe            Wipe out existing zone data            -g, --debug           Print debugging output    
+  -h, --help            Print help</pre>
+<p>To add a new zone manually, go to <span class="italic">Management -&gt; DNS Zones</span> and provide a name for the zone.  Optionally, select an existing zone which you would like to use as a template. This will tell Netdot to basically clone this template zone and all its records, but saving it with the name you provide. This is useful in cases when multiple zones share the same information, such as NS records, MX records, etc. Click on [add]. You will see a new zone created using the values from the template zone, or  with default values extracted from the configuration file.  </p>
+<p>Once a zone is created, it should be linked to an IP block (Subnet or Container).  You can do this by clicking on the [add] button of the IP blocks section in the zone page. </p>
+<p>The most convenient way to create reverse zones (in-addr.arpa or ip6.arpa) is to go to the corresponding IP block page, <span class="italic">DNS Zones</span> section,  and click on [add]. If the corresponding reverse zone does not exist, Netdot will present the user with the appropriate zone name and an option to create it. This is especially useful with IPv6 blocks, which tend to require very long reverse zone names.  </p>
 <p>At this point, you can add new records by clicking on the [add] button on the Records section.  Records can also be added from other parts of the user interface, for example, from the IP address page, or the <span class="italic">DNS Records</span> page.</p>
-<p>Records can also be imported in bulk into the zone by clicking on the [import] button of the Records section and pasting the text from a BIND zone file into the text box.</p>
-<p>Each time the zone or its contents are modified, the transaction is added to a list of "pending changes".  This list is used to determine when a zone needs to be exported. Zones can be exported manually via the UI by going to the Export menu, or via cron jobs. When a zone is exported, its serial number is increased and its list of pending changes is flushed.</p>
+<p>Records can also be imported in bulk into the zone by going to the Zone page, clicking on the [import] button of the <span class="italic">Records</span> section and pasting the text from a BIND zone file into the text box.</p>
+<p>Each time the zone or its contents are modified, the transaction is added to a list of "pending changes".  This list is used to determine when a zone needs to be exported. Zones can be exported manually via the UI by going to the <span class="italic">Export</span> menu, or via cron jobs. When a zone is exported, its serial number is increased and its list of pending changes is flushed.</p>
 <p>Netdot can auto-generate and maintain DNS records for IP addresses belonging to device interfaces, for example, routers.  The logic of how these names are generated is handed off to a plugin. In order to have Netdot generate DNS names for device IPs, set the "Auto DNS" option to "yes"  in the management section of the Device page.  From here, go to the IP Info tab for the same device and for each IP address, make sure that the interface it belongs to has the "Auto DNS" option set to "yes".</p>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h4 class="title">
-<a name="id388534"></a>The '@' record</h4></div></div></div>
-<p>In Netdot, as in BIND, the '@' record symbolizes the domain.  In order to add records that apply to the domain itself, such as NS records, MX records, A records, etc. you must add the '@' name first.  Once this name is created, you can add NS, MX and A records to it, which will apply to the domain that the zone represents.</p>
+<a name="id388564"></a>The '@' record</h4></div></div></div>
+<p>In Netdot, as in BIND, the '@' record symbolizes the domain (a.k.a "zone apex").   In order to add records that apply to the domain itself, such as NS records, MX records, A records, etc. this record must exist. At zone creation time, Netdot automatically adds this record, together with two NS records for the zone, with the names (ns1.zone.name and ns2.zone.name).  </p>
 </div>
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h3 class="title">
-<a name="id388549"></a>DHCP</h3></div></div></div>
+<a name="id388576"></a>DHCP</h3></div></div></div>
 <p>Netdot can maintain DHCP information and generate configurations for ISC DHCPD.</p>
 <p>DHCP information is organized hierarchically around the DHCP Scope object.  Netdot supports scopes of the following types: global, subnet, shared-subnet, group, and host. Each of these scopes can be assigned one or more attributes.  </p>
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h3 class="title">
-<a name="id388568"></a>Global Scopes</h3></div></div></div>
+<a name="id388594"></a>Global Scopes</h3></div></div></div>
 <p>A global scope will represent a DHCP server (or a pair of failover servers).  Attributes in this scope are the default attributes inherited by all other scopes.  Attributes in more specific scopes override the global scope attributes.</p>
 <p>To create a new global scope, go to <span class="italic">Management-&gt;DHCP</span>.  Click on the [new] button.  Assign the scope a name (for example, the host name of your DHCP server) and select type "global".  Global scopes are not contained by any other scope, so leave the Container field unselected.</p>
 <p>Once a scope is created, you can add attributes to it.  For example, click on the [attributes] button and then [add]. You will see a new page where you can create a new attribute.  Let's say, for example, that you want to add a list of name servers.  Type "name-servers" in the Name search box and click on "List".  Select the "domain-name-servers" attribute name from the list and add a list of values.  Then click Insert.</p>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h4 class="title">
-<a name="id388590"></a>Subnet Scopes</h4></div></div></div>
+<a name="id388573"></a>Subnet Scopes</h4></div></div></div>
 <p>Subnet scopes contain attributes that apply to all hosts within a subnet.  Subnet scopes are contained by a global scope. </p>
 <p>The easiest way to enable DHCP for a particular subnet is from within the Subnet page.  First, make sure that the subnet exists (you can create it manually or by discovering the router that serves that subnet). You can view the subnet by going to <span class="italic">Management-&gt;Address Space</span> and navigating to where the subnet is, or by simply searching for its address.</p>
 <p>Once in the subnet page, look for the <span class="italic">Dhcp Scope</span> section and click on [enable].  This will bring an input section where you can select the global scope and the routers option. By default, Netdot shows the first address of the subnet as the routers option value.  You can change this value if your router interface has a different address. Click Save.     You will now see the subnet scope listed in the Subnet page.  You can click on the scope name and that will take you to the DHCP Scope page, from which you can add any other necessary attributes.</p>
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h4 class="title">
-<a name="id388633"></a>Host Scopes</h4></div></div></div>
+<a name="id388657"></a>Host Scopes</h4></div></div></div>
 <p>Host scopes allow you to assign attributes that apply to particular hosts. Host scopes also link a host's Ethernet address with its IP address.  </p>
 <p>You can create a new host scope from the host page.  First of all, a Static IP address object needs to exist.  You can create new static IP objects by selecting the desired address from the Subnet page.  Once the Static IP address is created, you need to give it name.  Look for the <span class="italic">DNS A records</span> section and click on [add].  Once you provide a name for the A record, you will be redirected to the host page.  Here, find the <span class="italic">DHCP for &lt;IP address&gt;</span> section and click on [add].  Type the Ethernet address and save your changes. When you click on the Ethernet address, you'll go to the MAC address page, which has a "DHCP Scopes" section.  Clicking on the IP address will take you to the DHCP scope page.  Here, you can add any specific attributes for that specific host.</p>
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h4 class="title">
-<a name="id388672"></a>Template Scopes</h4></div></div></div>
+<a name="id388695"></a>Template Scopes</h4></div></div></div>
 <p>A template scope is not a real scope, but only a collection of attributes that you want to apply to things as a group.  For example, the DHCP host scope for an IP phone  may have one or more attributes that define where it should get its configuration from and other things.  You can create a template containing these attributes and then use that template each time you create a host scope for IP phones.</p>
 </div>
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h3 class="title">
-<a name="id388690"></a>Contact Information</h3></div></div></div>
+<a name="id388713"></a>Contact Information</h3></div></div></div>
 <p>Netdot uses the concept of "Contact Lists" to show contact information for different objects, for example devices, sites, entities (departments, providers, etc.). </p>
 <p>A Person object in Netdot contains a person's information, including location, e-mail address, phone numbers, pager numbers, etc.  </p>
 <p>Since a given person often times is the point of contact for different things, a person can have many "roles", which link that person with a particular Contact List.</p>
@@ -433,43 +443,43 @@ device3 community2
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h3 class="title">
-<a name="id388725"></a>Cable Plant</h3></div></div></div>
+<a name="id388748"></a>Cable Plant</h3></div></div></div>
 <p>Netdot allows you to document inter-building and intra-building fiber and copper wiring, closets, jacks, etc.</p>
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h3 class="title">
-<a name="id388737"></a>Advanced DB operations</h3></div></div></div>
+<a name="id388760"></a>Advanced DB operations</h3></div></div></div>
 <p>The Advanced section of the top menu shows basic <span class="italic">Browse</span>, <span class="italic">Search</span> and <span class="italic">Add</span> operations on particular tables of the database.  This often requires certain familiarity with the database schema.  </p>
 <p>In this section you can also write your own SQL queries, which can be saved for future use.  SQL query output can also be saved in comma-separated (CSV) format.</p>
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h3 class="title">
-<a name="id388772"></a>Reports</h3></div></div></div>
+<a name="id388795"></a>Reports</h3></div></div></div>
 <p>The Reports section provides a number of useful types of reports.  </p>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h4 class="title">
-<a name="id388782"></a>Device Reports</h4></div></div></div>
+<a name="id388805"></a>Device Reports</h4></div></div></div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h5 class="title">
-<a name="id388788"></a>By Type/Model</h5></div></div></div>
+<a name="id388811"></a>By Type/Model</h5></div></div></div>
 <p>Lists devices grouped by type (switches, routers, servers, etc), then by model, and gives a total count per type and model.  </p>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h6 class="title">
-<a name="id388799"></a>By Model/OS</h6></div></div></div>
+<a name="id388822"></a>By Model/OS</h6></div></div></div>
 <p>Lists devices by manufacturer, then model, showing each model's recommended OS version (which you would have had to previously specify) and all the other existing versions of that OS in your network, with counts.</p>
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h6 class="title">
-<a name="id388811"></a>Device in Downtime</h6></div></div></div>
+<a name="id388834"></a>Device in Downtime</h6></div></div></div>
 <p>Since Netdot can be used to export configurations for monitoring tools (e.g. Nagios), particular devices can be assigned a downtime period, which will exclude them from the monitoring tool during the time frame specified.  This report shows you all the devices that are within a downtime period.</p>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h6 class="title">
-<a name="id388825"></a>Duplex Mismatches</h6></div></div></div>
+<a name="id388848"></a>Duplex Mismatches</h6></div></div></div>
 <p>This report shows a list of neighboring device interfaces whose duplex settings are mismatched.</p>
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h6 class="title">
-<a name="id388837"></a>OS mismatches</h6></div></div></div>
+<a name="id388860"></a>OS mismatches</h6></div></div></div>
 <p>This report lists devices whose operating system version differs from the recommended version.  The list is grouped by manufacturer, then model, then device name and it shows the current OS version.</p>
 </div>
 </div>
@@ -477,32 +487,32 @@ device3 community2
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h4 class="title">
-<a name="id388853"></a>IP Reports</h4></div></div></div>
+<a name="id388876"></a>IP Reports</h4></div></div></div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h5 class="title">
-<a name="id388859"></a>Unused Subnets</h5></div></div></div>
+<a name="id388882"></a>Unused Subnets</h5></div></div></div>
 <p>Here you will see a list of subnets that have no IP addresses.  You can select only IPv4 subnets or IPv6 subnets.</p>
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h5 class="title">
-<a name="id388869"></a>Maxed out Subnets</h5></div></div></div>
+<a name="id388892"></a>Maxed out Subnets</h5></div></div></div>
 <p>This report lists subnets that are used beyond a given threshold. This threshold is configurable by modifying  the SUBNET_USAGE_MINPERCENT item in the etc/Site.conf file</p>
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h5 class="title">
-<a name="id388882"></a>Unused Static Addresses</h5></div></div></div>
+<a name="id388905"></a>Unused Static Addresses</h5></div></div></div>
 <p>This report shows static addresses that have not been seen in the network for a given time.  This makes it easy to free up subnet address space.</p>
 </div>
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h4 class="title">
-<a name="id388896"></a>MAC Addresses</h4></div></div></div>
+<a name="id388919"></a>MAC Addresses</h4></div></div></div>
 <p>This report shows a list of MAC address OUIs, sorted by number of addresses.  You have the option to include all addresses, only MAC addresses belonging to infrastructure devices or only MAC addresses found in ARP caches and forwarding tables.</p>
 </div>
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h3 class="title">
-<a name="id388911"></a>Exporting Configurations for External Programs</h3></div></div></div>
+<a name="id388934"></a>Exporting Configurations for External Programs</h3></div></div></div>
 <p>You can use the exporter tool to generate text files that can be used as configurations for third-party tools and programs.</p>
 <p>The exporter tool is available in the web UI, under the <span class="italic">Export</span> tab.  Simply select one or more programs and click on the [submit] button.  Netdot will show some output from the exporter tool, including the paths to the new files.</p>
 <p>Additionally, the exporter can be called from the command line.  For example, to generate Nagios configurations:</p>
@@ -512,13 +522,13 @@ device3 community2
 <p>There are specific export parameters for each of these which you can customize by editing your Site.conf file.</p>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h4 class="title">
-<a name="id388962"></a>Cacti Integration</h4></div></div></div>
+<a name="id388985"></a>Cacti Integration</h4></div></div></div>
 <p>Cacti integration is done a little differently (it's more of an "import"than an "export".  You will find a script called "netdot_to_cacti.php"under export/cacti in the Netdot package.  This script should be placed(together with its configuration file) in your Cacti's cli directory(it doesn't need to be the same machine running Netdot, but you need to make sure that the script can connect to Mysql on the Netdot machine).You will then need to run it periodically via CRON, say, once a day.</p>
 </div>
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h3 class="title">
-<a name="id388975"></a>Authorization</h3></div></div></div>
+<a name="id388998"></a>Authorization</h3></div></div></div>
 <p>Starting with version 0.9, netdot supports multi-level user access.  </p>
 <p>There are three types of users that correspond with levels of access in 
 Netdot:</p>
@@ -530,7 +540,7 @@ objects.  </p></li>
 </ul></div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h4 class="title">
-<a name="id389016"></a>Assigning permissions to users</h4></div></div></div>
+<a name="id389039"></a>Assigning permissions to users</h4></div></div></div>
 <p>Permissions can be assigned to individuals or to groups. Individuals are 
 grouped in contact lists.  A user who is a member of a contact list 
 inherits the permissions from the list.  However, the individual can 
@@ -570,11 +580,11 @@ contact lists.  </p></li>
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h3 class="title">
-<a name="id389120"></a>RESTful Interface</h3></div></div></div>
+<a name="id389144"></a>RESTful Interface</h3></div></div></div>
 <p>The RESTful interface allows  programmatic access to the Netdot database over the HTTP/HTTPS protocol.  At this moment, all objects are formatted in XML using the XML::Simple Perl module.  In the future, Netdot may support other formats, such as YAML.</p>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h4 class="title">
-<a name="id389133"></a>RESTful resources</h4></div></div></div>
+<a name="id389156"></a>RESTful resources</h4></div></div></div>
 <p>The REST interface is available using the following URL (or similar, depending on your Apache configuration):</p>
 <pre class="programlisting">
 https://myserver.mydomain.com/netdot/rest/</pre>
@@ -607,12 +617,23 @@ http://myserver.mydomain.com/netdot/rest/device/1</pre>
 </div>
 <div class="section" lang="en">
 <div class="titlepage"><div><div><h4 class="title">
-<a name="id389250"></a>Client module on CPAN</h4></div></div></div>
+<a name="id389273"></a>Client module on CPAN</h4></div></div></div>
 <p>A convenient module is provided via CPAN for use in Perl scripts that need to access Netdot's REST interface.  The module name is Netdot::Client::REST.  It can be installed by doing something like this:</p>
 <pre class="programlisting">#cpan
 &gt;install Netdot::Client::REST</pre>
 </div>
 </div>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="id389292"></a>FAQ</h2></div></div></div>
+<div class="itemizedlist"><ul type="disc"><li>
+<p>Q: Why can't Netdot discover my device using SNMP? I can see it responds when using snmpwalk.</p>
+<p>A: If your device is a Linux server or any other device using the SNMP agent from Net-SNMP, you need to add the following to /etc/snmpd.conf (or wherever it exists):</p>
+<pre class="programlisting">sysservices 72</pre>
+<p>Then, restart your snmpd process.</p>
+<p>The reason for this is that sysservices is essential to Netdot's device discovery. Most network devices implement this OID in their SNMP agents.</p>
+</li></ul></div>
 </div>
 </div></body>
 </html>

@@ -162,7 +162,7 @@ script de actualización para cambiar la base de datos actual al nuevo esquema. 
       <para>Sin embargo, se se actualiza de la version 0.8.X a 0.8.Y, sólo sera necesario ejecutar <emphasis role="italic">make install</emphasis> y reiniciar el servidor web Apache.  </para>
     </section>
     <section>
-      <title>Instalando el Netdot por primera vez</title>
+      <title>Instalando Netdot por primera vez</title>
       <itemizedlist>
         <listitem>
           <para>Compruebe que se ha creado el fichero <emphasis role="italic">etc/Site.conf</emphasis>, en el paquete de instalación, con las opciones de configuración en función de sus necesidades (Está explicado anteriormente).</para>
@@ -359,16 +359,25 @@ dispositivo3 comunidad3
         <para>El mecanismo por el cual los ficheros de zona son transferidos y cargados al servidor de DNS se deja en manos de los administradores.  Una vía para realizar esto es instalar un servidor DNS de forma local en el servidor que ejecuta netdot y guardar los ficheros de zona en un lugar donde el software dns pueda cargarlos periódicamente. Una configuración más compleja implicaría guardar los ficheros en sistemas de control de versiones (CVS, SVN, etc), los cuales pueden ser usados por sistemas de automatizacion de configuraciones como Puppet o CfEngine, que permiten ejecutar chequeos de sintaxis y cargarlos en los servidores DNS apropiados.</para>
       </tip>
       <para>Netdot soporta los siguientes registros DNS: A, AAAA, CNAME, DS, HINFO, LOC, MX, NAPTR, SRV, y TXT.</para>
-      <para>Se pueden importar los ficheros de zona existentes hacia Netdot con la ayuda de la herramienta <emphasis role="italic">import_bind_zones.pl</emphasis> que está en la carpeta  <emphasis role="italic">import</emphasis>.  </para>
-      <para>Para adicionar una nueva zona manualmente, ir a <emphasis role="italic">Management -&gt; DNS Zones</emphasis>, realice click en [add].  Se mostrará una nueva zona creada con los valores por defecto extraídos del fichero de configuración.  </para>
+      <para>Se pueden importar los ficheros de zona existentes hacia Netdot con la ayuda de la herramienta <emphasis role="italic">import_bind_zones.pl</emphasis> que está en la carpeta  <emphasis role="italic">import</emphasis><programlisting> usage: import/import_bind_zones.pl     
+  [ -n|domain &lt;name&gt;, -f|file &lt;path&gt; ] (for single zone)       [ -c|config &lt;path&gt;, -d|dir &lt;path&gt;  ] (for multiple zones)    [ -g|--debug ] [-h|--help]        
+
+  -c  --config &lt;path&gt;   Bind config file containing zone definitions    
+  -d, --dir &lt;path&gt;      Directory where zone files are found    
+  -n, --domain &lt;name&gt;   Domain or Zone name    
+  -f, --zonefile &lt;path&gt; Zone file    
+  -w, --wipe            Wipe out existing zone data            -g, --debug           Print debugging output    
+  -h, --help            Print help</programlisting></para>
+      <para>Para adicionar una nueva zona manualmente, ir a <emphasis role="italic">Management -&gt; DNS Zones</emphasis>. Opcionalmente puede seleccionar una zona para utilizar como plantilla (template). Esto indicará a Netdot que copie la zona de plantilla, incluyendo todos sus récords, y la guarde con otro nombre. Esto es útil cuando se deben crear múltiples zonas que comparten las mismas propiedades (récords NS, MX, etc.) Haga un click en [add].  Se mostrará una nueva zona creada a partir de la plantilla, o con los valores por defecto extraídos del fichero de configuración.  </para>
       <para>Una vez que la zona es creada, debe ser asignada a un bloque IP  (Subnet o Container).  Esto se realiza haciendo click en el boton [add] de la sección de bloques IP en la página de definición de zonas.   </para>
+      <para>La forma más conveniente de crear zonas inversas (in-addr.arpa ó ip6.arpa) es yendo a la página del bloque IP correspondiente, sección <emphasis role="italic">DNS Zones</emphasis>, y hacer  click en [add]. Si la zona inversa correspondiente no existe, Netdot le presentará  el nombre de zona apropiado y la opción de crearla. Esto es especialmente últi con  bloques IPv6, los cuales suelen requerir nombres de zona muy largos.  </para>
       <para>Alcanzado este punto, se pueden adicionar nuevos registros, haciendo click en el boton [add] de la sección  <emphasis>Records</emphasis>.  Los registros puede ser adicionados desde otras páginas de la interfaz web, por ejemplo, la página de direcciones IP o la página de  <emphasis role="italic">DNS Records</emphasis>.</para>
       <para>Los registros pueden ser importados completamente hacia la definición de zona, haciendo click en el botón  [import] de la sección <emphasis>Records</emphasis> y pegando el texto del fichero de zona BIND en la caja de texto de la interfaz web.</para>
       <para>Cada vez que la zona o su contenido es modifcado, la operación es adicionada a la lista de &quot;cambios pendientes&quot;/&quot;pending changes&quot;.  Esta lista es utilizada para determinar cuándo una zona necesita ser exportada. Las zonas pueden ser exportadas de forma manual a través de la interfaz web en el menu <emphasis>Export</emphasis>  o utilizando tareas programadas cron. Cuando una zona es exportada, su número de serie es incrementado y la lista de cambios pendientes es reseteada.</para>
       <para>Netdot puede generar y gestionar los registros DNS para direcciones IP que pertenecen a interfaces de dispositivos, como enturadores.  La operación de cómo estos nombres son generados es manejada por un <emphasis role="italic">plugin</emphasis> y configurado <emphasis>etc/Site.conf</emphasis>. Para establecer que Netdot realice la generación de nombres para los dispositivos, configure la opción &quot;Auto DNS&quot; con el valor &quot;yes&quot;  en la sección de gestión (<emphasis>Management</emphasis>) de la página de dispositivos.  Después, se debe acceder a la pestaña <emphasis>IP Info</emphasis> del dispositivo y para cada interfaz con direccion IP establezca que la opción  &quot;Auto DNS&quot; tiene el valor &quot;yes&quot;.</para>
       <section>
         <title>The &apos;@&apos; record</title>
-        <para>En Netdot, igual que en BIND, el registro &apos;@&apos; representa el dominio en cuestión.  Para adicionar registros que representan al dominio, como NS, MX, A, etc. se debe adicionar  &apos;@&apos; primero.  Una vez que este nombre es creado, se pueden adicionar registros NS, MX and A, los cuales pertenecerán al dominio que representa la zona definida.</para>
+        <para>En Netdot, igual que en BIND, el registro &apos;@&apos; representa el dominio en cuestión (también llamado el <emphasis role="italic">ápice</emphasis> de la zona).  Para adicionar registros que representan al dominio, como NS, MX, A, etc. este récord &apos;@&apos; debe existir.  Netdot crea este récord automáticamente al momento de crear la zona. Además, crea dos récords NS (ns1.nombre-zona y ns2.nombre-zona) por defecto.</para>
       </section>
     </section>
     <section>
@@ -536,5 +545,17 @@ VLAN, habitación, toma de red, descripción y dispositivo adyacente.  El usuari
         </itemizedlist>
       </section>
     </section>
+  </section>
+  <section>
+    <title>Preguntas Frecuentes</title>
+    <itemizedlist>
+      <listitem>
+        <para>P: Por qué Netdot no puede descubrir mi dispositivo via SNMP? Puedo verificar que el mismo responde utilizando snmpwalk</para>
+        <para>R: Si su equipo es un servidor Linux o cualquier otro dispositivo que utiliza el agente SNMP del paquete Net-SNMP, entonces es necesario agregar lo siguiente en el archivo de configuración /etc/snmp.conf (o donde quiera que se encuentre):</para>
+        <programlisting>sysservices 72</programlisting>
+        <para>Luego, hay que reiniciar el servicio snmpd.</para>
+        <para>Esta variable es esencial para Netdot, y la mayoría de los dispositivos implementan esta OID en sus agentes SNMP.</para>
+      </listitem>
+    </itemizedlist>
   </section>
 </article>
