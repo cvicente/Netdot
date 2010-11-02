@@ -5,6 +5,7 @@ use Netdot::Model::Nullify;
 use Time::Local;
 use Net::DNS;
 use Digest::MD5 qw(md5_hex);
+use Scalar::Util qw(blessed);
 
 =head1 NAME
 
@@ -108,7 +109,7 @@ BEGIN {
 	    $args{fields} = join ',', @$changed_columns;
 	    my @values;
 	    foreach my $col ( @$changed_columns ){
-		if ( $self->$col && ref($self->$col) ){
+		if ( $self->$col && blessed($self->$col) ){
 		    push @values, $self->$col->get_label();
 		}else{
 		    push @values, $self->$col;
@@ -127,7 +128,7 @@ BEGIN {
 	foreach my $col ( $self->columns ){
 	    if ( defined $self->$col ){ 
 		push @fields, $col;
-		if ( $self->$col && ref($self->$col) ){
+		if ( $self->$col && blessed($self->$col) ){
 		    push @values, $self->$col->get_label();
 		}else{
 		    push @values, $self->$col;
@@ -158,7 +159,7 @@ BEGIN {
 	    $zone = $self->zone;
 	}elsif ( $table =~ /^rr/ ){
 	    if ( defined $self->rr && int($self->rr) != 0 ){
-		if ( ref($self->rr) ){
+		if ( blessed($self->rr) ){
 		    $zone = $self->rr->zone;
 		}else{
 		    if ( my $rr = RR->retrieve($self->rr) ){
@@ -190,7 +191,7 @@ BEGIN {
 	$data{vals}   = $args{values} if $args{values};
 	my $name; # Name of the zone or global scope
 	if ( $zone ){
-	    unless ( ref($zone) ){
+	    unless ( blessed($zone) ){
 		$zone = Zone->retrieve($zone);
 	    }
 	    $data{zone} = $zone;
@@ -635,8 +636,8 @@ sub update {
 	}
 
 	while ( my ($col, $val) = each %$argv ){
-	    my $a = ref($self->$col) ? $self->$col->id : $self->$col;
-	    my $b = ref($val)        ? $val->id        : $val;
+	    my $a = blessed($self->$col) ? $self->$col->id : $self->$col;
+	    my $b = blessed($val)        ? $val->id        : $val;
 	    if ( (!defined $a && defined $b) || (defined $a && defined $b && $a ne $b) ){
 		$self->set($col=>$b);
 		push @changed_keys, $col;
@@ -808,7 +809,7 @@ sub get_label {
 		push @ret, $self->$c;
 	    }else{
 		# The field is a foreign key
-		if ( int($self->$c) && ref($self->$c) ){
+		if ( int($self->$c) && blessed($self->$c) ){
 		    push @ret, $self->$c->get_label($delim);
 		}else{
 		    push @ret, $self->$c;

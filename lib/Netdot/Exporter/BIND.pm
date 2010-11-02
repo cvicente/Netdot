@@ -157,8 +157,10 @@ sub print_zone_to_file {
 		}else{
 		    foreach my $data ( keys %{$rec->{$name}->{$type}} ){
 			if ( $argv{nopriv} && $type =~ /^(HINFO|TXT)$/ ){
-			    # Let SPF/Domainkey stuff pass
-			    unless ( $name =~ /\._domainkey\./ || $data =~ /v=spf/ ){
+			    # Let SPF/Domainkey andn other oper stuff pass
+			    unless ( $name =~ /\._domainkey\./ || 
+				     $data =~ /v=spf/ ||
+				     $data =~ /path=/ ){
 				next;
 			    }
 			}
