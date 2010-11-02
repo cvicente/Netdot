@@ -433,7 +433,7 @@ sub get_subnet_addr {
     prefix  - dotted quad or prefix length. Optional. NetAddr::IP will assume it is a host (/32 or /128)
 
   Returns:
-    NetAddr::IP object or 0 if failure
+    1 or 0
   Example:
     my $flag = Ipblock->is_loopback('127.0.0.1');
 
