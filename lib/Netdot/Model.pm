@@ -636,7 +636,7 @@ sub update {
 
 	while ( my ($col, $val) = each %$argv ){
 	    my $a = ref($self->$col) ? $self->$col->id : $self->$col;
-	    my $b = int($val);
+	    my $b = ref($val)        ? $val->id        : $val;
 	    if ( (!defined $a && defined $b) || (defined $a && defined $b && $a ne $b) ){
 		$self->set($col=>$b);
 		push @changed_keys, $col;
