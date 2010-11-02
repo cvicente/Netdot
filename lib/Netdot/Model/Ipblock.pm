@@ -2923,7 +2923,7 @@ sub _tree_save {
     unless ( $cache = DataCache->find_or_create({name=>$name}) ){
 	$class->throw_fatal("Could not find or create cache entry for IP tree: $name");
     }
-    $cache->update({data=>$frozen, tstamp=>$class->timestamp});
+    $cache->update({data=>$frozen, tstamp=>time});
     $logger->debug("Ipblock::_tree_save: Saved $name");
     return 1;
 }
@@ -2947,7 +2947,7 @@ sub _tree_get {
     my $TTL = $self->config->get('IP_TREE_TTL');
     for ( 1..2 ){
 	my $cache = DataCache->search(name=>$name)->first;
-	if ( defined $cache && ($self->timestamp - $cache->tstamp) < $TTL ){ 
+	if ( defined $cache && (time - $cache->tstamp) < $TTL ){ 
 	    $tree = thaw $cache->data;
 	    $logger->debug("Ipblock::_tree_get: $name thawed from cache");
 	    my $tree_class = ref($tree);

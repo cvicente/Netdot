@@ -116,6 +116,8 @@ foreach my $sn ( keys %assets ){
 "ALTER TABLE `devicemodule` DROP COLUMN `maint_until`",
 "ALTER TABLE `devicemodule` ADD INDEX `devicemodule2` (`asset_id`)",
 "ALTER TABLE `product` ADD COLUMN `mfg_number` varchar(255)",
+"ALTER TABLE `datacache` MODIFY COLUMN `tstamp` integer unsigned NOT NULL",
+"DELETE FROM `datacache`",
 );
 &execute_statements(@statements);
 
