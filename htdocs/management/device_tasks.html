@@ -61,7 +61,13 @@ if ( $device_search ){
 	    $m->comp('.show_tasks', %ARGS);
 	    $m->comp('/management/mac.html', search=>$device_search, dowindow=>1 );
 	}elsif ( $device_search =~ /$IPV4|$IPV6/ ){
-	    $m->comp('/management/address_tasks.html', submit=>1, search_address=>$device_search, user=>$user, dowindow=>1 );
+	    if ( scalar(@list = Device->search(name=>$device_search)) == 1 ){
+		my $o  = $list[0];
+		my $id = $o->id;
+		$m->comp('/management/device.html', id => $id, user=>$user );
+	    }else{
+		$m->comp('/management/address_tasks.html', submit=>1, search_address=>$device_search, user=>$user, dowindow=>1 );
+	    }
 	}else{
 	    $m->comp('.show_tasks', %ARGS);
 	    my %args = (name=>$device_search);
