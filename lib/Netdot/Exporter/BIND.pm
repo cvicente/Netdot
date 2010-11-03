@@ -156,13 +156,8 @@ sub print_zone_to_file {
 		    }
 		}else{
 		    foreach my $data ( keys %{$rec->{$name}->{$type}} ){
-			if ( $argv{nopriv} && $type =~ /^(HINFO|TXT)$/ ){
-			    # Let SPF/Domainkey andn other oper stuff pass
-			    unless ( $name =~ /\._domainkey\./ || 
-				     $data =~ /v=spf/ ||
-				     $data =~ /path=/ ){
-				next;
-			    }
+			if ( $argv{nopriv} && $type eq 'HINFO' ){
+			    next;
 			}
 			my $ttl = $rec->{$name}->{$type}->{$data};
 			if ( !defined $ttl || $ttl !~ /\d+/ ){
@@ -173,7 +168,23 @@ sub print_zone_to_file {
 			    # Add the final dot if necessary
 			    $data .= '.' unless $data =~ /\.$/;
 			}
-			print $fh "$name\t$ttl\tIN\t$type\t$data\n";
+
+			my $line = "$name\t$ttl\tIN\t$type\t$data\n";
+
+			if ( $argv{nopriv} && $type eq 'TXT' ){
+			    # We're told to exclude TXT records
+			    # Allow exceptions from config
+			    if ( my @patterns = @{$self->config->get('TXT_RECORD_EXCEPTIONS')} ){
+				foreach my $pattern ( @patterns ){
+				    if ( $line =~ /$pattern/ ){
+					print $fh $line;
+					last;
+				    }
+				}
+			    }
+			}else{
+			    print $fh $line;
+			}
 		    }
 		}
 	    }
