@@ -37,9 +37,12 @@ sub find_sequences{
     my %sequences = ();
     my $dbh = $class->db_Main;
     eval{
-	my $st = $dbh->prepare_cached("SELECT id 
-                                       FROM   closet 
-                                       WHERE  site = ?");
+	my $st = $dbh->prepare_cached("SELECT DISTINCT closet.id  
+                                       FROM   closet, room, floor, site
+                                       WHERE  closet.room=room.id
+                                         AND  room.floor=floor.id
+                                         AND  floor.site=site.id
+                                         AND  site.id=?");
 	$st->execute($start);
 	my $closet_ids = join(",", $st->fetchrow_array());
 	
