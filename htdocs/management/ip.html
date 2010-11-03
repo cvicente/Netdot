@@ -42,7 +42,7 @@ $edit_children     => undef
 $editattr          => undef
 $submit            => undef
 $rootversion       => 4 
-$view_format       => 'block'
+$view_format       => Netdot->config->get('DEFAULT_IPBLOCK_VIEW')
 $rowsize           => 22
 $dividefreespace   => 'max'
 $arp_limit         => 10
@@ -102,6 +102,10 @@ if ( $id ){
 # By default, view object after any operation
 # ( some exceptions will override )
 my $view = 1;
+
+unless ( $view_format =~ /^block|list|tree$/ ){
+    $m->comp('/generic/error.mhtml', error => "Invalid view format: $view_format. Perhaps wrongly configured in etc/Site.conf?");
+}
 
 </%init>
 %
