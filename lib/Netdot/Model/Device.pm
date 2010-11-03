@@ -3234,17 +3234,26 @@ sub _validate_args {
 
     # Asset
     if ( $args->{asset_id} && (my $asset = Asset->retrieve(int($args->{asset_id}))) ){
-	
-	# is there a device attached to this asset number we're given?
+	# is there a device associated with this asset number we're given?
 	if ( my $otherdev = ($asset->devices)[0] ){
 	    if ( defined $self ){
 		if ( $self->id != $otherdev->id ){
-		    $self->throw_user(sprintf("%s: S/N %s belongs to existing device: %s", 
-					      $self->fqdn, $asset->serial_number, $otherdev->fqdn)); 
+		    my $msg = sprintf("%s: S/N %s belongs to existing device: %s", 
+				      $self->fqdn, $asset->serial_number, $otherdev->fqdn);
+		    if ( Netdot->config->get('ENFORCE_DEVICE_UNIQUENESS') ){
+			$self->throw_user($msg); 
+		    }else{
+			$logger->warn($msg);
+		    }
 		}
 	    }else{
-		$class->throw_user(sprintf("S/N %s belongs to existing device: %s",
-					   $asset->serial_number, $otherdev->fqdn));
+		my $msg = sprintf("S/N %s belongs to existing device: %s",
+				  $asset->serial_number, $otherdev->fqdn);
+		if ( Netdot->config->get('ENFORCE_DEVICE_UNIQUENESS') ){
+		    $class->throw_user($msg);
+		}else{
+		    $logger->warn($msg);
+		}
 	    }
 	}
     }
@@ -3258,17 +3267,26 @@ sub _validate_args {
 		if ( defined $self ){
 		    if ( $self->id != $otherdev->id ){
 			# Another device has this address!
-			$class->throw_user( sprintf("%s: Base MAC %s belongs to existing device: %s", 
-						    $self->fqdn, $address, $otherdev->fqdn ) ); 
+			my $msg = sprintf("%s: Base MAC %s belongs to existing device: %s", 
+					  $self->fqdn, $address, $otherdev->fqdn);
+			if ( Netdot->config->get('ENFORCE_DEVICE_UNIQUENESS') ){
+			    $class->throw_user($msg); 
+			}else{
+			    $logger->warn($msg);
+			}
 		    }
 		}else{
-		    $class->throw_user( sprintf("Base MAC %s belongs to existing device: %s", 
-						$address, $otherdev->fqdn ) ); 
+		    my $msg = sprintf("Base MAC %s belongs to existing device: %s", 
+				      $address, $otherdev->fqdn);
+		    if ( Netdot->config->get('ENFORCE_DEVICE_UNIQUENESS') ){
+			$class->throw_user($msg); 
+		    }else{
+			$logger->warn($msg);
+		    }
 		}
 	    }
 	}
     }
-
     return 1;
 }
 
