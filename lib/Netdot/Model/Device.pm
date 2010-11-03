@@ -1272,7 +1272,6 @@ sub discover {
     my $sinfo = $argv{session} || 0;
     my $dev;
     my $ip;
-    my $device_changed_name;
 
     if ( $dev = Device->search(name=>$name)->first ){
         $logger->debug(sub{"Device::discover: Device $name already exists in DB"});
@@ -1301,28 +1300,6 @@ sub discover {
 					  sub{ return $class->get_snmp_info(session   => $sinfo,
 									    bgp_peers => $argv{bgp_peers},
 						   ) });
-	}
-	
-	
-	if ( $info->{serialnumber} ){
-	    my %search_args = (serialnumber=>$info->{serialnumber});
-	    if ( $info->{sysobjectid} && 
-	         (my $product = Product->search(sysobjectid=>$info->{sysobjectid})->first) ){
-	        $search_args{product} = $product;
-	    }
-	    if ( $dev = Device->search(%search_args)->first ){
-	        $logger->info(sub{"Device::discover: Device already exists in db with serial number ".$info->{serialnumber}});
-	        $device_changed_name = 1;
-	    }
-	}
-	
-	if ( $info->{physaddr} ){
-	    if ( my $physaddr = PhysAddr->search(address=>($info->{physaddr}))->first ){
-	        if ( $dev = Device->search(physaddr=>$physaddr)->first ){
-		    $logger->info(sub{"Device::discover: Device already exists in db with physical address ".$physaddr->address});
-		    $device_changed_name = 1; #using this to indicate this device exists with another name in the DB
-	        }
-	    }
 	}
     }
     
@@ -1394,16 +1371,6 @@ sub discover {
 	$device_is_new = 1;
     }
     
-    if( $device_changed_name ){
-        #We can update the resource record now, since the device has likely moved
-        my $old_rr = $dev->name;
-	my $new_rr = $class->assign_name(host=>$argv{name});
-        if(!$argv{pretend}){
-	    $dev->update({name=>$new_rr})
-        }
-        $logger->info("Device::discover: ".$old_rr->get_label.": hostname updated to ".$dev->get_label);
-    }   
-
     # Get relevant snmp_update args
     my %uargs;
     foreach my $field ( qw(communities version timeout retries sec_name sec_level auth_proto auth_pass priv_proto priv_pass
@@ -3254,13 +3221,23 @@ sub _validate_args {
     if ( my $sn = $args->{serialnumber} ){
 	if ( my $otherdev = $class->search(serialnumber=>$sn)->first ){
 	    if ( defined $self ){
+		my $msg = sprintf("%s: S/N %s belongs to existing device: %s.", 
+				  $self->fqdn, $sn, $otherdev->fqdn); 
 		if ( $self->id != $otherdev->id ){
-		    $self->throw_user( sprintf("%s: S/N %s belongs to existing device: %s.", 
-					       $self->fqdn, $sn, $otherdev->fqdn) ); 
+		    if ( $class->config->get('ENFORCE_DEVICE_UNIQUENESS') ){
+			$self->throw_user($msg); 
+		    }else{
+			$logger->warn($msg);
+		    }
 		}
 	    }else{
-		$class->throw_user( sprintf("S/N %s belongs to existing device: %s.", 
-					    $sn, $otherdev->fqdn) ); 
+		my $msg = sprintf("S/N %s belongs to existing device: %s.", 
+				  $sn, $otherdev->fqdn);
+		if ( $class->config->get('ENFORCE_DEVICE_UNIQUENESS') ){
+		    $class->throw_user($msg); 
+		}else{
+		    $logger->warn($msg);
+		}
 	    }
 	}
     }
@@ -3274,17 +3251,27 @@ sub _validate_args {
 		if ( defined $self ){
 		    if ( $self->id != $otherdev->id ){
 			# Another device has this address!
-			$class->throw_user( sprintf("%s: Base MAC %s belongs to existing device: %s", 
-						    $self->fqdn, $address, $otherdev->fqdn ) ); 
+			my $msg = sprintf("%s: Base MAC %s belongs to existing device: %s", 
+					  $self->fqdn, $address, $otherdev->fqdn);
+			if ( $class->config->get('ENFORCE_DEVICE_UNIQUENESS') ){
+			    $class->throw_user($msg); 
+			}else{
+			    $logger->warn($msg);
+			}
+			
+		    }else{
+			my $msg = sprintf("Base MAC %s belongs to existing device: %s", 
+					  $address, $otherdev->fqdn);
+			if ( $class->config->get('ENFORCE_DEVICE_UNIQUENESS') ){
+			    $class->throw_user($msg); 
+			}else{
+			    $logger->warn($msg);
+			}
 		    }
-		}else{
-		    $class->throw_user( sprintf("Base MAC %s belongs to existing device: %s", 
-						$address, $otherdev->fqdn ) ); 
 		}
 	    }
 	}
     }
-
     return 1;
 }
 

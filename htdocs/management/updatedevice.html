@@ -56,7 +56,7 @@ my $info;
 my $default_owner;
 my $default_cl;
 my $logstr;
-my $dev_exists_notice = 0;
+my $dev_exists_notice;
 
 print "ARGS contains: <pre>", Dumper(%ARGS), "</pre>" if $DEBUG;
 
@@ -123,35 +123,35 @@ if ( $action eq "discover" ){
 	}
 	print "info contains: <pre>", Dumper(%$info), "</pre>" if $DEBUG;
 	
+	# Check for duplicates
 	# Make sure we don't have a device by this name already
 	if ( my $o = Device->search(name=>$host)->first ){
 	    $argv{device} = $o->id;
 	}
-	
-	# Make sure we don't have any devices with this SN already
-	elsif( !$o && $info->{serialnumber} ){
+	# Serial Number + Product
+	elsif( $info->{serialnumber} ){
 	    my %search_args = (serialnumber=>$info->{serialnumber});
 	    if ( $info->{sysobjectid} && 
 		 (my $product = Product->search(sysobjectid=>$info->{sysobjectid})->first) ){
 		$search_args{product} = $product;
 	    }
-	    if ( $o = Device->search(%search_args)->first ){
-		$dev_exists_notice = "Device SN ". $o->serialnumber.
-		    " exists in the DB, but its name has changed";
-		$argv{device} = $o->id;
-		$argv{name}   = $host;
+	    if ( my $other = Device->search(%search_args)->first ){
+		$dev_exists_notice = sprintf("At least one other Device with this S/N: %s already exists: %s",
+					     $other->serialnumber, $other->get_label);
+		if ( Netdot->config->get('ENFORCE_DEVICE_UNIQUENESS') ){
+		    $m->comp('/generic/error.mhtml', error=>$dev_exists_notice);
+		}
 	    }
 	}
-	
-	# Make sure we don't have any devices with this PhysAddr already
-	elsif( !$o && $info->{physaddr} ){
+	# Base MAC
+	elsif( !$dev_exists_notice && $info->{physaddr} ){
 	    if ( my $physaddr = PhysAddr->search(address=>$info->{physaddr})->first ){
-		if ( $o = Device->search(physaddr=>$physaddr)->first ){
-		    print "Device::discover: Device already exists in DB with physical address ", $physaddr->address ;
-		    $dev_exists_notice = "Device with physical address ". $physaddr->address. 
-			" exists in the DB, but its name has changed";
-		    $argv{device} = $o->id;
-		    $argv{name}   = $host;
+		if ( my $other = Device->search(physaddr=>$physaddr)->first ){
+		    $dev_exists_notice = sprintf("At least one other Device with this MAC: %s already exists: %s", 
+						 $physaddr->address, $other->get_label);
+		    if ( Netdot->config->get('ENFORCE_DEVICE_UNIQUENESS') ){
+			$m->comp('/generic/error.mhtml', error=>$dev_exists_notice);
+		    }
 		}
 	    }
 	}
@@ -299,12 +299,7 @@ else{
 
 %   my @allcls = ContactList->retrieve_all; 
 
-%if($dev_exists_notice){
-    <& /generic/attribute_table.mhtml, field_headers=>["Notice:", "Description" ], data=>[$dev_exists_notice, $info->{sysdescription}] &>
-%}
-%else{
     <& /generic/attribute_table.mhtml, field_headers=>["Description"], data=>[ $info->{sysdescription} ] &>
-%}
     <form name="netdotform" action="updatedevice.html" method="POST">
     <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
     <input type="hidden" name="host" value="<% $host %>">
@@ -426,9 +421,14 @@ else{
 
 <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
 
+         <p>
          <center>
-             <input name="insert" value="Update" type="submit">&nbsp;
-             <input type="button" name="cancel" value="Cancel" onClick="history.go(-1);">
+%        if ( $dev_exists_notice ){
+             <strong>WARNING</strong>: <% $dev_exists_notice %>
+%        }
+         <p>
+         <input name="insert" value="Update" type="submit">&nbsp;
+         <input type="button" name="cancel" value="Cancel" onClick="history.go(-1);">
          </center>
       </form>
 
