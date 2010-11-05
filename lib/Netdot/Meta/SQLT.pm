@@ -110,7 +110,7 @@ sub graphviz_schema {
 		    show_fields      => 0,
 		    show_col_sizes   => 0,
 		    width            => 20,
-		    hight            => 15,
+		    height           => 15,
 		    );
     my %args = %defaults;
     foreach my $key ( keys %argv ) { $args{$key} = $argv{$key} };
