@@ -203,6 +203,12 @@ sub add_neighbor{
 	
 	$logger->info(sprintf("Added new neighbors: %s <=> %s, score: %s", 
 			      $self->get_label, $neighbor->get_label, $score));
+
+	if ( $self->device->id == $neighbor->device->id ){
+	    # This is most likely a loop
+	    $logger->warn(sprintf("Possible loop in %s, between ports %s and %s!", 
+				  $self->device->get_label, $self->name, $neighbor->name));
+	}
 	return 1;
     }
 }
