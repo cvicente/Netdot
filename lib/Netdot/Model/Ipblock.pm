@@ -2535,24 +2535,25 @@ sub _validate {
     $logger->debug("Ipblock::_validate: " . $self->get_label . " has status: $statusname");
 
     my ($pstatus, $parent);
-    if ( ($parent = $self->parent) && $parent->id ){
+    if ( int($parent = $self->parent) && $parent->id ){
 	$logger->debug("Ipblock::_validate: " . $self->get_label . " parent is ", $parent->get_label);
 	
-	$pstatus = $parent->status->name;
-	if ( $self->is_address() ){
-	    if ( $pstatus eq "Reserved" ){
-		$self->throw_user($self->get_label.": Address allocations not allowed under Reserved blocks");
-	    }elsif ( $pstatus eq 'Subnet' && $self->version == 4 && $parent->prefix != 31 ){
-		if ( $self->address eq $parent->address ){
-		    $self->throw_user(sprintf("IP cannot have same address as its subnet: %s == %s", 
-					      $self->address, $parent->address));
+	if ( int($parent->status) && ($pstatus = $parent->status->name)) {
+	    if ( $self->is_address() ){
+		if ( $pstatus eq "Reserved" ){
+		    $self->throw_user($self->get_label.": Address allocations not allowed under Reserved blocks");
+		}elsif ( $pstatus eq 'Subnet' && $self->version == 4 && $parent->prefix != 31 ){
+		    if ( $self->address eq $parent->address ){
+			$self->throw_user(sprintf("IP cannot have same address as its subnet: %s == %s", 
+						  $self->address, $parent->address));
+		    }
 		}
+	    }else{
+		if ( $pstatus ne "Container" ){
+		    $self->throw_user(sprintf("Block allocations only allowed under Container blocks: %s within %s",
+					      $self->get_label, $parent->get_label));
+		}	    
 	    }
-	}else{
-	    if ( $pstatus ne "Container" ){
-		$self->throw_user(sprintf("Block allocations only allowed under Container blocks: %s within %s",
-					  $self->get_label, $parent->get_label));
-	    }	    
 	}
     }else{
 	$logger->debug("Ipblock::_validate: " . $self->get_label . " does not have parent");
