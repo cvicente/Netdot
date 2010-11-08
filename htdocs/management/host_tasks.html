@@ -116,7 +116,7 @@ my @all_zones = Zone->retrieve_all();
                 <label for="Subnet">Subnet:</label>
                 <select name="add_host_block">
                 <option value="0">- Select Block -</option>
-%           my @subnets = Ipblock->search(status=>"Subnet");
+%           my @subnets = grep { $_->forward_zone } Ipblock->search(status=>"Subnet");
 %           foreach my $o ( sort { $a->address_numeric cmp $b->address_numeric } @subnets ){
 %               my $subnet_label = $o->get_label();
 %               if ( $o->description ){

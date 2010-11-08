@@ -1381,7 +1381,6 @@ if ($o->status->name eq "Subnet") {
     }
 
 </%perl>
-%   if (scalar( @children )){  
        <div class="container">
 %      if ( $edit_children ){
 	     <form name="edit_children" id="edit_children" action="ip.html" method="POST">
@@ -1400,7 +1399,7 @@ if ($o->status->name eq "Subnet") {
 		 <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
 		 <input type="submit" name="submit" value="save">
 %	      }else{
-%                 if ( $manager && $manager->can($user, 'access_section', 'ip.html:edit_children') ){
+%                 if ( @children && $manager && $manager->can($user, 'access_section', 'ip.html:edit_children') ){
 %		      print '<a href="ip.html?id='.$id.'&edit_children=1&view_format=list&sort=&ip_list_sort='.$ip_list_sort.'">[edit]</a>&nbsp;';
 %                 }
 %                 if( $o->version == 4 ) {
@@ -1412,7 +1411,9 @@ if ($o->status->name eq "Subnet") {
 %             }
           </div>
           <div class="containerbody">
-          <& ipblock_list.mhtml, parent=>$o, objects=>\@children, edit=>$edit_children, sort=>$ip_list_sort &>
+%         if ( @children ){ 
+              <& ipblock_list.mhtml, parent=>$o, objects=>\@children, edit=>$edit_children, sort=>$ip_list_sort &>
+%         }
 %	  if ( $edit_children ){
                   <input type="button" value="Check All" onclick="setCheckbox('edit_children', '', true);return false;" class="button" />
                   <input type="button" value="Clear All" onclick="setCheckbox('edit_children', '', false);return false;" class="button" />
@@ -1424,7 +1425,6 @@ if ($o->status->name eq "Subnet") {
 %    }
      </div>
 
-%   }
 % }else{
 %    $m->comp('/generic/error.mhtml', error => "Unknown view format: $view_format");
 % }
