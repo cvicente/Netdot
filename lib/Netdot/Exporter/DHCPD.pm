@@ -43,8 +43,7 @@ sub new{
 
   Arguments:
     Hash with the following keys:
-      scopes - Global scope names or 'all'
-      
+      scopes - Global scope names (optional)
   Returns:
     True if successful
   Examples:
@@ -54,7 +53,8 @@ sub generate_configs {
     my ($self, %argv) = @_;
     
     my @gscopes;
-    if ( !defined $argv{scopes} ){
+    if ( !defined $argv{scopes} || 
+	 (scalar(@{$argv{scopes}}) == 1 && $argv{scopes}->[0] eq "") ){
 	@gscopes = DhcpScope->search(type=>'global');
     }else{
 	foreach my $scope_name ( @{$argv{scopes}} ){
