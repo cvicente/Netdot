@@ -117,6 +117,15 @@ sub denies(){
 		    }
 		}
 	    }
+	    # Or if it has ARP entries in an allowed subnet
+	    if ( my @arp_entries = $object->arp_entries ){
+		foreach my $ae ( @arp_entries ){
+		    if ( int($ae->ipaddr) != 0 ){
+			my $ipb = $ae->ipaddr;
+			return 0 if ( !&_deny_ip_access($action, $access, $ipb) );
+		    }
+		}
+	    }
 	    return 1;
 	}elsif ( $otype eq 'PhysAddrAttr' ){
 	    if ( my @scopes = $object->dhcp_hosts ){
