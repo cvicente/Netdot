@@ -136,7 +136,7 @@ if ( $action eq "discover" ){
 		$search_args{product} = $product;
 	    }
 	    if ( my $other = Device->search(%search_args)->first ){
-		$dev_exists_notice = sprintf("At least one other Device with this S/N: %s already exists: %s",
+		$dev_exists_notice = sprintf("At least one other device with this S/N: %s already exists: %s",
 					     $other->serialnumber, $other->get_label);
 		if ( Netdot->config->get('ENFORCE_DEVICE_UNIQUENESS') ){
 		    $m->comp('/generic/error.mhtml', error=>$dev_exists_notice);
@@ -147,7 +147,7 @@ if ( $action eq "discover" ){
 	elsif( !$dev_exists_notice && $info->{physaddr} ){
 	    if ( my $physaddr = PhysAddr->search(address=>$info->{physaddr})->first ){
 		if ( my $other = Device->search(physaddr=>$physaddr)->first ){
-		    $dev_exists_notice = sprintf("At least one other Device with this MAC: %s already exists: %s", 
+		    $dev_exists_notice = sprintf("At least one other device with this MAC: %s already exists: %s", 
 						 $physaddr->address, $other->get_label);
 		    if ( Netdot->config->get('ENFORCE_DEVICE_UNIQUENESS') ){
 			$m->comp('/generic/error.mhtml', error=>$dev_exists_notice);

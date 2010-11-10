@@ -3251,7 +3251,7 @@ sub _validate_args {
 		if ( defined $self ){
 		    if ( $self->id != $otherdev->id ){
 			# Another device has this address!
-			my $msg = sprintf("%s: Base MAC %s belongs to existing device: %s", 
+			my $msg = sprintf("%s: At least one other device with this base MAC: %s already exists: %s", 
 					  $self->fqdn, $address, $otherdev->fqdn);
 			if ( $class->config->get('ENFORCE_DEVICE_UNIQUENESS') ){
 			    $class->throw_user($msg); 
@@ -3259,14 +3259,14 @@ sub _validate_args {
 			    $logger->warn($msg);
 			}
 			
+		    }
+		}else{
+		    my $msg = sprintf("At least one other device with this base MAC: %s already exists: %s", 
+				      $address, $otherdev->fqdn);
+		    if ( $class->config->get('ENFORCE_DEVICE_UNIQUENESS') ){
+			$class->throw_user($msg); 
 		    }else{
-			my $msg = sprintf("Base MAC %s belongs to existing device: %s", 
-					  $address, $otherdev->fqdn);
-			if ( $class->config->get('ENFORCE_DEVICE_UNIQUENESS') ){
-			    $class->throw_user($msg); 
-			}else{
-			    $logger->warn($msg);
-			}
+			$logger->warn($msg);
 		    }
 		}
 	    }
@@ -4044,16 +4044,22 @@ sub _get_arp_from_snmp {
     my $sinfo = $argv{session} || $self->_get_snmp_session();
 
     # Build a hash with device's interfaces, indexed by ifIndex
+    # Get all interface IPs for subnet validation
     my %devints;
+    my %devsubnets;
     foreach my $int ( $self->interfaces ){
 	$devints{$int->number} = $int->id;
+	foreach my $ip ( $int->ips ){
+	    push @{$devsubnets{$int->id}}, $ip->parent->_netaddr 
+		if $ip->parent;
+	}
     }
 
     $logger->debug(sub{"$host: Fetching ARP cache via SNMP" });
     my ( $at_paddr, $at_netaddr, $at_index );
     $at_paddr  = $sinfo->at_paddr();
 
-    # With the following checks we are trying query only one
+    # With the following checks we are trying to query only one
     # OID instead of three, which is a significant performance
     # improvement with very large caches.
     # The optional .1 in the middle is for cases where the old
@@ -4109,6 +4115,26 @@ sub _get_arp_from_snmp {
 	    $logger->debug(sub{"Device::get_snmp_arp: $host: Invalid MAC: $mac" });
 	    next;
 	}	
+
+	if ( Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET') ){
+	    # Don't accept entry if ip is not within this interface's subnets
+	    my $invalid_subnet = 1;
+	    foreach my $nsub ( @{$devsubnets{$intid}} ){
+		my $nip = NetAddr::IP->new($ip) 
+		    || $self->throw_fatal(sprintf("Cannot create NetAddr::IP object from %s", $ip));
+		if ( $nip->within($nsub) ){
+		    $invalid_subnet = 0;
+		    last;
+		}else{
+		    $logger->debug(sub{sprintf("Device::get_snmp_arp: $host: IP $ip not within %s", 
+					       $nsub->cidr)});
+		}
+	    }
+	    if ( $invalid_subnet ){
+		$logger->debug(sub{"Device::get_snmp_arp: $host: IP $ip not within interface $idx subnets"});
+		next;
+	    }
+	}
 	
 	# Store in hash
 	$cache{$intid}{$ip} = $mac;
