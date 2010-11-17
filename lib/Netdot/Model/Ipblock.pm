@@ -1001,7 +1001,6 @@ sub get_maxed_out_subnets {
       name_prefix - String to prepend to host part of IP address
       name_suffix - String to append to host part of IP address
       fzone       - Forward Zone id for DNS records
-      rzone       - Reverse Zone id for DNS records
   Returns:   
 
   Examples:
@@ -1060,17 +1059,16 @@ sub add_range{
 
 	#########################################
 	# Call the plugin that generates DNS records
-	if ( $argv{gen_dns} && $argv{fzone} && $argv{rzone} ){
+	if ( $argv{gen_dns} && $argv{fzone} ){
 	    if ( $argv{status} ne 'Dynamic' && $argv{status} ne 'Static' ){
 		$class->throw_user("DNS records can only be auto-generated for Dynamic or Static IPs");
 	    }
 	    my $fzone = Zone->retrieve($argv{fzone});
-	    my $rzone = Zone->retrieve($argv{rzone});
 	    $logger->info("Ipblock::add_range: Generating DNS records: $argv{start} - $argv{end}");
 	    $range_dns_plugin->generate_records(prefix=>$argv{name_prefix}, 
 						suffix=>$argv{name_suffix}, 
 						start=>$ipstart, end=>$ipend, 
-						fzone=>$fzone, rzone=>$rzone );
+						fzone=>$fzone);
 	}
 	
 				  }); # end of transaction
@@ -2234,13 +2232,9 @@ sub reverse_zone {
     my ($self) = @_;
     $self->isa_object_method('reverse_zone');
 
-    if ( my @zones = $self->dns_zones ){
-	foreach my $z ( @zones ){
-	    if ( $z->name =~ /\.arpa$|\.int$/ ){
-		return $z;
-	    }
-	}
-    }
+    my $rname = RRPTR->get_name(ipblock=>$self);
+    my @zones = Zone->search(name=>$rname);
+    return $zones[0];
 }
 
 ##################################################################

@@ -27,7 +27,6 @@ $range_description => undef
 $range_parent      => undef
 $range_gen_dns     => undef
 $range_fw_zone     => undef
-$range_rev_zone    => undef
 $name_prefix       => undef
 $name_suffix       => undef
 $block_owner       => undef
@@ -271,7 +270,6 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 					name_prefix => $name_prefix,
 					name_suffix => $name_suffix,
 					fzone       => $range_fw_zone,
-					rzone       => $range_rev_zone,
 		    );
 	    };
 	}
@@ -867,24 +865,6 @@ if ( $edit ){
 	}
 	$x .= '</select>';
 	$x .= '<a class="hand" onClick="openinsertwindow(\'table=Zone&select_id=range_fw_zone&selected=1&dowindow=1\')">[new]</a>';
-	$x;
-    }});
-
-    push @fields, 'Rerverse Zone';
-    push (@data, &{sub{
-	my $x;
-	$x .= '<select name="range_rev_zone" id="range_rev_zone">';
-	$x .= '<option value="0">-- Select --</option>';
-	if ( $revzone ){
-	    $x .= '<option value="'. $revzone->id .'" SELECTED>'. $revzone->name .'</option>';
-	}
-	foreach my $z ( @allzones ){
-	    next unless defined $z;
-	    next unless ( $z->name =~ /\.arpa$|\.int$/ );
-	    $x .= '<option value="'. $z->id .'">'. $z->name .'</option>';
-	}
-	$x .= '</select>';
-	$x .= '<a class="hand" onClick="openinsertwindow(\'table=Zone&select_id=range_rev_zone&selected=1&dowindow=1\')">[new]</a>';
 	$x;
     }});
 

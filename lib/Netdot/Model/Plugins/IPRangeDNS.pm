@@ -37,7 +37,6 @@ sub new{
     ipstart -  First IP in range (NetAddr::IP object)
     ipend   -  Last IP in range (NetAddr::IP object)
     fzone   -  Forward zone (for A records)
-    rzone   -  Reverse zone (for PTR records)
   Returns:
     Array of RRPTR and RRADDR objects
   Examples:
@@ -48,24 +47,18 @@ sub new{
        name_prefix=>$argv{name_prefix}, 
        name_suffix=>$argv{name_suffix}, 
        start=>$ipstart, end=>$ipend, 
-       fzone=>$fzone, rzone=>$rzone );
+       fzone=>$fzone );
 
 =cut 
 sub generate_records {
     my ($self, %argv) = @_;
-    my($prefix, $suffix, $ipstart, $ipend, $fzone, $rzone) 
-	= @argv{'prefix', 'suffix', 'start', 'end', 'fzone', 'rzone'};
+    my($prefix, $suffix, $ipstart, $ipend, $fzone) 
+	= @argv{'prefix', 'suffix', 'start', 'end', 'fzone'};
 
     $self->throw_fatal("Missing required arguments")
-	unless ( $ipstart && $ipend && $fzone && $rzone );
+	unless ( $ipstart && $ipend && $fzone );
 
     my @rrs;
-    my $zname = $rzone->name;
-    $zname =~ s/^(.*)\.in-addr.arpa$/$1/ || 
-	$zname =~ s/^(.*)\.ip6.arpa$/$1/ ||
-	$zname =~ s/^(.*)\.ip6.int$/$1/ ;
-
-    my $p = join('.', (reverse split(/\./, $zname)));
 
     my ($ipb, $name, $ptrdname);
     my $version = $ipstart->version;
@@ -90,7 +83,7 @@ sub generate_records {
 	    $name =~ s/://g;
 	    $name = join('.', split(//, $name));
 	}
-	$name =~ s/^$p\.//i;
+	
 	$name =~ s/\./-/g;
 	$name = $prefix.$name if ( defined $prefix );
 	$name .= $suffix if ( defined $suffix );
@@ -109,7 +102,7 @@ sub generate_records {
 	
 	my $ptr = Netdot::Model::RRPTR->insert({ptrdname => $ptrdname, 
 						ipblock  => $ipb, 
-						zone     => $rzone});
+						zone     => $ipb->reverse_zone});
 	push @rrs, $ptr;
 	
 	my $rraddr = Netdot::Model::RR->insert({type    => 'A',

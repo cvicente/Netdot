@@ -51,7 +51,7 @@ Netdot::Model::Zone - DNS Zone Class
 sub search {
     my ($class, @args) = @_;
     $class->isa_class_method('search');
-
+    
     @args = %{ $args[0] } if ref $args[0] eq "HASH";
     my $opts = @args % 2 ? pop @args : {}; 
     my %argv = @args;
@@ -600,10 +600,8 @@ sub import_records {
 		$ipversion = 4;
 	    }elsif ( $prefix =~ s/(.*)\.ip6.arpa/$1/ ){
 		$ipversion = 6;
-	    }elsif ( $prefix =~ s/(.*)\.ip6.int/$1/ ){
-		$ipversion = 6;
 	    }
-	    
+
 	    my $ipaddr = "$name.$prefix";
 	    
 	    if ( $ipversion eq '4' ){
