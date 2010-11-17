@@ -18,14 +18,46 @@ See Netdot::Model::Picture
 =head1 CLASS METHODS
 =cut
 
+##################################################################
+=head2 insert - Insert new object
+
+  Arguments:
+    Any of FloorPicture's fields
+  Returns:
+    New FloorPicture object
+  Examples:
+    my $fp = FloorPicture->insert(\%args);
+
+=cut
 sub insert {
-    my ($self, $argv) = @_;
-     defined $argv->{floor}  ||
-	$self->throw_fatal("Missing required arguments: floor");
-    
-    return $self->SUPER::insert($argv);
+    my ($class, $argv) = @_;
+    $argv->{floor} ||
+	$class->throw_user("Missing required arguments: floor");
+    return $class->SUPER::insert($argv);
 }
 
+=head1 INSTANCE METHODS
+=cut
+
+##################################################################
+=head2 update - Update object's values
+
+  Arguments:
+    Any of FloorPicture's fields
+  Returns:
+    See Class::DBI's update method
+  Examples:
+    $fp->update(\%args);
+
+=cut
+sub update {
+    my ($self, $argv) = @_;
+    $self->isa_object_method('update');
+    if ( exists $argv->{floor} && $argv->{floor} == 0 ){
+	$self->throw_user("Missing required arguments: floor");
+    }
+    return $self->SUPER::update($argv);
+}
 =head1 AUTHOR
 
 Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>

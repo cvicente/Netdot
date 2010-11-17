@@ -1,4 +1,4 @@
-package Netdot::Model::Room;
+package Netdot::Model::Floor;
 
 use base 'Netdot::Model';
 use warnings;
@@ -8,11 +8,9 @@ my $logger = Netdot->log->get_logger('Netdot::Model');
 
 =head1 NAME
 
-Netdot::Model::Room
+Netdot::Model::Floor
 
 =head1 SYNOPSIS
-
-    $room->get_label()
 
 =head1 CLASS METHODS
 =cut
@@ -21,11 +19,11 @@ Netdot::Model::Room
 =head2 insert - Insert new object
 
   Arguments:
-    Any of Room's fields
+    Any of Floor's fields
   Returns:
-    New Room object
+    New Floor object
   Examples:
-    my $room = Room->insert(\%args);
+    my $floor = Floor->insert(\%args);
 
 =cut
 sub insert {
@@ -42,11 +40,11 @@ sub insert {
 =head2 update - Update object's values
 
   Arguments:
-    Any of Room's fields
+    Any of Floor's fields
   Returns:
     See Class::DBI's update method
   Examples:
-    $room->update(\%args);
+    $floor->update(\%args);
 
 =cut
 sub update {
@@ -56,28 +54,6 @@ sub update {
     return $self->SUPER::update($argv);
 }
 
-##################################################################
-=head2 get_label - Override get_label method
-
-    Combines room number and site name
-
-  Arguments:
-    None
-  Returns:
-    string
-  Examples:
-    print $room->get_label();
-
-=cut
-sub get_label {
-    my $self = shift;
-    $self->isa_object_method('get_label');
-    if ( int($self->floor) && int($self->floor->site) ){
-	return $self->name. " ". $self->floor->site->get_label;
-    }else{
-	return $self->name;
-    }
-}
 
 ##################################################################
 # Private methods
@@ -88,7 +64,7 @@ sub get_label {
 #
 sub _validate_args {
     my ($self, $argv) = @_;
-    foreach my $field ( qw/floor name/ ){
+    foreach my $field ( qw/level site/ ){
 	$self->throw_user("Missing required argument: $field")
 	    unless ( $argv->{$field} );
     }
