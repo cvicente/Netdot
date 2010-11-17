@@ -480,6 +480,11 @@ sub insert {
 
     # Assign defaults
     # These will be overridden by the given arguments
+
+    # Search for the unknown product object. It is inserted at install time
+    # but we search for the name first in case it's changed.
+    my $unknown_product = Product->search(name=>'Unknown')->first || 3;
+
     my %devtmp = (
 	community        => 'public',
 	customer_managed => 0,
@@ -491,7 +496,7 @@ sub insert {
 	monitored        => 0,
 	monitorstatus    => 0,
 	owner            => $default_owner,
-	product          => 0,
+	product          => $unknown_product,
 	snmp_bulk        => $class->config->get('DEFAULT_SNMPBULK'),
 	snmp_managed     => 0,
 	snmp_polling     => 0,
@@ -4700,20 +4705,29 @@ sub _assign_snmp_target {
 sub _assign_product {
     my ($self, $info) = @_;
 
-    my $host = $self->fqdn;
+    my %args;
+    if ( $info->{sysobjectid} ){
+	$args{sysobjectid} = $info->{sysobjectid};
+    }else{
+	&_unknown;
+    }
 
     my $name = $info->{model} || $info->{productname};
-    my %args;
     if ( defined $name ){
 	$args{name}        = $name;
 	$args{description} = $name;
+    }else{
+	&_unknown;
     }
-    $args{sysobjectid}   = $info->{sysobjectid}  if defined $info->{sysobjectid};
     $args{type}          = $info->{type}         if defined $info->{type};
     $args{manufacturer}  = $info->{manufacturer} if defined $info->{manufacturer}; 
-    $args{hostname}      = $host;
+    $args{hostname}      = $self->fqdn;
     
     return Product->find_or_create(%args);
+
+    sub _unknown {
+	return Product->search(name=>'Unknown')->first || Product->retrieve(3);
+    }
 }
     
 

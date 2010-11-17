@@ -54,21 +54,21 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
     }
     # Look for products with no type
     foreach my $o ( Device->search_no_type() ){
-	$t{'Unknown'}{prod}{$o->name}{id}  = $o->id;
-	$t{'Unknown'}{prod}{$o->name}{num} = $o->{numdevs};
-	$t{'Unknown'}{total}              += $o->{numdevs};
+	$t{'Unset'}{prod}{$o->name}{id}  = $o->id;
+	$t{'Unset'}{prod}{$o->name}{num} = $o->{numdevs};
+	$t{'Unset'}{total}              += $o->{numdevs};
     }
     
     # Look for devices with no product set
     my @noprod = Device->search( product => 0 );
     
     if ( my $num = scalar @noprod ){
-	$t{'Unknown'}{prod}{'Unknown'}{id}   = 0;
-	$t{'Unknown'}{prod}{'Unknown'}{num}  = $num;
-	$t{'Unknown'}{total}                += $num;
+	$t{'Unset'}{prod}{'Unset'}{id}   = 0;
+	$t{'Unset'}{prod}{'Unset'}{num}  = $num;
+	$t{'Unset'}{total}                += $num;
     }
-    if ( exists $t{'Unknown'} ){
-	$grandtotal += $t{'Unknown'}{total};
+    if ( exists $t{'Unset'} ){
+	$grandtotal += $t{'Unset'}{total};
     }
 
     @headers = ( 'Type', 'Model', 'Count', );
@@ -81,7 +81,11 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 
     foreach my $pt ( sort keys %t ){
 	my @row = ();
-	push( @row, "<strong><a href=\"../generic/search_obj.html?table=Device&producttype=$t{$pt}{id}&res=1\">" . $pt . "</a></strong>" );
+	if ( $t{$pt}{id} ){
+	    push( @row, "<strong><a href=\"../generic/search_obj.html?table=Device&producttype=$t{$pt}{id}&res=1\">" . $pt . "</a></strong>" );
+	}else{
+	    push( @row, "<strong>$pt</strong>" );
+	}
 	push( @row, "" );
 	push( @row, '<strong>' . $t{$pt}{total} . '</strong>' );
 	push( @rows, \@row );
@@ -91,8 +95,8 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 	    push( @row, "" );
 	    if ( $t{$pt}{prod}{$product}{id} ){
 		push( @row, '<a href="../generic/view.html?table=Product&id=' . $t{$pt}{prod}{$product}{id} . '">' . $product . '</a>' );
-	    }elsif ( $product eq "Unknown" ){
-		push( @row, '<a href="../generic/search_obj.html?table=Device&product=0&res=1">' . $product . '</a>' );
+	    }elsif ( $product eq "Unset" ){
+		push( @row, '<a href="../generic/search_obj.html?table=Device&product=_unset&res=1">' . $product . '</a>' );
 	    }
 	    push( @row, $t{$pt}{prod}{$product}{num}  );
 	    push( @rows, \@row );
@@ -105,8 +109,8 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
     my %t;
     my @devs = Device->search_by_product_os();
     foreach my $dev (@devs){
-	my $prod  = ($dev->product) ? $dev->product->id : "Unknown";
-	my $manuf = ($dev->product && $dev->product->manufacturer) ? $dev->product->manufacturer->id : 'Unknown';
+	my $prod  = ($dev->product) ? $dev->product->id : "Unset";
+	my $manuf = ($dev->product && $dev->product->manufacturer) ? $dev->product->manufacturer->id : 'Unset';
 	my $os    = $dev->os;
 	$t{$manuf}{total}++;
 	$t{$manuf}{product}{$prod}{total}++;
@@ -118,7 +122,7 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
     foreach my $m ( keys %t ){
 	my @row = ();
 	my $entity;
-	if ( $m ne 'Unknown' && ($entity = Entity->retrieve($m)) ){
+	if ( $m ne 'Unset' && ($entity = Entity->retrieve($m)) ){
 	    push( @row, "<strong><a href=\"../generic/view.html?table=Entity&id=$m\">" . $entity->name . "</a></strong>" );
 	}else{
 	    push( @row, $m );
@@ -130,7 +134,7 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 	    push( @row, " " );
 	    my $product;
 	    my $latest_os;
-	    if ( $prod ne 'Unknown' && ($product = Product->retrieve($prod)) ){
+	    if ( $prod ne 'Unset' && ($product = Product->retrieve($prod)) ){
 		push( @row, "<strong><a href=\"../generic/view.html?table=Product&id=$prod\">" . $product->name . "</a></strong>" );
 		$latest_os = "(recommended: ".$product->latest_os.")" if defined($product->latest_os);
 	    }else{
@@ -160,8 +164,8 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
     @headers = ( 'Manufacturer', 'Model', 'Device', 'OS', );
     
     foreach my $dev (@devices) {
-	my $prod  = ($dev->product) ? $dev->product->id : "Unknown";
-	my $manuf = ($dev->product && $dev->product->manufacturer) ? $dev->product->manufacturer->id : "Unknown";
+	my $prod  = ($dev->product) ? $dev->product->id : "Unset";
+	my $manuf = ($dev->product && $dev->product->manufacturer) ? $dev->product->manufacturer->id : "Unset";
 	my $os    = $dev->os;
 	my $devid = $dev->id;
 	$t{$manuf}{total}++;
@@ -173,7 +177,7 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
     foreach my $m ( keys %t ){
 	my @row = ();
 	my $entity;
-	if ( $m ne 'Unknown' && ($entity = Entity->retrieve($m)) ){
+	if ( $m ne 'Unset' && ($entity = Entity->retrieve($m)) ){
 	    push(@row, "<strong><a href=\"../generic/view.html?table=Entity&id=$m\">" . $entity->name . "</a></strong>" );
 	}else{
 	    push( @row, $m );
@@ -184,7 +188,7 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 	    my @row = ();
 	    push( @row, " " );
 	    my $product;
-	    if ( $prod ne 'Unknown' && ($product = Product->retrieve($prod)) ) {
+	    if ( $prod ne 'Unset' && ($product = Product->retrieve($prod)) ) {
 		push( @row, "<strong><a href=\"../generic/view.html?table=Product&id=$prod\">" . $product->name . "</a></strong>" );
 	    }else{
 		push( @row, $prod );
