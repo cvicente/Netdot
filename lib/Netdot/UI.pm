@@ -360,7 +360,7 @@ sub form_field {
 	} elsif ( $table =~ /Picture/ && $type eq "longblob" ) {
 	    if ( ! $args{edit} ){
 		my $alt = $o->filename;
-		$value = "<a href=\"display_bin.html?table=$table&id=$id\"><img width\"150\" height=\"150\" alt=\"$alt\"src=\"display_bin.html?table=$table&id=$id\" ></a>";
+		$value = "<a href=\"display_bin.html?table=$table&id=$id\"><img width=\"150\" height=\"150\" alt=\"$alt\"src=\"display_bin.html?table=$table&id=$id\" ></a>";
 	    }
 
 	} else {
