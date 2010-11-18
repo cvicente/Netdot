@@ -103,8 +103,9 @@ is($all->{$container->address_numeric}, $container->id, 'retrieve_all_hashref');
 is($all->{$subnet->address_numeric}, $subnet->id, 'retrieve_all_hashref');
 is($all->{$address->address_numeric}, $address->id, 'retrieve_all_hashref');
 
-is($container->get_dot_arpa_name(), '254.169.in-addr.arpa', 'get_dot_arpa_name_v4_16');
-is($subnet->get_dot_arpa_name(), '60.254.169.in-addr.arpa', 'get_dot_arpa_name_v4_24');
+is(($container->get_dot_arpa_names)[0], '254.169.in-addr.arpa', 'get_dot_arpa_names_v4_16');
+
+is(($subnet->get_dot_arpa_names)[0], '60.254.169.in-addr.arpa', 'get_dot_arpa_names_v4_24');
 
 my $subnet2 = Ipblock->insert({
     address => "169.254.10.32",
@@ -112,7 +113,30 @@ my $subnet2 = Ipblock->insert({
     version => 4,
     status  => 'Subnet',
 });
-is($subnet2->get_dot_arpa_name(), '32-27.10.254.169.in-addr.arpa', 'get_dot_arpa_name_v4_27');
+is(($subnet2->get_dot_arpa_names)[0], '32-27.10.254.169.in-addr.arpa', 'get_dot_arpa_names_v4_27');
+
+my $subnet3 = Ipblock->insert({
+    address => "169.254.100.0",
+    prefix  => '23',
+    version => 4,
+    status  => 'Subnet',
+});
+my @arpa_names = ('100.254.169.in-addr.arpa', '101.254.169.in-addr.arpa');
+my @a = $subnet3->get_dot_arpa_names();
+is($a[0], $arpa_names[0], 'get_dot_arpa_names_v4_23');
+is($a[1], $arpa_names[1], 'get_dot_arpa_names_v4_23');
+
+my $blk = Ipblock->insert({
+    address => "8.0.0.0",
+    prefix  => '7',
+    version => 4,
+    status  => 'Container',
+});
+@arpa_names = ('8.in-addr.arpa', '9.in-addr.arpa');
+@a = $blk->get_dot_arpa_names();
+is($a[0], $arpa_names[0], 'get_dot_arpa_names_v4_7');
+is($a[1], $arpa_names[1], 'get_dot_arpa_names_v4_7');
+$blk->delete();
 
 my $v6container = Ipblock->insert({
     address => "2001:db8::",
@@ -121,7 +145,19 @@ my $v6container = Ipblock->insert({
     status  => 'Container',
 });
 
-is($v6container->get_dot_arpa_name(), '8.B.D.0.1.0.0.2.ip6.arpa', 'get_dot_arpa_name_v6_32');
+is(($v6container->get_dot_arpa_names)[0], '8.b.d.0.1.0.0.2.ip6.arpa', 'get_dot_arpa_name_v6_32');
+
+my $v6container2 = Ipblock->insert({
+    address => "2001:db8::",
+    prefix  => '62',
+    version => 6,
+    status  => 'Container',
+});
+
+is(($v6container2->get_dot_arpa_names)[0], '0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa', 'get_dot_arpa_name_v6_62');
+is(($v6container2->get_dot_arpa_names)[1], '1.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa', 'get_dot_arpa_name_v6_62');
+is(($v6container2->get_dot_arpa_names)[2], '2.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa', 'get_dot_arpa_name_v6_62');
+is(($v6container2->get_dot_arpa_names)[3], '3.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa', 'get_dot_arpa_name_v6_62');
 
 # Delete all records
 $container->delete(recursive=>1);

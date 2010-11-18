@@ -33,11 +33,11 @@ Netdot::Model::Product - Netdot Device Product Class
 
   Arguments:  
     Hash ref with following keys:
-     name          - 
-     description   - 
-     sysobjectid   - (required)
+     name          - A unique name for the product
+     description   - A short description of the product
+     sysobjectid   - (required) The value of SNMP's SysObjectID
      type          - Can be a ProductType object, id or name
-     manufacturer  
+     manufacturer  - An entity
      hostname      - (optional) for guessing product type based on device name
   Returns:    
     Product object or undef if error
@@ -83,25 +83,25 @@ sub find_or_create {
 				      $ent->name));
 	    }
 	}
-	if ( $manufacturer && !$ent ){
-	    if($ent = Entity->search(name=>$manufacturer)->first){
-                #Ok, there is an entity with the same name, does it have the same oid?
-                if(! ($ent = Entity->search(name=>$manufacturer, oid=>$oid)->first)){
-                    #eek, it sure dosn't, we'll need to add another entry with the same manufacturer name!
+	if ( !$ent && $manufacturer ){
+	    if ( $ent = Entity->search(name=>$manufacturer)->first ){
+                # There is an entity with the same name, does it have the same oid?
+                if (!($ent = Entity->search(name=>$manufacturer, oid=>$oid)->first) ){
+                    # We'll need to add another entry with the same manufacturer name
                     my $count = 1;
-                    #this technique will take a long time if there are a lot of products with the same name in the db
-                    #but that should very rarely happen.
-                    while($ent = Entity->search(name=>$manufacturer."[$count]")){
-                         if($count < 5){
-                             $count+=1;
-                         }
-                         #enough counting already lets get this overwith!
-                         else{
-                             $count = int(rand(1000000))
-			 }
+                    # this technique will take a long time if there are a lot of products with the same name in the db
+                    # but that should very rarely happen.
+                    while( $ent = Entity->search(name=>$manufacturer."[$count]") ){
+			if ( $count < 5 ){
+			    $count++;
+			}
+			# enough counting already lets get this over with!
+			else{
+			    $count = int(rand(1000000))
+			}
                     }
-                    #we have exited the loop, which means count contains a value that, when combined with the manufacturer's
-                    #name, does not exist in the database
+                    # we have exited the loop, which means count contains a value that, when combined with the manufacturer's
+                    # name, does not exist in the database
                     $manufacturer .= "[$count]";
                     $ent = 0; #set ent to 0 so the next if statement can execute                
                 }
@@ -118,7 +118,7 @@ sub find_or_create {
 	
 	my $ptype;
 	if ( $type ){
-	    if ( ref($type) =~ /ProductType/ ){
+	    if ( ref($type) eq 'Netdot::Model::ProductType' ){
 		# We were given an object
 		$ptype = $type;
 	    }elsif ( $type =~ /^\d+$/ ){
@@ -145,8 +145,9 @@ sub find_or_create {
 	    }
 	}	
 	
-	$class->throw_fatal("Product::find_or_create: A product type could not be determined.  Aborting")
-	    unless $ptype;
+	unless ( $ptype ){
+	    $ptype = ProductType->search(name=>'Unknown')->first;
+	}
 
 	###############################################
 	# Insert New product

@@ -27,7 +27,6 @@ $range_description => undef
 $range_parent      => undef
 $range_gen_dns     => undef
 $range_fw_zone     => undef
-$range_rev_zone    => undef
 $name_prefix       => undef
 $name_suffix       => undef
 $block_owner       => undef
@@ -50,7 +49,7 @@ $ip_list_sort      => 'Address'
 $show_ch_util      => 0
 $state_digest      => undef
 @link_zones        => undef
-$new_rev_zone      => undef
+@new_rev_zones     => undef
 $template_zone_for_rev => undef
 </%args>
 %
@@ -270,7 +269,6 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 					name_prefix => $name_prefix,
 					name_suffix => $name_suffix,
 					fzone       => $range_fw_zone,
-					rzone       => $range_rev_zone,
 		    );
 	    };
 	}
@@ -488,20 +486,23 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 #
 #######################################################################################
 }elsif ( $_action eq 'ADD_REV_ZONE' ){
-    if ( $new_rev_zone ){
-	my %args = (name=>$new_rev_zone);
-	$args{template} = $template_zone_for_rev if ( $template_zone_for_rev );
+    if ( @new_rev_zones && ($new_rev_zones[0] ne "") ){
 	eval {
-	    my $z = Zone->insert(\%args);
-	    SubnetZone->insert({subnet=>$o, zone=>$z});
+	    Netdot::Model->do_transaction(sub{ 
+		foreach my $name ( @new_rev_zones ){
+		    my %args = (name=>$name);
+		    $args{template} = $template_zone_for_rev if ( $template_zone_for_rev );
+		    my $z = Zone->insert(\%args);
+		}
+					  });
 	};
 	if ( my $e = $@ ){
-	    $m->comp('/generic/error.mhtml', error=>"Problem creating new reverse zone: $e");
+	    $m->comp('/generic/error.mhtml', error=>"Problem creating new reverse zones: $e");
 	}else{
-	    $m->comp('.show_message', title=>"Action Message", msg=>"<p><strong>Reverse zone created successfully</strong>");
+	    $m->comp('.show_message', title=>"Action Message", msg=>"<p><strong>Reverse zones created successfully</strong>");
 	}
     }else{
-	$m->comp('/generic/error.mhtml', error=>"Please provide a name for the reverse zone");
+	$m->comp('/generic/error.mhtml', error=>"Please provide a name for at least one reverse zone");
     }
 }
 
@@ -910,24 +911,6 @@ if ( $edit ){
 	$x;
     }});
 
-    push @fields, 'Rerverse Zone';
-    push (@data, &{sub{
-	my $x;
-	$x .= '<select name="range_rev_zone" id="range_rev_zone">';
-	$x .= '<option value="0">-- Select --</option>';
-	if ( $revzone ){
-	    $x .= '<option value="'. $revzone->id .'" SELECTED>'. $revzone->name .'</option>';
-	}
-	foreach my $z ( @allzones ){
-	    next unless defined $z;
-	    next unless ( $z->name =~ /\.arpa$|\.int$/ );
-	    $x .= '<option value="'. $z->id .'">'. $z->name .'</option>';
-	}
-	$x .= '</select>';
-	$x .= '<a class="hand" onClick="openinsertwindow(\'table=Zone&select_id=range_rev_zone&selected=1&dowindow=1\')">[new]</a>';
-	$x;
-    }});
-
 </%perl>
 
 <& /generic/attribute_table.mhtml, field_headers=>\@fields, data=>\@data,
@@ -1258,44 +1241,46 @@ if ($o->status->name eq "Subnet") {
 %         my %cur_zones;
 %         map { $cur_zones{$_->zone->id} = 1 } @sz; 
 	  <form name="netdotform" action="ip.html" method="POST">
-	  <input type="hidden" name="id" value="<% $o->id %>">
-	  <input type="hidden" name="_action" value="LINK_ZONES">
-	  <table><tr>
-          <td width="50%">
-          Link this block with existing forward and reverse zones:
-	  <p><select name="link_zones" multiple="multiple">
-%	  foreach my $zone ( grep { $_->active == 1 } @all_zones ){
-%             next if exists $cur_zones{$zone->id};
-              <option value="<% $zone->id %>"><% $zone->get_label %></option>
-%	  }
-          </select>
-          <p>
-          <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
-          <input type="submit" name="submit" value="save">
-          </td><td>
+	    <input type="hidden" name="id" value="<% $o->id %>">
+	    <input type="hidden" name="_action" value="LINK_ZONES">
+	    <table><tr>
+            <td width="50%">
+            Link this block with existing forward zones:
+	    <p><select name="link_zones" multiple="multiple">
+%	    foreach my $zone ( grep { $_->active == 1 && $_->name !~ /\.arpa$/ } @all_zones ){
+%               next if exists $cur_zones{$zone->id};
+                <option value="<% $zone->id %>"><% $zone->get_label %></option>
+%	    }
+            </select>
+            <p>
+            <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+            <input type="submit" name="submit" value="save">
+            </td><td>
 	  </form>
 	  <form name="netdotform" action="ip.html" method="POST">
-	  <input type="hidden" name="id" value="<% $o->id %>">
-	  <input type="hidden" name="_action" value="ADD_REV_ZONE">
-%	  my $new_rev_zone_name = $o->get_dot_arpa_name();
-%	  if ( Zone->search(name=>$new_rev_zone_name ) ){
-%	     # it already exists, don't show next block
-%	  }else{
-              Create a reverse zone for this block:
-              <p><input type="text" size="50" name="new_rev_zone" value=<% $new_rev_zone_name %>>
-              <p>Use template zone (optional):
-	      <p><select name="template_zone_for_rev">
-	      <option value="0">-- Select --</option>
-%	      foreach my $zone ( @all_zones ){
-                  <option value="<% $zone->id %>"><% $zone->get_label %></option>
-%	      }
-              </select>
-	      <p>
-              <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
-              <input type="submit" name="submit" value="create">
-%	  }
-          <p>
-	  </tr></table>
+	    <input type="hidden" name="id" value="<% $o->id %>">
+	    <input type="hidden" name="_action" value="ADD_REV_ZONE">
+            Create reverse zones for this block:
+	    <br>(zones that already exist will be skipped from list)
+            <p><select name="new_rev_zones" multiple="multiple">
+%           foreach my $n ( $o->get_dot_arpa_names ){
+%               my $name = Zone->search(name=>$n)->first->name;
+%               next if (  $name && ($n eq $name) );
+                <option value="<% $n %>"><% $n %></option>
+%           }
+	    </select>
+            <p>Use template zone (optional):
+	    <p><select name="template_zone_for_rev">
+            <option value="0">-- Select --</option>
+%	        foreach my $zone ( @all_zones ){
+                    <option value="<% $zone->id %>"><% $zone->get_label %></option>
+%	        }
+            </select>
+	    <p>
+            <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+            <input type="submit" name="submit" value="create">
+            <p>
+	    </tr></table>
 	  </form>
 %     }else{
              <& /generic/sortresults.mhtml, object=>\@sz, withedit=>($edit eq 'edit_zones')? 1 : 0 &>

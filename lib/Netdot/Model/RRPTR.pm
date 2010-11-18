@@ -48,7 +48,7 @@ sub insert {
 	$logger->debug("Netdot::Model::RRPTR: Figuring out owner for ".$ipb->get_label);
 
 	my $zone = ref($argv->{zone}) ? $argv->{zone} : Zone->retrieve($argv->{zone});
-	my $name = $class->get_name(ipblock=>$ipb, zone=>$zone);
+	my $name = $class->get_name(ipblock=>$ipb);
 	my $rr = RR->find_or_create({zone=>$zone, name=>$name});
 	$logger->debug("Netdot::Model::RRPTR: Created owner RR for IP: ".
 		       $ipb->get_label." as: ".$rr->get_label);
@@ -81,46 +81,35 @@ sub insert {
 }
 
 ##################################################################
-=head2 get_name - Figure out record name given IP and zone
+=head2 get_name - Figure out record name given IP
 
   Arguments:
-    Hashref containing:
+    Hash containing:
     ipblock - ipblock object
-    zone    - zone object
   Returns:
     String
   Examples:
-    my $name = RRPTR->get_name($ipb, $zone);
+    my $name = RRPTR->get_name(ipblock=>$ipb);
 =cut
 sub get_name {
     my ($class, %argv) = @_;
 
-    my ($ipblock, $zone) = @argv{'ipblock', 'zone'};
-    unless ( $ipblock && $zone ){
+    my $ipblock = $argv{ipblock};
+    unless ( $ipblock ){
 	$class->throw_fatal("RRPTR::get_name: Missing required arguments");
     }
 
-    my $p = $zone->name;
-    if ( $p =~ /\.in-addr.arpa$/ ){
-	$p =~ s/(.*)\.in-addr.arpa$/$1/;
-    }elsif ( $p =~ /\.ip6.arpa$/ ){
-	$p =~ s/(.*)\.ip6.arpa$/$1/;     
-    }elsif ( $p =~ /\.ip6.int$/ ){
-	$p =~ s/(.*)\.ip6.int$/$1/;
-    }else{
-	$class->throw_user("Zone name $p is not valid for a reverse zone");
-    }
-
-    my $name;
-    if ( $ipblock->version eq '4' ){
-	$name = join('.', reverse split(/\./, $ipblock->address));
-    }elsif ( $ipblock->version eq '6' ){
-	$name = $ipblock->full_address;
-	$name =~ s/://g;
-	$name = join('.', reverse split(//, $name));
-    }
-    $name =~ s/\.$p$//i;
-    return $name;
+      my $name;
+      if ( $ipblock->version eq '4' ){
+          $name = join('.', reverse(split(/\./, $ipblock->address)), 'in-addr.arpa');
+      }elsif ( $ipblock->version eq '6' ){
+          $name = $ipblock->full_address;
+          $name =~ s/://g;
+          $name = join('.', reverse(split(//, $name)), 'ip6.arpa');
+      }else {
+          $class->throw_fatal("RRPTR::get_name: Unknown IP version");
+      }
+      return $name;
 }
 
 =head1 INSTANCE METHODS

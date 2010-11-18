@@ -1014,7 +1014,6 @@ sub get_maxed_out_subnets {
       name_prefix - String to prepend to host part of IP address
       name_suffix - String to append to host part of IP address
       fzone       - Forward Zone id for DNS records
-      rzone       - Reverse Zone id for DNS records
   Returns:   
 
   Examples:
@@ -1073,17 +1072,16 @@ sub add_range{
 
 	#########################################
 	# Call the plugin that generates DNS records
-	if ( $argv{gen_dns} && $argv{fzone} && $argv{rzone} ){
+	if ( $argv{gen_dns} && $argv{fzone} ){
 	    if ( $argv{status} ne 'Dynamic' && $argv{status} ne 'Static' ){
 		$class->throw_user("DNS records can only be auto-generated for Dynamic or Static IPs");
 	    }
 	    my $fzone = Zone->retrieve($argv{fzone});
-	    my $rzone = Zone->retrieve($argv{rzone});
 	    $logger->info("Ipblock::add_range: Generating DNS records: $argv{start} - $argv{end}");
 	    $range_dns_plugin->generate_records(prefix=>$argv{name_prefix}, 
 						suffix=>$argv{name_suffix}, 
 						start=>$ipstart, end=>$ipend, 
-						fzone=>$fzone, rzone=>$rzone );
+						fzone=>$fzone);
 	}
 	
 				  }); # end of transaction
@@ -2247,61 +2245,82 @@ sub reverse_zone {
     my ($self) = @_;
     $self->isa_object_method('reverse_zone');
 
-    if ( my @zones = $self->dns_zones ){
-	foreach my $z ( @zones ){
-	    if ( $z->name =~ /\.arpa$|\.int$/ ){
-		return $z;
-	    }
-	}
-    }
+    my $rname = RRPTR->get_name(ipblock=>$self);
+    my @zones = Zone->search(name=>$rname);
+    return $zones[0];
 }
 
 ############################################################################
-=head2 - get_dot_arpa_name
+=head2 - get_dot_arpa_names
 
-    Return the corresponding in-addr.arpa or ip6.arpa zone name. 
+    Return the corresponding in-addr.arpa or ip6.arpa zone names 
     Supports RFC2317 (Classless IN-ADDR.ARPA delegation) notation
 
   Args: 
     delim (optional) - Delimiter to separate address and mask in RFC2317 cases
   Returns: 
-    string
+    Array of strings
   Examples:
-    my $name = $block->get_dot_arpa_name()
+    my $name = $block->get_dot_arpa_names()
 
 =cut
-sub get_dot_arpa_name {
+sub get_dot_arpa_names {
     my ($self, %argv) = @_;
-    $self->isa_object_method('get_dot_arpa_name');
+    $self->isa_object_method('get_dot_arpa_names');
     my $delim = $argv{delim} || '-';
-    my $dot_arpa;
+    my @names;
     if ( $self->version == 4 ){
-	my $name;
-	my @octets = split('\.', $self->address);
-	if ( $self->prefix < 8 ){
-	    $self->throw_user("Cannot create a single reverse zone for this prefix length");
-	}elsif ( $self->prefix == 8 ){
-	    $name = $octets[0];
-	}elsif ( $self->prefix == 16 ){
-	    $name = "$octets[1].$octets[0]";
-	}elsif ( $self->prefix == 24 ){
-	    $name = "$octets[2].$octets[1].$octets[0]";
-	}elsif ( $self->prefix > 24 ){
+	if ( 0 < $self->prefix && $self->prefix <= 8 ){
+	    my @subnets = $self->_netaddr->split(8);
+	    foreach my $subnet ( @subnets ){
+		push @names, (split(/\./, $subnet->addr))[0];
+	    }
+
+	}elsif ( $self->prefix <= 16 ){
+	    my @subnets = $self->_netaddr->split(16);
+	    foreach my $subnet ( @subnets ){
+		push @names, join('.', reverse((split(/\./, $subnet->addr))[0..1]));
+	    }	    
+
+	}elsif ( $self->prefix <= 24 ){
+	    my @subnets = $self->_netaddr->split(24);
+	    foreach my $subnet ( @subnets ){
+		push @names, join('.', reverse((split(/\./, $subnet->addr))[0..2]));
+	    }	    
+
+	}elsif ( $self->prefix < 32 ){
 	    # RFC 2317 case
-	    $name = $octets[3].$delim.$self->prefix.".$octets[2].$octets[1].$octets[0]";
+	    my @octets = split('\.', $self->address);
+	    push @names, $octets[3].$delim.$self->prefix.".$octets[2].$octets[1].$octets[0]";
+
 	}else {
-	    $self->throw_user('Cannot create a single reverse zone for this prefix length:'.$self->prefix);
+	    $self->throw_user('Unexpected prefix length:'.$self->prefix);
 	}
-	$dot_arpa = "$name.in-addr.arpa";
+	map { $_ .= '.in-addr.arpa' } @names;
+
     }elsif ( $self->version == 6 ){
-	my $name = $self->full_address();
+	if ( my $rem = $self->prefix % 4 ){
+	    # prefix is not a multiple of four
+	    my $split_size = $self->prefix - $rem + 4;
+	    my @subnets = $self->_netaddr->split($split_size);
+	    foreach my $subnet ( @subnets ){
+		push @names, &_get_v6_arpa($subnet);
+	    }
+	}else{
+	    push @names, &_get_v6_arpa($self->_netaddr);
+	}
+    }
+
+    sub _get_v6_arpa {
+	my ($netaddr) = @_;
+	my $name = $netaddr->full();
 	$name =~ s/://g;
 	my @nibbles = split(//, $name);
-	@nibbles = @nibbles[0..($self->prefix/4)-1];
+	@nibbles = @nibbles[0..($netaddr->masklen/4)-1];
 	$name = join('.', reverse @nibbles);
-	$dot_arpa = "$name.ip6.arpa";
+	return lc("$name.ip6.arpa");
     }
-    return $dot_arpa;
+    return @names;
 }
 
 ##################################################################
