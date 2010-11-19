@@ -2,7 +2,6 @@
 # Make the necessary modifications to upgrade Netdot's schema and data
 #
 #
-# This script modifies a 0.9.5 schema into 0.9.6
 #
 
 use strict;
@@ -26,20 +25,6 @@ my $dbh = &dbconnect($CONFIG{DB_TYPE}, $CONFIG{DB_HOST}, $CONFIG{DB_PORT},
 
 
 my @statements = (
-    "CREATE TABLE `datacache` (
-     `data` longblob NOT NULL,
-     `id` integer unsigned NOT NULL auto_increment,
-     `name` varchar(255) NOT NULL,
-     `tstamp` timestamp NOT NULL DEFAULT '1970-01-02 00:00:01',
-     UNIQUE INDEX datacache1 (`name`),
-     PRIMARY KEY (`id`)
-     ) ENGINE=InnoDB;",
-    "ALTER TABLE rrtxt MODIFY COLUMN txtdata varchar(255)",
-    "ALTER TABLE rrloc MODIFY COLUMN latitude integer unsigned",
-    "ALTER TABLE rrloc MODIFY COLUMN longitude integer unsigned",
-    "ALTER TABLE rrloc MODIFY COLUMN altitude integer unsigned",
-    "ALTER TABLE zone MODIFY COLUMN minimum integer unsigned",
-    "ALTER TABLE zone MODIFY COLUMN serial integer unsigned",
     );
 
 foreach my $st ( @statements ) {
