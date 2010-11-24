@@ -476,7 +476,7 @@ sub insert {
 
     # Get the default owner entity from config
     my $config_owner  = Netdot->config->get('DEFAULT_DEV_OWNER');
-    my $default_owner = Entity->search(name=>$config_owner)->first;
+    my $default_owner = Entity->search(name=>$config_owner)->first || Entity->search(name=>'Unknown')->first;
 
     # Assign defaults
     # These will be overridden by the given arguments
