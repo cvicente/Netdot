@@ -321,9 +321,9 @@ sub insert {
 	# Class::DBI shows a full stack trace
 	# Try to make it less frightening for the user
 	if ( $e =~ /Duplicate entry/i ){
-	    $msg .= "Some values are duplicated.";
+	    $msg .= "Some values are duplicated. Full error: $e";
 	}elsif ( $e =~ /cannot be null|not-null constraint/i ){
-	    $msg .= "Some fields cannot be null.";
+	    $msg .= "Some fields cannot be null. Full error: $e";
 	}elsif ( $e =~ /invalid input syntax/i ){
 	    $msg .= "Some fields have invalid input syntax.";
 	}elsif ( $e =~ /out of range/i ){
