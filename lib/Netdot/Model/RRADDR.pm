@@ -218,8 +218,6 @@ sub _update_rrptr {
 
     my $rrptr;
     if ( !($rrptr = ($self->ipblock->ptr_records)[0]) ){
-	# We *need* to have a SubnetZone relationship.
-	# Otherwise it's hard to tell where the PTR record goes
 	if ( my $rev_zone = $self->ipblock->reverse_zone() ){
 	    # Notice that we don't pass the rr field because
 	    # the RRPTR class can figure that out.
