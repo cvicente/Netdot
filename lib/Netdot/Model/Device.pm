@@ -441,7 +441,7 @@ sub assign_name {
     # Make sure name has an associated IP and A record
     if ( $ip ){
 	my $ipb = Ipblock->search(address=>$ip)->first ||
-	    Ipblock->insert({address=>$ip, status=>'Static', no_update_tree=>1});
+	    Ipblock->insert({address=>$ip, status=>'Static'});
 	my $rraddr = RRADDR->find_or_create({ipblock=>$ipb, rr=>$rr});
     }
     return $rr;
