@@ -9,8 +9,13 @@ $dividefreespace => 'max'
 </%args>
 
 <%init>
-if ( $network->version == 6 ){
+my $BLOCK_MAX = Netdot->config->get('CONTAINER_BLOCK_VIEW_MAX_PREFIX');
+if ( $network->version == 4 && $network->prefix < $BLOCK_MAX ){
+    print "This block is too big for the block view";
+    $m->abort;
+}elsif ( $network->version == 6 ){
     $m->comp('/generic/error.mhtml', error=>"This component cannot currently handle IPv6 blocks");
+    $m->abort;
 }
 </%init>
 
