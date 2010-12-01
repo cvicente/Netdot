@@ -68,6 +68,7 @@ my $max_ips     = Netdot->config->get('SHOW_COUNT_THRESHOLD');
 my $added_ip    = 0;
 my $added_block = 0;
 my $covering_block;
+my $BLOCK_VIEW_MAX;
 
 # Some regular expressions
 my $IPV4 = Netdot->get_ipv4_regex();
@@ -85,14 +86,25 @@ if ( $id ){
 	    $m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
 	}
 	$title = $o->get_label;
-	if ( $o->version == 6 ){
-	    $view_format = 'list' 
-		if $view_format eq 'block';
-	}
     }else{
 	$m->comp('/generic/error.mhtml', error => "Could not retrieve Ipblock id: $id");
     }
 
+    # Block View has some limits
+    if ( $o->status->name eq 'Subnet' ){
+	$BLOCK_VIEW_MAX = Netdot->config->get('SUBNET_BLOCK_VIEW_MAX_PREFIX');
+    }elsif ( $o->status->name eq 'Container' ){
+	$BLOCK_VIEW_MAX = Netdot->config->get('CONTAINER_BLOCK_VIEW_MAX_PREFIX');
+    }
+    if ( $o->version == 4 ){
+	if ( $view_format eq 'block' ){
+	    if ( $BLOCK_VIEW_MAX && ($o->prefix < $BLOCK_VIEW_MAX) ){
+		$view_format = 'list';
+	    }
+	}
+    }elsif ( $o->version == 6 ){
+	$view_format = 'list' if $view_format eq 'block';
+    }
 
 }else{
     $title = "Search";
@@ -1347,7 +1359,9 @@ if ($o->status->name eq "Subnet") {
             <span class="ipaddr_reserved">Reserved</span>
 			&nbsp;&nbsp;
 %	        if ( $o->version == 4 ){
-         	    <a href="ip.html?id=<% $id %>&view_format=block">[Block View]</a>
+%                   if ( $BLOCK_VIEW_MAX && ($o->prefix >= $BLOCK_VIEW_MAX) ){
+         	        <a href="ip.html?id=<% $id %>&view_format=block">[Block View]</a>
+%                   }
 %               }
          	<a href="ip.html?id=<% $id %>&view_format=list">[List View]</a>
           </div>
@@ -1388,7 +1402,9 @@ if ($o->status->name eq "Subnet") {
 %		      print '<a href="ip.html?id='.$id.'&edit_children=1&view_format=list&sort=&ip_list_sort='.$ip_list_sort.'">[edit]</a>&nbsp;';
 %                 }
 %                 if( $o->version == 4 ) {
-%                     print '<a href="ip.html?id='.$id.'&view_format=block">[Block View]</a>';
+%                     if ( $BLOCK_VIEW_MAX && ($o->prefix >= $BLOCK_VIEW_MAX) ){
+%                         print '<a href="ip.html?id='.$id.'&view_format=block">[Block View]</a>';
+%                     }
 %                 } 
 %                 if ( $o->status->name eq 'Container' ){
                       <a href="ip.html?id=<% $id %>&view_format=tree">[Tree View]</a>

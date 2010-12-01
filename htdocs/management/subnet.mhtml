@@ -10,7 +10,8 @@ $user    => $ui->get_current_user($r)
 
 <%init>
 
-if ( $network->version == 4 && $network->prefix < 19 ){
+my $BLOCK_MAX = Netdot->config->get('SUBNET_BLOCK_VIEW_MAX_PREFIX');
+if ( $network->version == 4 && $network->prefix < $BLOCK_MAX ){
     print "This subnet is too big for the block view";
     $m->abort;
 }elsif ( $network->version == 6 ){
