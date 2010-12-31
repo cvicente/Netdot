@@ -58,6 +58,7 @@ my $hideheader = 'style="display:none"' if ( !$showheader );
 
 my @list;
 my $entityid = -1;
+my $manager = $ui->get_permission_manager($r);
 </%init>
 
 <div id="sectiontools" <% $hideheader %>>
@@ -66,12 +67,14 @@ my $entityid = -1;
         Contacts Tasks
     </div>
     <div class="containerheadright">
-%   if ( $view_entity eq 'search' ){ 
-	<a href="index.html?page=ENTITIES&view_entity=new">[new]</a>
-%   }elsif ( $view_entity eq 'new' ){
-        <a href="index.html?page=ENTITIES&view_entity=search">[search]</a>
+%   if ( $manager && $manager->can($user, 'access_admin_section', 'entities:new') ){
+%       if ( $view_entity eq 'search' ){ 
+	    <a href="index.html?page=ENTITIES&view_entity=new">[new]</a>
+%       }elsif ( $view_entity eq 'new' ){
+            <a href="index.html?page=ENTITIES&view_entity=search">[search]</a>
+%       }
 %   }
-%       print_showtaskslink($show_tasks);
+%   print_showtaskslink($show_tasks);
     </div>
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
         <table><tr><td>

@@ -196,9 +196,11 @@ my $refresh_url = "device.html?id=$id&view=$view";
  <div class="containerheadrightoutside">
     <a href="<% $refresh_url %>">[refresh]</a>
 %    if ( $o->snmp_managed ){
-	<a href="updatedevice.html?device=<% $id %>&action=discover">[snmp-update]</a>
+%        if ( $manager && $manager->can($user, 'edit', $o) ){
+	    <a href="updatedevice.html?device=<% $id %>&action=discover">[snmp-update]</a>
+%        }
 %    }
-%    if ( $manager && $manager->can($user, "delete", $o) ){
+%    if ( $manager && $manager->can($user, 'delete', $o) ){
 %       my $default_inventory = Netdot->config->get("INVENTORY_WARNING");
 %       my $warning;
 %       if( $default_inventory && $o->inventorynumber != "" ){
@@ -245,11 +247,14 @@ my $refresh_url = "device.html?id=$id&view=$view";
           <li><a href="device.html?id=<% $id %>&view=BGP">BGP Peers</a></li>
 %       }
 %     }
-%     if($view eq "Circuit"){
-        <li><span>Circuit</span></li>
-%     }
-%     else{
-        <li><a href="device.html?id=<% $id %>&view=Circuit">Circuits</a></li>
+%     my @circuits = $o->get_circuits;
+%     if( scalar @circuits ){
+%         if( $view eq "Circuit" ){
+              <li><span>Circuits</span></li>
+%         }
+%         else{
+              <li><a href="device.html?id=<% $id %>&view=Circuit">Circuits</a></li>
+%         }
 %     }
 %     if ( $o->stp_enabled ){
 %       if( $view eq "STP" ) {
@@ -328,7 +333,7 @@ function setNull(select){
 	<!-- General Info Table -->
     	<div class="containerheadleft"><b>General</b></div>
     	<div class="containerheadright">
-% if ($editgen) {
+% if ( $editgen ) {
 	    <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
 	    <input type="submit" name="submit" value="save" >
 %           my $digest = $o->get_digest();
@@ -336,7 +341,9 @@ function setNull(select){
 
 % }else{
 %    if ( $manager && $manager->can($user, "edit", $o) ){
-            <a href="device.html?id=<% $id %>&view=<% $view %>&editgen=1">[edit]</a>
+         <a href="device.html?id=<% $id %>&view=<% $view %>&editgen=1">[edit]</a>
+%    }else{
+         &nbsp;
 %    }
 % }
         </div>
@@ -400,7 +407,9 @@ $ui->add_to_fields(o=>$o, edit=>$editgen,
 %	}else{
 %           if ( $manager && $manager->can($user, "edit", $o) ){
                 <a href="device.html?id=<% $id %>&view=<% $view %>&editloc=1">[edit]</a>
-%           }
+%           }else{
+                &nbsp;
+%    	    }
 %	}
     </div>
     <div class="containerbody">
@@ -462,7 +471,9 @@ $ui->add_to_fields(o=>$o, edit=>$editloc, fields=>\@fields, field_headers=>\@fie
 %	 }else{
 %           if ( $manager && $manager->can($user, "edit", $o) ){
                 <a href="device.html?id=<% $id %>&view=<% $view %>&editmgmt=1">[edit]</a>
-%           }
+%           }else{
+                &nbsp;
+% 	    }
 %	 }
     </div>
     <div class="containerbody">
@@ -533,13 +544,15 @@ if ( $o->snmp_managed ){
         Comments
     </div>
     <div class="containerheadright">
-%	if ($editcomments){	 
-        <input type="button" name="cancel_button" value="Cancel" onClick="history.go(-1);">
-        <input type="submit" name="submit" value="save">
+%	if ( $editcomments ){
+            <input type="button" name="cancel_button" value="Cancel" onClick="history.go(-1);">
+            <input type="submit" name="submit" value="save">
 %	}else{
 %           if ( $manager && $manager->can($user, "edit", $o) ){
                 <a href="device.html?id=<% $id %>&view=<% $view %>&editcomments=1">[edit]</a>
-%           }
+%           }else{
+                &nbsp;
+%	    }
 %	}
     </div>
     <div class="containerbody">
@@ -564,10 +577,14 @@ print $tmp{value};
   <div class="container">
     <div class="containerheadleft"><strong>Custom Attributes</strong></div>
     <div class="containerheadright">
-%     if ( @attributes ) {
-        <a href="device.html?id=<% $o %>&editattr=1">[edit]</a>
+%     if ( $manager && $manager->can($user, 'edit', $o) ){
+%         if ( @attributes ) {
+              <a href="device.html?id=<% $o %>&editattr=1">[edit]</a>
+%         }
+          <a href="edit.html?table=DeviceAttr&device=<% $o %>">[add]</a>
+%     }else{
+          &nbsp;
 %     }
-        <a href="edit.html?table=DeviceAttr&device=<% $o %>">[add]</a>
     </div>
     <div class="containerbody">
         <& /generic/sortresults.mhtml, object=>\@attributes, withedit=>$editattr, return_args=>"?id=$id" &>
@@ -620,7 +637,10 @@ function showVlan(){
 		}
 	    }
 	}
-    } 
+    }
+    # Use this var to avoid checking for permissions for each int
+    my $can_edit = ($manager && $manager->can($user, "edit", $o))? 1 : 0;
+
     ### Headers
     my @closet_jacks;
     (@headers, @rows) = ();
@@ -725,7 +745,7 @@ function showVlan(){
 	  $ac = $ui->form_field(object=>$if, column=>"neighbor", edit=>$editints, linkPage=>1, returnValOnly=>1);
 	  $ac .= "<br>";
       }
-      if ( !$editints ){
+      if ( !$editints && $can_edit ){
 	  #  Do not allow user to add neighbors on virtual interfaces
 	  if ( $if->type ne "53" && $if->type ne "propVirtual" ){
 	      $ac .= "<a class=\"hand\" onClick=\"window.open('addneighbor.html?int_id=$if&url=$refresh_url', 'Add Neighbor', 'width=600,height=200')\">[add]</a>";
@@ -800,6 +820,7 @@ function showVlan(){
 </div>
 
 % if ( ! $editints && ($view eq "Interfaces" || $view eq "All") ){
+%  if ( $manager && $manager->can($user, 'edit', $o) ){
 <div class="container">
     <div class="containerheadleft">
         Options
@@ -829,6 +850,7 @@ function showVlan(){
     </form>
     </p>
     </div>
+%   }
 % }
 </div>
 
@@ -938,9 +960,8 @@ $objects
     </div>
     <div class="containerbody">
 
-%    if (scalar @$ips){
-
 <%perl>
+if (scalar @$ips){
     (@headers, @rows, @row) = ();
 
     @headers = ('<a href="device.html?id='. $id .'&view='. $view .'&ipsort=address">Address</a>',
@@ -949,6 +970,8 @@ $objects
 		'DNS Name(s)',
 		'Services',
 		);
+
+    my $can_edit = ($manager && $manager->can($user, "edit", $o))? 1 : 0;
 
     foreach my $ip ( @$ips ){	   
 	next if ( ! exists $ifvlans{$ip->interface}{$showvlan} && 
@@ -1013,7 +1036,7 @@ $objects
 			  $a .= '<br>';
 		      }
 		  }
-		  if ( !$editips ){
+		  if ( !$editips && $can_edit ){
                       $a .= "<a class=\"hand\" onClick=\"window.open('addservice.html?ip=$ip&url=$refresh_url', 'Create IP service', 'width=400,height=200')\">[add]</a>";
 		  }
 		  $a;
@@ -1074,19 +1097,21 @@ if ( !$editips ){
     </div>
     <div class="containerheadright">&nbsp;</div>
     <div class="containerbody">
-    <p>
-    <form name="if_auto_dns_form" action="device.html" method="POST">
-      <input type="hidden" name="id" value="<% $id %>">
-      <input type="hidden" name="view" value="<% $view %>">
-      Set Auto DNS on all IP interfaces to:
-      <select name="if_auto_dns">
+%   if ( $manager && $manager->can($user, 'edit', $o) ){
+      <p>
+      <form name="if_auto_dns_form" action="device.html" method="POST">
+        <input type="hidden" name="id" value="<% $id %>">
+        <input type="hidden" name="view" value="<% $view %>">
+        Set Auto DNS on all IP interfaces to:
+        <select name="if_auto_dns">
           <option value="" selected>--Select--</option>
           <option value="0">No</option>
           <option value="1">Yes</option>
-      </select>
-      <input type="submit" name="Set" value="Set">
-    </form>
-    </p>
+        </select>
+        <input type="submit" name="Set" value="Set">
+      </form>
+      </p>
+%   }
     </div>
 % }
 </div>
@@ -1474,31 +1499,13 @@ if ( $ipeers ){
 %#
 %#######################################################################
 
-%if ($view eq "Circuit" || $view eq "All"){
-%   my $device_cable = Device->retrieve($id);
-%   my @circuits = $device_cable->get_circuits;
-%   my @non_null_circuits;
-%   foreach(@circuits){
-%       if($_->id != 0){
-%           push(@non_null_circuits, $_);
-%       }
-%   }
-
-
-
-<div class="container">
-    <div class="containerhead">
-        Cable
+%if ( $view eq "Circuit" || $view eq "All" ){
+    <div class="container">
+        <div class="containerhead">Circuits</div>
+        <div class="containerbody">
+            <& /generic/sortresults.mhtml, object => \@circuits , view => "row" &>
+        </div>
     </div>
-    <div class="containerbody">
-%      if(@non_null_circuits){ #do we have any circuits for this device?
-            <& /generic/sortresults.mhtml, object => \@non_null_circuits , view => "row" &>
-%      }
-%      else{
-            No circuits for device
-%      }
-    </div>
-</div>
 %}
   </div> <!-- close containerbodyoutside --> 
  </div> <!-- close containeroutside -->

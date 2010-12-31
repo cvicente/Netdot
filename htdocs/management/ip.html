@@ -538,11 +538,13 @@ if ( my @parents = $o->get_ancestors ){
          <input type="submit" name="submit" value="save">
 %	 }else{
             <a href="ip.html?id=<% $id %>">[refresh]</a>
-%           if ( $manager && $manager->can($user, "access_section", 'ip.html:edit_ipinfo') ){
-                <a href="ip.html?id=<% $id %>&edit=ipinfo">[edit]</a>
-%           }
-%           if ( $manager && $manager->can($user, "access_section", 'ip.html:delete_ip') ){
-                <a href="ip.html?id=<% $id %>&_action=DELETE">[delete]</a>
+%           if ( $manager && $manager->can($user, 'access_section', 'ip.html:edit_ipinfo') ){
+%               if ( $manager && $manager->can($user, 'edit', $o) ){
+                    <a href="ip.html?id=<% $id %>&edit=ipinfo">[edit]</a>
+%               }
+%               if ( $manager && $manager->can($user, 'delete', $o) ){
+                    <a href="ip.html?id=<% $id %>&_action=DELETE">[delete]</a>
+%               }
 %           }
 %	 }
     </div>
@@ -661,7 +663,9 @@ if ( $edit ){
 <div class="container">
     <div class="containerheadleft">Services</div>
     <div class="containerheadright">
+%   if ( $manager && $manager->can($user, 'edit', $o) ){
 	<a href="edit.html?table=IpService&ip=<% $o %>">[add]</a>
+%   }
     </div>
 <%perl>
     my @headers = ("Service", "Contact List");
@@ -771,11 +775,17 @@ if ( $edit ){
 %  }else{
     <a href="ip.html?id=<% $id %>">[refresh]</a>
 %      if ( $manager && $manager->can($user, "access_section", 'ip.html:edit_blockinfo') ){
-	    <a href="ip.html?id=<% $id %>&edit=blockinfo">[edit]</a>
-%	    if ( $o->status->name eq 'Subnet' ){
-	        <a href="ip.html?id=<% $id %>&edit=address_range">[range]</a>
+%           if ( $manager && $manager->can($user, 'edit', $o) ){
+	        <a href="ip.html?id=<% $id %>&edit=blockinfo">[edit]</a>
 %           }
-	    <a href="ip.html?id=<% $id %>&_action=DELETE">[delete]</a>
+%	    if ( $o->status->name eq 'Subnet' ){
+%               if ( $manager && $manager->can($user, 'edit', $o) ){
+	            <a href="ip.html?id=<% $id %>&edit=address_range">[range]</a>
+%               }
+%           }
+%           if ( $manager && $manager->can($user, 'delete', $o) ){
+	        <a href="ip.html?id=<% $id %>&_action=DELETE">[delete]</a>
+%           }
 %       }
 %  }
     </div>
@@ -784,7 +794,7 @@ if ( $edit ){
 
 % if ( $edit eq 'address_range' ){
 
-%     unless ( $manager && $manager->can($user, "edit", $o) ){
+%     unless ( $manager && $manager->can($user, 'edit', $o) ){
 %          $m->comp('/generic/error.mhtml', error=>"You don't have permission to edit this object");
 %     }
 
@@ -997,7 +1007,9 @@ my %owner_tmp = $ui->form_field(object=>$o, column=>"owner", edit=>$edit_block, 
 my $owner = $owner_tmp{value};
 
 if ( ! $edit_block ){
-    $owner .= '<a href="#" onClick="edit_recursive(' . $o->id . ',\'owner\', \'1\')">[edit]</a>';
+    if ( $manager && $manager->can($user, 'edit', $o) ){
+	$owner .= '<a href="#" onClick="edit_recursive(' . $o->id . ',\'owner\', \'1\')">[edit]</a>';
+    }
 }
 push( @field_headers, $owner_tmp{label} );
 push( @cell_data, $owner );
@@ -1163,16 +1175,12 @@ if ($o->status->name eq "Subnet") {
   <div class="container">
     <div class="containerheadleft">Sites</div>
        <div class="containerheadright">
-%      if ( $manager && $manager->can($user, "access_section", 'ip.html:edit_sites') ){
-%          if ( $edit eq 'edit_sites' ){
-               &nbsp;
-%          }else{
-               <a href="ip.html?id=<% $o %>&edit=edit_sites">[edit]</a>
-               <a href="edit.html?table=SiteSubnet&subnet=<% $o %>">[add]</a>
+       &nbsp;
+%      if ( $edit ne 'edit_sites' ){
+%          if ( $manager && $manager->can($user, 'edit', $o) ){
+                   <a href="ip.html?id=<% $o %>&edit=edit_sites">[edit]</a>
+                   <a href="edit.html?table=SiteSubnet&subnet=<% $o %>">[add]</a>
 %          }
-%       }
-%       else{
-            &nbsp;
 %      }
        </div>
     <div class="containerbody">
@@ -1189,11 +1197,12 @@ if ($o->status->name eq "Subnet") {
       <div class="container">
       <div class="containerheadleft">DNS Zones</div>
       <div class="containerheadright">
-%     if ( $edit eq 'edit_zones' ){
-        &nbsp;
-%     }else{
-        <a href="ip.html?id=<% $o %>&edit=edit_zones">[edit]</a>
-        <a href="edit.html?table=SubnetZone&subnet=<% $o %>">[add]</a>
+      &nbsp;
+%     if ( $edit ne 'edit_zones' ){
+%         if ( $manager && $manager->can($user, 'edit', $o) ){
+              <a href="ip.html?id=<% $o %>&edit=edit_zones">[edit]</a>
+              <a href="edit.html?table=SubnetZone&subnet=<% $o %>">[add]</a>
+%	  }
 %     }
       </div>
       <div class="containerbody">
@@ -1300,9 +1309,12 @@ if ($o->status->name eq "Subnet") {
 		 <input type="submit" name="submit" value="save">
 %	      }else{
 %                 if ( @children && $manager && $manager->can($user, 'access_section', 'ip.html:edit_children') ){
-%		      print '<a href="ip.html?id='.$id.'&edit_children=1&view_format=list&sort=&ip_list_sort='.$ip_list_sort.'">[edit]</a>&nbsp;';
+%                     if ( $manager && $manager->can($user, 'edit', $o) ){
+%		          print '<a href="ip.html?id='.$id.'&edit_children=1&view_format=list&sort=&ip_list_sort='.
+%                                $ip_list_sort.'">[edit]</a>&nbsp;';
+%                     }
 %                 }
-%                 if( $o->version == 4 ) {
+%                 if ( $o->version == 4 ) {
 %                     if ( $BLOCK_VIEW_MAX && ($o->prefix >= $BLOCK_VIEW_MAX) ){
 %                         print '<a href="ip.html?id='.$id.'&view_format=block">[Block View]</a>';
 %                     }

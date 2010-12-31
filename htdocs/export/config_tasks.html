@@ -41,9 +41,13 @@ my $DEBUG = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 my @types = qw /Nagios Sysmon Rancid BIND DHCPD/;
 my $logstr;
-
+my $manager = $ui->get_permission_manager($r);
 </%init>
 
+
+% unless ( $manager && $manager->can($user, 'access_admin_section', 'Export:Configurations') ){
+    $m->comp('/generic/error.mhtml', error=>"You don't  have permission to access this section");
+% }
 <form action="config_tasks.html" method="POST">
 <div id="sectiontools" <% $hideheader %>>
 <div class="container">
@@ -108,6 +112,9 @@ my $logstr;
 
 <%perl>
 if ( $submit ){
+    unless ( $manager && $manager->can($user, 'access_admin_section', 'Export:Submit_Configuration') ){
+	$m->comp('/generic/error.mhtml', error=>"You don't  have permission to perform this operation")
+    }
 
     $m->comp('/generic/error.mhtml', error=>"Please select an Export type")
 	unless ( $ARGS{config_types} );

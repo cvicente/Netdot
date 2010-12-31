@@ -26,6 +26,10 @@ if( $onload ) {
     $onload = ' onload="'.$onload.'"';
 }
 my $manager = Apache2::SiteControl->getPermissionManager($r);
+
+# Make sure we have this information for every user
+$ui->get_allowed_objects($r, $user) if $user;
+
 </%init>
 %
 %

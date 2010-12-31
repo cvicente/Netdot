@@ -24,15 +24,15 @@ $import_overwrite => undef
 my $DEBUG = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
-my $obj = Zone->retrieve($id);
-unless ( $obj ){
+my $o = Zone->retrieve($id);
+unless ( $o ){
     $m->comp('/generic/error.mhtml', error=>"Cannot retrieve zone id $id");
 }
 
 # Check if user can view this object
 my $manager = $ui->get_permission_manager($r);
-unless ( $manager && $manager->can($user, "view", $obj) ){
-    $m->comp('/generic/error.mhtml', error=>"You don't have permission to view zone ".$obj->name);
+unless ( $manager && $manager->can($user, "view", $o) ){
+    $m->comp('/generic/error.mhtml', error=>"You don't have permission to view zone ".$o->name);
 }
 
 if ( $submit ){
@@ -43,7 +43,7 @@ if ( $submit ){
 	# Do this atomically
 	eval {
 	    Netdot::Model->do_transaction(sub{
-		$obj->import_records(text=>$bulk_import_data, overwrite=>$import_overwrite)
+		$o->import_records(text=>$bulk_import_data, overwrite=>$import_overwrite)
 					  });
 	};
 	if ( my $e = $@ ){
@@ -63,13 +63,16 @@ if ( $submit ){
 %###########################################################################
 <!-- Display main object values -->
 <div class="container">
-    <div class="containerheadleftoutside"><strong>Zone <% $obj->name %></strong></div>
+    <div class="containerheadleftoutside"><strong>Zone <% $o->name %></strong></div>
     <div class="containerheadrightoutside">
           <a href="zone.html?id=<% $id %>">[refresh]</a>
-%         if ( $manager && $manager->can($user, 'access_section', 'zone.html:buttons') ){
-%           # Only admins can do this
+%         if ( $manager && $manager->can($user, 'access_admin_section', 'zone.html:buttons') ){
             <a href="edit.html?table=Zone">[new]</a>
+%         }
+%         if ( $manager && $manager->can($user, 'edit', $o) ){
             <a href="edit.html?table=Zone&id=<% $id %>">[edit]</a>
+%         }
+%         if ( $manager && $manager->can($user, 'delete', $o) ){
             <a href="delete.html?table=Zone&id=<% $id %>">[delete]</a>
 %         }
           <a href="#" onClick="opentextwindow(jspopoutstring,'js','');">[text]</a>
@@ -83,7 +86,7 @@ if ( $submit ){
 %###########################################################################
 % my @headers;
 % my @rows;
-% my $count = $obj->get_record_count();
+% my $count = $o->get_record_count();
 
  <div class="container">
    <div class="containerhead">Record Count</div>
@@ -140,15 +143,18 @@ if ( $submit ){
 
 <!-- Display list of SubnetZone relationships -->
 %###########################################################################
-%     my @sz = $obj->subnets;
+%     my @sz = $o->subnets;
       <div class="container">
         <div class="containerheadleft">IP Blocks</div>
 %       if ( $edit eq 'ipblocks' ){
 	  <div class="containerheadright">&nbsp;</div>
 %       }else{
 	  <div class="containerheadright">
+	  &nbsp;
+%         if ( $manager && $manager->can($user, 'access_admin_section', 'zone.html:buttons') ){
 	      <a href="zone.html?id=<% $id %>&edit=ipblocks">[edit]</a>
               <a href="edit.html?table=SubnetZone&zone=<% $id %>">[add]</a>
+%         }
 	  </div>
 %       }
         <& /generic/sortresults.mhtml, object=>\@sz, withedit=>($edit eq 'ipblocks')? 1 : 0  &>
@@ -159,15 +165,16 @@ if ( $submit ){
    <div class="container">
       <div class="containerheadleft">Records</div>
       <div class="containerheadright">
-      <a href="host.html?action=new&zone=<% $id %>">[add]</a> 
-%     if ( $manager && $manager->can($user, "access_section", 'zone.html:bulk_import') ){
+%     if ( $manager && $manager->can($user, 'edit', $o) ){
+          <a href="host.html?action=new&zone=<% $id %>">[add]</a> 
           <a href="zone.html?id=<% $id %>&view=bulk_import">[import]</a>
 %     }
 %     if ( $view eq 'records' ){
-%         if ( $edit eq 'records' ){
-	      &nbsp;
-%         }else{
-	      <a href="zone.html?id=<% $id %>&edit=records">[edit]</a>
+          &nbsp;
+%         if ( $edit ne 'records' ){
+%             if ( $manager && $manager->can($user, 'edit', $o) ){
+	          <a href="zone.html?id=<% $id %>&edit=records">[edit]</a>
+%	     }
 %         }
 %     }else{
           <a href="zone.html?id=<% $id %>&view=records">[view]</a>
@@ -177,9 +184,9 @@ if ( $submit ){
 <!-- Display list of records -->
 <%perl>
 if ( $view eq 'records' || $edit eq 'records' ){
-    my $records = $obj->get_hosts();
+    my $records = $o->get_hosts();
     print '<div class="containerbody">';
-    $m->comp('/management/hostlist.mhtml', records=>$records, withedit=>($edit eq 'records')? 1 : 0, return_args=>"?id=$id", dot_arpa=>$obj->is_dot_arpa);
+    $m->comp('/management/hostlist.mhtml', records=>$records, withedit=>($edit eq 'records')? 1 : 0, return_args=>"?id=$id", dot_arpa=>$o->is_dot_arpa);
     print '</div>';
     print '</div>';
 } 
@@ -200,7 +207,7 @@ if ( $view eq 'records' || $edit eq 'records' ){
       <div class="containerbody">
 %     if ( $view eq 'pending_changes' ){
 %         my @pending_changes = HostAudit->search_where(
-%			{ zone     => $obj, 
+%			{ zone     => $o, 
 %                         pending  => 1 },
 %                       { order_by => 'tstamp DESC' });
           <& /generic/sortresults.mhtml, object=>\@pending_changes, withedit=>0  &>
@@ -221,7 +228,7 @@ if ( $view eq 'records' || $edit eq 'records' ){
       <div class="containerbody">
 %     if ( $view eq 'recent_changes' ){
 %         my @audit_records = HostAudit->search_where(
-%	      { zone          => $obj },
+%	      { zone          => $o },
 %	      { order_by      => 'tstamp DESC', 
 %	        limit_dialect => 'LimitXY',
 %	        limit         => '50' });

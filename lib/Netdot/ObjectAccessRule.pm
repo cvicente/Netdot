@@ -42,7 +42,7 @@ sub denies(){
     if ( $user_type eq 'User' || $user_type eq 'Operator' ){
 
 	# Operators have 'view' access to everything
-	return 0 if ( $user_type eq "Operator" && $action eq 'view' );
+	return 0 if ( $user_type eq 'Operator' && $action eq 'view' );
 
 	my $access;
 	if ( !($access = $user->getAttribute('ALLOWED_OBJECTS')) ){

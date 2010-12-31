@@ -10,6 +10,7 @@ $edit        => undef;
 $_action     => undef;
 $__splice1   => undef;
 $__splice2   => undef;
+$user        => $ui->get_current_user($r)
 </%args>
 
 <%attr>
@@ -30,6 +31,9 @@ $edit_strand = 1 if ($id eq "NEW" || $edit eq "strandinfo");
 
 # For /generic/attribute_table.mhtml
 my (@field_headers, @cell_data);
+
+my $manager = $ui->get_permission_manager($r);
+
 </%init>
 
 <%perl>
@@ -87,11 +91,20 @@ if ( defined($_action) ) {
         <script language="javascript" src="../java_script/datechooser.js"></script>
         <input type="hidden" name="id" value="<% $id %>">
         <input type="hidden" name="_action" value="<% $id eq "NEW" ? "NEW" : "UPDATE" %>">
-%           if ($edit_strand) {
+%       if ($edit_strand) {
             <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> <input name="submit" value="save" type="submit">
-%           } else {
-            <a href="cable_strand.html?id=NEW">[new]</a> <a href="cable_strand.html?id=<% $id %>&edit=strandinfo">[edit]</a> <a href="delete.html?table=CableStrand&id=<% $id %>">[delete]</a>
+%       } else {
+%           if ( $manager && $manager->can($user, 'access_admin_section', 'cable_strand:new') ){
+                <a href="cable_strand.html?id=NEW">[new]</a> 
 %           }
+%           if ( $manager && $manager->can($user, 'edit', $o) ){
+                <a href="cable_strand.html?id=<% $id %>&edit=strandinfo">[edit]</a> 
+%           }
+%           if ( $manager && $manager->can($user, 'delete', $o) ){
+                <a href="delete.html?table=CableStrand&id=<% $id %>">[delete]</a>
+%           }
+            &nbsp;
+%       }
 </div>
 <!-- End Header Table -->
 <div class="containerbody">

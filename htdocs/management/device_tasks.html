@@ -58,7 +58,7 @@ if ( $device_search ){
 	# Get rid of spaces
 	$device_search =~ s/\s+//g;
 	if ( $device_search =~ /$MAC/ ){
-	    $m->comp('.show_tasks', %ARGS);
+	    $m->comp('.show_tasks', %ARGS, user=>$user);
 	    $m->comp('/management/mac.html', search=>$device_search, dowindow=>1 );
 	}elsif ( $device_search =~ /$IPV4|$IPV6/ ){
 	    if ( scalar(@list = Device->search(name=>$device_search)) == 1 ){
@@ -69,7 +69,7 @@ if ( $device_search ){
 		$m->comp('/management/address_tasks.html', submit=>1, search_address=>$device_search, user=>$user, dowindow=>1 );
 	    }
 	}else{
-	    $m->comp('.show_tasks', %ARGS);
+	    $m->comp('.show_tasks', %ARGS, user=>$user);
 	    my %args = (name=>$device_search);
 	    $args{zone} = $zone_id if $zone_id;
 	    unless ( (@list = Device->search_like(%args)) ){
@@ -85,12 +85,15 @@ if ( $device_search ){
 	    }
 	}
 }else{
-    $m->comp('.show_tasks', %ARGS);
+    $m->comp('.show_tasks', %ARGS, user=>$user);
 }
 
 
 </%perl>
 
+%################################################################
+%# show_tasks sub-component
+%################################################################
 
 <%def .show_tasks>
 
@@ -102,11 +105,14 @@ $ip_search      => undef
 $mac_search     => undef
 $view           => 'search'
 $zone_id        => undef
+$user
 </%args>
 
 <%init>
 my @communities = @{Netdot->config->get('DEFAULT_SNMPCOMMUNITIES')};
 my @all_zones = Zone->retrieve_all();
+
+my $manager = $ui->get_permission_manager($r);
 </%init>
 
 <div id="sectiontools" <% $hideheader %>>
@@ -115,12 +121,15 @@ my @all_zones = Zone->retrieve_all();
         Device Tasks
     </div>
     <div class="containerheadright">
-%   if ( $view eq 'search' ){ 
-	<a href="device_tasks.html?view=new">[new]</a>
-%   }elsif ( $view eq 'new' ){
-        <a href="device_tasks.html?view=search">[search]</a>
+
+%   if ( $manager && $manager->can($user, 'access_admin_section', 'device_tasks:new') ){
+%       if ( $view eq 'search' ){ 
+	    <a href="device_tasks.html?view=new">[new]</a>
+%       }elsif ( $view eq 'new' ){
+            <a href="device_tasks.html?view=search">[search]</a>
+%       }
 %   }
-%       print_showtaskslink($show_tasks);
+%   print_showtaskslink($show_tasks);
     </div>
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
         <table><tr><td>

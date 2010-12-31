@@ -21,6 +21,8 @@ if( !$showheader ) {
     $hideheader = 'style="display:none"';
 }
 
+my $manager = $ui->get_permission_manager($r);
+
 # This is the stuff that varies in the different sections of the
 # navbar.  Notice that section, attribute, and page could probably be
 # unified into a single string (use upcase to make attribute upcase if
@@ -37,8 +39,15 @@ if( !$showheader ) {
 
 my $section_meta_data = [ 
     map { $m->comp("/$_/autohandler:.section_meta_data") }
-        ("management", "contacts", "cable_plant", "generic", "reports", "export", "help")
+        ("management", "contacts", "cable_plant", "generic", "reports")
 ];
+
+# Only Admins can export stuff
+push @$section_meta_data, $m->comp('/export/autohandler:.section_meta_data') 
+    if ($manager && $manager->can($user, 'access_admin_section', 'Menu:export'));
+	
+push @$section_meta_data, $m->comp("/help/autohandler:.section_meta_data");
+
 </%init>
 %
 %

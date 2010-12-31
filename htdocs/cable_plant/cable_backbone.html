@@ -17,6 +17,7 @@ $range1         => undef
 $range2         => undef
 $splice_bb_end  => undef
 $strand_range   => undef
+$user           => $ui->get_current_user($r)
 </%args>
 
 <%flags>
@@ -55,6 +56,7 @@ $editStrand   = 1 if ($edit eq "strandinfo");
 
 # For table building modules:
 my (@field_headers, @cell_data, @headers, @rows);
+my $manager = $ui->get_permission_manager($r);
 </%init>
 
 <%perl>
@@ -277,10 +279,13 @@ function suggestName()
 	    &nbsp;&nbsp; 
 	    <input name="submit" value="save" type="submit" />
 %         } else {
-            <a href="cable_backbone.html?id=<% $id %>">[refresh]</a> 
-            <a href="cable_backbone.html?id=NEW">[new]</a> 
-	    <a href="cable_backbone.html?id=<% $id %>&edit=cableinfo">[edit]</a> 
-	    <a href="delete.html?table=BackboneCable&id=<% $id %>">[delete]</a>
+              <a href="cable_backbone.html?id=<% $id %>">[refresh]</a> 
+%             if ( $manager && $manager->can($user, 'edit', $o) ){
+	          <a href="cable_backbone.html?id=<% $id %>&edit=cableinfo">[edit]</a> 
+%             }
+%             if ( $manager && $manager->can($user, 'delete', $o) ){
+	          <a href="delete.html?table=BackboneCable&id=<% $id %>">[delete]</a>
+%             }
 %         }
 	</div>
 	<div class="containerbody">
@@ -411,11 +416,16 @@ function editSelected(id)
             <input type="button" name="cancel_st_button" value="cancel" onClick="history.go(-1);" /> 
 	    &nbsp;&nbsp; 
 	    <input name="submit" value="save" type="submit" />
-%	 } else {
-
-                <a href="cable_strand.html?id=NEW&backbone_id=<% $o->id %>">[new]</a>
-                <a href="#" onClick="editSelected(<% $id %>);">[edit]</a>
-                <a href="cable_backbone.html?id=<% $id %>&edit=strandinfo#cable_strand">[edit all]</a>
+%	 }else {
+%             if ( $manager && $manager->can($user, 'access_admin_section', 'cable_backbone:new') ){
+                  <a href="cable_strand.html?id=NEW&backbone_id=<% $o->id %>">[new]</a>
+%             }
+%             if ( $manager && $manager->can($user, 'edit', $o) ){
+                  <a href="#" onClick="editSelected(<% $id %>);">[edit]</a>
+%             }
+%             if ( $manager && $manager->can($user, 'edit', $o) ){
+                  <a href="cable_backbone.html?id=<% $id %>&edit=strandinfo#cable_strand">[edit all]</a>
+%             }
            
 %	 }
 </div>
@@ -448,7 +458,9 @@ function editSelected(id)
 
 	if (!$editStrand) {        
 	    push( @headers, 'Part of Sequence' );
-	    push( @headers, '<B>Edit?</B>' );
+            if ( $manager && $manager->can($user, 'edit', $o) ){
+	        push( @headers, '<B>Edit?</B>' );
+	    }
 	}
 	</%perl>
 
@@ -583,8 +595,9 @@ HERE
 
 	    if (!$editStrand) {        
 	      push( @row, $m->scomp('display_sequence.mhtml', strands=>[$st]) );
-
-	      push( @row, '<input type="checkbox" name="edit_' . $st->id . '" onChange="editCheck(this);">' );
+              if ( $manager && $manager->can($user, 'edit', $o) ){
+	          push( @row, '<input type="checkbox" name="edit_' . $st->id . '" onChange="editCheck(this);">' );
+	      }
 
 	      # This scomp method is *very* helpful.  It returns as a
 	      # string what the component would have printed.  Like
@@ -605,9 +618,10 @@ HERE
 </div>  <!-- container -->
 <!-- End Cable Strands Table -->
 
+% if ( $manager && $manager->can($user, 'edit', $o) ){
 
 <!-- Edit Strand Range  -->
-%if ($edit ne "strandinfo") {
+%  if ($edit ne "strandinfo") {
   <div class="container">
     
     <div class="containerhead">
@@ -637,10 +651,12 @@ HERE
     </div>
   </div>
 
-%}
+%  }
+% }
 
+% if ( $manager && $manager->can($user, 'edit', $o) ){
 <!-- Manually Add Strands  -->
-%if ($edit ne "strandinfo") {
+%  if ($edit ne "strandinfo") {
   <div class="container">
     
     <div class="containerhead">
@@ -701,8 +717,9 @@ HERE
       </form>
     </div>
   </div>
-% }
-%}	# if edit ne strandinfo
+%   }
+%  }	# if edit ne strandinfo
+% }     # if manager
 %}	# if defined (about 300 lines up !)
 </div>  <!-- containerheadoutside -->
 </div>  <!-- containeroutside -->
