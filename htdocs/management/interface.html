@@ -29,7 +29,7 @@ unless ( $manager && $manager->can($user, "access_section", 'interface.html') ){
     $m->comp('/generic/error.mhtml', error=>"You don't have permission to access this page");
 }
 
-my $obj = Interface->retrieve($id);
+my $o = Interface->retrieve($id);
 
 my $dbh = Netdot::Model->db_Main();
 my $fdb_tstamps;
@@ -42,10 +42,16 @@ my %linksfrom = Interface->meta_data->get_links_from;
 <div class="container">
     <div class="containerheadleftoutside"><strong>Interface</strong></div>
     <div class="containerheadrightoutside">
-            <a href="edit.html?table=Interface">[new]</a>
-            <a href="delete.html?table=Interface&id=<% $id %>">[delete]</a>
-          <a href="edit.html?table=Interface&id=<% $id %>">[edit]</a>
-          <a href="#" onClick="opentextwindow(jspopoutstring,'js','');">[text]</a>
+%           if ( $manager && $manager->can($user, "access_admin_section", 'interface.html:new') ){
+                <a href="edit.html?table=Interface">[new]</a>
+%           }
+%           if ( $manager && $manager->can($user, 'delete', $o) ){
+                <a href="delete.html?table=Interface&id=<% $id %>">[delete]</a>
+%           }
+%           if ( $manager && $manager->can($user, 'edit', $o) ){
+                <a href="edit.html?table=Interface&id=<% $id %>">[edit]</a>
+%           }
+            <a href="#" onClick="opentextwindow(jspopoutstring,'js','');">[text]</a>
     </div>
     <div class="containerbodyoutside">
         <& /generic/form.mhtml, table=>"Interface", id=>$id, edit=>0 &>
@@ -61,17 +67,17 @@ my %linksfrom = Interface->meta_data->get_links_from;
 %	      if ( $view eq "all" ){
 		  [all]
 %	      }elsif ( keys %linksfrom > 1 ){
-		  <a href="interface.html?id=<% $obj %>&view=all">[all]</a>
+		  <a href="interface.html?id=<% $o %>&view=all">[all]</a>
 %             }
 %             foreach my $i ( sort keys %linksfrom ){
 %               next if $i eq 'neighbors';
 %               if ( $view eq $i ){
                    [<% $i %>]
 %               }else{
-                   <a href="interface.html?id=<% $obj %>&view=<% $i %>">[<% $i %>]</a>
+                   <a href="interface.html?id=<% $o %>&view=<% $i %>">[<% $i %>]</a>
 %               }   
 %             }
-              <a href="interface.html?id=<% $obj %>&view=history">[history]</a>
+              <a href="interface.html?id=<% $o %>&view=history">[history]</a>
 	   </div>
 	</div>
       </div>
@@ -83,7 +89,7 @@ my %linksfrom = Interface->meta_data->get_links_from;
 %    if ( ($view eq 'all' || $view eq $i ) ){
 %	# Special cases
 %       next if $i eq 'neighbors';
-%	if( $i eq 'vlans' && (my @ivlans = $obj->vlans) ){
+%	if( $i eq 'vlans' && (my @ivlans = $o->vlans) ){
 %           my @vlans = map { $_->vlan } @ivlans;
             <div class="containerhead">VLANs</div>
 	        <div class="container">
@@ -151,7 +157,7 @@ my %linksfrom = Interface->meta_data->get_links_from;
 %	    my $ffattrs = $j->meta_data->get_column($ffield)->links_to_attrs();
 %	    my $ffield_order = $ffattrs->{order_by} if ( defined $ffattrs && exists $ffattrs->{order_by} );
 %	    
-%	    my @robjs = $obj->$i;
+%	    my @robjs = $o->$i;
 %	    my $dtbl  = $j;
 %	    my $ctbl  = $j; 
 %	
@@ -168,7 +174,7 @@ my %linksfrom = Interface->meta_data->get_links_from;
 %	        if ( $num ){
                     <a href="view.html?table=<% $table %>&id=<% $id %>&view=<% $view %>&edit=<% $i %>">[edit]</a>
 %	        }
-	        <a href="edit.html?table=<% $ctbl %>&<% $ffield %>=<% $obj %>">[add]</a>
+	        <a href="edit.html?table=<% $ctbl %>&<% $ffield %>=<% $o %>">[add]</a>
 %           }
 	    </div>
 
@@ -193,7 +199,7 @@ my %linksfrom = Interface->meta_data->get_links_from;
 <!-- Display history objects associated with this object-->
 %if ( $view eq 'all' || $view eq 'history' ){
 <div class="container">
-%    my @ho = $obj->get_history;
+%    my @ho = $o->get_history;
      <& /generic/sortresults.mhtml, object => \@ho , view => "row", sort => 0 &>
 </div>
 %} 

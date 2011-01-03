@@ -17,6 +17,7 @@ $start             => undef
 $end               => undef
 $editvlans         => undef
 $editgroups        => undef
+$user              => $ui->get_current_user($r)
 </%args>
 %
 %
@@ -27,6 +28,8 @@ my $o;
 my (@grouplist, @vlanlist);
 
 print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+
+my $manager = $ui->get_permission_manager($r);
 
 </%init>
 
@@ -66,12 +69,11 @@ if( $_action eq "INSERT" && !$o ){
       <div class="container">
           <div class="containerheadleft">VLAN Groups:</div>
 	  <div class="containerheadright">
-%	  if ( $editgroups ){
-               &nbsp;
-%	  }elsif ( scalar(@grouplist) ){
-              <a href="vlan.html?$action=<% $_action %>&editgroups=1">[edit]</a>
-%	  }else{
-	      &nbsp;
+          &nbsp;
+%	  if ( !$editgroups && scalar(@grouplist) ){
+%             if ( $manager && $manager->can($user, "access_admin_section", 'vlan.html:editgroups') ){
+                  <a href="vlan.html?$action=<% $_action %>&editgroups=1">[edit]</a>
+%             }
 %         }
           </div>
           <div class="containerbody">
@@ -91,12 +93,11 @@ if( $_action eq "INSERT" && !$o ){
       <div class="container">
           <div class="containerheadleft">Ungrouped VLANs:</div>
 	  <div class="containerheadright">
-%	  if ( $editvlans ){
-               &nbsp;
-%	  }elsif ( scalar(@vlanlist) ){
-              <a href="vlan.html?$action=<% $_action %>&editvlans=1">[edit]</a>
-%	  }else{
-	      &nbsp;
+          &nbsp;
+%	  if ( !$editvlans && scalar(@vlanlist) ){
+%             if ( $manager && $manager->can($user, "access_admin_section", 'vlan.html:editvlans') ){
+                  <a href="vlan.html?$action=<% $_action %>&editvlans=1">[edit]</a>
+%             }
 %         }
           </div>
           <div class="containerbody">

@@ -9,6 +9,7 @@ $edit       => undef;
 $bb_sort    => undef;
 $cable_sort => undef;
 $pic_sort   => undef;
+$user       => $ui->get_current_user($r)
 </%args>
 
 <%flags>
@@ -41,6 +42,7 @@ $editHorizontal = 1 if ($edit eq "cableinfo");
 
 my (@field_headers, @cell_data); # For /generic/attribute_table.mhtml calls
 my (@headers, @rows);	# For /generic/data_table.mhtml calls.  Aware there need not really be 4 variables.
+my $manager = $ui->get_permission_manager($r);
 </%init>
 
 
@@ -105,11 +107,21 @@ if ( defined($ARGS{_action}) && $ARGS{_action} eq "ADD_PICTURE" && defined($ARGS
 %       if ($editCloset) {
             <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit">
 %       } else {
-            <a href="closet.html?id=NEW">[new]</a> <a href="closet.html?id=<% $id %>&edit=closetinfo">[edit]</a> <a href="delete.html?table=Closet&id=<% $id %>">[delete]</a>
+            &nbsp;
+%           if ( $manager && $manager->can($user, 'access_admin_section', 'closet:new') ){
+                <a href="closet.html?id=NEW">[new]</a> 
+%           }
+%           if ( $manager && $manager->can($user, 'edit', $o) ){
+                <a href="closet.html?id=<% $id %>&edit=closetinfo">[edit]</a> 
+%           }
+%           if ( $manager && $manager->can($user, 'delete', $o) ){
+                <a href="delete.html?table=Closet&id=<% $id %>">[delete]</a>
+%           }
 %       }
     </div>
     <div class="containerbody">
-        <table> <!-- two column layout table -->
+        <!-- two column layout table -->
+        <table width="100%" border="0" cellpadding="0" cellspacing="0"> 
         <tr>
 	  <td>
 	    <%perl>
@@ -166,7 +178,11 @@ if ( defined($ARGS{_action}) && $ARGS{_action} eq "ADD_PICTURE" && defined($ARGS
 %   if ($editPictures) {	 
         <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit">
 %   } else {
-        <a href="closet.html?id=<% $id %>&edit=closetpictures#pics">[edit]</a>
+%       if ( $manager && $manager->can($user, 'edit', $o) ){
+            <a href="closet.html?id=<% $id %>&edit=closetpictures#pics">[edit]</a>
+%       }else{
+            &nbsp;
+% 	}
 %   }
     </div>
 
@@ -222,8 +238,10 @@ if ( defined($ARGS{_action}) && $ARGS{_action} eq "ADD_PICTURE" && defined($ARGS
     <br>
 
 %   if (!$editPictures) {
+%       if ( $manager && $manager->can($user, 'access_admin_section', 'closet:add_picture') ){
             Add New Picture: &nbsp;<input type="file" name="__picture" size="30" value="">
 	        &nbsp;<input type="submit" name="__picture_add" value="Add">
+%       }
 %   }
 
     </div> <!-- close containerbody -->
@@ -242,7 +260,11 @@ if ( defined($ARGS{_action}) && $ARGS{_action} eq "ADD_PICTURE" && defined($ARGS
     </div>
 
     <div class="containerheadright">
-        <a href= "../management/device_tasks.html?view=new">[new]</a>
+%       if ( $manager && $manager->can($user, 'access_admin_section', 'closet:new_device') ){
+            <a href= "../management/device_tasks.html?view=new">[new]</a>
+%       }else{
+            &nbsp;
+%       }
     </div>
 
     <div class="containerbody">
@@ -290,7 +312,11 @@ if ($editBackbones) {
 %       if ($editBackbones) {	 
             <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit">
 %       } else {
-            <a href="edit.html?table=BackboneCable">[new]</a>
+%           if ( $manager && $manager->can($user, 'access_admin_section', 'closet:new_backbone') ){
+                <a href="edit.html?table=BackboneCable">[new]</a>
+%           }else{
+                &nbsp;
+%           }
 %       }
     </div>
 %	if (scalar(@bbones)) {
@@ -430,8 +456,12 @@ if ($editBackbones) {
 %   if ($editHorizontal) {
         <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> &nbsp;&nbsp; <input name="submit" value="save" type="submit">
 %   } else {
-       <a href="edit.html?table=HorizontalCable">[new]</a>
-%	 }
+%       if ( $manager && $manager->can($user, 'access_admin_section', 'closet:new_horizontal') ){
+            <a href="edit.html?table=HorizontalCable">[new]</a>
+%	}else{
+            &nbsp;
+%       }
+%   }
     </div>
 %	if (scalar(@cables)) {
     <div class="containerbody">

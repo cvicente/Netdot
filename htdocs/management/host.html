@@ -182,9 +182,9 @@ if ($action eq 'new') {
     print '<input type="submit" name="submit" value="save" >';
     print '<input type="hidden" name="action" value="new" >';
 } elsif ($ipblock) {
-	print '<a href="host.html?ipblock='.$ipblock.'&action=new">[new]</a>';
+    print '<a href="host.html?ipblock='.$ipblock.'&action=new">[new]</a>';
 } elsif (!($id || $rr || $ipblock)) {
-	print '<a href="host.html?action=new">[add]</a>';
+    print '<a href="host.html?action=new">[add]</a>';
 }else{
     print '&nbsp;'
 }
@@ -280,7 +280,7 @@ foreach my $o ( values %rrs ) {
 	print '<input type="submit" name="submit" value="save" >';
     } else {
 	print '<a href="host.html?id='.$o.'">[refresh]</a>&nbsp;';
-	if ( $manager && $manager->can($user, "edit", $o) ){
+	if ( $manager && $manager->can($user, 'edit', $o) ){
 	    print '<a href="host.html?id='.$o.'&action=edit">[edit]</a>&nbsp;';
 	}
 	if ( $manager && $manager->can($user, "delete", $o) ){
@@ -325,10 +325,11 @@ foreach my $o ( values %rrs ) {
 	    $newrraddr =~ s/<script.*?<\/script>//g;
 	    $newrraddr =~ s/'/\\'/g;
 	    print '<script type="text/javascript" language="javascript">uricomponents[\'rraddr_'.$o.'_content\']=encodeURIComponent(\''.$newrraddr.'\');</script>';
-	    if ( $edit ){
-		print '&nbsp;';
-	    }else{
-		print '<div id="rraddr_'.$o.'"><a href="#" onClick="dynamicAdd(\'rraddr\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+	    print '&nbsp;';
+	    if ( !$edit ){
+   	        if ( $manager && $manager->can($user, 'edit', $o) ){
+   		    print '<div id="rraddr_'.$o.'"><a href="#" onClick="dynamicAdd(\'rraddr\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+		}
 	    }
 	}else{
 	    print '&nbsp;';
@@ -391,10 +392,11 @@ foreach my $o ( values %rrs ) {
 		    print '<input type="submit" name="submit" value="save" >';
 		}else{
 		    # Let user add a scope
-		    if ( $edit ){
-			print '&nbsp;';
-		    }else{
-			print '<a href="host.html?id='.$id.'&add_dhcp='.$ipblock.'">[add]</a>';
+		    print '&nbsp;';
+		    if ( !$edit ){
+			if ( $manager && $manager->can($user, 'edit', $o) ){
+			    print '<a href="host.html?id='.$id.'&add_dhcp='.$ipblock.'">[add]</a>';
+			}
 		    }
 		}
 	    }
@@ -454,10 +456,11 @@ foreach my $o ( values %rrs ) {
 	    $newhinfo =~ s/<script.*?<\/script>//g;
 	    $newhinfo =~ s/'/\\'/g;
 	    print '<script type="text/javascript" language="javascript">uricomponents[\'rrhinfo_'.$o.'_content\']=encodeURIComponent(\''.$newhinfo.'\');</script>';
-	    if ( $edit ){
-		print '&nbsp;';
-	    }else{
-		print '<div id="rrhinfo_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrhinfo\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+	    print '&nbsp;';
+	    if ( !$edit ){
+		if ( $manager && $manager->can($user, 'edit', $o) ){
+		    print '<div id="rrhinfo_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrhinfo\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+		}
 	    }
 	}else{
 	    print '&nbsp;';
@@ -497,10 +500,11 @@ foreach my $o ( values %rrs ) {
 	$newtxt =~ s/<script.*?<\/script>//g;
 	$newtxt =~ s/'/\\'/g;
 	print '<script type="text/javascript" language="javascript">uricomponents[\'rrtxt_'.$o.'_content\']=encodeURIComponent(\''.$newtxt.'\');</script>';
-	if ( $edit ){
-	    print '&nbsp;';
-	}else{
-	    print '<div id="rrtxt_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrtxt\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+	print '&nbsp;';
+	if ( !$edit ){
+	    if ( $manager && $manager->can($user, 'edit', $o) ){
+		print '<div id="rrtxt_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrtxt\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+	    }
 	}
 	print '</div>';  #close containerheadright
 
@@ -535,10 +539,11 @@ foreach my $o ( values %rrs ) {
 	$newmx =~ s/<script.*?<\/script>//g;
 	$newmx =~ s/'/\\'/g;
 	print '<script type="text/javascript" language="javascript">uricomponents[\'rrmx_'.$o.'_content\']=encodeURIComponent(\''.$newmx.'\');</script>';
-	if ( $edit ){
-	    print '&nbsp;';
-	}else{
-	    print '<div id="rrmx_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrmx\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+	print '&nbsp;';
+	if ( !$edit ){
+	    if ( $manager && $manager->can($user, 'edit', $o) ){
+		print '<div id="rrmx_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrmx\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+	    }
 	}
 	print '</div>';  #close containerheadright
 	
@@ -567,10 +572,11 @@ foreach my $o ( values %rrs ) {
 	    print '<input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">';
 	    print '<input type="submit" name="submit" value="save" >';
 	}else{
-	    if ( $edit ){
-		print '&nbsp;';
-	    }else{
-		print '<a href="host.html?id='.$rr.'&add_alias=1">[add]</a>';
+	    print '&nbsp;';
+	    if ( !$edit ){
+		if ( $manager && $manager->can($user, 'edit', $o) ){
+		    print '<a href="host.html?id='.$rr.'&add_alias=1">[add]</a>';
+		}
 	    }
 	}
  	print '</div>';  #close containerheadright
@@ -627,10 +633,11 @@ foreach my $o ( values %rrs ) {
 	    $newcname =~ s/<script.*?<\/script>//g;
 	    $newcname =~ s/'/\\'/g;
 	    print '<script type="text/javascript" language="javascript">uricomponents[\'rrcname_'.$o.'_content\']=encodeURIComponent(\''.$newcname.'\');</script>';
-	    if ( $edit ){
-		print '&nbsp;';
-	    }else{
-		print '<div id="rrcname_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrcname\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+	    print '&nbsp;';
+	    if ( !$edit ){
+		if ( $manager && $manager->can($user, 'edit', $o) ){
+		    print '<div id="rrcname_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrcname\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+		}
 	    }
 
 	}else{
@@ -684,14 +691,13 @@ foreach my $o ( values %rrs ) {
 	print '<div class="container" style="margin-left:10px">';
 	print '<div class="containerheadleft"><b>Reverse for '.$ipblock->get_label.' '.$ui->table_descr_link('RRPTR', '(PTR)').'</b></div>';
 	print '<div class="containerheadright">';
+	print '&nbsp;';
 	if ( !$ptr ){
-	    if ( $edit ){
-		print '&nbsp;';
-	    }else{
-		print '<a href="host.html?id='.$id.'&add_ptr='.$ipblock.'">[add]</a>';
+	    if ( !$edit ){
+		if ( $manager && $manager->can($user, 'edit', $o) ){
+		    print '<a href="host.html?id='.$id.'&add_ptr='.$ipblock.'">[add]</a>';
+		}
 	    }
-	}else{
-	    print '&nbsp;';
 	}
 	print '</div>';  #close containerheadright
 	print '<div class="containerbody">';
@@ -760,10 +766,11 @@ foreach my $o ( values %rrs ) {
 	$newns =~ s/<script.*?<\/script>//g;
 	$newns =~ s/'/\\'/g;
 	print '<script type="text/javascript" language="javascript">uricomponents[\'rrns_'.$o.'_content\']=encodeURIComponent(\''.$newns.'\');</script>';
-	if ( $edit ){
-	    print '&nbsp;';
-	}else{
-	    print '<div id="rrns_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrns\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+	print '&nbsp;';
+	if ( !$edit ){
+	    if ( $manager && $manager->can($user, 'edit', $o) ){
+		print '<div id="rrns_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrns\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+	    }
 	}
 	print '</div>';  #close containerheadright
 
@@ -801,10 +808,11 @@ foreach my $o ( values %rrs ) {
 	$newds =~ s/<script.*?<\/script>//g;
 	$newds =~ s/'/\\'/g;
 	print '<script type="text/javascript" language="javascript">uricomponents[\'rrds_'.$o.'_content\']=encodeURIComponent(\''.$newds.'\');</script>';
-	if ( $edit ){
-	    print '&nbsp;';
-	}else{
-	    print '<div id="rrds_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrds\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+	print '&nbsp;';
+	if ( !$edit ){
+	    if ( $manager && $manager->can($user, 'edit', $o) ){
+		print '<div id="rrds_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrds\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+	    }
 	}
 	print '</div>';  #close containerheadright
 
@@ -844,10 +852,11 @@ foreach my $o ( values %rrs ) {
 	$newnaptr =~ s/<script.*?<\/script>//g;
 	$newnaptr =~ s/'/\\'/g;
 	print '<script type="text/javascript" language="javascript">uricomponents[\'rrnaptr_'.$o.'_content\']=encodeURIComponent(\''.$newnaptr.'\');</script>';
-	if ( $edit ){
-	    print '&nbsp;';
-	}else{
-	    print '<div id="rrnaptr_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrnaptr\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+	print '&nbsp;';
+	if ( !$edit ){
+	    if ( $manager && $manager->can($user, 'edit', $o) ){
+		print '<div id="rrnaptr_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrnaptr\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+	    }
 	}
 	print '</div>';  #close containerheadright
 
@@ -889,10 +898,11 @@ foreach my $o ( values %rrs ) {
 	$newptr =~ s/<script.*?<\/script>//g;
 	$newptr =~ s/'/\\'/g;
 	print '<script type="text/javascript" language="javascript">uricomponents[\'rrptr_'.$o.'_content\']=encodeURIComponent(\''.$newptr.'\');</script>';
-	if ( $edit ){
-	    print '&nbsp;';
-	}else{
-	    print '<div id="rrptr_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrptr\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+	print '&nbsp;';
+	if ( !$edit ){
+	    if ( $manager && $manager->can($user, 'edit', $o) ){
+		print '<div id="rrptr_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrptr\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+	    }
 	}
 	print '</div>';  #close containerheadright
 
@@ -939,10 +949,11 @@ foreach my $o ( values %rrs ) {
 	$newloc =~ s/<script.*?<\/script>//g;
 	$newloc =~ s/'/\\'/g;
 	print '<script type="text/javascript" language="javascript">uricomponents[\'rrloc_'.$o.'_content\']=encodeURIComponent(\''.$newloc.'\');</script>';
-	if ( $edit ){
-	    print '&nbsp;';
-	}else{
-	    print '<div id="rrloc_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrloc\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+	print '&nbsp;';
+	if ( !$edit ){
+	    if ( $manager && $manager->can($user, 'edit', $o) ){
+		print '<div id="rrloc_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrloc\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+	    }
 	}
 	print '</div>';  #close containerheadright
 
@@ -984,10 +995,11 @@ foreach my $o ( values %rrs ) {
 	$newsrv =~ s/<script.*?<\/script>//g;
 	$newsrv =~ s/'/\\'/g;
 	print '<script type="text/javascript" language="javascript">uricomponents[\'rrsrv_'.$o.'_content\']=encodeURIComponent(\''.$newsrv.'\');</script>';
-	if ( $edit ){
-	    print '&nbsp;';
-	}else{
-	    print '<div id="rrsrv_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrsrv\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+	print '&nbsp;';
+	if ( !$edit ){
+	    if ( $manager && $manager->can($user, 'edit', $o) ){
+		print '<div id="rrsrv_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrsrv\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+	    }
 	}
 	print '</div>';  #close containerheadright
 

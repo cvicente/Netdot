@@ -52,6 +52,7 @@ my @global_scopes = DhcpScope->search(type=>'global');
 
 my @containers = DhcpScope->get_containers();
 
+my $manager = $ui->get_permission_manager($r);
 </%init>
 
 <div id="sectiontools" <% $hideheader %>>
@@ -60,12 +61,14 @@ my @containers = DhcpScope->get_containers();
         DHCP Tasks
     </div>
     <div class="containerheadright">
-%   if ( $view eq 'search' ){ 
-	<a href="dhcp_tasks.html?view=new">[new]</a>
-%   }elsif ( $view eq 'new' ){
-        <a href="dhcp_tasks.html?view=search">[search]</a>
+%   if ( $manager && $manager->can($user, 'access_admin_section', 'dhcp_tasks:new') ){
+%       if ( $view eq 'search' ){ 
+	    <a href="dhcp_tasks.html?view=new">[new]</a>
+%       }elsif ( $view eq 'new' ){
+            <a href="dhcp_tasks.html?view=search">[search]</a>
+%       }
 %   }
-%       print_showtaskslink($show_tasks);
+%   print_showtaskslink($show_tasks);
     </div>
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
         <table><tr><td>
@@ -153,7 +156,8 @@ elsif ( $action eq "search" ) {
     print '<div class="containerhead"><b>DHCP Scopes</b></div>';
     print '<div class="containerbody">';
     if ( @scopes ){
-	$m->comp('/generic/sortresults.mhtml', object=>\@scopes, withedit=>1);
+	my $with_edit = ($manager && $manager->can($user, 'access_admin_section', 'dhcp_tasks:edit'))? 1 : 0;
+	$m->comp('/generic/sortresults.mhtml', object=>\@scopes, withedit=>$with_edit);
     }else{
 	print "No matches";
     }

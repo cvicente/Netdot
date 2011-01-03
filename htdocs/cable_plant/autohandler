@@ -90,7 +90,9 @@ if( !$showheader ) {
     </div>
     <div class="containerheadright">
 %       print_showtaskslink($show_tasks);
-        <a href="cable_backbone.html?id=NEW">[new]</a>
+%       if ( $manager && $manager->can($user, 'access_admin_section', 'cable_plant:new_backbone') ){
+            <a href="cable_backbone.html?id=NEW">[new]</a>
+%       }
     </div>
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
 
@@ -157,7 +159,9 @@ if( !$showheader ) {
     </div>
     <div class="containerheadright">
 %       print_showtaskslink($show_tasks);
-        <a href="edit.html?table=HorizontalCable">[new]</a>
+%       if ( $manager && $manager->can($user, 'access_admin_section', 'cable_lant:new_horizontal') ){
+            <a href="edit.html?table=HorizontalCable">[new]</a>
+%       }
     </div>
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
 
@@ -256,7 +260,9 @@ if( !$showheader ) {
     </div>
     <div class="containerheadright">
 %       print_showtaskslink($show_tasks);
-        <a href="closet.html?id=NEW">[new]</a>
+%       if ( $manager && $manager->can($user, 'access_admin_section', 'cable_plant:new_closet') ){
+            <a href="closet.html?id=NEW">[new]</a>
+%       }
     </div>
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
 
@@ -320,8 +326,10 @@ if( !$showheader ) {
 <div class="container">
     <div class="containerheadleft">Circuits</div>
     <div class="containerheadright">
-%     print_showtaskslink($show_tasks);
-      &nbsp;<a href="edit.html?table=Circuit">[new]</a>
+%       print_showtaskslink($show_tasks);
+%       if ( $manager && $manager->can($user, 'access_admin_section', 'cable_plant:new_circuit') ){
+            <a href="edit.html?table=Circuit">[new]</a>
+%       }
     </div>
 
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">

@@ -33,6 +33,7 @@ my @sites = Site->retrieve_all();
 
 my $hideheader = 'style="display:none"' if ( !$showheader );
 
+my $manager = $ui->get_permission_manager($r);
 </%init>
 
 
@@ -43,7 +44,9 @@ my $hideheader = 'style="display:none"' if ( !$showheader );
     </div>
     <div class="containerheadright">
 %       print_showtaskslink($show_tasks);
+%   if ( $manager && $manager->can($user, 'access_admin_section', 'site_tasks:new') ){
         <a href="edit.html?table=Site">[new]</a>
+%   }
     </div>
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
 

@@ -23,7 +23,7 @@ title   => 'View Object'
 <%init>
 my $table = 'DhcpScope';
 my $DEBUG = 0;
-my($obj, $prevobj );
+my($o, $prevobj );
 my %ftables;
 
 if(! $id){
@@ -47,17 +47,17 @@ my @alias = ("");
 #we add one entry to both of these lists because perl was complaining when passing these lists into 
 #the form.mhtml component even when that entry was a "" or " "... so "nothing" should never match anything
 
-unless ( $obj = $table->retrieve($id) ){
+unless ( $o = $table->retrieve($id) ){
    $m->comp('error.mhtml', error => "Nonexistent record: $id");
 }
 # Check if user can view this object
 my $manager = $ui->get_permission_manager($r);
-unless ( $manager && $manager->can($user, "view", $obj) ){
+unless ( $manager && $manager->can($user, "view", $o) ){
     $m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
 }
 
-my $labelstr  = $obj->get_label;
-my $type = $obj->type->name;
+my $labelstr  = $o->get_label;
+my $type = $o->type->name;
 my %linksfrom = $table->meta_data->get_links_from;
 my %order     = $table->meta_data->get_column_order;
 
@@ -91,6 +91,10 @@ if ( $DEBUG ){
 
 if ( $submit ){
     if ($edit eq 'bulk_import'){
+	unless ( $manager && $manager->can($user, 'access_admin_section', 'scope:bulk_import') ){
+	    $m->comp('/generic/error.mhtml', error=>"You don't have permission to perform this operation");
+	}
+
 	unless ( $bulk_import_data ){
 	    $m->comp('/generic/error.mhtml', error=>"Empty import data");
 	}
@@ -98,7 +102,7 @@ if ( $submit ){
 	eval {
 	    Netdot::Model->do_transaction(
 		sub{
-		    $obj->import_hosts(text=>$bulk_import_data, overwrite=>$import_overwrite);
+		    $o->import_hosts(text=>$bulk_import_data, overwrite=>$import_overwrite);
 		});
 	};
 	if ( my $e = $@ ){
@@ -117,13 +121,15 @@ if ( $submit ){
     <div class="containerheadleft"><strong><% $table %></strong></div>
     <div class="containerheadright">
 %       if ( ! $table->meta_data->is_history() ){
-            <a href="edit.html?table=<% $table %>">[new]</a>
-%	    if ( $manager && $manager->can($user, "edit", $obj) ){
-		<a href="edit.html?table=<% $table %>&id=<% $obj %>">[edit]</a>
+%           if ( $manager && $manager->can($user, 'access_admin_section', 'scope:new') ){
+                <a href="edit.html?table=<% $table %>">[new]</a>
+%           }
+%	    if ( $manager && $manager->can($user, 'edit', $o) ){
+		<a href="edit.html?table=<% $table %>&id=<% $o %>">[edit]</a>
 %	    }
 %	}
-%	if ( $manager && $manager->can($user, "delete", $obj) ){
-            <a href="delete.html?table=<% $table %>&id=<% $obj %>">[delete]</a>
+%	if ( $manager && $manager->can($user, 'delete', $o) ){
+            <a href="delete.html?table=<% $table %>&id=<% $o %>">[delete]</a>
 %       }
         <a href="#" onClick="opentextwindow(jspopoutstring,'js','');">[text]</a>
     </div>
@@ -141,7 +147,7 @@ if ( $submit ){
 %	      if ( $view eq "all" ){
 		  [all]
 %	      }elsif ( keys %linksfrom > 1 ){
-		  <a href="scope.html?id=<% $obj %>&view=all">[all]</a>
+		  <a href="scope.html?id=<% $o %>&view=all">[all]</a>
 %             }
 %             foreach my $i ( sort keys %linksfrom ){
 %               next if ($i eq 'derived_scopes' && $type ne 'template');
@@ -151,11 +157,13 @@ if ( $submit ){
 %               if ( $view eq $i ){
                    [<% $i %>]
 %               }else{
-                   <a href="scope.html?id=<% $obj %>&view=<% $i %>">[<% $i %>]</a>
+                   <a href="scope.html?id=<% $o %>&view=<% $i %>">[<% $i %>]</a>
 %               }   
 %             }
 %             if ( $type eq 'global' || $type eq 'group' ){
-                  <a href="scope.html?id=<% $obj %>&view=bulk_import">[bulk import]</a>
+%                 if ( $manager && $manager->can($user, 'access_admin_section', 'scope:bulk_import') ){
+                      <a href="scope.html?id=<% $o %>&view=bulk_import">[bulk import]</a>
+%                 }
 %             }
 	   </div>
 	</div>
@@ -165,6 +173,9 @@ if ( $submit ){
 
 <!-- Display has_many objects -->
 <%perl>
+
+my @all_types = DhcpScopeType->retrieve_all();  
+
 foreach my $i ( keys %linksfrom ){
     next if ($i eq "derived_scopes" && $type ne "template");
     next if ($i eq 'contained_scopes' && ($type eq 'host' || $type eq 'subnet' || $type eq 'template'));
@@ -184,7 +195,7 @@ foreach my $i ( keys %linksfrom ){
         
         my @robjs;
         if($i ne 'contained_scopes' || $scope_text_filter || @scope_type_box){
-            @robjs = $obj->$i;
+            @robjs = $o->$i;
         }
         else{
            @robjs = (); #no need to preform this expensvie query if the user hasn't selected filters
@@ -215,34 +226,35 @@ foreach my $i ( keys %linksfrom ){
 
 </%perl>
 
-%       my @all_zones = DhcpScopeType->retrieve_all();  
         <div class="container">
 %       my $title = $i;
 %       $title .= " ($num)" if $num;	 
 %       $title .= "&nbsp;&nbsp;&nbsp;".$explanation_hash{$i};
             <div class="containerheadleft"><% $title %></div>
 	    <div class="containerheadright">
-%       if ( $edit eq $i ){	    
-              &nbsp;
-%       }
-%       else{
+        &nbsp;
+%       if ( $edit ne $i ){	    
 %           if($i eq "templates"){ #we have a special edit page for templates.
-%	            if ( $num ){
-%                   my @temps = DhcpScopeUse->search(scope=>$obj);
+%	        if ( $num ){
+%                   my @temps = DhcpScopeUse->search(scope=>$o);
 %                   my $space_seperated_list = "";
 %                   for my $s (@temps){
 %                       $space_seperated_list.=$s." "
-%                    }
-%                         
-                    <a href="template_edit.html?id=<% $id %>&selectall_ids=<% $space_seperated_list %>">[edit]</a>
-%	            }
-                <a href="template_edit.html?id=<% $obj %>">[add]</a>
-%           }
-%           else{ #for everything BUT templates:
+%                   }
+%	            if ( $manager && $manager->can($user, 'edit', $o) ){
+                       <a href="template_edit.html?id=<% $id %>&selectall_ids=<% $space_seperated_list %>">[edit]</a>
+%                   }
+%	        }
+%               if ( $manager && $manager->can($user, 'edit', $o) ){
+                    <a href="template_edit.html?id=<% $o %>">[add]</a>
+%               }
+%           }else{ #for everything BUT templates:
+%               if ( $manager && $manager->can($user, 'edit', $o) ){
 %	            if ( $num ){
-                  <a href="view.html?table=<% $table %>&id=<% $id %>&view=<% $view %>&edit=<% $i %>">[edit]</a>
-%	            }
-               <a href="edit.html?table=<% $ctbl %>&<% $ffield %>=<% $obj %>">[add]</a>
+                        <a href="view.html?table=<% $table %>&id=<% $id %>&view=<% $view %>&edit=<% $i %>">[edit]</a>
+%                   }
+                    <a href="edit.html?table=<% $ctbl %>&<% $ffield %>=<% $o %>">[add]</a>
+%               }
 %           }
 %       }
 	    </div>
@@ -255,9 +267,9 @@ foreach my $i ( keys %linksfrom ){
               <form name = "scope_options" action="scope.html" method="POST" >
               Select Scope type(s)
               <select name = "scope_type_box">
-%                    foreach my $zone (@all_zones){                   
-                         <option value="<% $zone->name %>"><% $zone->name %></option>
-%                    }
+%             foreach my $type (@all_types){                   
+                  <option value="<% $type->name %>"><% $type->name %></option>
+%             }
                </select>
             keyword:  <input type="text" name="scope_text_filter"></input></td></tr>
             <input type="submit" /></td></tr>
@@ -291,7 +303,7 @@ foreach my $i ( keys %linksfrom ){
    <div class="container">
       <div class="containerhead">Bulk Import</div>
       <div class="containerbody">
-%     if ( $obj->type->name ne 'global' && $obj->type->name ne 'group' ){
+%     if ( $o->type->name ne 'global' && $o->type->name ne 'group' ){
 	 <p>At this time, only host scopes can be imported, which can only be contained in global or group scopes
 %     }else{
       <p>

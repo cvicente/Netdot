@@ -11,6 +11,7 @@ $strand_sort   => undef;
 $search        => undef;
 $_action       => undef;
 $sequence_list => undef;
+$user          => $ui->get_current_user($r)
 </%args>
 
 <%attr>
@@ -31,6 +32,8 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 $o              = Circuit->retrieve($id) if ($id && $id ne "NEW");
 $editCircuit    = 1 if ($id eq "NEW" || $edit eq "circuitinfo");
 $editStrand     = 1 if ($edit eq "strandinfo");
+
+my $manager = $ui->get_permission_manager($r);
     
 if ( $_action ){
     if ( $_action eq "SEARCH" ) {
@@ -106,7 +109,7 @@ if ( $_action ){
 
 # end insertion/update code
 # -----------------------------------------------------------------------------
-    
+
 </%init>
 
 % if ( $search && @list ){
@@ -140,9 +143,15 @@ if ( $_action ){
 <div class="container">
     <div class="containerheadleft"><strong>Circuit</strong></div>
     <div class="containerheadright">
-          <a href="edit.html?table=Circuit">[new]</a>
-          <a href="edit.html?table=Circuit&id=<% $o->id %>">[edit]</a>
-	  <a href="delete.html?table=Circuit&id=<% $o->id %>">[delete]</a>
+%         if ( $manager && $manager->can($user, 'access_admin_section', 'circuit:new') ){
+              <a href="edit.html?table=Circuit">[new]</a>
+%         }
+%         if ( $manager && $manager->can($user, 'edit', $o) ){
+              <a href="edit.html?table=Circuit&id=<% $o->id %>">[edit]</a>
+%         }
+%         if ( $manager && $manager->can($user, 'delete', $o) ){
+    	      <a href="delete.html?table=Circuit&id=<% $o->id %>">[delete]</a>
+%         }
           <a href="#" onClick="opentextwindow(jspopoutstring,'js','');">[text]</a>
     </div>
     <div class="containerbodyoutside">
@@ -160,8 +169,13 @@ if ( $_action ){
 	  <div class="containerheadright">&nbsp;</div>
 %       }else{
 	  <div class="containerheadright">
+	    &nbsp;
+%           if ( $manager && $manager->can($user, 'edit', $o) ){
 	      <a href="circuit.html?id=<% $id %>&edit=interfaces">[edit]</a>
+%           }
+%           if ( $manager && $manager->can($user, 'access_admin_section', 'circuit:add_interface') ){
               <a href="edit.html?table=Interface&circuit=<% $id %>">[add]</a>
+%           }
 	  </div>
 %       }
         <& /generic/sortresults.mhtml, object=>\@interfaces, withedit=>($edit eq 'interfaces')? 1 : 0  &>
@@ -182,7 +196,7 @@ if ( $_action ){
 %   # First select a start site, then an end site, and then a backbone
 %   # from the populated list. Hit submit and all strands for that backbone
 %   # are associated with this circuit.
-%   if ( $edit ne "strandinfo" ) {
+% if ( $edit ne "strandinfo" ) {
     <script language="JavaScript">
     <!--
         /* getStrandList()
@@ -211,6 +225,7 @@ if ( $_action ){
     -->
     </script>
 
+%   if ( $manager && $manager->can($user, 'access_admin_section', 'circuit:add_strand_sequences') ){
     <div class="container">
         <div class="containerhead">Add</div>
         <div class="containerbody">
@@ -256,11 +271,12 @@ if ( $_action ){
         </div> <!-- close containerbody -->
     </div> <!-- close container -->
 %   }
+% }
 <!-- End Cable Strand Table -->
 
 
 % my $cl;
-% if ( $o->vendor && int($cl = $o->vendor->contactlist) ){
+% if ( $o->vendor && int($cl = $o->vendor->contactlist) && $cl->contacts ){
 <!-- Contacts Table -->
 <div class="container">
     <& /generic/contactlist.mhtml, id=>$cl->id, edit=>0, show_buttons=>0 &>

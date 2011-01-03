@@ -16,7 +16,6 @@ sub grants()
    return 0;
 }
 
-# Deny access to UI sections only available to Admins and Operators
 sub denies(){
     my ($this, $user, $action, $resource) = @_;
 
@@ -25,7 +24,14 @@ sub denies(){
     $resource ||= '(n/a)';
     $logger->debug("Netdot::SectionAccessRule::denies: Requesting $action $resource on behalf of $username ($user_type)");
 
+    # Deny access to UI sections only available to Admins and Operators
     if ( $action eq "access_section" && ($user_type ne "Admin" && $user_type ne "Operator") ){
+	$logger->debug("Netdot::SectionAccessRule::denies: Denying $action for $username ($user_type)");
+	return 1;
+    }
+
+    # Deny access to UI sections only available to Admins
+    if ( $action eq "access_admin_section" && ($user_type ne "Admin") ){
 	$logger->debug("Netdot::SectionAccessRule::denies: Denying $action for $username ($user_type)");
 	return 1;
     }
