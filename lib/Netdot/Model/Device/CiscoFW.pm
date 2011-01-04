@@ -172,8 +172,11 @@ sub _get_arp_from_cli {
 	# The failover interface appears in the arp output but it's not in the IF-MIB output
 	next if ($iname eq 'failover');
 
+	# Interface names from SNMP are stupidly long and don't match the short name in the ARP output
+	# so we have to do some pattern matching. Of course, this will break when they
+	# decide to change the string.
 	foreach my $name ( keys %int_names ){
-	    if ( $name =~ /$iname/ ){
+	    if ( $name =~ /Appliance \'$iname\' interface/ ){
 		$intid = $int_names{$name};
 		last;
 	    }
