@@ -134,9 +134,9 @@ sub _get_arp_from_cli {
     }
 
     # MAP interface names to IDs
-    my %iface_names;
-    foreach my $iface ( $self->interfaces ){
-	$iface_names{$iface->name} = $iface->id;
+    my %int_names;
+    foreach my $int ( $self->interfaces ){
+	$int_names{$int->name} = $int->id;
     }
 
     my ($iname, $ip, $mac, $intid);
@@ -165,9 +165,12 @@ sub _get_arp_from_cli {
 	# The failover interface appears in the arp output but it's not in the IF-MIB output
 	next if ($iname eq 'failover');
 
-	foreach my $name ( keys %iface_names ){
-	    if ( $name =~ /$iname/ ){
-		$intid = $iface_names{$name};
+	# Interface names from SNMP are stupidly long and don't match the short name in the ARP output
+	# so we have to do some pattern matching. Of course, this will break when they
+	# decide to change the string.
+	foreach my $name ( keys %int_names ){
+	    if ( $name =~ /Appliance \'$iname\' interface/ ){
+		$intid = $int_names{$name};
 		last;
 	    }
 	}
