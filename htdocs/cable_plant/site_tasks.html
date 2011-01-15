@@ -108,9 +108,9 @@ if ( $site_select ){
 	$search_number =~ s/^\s*(.*)\s*$/$1/g;
 	$sargs{number} = $search_number;
     }
-    @results = Site->search_like(%sargs);
+    @results = Site->search_like(%sargs) if %sargs;
 
-    $search = join ' ', %sargs;
+    $search = join ' ', %sargs if %sargs;
 </%perl>
 
 %   if ( $search ){   
