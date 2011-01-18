@@ -360,11 +360,13 @@ sub _get_ap_info {
     }
 
     # Add an Ethernet interface
-    my $ethidx = 3;
-    # As far as I can tell, the Airespace MIB does not include the Ethernet interface name
-    # The 1140 and 1522 series have GigabitEthernet, while the rest have FastEthernet
     # This is important because the name is advertised using CDP
-    if ( $info->{model} =~ /^(AIR-LAP114\d)|^(AIR-LAP1522)/ ){
+    my $ethidx = 3;
+
+    # As far as I can tell, the Airespace MIB does not include the Ethernet interface name
+    # Assign either GigabitEthernet0 or FastEthernet0 based on what we know about current products
+    # This will most likely be out of date soon. There has to be a better way to do this!
+    if ( $info->{model} =~ /(-LAP114\d)|(-LAP152\d)|(-CAP350\d)|(-SAP35)|(AP801)/ ){
 	$info->{interface}{$ethidx}{name}   = 'GigabitEthernet0';
     }else{
 	$info->{interface}{$ethidx}{name}   = 'FastEthernet0';
