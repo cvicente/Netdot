@@ -502,9 +502,12 @@ sub get_dp_links {
 		foreach my $rem_port ( split ';', $r_port ) {
 		    $rem_int = Interface->search(device=>$rem_dev, number=>$rem_port)->first;
 		    unless ( $rem_int ){
+			$rem_int = Interface->search(device=>$rem_dev, name=>$rem_port)->first;
+		    }
+		    unless ( $rem_int ){
 			# If interface name has a slot/sub-slot number
 			# (helps finding stuff like Gi2/7)
-			if ( $rem_port =~ /^([A-Z]{1}).*(\d+\/\d+)$/i ){
+			if ( $rem_port =~ /^([A-Z]{1})\w+([\d\/]+)$/i ){
 			    $rem_port = "'".$1.'%'.$2."'";
 			}
 			# Try name first, then number, then description (if it is unique)
@@ -799,7 +802,7 @@ sub get_fdb_links {
 			foreach my $int ( $physaddr->interfaces() ){
 			    # The idea is that there could be multiple interfaces using the same
 			    # MAC address.  Our goal is to ignore the vitual ones.
-			    next if ( $int->type eq 'propVirtual' || $int->type eq 'l2vlan' );
+			    next if ( $int->type && ($int->type eq 'propVirtual' || $int->type eq 'l2vlan') );
 			    push @other_links, ['single-entry', $interface, $int];
 			    last;
 			}
