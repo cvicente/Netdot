@@ -1288,11 +1288,12 @@ if ($o->status->name eq "Subnet") {
 %################################################################
 % if ( $manager && $manager->can($user, "access_section", 'ip.html:edit_rzones') ){
 
+%     my %all_zones;
+%     map { $all_zones{$_->name} = $_ } Zone->retrieve_all;
 %     my %reverse_zones;
 %     foreach my $n ( $o->get_dot_arpa_names ){
-%         if ( my @z = Zone->search(name=>$n) ){
-%             my $name = $z[0]->name if $z[0];
-%             $reverse_zones{$name} = $z[0];
+%         if ( exists $all_zones{$n} ){
+%             $reverse_zones{$n} = $all_zones{$n};
 %         }
 %     }
       <div class="container">
