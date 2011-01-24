@@ -6,7 +6,7 @@ use strict;
 use Math::BigInt;
 use NetAddr::IP;
 use Net::IPTrie;
-use Storable qw(freeze thaw);
+use Storable qw(nfreeze thaw);
 
 =head1 NAME
 
@@ -2937,7 +2937,7 @@ sub _tree_save {
     unless ( ref($argv{tree}) eq 'Net::IPTrie' ){
 	$class->throw_fatal("Ipblock::_tree_save: invalid tree object");
     }
-    my $frozen = freeze($argv{tree});
+    my $frozen = nfreeze($argv{tree});
     my $name = 'iptree'.$argv{version};
     my $cache;
     unless ( $cache = DataCache->find_or_create({name=>$name}) ){
