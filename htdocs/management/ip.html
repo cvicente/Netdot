@@ -1238,78 +1238,107 @@ if ($o->status->name eq "Subnet") {
   </div>
 
 %################################################################
-%# Zones
+%# Forward Zones
 %################################################################
-% if ( $manager && $manager->can($user, "access_section", 'ip.html:edit_zones') ){
+% if ( $manager && $manager->can($user, "access_section", 'ip.html:edit_fzones') ){
 
 %     my @sz = $o->zones;
       <div class="container">
-      <div class="containerheadleft">DNS Zones</div>
+      <div class="containerheadleft">Forward DNS Zones</div>
       <div class="containerheadright">
       &nbsp;
-%     if ( $edit ne 'edit_zones' ){
+%     if ( $edit ne 'edit_fzones' ){
 %         if ( $manager && $manager->can($user, 'edit', $o) ){
 %             if ( @sz ){
-                  <a href="ip.html?id=<% $o %>&edit=edit_zones">[edit]</a>
+                  <a href="ip.html?id=<% $o %>&edit=edit_fzones">[edit]</a>
 %             }
-              <a href="ip.html?id=<% $o %>&_action=VIEW_ADD_ZONES">[add]</a>
+              <a href="ip.html?id=<% $o %>&_action=VIEW_ADD_FZONES">[add]</a>
 %	  }
 %     }
       </div>
       <div class="containerbody">
-%     if ( $_action eq 'VIEW_ADD_ZONES' ){
+%     if ( $_action eq 'VIEW_ADD_FZONES' ){
 %         my @all_zones = sort { $a->name cmp $b->name } Zone->retrieve_all;
 %         my %cur_zones;
 %         map { $cur_zones{$_->zone->id} = 1 } @sz; 
 	  <form name="netdotform" action="ip.html" method="POST">
 	    <input type="hidden" name="id" value="<% $o->id %>">
 	    <input type="hidden" name="_action" value="LINK_ZONES">
-	    <table><tr>
-            <td width="50%">
             Link this block with existing forward zones:
 	    <p><select name="link_zones" multiple="multiple">
+            <option value="0"> - select - </option>
 %	    foreach my $zone ( grep { $_->active == 1 && $_->name !~ /\.arpa$/ } @all_zones ){
 %               next if exists $cur_zones{$zone->id};
                 <option value="<% $zone->id %>"><% $zone->get_label %></option>
 %	    }
             </select>
-            <p>
             <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
             <input type="submit" name="submit" value="save">
-            </td><td>
-	  </form>
-	  <form name="netdotform" action="ip.html" method="POST">
-	    <input type="hidden" name="id" value="<% $o->id %>">
-	    <input type="hidden" name="_action" value="ADD_REV_ZONE">
-            Create reverse zones for this block:
-	    <br>(zones that already exist will be skipped from list)
-            <p><select name="new_rev_zones" multiple="multiple">
-%           foreach my $n ( $o->get_dot_arpa_names ){
-%               my $name = Zone->search(name=>$n)->first->name;
-%               next if (  $name && ($n eq $name) );
-                <option value="<% $n %>"><% $n %></option>
-%           }
-	    </select>
-            <p>Use template zone (optional):
-	    <p><select name="template_zone_for_rev">
-            <option value="0">-- Select --</option>
-%	        foreach my $zone ( @all_zones ){
-                    <option value="<% $zone->id %>"><% $zone->get_label %></option>
-%	        }
-            </select>
-	    <p>
-            <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
-            <input type="submit" name="submit" value="create">
-            <p>
-	    </tr></table>
 	  </form>
 %     }else{
-          <& /generic/sortresults.mhtml, object=>\@sz, withedit=>($edit eq 'edit_zones')? 1 : 0 &>
+          <& /generic/sortresults.mhtml, object=>\@sz, withedit=>($edit eq 'edit_fzones')? 1 : 0 &>
 %     }
       </div>
       </div>
 % }
 
+
+%################################################################
+%# Reverse Zones
+%################################################################
+% if ( $manager && $manager->can($user, "access_section", 'ip.html:edit_rzones') ){
+
+%     my %reverse_zones;
+%     foreach my $n ( $o->get_dot_arpa_names ){
+%         if ( my @z = Zone->search(name=>$n) ){
+%             my $name = $z[0]->name if $z[0];
+%             $reverse_zones{$name} = $z[0];
+%         }
+%     }
+      <div class="container">
+      <div class="containerheadleft">Reverse DNS Zones</div>
+      <div class="containerheadright">
+      &nbsp;
+%     if ( $edit ne 'edit_fzones' ){
+%         if ( $manager && $manager->can($user, 'edit', $o) ){
+%             if ( %reverse_zones ){
+                  <a href="ip.html?id=<% $o %>&edit=edit_rzones">[edit]</a>
+%             }
+              <a href="ip.html?id=<% $o %>&_action=VIEW_ADD_RZONES">[add]</a>
+%	  }
+%     }
+      </div>
+      <div class="containerbody">
+%     if ( $_action eq 'VIEW_ADD_RZONES' ){
+%         my @all_zones = sort { $a->name cmp $b->name } Zone->retrieve_all;
+	  <form name="netdotform" action="ip.html" method="POST">
+	    <input type="hidden" name="id" value="<% $o->id %>">
+	    <input type="hidden" name="_action" value="ADD_REV_ZONE">
+            Create reverse zones for this block (existing zones not included):
+            <p><select name="new_rev_zones" multiple="multiple">
+            <option value="0"> - select - </option>
+%           foreach my $n ( $o->get_dot_arpa_names ){
+%               next if exists $reverse_zones{$n};
+                <option value="<% $n %>"><% $n %></option>
+%           }
+	    </select>
+            <p>Use template zone (optional):
+	    <select name="template_zone_for_rev">
+            <option value="0">-- Select --</option>
+%	        foreach my $zone ( @all_zones ){
+                    <option value="<% $zone->id %>"><% $zone->get_label %></option>
+%	        }
+            </select>
+            <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+            <input type="submit" name="submit" value="create">
+	  </form>
+%     }else{
+%         my @z = values %reverse_zones;
+          <& /generic/sortresults.mhtml, object=>\@z, withedit=>($edit eq 'edit_rzones')? 1 : 0 &>
+%     }
+      </div>
+      </div>
+% }
 
 %################################################################
 %# Graphical Views
