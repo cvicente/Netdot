@@ -4,17 +4,15 @@
 #
 
 # Retrieve forwarding tables and ARP caches
-0 1-11,13-16,18-23 * * * root /usr/local/netdot/bin/updatedevices.pl -D -F -A
+0 1-11,13-16,18-23 * * * root /usr/local/netdot/bin/updatedevices.pl -DFA
 
 # Twice a day, rediscover devices and topology (in addition to above)
-0 12,17 * * * root /usr/local/netdot/bin/updatedevices.pl -D -I -F -A -T
+0 12,17 * * * root /usr/local/netdot/bin/updatedevices.pl -DIFAT
 
 # Update whole-network topology graphs
-45 0 * * * root /usr/local/netdot/bin/build_topo_graph.pl \
--f /usr/local/netdot/htdocs/img/graphs/whole_network_no_vlans.png
+45 0 * * * root /usr/local/netdot/bin/build_topo_graph.pl -f /usr/local/netdot/htdocs/img/graphs/whole_network_no_vlans.png
 
-50 0 * * * root /usr/local/netdot/bin/build_topo_graph.pl -v \
--f /usr/local/netdot/htdocs/img/graphs/whole_network_with_vlans.png
+50 0 * * * root /usr/local/netdot/bin/build_topo_graph.pl -v -f /usr/local/netdot/htdocs/img/graphs/whole_network_with_vlans.png
 
 # Rotate forwarding tables and arp caches once a week.  Keep 7 days of backups
 45 3 * * 0 root /usr/local/netdot/bin/prune_db.pl -F -A -d 7 -r
