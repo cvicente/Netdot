@@ -52,7 +52,7 @@ sub get_arp {
 	    $args{password}   = $cred->{password};
 	    $args{privileged} = $cred->{privileged};
 	    $args{transport}  = $cred->{transport} || 'SSH';
-	    $args{timeout}    = $cred->{timeout}   || '5';
+	    $args{timeout}    = $cred->{timeout}   || '30';
 	    
 	    $cache = $self->_get_arp_from_cli(%args);
 	    last;

@@ -256,7 +256,7 @@ sub search_address_live {
 	    my %args;
 	    $args{vlan} = $vlan->vid if ( $vlan );
 	    eval {
-		$fwt = $class->_exec_timeout($dev->fqdn, sub{ return $dev->_get_fwt_from_snmp(%args) } );
+		$fwt = $class->_exec_timeout($dev->fqdn, sub{ return $dev->get_fwt(%args) } );
 	    };
 	    $logger->debug($@) if $@;
 	    push @fwts, $fwt if $fwt;
@@ -1761,26 +1761,32 @@ sub get_arp {
     $logger->debug("$host: Unknown product or sysObjectID not found") 
 	unless $oid;
     
-    my %OID2CLASSMAP  = ( 
-	'1.3.6.1.4.1.9.1.392' => 'Netdot::Model::Device::CiscoFW', 
-	'1.3.6.1.4.1.9.1.451' => 'Netdot::Model::Device::CiscoFW', 
-	'1.3.6.1.4.1.9.1.669' => 'Netdot::Model::Device::CiscoFW', 
-	'1.3.6.1.4.1.9.1.670' => 'Netdot::Model::Device::CiscoFW', 
-	'1.3.6.1.4.1.9.1.672' => 'Netdot::Model::Device::CiscoFW', 
-	'1.3.6.1.4.1.9.1.745' => 'Netdot::Model::Device::CiscoFW', 
-	'1.3.6.1.4.1.9.1.753' => 'Netdot::Model::Device::CiscoFW',
-        '1.3.6.1.4.1.9.1.915' => 'Netdot::Model::Device::CiscoFW',
-	);
-
+    my $obj       = $self->_snmp_translate($oid);
     my $start     = time;
     my $arp_count = 0;
-
-    if ( $oid && exists $OID2CLASSMAP{$oid} ){
-	# Rebless
-	$logger->debug("$host: $oid matches class: $OID2CLASSMAP{$oid}"); 
-	bless $self, $OID2CLASSMAP{$oid};
-	$cache = $self->get_arp();
-    }else{
+    
+    if ( $obj ){
+	my %OID2CLASSMAP = %{ $self->config->get('FETCH_DEVICE_INFO_VIA_CLI') };
+	foreach my $pat ( keys %OID2CLASSMAP ){
+	    if ( $obj =~ /$pat/ ){
+		my $class = $OID2CLASSMAP{$pat};
+		$class = 'Netdot::Model::Device::'.$class;
+		# Re-bless
+		$logger->debug("$host: $obj matches class: $class"); 
+		bless $self, $class;
+		# We don't want to break execution here, so
+		eval {
+		    $cache = $self->get_arp();
+		};
+		if ( my $e = $@ ){
+		    $logger->error("Device::get_arp: Failed to fetch ARP via CLI: $e");
+		}
+		last;
+	    }
+	}
+    }
+    unless ( $cache ){
+	# Try SNMP as a last resort
 	$cache = $self->_get_arp_from_snmp(session=>$argv{session});
     }
 	
@@ -1829,7 +1835,7 @@ sub fwt_update {
     }
 
     # Fetch from SNMP if necessary
-    my $fwt = $argv{fwt} || $class->_exec_timeout($host, sub{ return $self->_get_fwt_from_snmp(session=>$argv{session}) } );
+    my $fwt = $argv{fwt} || $class->_exec_timeout($host, sub{ return $self->get_fwt(session=>$argv{session}) } );
 
     unless ( keys %$fwt ){
 	$logger->debug("$host: FWT empty");
@@ -1883,6 +1889,74 @@ sub fwt_update {
     
     return 1;
 }
+
+
+############################################################################
+=head2 get_fwt - Fetch forwarding tables
+
+  Arguments:
+    session - SNMP session (optional)
+  Returns:
+    Hashref
+  Examples:
+    my $fwt = $self->get_fwt(%args)
+=cut
+sub get_fwt {
+    my ($self, %argv) = @_;
+    $self->isa_object_method('get_fwt');
+    my $host = $self->fqdn;
+    my $fwt;
+
+    unless ( $self->collect_fwt ){
+	$logger->debug(sub{"Device::get_fwt: $host excluded from FWT collection. Skipping"});
+	return;
+    }
+    if ( $self->is_in_downtime ){
+	$logger->debug(sub{"Device::get_fwt: $host in downtime. Skipping"});
+	return;
+    }
+
+    my $oid = ($self->product)? $self->product->sysobjectid : undef;
+    $logger->debug("Device::get_fwt: $host: Unknown product or sysObjectID not found") 
+	unless $oid;
+    
+    my $obj       = $self->_snmp_translate($oid);
+    my $start     = time;
+    my $fwt_count = 0;
+    
+    if ( $obj ){
+	my %OID2CLASSMAP = %{ $self->config->get('FETCH_DEVICE_INFO_VIA_CLI') };
+	foreach my $pat ( keys %OID2CLASSMAP ){
+	    if ( $obj =~ /$pat/ ){
+		my $class = $OID2CLASSMAP{$pat};
+		$class = 'Netdot::Model::Device::'.$class;
+		# Re-bless
+		$logger->debug("$host: $obj matches class: $class"); 
+		bless $self, $class;
+		# We don't want to break execution here, so
+		eval {
+		    $fwt = $self->get_fwt();
+		};
+		if ( my $e = $@ ){
+		    $logger->error("Device::get_fwt: Failed to fetch FWT via CLI: $e");
+		}
+		last;
+	    }
+	}
+    }
+    unless ( $fwt ){
+	# Try SNMP as a last resort
+	$fwt = $self->_get_fwt_from_snmp(session=>$argv{session});
+    }
+	
+    map { $fwt_count+= scalar(keys %{$fwt->{$_}}) } keys %$fwt;
+
+    my $end = time;
+    $logger->debug(sub{ sprintf("$host: FWT fetched. %s entries in %s", 
+				$fwt_count, $self->sec2dhms($end-$start) ) });
+   return $fwt;
+}
+
 
 ############################################################################
 =head2 delete - Delete Device object
@@ -4200,7 +4274,7 @@ sub _get_fwt_from_snmp {
     # Notice that we pass the result variable as a parameter since that's the
     # easiest way to append more info later using the same function (see below).
     my %fwt; 
-    $logger->debug(sub{"$host: Fetching forwarding table" });
+    $logger->debug(sub{"$host: Fetching forwarding table via SNMP" });
     $class->_exec_timeout($host, sub{ return $self->_walk_fwt(sinfo   => $sinfo,
 							      sints   => $sints,
 							      devints => \%devints,
@@ -5227,6 +5301,20 @@ sub _update_bgp_info {
 	$p->delete();
     }
 }
+
+
+###############################################################
+# Takes an OID and returns the object name if the right MIB is loaded.
+# 
+# Arguments: SNMP OID string
+# Returns: Object name (scalar)
+#
+sub _snmp_translate {
+    my ($self, $oid) = @_;
+    my $name = &SNMP::translateObj($oid);
+    return $name if defined($name);
+}
+
     
 
 
