@@ -507,7 +507,7 @@ sub get_dp_links {
 		    unless ( $rem_int ){
 			# If interface name has a slot/sub-slot number
 			# (helps finding stuff like Gi2/7)
-			if ( $rem_port =~ /^([A-Z]{1})\w+([\d\/]+)$/i ){
+			if ( $rem_port =~ /^([A-Z]{1}).+?([\d\/]+)$/i ){
 			    $rem_port = "'".$1.'%'.$2."'";
 			}
 			# Try name first, then number, then description (if it is unique)
