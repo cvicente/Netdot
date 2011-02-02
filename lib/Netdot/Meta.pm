@@ -134,7 +134,7 @@ sub get_table{
   Arguments:
     with_history - If true, history tables will be included in the array
   Returns:
-    Array
+    Array of Netdot::Meta::Table objects
   Example: 
     my @meta_tables = $meta->get_tables;
 

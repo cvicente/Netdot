@@ -6,6 +6,7 @@ use lib "../lib";
 use DBUTIL;
 use Netdot;
 use Netdot::Model;
+use Netdot::Meta;
 use Data::Dumper;
 
 my %CONFIG;
@@ -29,7 +30,7 @@ $dbh->{RaiseError} = 1;
 my @statements = (
 "CREATE TABLE `asset` (
   `date_purchased` timestamp DEFAULT '1970-01-01 00:00:01',
-  `id` integer unsigned NOT NULL auto_increment,
+  `id` bigint unsigned NOT NULL auto_increment,
   `info` blob,
   `inventory_number` varchar(255),
   `maint_contract` integer NOT NULL,
@@ -97,8 +98,9 @@ foreach my $sn ( keys %assets ){
 }
 
 @statements = (
-"ALTER TABLE device ADD COLUMN `asset_id` integer NOT NULL AFTER `aliases`",
-"ALTER TABLE devicemodule ADD COLUMN `asset_id` integer NOT NULL FIRST",
+"ALTER TABLE device ADD COLUMN `asset_id` bigint NOT NULL AFTER `aliases`",
+"ALTER TABLE device_history ADD COLUMN `asset_id` bigint NOT NULL AFTER `aliases`",
+"ALTER TABLE devicemodule ADD COLUMN `asset_id` bigint NOT NULL FIRST",
 "UPDATE device,asset SET device.asset_id=asset.id WHERE asset.serial_number=device.serialnumber",
 "UPDATE devicemodule,asset SET devicemodule.asset_id=asset.id WHERE asset.serial_number=devicemodule.serialnumber",
 "UPDATE asset,device,devicemodule SET asset.product_id=device.product WHERE devicemodule.device=device.id AND devicemodule.asset_id=asset.id",
@@ -109,6 +111,12 @@ foreach my $sn ( keys %assets ){
 "ALTER TABLE `device` DROP COLUMN `maint_until`",
 "ALTER TABLE `device` DROP COLUMN `custom_serial`",
 "ALTER TABLE `device` ADD INDEX `Device13` (`asset_id`)",
+"ALTER TABLE `device_history` DROP COLUMN `serialnumber`",
+"ALTER TABLE `device_history` DROP COLUMN `inventorynumber`",
+"ALTER TABLE `device_history` DROP COLUMN `maint_contract`",
+"ALTER TABLE `device_history` DROP COLUMN `maint_from`",
+"ALTER TABLE `device_history` DROP COLUMN `maint_until`",
+"ALTER TABLE `device_history` DROP COLUMN `custom_serial`",
 "ALTER TABLE `devicemodule` DROP COLUMN `serialnumber`",
 "ALTER TABLE `devicemodule` DROP COLUMN `inventorynumber`",
 "ALTER TABLE `devicemodule` DROP COLUMN `maint_contract`",
@@ -119,6 +127,29 @@ foreach my $sn ( keys %assets ){
 "ALTER TABLE `datacache` MODIFY COLUMN `tstamp` integer unsigned NOT NULL",
 "DELETE FROM `datacache`",
 );
+
+
+# Change all table IDs and foreign keys to bigint (Ticket #737)
+my $meta = Netdot::Meta->new();
+my @tables = $meta->get_tables(with_history=>1);
+
+foreach my $mtable ( sort { $a->name cmp $b->name } @tables ){
+    my $tname = lc($mtable->name);
+    print $tname, "\n";
+    foreach my $mcol ( $mtable->get_columns ) {
+	my $cname = $mcol->name;
+	if ( $cname eq 'id' ){
+	    push @statements, "ALTER TABLE `$tname` MODIFY COLUMN `$cname` bigint unsigned NOT NULL auto_increment";
+	}
+	if ( $mcol->links_to ){
+	    push @statements, "ALTER TABLE `$tname` MODIFY COLUMN `$cname` bigint unsigned NOT NULL";
+	}
+    }
+}
+# Exceptions
+push @statements, "ALTER TABLE `accessright` MODIFY COLUMN `object_id` bigint unsigned NOT NULL";
+
+
 &execute_statements(@statements);
 
 &dbdisconnect($dbh);
