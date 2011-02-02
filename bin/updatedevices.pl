@@ -42,10 +42,10 @@ my $USAGE = <<EOF;
         
     Argument Detail: 
     -H, --host <hostname|address>        Update given host only.
-    -B, --blocks <address/prefix>[, ...]  Specify an IP block (or blocks) to discover
+    -B, --blocks <address/prefix>[, ...] Specify an IP block (or blocks) to discover
     -D, --db                             Update only DB existing devices
     -E, --file                           Update devices listed in given file
-    -c, --community <string>             SNMP community string(s)
+    -c, --communities <string>[, ...]    SNMP community string(s)
     -r, --retries <integer >             SNMP retries (default: $retries)
     -o, --timeout <secs>                 SNMP timeout in seconds (default: $timeout)
     -v, --version <integer>              SNMP version [1|2|3]
