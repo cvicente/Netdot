@@ -1070,7 +1070,7 @@ sub get_tree_stp_links {
 =head2 get_p2p_links - Get Point-to-Point links based on network prefix
 
     Take advantage of the fact that point to point links between routers are usually configured
-    to use IP subnets of /30 prefix length.  
+    to use IP subnets of /30 or /31 prefix length.  
 
   Arguments:  
     None
@@ -1085,7 +1085,8 @@ sub get_p2p_links {
     $class->isa_class_method('get_p2p_links');
     my $start = time;
     my %links;
-    my @blocks = Ipblock->search(prefix=>'30');
+    my @blocks  = Ipblock->search(version=>'4', prefix=>'30');
+    push @blocks, Ipblock->search(versoin=>'4', prefix=>'31');
     foreach my $block ( @blocks ){
 	next unless ( $block->status->name eq 'Subnet' );
 	$logger->debug(sprintf("Topology::get_p2p_links: Checking Subnet %s",
