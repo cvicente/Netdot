@@ -2157,6 +2157,22 @@ $meta = {
         tag => 'SNMP Version',
         type => 'integer'
       },
+      snmp_conn_attempts => {
+        default => '',
+        description => 'How many times Netdot has attempted, and failed, to contact this device via SNMP',
+        length => '',
+        nullable => 1,
+        tag => 'SNMP Failed Attempts',
+        type => 'integer'
+      },
+      snmp_down => {
+        default => '',
+        description => 'Whether Netdot has tried more than MAX_SNMP_CONNECTION_ATTEMPTS times to update this device via SNMP',
+        length => '',
+        nullable => 0,
+        tag => 'SNMP Down',
+        type => 'bool'
+      },
       stp_enabled => {
         default => '',
         description => 'Whether some version of the Spanning Tree Protocol is enabled on this switch',
@@ -2293,6 +2309,8 @@ $meta = {
         'snmp_privkey',
         'snmp_privprotocol',
         'snmp_securitylevel',
+        'snmp_conn_attempts',
+        'snmp_down',
 	'stp_enabled',
         'stp_type',
         'stp_mst_region',

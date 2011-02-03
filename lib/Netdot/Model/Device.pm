@@ -482,22 +482,24 @@ sub insert {
     # These will be overridden by the given arguments
 
     my %devtmp = (
-	community        => 'public',
-	customer_managed => 0,
-	collect_arp      => 0,
-	collect_fwt      => 0,
-	canautoupdate    => 0,
-	date_installed   => $class->timestamp,
-	monitor_config   => 0,
-	monitored        => 0,
-	monitorstatus    => 0,
-	owner            => $default_owner,
-	asset_id         => 0,
-	snmp_bulk        => $class->config->get('DEFAULT_SNMPBULK'),
-	snmp_managed     => 0,
-	snmp_polling     => 0,
-	snmp_target      => 0,
-	auto_dns         => $class->config->get('UPDATE_DEVICE_IP_NAMES'),
+	community          => 'public',
+	customer_managed   => 0,
+	collect_arp        => 0,
+	collect_fwt        => 0,
+	canautoupdate      => 0,
+	date_installed     => $class->timestamp,
+	monitor_config     => 0,
+	monitored          => 0,
+	monitorstatus      => 0,
+	owner              => $default_owner,
+	asset_id           => 0,
+	snmp_bulk          => $class->config->get('DEFAULT_SNMPBULK'),
+	snmp_managed       => 0,
+	snmp_polling       => 0,
+	snmp_target        => 0,
+	snmp_down          => 0,
+	snmp_conn_attempts => 0,
+	auto_dns           => $class->config->get('UPDATE_DEVICE_IP_NAMES'),
 	);
 
     # Add given args (overrides defaults).
@@ -3433,6 +3435,10 @@ sub _get_snmp_session {
 	$self->throw_user(sprintf("Device %s not SNMP-managed. Aborting.", $self->fqdn))
 	    unless $self->snmp_managed;
 
+	# Do not continue if we've exceeded the connection attempts threshold
+	$self->throw_user(sprintf("Device %s has been marked as snmp_down. Aborting.", $self->fqdn))
+	    if ( $self->snmp_down == 1 );
+
 	# Fill up SNMP arguments from object if it wasn't passed to us
 	if ( !defined $argv{communities} && $self->community ){
 	    push @{$argv{communities}}, $self->community;
@@ -3495,6 +3501,26 @@ sub _get_snmp_session {
 
     my ($sinfo, $layers);
 
+    # Deal with the number of connection attempts and the snmp_down flag
+    # We need to do this in a couple of places
+    sub _check_max_attempts {
+	my ($self, $host) = @_;
+	return unless ref($self); # only applies to instance calls
+	my $max = $self->config->get('MAX_SNMP_CONNECTION_ATTEMPTS');
+	my $count = $self->snmp_conn_attempts || 0;
+	$count++;
+	$self->update({snmp_conn_attempts=>$count});
+	$logger->info(sprintf("Device::_get_snmp_session: %s: Failed connection attempts: %d",
+			      $host, $count));
+	if ( $max == 0 ){
+	    # This setting implies that we're told not to limit maximum connections
+	    return;
+	}
+	if ( $count >= $max ){
+	    $self->update({snmp_down=>1});
+	}
+    }
+
     if ( $sinfoargs{Version} == 3 ){
 	$sinfoargs{SecName}   = $argv{sec_name}   if $argv{sec_name};
 	$sinfoargs{SecLevel}  = $argv{sec_level}  if $argv{sec_level};
@@ -3521,6 +3547,7 @@ sub _get_snmp_session {
 					  $argv{host}, $sinfoargs{Version}));
 	    
 	}else {
+	    &_check_max_attempts($self, $argv{host});
 	    $self->throw_user(sprintf("Device::get_snmp_session: %s: SNMPv%d failed", 
 				      $argv{host}, $sinfoargs{Version}));
 	}
@@ -3563,10 +3590,10 @@ sub _get_snmp_session {
 	} #end foreach community
 
 	unless ( defined $sinfo ){
+	    &_check_max_attempts($self, $argv{host});
 	    $self->throw_user(sprintf("Device::_get_snmp_session: Cannot connect to %s.  Tried communities: %s", 
 				      $argv{host}, (join ', ', @{$argv{communities}}) ));
 	}
-
     }
 
     # Save SNMP::Info class if we are an object
@@ -3575,9 +3602,15 @@ sub _get_snmp_session {
 	$self->{_sclass} = $sinfo->class();
     }
 
-    # We might have tried a different SNMP version and community above. Rectify DB if necessary
     if ( $class ){
+	# We're called as an instance method
+
 	my %uargs;
+
+	# Reset dead counter and snmp_down flag
+	$uargs{snmp_conn_attempts} = 0; $uargs{snmp_down} = 0;
+
+	# We might have tried a different SNMP version and community above. Rectify DB if necessary
 	$uargs{snmp_version} = $sinfoargs{Version}   if ( !$self->snmp_version || $self->snmp_version ne $sinfoargs{Version}  );
 	$uargs{snmp_bulk}    = $sinfoargs{BulkWalk}  if ( !$self->snmp_bulk    || $self->snmp_bulk    ne $sinfoargs{BulkWalk} );
 	if ( $sinfoargs{Version} == 3 ){
