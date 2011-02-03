@@ -1086,7 +1086,7 @@ sub get_p2p_links {
     my $start = time;
     my %links;
     my @blocks  = Ipblock->search(version=>'4', prefix=>'30');
-    push @blocks, Ipblock->search(versoin=>'4', prefix=>'31');
+    push @blocks, Ipblock->search(version=>'4', prefix=>'31');
     foreach my $block ( @blocks ){
 	next unless ( $block->status->name eq 'Subnet' );
 	$logger->debug(sprintf("Topology::get_p2p_links: Checking Subnet %s",
