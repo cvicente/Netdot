@@ -65,7 +65,6 @@ foreach my $r ( @$results ){
     $status{$address}  = $status;
     $iplinks{$address} = $ipid;
 }
-#$m->abort;
 
 my $net = NetAddr::IP->new($network->address, $network->prefix);
 my $mask = $net->masklen;
@@ -78,7 +77,7 @@ $net = $net->network();  # start printing from the first address, in case $net w
 
 if( $mask > 29 ) {
     # if there are 8 or less addresses in the subnet, show only that many columns
-    $cols = $net->num()+1;
+    $cols = $net->num()+2;
 } elsif( $mask > 23 ) {
     # if there are 16-512 addresses, show them in 8 columns, and show the entire IPv4 address
     $cols = 8;
@@ -108,14 +107,10 @@ for( my $i=0; $i<(($net->num()+1)/$cols); $i++ ) {
 	    $ipaddr = $ipaddr;
 	}
 
-	if ( $net == $net->network || $net == $net->broadcast ) {
+	if( ($net == $net->network) && ($mask != 31) ){
 	    # don't allow selection of network or broadcast addresses
-	    if( $net == $net->network ) {
-		$ipaddr = '<div class="ipaddr_disabled" title="Network">'.$ipaddr.'</div>';
-	    } else {
-		$ipaddr = '<div class="ipaddr_disabled" title="Broadcast">'.$ipaddr.'</div>';
-	    }
-	} elsif( exists $used{$net->numeric} ) {
+	    $ipaddr = '<div class="ipaddr_disabled" title="Network">'.$ipaddr.'</div>';
+	}elsif( exists $used{$net->numeric} ) {
 	    my $divclass;
 	    my $divtitle = $names{$net->numeric} if exists $names{$net->numeric};
 
@@ -150,6 +145,9 @@ for( my $i=0; $i<(($net->num()+1)/$cols); $i++ ) {
 
 	    $ipaddr = '<div class="'.$divclass.'" title="'.$divtitle.'" width="100%">'.$ipaddr.'</div>';
 
+	}elsif ( $net == $net->broadcast && $mask != 31 ){
+	    # don't allow selection of network or broadcast addresses
+	    $ipaddr = '<div class="ipaddr_disabled" title="Broadcast">'.$ipaddr.'</div>';
 	} else {
 	    if ( $priv_user ){
 		# link this address to the "Add" section in ip.html
