@@ -569,7 +569,7 @@ sub update_ip {
     }
     
     my $ipobj;
-    if ( $ipobj = Ipblock->search(address=>$address)->first ){
+    if ( $ipobj = Ipblock->search(address=>$address, prefix=>$prefix)->first ){
 
 	# update
 	$logger->debug(sub{ sprintf("%s: IP %s/%s exists. Updating", 
