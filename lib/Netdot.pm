@@ -214,6 +214,26 @@ close(SENDMAIL);
 
 }
 
+######################################################################
+=head2 rem_lt_sp - Remove leading and trailing space from string
+	
+   Arguments: 
+    string
+   Returns:
+    string
+   Example:
+    $str = $self->rem_lt_sp($str);
+=cut   
+sub rem_lt_sp {
+    my ($self, $str) = @_;
+    return unless $str;
+    my $logger = $class->{_log}->get_logger('Netdot');
+    my $old = $str;
+    $str =~ s/^\s*(\S+?)\s*$/$1/g;
+    $logger->debug("Netdot::rem_lt_sp: '$old' converted into '$str'");
+    return $str;
+}
+
 =head1 AUTHOR
 
 Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>

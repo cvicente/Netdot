@@ -119,11 +119,11 @@ my $manager = $ui->get_permission_manager($r);
 #######################################################################################
 
 if ( $submit ){
-    # Remove trailing and leading spaces
     my %idx;
     if ( $search_vlan ){
 	$search = $search_vlan;
-	$search =~ s/^\s*(.*)\s*$/$1/g;
+	# Remove trailing and leading spaces
+	$search = $ui->rem_lt_sp($search);
         map { $idx{$_->id} = $_ } Vlan->search_like(vid         => $search);
         map { $idx{$_->id} = $_ } Vlan->search_like(name        => $search);
         map { $idx{$_->id} = $_ } Vlan->search_like(description => $search);
@@ -131,7 +131,8 @@ if ( $submit ){
 	
     }elsif ( $search_vlangroup ) {
 	$search = $search_vlangroup;
-	$search =~ s/^\s*(.*)\s*$/$1/g;
+	# Remove trailing and leading spaces
+	$search = $ui->rem_lt_sp($search);
         map { $idx{$_->id} = $_ } VlanGroup->search_like(name        => $search);
         map { $idx{$_->id} = $_ } VlanGroup->search_like(description => $search);
 	@list = values %idx;

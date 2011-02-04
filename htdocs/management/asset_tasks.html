@@ -55,7 +55,8 @@ if ( $submit ){
 	my %dups;
 	foreach my $s ( @s_numbers ){
 	    next if $s eq "";
-	    $s =~ s/^\s+(.*)\s+/$1/;
+	    # Remove leading and trailing spaces
+	    $s = $ui->rem_lt_sp($s);
 	    if ( exists $tmp{$s} || exists $a_serial{$s} ){
 		$dups{$s} = 1;
 	    }else{
@@ -66,7 +67,7 @@ if ( $submit ){
 	# Arguments for insert
 	my %args = (product_id=>$product);
 	# These are optional
-	$args{date_purchased}      = $date_purchased      if defined $date_purchased;
+	$args{date_purchased} = $date_purchased if defined $date_purchased;
 	$args{maint_contract} = $maint_contract if defined $maint_contract;
 
 	# Insert new assets
