@@ -229,7 +229,7 @@ sub rem_lt_sp {
     return unless $str;
     my $logger = $class->{_log}->get_logger('Netdot');
     my $old = $str;
-    $str =~ s/^\s*(\S+?)\s*$/$1/g;
+    $str =~ s/^\s*(.+?)\s*$/$1/g;
     $logger->debug("Netdot::rem_lt_sp: '$old' converted into '$str'");
     return $str;
 }
