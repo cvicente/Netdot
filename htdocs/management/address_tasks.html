@@ -183,7 +183,7 @@ if ( $submit ){
 	@list = Ipblock->search_like(address=>$search);
     }elsif ( $search_other ){
 	$search = $search_other;
-	$search =~ s/^\s+(.*)\s+$/$1/g;
+	$search = $ui->rem_lt_sp($search);
 	@list = Ipblock->keyword_search($search);
     }elsif( $search_live ){
 	eval { $live_info = Device->search_address_live(ip=>$search_live) };

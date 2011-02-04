@@ -1044,7 +1044,7 @@ sub _convert_search_keyword {
     $old = $keyword;
 
     # Remove leading and trailing spaces
-    $keyword =~ s/^\s*(.*)\s*$/$1/;
+    $keyword = Netdot->rem_lt_sp($keyword);
 
     if ( $keyword =~ /^['"](.*)['"]$/ ){
 	# User wants exact match
@@ -1058,7 +1058,7 @@ sub _convert_search_keyword {
 	# Add wildcards at beginning and end
 	$new =  "%" . $keyword . "%";
     }
-    $logger->debug(sub{"Model::_convert_search_keyword: Converted $old into $new"});
+    $logger->debug(sub{"Model::_convert_search_keyword: Converted '$old' into '$new'"});
     return $new;
 }
 
