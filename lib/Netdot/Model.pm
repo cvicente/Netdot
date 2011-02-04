@@ -855,9 +855,12 @@ sub get_history {
 
 ############################################################################
 =head2 search_all_tables - Search for a string in all text fields from all tables
+    
+    If query has the format <table:keyword>, then only fields of that table
+    will be searched
 
   Arguments:  
-    query string    
+    query string
   Returns:    
     reference to hash of hashes
 
@@ -865,20 +868,29 @@ sub get_history {
 sub search_all_tables {
     my ($self, $q) = @_;
     my %results;
-
+   
+    # Check if a table was specified
+    my $table;
+    if ( $q =~ /(\S+):(.+)$/ ){
+	$table = $1;
+	$q     = $2;
+    }
     foreach my $tbl ( $self->meta->get_table_names() ) {
+	next if ( $table && $tbl !~ /^$table$/i );
 	$lctbl = lc($tbl);
-	# Only search blob and varchar fields
 	my @cols;
-	map { push @cols, $_ 
-		  if ( $tbl->meta_data->get_column($_)->sql_type eq 'blob'
-		       || $tbl->meta_data->get_column($_)->sql_type eq 'varchar'
-		  ) 
-	      } $tbl->columns();
+	foreach my $c ( $tbl->columns ){
+	    # Ignore foreign key fields
+	    next if ( $tbl->meta_data->get_column($c)->links_to() );
+	    # Only include these types
+	    push @cols, $c
+		if ( $tbl->meta_data->get_column($c)->sql_type =~ /^blob|varchar|integer$/ ); 
+	}
 	foreach my $col ( @cols ){
 	    my @res = $tbl->search_like($col=>$q);
 	    map { $results{$tbl}{$_->id} = $_ } @res;
 	}
+	last if $table;
     }
     return \%results;
 }
