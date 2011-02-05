@@ -880,11 +880,14 @@ sub search_all_tables {
 	$lctbl = lc($tbl);
 	my @cols;
 	foreach my $c ( $tbl->columns ){
+	    my $mcol = $tbl->meta_data->get_column($c);
 	    # Ignore foreign key fields
-	    next if ( $tbl->meta_data->get_column($c)->links_to() );
+	    next if ( $mcol->name eq 'id' );
+	    # Ignore foreign key fields
+	    next if ( $mcol->links_to() );
 	    # Only include these types
 	    push @cols, $c
-		if ( $tbl->meta_data->get_column($c)->sql_type =~ /^blob|varchar|integer$/ ); 
+		if ( $mcol->sql_type =~ /^blob|varchar|integer$/ ); 
 	}
 	foreach my $col ( @cols ){
 	    my @res = $tbl->search_like($col=>$q);
