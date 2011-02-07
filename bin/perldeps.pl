@@ -157,17 +157,16 @@ sub install_modules_cpan{
     $ENV{FTP_PASSIVE} = 1;
     foreach my $anon_hash (@DEPS){
 	my $module = $anon_hash->{'cpan'};
-	if ($module){
-	    eval "use $module";
-	    if ( $@ ){
-		$module =~ s/^(.*)\s+.*/$1/;
-		eval {
-		    CPAN::Shell->install($module);
-		};
-		
-		if ( my $e = $@ ){
-		    print $e;
-		}
+	next unless $module;
+	eval "use $module";
+	if ( $@ ){
+	    $module =~ s/^(.*)\s+.*/$1/;
+	    eval {
+		CPAN::Shell->install($module);
+	    };
+	    
+	    if ( my $e = $@ ){
+		print $e;
 	    }
 	}
     }
@@ -176,17 +175,18 @@ sub install_modules_cpan{
 sub run_test{
     foreach my $anon_hash (@DEPS){
 	my $module = $anon_hash->{'cpan'};
-	if ($module){
-	    eval "use $module";
-	    print $module, "................";
-	    if ( $@ ){
-		print "MISSING";
-	    }
-	    else{
-		print "installed";
-	    }
-	    print "\n";
+	next unless $module;
+	eval "use $module";
+	my $len = 50 - length($module);
+	my $sep = '.' x $len;
+	print $module."$sep";
+	if ( $@ ){
+	    print "MISSING";
 	}
+	else{
+	    print "ok";
+	}
+	print "\n";
     }
 }
 
