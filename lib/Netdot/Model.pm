@@ -632,11 +632,9 @@ sub update {
     my $class = ref($self);
     my @changed_keys;
     if ( $argv ){
-
         if ( Netdot->config->get('DB_TYPE') =~ /^pg$/i ){
 	    $class->_adjust_vals(args=>$argv, action=>'update');
 	}
-
 	while ( my ($col, $val) = each %$argv ){
 	    my $a = blessed($self->$col) ? $self->$col->id : $self->$col;
 	    my $b = blessed($val)        ? $val->id        : $val;
@@ -646,30 +644,29 @@ sub update {
 	    }
 	}
     }
-
     my $id = $self->id;
     my $res;
-    if ( @changed_keys ){
-	eval {
-	    $res = $self->SUPER::update();
-	};
-	if ( my $e = $@ ){
-	    my $msg = "Error while updating $class: ";
-	    # Class::DBI shows a full stack trace
-	    # Try to make it less frightening for the user
-	    if ( $e =~ /Duplicate/i ){
-		$msg .= "Some values are duplicated";
-	    }elsif ( $e =~ /invalid input syntax/i ){
-		$msg .= "Some fields have invalid input syntax";
-	    }elsif ( $e =~ /out of range/i ){
-		$msg .= "Some values are out of valid range.";
-	    }else{ 
-		$msg .= $e;
-	    }
-	    $self->throw_user("$msg");
+    eval {
+	$res = $self->SUPER::update();
+    };
+    if ( my $e = $@ ){
+	my $msg = "Error while updating $class: ";
+	# Class::DBI shows a full stack trace
+	# Try to make it less frightening for the user
+	if ( $e =~ /Duplicate/i ){
+	    $msg .= "Some values are duplicatedxs";
+	}elsif ( $e =~ /invalid input syntax/i ){
+	    $msg .= "Some fields have invalid input syntax";
+	}elsif ( $e =~ /out of range/i ){
+	    $msg .= "Some values are out of valid range.";
+	}else{ 
+	    $msg .= $e;
 	}
+	$self->throw_user("$msg");
+    }
+    if ( @changed_keys ){
 	# For some reason, we (with some classes) get an empty object after updating (weird)
-	# so we re-read the object from the DB to make sure we have the id value below:
+	# so we re-read the object from the DB
 	$self = $class->retrieve($id);
 	my @values = map { $self->$_ } @changed_keys;
 	$logger->debug( sub { sprintf("Model::update: Updated table: %s, id: %s, fields: (%s), values: (%s)", 
