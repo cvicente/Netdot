@@ -5739,6 +5739,14 @@ $meta = {
         tag => 'Auto Update?',
         type => 'bool'
       },
+      created => {
+        default => '1970-01-02 00:00:01',
+        description => 'Time when this resource record was created',
+        length => '',
+        nullable => 0,
+        tag => 'Created',
+        type => 'timestamp'
+      },
       expiration => {
         default => '',
         description => 'Expiration Date for this Record (YYYY-MM-DD)',
@@ -5762,6 +5770,14 @@ $meta = {
         nullable => 1,
         tag => 'Comments',
         type => 'blob'
+      },
+      modified => {
+        default => '1970-01-02 00:00:01',
+        description => 'Last time when this resource record was modified',
+        length => '',
+        nullable => 0,
+        tag => 'Modified',
+        type => 'timestamp'
       },
       name => {
         default => '',
@@ -5787,7 +5803,7 @@ $meta = {
     },
     description => 'DNS Resource Record. Also known as the "owner", this object in Netdot groups all the records with the same name.',
     has_history => 0,
-    index => [ ['name'], ['expiration'] ],
+    index => [ ['name'], ['expiration'], ['created'], ['modified'] ],
     isjoin => '0',
     label => [
       'name',
@@ -5801,6 +5817,8 @@ $meta = {
         'zone',
         'active',
         'auto_update',
+        'created',
+        'modified',  
         'expiration',
         'info',
       ],
@@ -8047,6 +8065,14 @@ $meta = {
         tag => undef,
         type => 'bigint'
       },
+      include => {
+        default => '',
+        description => 'Text to include when exporting zone',
+        length => '',
+        nullable => 1,
+        tag => 'Include',
+        type => 'blob'
+      },
       info => {
         default => '',
         description => '',
@@ -8139,6 +8165,7 @@ $meta = {
         'active',
         'export_file',
         'default_ttl',
+        'include',
         'info'
       ],
       brief => [

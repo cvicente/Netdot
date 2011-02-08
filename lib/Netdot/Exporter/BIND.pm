@@ -190,6 +190,10 @@ sub print_zone_to_file {
 	    }
 	}
     }
+
+    # Add any includes
+    print $fh $zone->include . "\n";
+
     close($fh);
     return $path;
 }

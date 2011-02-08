@@ -130,6 +130,11 @@ foreach my $sn ( keys %assets ){
 "ALTER TABLE device ADD COLUMN snmp_down tinyint(1) NOT NULL AFTER snmp_conn_attempts",
 "ALTER TABLE device_history ADD COLUMN snmp_conn_attempts integer AFTER snmp_bulk",
 "ALTER TABLE device_history ADD COLUMN snmp_down tinyint(1) NOT NULL AFTER snmp_conn_attempts",
+"ALTER TABLE rr ADD COLUMN created timestamp AFTER auto_update",
+"ALTER TABLE rr ADD COLUMN modified timestamp AFTER info",
+"ALTER TABLE rr ADD INDEX RR4 (`created`)",
+"ALTER TABLE rr ADD INDEX RR5 (`modified`)",
+"ALTER TABLE zone ADD COLUMN include blob AFTER id",
 );
 
 

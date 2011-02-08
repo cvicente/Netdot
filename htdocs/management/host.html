@@ -289,9 +289,15 @@ foreach my $o ( values %rrs ) {
     }
     print '</div>';
 
-    $ui->add_to_fields(edit=>$edit, o=>$o, fields=>['name', 'zone', 'expiration', 'active'],
+    $ui->add_to_fields(edit=>$edit, o=>$o, fields=>['name', 'zone', 'active', 'info'],
 		       field_headers=>\@field_headers, cell_data=>\@cell_data,
-		       linkpages=>['', 'zone.html', '']);
+		       linkpages=>['', 'zone.html', '', '']);
+
+    $ui->add_to_fields(edit=>0, o=>$o, fields=>['created', 'modified'],
+		       field_headers=>\@field_headers, cell_data=>\@cell_data);
+
+    $ui->add_to_fields(edit=>$edit, o=>$o, fields=>['expiration'],
+		       field_headers=>\@field_headers, cell_data=>\@cell_data);
 
     if ( $manager && $manager->can($user, "access_section", 'host.html:auto_update') ){
 	if ( my $device = ($o->devices)[0] ){

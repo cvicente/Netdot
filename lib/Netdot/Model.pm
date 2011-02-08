@@ -153,16 +153,20 @@ BEGIN {
 	my $table = $self->table;
 	my ($zone, $scope);
 	my $user = $ENV{REMOTE_USER} || "unknown";
+	my $rr; 
 	if ( $table eq 'zone' ){
 	    $zone = $self;   
 	}elsif ( $table eq 'rr' ){
+	    $rr = $self;
+	    return if ( $args{fields} eq 'modified' );
 	    $zone = $self->zone;
 	}elsif ( $table =~ /^rr/ ){
 	    if ( defined $self->rr && int($self->rr) != 0 ){
 		if ( blessed($self->rr) ){
-		    $zone = $self->rr->zone;
+		    $rr = $self->rr;
+		    $zone = $rr->zone;
 		}else{
-		    if ( my $rr = RR->retrieve($self->rr) ){
+		    if ( $rr = RR->retrieve($self->rr) ){
 			$zone = $rr->zone;
 		    }else{
 			$logger->error("Netdot::Model::_host_audit: $table id ".$self->id." has invalid rr: ".$self->rr);
@@ -216,6 +220,38 @@ BEGIN {
 	}
 	1;
     }
+
+    #############################################################################
+    # Update RR 'modified' timestamp if any of its sub-records are touched
+    #############################################################################
+    __PACKAGE__->add_trigger( before_create  => \&_update_rr_tstamp );
+    __PACKAGE__->add_trigger( before_update  => \&_update_rr_tstamp );
+    __PACKAGE__->add_trigger( before_delete  => \&_update_rr_tstamp );
+
+    sub _update_rr_tstamp {
+	my $self = shift;
+	my $table = $self->table;
+	my $rr;
+	if ( $table eq 'rr' ){
+	    $rr = $self;
+	    $rr->_attribute_set({modified=>$self->timestamp});
+	}elsif ( $table =~ /^rr/ ){
+	    if ( defined $self->rr && int($self->rr) != 0 ){
+		if ( blessed($self->rr) ){
+		    $rr = $self->rr;
+		}else{
+		    unless ( $rr = RR->retrieve($self->rr) ){
+			return;
+		    }
+		}
+	    }else{
+		return;
+	    }
+	    $rr->SUPER::update({modified=>$self->timestamp});
+	}
+	1;
+    }
+
     ###########################################################
     # This sub avoids errors like:
     # "Deep recursion on subroutine "Class::DBI::_flesh""

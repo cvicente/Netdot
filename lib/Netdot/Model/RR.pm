@@ -187,6 +187,8 @@ sub insert {
 	
 	my %state = (name        => $argv->{name},
 		     zone        => $zone->id,
+		     created     => $class->timestamp,
+		     modified    => $class->timestamp,
 		     active      => defined($argv->{active})? $argv->{active} : 1,
 		     auto_update => $auto_update,
 		     expiration  => $argv->{expiration},
