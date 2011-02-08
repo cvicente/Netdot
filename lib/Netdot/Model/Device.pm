@@ -1220,8 +1220,8 @@ sub snmp_update_from_file {
     my $device_count = $class->snmp_update_parallel(%argv);
 
     my $end = time;
-    $logger->info(sprintf("Devices in $file updated. %d devices in %s", 
-			  $device_count, $class->sec2dhms($end-$start)));
+    $logger->info(sprintf("Devices in %s updated. %d devices in %s", 
+			  $file, $device_count, $class->sec2dhms($end-$start)));
 		  
 }
 
@@ -2343,7 +2343,7 @@ sub snmp_update {
 
 	if ( defined $info->{_sclass} && $info->{_sclass} =~ /Airespace/ ){
 	    my $newclass = 'Netdot::Model::Device::Airespace';
-	    $logger->debug("$host: reblessing as $newclass"); 
+	    $logger->debug("Device::snmp_update: $host: reblessing as $newclass"); 
 	    bless $self, $newclass;
 	}
 	
@@ -2389,6 +2389,7 @@ sub snmp_update {
 	    return;
 	}
     }
+    $logger->info("Device::snmp_update: $host: Finished updating");
 }
 
 
@@ -3948,6 +3949,7 @@ sub snmp_update_parallel {
 		$do_devs{$dev->id} = $dev;
 		$logger->debug(sub{ sprintf("%s exists in DB.", $dev->fqdn) });
 	    }else{
+		$device_count++;
 		# FORK
 		$pm->start and next;
 		eval {
