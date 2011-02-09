@@ -88,12 +88,25 @@ if ( defined($object) && scalar @$object ){
 	$osession->{object} = $object;
     }
     
+    my $first_obj = $object->[0];
     ##############################################
     # Determine table name if not passed to us
-    $table = $object->[0]->short_class 
+    $table = $first_obj->short_class 
 	unless $table;
 
-    %orderbrief  = $table->meta_data->get_column_order_brief();
+    if ( $table eq 'Ipblock' ){
+	if ( $first_obj->is_address ){
+	    %orderbrief  = $table->meta_data->get_column_order(view=>'address_brief');
+	}elsif ( $first_obj->status->name eq 'Subnet' ){
+	    %orderbrief  = $table->meta_data->get_column_order(view=>'subnet_brief');
+	}elsif ( $first_obj->status->name eq 'Container' ){
+	    %orderbrief  = $table->meta_data->get_column_order(view=>'container_brief');
+	}else{
+	    %orderbrief  = $table->meta_data->get_column_order_brief();
+	}
+    }else{
+	%orderbrief  = $table->meta_data->get_column_order_brief();
+    }
     @orderbrief  = sort { $orderbrief{$a} <=> $orderbrief{$b} } keys %orderbrief;
 
     ##############################################
