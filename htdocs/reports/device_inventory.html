@@ -25,6 +25,7 @@ my (@headers, @rows) = ();
          By <select name="report_type" onChange="document.report_form.submit()">
          <option value="product" <% ($report_type eq "product")?"SELECTED":"" %>>Type/Model</option>
          <option value="product_monitored" <% ($report_type eq "product_monitored")?"SELECTED":"" %>>Type/Model (monitored)</option>
+         <option value="site" <% ($report_type eq "site")?"SELECTED":"" %>>Site/Model</option>
          <option value="os" <% ($report_type eq "os")?"SELECTED":"" %>>Model/OS</option>
          <option value="downtime" <% ($report_type eq "downtime")?"SELECTED":"" %>>Downtime</option>
          <option value="duplex" <% ($report_type eq "duplex")?"SELECTED":"" %>>Duplex Mismatches</option>
@@ -104,6 +105,50 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 
     }
     $m->comp('/generic/data_table.mhtml', field_headers=>\@headers, data=>\@rows);
+
+}elsif ( $report_type eq 'site' ){
+    my $res = Netdot::Model->raw_sql("
+    SELECT     device.site,
+               device.product,
+               site.name AS site_name,
+               product.name AS product_name,
+               entity.name AS manufacturer,
+               count(*) AS count
+    FROM       device
+    LEFT JOIN  site ON site.id=device.site
+    LEFT JOIN  (product,entity) ON product.id=device.product 
+                 AND entity.id=product.manufacturer 
+    GROUP BY   site,product
+    ORDER BY   site_name,product_name
+    ")->{rows};
+
+    @headers = ( 'Site', 'Model', 'Count', );
+
+    my $last_site;
+    foreach my $r ( @$res ) {
+        my $site = ($r->[0] || "_unset");
+	my $site_name = ($r->[2] || "Unset");
+	if ($site ne $last_site) {
+	    $last_site = $site;
+	    my @hdr = ();
+	    push( @hdr, "<strong><a href=\"../generic/search_obj.html?table=Device&site=$site&res=1\">$site_name</a></strong>" );
+	    push( @hdr, "" );
+	    push( @hdr, "" );
+	    push( @rows, \@hdr );
+	}
+	my @row = ();
+	push( @row, "" );
+	my $product      = ($r->[1] || "_unset");
+	my $product_name = ($r->[3] || "Unset");
+	my $manuf        = ($r->[4] || "Unset");
+        my $label        = $manuf." ".$product_name;
+	push( @row, "<strong><a href=\"../generic/search_obj.html?table=Device&site=$site&product=$product&res=1\">$label</a></strong>" );
+	push( @row, '<strong>' . $r->[5] . '</strong>' );
+	push( @rows, \@row );
+    }
+    $m->comp('/generic/data_table.mhtml', field_headers=>\@headers, data=>\@rows);
+
+
 
 }elsif ( $report_type eq 'os' ){
     my %t;
