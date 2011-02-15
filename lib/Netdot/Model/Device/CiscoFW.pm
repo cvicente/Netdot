@@ -135,9 +135,15 @@ sub _get_arp_from_cli {
 
     # MAP interface names to IDs
     my %int_names;
+    my %devsubnets;
     foreach my $int ( $self->interfaces ){
 	$int_names{$int->name} = $int->id;
+	foreach my $ip ( $int->ips ){
+	    push @{$devsubnets{$int->id}}, $ip->parent->_netaddr 
+		if $ip->parent;
+	}
     }
+
 
     my ($iname, $ip, $mac, $intid);
     foreach my $line ( @output ) {
@@ -186,9 +192,30 @@ sub _get_arp_from_cli {
 	    $logger->debug(sub{"Device::CiscoFW::_get_arp_from_cli: $host: Invalid MAC: $mac" });
 	    next;
 	}	
+
+	if ( Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET') ){
+	    # Don't accept entry if ip is not within this interface's subnets
+	    my $invalid_subnet = 1;
+	    foreach my $nsub ( @{$devsubnets{$intid}} ){
+		my $nip = NetAddr::IP->new($ip) 
+		    || $self->throw_fatal(sprintf("Cannot create NetAddr::IP object from %s", $ip));
+		if ( $nip->within($nsub) ){
+		    $invalid_subnet = 0;
+		    last;
+		}else{
+		    $logger->debug(sub{sprintf("Device::CiscoFW::_get_arp_from_cli: $host: IP $ip not within %s", 
+					       $nsub->cidr)});
+		}
+	    }
+	    if ( $invalid_subnet ){
+		$logger->debug(sub{"Device::CiscoFW::_get_arp_from_cli: $host: IP $ip not within interface $iname subnets"});
+		next;
+	    }
+	}
+
 	# Store in hash
 	$cache{$intid}{$ip} = $mac;
-	$logger->debug(sub{"Device::get_arp_from_cli: $host: $iname -> $ip -> $mac" });
+	$logger->debug(sub{"Device::CiscoFW::_get_arp_from_cli: $host: $iname -> $ip -> $mac" });
     }
     
     return \%cache;
