@@ -232,10 +232,7 @@ if ( $action eq "discover" ){
 
     }else{
         $argv{name}         = $host           || "";
-	$argv{owner}        = $owner          ||  0;
-	$argv{used_by}      = $used_by        ||  0;
-	$argv{site}         = $site           ||  0;
-	$argv{contacts}     = $contacts       ||  "";
+	$argv{contacts}     = $contacts       || "";
 	$argv{add_subnets}  = $add_subnets;
 	$argv{subs_inherit} = $subs_inherit;
 	eval {
@@ -286,7 +283,7 @@ else{
 % push( @field_headers, "Owner:" );
 <&| "/generic/HERE.mhtml" &>
            <select name="owner" id="owner">
-           <option value="0">-- Select --</option>
+           <option value="">-- Select --</option>
 %          my @allents = Entity->retrieve_all; 
 %          @allents = sort { $a->name cmp $b->name } @allents;
 %          foreach my $ent (@allents){
@@ -304,7 +301,7 @@ else{
 % push( @field_headers, "Used by:" );
 <&| "/generic/HERE.mhtml" &>
            <select name="used_by" id="used_by">
-           <option value="0">-- Select --</option>
+           <option value="">-- Select --</option>
 %          my @allents = Entity->retrieve_all; 
 %          @allents = sort { $a->name cmp $b->name } @allents;
 %          foreach my $ent (@allents){
@@ -322,7 +319,7 @@ else{
 % push( @field_headers, "Site:" );
 <&| "/generic/HERE.mhtml" &>
            <select name="site" id="site">
-           <option value="0">-- Select --</option>
+           <option value="">-- Select --</option>
 %          my @allsites = Site->retrieve_all; 
 %          @allsites = sort { $a->name cmp $b->name } @allsites;
 %          foreach my $site (@allsites){

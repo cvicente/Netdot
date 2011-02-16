@@ -865,7 +865,7 @@ if ( $edit ){
     push (@data, &{sub{ 
 	my $x;
 	$x .= '<select name="range_status" id="range_used_by">';
-        $x .= '<option value="0">-- Select --</option>';
+        $x .= '<option value="">-- Select --</option>';
 	my @allstatus = qw( Dynamic Reserved Static Available ); 
 	foreach my $status ( @allstatus ){
 	    $x .= '<option value="'.$status.'">'.$status.'</option>';
@@ -880,7 +880,7 @@ if ( $edit ){
     push (@data, &{sub{
 	my $x;
 	$x .= '<select name="range_owner" id="range_owner">';
-	$x .= '<option value="0">-- Select --</option>';
+	$x .= '<option value="">-- Select --</option>';
 	foreach my $ent ( @allents ){
 	    $x .= '<option value="'. $ent->id .'">'. $ent->name .'</option>';
 	}
@@ -893,7 +893,7 @@ if ( $edit ){
     push (@data, &{sub{
 	my $x;
 	$x .= '<select name="range_used_by" id="range_used_by">';
-	$x .= '<option value="0">-- Select --</option>';
+	$x .= '<option value="">-- Select --</option>';
 	foreach my $ent ( @allents ){
 	    $x .= '<option value="'. $ent->id .'">'. $ent->name .'</option>';
 	}
@@ -919,7 +919,7 @@ if ( $edit ){
     push (@data, &{sub{
 	my $x;
 	$x .= '<select name="range_fw_zone" id="range_fw_zone">';
-	$x .= '<option value="0">-- Select --</option>';
+	$x .= '<option value="">-- Select --</option>';
 	if ( $fwzone ){
 	    $x .= '<option value="'. $fwzone->id .'" SELECTED>'. $fwzone->name .'</option>';
 	}
@@ -954,7 +954,7 @@ if ( $edit ){
     push (@data, &{sub{
 	my $x;
 	$x .= '<select name="dhcp_global_scope" id="dhcp_global_scope">';
-	$x .= '<option value="0">-- Select --</option>';
+	$x .= '<option value="">-- Select --</option>';
 	foreach my $ent ( DhcpScope->search(type=>'global') ){
 	    $x .= '<option value="'. $ent->id .'">'. $ent->name .'</option>';
 	}
@@ -1266,7 +1266,7 @@ if ($o->status->name eq "Subnet") {
 	    <input type="hidden" name="_action" value="LINK_ZONES">
             Link this block with existing forward zones:
 	    <p><select name="link_zones" multiple="multiple">
-            <option value="0"> - select - </option>
+            <option value=""> - select - </option>
 %	    foreach my $zone ( grep { $_->active == 1 && $_->name !~ /\.arpa$/ } @all_zones ){
 %               next if exists $cur_zones{$zone->id};
                 <option value="<% $zone->id %>"><% $zone->get_label %></option>
@@ -1317,7 +1317,7 @@ if ($o->status->name eq "Subnet") {
 	    <input type="hidden" name="_action" value="ADD_REV_ZONE">
             Create reverse zones for this block (existing zones not included):
             <p><select name="new_rev_zones" multiple="multiple">
-            <option value="0"> - select - </option>
+            <option value=""> - select - </option>
 %           foreach my $n ( $o->get_dot_arpa_names ){
 %               next if exists $reverse_zones{$n};
                 <option value="<% $n %>"><% $n %></option>
@@ -1325,7 +1325,7 @@ if ($o->status->name eq "Subnet") {
 	    </select>
             <p>Use template zone (optional):
 	    <select name="template_zone_for_rev">
-            <option value="0">-- Select --</option>
+            <option value="">-- Select --</option>
 %	        foreach my $zone ( @all_zones ){
                     <option value="<% $zone->id %>"><% $zone->get_label %></option>
 %	        }

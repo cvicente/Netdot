@@ -110,7 +110,7 @@ my %ipb_actions = (
         <legend>IP Block Actions</legend>
         <form name="actions_form" action="hostinfo_tasks.html" method="POST">
         <select name="ipblock">
-            <option value="0">- Select Block -</option>
+            <option value="">- Select Block -</option>
 %       foreach my $o ( sort { $a->address_numeric <=> $b->address_numeric } @ipblocks ){
 %           if ( $ipblock && $ipblock eq $o->id ){
                 <option value="<% $o %>" SELECTED><% $o->get_label %></option>
@@ -121,7 +121,7 @@ my %ipb_actions = (
         </select>
 
         <select name="ipblock_action">
-            <option value="0">- Select Action -</option>
+            <option value="">- Select Action -</option>
 %	    foreach my $action ( sort keys %ipb_actions ){
 %		if ( $ipblock_action && $ipblock_action eq $action  ){
 		    <option value="<% $action %>" SELECTED><% $ipb_actions{$action} %></option>
@@ -142,7 +142,7 @@ my %ipb_actions = (
         <legend>My Zones</legend>
         <form name="zone_form" action="zone.html" method="POST">
         <select name="id" onChange="document.zone_form.submit();">
-            <option value="0">- Select Zone -</option>
+            <option value="">- Select Zone -</option>
 %       foreach my $o ( sort { $a->name cmp $b->name } @zones ){
             <option value="<% $o %>"><% $o->get_label %></option>
 %       }

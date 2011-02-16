@@ -287,7 +287,7 @@ BEGIN {
 							  );
 	$subclasses{$package} = $code;
 	$tables{$package}     = $table->name;
-	$evalcode .= $code;
+	$evalcode .= "\n".$code;
     }
 
     # Load all Class::DBI subclasses
@@ -346,9 +346,7 @@ sub insert {
     $class->throw_fatal("insert needs field/value parameters") 
 	unless ( keys %{$argv} );
 
-    if ( Netdot->config->get('DB_TYPE') =~ /^pg$/i ){
-	$class->_adjust_vals(args=>$argv, action=>'insert');
-    }
+    $class->_adjust_vals(args=>$argv, action=>'insert');
 
     my $obj;
     eval {
@@ -668,13 +666,13 @@ sub update {
     my $class = ref($self);
     my @changed_keys;
     if ( $argv ){
-        if ( Netdot->config->get('DB_TYPE') =~ /^pg$/i ){
-	    $class->_adjust_vals(args=>$argv, action=>'update');
-	}
+
+	$class->_adjust_vals(args=>$argv, action=>'update');
+	
 	while ( my ($col, $val) = each %$argv ){
 	    my $a = blessed($self->$col) ? $self->$col->id : $self->$col;
 	    my $b = blessed($val)        ? $val->id        : $val;
-	    if ( (!defined $a && defined $b) || (defined $a && defined $b && $a ne $b) ){
+	    if ( (!defined $a || !defined $b) || (defined $a && defined $b && $a ne $b) ){
 		$self->set($col=>$b);
 		push @changed_keys, $col;
 	    }
@@ -1034,34 +1032,38 @@ sub _adjust_vals{
     map { $meta_columns{$_->name} = $_ } $class->meta_data->get_columns;
     foreach my $field ( keys %$args ){
 	my $mcol = $meta_columns{$field};
-	if ( !ref($args->{$field}) && 
-	     (!defined($args->{$field}) || $args->{$field} eq 'null' || 
-	      $args->{$field} eq 'NULL' || $args->{$field} eq "") ){
-	    if ( !defined($mcol->sql_type) ){
-		$class->throw_fatal("sql_type not defined for $field");
-	    }
-	    if ( ($mcol->sql_type eq 'integer') || ($mcol->sql_type eq 'bool') ){
-		$logger->debug(sub{sprintf("Model::_adjust_vals: Setting empty field '%s' type '%s' to 0.", 
-					   $field, $mcol->sql_type) });
-		$args->{$field} = 0;
-	    }elsif ( $mcol->sql_type eq 'date' ){
-		# If date field is empty, insert NULL instead of ignoring it
+	if ( !blessed($args->{$field}) && 
+	     (!defined($args->{$field}) || $args->{$field} eq '' || 
+	      $args->{$field} eq 'null' || $args->{$field} eq 'NULL' ) ){
+
+	    if ( $mcol->links_to ){
+		# It's a foreign key. Set to null
 		$args->{$field} = undef;
-	    }elsif ( $args->{$field} eq "" ){
-		# This causes DBI to insert NULL instead of ""
-		$args->{$field} = undef;
+	    }else{
+		if ( !defined($mcol->sql_type) ){
+		    $class->throw_fatal("Netdot::Model::_adjust_vals: sql_type not defined for $field");
+		}
+		if ( $mcol->sql_type =~ /^integer|bigint|bool$/o ) {
+		    $logger->debug(sub{sprintf("Model::_adjust_vals: Setting empty field '%s' type '%s' to 0.", 
+					       $field, $mcol->sql_type) });
+		    $args->{$field} = 0;
+		}else{
+		    # Insert NULL instead of ""
+		    $args->{$field} = undef;
+		}
 	    }
 	}
 	delete $meta_columns{$field};
     }
-    # Go over remaining columns to make sure non-nullables are 
+    # Go over remaining (not given) columns to make sure non-nullables are 
     # explicitly set to 0
     if ( $action eq 'insert' ){
 	foreach my $field ( keys %meta_columns ){
 	    next if ( $field eq 'id' );
 	    my $mcol = $meta_columns{$field};
-	    if ( !$mcol->is_nullable && ($mcol->sql_type eq 'integer' || $mcol->sql_type eq 'bool') ){
-		$logger->debug(sub{sprintf("Model::_adjust_vals: Setting missing non-nullable ". 
+	    if ( !$mcol->is_nullable && 
+		 $mcol->sql_type =~ /^integer|bigint|bool$/o ) {
+		$logger->debug(sub{sprintf("Netdot::Model::_adjust_vals: Setting missing non-nullable ". 
 					   "field '%s' type '%s' to 0.", 
 					   $field, $mcol->sql_type) } );
 		$args->{$field} = 0;

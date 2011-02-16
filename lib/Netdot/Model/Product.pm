@@ -112,7 +112,7 @@ sub find_or_create {
 	    my $entname = $manufacturer || $oid;
 	    $ent = Entity->insert({name=>$entname, oid=>$oid});
 	    $logger->info("Inserted new Entity: $entname.");
-	    my $etype = EntityType->search(name=>"Manufacturer")->first || 0;
+	    my $etype = EntityType->search(name=>"Manufacturer")->first || undef;
 	    my $erole = EntityRole->insert({entity=>$ent, type=>$etype});
 	}
 	

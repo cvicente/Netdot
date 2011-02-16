@@ -24,7 +24,7 @@ Netdot::Model::Device::CiscoIOS - Cisco IOS Class
 =head2 get_arp - Fetch ARP tables
 
   Arguments:
-    None
+    session - SNMP session (optional)
   Returns:
     Hashref
   Examples:
@@ -34,14 +34,37 @@ sub get_arp {
     my ($self, %argv) = @_;
     $self->isa_object_method('get_arp');
     my $host = $self->fqdn;
-    return $self->_get_arp_from_cli(host=>$host);
+    my $cache = {};
+
+    unless ( $self->collect_arp ){
+	$logger->debug(sub{"Device::CiscoIOS::_get_arp: $host excluded from ARP collection. Skipping"});
+	return;
+    }
+    if ( $self->is_in_downtime ){
+	$logger->debug(sub{"Device::CiscoIOS::_get_arp: $host in downtime. Skipping"});
+	return;
+    }
+
+    my $start     = time;
+    my $arp_count = 0;
+
+    # Try CLI, and then SNMP 
+    $cache = $self->_get_arp_from_cli(host=>$host) ||
+	$self->_get_arp_from_snmp(session=>$argv{session});
+
+    map { $arp_count+= scalar(keys %{$cache->{$_}}) } keys %$cache;
+    my $end = time;
+    $logger->debug(sub{ sprintf("$host: ARP cache fetched. %s entries in %s", 
+				$arp_count, $self->sec2dhms($end-$start) ) });
+   return $cache;
+
 }
 
 ############################################################################
 =head2 get_fwt - Fetch forwarding tables
 
   Arguments:
-    None
+    session - SNMP session (optional)    
   Returns:
     Hashref
   Examples:
@@ -51,7 +74,30 @@ sub get_fwt {
     my ($self, %argv) = @_;
     $self->isa_object_method('get_fwt');
     my $host = $self->fqdn;
-    return $self->_get_fwt_from_cli(host=>$host);
+    my $fwt = {};
+
+    unless ( $self->collect_fwt ){
+	$logger->debug(sub{"Device::CiscoIOS::get_fwt: $host excluded from FWT collection. Skipping"});
+	return;
+    }
+    if ( $self->is_in_downtime ){
+	$logger->debug(sub{"Device::CiscoIOS::get_fwt: $host in downtime. Skipping"});
+	return;
+    }
+
+    my $start     = time;
+    my $fwt_count = 0;
+    
+    # Try CLI, and then SNMP 
+    $fwt = $self->_get_fwt_from_cli(host=>$host) ||
+	$self->_get_fwt_from_snmp(session=>$argv{session});
+
+    map { $fwt_count+= scalar(keys %{$fwt->{$_}}) } keys %$fwt;
+    my $end = time;
+    $logger->debug(sub{ sprintf("$host: FWT fetched. %s entries in %s", 
+				$fwt_count, $self->sec2dhms($end-$start) ) });
+   return $fwt;
+
 }
 
 
@@ -73,6 +119,7 @@ sub _get_arp_from_cli {
 
     my $host = $argv{host};
     my $args = $self->_get_credentials(host=>$host);
+    return unless ref($args) eq 'HASH';
 
     my @output = $self->_cli_cmd(%$args, host=>$host, cmd=>'show ip arp');
 
@@ -166,6 +213,8 @@ sub _get_fwt_from_cli {
 
     my $host = $argv{host};
     my $args = $self->_get_credentials(host=>$host);
+    return unless ref($args) eq 'HASH';
+
     my @output = $self->_cli_cmd(%$args, host=>$host, cmd=>'show mac-address-table dynamic');
 
     # MAP interface names to IDs
@@ -257,8 +306,9 @@ sub _get_credentials {
 	}
     }   
     if ( !$match ){
-	$self->throw_user("Device::CiscoIOS::_get_credentials: $host did not match any patterns in configured credentials.")
+	$logger->warn("Device::CiscoIOS::_get_credentials: $host did not match any patterns in configured credentials.");
     }
+    return;
 }
 
 ############################################################################

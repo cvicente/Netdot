@@ -14,23 +14,14 @@ $CONFIG{debug}             = 1;
 $CONFIG{keep_history}      = 1;
 $CONFIG{keep_dependencies} = 0;
 
-foreach my $var ( qw /DB_TYPE DB_HOME DB_HOST DB_PORT DB_DBA DB_DBA_PASSWORD
-                  DB_NETDOT_USER DB_NETDOT_PASS DB_DATABASE/ ){
-    $CONFIG{$var} = Netdot->config->get($var);
-}
+my $dbh = &dbconnect();
 
-my $dbh = dbconnect($CONFIG{DB_TYPE}, $CONFIG{DB_HOST}, $CONFIG{DB_PORT},
-		    $CONFIG{DB_DBA}, $CONFIG{DB_DBA_PASSWORD}, $CONFIG{DB_DATABASE});
+my @statements;
 
-
-$dbh->{AutoCommit} = 1;
-$dbh->{RaiseError} = 1;
-
-
-my @statements = (
+@statements = (
 "CREATE TABLE `asset` (
   `date_purchased` timestamp DEFAULT '1970-01-01 00:00:01',
-  `id` bigint unsigned NOT NULL auto_increment,
+  `id` bigint NOT NULL auto_increment,
   `info` blob,
   `inventory_number` varchar(255),
   `maint_contract` integer NOT NULL,
@@ -47,7 +38,7 @@ my @statements = (
 ",
     );
 
-&execute_statements(@statements);
+&processdata(\@statements);
 
 # Store assets to be inserted, keyed by serial number
 my %assets;
@@ -97,48 +88,50 @@ foreach my $sn ( keys %assets ){
     $ia->execute($sn,$cs,$in,$mc,$mf,$mu,$pr);
 }
 
+
 @statements = (
-"ALTER TABLE device ADD COLUMN asset_id bigint NOT NULL AFTER aliases",
-"ALTER TABLE device_history ADD COLUMN asset_id bigint NOT NULL AFTER aliases",
-"ALTER TABLE devicemodule ADD COLUMN asset_id bigint NOT NULL FIRST",
-"UPDATE device,asset SET device.asset_id=asset.id WHERE asset.serial_number=device.serialnumber",
-"UPDATE devicemodule,asset SET devicemodule.asset_id=asset.id WHERE asset.serial_number=devicemodule.serialnumber",
-"UPDATE asset,device,devicemodule SET asset.product_id=device.product WHERE devicemodule.device=device.id AND devicemodule.asset_id=asset.id",
-"ALTER TABLE device DROP COLUMN serialnumber",
-"ALTER TABLE device DROP COLUMN inventorynumber",
-"ALTER TABLE device DROP COLUMN maint_contract",
-"ALTER TABLE device DROP COLUMN maint_from",
-"ALTER TABLE device DROP COLUMN maint_until",
-"ALTER TABLE device DROP COLUMN custom_serial",
-"ALTER TABLE device ADD INDEX Device13 (asset_id)",
-"ALTER TABLE device_history DROP COLUMN serialnumber",
-"ALTER TABLE device_history DROP COLUMN inventorynumber",
-"ALTER TABLE device_history DROP COLUMN maint_contract",
-"ALTER TABLE device_history DROP COLUMN maint_from",
-"ALTER TABLE device_history DROP COLUMN maint_until",
-"ALTER TABLE device_history DROP COLUMN custom_serial",
-"ALTER TABLE devicemodule DROP COLUMN serialnumber",
-"ALTER TABLE devicemodule DROP COLUMN inventorynumber",
-"ALTER TABLE devicemodule DROP COLUMN maint_contract",
-"ALTER TABLE devicemodule DROP COLUMN maint_from",
-"ALTER TABLE devicemodule DROP COLUMN maint_until",
-"ALTER TABLE devicemodule ADD INDEX devicemodule2 (asset_id)",
-"ALTER TABLE product ADD COLUMN mfg_number varchar(255)",
-"ALTER TABLE datacache MODIFY COLUMN tstamp integer unsigned NOT NULL",
-"DELETE FROM datacache",
-"ALTER TABLE device ADD COLUMN snmp_conn_attempts integer AFTER snmp_bulk",
-"ALTER TABLE device ADD COLUMN snmp_down tinyint(1) NOT NULL AFTER snmp_conn_attempts",
-"ALTER TABLE device_history ADD COLUMN snmp_conn_attempts integer AFTER snmp_bulk",
-"ALTER TABLE device_history ADD COLUMN snmp_down tinyint(1) NOT NULL AFTER snmp_conn_attempts",
-"ALTER TABLE rr ADD COLUMN created timestamp AFTER auto_update",
-"ALTER TABLE rr ADD COLUMN modified timestamp AFTER info",
-"ALTER TABLE rr ADD INDEX RR4 (`created`)",
-"ALTER TABLE rr ADD INDEX RR5 (`modified`)",
-"ALTER TABLE zone ADD COLUMN include blob AFTER id",
+"ALTER TABLE device ADD COLUMN asset_id bigint NOT NULL AFTER aliases;",
+"ALTER TABLE device_history ADD COLUMN asset_id bigint NOT NULL AFTER aliases;",
+"ALTER TABLE devicemodule ADD COLUMN asset_id bigint NOT NULL FIRST;",
+"UPDATE device,asset SET device.asset_id=asset.id WHERE asset.serial_number=device.serialnumber;",
+"UPDATE devicemodule,asset SET devicemodule.asset_id=asset.id WHERE asset.serial_number=devicemodule.serialnumber;",
+"UPDATE asset,device,devicemodule SET asset.product_id=device.product WHERE devicemodule.device=device.id AND devicemodule.asset_id=asset.id;",
+"ALTER TABLE device DROP COLUMN serialnumber;",
+"ALTER TABLE device DROP COLUMN inventorynumber;",
+"ALTER TABLE device DROP COLUMN maint_contract;",
+"ALTER TABLE device DROP COLUMN maint_from;",
+"ALTER TABLE device DROP COLUMN maint_until;",
+"ALTER TABLE device DROP COLUMN custom_serial;",
+"ALTER TABLE device ADD INDEX Device13 (asset_id);",
+"ALTER TABLE device_history DROP COLUMN serialnumber;",
+"ALTER TABLE device_history DROP COLUMN inventorynumber;",
+"ALTER TABLE device_history DROP COLUMN maint_contract;",
+"ALTER TABLE device_history DROP COLUMN maint_from;",
+"ALTER TABLE device_history DROP COLUMN maint_until;",
+"ALTER TABLE device_history DROP COLUMN custom_serial;",
+"ALTER TABLE devicemodule DROP COLUMN serialnumber;",
+"ALTER TABLE devicemodule DROP COLUMN inventorynumber;",
+"ALTER TABLE devicemodule DROP COLUMN maint_contract;",
+"ALTER TABLE devicemodule DROP COLUMN maint_from;",
+"ALTER TABLE devicemodule DROP COLUMN maint_until;",
+"ALTER TABLE devicemodule ADD INDEX devicemodule2 (asset_id);",
+"ALTER TABLE product ADD COLUMN mfg_number varchar(255);",
+"ALTER TABLE datacache MODIFY COLUMN tstamp integer unsigned NOT NULL;",
+"DELETE FROM datacache;",
+"ALTER TABLE device ADD COLUMN snmp_conn_attempts integer AFTER snmp_bulk;",
+"ALTER TABLE device ADD COLUMN snmp_down tinyint(1) NOT NULL AFTER snmp_conn_attempts;",
+"ALTER TABLE device_history ADD COLUMN snmp_conn_attempts integer AFTER snmp_bulk;",
+"ALTER TABLE device_history ADD COLUMN snmp_down tinyint(1) NOT NULL AFTER snmp_conn_attempts;",
+"ALTER TABLE rr ADD COLUMN created timestamp AFTER auto_update;",
+"ALTER TABLE rr ADD COLUMN modified timestamp AFTER info;",
+"ALTER TABLE rr ADD INDEX RR4 (`created`);",
+"ALTER TABLE rr ADD INDEX RR5 (`modified`);",
+"ALTER TABLE zone ADD COLUMN include blob AFTER id;",
 );
 
 
 # Change all table IDs and foreign keys to bigint (Ticket #737)
+# Also, set them to NULLable and replace 0s with NULL values
 my $meta = Netdot::Meta->new();
 my @tables = $meta->get_tables(with_history=>1);
 
@@ -147,35 +140,37 @@ foreach my $mtable ( sort { $a->name cmp $b->name } @tables ){
     foreach my $mcol ( $mtable->get_columns ) {
 	my $cname = $mcol->name;
 	if ( $cname eq 'id' ){
-	    push @statements, "ALTER TABLE $tname MODIFY COLUMN $cname bigint unsigned NOT NULL auto_increment";
+	    push @statements, "ALTER TABLE $tname MODIFY COLUMN $cname bigint NOT NULL auto_increment;";
 	}
 	if ( $mcol->links_to ){
-	    push @statements, "ALTER TABLE $tname MODIFY COLUMN $cname bigint unsigned NOT NULL";
+	    push @statements, "ALTER TABLE $tname MODIFY COLUMN $cname bigint;";
+	    push @statements, "UPDATE $tname SET $cname=NULL WHERE $cname=0;";
 	}
     }
 }
 # Exceptions
-push @statements, "ALTER TABLE accessright MODIFY COLUMN object_id bigint unsigned NOT NULL";
+push @statements, "ALTER TABLE accessright MODIFY COLUMN object_id bigint NOT NULL;";
 
 
-&execute_statements(@statements);
+&processdata(\@statements);
 
-&dbdisconnect($dbh);
-
-sub debug {
-    print STDERR "[DEBUG] Executing: ", @_, "\n" if $CONFIG{debug};
-}
-
-sub execute_statements {
-    foreach my $st (@_) {
-	&debug($st);
-	my $sth = $dbh->prepare($st);
-	eval {
-	    $dbh->do($st);
-	};
-	if ( $@ ) {
-	    print "FAILED STATEMENT: $st\n";
-	}
+##################   THIS HAS TO BE THE LAST THING   #######################
+# Add FK constraints. 
+my @schema = &generate_schema_from_metadata();
+@statements = ('SET foreign_key_checks=0;');
+my $fk_table;
+foreach ( @schema ){
+    if ( /^CREATE TABLE `(\S+)`/ ){
+	$fk_table = $1;
+    }elsif ( /CONSTRAINT/ ){
+	$_ =~ s/^\s+//; # Remove leading spaces
+	$_ =~ s/,$//;   # Remove last comma
+	push @statements, "ALTER TABLE $fk_table ADD $_;";
     }
 }
+push @statements, 'SET foreign_key_checks=1;';
+
+&processdata(\@statements);
+
+&dbdisconnect();
 

@@ -80,7 +80,7 @@ my $manager = $ui->get_permission_manager($r);
             <form name="scope_select_form" action="dhcp_tasks.html" method="POST">
                 <label for="Select">Global Scope:</label>
                 <select name="scope_id" onChange="document.scope_select_form.submit();">
-                <option value="0">-- Select --</option>
+                <option value="">-- Select --</option>
 %               foreach my $scope ( sort { $a->name cmp $b->name } @global_scopes ){
 %                   if ( $scope->id eq $scope_id ){
                         <option value="<% $scope->id %>" SELECTED><% $scope->get_label %></option>
@@ -118,7 +118,7 @@ my $manager = $ui->get_permission_manager($r);
                 <p>
                 <label for="Container">Container:</label>
                 <select name="scope_container">
-                    <option value="0">-- Select --</option>
+                    <option value="">-- Select --</option>
 %               foreach my $cont ( @containers ){
       	            <option value="<% $cont->id %>"><% $cont->name %></option>
 %               }

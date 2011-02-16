@@ -213,8 +213,6 @@ sub get_links_from{
     my %ret;
     return if ( $self->is_history );
     foreach my $t ( $self->{meta}->get_tables(with_history=>1) ){
-	# We'll treat history tables differently
-	next if ( $t->is_history );
 	foreach my $c ( $t->get_columns() ){
 	    my $lt = $c->links_to_attrs();
 	    next unless ( $lt && exists $lt->{table} );
@@ -490,7 +488,7 @@ sub _get_columns_hash{
 			  method  => 'history_records',
 			  table   => $self->original_table
 			  },
-		      nullable    => 0,
+		      nullable    => 1,
 		      tag         => '',
 		      type        => 'bigint'};
 	

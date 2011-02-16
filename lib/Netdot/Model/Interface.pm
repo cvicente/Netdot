@@ -54,7 +54,7 @@ sub insert {
 	unless defined $argv->{auto_dns};
     
     my $unknown_status = (MonitorStatus->search(name=>"Unknown"))[0];
-    $argv->{monitorstatus} = ($unknown_status)? $unknown_status->id : 0;
+    $argv->{monitorstatus} = ($unknown_status)? $unknown_status->id : undef;
     
     return $class->SUPER::insert( $argv );
 }
@@ -136,7 +136,7 @@ sub delete {
     $self->isa_object_method('delete');
     
     foreach my $neighbor ( $self->neighbors ){
-	$neighbor->SUPER::update({neighbor=>0, neighbor_fixed=>0, neighbor_missed=>0});
+	$neighbor->SUPER::update({neighbor=>undef, neighbor_fixed=>0, neighbor_missed=>0});
     }
 
     return $self->SUPER::delete();
@@ -223,7 +223,7 @@ sub remove_neighbor{
     my ($self) = @_;
 
     my %args = (
-	neighbor        => 0,
+	neighbor        => undef,
 	neighbor_fixed  => 0, 
 	neighbor_missed => 0
 	);
@@ -311,7 +311,7 @@ sub snmp_update {
     ############################################
     # Update PhysAddr
     if ( ! $newif->{physaddr} ){
-	$iftmp{physaddr} = 0;
+	$iftmp{physaddr} = undef;
     }elsif ( my $addr = PhysAddr->validate($newif->{physaddr}) ){
 	
 	my $physaddr = PhysAddr->search(address=>$addr)->first;

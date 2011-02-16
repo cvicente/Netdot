@@ -118,7 +118,7 @@ sub assign_vlans{
 	    if ( exists $myvlans{$vlan->id} ){
 		$logger->info(sprintf("VlanGroup %s: Vlan %s no longer within my range. Updating.", 
 				      $vlan->vid, $self->name));
-		$vlan->update({vlangroup=>0});
+		$vlan->update({vlangroup=>undef});
 	    }
 	}
     }

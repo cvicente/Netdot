@@ -12,6 +12,7 @@ my $ALT_META_FILE     = catpath( ( splitpath( rel2abs $0 ) )[ 0, 1 ], '' ) . "..
 
 my %DERIVED_CLASSES = (
     'CiscoFW'   => 'Device',
+    'CiscoIOS'  => 'Device',
     'Airespace' => 'Device',
     );
 
@@ -214,35 +215,39 @@ sub cdbi_class{
     
     # Set up has_many relationships
     my %hm = $table->get_links_from();
+
+    my $hf = $self->get_history_suffix;
+
     foreach my $rel ( keys %hm ){
-	my $method = $rel;
 	my $tab;
-	# A has_many relationship should not point to a history table unless
-	# it is the 'history_records' method.
 	foreach my $key ( keys %{$hm{$rel}} ){
-	    my $hf = $self->get_history_suffix;
-	    next if $key =~ /$hf$/ && $method !~ /history_records/;
 	    $tab = $key;
+	    croak "cdbi_classes: Can't get has_many table from ", $table->name, ":$rel" unless $tab;
+
+	    my $method = $rel;
+	    if ( $tab =~ /$hf$/ && $method ne 'history_records' ){
+		$method = 'history_'.$method;
+	    }
+
+	    my $col    = $hm{$rel}{$tab};
+	    my $t      = $self->get_table($tab);
+	    my $c      = $t->get_column($col);
+	    my $l      = $c->links_to_attrs();
+	    my $casc   = $l->{cascade};
+	    croak "cdbi_classes: Missing 'cascade' entry for $tab:$col" unless $casc;
+	    my %args;
+	    if ( $casc eq 'Nullify' ){
+		$args{cascade} = 'Class::DBI::Cascade::Nullify';
+	    }elsif ( $casc =~ /^Delete|Fail$/i ){
+		$args{cascade} = $casc;
+	    }else{
+		croak "cdbi_classes: Unknown cascade behavior $casc";
+	    }
+	    $args{order_by} = $l->{order_by} if defined $l->{order_by};
+	    my $sargs = join ', ', map { sprintf("%s=>'%s'", $_, $args{$_}) } keys %args;
+	    $tab = ($argv{namespace}) ? $argv{namespace}."::".$tab : $tab;
+	    $code .= "__PACKAGE__->has_many( '$method', '$tab' => '$col', {$sargs} );\n";
 	}
-	croak "cdbi_classes: Can't get has_many table from ", $table->name, ":$method" unless $tab;
-	my $col    = $hm{$rel}{$tab};
-	my $t      = $self->get_table($tab);
-	my $c      = $t->get_column($col);
-	my $l      = $c->links_to_attrs();
-	my $casc   = $l->{cascade};
-	croak "cdbi_classes: Missing 'cascade' entry for $tab:$col" unless $casc;
-	my %args;
-	if ( $casc eq 'Nullify' ){
-	    $args{cascade} = 'Class::DBI::Cascade::Nullify';
-	}elsif ( $casc =~ /^Delete|Fail$/i ){
-	    $args{cascade} = $casc;
-	}else{
-	    croak "cdbi_classes: Unknown cascade behavior $casc";
-	}
-	$args{order_by} = $l->{order_by} if defined $l->{order_by};
-	my $sargs = join ', ', map { sprintf("%s=>'%s'", $_, $args{$_}) } keys %args;
-	$tab = ($argv{namespace}) ? $argv{namespace}."::".$tab : $tab;
-	$code .= "__PACKAGE__->has_many( '$method', '$tab' => '$col', {$sargs} );\n";
     }
 
     return ($package, $code);

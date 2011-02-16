@@ -215,7 +215,7 @@ sub form_to_db{
 	my %todelete;
 	
 	foreach my $id (keys %{ $objs{$table} }){
-	    
+
 	    my $act = 0; 
 
 	    # If our id is 'NEW' we want to insert a new row in the DB.
@@ -551,7 +551,7 @@ sub select_lookup{
             # as well as add an initial element to the selection list.
             if ( $o ){
                 $output .= sprintf("<select name=\"%s\" id=\"%s\" %s>\n", $name, $name, $args{htmlExtra});
-		$output .= sprintf("<option value=\"0\" selected>-- Select --</option>\n");
+		$output .= sprintf("<option value=\"\" selected>-- Select --</option>\n");
                 if ( int($o->$column) ){
                     $output .= sprintf("<option value=\"%s\" selected>%s</option>\n", 
 				       $o->$column->id, $o->$column->get_label);
@@ -564,7 +564,7 @@ sub select_lookup{
             #      id of "NEW" in order to force insertion when the user hits submit.
             elsif ( $table ){
                 $output .= sprintf("<select name=\"%s\" id=\"%s\" %s>\n", $name, $name, $args{htmlExtra});
-                $output .= "<option value=\"0\" ".($args{default} ? "" :"selected").">-- Select --</option>\n";
+                $output .= "<option value=\"\" ".($args{default} ? "" :"selected").">-- Select --</option>\n";
             }else{
                 $self->throw_fatal("Unable to determine table name. Please pass valid object and/or table name.\n");
             }
@@ -575,7 +575,7 @@ sub select_lookup{
 		my $selected = ($fo->id == $args{default} ? "selected" : "");
                 $output .= sprintf("<option value=\"%s\" %s>%s</option>\n", $fo->id, $selected, $fo->get_label);
             }
-	    $output .= sprintf("<option value=\"0\">[null]</option>\n");
+	    $output .= sprintf("<option value=\"\">[null]</option>\n");
             $output .= sprintf("</select>\n");
         }else{
 	    # ...otherwise provide tools to narrow the selection to a managable size.
@@ -586,12 +586,12 @@ sub select_lookup{
             $output .= "</nobr>";
             $output .= "<nobr>";   # forces the select box and "new" link to be on the same line
             $output .= sprintf("<select name=\"%s\" id=\"%s\" %s>\n", $name, $name, $args{htmlExtra});
-            $output .= sprintf("<option value=\"0\" selected>-- Select --</option>\n");
+            $output .= sprintf("<option value=\"\" selected>-- Select --</option>\n");
             if ( $o && $o->$column ){
                 $output .= sprintf("<option value=\"%s\" selected>%s</option>\n", 
 				   $o->$column->id, $o->$column->get_label);
             }
-    	    $output .= sprintf("<option value=\"0\">[null]</option>\n");
+    	    $output .= sprintf("<option value=\"\">[null]</option>\n");
             $output .= sprintf("</select>\n");
         }
 

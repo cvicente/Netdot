@@ -246,7 +246,7 @@ if ( $submit ){
 %	            }
 %               }
 %           }
-            <option value="0">-- Select --</option>
+            <option value="">-- Select --</option>
 %           foreach my $z ( sort { $a->get_label cmp $b->get_label } @zones ){
 %               if ( $default_zone && $default_zone->id == $z->id ){
                     <option value="<% $z->id %>" SELECTED><% $z->get_label %></option>
@@ -281,12 +281,12 @@ if ( $submit ){
         <p>
         <label for="cpu"><% $ui->help_link('../user_help/hosts.html#CPU', '', '', 'CPU') %></label>
         <select name="cpu" id="cpu">
-            <option value="0">-- Select --</option>
+            <option value="">-- Select --</option>
 %	foreach my $key ( sort { $cpu_defaults->{$a} cmp $cpu_defaults->{$b} } keys %$cpu_defaults ){
 %           my $value = $cpu_defaults->{$key};
             <option value="<% $key %>"><% $value %></option>
 %       }
-            <option value="0">Other</option>
+            <option value="">Other</option>
         </select>
         </p>
         <p>
@@ -296,12 +296,12 @@ if ( $submit ){
         <p>
         <label for="os"><% $ui->help_link('../user_help/hosts.html#OS', '', '', 'Operating System') %></label>
         <select name="os" id="os">
-            <option value="0">-- Select --</option>
+            <option value="">-- Select --</option>
 %	foreach my $key ( sort { $os_defaults->{$a} cmp $os_defaults->{$b} } keys %$os_defaults ){
 %           my $value = $os_defaults->{$key};
             <option value="<% $key %>"><% $value %></option>
 %       }
-            <option value="0">Other</option>
+            <option value="">Other</option>
         </select>
         </p>
         <p>
@@ -317,7 +317,7 @@ if ( $submit ){
         <label for="site_id">Site</label>
         <select name="site_id" id="site_id" onChange="jsrsSendqueryNM('Room', 'room_id', this.options[selectedIndex].text);">
 %       my @all_sites = Site->retrieve_all();
-        <option value="0">-- Select --</option>
+        <option value="">-- Select --</option>
 %       foreach my $site ( sort { $a->get_label cmp $b->get_label } @all_sites ){
             <option value="<% $site->id %>"><% $site->get_label %></option>
 %       }
@@ -330,7 +330,7 @@ if ( $submit ){
         <p>
         <label for="room_id">Room</label>
         <select name="room_id" id="room_id">
-            <option value="0">-- Select --</option>
+            <option value="">-- Select --</option>
         </select>
         </p>
         <p>

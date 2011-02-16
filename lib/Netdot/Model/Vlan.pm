@@ -41,7 +41,7 @@ sub insert{
     $class->throw_user("Missing required arguments: vlan id")
 	unless (exists $argv->{vid});
 
-    $argv->{vlangroup} = $class->_find_group($argv->{vid}) || 0;
+    $argv->{vlangroup} = $class->_find_group($argv->{vid}) || undef;
     
     my $new = $class->SUPER::insert($argv);
     return $new;

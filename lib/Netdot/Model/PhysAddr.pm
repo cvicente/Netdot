@@ -565,7 +565,7 @@ sub find_edge_port {
                                    AND    fte.interface=i.id 
                                    AND    fte.fwtable=ft.id
                                    AND    ft.tstamp=?
-                                   AND    i.neighbor=0');
+                                   AND    i.neighbor IS NULL');
     
 	$sth->execute($self->id, $self->last_seen);
 	$rows = $sth->fetchall_arrayref;

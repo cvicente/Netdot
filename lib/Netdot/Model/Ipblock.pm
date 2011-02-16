@@ -513,12 +513,6 @@ sub insert {
     $class->throw_fatal("Missing required arguments: address")
 	unless ( exists $argv->{address} );
 
-    $argv->{prefix}        ||= undef;
-    $argv->{interface}     ||= 0; 
-    $argv->{owner}         ||= 0; 
-    $argv->{used_by}       ||= 0; 
-    $argv->{parent}        ||= 0; 
-    
     unless ( $argv->{status} ){
 	if (defined $argv->{prefix} && 
 	    (($argv->{address} =~ $IPV4 && $argv->{prefix} eq '32') || 
@@ -586,7 +580,7 @@ sub insert {
     }
     
     # Inherit some of parent's values if it's not an address
-    if ( !$newblock->is_address && (int($newblock->parent) != 0) ){
+    if ( !$newblock->is_address && $newblock->parent ){
 	$newblock->SUPER::update({owner=>$newblock->parent->owner});
     }
     
@@ -656,9 +650,9 @@ sub get_roots {
 
     my @ipb;
     if ( $version =~ /^4|6$/ ){
-	@ipb = $class->search(version => $version, parent => 0, {order_by => 'address'});
+	@ipb = $class->search(version => $version, parent=>undef, {order_by => 'address'});
     }elsif ( $version eq "all" ){
-	@ipb = $class->search(parent => 0, {order_by => 'address'});
+	@ipb = $class->search(parent=>undef, {order_by => 'address'});
     }else{
 	$class->throw_fatal("Unknown version: $version");
     }
@@ -794,7 +788,8 @@ sub build_tree {
     $sth = $dbh->prepare_cached("UPDATE ipblock SET parent = ? WHERE id = ?");
     foreach ( keys %$parents ){
 	$sth->execute($parents->{$_}, $_)
-	    unless $parents->{$_} == $current_parents->{$_};
+	    unless ( (defined $parents->{$_} && defined $current_parents->{$_}) &&
+		     ($parents->{$_} == $current_parents->{$_}) );
     }
     return 1;
 }
@@ -876,9 +871,8 @@ sub fast_update{
     if ( $class->config->get('DB_TYPE') eq 'mysql' ){
 	# Take advantage of MySQL's "ON DUPLICATE KEY UPDATE" 
 	my $sth = $dbh->prepare_cached("INSERT INTO ipblock
-                                        (address,prefix,version,status,first_seen,last_seen,
-                                        interface,owner,parent,used_by,vlan)
-                                        VALUES (?, ?, ?, ?, ?, ?,'0','0','0','0','0')
+                                        (address,prefix,version,status,first_seen,last_seen)
+                                        VALUES (?, ?, ?, ?, ?, ?)
                                         ON DUPLICATE KEY UPDATE last_seen=VALUES(last_seen);");
 
 	foreach my $address ( keys %$ips ){
@@ -896,9 +890,8 @@ sub fast_update{
                                           WHERE id=?");	
 	
 	my $sth2 = $dbh->prepare_cached("INSERT INTO ipblock 
-                                          (address,prefix,version,status,first_seen,last_seen,
-                                           interface,owner,parent,used_by,vlan)
-                                           VALUES (?, ?, ?, ?, ?, ?,'0','0','0','0','0')");
+                                          (address,prefix,version,status,first_seen,last_seen)
+                                           VALUES (?, ?, ?, ?, ?, ?)");
 	
 	# Now walk our list and do the right thing
 	foreach my $address ( keys %$ips ){
@@ -1414,7 +1407,7 @@ sub delete {
 	foreach my $ch ( $self->children ){
 	    if ( $ch->id == $self->id ){
 		$logger->warn("Ipblock::delete: ".$self->get_label()." is parent of itself!. Removing parent.");
-		$self->update({parent=>0});
+		$self->update({parent=>undef});
 	    }
 	    $ch->delete(recursive=>1);
 	}
@@ -1441,10 +1434,10 @@ sub get_ancestors {
     my ($self, $parents) = @_;
     $self->isa_object_method('get_ancestors');
 
-    if ( $self->parent && int($self->parent) != 0 ){
+    if ( $self->parent ){
 	if ( $self->parent->id == $self->id ){
 	    $logger->warn("Ipblock::get_ancestors: ".$self->get_label()." is parent of itself!. Removing parent.");
-	    $self->update({parent=>0});
+	    $self->update({parent=>undef});
 	    return;
 	}
 	$logger->debug("Ipblock::get_ancestors: ".$self->get_label()." parent: ".$self->parent->get_label());
@@ -1827,7 +1820,7 @@ sub update_a_records {
 		# If this is the only IP, or the snmp_target IP, make sure that it uses 
 		# the same record that the device uses as its main name
 		if ( $argv{num_ips} == 1 ||
-		     (int($self->interface->device->snmp_target) &&
+		     ($self->interface->device->snmp_target &&
 		      $self->interface->device->snmp_target->id == $self->id) ){
 		    
 		    if ( $rr->id != $self->interface->device->name->id ){
@@ -1943,7 +1936,7 @@ sub get_devices {
     my %devs;
     foreach my $ch ( $self->children ){
 	if ( $ch->is_address ){
-	    if ( int($ch->interface) && int($ch->interface->device) ){
+	    if ( $ch->interface && $ch->interface->device ){
 		my $dev = $ch->interface->device;
 		$devs{$dev->id} = $dev;
 	    }
@@ -2025,7 +2018,7 @@ sub shared_network_subnets{
                  FROM    ipblock me, ipblock other, ipblock myaddr, ipblock otheraddr 
                  WHERE   me.id=? AND myaddr.parent=? AND otheraddr.parent=other.id 
                      AND myaddr.interface=otheraddr.interface 
-                     AND myaddr.interface != 0 AND other.id!=me.id';
+                     AND myaddr.interface IS NOT NULL AND other.id!=me.id';
 
     my $sth = $dbh->prepare_cached($query);
     $sth->execute($self->id, $self->id);
@@ -2554,10 +2547,10 @@ sub _validate {
     $logger->debug("Ipblock::_validate: " . $self->get_label . " has status: $statusname");
 
     my ($pstatus, $parent);
-    if ( int($parent = $self->parent) && $parent->id ){
+    if ( ($parent = $self->parent) && $parent->id ){
 	$logger->debug("Ipblock::_validate: " . $self->get_label . " parent is ", $parent->get_label);
 	
-	if ( int($parent->status) && ($pstatus = $parent->status->name)) {
+	if ( $parent->status && ($pstatus = $parent->status->name)) {
 	    if ( $self->is_address() ){
 		if ( $pstatus eq "Reserved" ){
 		    $self->throw_user($self->get_label.": Address allocations not allowed under Reserved blocks");
@@ -2672,14 +2665,14 @@ sub _build_tree_mem {
 					   tree    => $tree,
 		);
 	    
-	    $parents{$id} = (defined $node && $node->data)? $node->data : 0;
+	    $parents{$id} = (defined $node && $node->data)? $node->data : undef;
 	}else{
 	    my $node =  $class->_tree_insert(address => $address, 
 					     prefix  => $prefix, 
 					     data    => $id,
 					     tree    => $tree,
 		);
-	    $parents{$id} = (defined $node && $node->parent)? $node->parent->data : 0
+	    $parents{$id} = (defined $node && $node->parent)? $node->parent->data : undef;
 	}
     }
 
@@ -2747,7 +2740,7 @@ sub _update_tree{
 		if ( $n->parent->parent ){
 		    $parent_id = $n->parent->parent->data;
 		}else{ 
-		    $parent_id = 0;
+		    $parent_id = undef;
 		}
 		$n->parent->delete();
 	    }

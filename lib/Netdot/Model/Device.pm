@@ -181,14 +181,14 @@ sub search_address_live {
 		$subnet = $ipblock;
 	    }
 	    if ( !$vlan ){
-		$vlan = $subnet->vlan if int($subnet->vlan);
+		$vlan = $subnet->vlan if $subnet->vlan;
 	    }
 	    @arp_devs = @{$subnet->get_devices()};
 	}else{
 	    $subnet = Ipblock->get_covering_block(address=>$argv{ip});
 	    if ( $subnet ){
 		if ( !$vlan ){
-		    $vlan = $subnet->vlan if ( $subnet && int($subnet->vlan) );
+		    $vlan = $subnet->vlan if ( $subnet && $subnet->vlan );
 		}
 		@arp_devs = @{$subnet->get_devices()};
 	    }
@@ -220,6 +220,7 @@ sub search_address_live {
     my %routerports;
     foreach my $dev ( @arp_devs ){
 	my $cache;
+	$dev->_netdot_rebless();
 	eval {
 	    $cache = $class->_exec_timeout($dev->fqdn, sub{ return $dev->get_arp() });
 	};
@@ -490,13 +491,10 @@ sub insert {
 	date_installed     => $class->timestamp,
 	monitor_config     => 0,
 	monitored          => 0,
-	monitorstatus      => 0,
 	owner              => $default_owner,
-	asset_id           => 0,
 	snmp_bulk          => $class->config->get('DEFAULT_SNMPBULK'),
 	snmp_managed       => 0,
 	snmp_polling       => 0,
-	snmp_target        => 0,
 	snmp_down          => 0,
 	snmp_conn_attempts => 0,
 	auto_dns           => $class->config->get('UPDATE_DEVICE_IP_NAMES'),
@@ -603,7 +601,7 @@ sub get_snmp_info {
 	$args{host} = $sinfo->{args}->{DestHost};
     }else{
 	if ( ref($self) ){
-	    if ( $self->snmp_target && int($self->snmp_target) != 0 ){
+	    if ( $self->snmp_target ){
 		$args{host} = $self->snmp_target->address;
 		$logger->debug(sub{"Device::get_snmp_info: Using configured target address: $args{host}"});
 	    }else{
@@ -1371,6 +1369,7 @@ sub discover {
 	# Insert the new Device
 	$devtmp{name} = $newname;
 	$dev = $class->insert(\%devtmp);
+	$logger->info(sprintf("Inserted new Device: %s", $dev->get_label));
 	$device_is_new = 1;
     }
     
@@ -1418,7 +1417,7 @@ sub get_all_from_block {
 	my %devs; #index by id to avoid duplicates
 	foreach my $ip ( @$hosts ){
 	    if ( my $ipb = Ipblock->search(address=>$ip)->first ){
-		if ( int($ipb->interface) && int($ipb->interface->device) ){
+		if ( $ipb->interface && $ipb->interface->device ){
 		    my $dev = $ipb->interface->device;
 		    $devs->{$dev->id} = $dev; 
 		}
@@ -1741,9 +1740,9 @@ sub arp_update {
 =cut
 sub get_arp {
     my ($self, %argv) = @_;
-    $self->isa_object_method('_get_arp');
+    $self->isa_object_method('get_arp');
     my $host = $self->fqdn;
-    my $cache;
+    my $cache = {};
 
     unless ( $self->collect_arp ){
 	$logger->debug(sub{"Device::_get_arp: $host excluded from ARP collection. Skipping"});
@@ -1754,41 +1753,10 @@ sub get_arp {
 	return;
     }
 
-    my $oid = ($self->product)? $self->product->sysobjectid : undef;
-    $logger->debug("$host: Unknown product or sysObjectID not found") 
-	unless $oid;
-    
-    my $obj       = $self->_snmp_translate($oid);
     my $start     = time;
     my $arp_count = 0;
-    
-    if ( $obj ){
-	my %OID2CLASSMAP = %{ $self->config->get('FETCH_DEVICE_INFO_VIA_CLI') };
-	foreach my $pat ( keys %OID2CLASSMAP ){
-	    if ( $obj =~ /$pat/ ){
-		my $class = $OID2CLASSMAP{$pat};
-		$class = 'Netdot::Model::Device::'.$class;
-		# Re-bless
-		$logger->debug("$host: $obj matches class: $class"); 
-		bless $self, $class;
-		# We don't want to break execution here, so
-		eval {
-		    $cache = $self->get_arp();
-		};
-		if ( my $e = $@ ){
-		    $logger->error("Device::get_arp: Failed to fetch ARP via CLI: $e");
-		}
-		last;
-	    }
-	}
-    }
-    unless ( $cache ){
-	# Try SNMP as a last resort
-	$cache = $self->_get_arp_from_snmp(session=>$argv{session});
-    }
-	
+    $cache = $self->_get_arp_from_snmp(session=>$argv{session});
     map { $arp_count+= scalar(keys %{$cache->{$_}}) } keys %$cache;
-
     my $end = time;
     $logger->debug(sub{ sprintf("$host: ARP cache fetched. %s entries in %s", 
 				$arp_count, $self->sec2dhms($end-$start) ) });
@@ -1901,8 +1869,9 @@ sub fwt_update {
 sub get_fwt {
     my ($self, %argv) = @_;
     $self->isa_object_method('get_fwt');
+    my $class = ref($self);
     my $host = $self->fqdn;
-    my $fwt;
+    my $fwt = {};
 
     unless ( $self->collect_fwt ){
 	$logger->debug(sub{"Device::get_fwt: $host excluded from FWT collection. Skipping"});
@@ -1913,41 +1882,10 @@ sub get_fwt {
 	return;
     }
 
-    my $oid = ($self->product)? $self->product->sysobjectid : undef;
-    $logger->debug("Device::get_fwt: $host: Unknown product or sysObjectID not found") 
-	unless $oid;
-    
-    my $obj       = $self->_snmp_translate($oid);
     my $start     = time;
     my $fwt_count = 0;
-    
-    if ( $obj ){
-	my %OID2CLASSMAP = %{ $self->config->get('FETCH_DEVICE_INFO_VIA_CLI') };
-	foreach my $pat ( keys %OID2CLASSMAP ){
-	    if ( $obj =~ /$pat/ ){
-		my $class = $OID2CLASSMAP{$pat};
-		$class = 'Netdot::Model::Device::'.$class;
-		# Re-bless
-		$logger->debug("$host: $obj matches class: $class"); 
-		bless $self, $class;
-		# We don't want to break execution here, so
-		eval {
-		    $fwt = $self->get_fwt();
-		};
-		if ( my $e = $@ ){
-		    $logger->error("Device::get_fwt: Failed to fetch FWT via CLI: $e");
-		}
-		last;
-	    }
-	}
-    }
-    unless ( $fwt ){
-	# Try SNMP as a last resort
-	$fwt = $self->_get_fwt_from_snmp(session=>$argv{session});
-    }
-	
+    $fwt = $self->_get_fwt_from_snmp(session=>$argv{session});
     map { $fwt_count+= scalar(keys %{$fwt->{$_}}) } keys %$fwt;
-
     my $end = time;
     $logger->debug(sub{ sprintf("$host: FWT fetched. %s entries in %s", 
 				$fwt_count, $self->sec2dhms($end-$start) ) });
@@ -1981,7 +1919,7 @@ sub delete {
     if ( my $ips = $self->get_ips ){
 	foreach my $ip ( @$ips ) {
 	    if ( $ip->status && $ip->status->name eq 'Dynamic' ){
-		$ip->update({interface=>0});
+		$ip->update({interface=>undef});
 	    }
 	}
     }
@@ -2022,7 +1960,7 @@ sub short_name {
     
     my $rr;
     $self->throw_fatal("Model::Device::short_name: Device id ". $self->id ." has no RR defined") 
-	unless ( int($rr = $self->name) != 0 );
+	unless ( $rr = $self->name );
     if ( $name ){
 	$rr->name($name);
 	$rr->update;
@@ -2144,7 +2082,7 @@ sub update {
     }
     $self->_validate_args($argv);
 
-    if ( $argv->{product} && int($self->asset_id) ){
+    if ( $argv->{product} && $self->asset_id ){
 	$self->asset_id->update({product_id=>$argv->{product}});
     }
 
@@ -2336,17 +2274,22 @@ sub snmp_update {
 	    );
     }
     
+    # Re-bless into appropriate sub-class if needed
+    my %r_args;
+    if ( $sinfo ){
+	$r_args{sclass}       = $sinfo->class;
+	$r_args{sysobjectid}  = $sinfo->id;
+    }elsif ( $argv{info} ){
+	$r_args{sclass}     ||= $argv{info}->{_sclass};
+	$r_args{sysobjectid}  = $argv{info}->{sysobjectid};
+    }
+    $self->_netdot_rebless(%r_args);
+
     if ( $argv{do_info} ){
 	my $info = $argv{info} || 
 	    $class->_exec_timeout($host, sub{ return $self->get_snmp_info(session   => $sinfo,
 									  bgp_peers => $argv{bgp_peers}) });
 
-	if ( defined $info->{_sclass} && $info->{_sclass} =~ /Airespace/ ){
-	    my $newclass = 'Netdot::Model::Device::Airespace';
-	    $logger->debug("Device::snmp_update: $host: reblessing as $newclass"); 
-	    bless $self, $newclass;
-	}
-	
 	if ( $atomic && !$argv{pretend} ){
 	    Netdot::Model->do_transaction( sub{ return $self->info_update(add_subnets   => $argv{add_subnets},
 									  subs_inherit  => $argv{subs_inherit},
@@ -2702,7 +2645,7 @@ sub get_neighbors {
     my %res;
     foreach my $int ( $self->interfaces ){
 	my $n = $int->neighbor();
-	$res{$int->id} = $n if int($n);
+	$res{$int->id} = $n if $n;
     }
     return \%res;
 }
@@ -2724,7 +2667,7 @@ sub get_circuits {
     my @res;
     foreach my $int ( $self->interfaces ){
 	my $c = $int->circuit();
-	push @res, $c unless ( int($c) == 0 );
+	push @res, $c if ( $c );
     }
     return @res if @res;
     return;
@@ -2766,7 +2709,7 @@ sub get_subnets {
     my %subnets;
     foreach my $ip ( @{ $self->get_ips() } ){
 	my $subnet;
-	if ( (int($subnet = $ip->parent) != 0) 
+	if ( ($subnet = $ip->parent) 
 	     && $subnet->status 
 	     && $subnet->status->name eq "Subnet" ){
 	    $subnets{$subnet->id} = $subnet;
@@ -3355,12 +3298,6 @@ sub _validate_args {
 			}
 		    }
 		}else{
-		    my $msg = sprintf("Base MAC %s belongs to existing device: %s", 
-				      $address, $otherdev->fqdn);
-		    if ( Netdot->config->get('ENFORCE_DEVICE_UNIQUENESS') ){
-			$class->throw_user($msg); 
-		    }
-		}else{
 		    my $msg = sprintf("At least one other device with this base MAC: %s already exists: %s", 
 				      $address, $otherdev->fqdn);
 		    if ( $class->config->get('ENFORCE_DEVICE_UNIQUENESS') ){
@@ -3466,7 +3403,7 @@ sub _get_snmp_session {
 	
 	# Fill out some arguments if not given explicitly
 	unless ( $argv{host} ){
-	    if ( int($self->snmp_target) ){
+	    if ( $self->snmp_target ){
 		$argv{host} = $self->snmp_target->address;
 	    }else{
 		$argv{host} = $self->fqdn;
@@ -3474,7 +3411,6 @@ sub _get_snmp_session {
 	}
 	$self->throw_user(sprintf("Could not determine IP nor hostname for Device id: %d", $self->id))
 	    unless $argv{host};
-
 	
     }else{
 	$self->throw_fatal("Model::Device::_get_snmp_session: Missing required arguments: host")
@@ -3603,15 +3539,14 @@ sub _get_snmp_session {
 	}
     }
 
-    # Save SNMP::Info class if we are an object
-    $logger->debug(sub{"Device::get_snmp_session: $argv{host} is: ", $sinfo->class() });
-    if ( $class ){
-	$self->{_sclass} = $sinfo->class();
-    }
 
     if ( $class ){
 	# We're called as an instance method
 
+	# Save SNMP::Info class
+	$logger->debug(sub{"Device::get_snmp_session: $argv{host} is: ", $sinfo->class() });
+	$self->{_sclass} = $sinfo->class();
+	
 	my %uargs;
 
 	# Reset dead counter and snmp_down flag
@@ -4786,6 +4721,7 @@ sub _assign_base_mac {
     }else{
 	$logger->debug(sub{"$host did not return base MAC"});
 	delete $info->{physaddr};
+	return;
     }
 }
 
@@ -4800,8 +4736,7 @@ sub _assign_base_mac {
 sub _assign_snmp_target {
     my ($self, $info) = @_;
     my $host = $self->fqdn;
-    if ( $self->snmp_managed && (!defined($self->snmp_target) || int($self->snmp_target) == 0) 
-	 && defined($info->{snmp_target}) ){
+    if ( $self->snmp_managed && !$self->snmp_target && $info->{snmp_target} ){
 	my $ipb = Ipblock->search(address=>$info->{snmp_target})->first;
 	unless ( $ipb ){
 	    eval {
@@ -5264,7 +5199,7 @@ sub _update_interfaces {
 
 	# Don't delete dynamic addresses, just unset the interface
 	if ( $obj->status && $obj->status->name eq 'Dynamic' ){
-	    $obj->update({interface=>0});
+	    $obj->update({interface=>undef});
 	    next;
 	}
 
@@ -5373,6 +5308,65 @@ sub _snmp_translate {
     return $name if defined($name);
 }
 
+################################################################
+# Subclass if needed
+#
+# Arguments
+#   Hash
+# Returns
+#   Device subclass object
+# Example
+#   $self->_netdot_rebless($sinfo);
+#
+sub _netdot_rebless {
+    my ($self, %argv) = @_;
+    my $class = ref($self);
+    my $host = $self->fqdn;
+    
+    my ($sclass, $sysobjectid) = @argv{'sclass', 'sysobjectid'};
+
+    if ( $class ne 'Device' && $class ne __PACKAGE__ ){
+	# Looks like we were subclassed already
+	$logger->debug("Device::_netdot_rebless: $host: Already reblessed as $class");
+	return $self;
+    }
+
+    my $new_class = __PACKAGE__;
+
+    if ( defined $sclass && $sclass =~ /Airespace/o ){
+	$new_class .= '::Airespace';
+	$logger->debug("Device::_netdot_rebless: $host: changed class to $new_class"); 
+	bless $self, $new_class;
+	return $self;
+    }
+
+    # In the other cases, we have more flexibility by mapping OIDs to classes in 
+    # the config file.
+
+    my $oid = $sysobjectid;
+    $oid  ||= $self->product->sysobjectid if $self->product;
+    
+    unless ( $oid ){
+	$logger->debug("Device::_netdot_rebless: $host: sysObjectID not available");
+	return;
+    }
+    my $obj = $self->_snmp_translate($oid);
+    unless ( $obj ){
+	$logger->debug("Device::_netdot_rebless: $host: Unknown SysObjectID $oid");
+	return;
+    }
+ 
+    my %OID2CLASSMAP = %{ $self->config->get('FETCH_DEVICE_INFO_VIA_CLI') };
+    foreach my $pat ( keys %OID2CLASSMAP ){
+	if ( $obj =~ /$pat/ ){
+	    my $subclass = $OID2CLASSMAP{$pat};
+	    $new_class .= "::$subclass";
+	    $logger->debug("Device::_netdot_rebless: $host: changed class to $new_class"); 
+	    bless $self, $new_class;
+	    return $self;
+	}
+    }
+}
     
 ############################################################################
 #

@@ -25,8 +25,7 @@ $view_entity      => 'search'
 $_action          => undef
 
 #add a new entity
-$_rolecount       => undef
-$role1            => undef
+@entityroles      => undef
 $sitestatus       => undef
 $clstatus         => undef
 $entity_name      => undef
@@ -57,7 +56,7 @@ if ( $show_tasks eq "" ) {
 my $hideheader = 'style="display:none"' if ( !$showheader );
 
 my @list;
-my $entityid = -1;
+my $entityid;
 my $manager = $ui->get_permission_manager($r);
 </%init>
 
@@ -91,27 +90,6 @@ my $manager = $ui->get_permission_manager($r);
             </form>
         </fieldset>
 %   }elsif ( $view_entity eq 'new' ){
-        <script type="text/javascript">
-            var rolecount=1;
-            function jsaddrole(countid) {
-		countid = countid.toString();
-		var rolehtml='<p><label for="new"';
-		if (countid=="1") {rolehtml+=" id='roleslabel'>Role:";}
-		else {rolehtml+=">&nbsp;";}
-		rolehtml+='</label><select name="role'+countid+'" class="dropdown"><option value="0">-- Select --</option>';
-%               my @roles = EntityType->retrieve_all;
-%               foreach my $r (@roles) {
-%                   print "rolehtml+='<option value=\"".$r->id."\">".$r->name."</option>';\n";
-%               }
-		rolehtml+='</select>';
-		if (countid=="1") {
-		    rolehtml+='<a href="#" onClick="document.getElementById(\'roles\').innerHTML+=jsaddrole(rolecount+1);rolecount+=1;document.getElementById(\'_rolecount\').value=rolecount">&nbsp;[Add Another Role]</a>';
-		}
-                rolehtml+='</p>';
-		return rolehtml;
-            }
-        </script>
-
        <fieldset class="medium">
             <legend>Add A New Entity</legend>
             <form action="entities.html" method="POST">
@@ -120,19 +98,24 @@ my $manager = $ui->get_permission_manager($r);
     <script type="text/javascript">var entorigname="";</script>
     <input type="text" name="entity_name" id="entitynameinput" class="txt" value="" onfocus="entorigname=document.getElementById('entitynameinput').value;" onblur="var entname=document.getElementById('entitynameinput').value;if(document.getElementById('newsiteinput').value==entorigname){document.getElementById('newsiteinput').value=entname;}if(document.getElementById('newclistinput').value==entorigname){document.getElementById('newclistinput').value=entname;}">
                 </p>
-                <input type="hidden" name="_rolecount" id="_rolecount" value="1">
+                <p>
+                <label for="new">Roles:</label>
                 <input type="hidden" name="sitestatus" id="sitestatus" value="new">
                 <input type="hidden" name="clstatus" id="clstatus" value="new">
-                <div id="roles">
-                <script type="text/javascript">
-                    document.write(jsaddrole(1));
-                </script>
+                <div id="entityroles">
+                    <select name="entityroles" multiple="multiple">
+                    <option value="">-- Select --</option>
+%                   my @roles = EntityType->retrieve_all;
+%                   foreach my $r (sort { $a->name cmp $b->name } @roles) {
+                        <option value="<% $r->id %>"><% $r->name %></option>
+%                   }
+                    </select>
                 </div>
                 <p>
                 <label for="new" id="sitelabel">Site:</label>
                 <div id="existingsite" style="display:none">
                     <select name="site" class="dropdown">
-                    <option value="0">-- Select --</option>
+                    <option value="">-- Select --</option>
 %                   my @sites = Site->retrieve_all;
 %                   foreach my $s (sort { $a->name cmp $b->name } @sites) {
                         <option value="<% $s->id %>"><% $s->name %></option>
@@ -149,7 +132,7 @@ my $manager = $ui->get_permission_manager($r);
                 <label for="new" id='cllabel'>Contact List:</label>
                 <div id="existingcontactlist" style="display:none">
                     <select name="contactlist" class="dropdown">
-                    <option value="0">-- Select --</option>
+                    <option value="">-- Select --</option>
 %                   my @clist = ContactList->retrieve_all;
 %                   foreach my $cl (@clist) {
                         <option value="<% $cl->id %>"><% $cl->name %></option>
@@ -269,11 +252,11 @@ if ( $_action eq "INSERT" && $submit ){
 	}
     }
     
-    if ( ($entityid) && ($_rolecount =~ m/^\d+$/) && ($role1 ne "0") ) {
+    if ( ($entityid) && @entityroles ) {
 	eval {
-	    for ( my$i=1; $i<=$_rolecount; $i++ ) {
-		if ($ARGS{"role".$i} ne "0") {
-		    EntityRole->insert({entity=>$entityid, type=>$ARGS{"role".$i}});
+	    foreach my $r ( @entityroles ) {
+		if ( $r ) {
+		    EntityRole->insert({entity=>$entityid, type=>$r});
 		}
 	    }
 	};

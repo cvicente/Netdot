@@ -54,7 +54,6 @@ sub sql_schema {
     my ($self, $type) = @_;
     $t->parser( sub{ return $self->_parser(@_) } ) or croak $t->error;
     $t->producer($type) or croak $t->error;
-    $t->filters( [sub{ return $self->_drop_fkeys(@_) }] ) or croak $t->error;
     my $output = $t->translate() or croak $t->error;
     return $output;
 }
@@ -163,7 +162,6 @@ sub _parser{
 
 	    if ( $mcol->name eq 'id' ){
 		$field_args{is_auto_increment} = 1;
-		$field_args{extra}             = { unsigned => 1 };
 	    }
 	    
 	    $table->add_field(%field_args) or croak $table->error;
@@ -204,19 +202,4 @@ sub _parser{
     return 1;
 }
 
-#####################################################################
-# Ignore FOREIGN KEY constraints when generating the actual schema
-#
-# This might change in the future, but for now, FK constraints at the 
-# DB level are a royal pain.
-sub _drop_fkeys {
-    my ($self, $schema) = @_;
-    foreach my $table ( $schema->get_tables ){
-	foreach my $constraint ( $table->get_constraints ){
-	    if ($constraint->type eq "FOREIGN KEY"){
-		$table->drop_constraint($constraint);
-	    }
-	}
-    }
-}
 

@@ -18,9 +18,9 @@ use base 'Class::DBI::Cascade::None';
 
 sub cascade {
     my ($self, $obj) = @_;
-    map { $_->set($self->{_rel}->args->{foreign_key}, 0); 
-	  $_->update 
-	  } $self->foreign_for($obj);
+    map { $_->set($self->{_rel}->args->{foreign_key}, undef); 
+	  $_->update;
+    } $self->foreign_for($obj);
 }
 
 1;
