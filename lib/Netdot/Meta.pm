@@ -266,6 +266,13 @@ sub get_history_suffix{
 
 
 ##################################################################
+# Return hash containing mapping between derived classes and 
+# their SUPER class
+sub get_derived_classes {
+    return %DERIVED_CLASSES;
+}
+
+##################################################################
 #
 # Private Methods
 #

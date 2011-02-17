@@ -317,12 +317,13 @@ BEGIN {
 	}
    }
     # Do the same as above for these special derived classes
-    use Netdot::Model::Device::Airespace;
-    eval "package Airespace; use base 'Netdot::Model::Device::Airespace'";
-    use Netdot::Model::Device::CiscoFW;
-    eval "package CiscoFW; use base 'Netdot::Model::Device::CiscoFW'";
-    use Netdot::Model::Device::CiscoIOS;
-    eval "package CiscoFW; use base 'Netdot::Model::Device::CiscoIOS'";
+    my %dc = __PACKAGE__->meta->get_derived_classes();
+    my $pre = __PACKAGE__;
+    foreach my $p ( keys %dc ){
+	my $package = $pre.'::$p';
+	eval "use $package"; 
+	eval "package $p; use base '$package';";
+    }
     
 }
 
