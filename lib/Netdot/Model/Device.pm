@@ -5387,7 +5387,7 @@ __PACKAGE__->set_sql(no_type => qq{
     SELECT p.name, p.id, COUNT(d.id) AS numdevs
         FROM device d, product p
         WHERE d.product = p.id AND
-        p.type = 0
+        p.type IS NULL
         GROUP BY p.name, p.id
         ORDER BY numdevs DESC
     });

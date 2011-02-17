@@ -216,8 +216,6 @@ sub cdbi_class{
     # Set up has_many relationships
     my %hm = $table->get_links_from();
 
-    my $hf = $self->get_history_suffix;
-
     foreach my $rel ( keys %hm ){
 	my $tab;
 	foreach my $key ( keys %{$hm{$rel}} ){
@@ -225,10 +223,6 @@ sub cdbi_class{
 	    croak "cdbi_classes: Can't get has_many table from ", $table->name, ":$rel" unless $tab;
 
 	    my $method = $rel;
-	    if ( $tab =~ /$hf$/ && $method ne 'history_records' ){
-		$method = 'history_'.$method;
-	    }
-
 	    my $col    = $hm{$rel}{$tab};
 	    my $t      = $self->get_table($tab);
 	    my $c      = $t->get_column($col);

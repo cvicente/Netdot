@@ -34,6 +34,8 @@ my (@headers, @rows) = ();
       </form>
 
 <%perl>
+
+#######################################################################################
 if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
     my %t;
     my $grandtotal = 0;
@@ -42,9 +44,9 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 	$t{$pt->name}{id}    = $pt->id;
 	my @prods;
 	if ( $report_type eq 'product' ){
-	    @prods = Product->search_by_type($pt);
+	    @prods = Product->search_by_type($pt->id);
 	}elsif ( $report_type eq 'product_monitored' ){
-	    @prods = Product->search_monitored_by_type($pt);
+	    @prods = Product->search_monitored_by_type($pt->id);
 	}
 	foreach my $o ( @prods ){
 	    $t{$pt->name}{prod}{$o->name}{id}   = $o->id;
@@ -53,6 +55,7 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 	}
 	$grandtotal += $t{$pt->name}{total};
     }
+
     # Look for products with no type
     foreach my $o ( Device->search_no_type() ){
 	$t{'Unset'}{prod}{$o->name}{id}  = $o->id;
@@ -61,12 +64,12 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
     }
     
     # Look for devices with no product set
-    my @noprod = Device->search( product => 0 );
+    my @noprod = Device->search( product => undef );
     
     if ( my $num = scalar @noprod ){
 	$t{'Unset'}{prod}{'Unset'}{id}   = 0;
 	$t{'Unset'}{prod}{'Unset'}{num}  = $num;
-	$t{'Unset'}{total}                += $num;
+	$t{'Unset'}{total}               = $num;
     }
     if ( exists $t{'Unset'} ){
 	$grandtotal += $t{'Unset'}{total};
@@ -97,7 +100,7 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 	    if ( $t{$pt}{prod}{$product}{id} ){
 		push( @row, '<a href="../generic/view.html?table=Product&id=' . $t{$pt}{prod}{$product}{id} . '">' . $product . '</a>' );
 	    }elsif ( $product eq "Unset" ){
-		push( @row, '<a href="../generic/search_obj.html?table=Device&product=_unset&res=1">' . $product . '</a>' );
+		push( @row, '<a href="../generic/search_obj.html?table=Device&product=undef&res=1">' . $product . '</a>' );
 	    }
 	    push( @row, $t{$pt}{prod}{$product}{num}  );
 	    push( @rows, \@row );
@@ -106,6 +109,7 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
     }
     $m->comp('/generic/data_table.mhtml', field_headers=>\@headers, data=>\@rows);
 
+#######################################################################################
 }elsif ( $report_type eq 'site' ){
     my $res = Netdot::Model->raw_sql("
     SELECT     device.site,
@@ -126,7 +130,7 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 
     my $last_site;
     foreach my $r ( @$res ) {
-        my $site = ($r->[0] || "_unset");
+        my $site = ($r->[0] || "undef");
 	my $site_name = ($r->[2] || "Unset");
 	if ($site ne $last_site) {
 	    $last_site = $site;
@@ -138,11 +142,11 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 	}
 	my @row = ();
 	push( @row, "" );
-	my $product      = ($r->[1] || "_unset");
+	my $product      = ($r->[1] || "undef");
 	my $product_name = ($r->[3] || "Unset");
 	my $manuf        = ($r->[4] || "Unset");
         my $label        = $manuf." ".$product_name;
-	push( @row, "<strong><a href=\"../generic/search_obj.html?table=Device&site=$site&product=$product&res=1\">$label</a></strong>" );
+	push( @row, "<a href=\"../generic/search_obj.html?table=Device&site=$site&product=$product&res=1\">$label</a>" );
 	push( @row, '<strong>' . $r->[5] . '</strong>' );
 	push( @rows, \@row );
     }
@@ -150,12 +154,15 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 
 
 
+#######################################################################################
 }elsif ( $report_type eq 'os' ){
     my %t;
     my @devs = Device->search_by_product_os();
     foreach my $dev (@devs){
-	my $prod  = ($dev->asset_id->product_id) ? $dev->asset_id->product_id->id : "Unset";
-	my $manuf = ($dev->asset_id->product_id && $dev->asset_id->product_id->manufacturer) ? $dev->asset_id->product_id->manufacturer->id : 'Unset';
+	my $prod  = ($dev->asset_id && $dev->asset_id->product_id) ? 
+	    $dev->asset_id->product_id->id : "Unset";
+	my $manuf = ($dev->asset_id && $dev->asset_id->product_id && $dev->asset_id->product_id->manufacturer) ? 
+	    $dev->asset_id->product_id->manufacturer->id : 'Unset';
 	my $os    = $dev->os;
 	$t{$manuf}{total}++;
 	$t{$manuf}{product}{$prod}{total}++;
@@ -197,10 +204,16 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 	}
     }
     $m->comp('/generic/data_table.mhtml', field_headers=>\@headers, data=>\@rows);
+
+#######################################################################################
 }elsif ( $report_type eq 'downtime' ){
     $m->comp('downtime.html');
+
+#######################################################################################
 }elsif ( $report_type eq 'duplex' ){
     $m->comp('duplex.html');
+
+#######################################################################################
 }elsif ( $report_type eq 'os_mismatches' ){
     print "<strong>Devices with OS different from the recommended OS of product</strong>";
     print " (Note: devices without OS data are omitted.)";

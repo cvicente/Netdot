@@ -84,6 +84,7 @@ if ( $DEBUG ){
 		  <a href="view.html?table=<% $table %>&id=<% $obj %>&view=all">[all]</a>
 %             }
 %             foreach my $i ( sort keys %linksfrom ){
+%               next if $i =~ /^history_/;
 %               if ( $view eq $i ){
                    [<% $i %>]
 %               }else{
@@ -102,6 +103,7 @@ if ( $DEBUG ){
 <!-- Display has_many objects -->
 <%perl>
 foreach my $i ( keys %linksfrom ){
+    next if $i =~ /^history_/;
     if ( ($view eq 'all' || $view eq $i ) ){
     # Table that points to us
     my $j = (keys %{ $linksfrom{$i} })[0];

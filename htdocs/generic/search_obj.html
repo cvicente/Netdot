@@ -100,7 +100,7 @@ foreach my $j (keys %ARGS){
     next if ( $ARGS{$j} =~ /radio_unset/ );
     $ARGS{$j} =~ s/radio_yes/1/;
     $ARGS{$j} =~ s/radio_no/0/;
-    $ARGS{$j} =~ s/_unset/0/;
+    $ARGS{$j} = undef if $ARGS{$j} eq 'undef';
     
     # "/^_/" is added to avoid using reserved words in javascript
     # chop it off
