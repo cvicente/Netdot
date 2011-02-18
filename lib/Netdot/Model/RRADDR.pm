@@ -256,6 +256,7 @@ sub _net_dns {
 sub _convert_ipblock {
     my ($self, $ip) = @_;
     if (!(ref $ip) && ($ip =~ /\D/)) {
+	$ip = $self->rem_lt_sp($ip);
 	my $ipblock;
 	unless ( $ipblock = Ipblock->search(address=>$ip)->first){
 	    $ipblock = Ipblock->insert({address=>$ip, status=>'Static'});

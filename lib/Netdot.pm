@@ -125,7 +125,9 @@ sub get_mac_regex { return $MAC }
 =cut
 sub ttl_from_text {
     my ($self, $t) = @_;
-    
+
+    $t = $self->rem_lt_sp($t);
+
     my $MAXIMUM_TTL = 0x7fffffff;
     my $res = 0;
     if ( $t =~ /^\d+$/ ){
