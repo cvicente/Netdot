@@ -322,7 +322,7 @@ foreach my $o ( values %rrs ) {
 	print '<div class="containerheadright">';
 
 	if ( $manager && $manager->can($user, "access_section", 'host.html:add_rraddr') ){
-	    push( @field_headers, ("IP", "TTL") );
+	    push( @field_headers, ("IP:", "TTL") );
 	    push( @cell_data, "<input name='RRADDR__NEW__ipblock' value='' type='text'>" );
 	    push( @cell_data, "<input name='RRADDR__NEW__ttl' value='' type='text'>" );
 	    my $newrraddr = $m->scomp('/generic/attribute_table.mhtml', %comphash, width=>2);
@@ -658,14 +658,15 @@ foreach my $o ( values %rrs ) {
 	    if ( my $cnamerr = RR->search(name=>$cname->cname)->first ){
 		push @field_headers, "Canonical Name:";
 		push @cell_data, "<a href=\"host.html?id=$cnamerr\">".$cnamerr->get_label."</a>";
-		$m->comp('/generic/attribute_table.mhtml', %comphash);
-		(@field_headers, @cell_data) = ((),());
 	    }else{
 		push @field_headers, "Canonical Name:";
 		push @cell_data, $cname->cname;
-		$m->comp('/generic/attribute_table.mhtml', %comphash);
-		(@field_headers, @cell_data) = ((),());
 	    }
+	    # Add TTL
+	    $ui->add_to_fields(o=>$cname, edit=>$edit, fields=>['ttl'],
+			       field_headers=>\@field_headers, cell_data=>\@cell_data);
+	    $m->comp('/generic/attribute_table.mhtml', %comphash);
+	    (@field_headers, @cell_data) = ((),());
 	}
 	
 	if (!$o->arecords()) {
