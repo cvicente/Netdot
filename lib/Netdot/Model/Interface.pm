@@ -542,10 +542,6 @@ sub update_ip {
 		$iargs{address} = $subnetaddr;
 		$iargs{prefix}  = $subnetprefix;
 		
-		# We will update tree once at the end of all interface updates 
-		# (in Device.pm)
-		$iargs{no_update_tree} = 1;
-
 		# Ipblock validation might throw an exception
 		my $newblock;
 		eval {
