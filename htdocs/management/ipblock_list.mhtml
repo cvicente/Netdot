@@ -89,8 +89,8 @@ if ( $type eq "address" ){
 
 	$ui->add_to_fields(o=>$o, edit=>$edit, fields=>['status', 'used_by', 'description'], 
 			   cell_data=>\@row, linkpages=>['', '', '']);
-        push( @text_row, $o->status->get_label );
-        push( @text_row, $o->used_by->get_label );
+        push( @text_row, $o->status->get_label )  if $o->status;
+        push( @text_row, $o->used_by->get_label ) if $o->used_by;
         push( @text_row, $o->description );      
   
 	$ui->add_to_fields(o=>$o, edit=>0, fields=>['last_seen'], cell_data=>\@row, );
@@ -154,8 +154,8 @@ if ( $type eq "address" ){
 	}
 	$ui->add_to_fields(o=>$o, edit=>$edit, fields=>['owner', 'used_by', 'description'],
 			   cell_data=>\@row, linkpages=>['view.html', 'view.html', '']);
-	push( @text_row, $o->owner->get_label )   if int($o->owner);
-	push( @text_row, $o->used_by->get_label ) if int($o->used_by);
+	push( @text_row, $o->owner->get_label )   if $o->owner;
+	push( @text_row, $o->used_by->get_label ) if $o->used_by;
 	push( @text_row, $o->description );
 	
 	push( @rows, \@row );
