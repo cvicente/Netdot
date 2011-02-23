@@ -318,11 +318,10 @@ BEGIN {
    }
     # Do the same as above for these special derived classes
     my %dc = __PACKAGE__->meta->get_derived_classes();
-    my $pre = __PACKAGE__;
-    foreach my $p ( keys %dc ){
-	my $package = $pre.'::$p';
-	eval "use $package"; 
-	eval "package $p; use base '$package';";
+    while ( my($pa,$ba) = each %dc ){
+	my $pack = 'Netdot::Model::'.$ba.'::'.$pa;
+	eval "use $pack"; 
+	eval "package $p; use base '$pack';";
     }
     
 }
