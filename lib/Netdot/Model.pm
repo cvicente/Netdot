@@ -315,15 +315,18 @@ BEGIN {
 	if ( my $e = $@ ){
 	    die $e; 
 	}
-   }
+    }
     # Do the same as above for these special derived classes
     my %dc = __PACKAGE__->meta->get_derived_classes();
     while ( my($pa,$ba) = each %dc ){
-	my $pack = 'Netdot::Model::'.$ba.'::'.$pa;
-	eval "use $pack"; 
-	eval "package $p; use base '$pack';";
+	my $package = 'Netdot::Model::'.$ba.'::'.$pa;
+	eval "use $package"; 
+	my $cmd = "package $pa; use base '$package';";
+	eval $cmd;
+	if ( my $e = $@ ){
+	    die $e; 
+	}	
     }
-    
 }
 
 =head1 CLASS METHODS
