@@ -642,6 +642,11 @@ sub get_snmp_info {
 		       i_vlan_membership qb_v_name v_name v_state
 		       );
 
+    if ( $sinfo->can('ipv6_addr_prefix') ){
+	# This version of SNMP::Info supports fetching IPv6 addresses
+	push @SMETHODS, qw(ipv6_addr_prefix);
+    }
+
     if ( $self->config->get('GET_DEVICE_MODULE_INFO') ){
 	push @SMETHODS, qw( e_type e_parent e_name e_class e_pos e_descr
                             e_hwver e_fwver e_swver e_model e_serial e_fru );
@@ -912,9 +917,60 @@ sub get_snmp_info {
 	
     }
 
+
     ################################################################
     # Interface stuff
     
+    sub _check_if_status_down{
+	my ($dev, $iid) = @_;
+	return 1 if ( (defined $dev->{interface}{$iid}{admin_status}) &&
+		      ($dev->{interface}{$iid}{admin_status} eq 'down') );
+	return 0;
+    }
+    
+    ################################################################
+    # IPv4 addresses and masks 
+    #
+    while ( my($ip,$iid) = each %{ $hashes{'ip_index'} } ){
+	next if &_check_if_status_down(\%dev, $iid);
+	next if Ipblock->is_loopback($ip);
+	next if ( $ip eq '0.0.0.0' || $ip eq '255.255.255.255' );
+	$dev{interface}{$iid}{ips}{$ip}{address} = $ip;
+	$dev{interface}{$iid}{ips}{$ip}{version} = 4;
+	if ( my $mask = $hashes{'ip_netmask'}->{$ip} ){
+	    my ($subnet, $len) = Ipblock->get_subnet_addr(address => $ip, 
+							  prefix  => $mask );
+	    $dev{interface}{$iid}{ips}{$ip}{subnet} = "$subnet/$len";
+	}
+    }
+
+    ################################################################
+    # IPv6 addresses and prefixes
+    # Stuff in this hash looks like this:
+    # 2.16.32.1.4.104.13.1.0.2.0.0.0.0.0.0.0.9	=> 49.2.16.32.1.4.104.13.1.0.2.0.0.0.0.0.0.0.0.64
+    #
+    while ( my($key,$val) = each %{$hashes{'ipv6_addr_prefix'}} ){
+	my ($iid, $addr, $pfx, $len);
+	if ( $key =~ /^\d+\.\d+\.([\d\.]+)$/ ) {
+	    # type, size, address
+	    $addr = $self->_octet_string_to_v6($1);
+	}
+	if ( $val =~ /^(\d+)\.\d+\.\d+\.([\d\.]+)\.(\d+)$/ ) {
+	    # ifIndex, type, size, prefix length
+	    $iid = $1; $len = $3;
+	    $pfx = $self->_octet_string_to_v6($2);
+	}
+	if ( $iid && $addr && $pfx && $len ){
+	    next if &_check_if_status_down(\%dev, $iid);
+	    $dev{interface}{$iid}{ips}{$addr}{address} = $addr;
+	    $dev{interface}{$iid}{ips}{$addr}{version} = 6;
+	    $dev{interface}{$iid}{ips}{$addr}{subnet}  = "$pfx/$len";
+	}else{
+	    # What happened?
+	    $logger->debug("$args{host}: Unrecognized ipv6_addr_prefix entry: $key => $val")
+	}
+    }
+
     # Netdot Interface field name to SNMP::Info method conversion table
     my %IFFIELDS = ( type                => 'i_type',
 		     description         => 'i_alias',		     speed               => 'i_speed',
@@ -928,8 +984,6 @@ sub get_snmp_info {
     ##############################################
     # for each interface discovered...
 
-    my $ifreserved = $self->config->get('IFRESERVED');
-
     unless ( scalar keys %{ $hashes{interfaces} } ){
 	$logger->debug(sub{"$args{host} did not return any interfaces"});
     }
@@ -938,9 +992,10 @@ sub get_snmp_info {
 	# check whether it should be ignored
 	my $name = $hashes{i_description}->{$iid};
 	if ( $name ){
-	    if ( defined $ifreserved ){
+	    if ( my $ifreserved = $self->config->get('IFRESERVED') ){
 		if ( $name =~ /$ifreserved/i ){
 		    $logger->debug(sub{"Device::get_snmp_info: $args{host}: Interface $name ignored per config option (IFRESERVED)"});
+		    delete $dev{interface}{$iid}; # Could have been added above
 		    next;
 		}
 	    }
@@ -964,30 +1019,10 @@ sub get_snmp_info {
  		$dev{interface}{$iid}{$field} = "";
 	    }
 	}
-
-	#
-	# IP addresses and masks 
-	#
-	if ( defined $dev{interface}{$iid}{admin_status} &&
-	     $dev{interface}{$iid}{admin_status} eq 'down' ){
-	    # Ignore IP addresses in this case
-	}else{
-	    foreach my $ip ( keys %{ $hashes{'ip_index'} } ){
-		if ( $hashes{'ip_index'}->{$ip} eq $iid ){
-		    next if Ipblock->is_loopback($ip);
-		    next if ( $ip eq '0.0.0.0' || $ip eq '255.255.255.255' );
-		    $dev{interface}{$iid}{ips}{$ip}{address} = $ip;
-		    if ( my $mask = $hashes{'ip_netmask'}->{$ip} ){
-			$dev{interface}{$iid}{ips}{$ip}{mask} = $mask;
-		    }
-		}
-	    }
-	}
   
 	################################################################
 	# Vlan info
 	# 
-
 	my ($vid, $vname);
 	# These are all the vlans that are enabled on this port.
 	if ( my $vm = $hashes{'i_vlan_membership'}->{$iid} ){
@@ -5034,11 +5069,7 @@ sub _update_interfaces {
     if ( my $devips = $self->get_ips ){
 	map { $oldips{$_->address} = $_ } @{ $devips };
     }
-    
-    # Flag for determining if IP info has changed
-    my $ipv4_changed = 0;
-    my $ipv6_changed = 0;
-    
+        
     ##############################################
     # Try to solve the problem with devices that change ifIndex
     # We use the name as the most stable key to identify interfaces
@@ -5162,8 +5193,6 @@ sub _update_interfaces {
 	$if->snmp_update(info          => $info->{interface}->{$newif},
 			 add_subnets   => $add_subnets,
 			 subs_inherit  => $subs_inherit,
-			 ipv4_changed  => \$ipv4_changed,
-			 ipv6_changed  => \$ipv6_changed,
 			 stp_instances => $info->{stp_instances},
 	    );
 	
@@ -5213,15 +5242,8 @@ sub _update_interfaces {
 	$logger->info(sprintf("%s: IP %s no longer exists.  Removing.", 
 			      $host, $obj->address));
 	$obj->delete(no_update_tree=>1);
-	$ipv4_changed = 1;
     }
     
-    # Rebuild IP space tree
-    # Notice we do this at the end instead of per IP to speed things up
-    Ipblock->build_tree(4) if $ipv4_changed;
-    Ipblock->build_tree(6) if $ipv6_changed;
-
-
     ##############################################################
     # Update A records for each IP address
     
@@ -5306,6 +5328,22 @@ sub _snmp_translate {
     my ($self, $oid) = @_;
     my $name = &SNMP::translateObj($oid);
     return $name if defined($name);
+}
+
+
+#####################################################################
+# Converts dotted-decimal octets from SNMP into IPv6 address format, 
+# i.e:
+# 32.1.4.104.13.1.0.196.0.0.0.0.0.0.0.0 =>
+# 2001:0468:0d01:00c4:0000:0000:0000:0000
+#
+sub _octet_string_to_v6 {
+    my ($self, $str) = @_;
+    return unless $str;
+    my @a = map { sprintf("%02x",$_) } split('\.', $str);
+    my @g;
+    push(@g, join('', splice(@a, 0, 2))) while @a;
+    return lc(join(':', @g));
 }
 
 ################################################################

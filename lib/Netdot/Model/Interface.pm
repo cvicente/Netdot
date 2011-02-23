@@ -272,8 +272,6 @@ sub update {
     info          - Hash ref with SNMP info about interface
     add_subnets   - Whether to add subnets automatically
     subs_inherit  - Whether subnets should inherit info from the Device
-    ipv4_changed  - Scalar ref.  Set if IPv4 info changes
-    ipv6_changed  - Scalar ref.  Set if IPv6 info changes
     stp_instances - Hash ref with device STP info
   Returns:    
     Interface object
@@ -281,8 +279,6 @@ sub update {
     $if->snmp_update(info         => $info->{interface}->{$newif},
 		     add_subnets  => $add_subnets,
 		     subs_inherit => $subs_inherit,
-		     ipv4_changed => \$ipv4_changed,
-		     ipv6_changed => \$ipv6_changed,
 		     );
 =cut
 sub snmp_update {
@@ -290,10 +286,7 @@ sub snmp_update {
     $self->isa_object_method('snmp_update');
     my $class = ref($self);
     my $newif = $args{info};
-    my $label  = $self->get_label;
-    # Remember these are scalar refs.
-    my ( $ipv4_changed, $ipv6_changed ) = @args{'ipv4_changed', 'ipv6_changed'};
-
+    my $label = $self->get_label;
     my %iftmp = (doc_status => 'snmp');
 
     ############################################
@@ -451,11 +444,10 @@ sub snmp_update {
 	foreach my $newip ( keys %{ $newif->{ips} } ){
 	    if ( my $address = $newif->{ips}->{$newip}->{address} ){
 		my %iargs   =  (address      => $address,
-				mask         => $newif->{ips}->{$newip}->{mask},
+				version      => $newif->{ips}->{$newip}->{version},
+				subnet       => $newif->{ips}->{$newip}->{subnet},
 				add_subnets  => $args{add_subnets},
 				subs_inherit => $args{subs_inherit},
-				ipv4_changed => $ipv4_changed,
-				ipv6_changed => $ipv6_changed,
 		    );
 		$iargs{vlan} = $vlan if $vlan;
 		if ( $self->ignore_ip ){
@@ -476,11 +468,10 @@ sub snmp_update {
   Arguments:
     Hash with the following keys:
     address      - Dotted quad ip address
-    mask         - Dotted quad mask
+    version      - 4 or 6
+    subnet       - Subnet CIDR
     add_subnets  - Flag.  Add subnet if necessary (only for routers)
     subs_inherit - Flag.  Have subnet inherit some Device information
-    ipv4_changed - Scalar ref.  Set if IPv4 info changes
-    ipv6_changed - Scalar ref.  Set if IPv6 info changes
     vlan         - Vlan ID (for Subnet to Vlan mapping)
     
   Returns:
@@ -493,10 +484,10 @@ sub update_ip {
     $self->isa_object_method('update_ip');
 
     my $address = $args{address};
-    $self->throw_fatal("Model::Interface::update_ip: Missing required arguments: address") unless ( $address );
-    # Remember these are scalar refs.
-    my ( $ipv4_changed, $ipv6_changed ) = @args{'ipv4_changed', 'ipv6_changed'};
-
+    my $version = $args{version};
+    $self->throw_fatal("Model::Interface::update_ip: Missing required arguments: address, version") 
+	unless ( $address && $version );
+    
     my $label = $self->get_label;
     
     # Do not bother with loopbacks
@@ -504,15 +495,16 @@ sub update_ip {
 	$logger->debug(sub{"$label: IP $address is a loopback. Skipping."});
 	return;
     }
-	
-    my $version = ($address =~ /^($IPV4)$/) ?  4 : 6;
-    my $prefix  = ($version == 4)  ? 32 : 128;
     
-    # If given a mask, we might have to add a subnet
-    if ( (my $mask = $args{mask}) && $args{add_subnets} && $self->device->ipforwarding ){
-	# Create a subnet if necessary
-	my ($subnetaddr, $subnetprefix) = Ipblock->get_subnet_addr(address => $address, 
-								   prefix  => $mask );
+    # We might have to add a subnet
+    if ( $self->device->ipforwarding && $args{add_subnets} && (my $subnet = $args{subnet}) ){
+	my ($subnetaddr, $subnetprefix);
+	if ( $subnet =~ /^(.+)\/(\d+)$/ ){
+	    ($subnetaddr, $subnetprefix) = ($1, $2);
+	}else{
+	    $self->throw_fatal("Model::Interface::update_ip: Invalid subnet: $subnet");
+	}
+	
 	if ( ($version == 4 && $subnetprefix == 31) || $subnetaddr ne $address ){
 	    my %iargs;
 	    $iargs{status} = 'Subnet' ;
@@ -520,27 +512,30 @@ sub update_ip {
 	    # If we have a VLAN, make the relationship
 	    $iargs{vlan} = $args{vlan} if defined $args{vlan};
 	    
-	    if ( my $subnet = Ipblock->search(address => $subnetaddr, 
-					      prefix  => $subnetprefix)->first ){
+	    if ( my $subnetobj = Ipblock->search(address => $subnetaddr, 
+						 version => $version,
+						 prefix  => $subnetprefix)->first ){
 		
-		$logger->debug(sub{ sprintf("%s: Block %s/%s already exists", 
-					    $label, $subnetaddr, $subnetprefix)} );
+		$logger->debug(sub{ sprintf("%s: Block %s already exists", 
+					    $label, $subnetobj->get_label)} );
 		
 		# Skip validation for speed, since the block already exists
 		$iargs{validate} = 0;
-
-		$subnet->update(\%iargs);
+		$subnetobj->update(\%iargs); # Makes sure that the status is set to subnet
+		
 	    }else{
-		$logger->debug(sub{ sprintf("Subnet %s/%s does not exist.  Inserting.", $subnetaddr, $subnetprefix) });
+		$logger->debug(sub{ sprintf("Subnet %s/%s does not exist.  Inserting.", 
+					    $subnetaddr, $subnetprefix) });
+		
+		$iargs{address} = $subnetaddr;
+		$iargs{prefix}  = $subnetprefix;
+		$iargs{version} = $version;
 		
 		# Check if subnet should inherit device info
 		if ( $args{subs_inherit} ){
 		    $iargs{owner}   = $self->device->owner;
 		    $iargs{used_by} = $self->device->used_by;
 		}
-
-		$iargs{address} = $subnetaddr;
-		$iargs{prefix}  = $subnetprefix;
 		
 		# Ipblock validation might throw an exception
 		my $newblock;
@@ -554,18 +549,17 @@ sub update_ip {
 		    $logger->info(sprintf("%s: Created Subnet %s/%s", 
 					  $label, $subnetaddr, $subnetprefix));
 		    my $version = $newblock->version;
-		    if ( $version == 4 ){
-			$$ipv4_changed = 1;
-		    }elsif ( $version == 6 ){
-			$$ipv6_changed = 1;
-		    }
 		}
 	    }
 	}
     }
-    
+
+    # Now work on the address itself
+    my $prefix  = ($version == 4)  ? 32 : 128;
     my $ipobj;
-    if ( $ipobj = Ipblock->search(address=>$address, prefix=>$prefix)->first ){
+    if ( $ipobj = Ipblock->search(address => $address, 
+				  prefix  => $prefix, 
+				  version => $version)->first ){
 
 	# update
 	$logger->debug(sub{ sprintf("%s: IP %s/%s exists. Updating", 
@@ -576,18 +570,18 @@ sub update_ip {
 	# Therefore, it's very unlikely that the object won't pass 
 	# validation, so we skip it to speed things up.
 	my %args = (interface => $self, validate => 0, last_seen=>$self->timestamp);
-	if ( !int($ipobj->status) || 
+	if ( !($ipobj->status) || 
 	     ($ipobj->status->name ne 'Static' && $ipobj->status->name ne 'Dynamic') ){
 	    $args{status} = 'Static';
 	}
 	$ipobj->update(\%args);
     }else {
-	# Create a new Ip
+	# Create a new IP
 	# This could also go wrong, but we don't want to bail out
 	eval {
-	    $ipobj = Ipblock->insert({address => $address, prefix => $prefix, 
-				      status  => "Static", interface  => $self,
-				      no_update_tree => 1,
+	    $ipobj = Ipblock->insert({address => $address, prefix    => $prefix, 
+				      status  => "Static", interface => $self,
+				      version => $version,
 				     });
 	};
 	if ( my $e = $@ ){
@@ -597,11 +591,6 @@ sub update_ip {
 	}else{
 	    $logger->info(sprintf("%s: Inserted new IP %s", $label, $ipobj->address));
 	    my $version = $ipobj->version;
-	    if ( $version == 4 ){
-		$$ipv4_changed = 1;
-	    }elsif ( $version == 6 ){
-		$$ipv6_changed = 1;
-	    }
 	}
     }
     return $ipobj;

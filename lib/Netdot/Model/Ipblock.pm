@@ -129,16 +129,21 @@ sub int2ip {
     my @objs = Ipblock->search(field => $keyword);
 
 =cut
+
 sub search {
     my ($class, @args) = @_;
     $class->isa_class_method('search');
-
+    
     # Class::DBI::search() might include an extra 'options' hash ref
     # at the end.  In that case, we want to extract the 
     # field/value hash first.
     my $opts = @args % 2 ? pop @args : {}; 
     my %args = @args;
-
+   
+    if ( defined $args{status} ){
+	my $statusid = $class->_get_status_id($args{status});
+	$args{status} = $statusid;
+    }
     if ( defined $args{address} ){
 	if ( $args{address} =~ /\/\d+$/ ){
 	    # Address is in CIDR format
@@ -151,14 +156,34 @@ sub search {
 		$args{address} = $class->ip2int($args{address});
 	    }
 	}
-    }
-    if ( defined $args{status} ){
-	my $statusid = $class->_get_status_id($args{status});
-	$args{status} = $statusid;
+	if ( $class->config->get('DB_TYPE') eq 'mysql' ){
+	    # Deal with mysql bug 
+	    # http://bugs.mysql.com/bug.php?id=60213
+	    # We have to build our own query
+	    my @q; my @vals;
+	    while ( my($key,$val) = each(%args) ){
+		if ( $key eq 'address' ){
+		    push @q, "$key=CONVERT(?, DECIMAL(40,0))";
+		}else{
+		    push @q, "$key=?";
+		}
+		push @vals, $val;
+	    }
+	    my $q = join ' AND ', @q;
+	    my @cols = ('id');
+	    my %co = $class->meta_data->get_column_order_brief();
+	    foreach my $c ( keys %co ){
+		push @cols, $c;
+	    } 
+	    my $cols = join ',', @cols;
+	    my $dbh = $class->db_Main();
+	    my $sth = $dbh->prepare("SELECT $cols FROM ipblock WHERE $q;");
+	    $sth->execute(@vals);
+	    return $class->sth_to_objects($sth);
+	}
     }
     return $class->SUPER::search( %args, $opts );
 }
-
 
 ##################################################################
 =head2 search_like - Search IP Blocks that match the specified regular expression
