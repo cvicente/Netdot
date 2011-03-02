@@ -218,7 +218,12 @@ sub get_links_from{
 	    next unless ( $lt && exists $lt->{table} );
 	    if ( $lt->{table} eq $self->name ){
 		next unless exists $lt->{method};
-		my $method = ($t->is_history)? 'history_'.$lt->{method} : $lt->{method};
+		my $method;
+		if ( $t->is_history && $lt->{method} ne 'history_records' ){
+		    $method = 'history_'.$lt->{method};
+		}else{
+		    $method = $lt->{method};
+		}
 		$ret{$method}{$t->name} = $c->name;
 	    }
 	}
