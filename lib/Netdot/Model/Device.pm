@@ -1735,16 +1735,18 @@ sub arp_update {
 
     my ($arp_count, @ce_updates);
 
-    foreach my $intid ( keys %$cache ){
-	foreach my $ip ( keys %{$cache->{$intid}} ){
-	    my $mac = $cache->{$intid}->{$ip};
-	    $arp_count++;
-	    push @ce_updates, {
-		arpcache  => $ac->id,
-		interface => $intid,
-		ipaddr    => Ipblock->ip2int($ip),
-		physaddr  => $mac,
-	    };
+    foreach my $version ( keys %$cache ){
+	foreach my $intid ( keys %{$cache->{$version}} ){
+	    foreach my $ip ( keys %{$cache->{$version}{$intid}} ){
+		my $mac = $cache->{$version}{$intid}{$ip};
+		$arp_count++;
+		push @ce_updates, {
+		    arpcache  => $ac->id,
+		    interface => $intid,
+		    ipaddr    => Ipblock->ip2int($ip),
+		    physaddr  => $mac,
+		};
+	    }
 	}
     }
     if ( $argv{atomic} ){
@@ -1764,12 +1766,13 @@ sub arp_update {
 }
 
 ############################################################################
-=head2 get_arp - Fetch ARP tables
+=head2 get_arp - Fetch ARP and IPv6 ND tables
 
   Arguments:
     session - SNMP session (optional)
   Returns:
-    Hashref
+    Hashref of hashrefs containing:
+      ip version -> interface id -> mac address = ip address
   Examples:
     my $cache = $self->get_arp(%args)
 =cut
@@ -1777,25 +1780,48 @@ sub get_arp {
     my ($self, %argv) = @_;
     $self->isa_object_method('get_arp');
     my $host = $self->fqdn;
-    my $cache = {};
 
     unless ( $self->collect_arp ){
-	$logger->debug(sub{"Device::_get_arp: $host excluded from ARP collection. Skipping"});
+	$logger->debug(sub{"Device::get_arp: $host excluded from ARP collection. Skipping"});
 	return;
     }
     if ( $self->is_in_downtime ){
-	$logger->debug(sub{"Device::_get_arp: $host in downtime. Skipping"});
+	$logger->debug(sub{"Device::get_arp: $host in downtime. Skipping"});
 	return;
     }
 
-    my $start     = time;
+    # This will hold both ARP and v6 ND caches
+    my %cache;
+
+    ### v4 ARP
+    my $start = time;
     my $arp_count = 0;
-    $cache = $self->_get_arp_from_snmp(session=>$argv{session});
-    map { $arp_count+= scalar(keys %{$cache->{$_}}) } keys %$cache;
+    my $arp_cache = $self->_get_arp_from_snmp(session=>$argv{session});
+    foreach ( keys %$arp_cache ){
+	$cache{'4'}{$_} = $arp_cache->{$_};
+	$arp_count+= scalar(keys %{$arp_cache->{$_}})
+    }
     my $end = time;
-    $logger->debug(sub{ sprintf("$host: ARP cache fetched. %s entries in %s", 
+    $logger->info(sub{ sprintf("$host: ARP cache fetched. %s entries in %s", 
 				$arp_count, $self->sec2dhms($end-$start) ) });
-   return $cache;
+
+    ### v6 ND
+    $start = time;
+    my $nd_count = 0;
+    my $nd_cache  = $self->_get_v6_nd_from_snmp(session=>$argv{session});
+    # Here we have to go one level deeper in order to
+    # avoid losing the previous entries
+    foreach ( keys %$nd_cache ){
+	foreach my $ip ( keys %{$nd_cache->{$_}} ){
+	    $cache{'6'}{$_}{$ip} = $nd_cache->{$_}->{$ip};
+	    $nd_count++;
+	}
+    }
+    $end = time;
+    $logger->info(sub{ sprintf("$host: IPv6 ND cache fetched. %s entries in %s", 
+				$nd_count, $self->sec2dhms($end-$start) ) });
+
+    return \%cache;
 }
 
 
@@ -1922,8 +1948,8 @@ sub get_fwt {
     $fwt = $self->_get_fwt_from_snmp(session=>$argv{session});
     map { $fwt_count+= scalar(keys %{$fwt->{$_}}) } keys %$fwt;
     my $end = time;
-    $logger->debug(sub{ sprintf("$host: FWT fetched. %s entries in %s", 
-				$fwt_count, $self->sec2dhms($end-$start) ) });
+    $logger->info(sub{ sprintf("$host: FWT fetched. %s entries in %s", 
+			       $fwt_count, $self->sec2dhms($end-$start) ) });
    return $fwt;
 }
 
@@ -3992,7 +4018,10 @@ sub snmp_update_parallel {
     $class->_fork_end($pm);
     
     # Rebuild the IP tree if ARP caches were updated
-    Ipblock->build_tree(4) if $argv{do_arp};
+    if ( $argv{do_arp} ){
+	Ipblock->build_tree(4);
+	Ipblock->build_tree(6);
+    }
     my $runtime = time - $start;
     $class->_update_poll_stats($uargs{timestamp}, $runtime);
     
@@ -4125,16 +4154,14 @@ sub _get_poll_stats {
 ############################################################################
 #_get_arp_from_snmp - Fetch ARP tables via SNMP
 #
-#     Performs some validation and abstracts SNMP::Info logic
+#   Performs some validation and abstracts SNMP::Info logic
 #    
 #   Arguments:
 #       session - SNMP session (optional)
 #   Returns:
-#     Hash ref.
-#    
+#       Hash ref.
 #   Examples:
-#     $self->_get_arp_from_snmp();
-#
+#       $self->_get_arp_from_snmp();
 #
 sub _get_arp_from_snmp {
     my ($self, %argv) = @_;
@@ -4142,21 +4169,12 @@ sub _get_arp_from_snmp {
     my $host = $self->fqdn;
 
     my %cache;
-    
     my $sinfo = $argv{session} || $self->_get_snmp_session();
 
-    # Build a hash with device's interfaces, indexed by ifIndex
-    # Get all interface IPs for subnet validation
-    my %devints;
-    my %devsubnets;
+    my %devints; my %devsubnets;
     foreach my $int ( $self->interfaces ){
 	$devints{$int->number} = $int->id;
-	foreach my $ip ( $int->ips ){
-	    push @{$devsubnets{$int->id}}, $ip->parent->_netaddr 
-		if $ip->parent;
-	}
     }
-
     $logger->debug(sub{"$host: Fetching ARP cache via SNMP" });
     my ( $at_paddr, $at_netaddr, $at_index );
     $at_paddr  = $sinfo->at_paddr();
@@ -4177,7 +4195,6 @@ sub _get_arp_from_snmp {
 	    $at_index   = $sinfo->at_index();
 	}
     }
-
     foreach my $key ( @paddr_keys ){
 	my ($ip, $idx, $mac);
 	$mac = $at_paddr->{$key};
@@ -4193,60 +4210,130 @@ sub _get_arp_from_snmp {
 	    $idx = $at_index->{$key};
 	    $ip  = $at_netaddr->{$key};
 	}
-        unless ( defined($ip) ){
-	    $logger->debug(sub{"Device::_get_arp_from_snmp: $host: IP not defined in hash key: $key" });
+	unless ( $ip && $idx && $mac ){
+	    $logger->debug(sub{"Device::_get_arp_from_snmp: $host: Missing information at row: $key" });
 	    next;
 	}
-	unless ( defined($idx) ){
-	    $logger->debug(sub{"Device::_get_arp_from_snmp: $host: ifIndex not defined in hash key: $key" });
-	    next;
-	}
-	my $intid = $devints{$idx} if exists $devints{$idx};
-	unless ( $intid  ){
-	    $logger->warn("Device::get_arp_from_snmp: $host: Interface $idx not in database. Skipping");
-	    next;
-	}
-	unless ( $mac ){
-	    $logger->debug(sub{"Device::_get_arp_from_snmp: $host: MAC not defined in at_paddr->{$key}" });
-	    next;
-	}
-	my $validmac = PhysAddr->validate($mac); 
-	if ( $validmac ){
-	    $mac = $validmac;
-	}else{
-	    $logger->debug(sub{"Device::get_snmp_arp: $host: Invalid MAC: $mac" });
-	    next;
-	}	
-
-	if ( Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET') ){
-	    # Don't accept entry if ip is not within this interface's subnets
-	    my $invalid_subnet = 1;
-	    foreach my $nsub ( @{$devsubnets{$intid}} ){
-		my $nip = NetAddr::IP->new($ip) 
-		    || $self->throw_fatal(sprintf("Cannot create NetAddr::IP object from %s", $ip));
-		if ( $nip->within($nsub) ){
-		    $invalid_subnet = 0;
-		    last;
-		}else{
-		    $logger->debug(sub{sprintf("Device::get_snmp_arp: $host: IP $ip not within %s", 
-					       $nsub->cidr)});
-		}
-	    }
-	    if ( $invalid_subnet ){
-		$logger->debug(sub{"Device::get_snmp_arp: $host: IP $ip not within interface $idx subnets"});
-		next;
-	    }
-	}
-	
 	# Store in hash
-	$cache{$intid}{$ip} = $mac;
-
-	$logger->debug(sub{"Device::get_arp_from_snmp: $host: $idx -> $ip -> $mac" });
+	$cache{$idx}{$ip} = $mac;
     }
-    
-    return \%cache;
+    return $self->_validate_arp(\%cache, 4);
 }
 
+############################################################################
+#_get_v6_nd_from_snmp - Fetch IPv6 Neighbor Discovery tables via SNMP
+#
+#   Abstracts SNMP::Info logic
+#    
+#   Arguments:
+#       session - SNMP session (optional)
+#   Returns:
+#     Hash ref.
+#   Examples:
+#     $self->_get_v6_nd_from_snmp();
+#
+sub _get_v6_nd_from_snmp {
+    my ($self, %argv) = @_;
+    $self->isa_object_method('_get_v6_nd_from_snmp');
+    my $host = $self->fqdn;
+    my %cache;
+    my $sinfo = $argv{session} || $self->_get_snmp_session();
+    unless ( $sinfo->can('ipv6_n2p_mac') ){
+	$logger->debug("Device::_get_v6_nd_from_snmp: This version of SNMP::Info ".
+		       "does not support fetching Ipv6 addresses");
+	return;
+    }
+    $logger->debug(sub{"$host: Fetching IPv6 ND cache via SNMP" });
+    my $n2p_mac   = $sinfo->ipv6_n2p_mac();
+    my $n2p_addr  = $sinfo->ipv6_n2p_addr();
+    my $n2p_if    = $sinfo->ipv6_n2p_if();
+
+    unless ( %$n2p_mac && %$n2p_addr && %$n2p_if ){
+	$logger->debug(sub{"Device::_get_v6_nd_from_snmp: $host: No IPv6 ND information" });
+	return;
+    }
+    while ( my($row,$val) = each %$n2p_mac ){
+	my $idx   = $n2p_if->{$row}; 
+	my $ip    = $n2p_addr->{$row}; 
+	my $mac   = $val;
+	unless ( $idx && $ip && $mac ){
+	    $logger->debug(sub{"Device::_get_v6_nd_from_snmp: $host: Missing information in row: $row" });
+	    next;
+	}
+	$cache{$idx}{$ip} = $mac;
+    }
+    return $self->_validate_arp(\%cache, 6);
+}
+
+############################################################################
+# _validate_arp - Validate contents of ARP and v6 ND structures
+#    
+#   Arguments:
+#       hashref of hashrefs containing ifIndex, IP address and Mac
+#       IP version
+#   Returns:
+#     Hash ref.
+#   Examples:
+#     $self->_get_v6_nd_from_snmp();
+#
+#
+sub _validate_arp {
+    my ($self, $cache, $version) = @_;
+    
+    $self->throw_fatal("Device::_validate_arp: Missing required arguments")
+	unless ($cache && $version);
+
+    my $host = $self->fqdn();
+    
+    # Get all interfaces and IPs
+    my %devints; my %devsubnets;
+    foreach my $int ( $self->interfaces ){
+	$devints{$int->number} = $int->id;
+	if ( Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET') ){
+	    foreach my $ip ( $int->ips ){
+		next unless ($ip->version == $version);
+		push @{$devsubnets{$int->id}}, $ip->parent->_netaddr 
+		    if $ip->parent;
+	    }
+	}
+    }
+    my %valid;
+    foreach my $idx ( keys %$cache ){
+	my $intid = $devints{$idx} if exists $devints{$idx};
+	unless ( $intid  ){
+	    $logger->warn("Device::_validate_arp: $host: Interface $idx not in database. Skipping");
+	    next;
+	}
+	foreach my $ip ( keys %{$cache->{$idx}} ){
+	    if ( $version == 6 && Ipblock->is_link_local($ip) ){
+		next;
+	    }
+	    my $mac = $cache->{$idx}->{$ip};
+	    my $validmac = PhysAddr->validate($mac); 
+	    unless ( $validmac ){
+		$logger->debug(sub{"Device::_validate_arp: $host: Invalid MAC: $mac" });
+		next;
+	    }
+	    $mac = $validmac;
+	    if ( Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET') ){
+		foreach my $nsub ( @{$devsubnets{$intid}} ){
+		    my $nip = NetAddr::IP->new($ip) or
+			$self->throw_fatal(sprintf("Device::_validate_arp: Cannot create NetAddr::IP ".
+						   "object from %s", $ip));
+		    if ( $nip->within($nsub) ){
+			$valid{$intid}{$ip} = $mac;
+			$logger->debug(sub{"Device::_validate_arp: $host: valid: $idx -> $ip -> $mac" });
+			last;
+		    }
+		}
+	    }else{
+		$valid{$intid}{$ip} = $mac;
+		$logger->debug(sub{"Device::_validate_arp: $host: valid: $idx -> $ip -> $mac" });
+	    }
+	}
+    }
+    return \%valid;
+}
 
 ############################################################################
 #_get_fwt_from_snmp - Fetch fowarding tables via SNMP
@@ -4266,7 +4353,6 @@ sub _get_arp_from_snmp {
 #
 sub _get_fwt_from_snmp {
     my ($self, %argv) = @_;
-
     $self->isa_object_method('get_fwt_from_snmp');
     my $class = ref($self);
 
@@ -4622,10 +4708,11 @@ sub _update_macs_from_arp_cache {
 
     my %mac_updates;
     foreach my $cache ( @$caches ){
-	foreach my $idx ( keys %{$cache} ){
-	    foreach my $ip ( keys %{$cache->{$idx}} ){
-		my $mac = $cache->{$idx}{$ip};
-		$mac_updates{$mac} = 1;
+	foreach my $version ( keys %{$cache} ){
+	    foreach my $idx ( keys %{$cache->{$version}} ){
+		foreach my $mac ( values %{$cache->{$version}->{$idx}} ){
+		    $mac_updates{$mac} = 1;
+		}
 	    }
 	}
     }
@@ -4642,7 +4729,7 @@ sub _update_macs_from_arp_cache {
 #
 # Arguments:
 #   hash with following keys:
-#     caches         - Array ref with ARP Cache info
+#     caches         - Arrayref of hashrefs with ARP Cache info
 #     timestamp      - Time Stamp
 #     no_update_tree - Boolean 
 #     atomic         - Perform atomic updates
@@ -4651,24 +4738,29 @@ sub _update_ips_from_arp_cache {
     my ($caches, $timestamp, 
 	$no_update_tree, $atomic) = @argv{'caches', 'timestamp', 
 					  'no_update_tree', 'atomic'};
-
+    
     my %ip_updates;
-
+    
     my $ip_status = (IpblockStatus->search(name=>'Discovered'))[0];
     $class->throw_fatal("Model::Device::_update_ips_from_cache: IpblockStatus 'Discovered' not found?")
 	unless $ip_status;
     
+    my %build_tree;
     foreach my $cache ( @$caches ){
-	foreach my $idx ( keys %{$cache} ){
-	    foreach my $ip ( keys %{$cache->{$idx}} ){
-		my $mac = $cache->{$idx}->{$ip};
-		$ip_updates{$ip} = {
-		    prefix     => 32,
-		    version    => 4,
-		    timestamp  => $timestamp,
-		    physaddr   => $mac,
-		    status     => $ip_status,
-		};
+	foreach my $version ( keys %{$cache} ){
+	    $build_tree{$version} = 1;
+	    foreach my $idx ( keys %{$cache->{$version}} ){
+		foreach my $ip ( keys %{$cache->{$version}{$idx}} ){
+		    my $mac = $cache->{$version}->{$idx}->{$ip};
+		    my $prefix = ($version == 4)? 32 : 128;
+		    $ip_updates{$ip} = {
+			prefix     => $prefix,
+			version    => $version,
+			timestamp  => $timestamp,
+			physaddr   => $mac,
+			status     => $ip_status,
+		    };
+		}
 	    }
 	}
     }
@@ -4678,11 +4770,13 @@ sub _update_ips_from_arp_cache {
     }else{
 	Ipblock->fast_update(\%ip_updates);
     }
-
+    
     unless ( $no_update_tree ){
-	Ipblock->build_tree(4);
+	foreach my $version ( keys %build_tree ){
+	    Ipblock->build_tree($version);
+	}
     }
-
+    
     return 1;
 }
 
@@ -5340,10 +5434,9 @@ sub _snmp_translate {
 sub _octet_string_to_v6 {
     my ($self, $str) = @_;
     return unless $str;
-    my @a = map { sprintf("%02x",$_) } split('\.', $str);
-    my @g;
-    push(@g, join('', splice(@a, 0, 2))) while @a;
-    return lc(join(':', @g));
+    my $v6_packed = pack("C*", split(/\./, $str));
+    my $v6addr = join(':', map { sprintf("%04x", $_) } unpack("n*", $v6_packed) );
+    return $v6addr;
 }
 
 ################################################################

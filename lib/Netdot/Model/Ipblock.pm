@@ -485,6 +485,39 @@ sub is_loopback{
 }
 
 ##################################################################
+=head2 is_link_local - Check if address is v6 Link Local
+
+  Arguments:
+    address - IPv6 address
+    prefix  - prefix length. Optional. NetAddr::IP will assume it is a host (/128)
+
+  Returns:
+    1 or 0
+  Example:
+    my $flag = Ipblock->is_loopback('fe80::1');
+
+=cut
+sub is_link_local{
+    my ( $class, $address, $prefix ) = @_;
+    $class->isa_class_method('is_link_local');
+
+    $class->throw_fatal("Missing required arguments: address")
+	unless $address;
+
+    my $ip;
+    my $str;
+    if ( !($ip = NetAddr::IP->new6($address, $prefix))){
+	$str = ( $address && $prefix ) ? (join '/', $address, $prefix) : $address;
+	$class->throw_user("Invalid IP: $str");
+    }
+
+    if ( $ip->within(NetAddr::IP->new6("fe80::/10")) ) {
+	return 1;	
+    }
+    return 0;
+}
+
+##################################################################
 =head2 within - Check if address is within block
 
   Arguments:
