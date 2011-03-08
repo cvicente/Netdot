@@ -60,15 +60,24 @@ sub check_credentials {
 	$r->log_error("Missing username and/or password");
 	return 0;
     }
-    my $radius = Netdot::Radius::_connect($r) || return 0;
-    
+
+    my $fail_to_local = ($r->dir_config("NetdotRadiusFailToLocal") eq "yes")? 1 : 0;
+
+    my $radius;
+    unless ( $radius = Netdot::Radius::_connect($r) ){
+	if ( $fail_to_local ){
+	    $r->log_error("Netdot::Radius::check_credentials: Trying local auth");
+	    return Netdot::AuthLocal::check_credentials($r, $username, $password);
+	}else{
+	    return 0;
+	}
+    }
 
     # Get my IP address to pass as the Source IP and NAS IP Address
     my $c = $r->connection;
     my $sockaddr = $c->local_addr if defined($c);
     my $nas_ip_address = $sockaddr->ip_get if defined($sockaddr);
 
-    my $fail_to_local = ($r->dir_config("NetdotRadiusFailToLocal") eq "yes")? 1 : 0;
     
     if ( $radius->check_pwd($username, $password, $nas_ip_address) ) {
 	return 1;

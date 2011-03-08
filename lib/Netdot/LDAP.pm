@@ -103,7 +103,12 @@ sub check_credentials {
 
     my $ldap;
     unless ( $ldap = Netdot::LDAP::_connect($r) ){
-	return 0;
+	if  ( $fail_to_local ){
+	    $r->log_error("Netdot::LDAP::check_credentials: Trying local auth");
+	    return Netdot::AuthLocal::check_credentials($r, $username, $password);
+	}else{
+	    return 0;
+	}
     }
 
     my $auth = $ldap->bind($user_dn, password=>$password);
@@ -112,6 +117,8 @@ sub check_credentials {
 	if  ( $fail_to_local ){
 	    $r->log_error("Netdot::LDAP::check_credentials: Trying local auth");
 	    return Netdot::AuthLocal::check_credentials($r, $username, $password);
+	}else{
+	    return 0;
 	}
     }else{
 	return 1;
