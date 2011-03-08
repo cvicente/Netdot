@@ -177,6 +177,8 @@ BEGIN {
 	    $scope = $self->get_global();   
 	}elsif ( $table eq 'dhcpattr' ){
 	    $scope = $self->scope->get_global();
+	}elsif ( $table eq 'ipblock' ){
+	    $scope = $self->parent->dhcp_scopes->first->get_global();
 	}else{
 	    $self->throw_fatal("Netdot::Model::_host_audit: Invalid table: $table");
 	}
