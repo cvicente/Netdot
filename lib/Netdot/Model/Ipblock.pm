@@ -7,6 +7,7 @@ use Math::BigInt;
 use NetAddr::IP;
 use Net::IPTrie;
 use Storable qw(nfreeze thaw);
+use Scalar::Util qw(blessed);
 
 =head1 NAME
 
@@ -642,6 +643,26 @@ sub insert {
 	$newblock->SUPER::update({owner=>$newblock->parent->owner});
     }
     
+    # Generate a hostaudit entry if necessary to trigger
+    # a DHCP update
+    if ( $newblock->status->name eq 'Dynamic' ){
+	my %args;
+	$args{operation} = 'insert';
+	my (@fields, @values);
+	foreach my $col ( $newblock->columns ){
+	    if ( defined $newblock->$col ){ 
+		push @fields, $col;
+		if ( $newblock->$col && blessed($newblock->$col) ){
+		    push @values, $newblock->$col->get_label();
+		}else{
+		    push @values, $newblock->$col;
+		}
+	    } 
+	}
+	$args{fields} = join ',', @fields;
+	$args{values} = join ',', map { "'$_'" } @values if @values;
+	$newblock->_host_audit(%args);
+    }
     return $newblock;
 }
 
@@ -1380,7 +1401,7 @@ sub update {
     }
 
     my %state = %$argv;
-    $state{status}    = $self->_get_status_id($argv->{status});
+    $state{status} = $self->_get_status_id($argv->{status});
 
     # We might need to discard changes.
     # Class::DBI's 'discard_changes' method won't work
@@ -1424,6 +1445,18 @@ sub update {
 	    $scope->update({ipblock=>$self});
 	}
     }
+    # Generate hostaudit entry if needed
+    if ( $self->parent && $self->parent->dhcp_scopes
+	 && ($bak{status}->id != $state{status}) ){
+	my $dyn_id = IpblockStatus->search(name=>'Dynamic')->first->id;
+	if ( $dyn_id == $bak{status}->id || $dyn_id == $state{status} ){
+	    my %args;
+	    $args{operation} = 'update';
+	    $args{fields} = ('status');
+	    $args{values} = ($state{status});
+	    $self->_host_audit(%args);
+	}
+    }
 	
     if ( $recursive ){
 	my %data = %{ $argv };
@@ -1461,6 +1494,8 @@ sub delete {
     $self->isa_object_method('delete');
     my $class = ref($self);
      
+    my %bak = $self->get_state();
+
     if ( $args{recursive} ){
 	foreach my $ch ( $self->children ){
 	    if ( $ch->id == $self->id ){
@@ -1473,6 +1508,19 @@ sub delete {
     unless ( $args{no_update_tree} ){
 	$self->_tree_delete();
     }
+
+    # Generate hostaudit entry if needed
+    if ( $self->parent && $self->parent->dhcp_scopes ){
+	my $dyn_id = IpblockStatus->search(name=>'Dynamic')->first->id;
+	if ( $dyn_id == $bak{status}->id ){
+	    my %args;
+	    $args{operation} = 'delete';
+	    $args{fields} = 'all';
+	    $args{values} = $self->get_label;
+	    $self->_host_audit(%args);
+	}
+    }
+
     $self->SUPER::delete();
 
     return 1;
@@ -2186,22 +2234,21 @@ sub enable_dhcp{
 =cut
 sub get_dynamic_ranges {
     my ($self) = @_;
-
-    $self->isa_object_method('enable_dhcp');
+    $self->isa_object_method('get_dynamic_ranges');
     
     $self->throw_fatal("Ipblock::get_dynamic_ranges: Invalid call to this method on a non-subnet")
 	if ( $self->status->name ne 'Subnet' );
     
-    my $id = $self->id;
-    my $version = $self->version;
-    my $st = IpblockStatus->search(name=>'Dynamic')->first;
-    my $status_id = $st->id;
+    my $id        = $self->id;
+    my $version   = $self->version;
     my $dbh = $self->db_Main;
     my $rows = $dbh->selectall_arrayref("
-                SELECT address FROM ipblock
-                WHERE  parent = $id AND
-                       status = $status_id   
-                ORDER BY address
+                SELECT   ipblock.address 
+                 FROM    ipblock,ipblockstatus
+                WHERE    ipblock.parent=$id 
+                     AND ipblock.status=ipblockstatus.id
+                     AND ipblockstatus.name='Dynamic'
+                ORDER BY ipblock.address
 	");
     my @ips = map { $_->[0] } @$rows;
 
@@ -2225,7 +2272,6 @@ sub get_dynamic_ranges {
     }
 
     return @ranges if scalar @ranges;
-    return;
 }
 
 ################################################################
