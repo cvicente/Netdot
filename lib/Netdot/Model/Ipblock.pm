@@ -2208,6 +2208,7 @@ sub get_dynamic_ranges {
     }
 
     return @ranges if scalar @ranges;
+    return;
 }
 
 ################################################################
