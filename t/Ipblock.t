@@ -12,7 +12,6 @@ my $container = Ipblock->insert({
 });
 is($container->status->name, 'Container', 'insert container');
 
-
 my $subnet = Ipblock->insert({
     address => "169.254.60.0",
     prefix  => '24',
@@ -139,25 +138,39 @@ is($a[1], $arpa_names[1], 'get_dot_arpa_names_v4_7');
 $blk->delete();
 
 my $v6container = Ipblock->insert({
-    address => "2001:db8::",
-    prefix  => '32',
+    address => "fe80::",
+    prefix  => '10',
     version => 6,
     status  => 'Container',
 });
 
-is(($v6container->get_dot_arpa_names)[0], '8.b.d.0.1.0.0.2.ip6.arpa', 'get_dot_arpa_name_v6_32');
+is(($v6container->get_dot_arpa_names)[0], '8.e.f.ip6.arpa', 'get_dot_arpa_name_v6_10');
 
 my $v6container2 = Ipblock->insert({
-    address => "2001:db8::",
+    address => "fe80::",
     prefix  => '62',
     version => 6,
     status  => 'Container',
 });
 
-is(($v6container2->get_dot_arpa_names)[0], '0.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa', 'get_dot_arpa_name_v6_62');
-is(($v6container2->get_dot_arpa_names)[1], '1.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa', 'get_dot_arpa_name_v6_62');
-is(($v6container2->get_dot_arpa_names)[2], '2.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa', 'get_dot_arpa_name_v6_62');
-is(($v6container2->get_dot_arpa_names)[3], '3.0.0.0.0.0.0.0.8.b.d.0.1.0.0.2.ip6.arpa', 'get_dot_arpa_name_v6_62');
+is(($v6container2->get_dot_arpa_names)[0], '0.0.0.0.0.0.0.0.0.0.0.0.0.8.e.f.ip6.arpa', 'get_dot_arpa_name_v6_62');
+is(($v6container2->get_dot_arpa_names)[1], '1.0.0.0.0.0.0.0.0.0.0.0.0.8.e.f.ip6.arpa', 'get_dot_arpa_name_v6_62');
+is(($v6container2->get_dot_arpa_names)[2], '2.0.0.0.0.0.0.0.0.0.0.0.0.8.e.f.ip6.arpa', 'get_dot_arpa_name_v6_62');
+is(($v6container2->get_dot_arpa_names)[3], '3.0.0.0.0.0.0.0.0.0.0.0.0.8.e.f.ip6.arpa', 'get_dot_arpa_name_v6_62');
+
+is($v6container2->parent, $v6container, 'v6 hierarchy');
+
+# update_tree
+my $v6container3 = Ipblock->insert({
+    address => "fe80::",
+    prefix  => '32',
+    version => 6,
+    status  => 'Container',
+});
+
+is($v6container3->parent, $v6container,  'v6 hierarchy');
+is($v6container2->parent, $v6container3, 'v6 hierarchy');
+
 
 # Delete all records
 $container->delete(recursive=>1);

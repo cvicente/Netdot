@@ -2272,6 +2272,7 @@ sub get_dynamic_ranges {
     }
 
     return @ranges if scalar @ranges;
+    return;
 }
 
 ################################################################
@@ -2870,27 +2871,15 @@ sub _update_tree{
 					      prefix   => $prefix,
 					      tree     => $tree,
 		    );
-		if ( $node && $node->data == $id ){
-		    $node->delete();
-		}
-		# Insert again
-		$node =  $class->_tree_insert(address => $address, 
-					      prefix  => $prefix, 
-					      data    => $id,
-					      tree    => $tree,
-		    );
 		if ( defined $node && $node->parent 
 		     && $node->parent->data != $par ){
 		    $logger->debug("Ipblock::_update_tree: node $id has new parent");
 		    $parents{$id} = $node->parent->data;
 		}
 	    }
-	    
 	    # Now update the DB
-	    my $sth2;
-	    $sth2 = $dbh->prepare_cached("UPDATE ipblock SET parent = ? WHERE id = ?");
-	    foreach ( keys %parents ){
-		$sth2->execute($parents{$_}, $_);
+	    foreach my $id ( keys %parents ){
+		Ipblock->retrieve($id)->update({parent=>$parents{$id}});
 	    }
 	}else{
 	    # This could be a root covering other blocks, so we 
