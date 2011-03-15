@@ -650,12 +650,25 @@ foreach my $o ( values %rrs ) {
 	print '<div class="containerbody">';
 	if ( @cnames ) {
 	    my $cname = $cnames[0]; # shouldn't be more than one, right?
-	    if ( my $cnamerr = RR->search(name=>$cname->cname)->first ){
-		push @field_headers, "Canonical Name:";
-		push @cell_data, "<a href=\"host.html?id=$cnamerr\">".$cnamerr->get_label."</a>";
+	    # Deal with cname field
+	    # The trick here is that the cname is a varchar field, so it could or
+	    # could not be referencing a record which exists in Netdot.
+	    # We let the user edit the text, but when not editing, we'll try 
+	    # to find an existing RR and provide a hyperlink if found.
+	    if ( $edit ){
+		# Edit cname field
+		$ui->add_to_fields(o=>$cname, edit=>1, fields=>['cname'],
+				   field_headers=>\@field_headers, cell_data=>\@cell_data);
+		$m->comp('/generic/attribute_table.mhtml', %comphash);
+		(@field_headers, @cell_data) = ((),());
 	    }else{
-		push @field_headers, "Canonical Name:";
-		push @cell_data, $cname->cname;
+		if ( my $cnamerr = RR->search(name=>$cname->cname)->first ){
+		    push @field_headers, "Canonical Name:";
+		    push @cell_data, "<a href=\"host.html?id=$cnamerr\">".$cnamerr->get_label."</a>";
+		}else{
+		    push @field_headers, "Canonical Name:";
+		    push @cell_data, $cname->cname;
+		}
 	    }
 	    # Add TTL
 	    $ui->add_to_fields(o=>$cname, edit=>$edit, fields=>['ttl'],
