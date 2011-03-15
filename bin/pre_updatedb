@@ -1,0 +1,25 @@
+# Adds schemainfo table to 1.0 schema
+# This needs to happen before loading Netdot, otherwise
+# the version check would fail
+
+use warnings;
+use strict;
+use lib "../lib";
+use DBUTIL;
+
+my $dbh = &dbconnect();
+my @statements;
+
+@statements = (	
+"CREATE TABLE `schemainfo` (
+  `id` bigint NOT NULL auto_increment,
+  `info` blob,
+  `version` varchar(255) NOT NULL,
+  UNIQUE INDEX schemainfo1 (`version`),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB;",
+"INSERT INTO schemainfo (version) VALUES('1.0');",
+	    );
+
+&processdata(\@statements);
+&dbdisconnect();

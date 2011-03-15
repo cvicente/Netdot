@@ -22,7 +22,6 @@ Netdot::Model - Netdot implementation of the Model layer (of the MVC architectur
 my %defaults; 
 my $logger = Netdot->log->get_logger("Netdot::Model");
 
-
 BEGIN {
     my $db_type  = __PACKAGE__->config->get('DB_TYPE');
     my $database = __PACKAGE__->config->get('DB_DATABASE');
@@ -42,6 +41,14 @@ BEGIN {
 			    $defaults{user}, 
 			    $defaults{password}, 
 			    $defaults{dbi_options});
+
+    # Verify Schema version
+    my $dbh = __PACKAGE__->db_Main();
+    my ($schema_version) = $dbh->selectrow_array("SELECT version FROM schemainfo");
+    if ( $schema_version ne $Netdot::VERSION ){
+     	Netdot::Model->_croak(sprintf("Netdot DB schema version mismatch: Netdot version '%s' != Schema version '%s'", 
+				      $schema_version, $Netdot::VERSION));
+    }
 
 
 ###########################################################

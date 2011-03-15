@@ -6881,6 +6881,57 @@ $meta = {
       ]
     }
   },
+  SchemaInfo => {
+    table_db_name => 'schemainfo',
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'bigint'
+      },
+      info => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'blob'
+      },
+      version => {
+        default => '',
+        description => '',
+        length => '255',
+        nullable => 0,
+        tag => 'Version',
+        type => 'varchar'
+      }
+    },
+    description => 'Information about the database schema. This is used to verify that the application version matches the DB schema version, and also during upgrades to track which changes need to be applied',
+    has_history => 0,
+    index => [],
+    isjoin => '0',
+    label => [
+      'version'
+    ],
+    primary_key => 'id',
+    unique => [
+      [
+        'version'
+      ]
+    ],
+    views => {
+      all => [
+        'version',
+        'info'
+      ],
+      brief => [
+        'version'
+      ]
+    }
+  },
   Site => {
     table_db_name => 'site',
     columns => {

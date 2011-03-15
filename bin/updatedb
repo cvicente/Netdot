@@ -10,12 +10,9 @@ use Netdot::Meta;
 use Data::Dumper;
 
 my %CONFIG;
-$CONFIG{debug}             = 1;
-$CONFIG{keep_history}      = 1;
-$CONFIG{keep_dependencies} = 0;
+$CONFIG{debug} = 1;
 
 my $dbh = &dbconnect();
-
 my @statements;
 
 @statements = (
@@ -34,8 +31,7 @@ my @statements;
   INDEX Asset2 (`product_id`),
   INDEX Asset3 (`inventory_number`),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB;
-",
+) ENGINE=InnoDB;",
     );
 
 &processdata(\@statements);
