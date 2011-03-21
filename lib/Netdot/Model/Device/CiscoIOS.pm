@@ -227,7 +227,7 @@ sub _get_v6_nd_from_cli {
 #   Returns:
 #     Hash ref.
 #   Examples:
-#     $self->_get_v6_nd_from_snmp();
+#     $self->_validate_arp(\%cache, 4);
 #
 #
 sub _validate_arp {
