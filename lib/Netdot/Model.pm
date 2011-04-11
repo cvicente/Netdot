@@ -47,7 +47,7 @@ BEGIN {
     my ($schema_version) = $dbh->selectrow_array("SELECT version FROM schemainfo");
     if ( $schema_version ne $Netdot::VERSION ){
      	Netdot::Model->_croak(sprintf("Netdot DB schema version mismatch: Netdot version '%s' != Schema version '%s'", 
-				      $schema_version, $Netdot::VERSION));
+				      $Netdot::VERSION, $schema_version));
     }
 
 
