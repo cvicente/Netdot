@@ -2526,9 +2526,13 @@ sub info_update {
     $devtmp{product} = $self->_assign_product($info);
     
     ##############################################################
-    # Serial Number
-    if ( my $sn = $info->{serial_number} ){
-	$devtmp{asset_id} = Asset->find_or_create({serial_number=>$sn, product_id=>$devtmp{product}});
+    # Asset
+    my $sn   = $info->{serial_number};
+    my $prod = $devtmp{product};
+    if ( $sn && $prod){
+	$devtmp{asset_id} = Asset->find_or_create({serial_number=>$sn, product_id=>$prod});
+    }elsif ( $sn ){
+	$devtmp{asset_id} = Asset->find_or_create({serial_number=>$sn});	
     }else{
     	$logger->debug(sub{"$host did not return serial number" });
     }

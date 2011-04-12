@@ -149,14 +149,6 @@ sub info_update {
     $dev{physaddr} = $self->_assign_base_mac($info);
 
     ##############################################################
-    # Serial Number
-    if ( my $sn = $info->{serial_number} ){
-	$dev{asset_id} = Asset->find_or_create({serial_number=>$sn, product_id=>$dev{product}});
-    }else{
-    	$logger->debug(sub{"$host did not return serial number" });
-    }
-    
-    ##############################################################
     # Fill in some basic device info
     foreach my $field ( qw( community snmp_version layers ipforwarding sysname 
                             sysdescription syslocation os collect_arp collect_fwt ) ){
@@ -170,6 +162,18 @@ sub info_update {
 
     ##############################################################
     $dev{product} = $self->_assign_product($info);
+    
+    ##############################################################
+    # Asset
+    my $sn   = $info->{serial_number};
+    my $prod = $dev{product};
+    if ( $sn && $prod ){
+	$dev{asset_id} = Asset->find_or_create({serial_number=>$sn, product_id=>$prod});
+    }elsif ( $sn ){
+	$dev{asset_id} = Asset->find_or_create({serial_number=>$sn});
+    }else{
+	$logger->debug(sub{"$host did not return serial number" });
+    }
     
     ##############################################################
     if ( $dev{product} && $argv{device_is_new} ){
