@@ -1,0 +1,447 @@
+HP-ICF-IP-LOCKDOWN-MIB DEFINITIONS ::= BEGIN
+    
+    IMPORTS
+        OBJECT-TYPE, MODULE-IDENTITY, NOTIFICATION-TYPE, Counter32
+            FROM SNMPv2-SMI
+        MacAddress, TruthValue
+            FROM SNMPv2-TC
+        MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP
+            FROM SNMPv2-CONF
+        InetAddressType, InetAddress
+            FROM INET-ADDRESS-MIB
+        ifIndex, InterfaceIndex
+            FROM IF-MIB
+        VlanIndex
+            FROM Q-BRIDGE-MIB
+        DisplayString
+            FROM RFC1213-MIB
+        hpSwitch
+            FROM HP-ICF-OID;
+
+    hpicfIpLockdown MODULE-IDENTITY
+        LAST-UPDATED  "200803160524Z" -- March 16, 2008
+        ORGANIZATION "Hewlett-Packard Company
+                      Procurve Networking Business"
+        CONTACT-INFO "Hewlett-Packard Company
+                      8000 Foothills Blvd.
+                      Roseville, CA 95747"
+        DESCRIPTION  "This MIB module contains HP proprietary
+                     objects for managing Dynamic IP Lockdown."
+
+        REVISION     "200606082347Z" -- June 8, 2006
+        DESCRIPTION  
+                     "Initial revision."
+        REVISION     "200803160524Z" -- March 16, 2008
+        DESCRIPTION  
+                     "Added hpicfIpLockErrantNotify, it's objects
+                     and groups. Obsoleted hpicfIpLockTrapsCntl
+                     in favor of hpicfIpLockTrapsCtrl and added 
+                     a hpicfIpLockObsoleteGroup."
+        ::= { hpSwitch 39 }
+
+    -- **********************************************************
+    -- Trap Definitions
+    -- **********************************************************
+
+    hpicfIpLockTraps OBJECT IDENTIFIER ::= { hpicfIpLockdown 0 }
+
+    hpicfIpLockTrapsObjects
+                     OBJECT IDENTIFIER ::= { hpicfIpLockTraps 1 }
+
+    hpicfIpLockOutOfResourceSource OBJECT-TYPE 
+        SYNTAX       INTEGER {
+                         dhcpsnooping (1),
+                         iplockdown (2)
+                     }
+        MAX-ACCESS   accessible-for-notify
+        STATUS       current
+        DESCRIPTION  "The identifier of the reason for out of hardware
+                      resource condition"
+        ::= { hpicfIpLockTrapsObjects 1 }
+
+    hpicfIpLockOutOfResources NOTIFICATION-TYPE
+        OBJECTS     { hpicfIpLockAddrPort,  
+                      hpicfIpLockAddrMacAddress,
+                      hpicfIpLockAddrIpAddress,
+                      hpicfIpLockAddrVlan,
+                      hpicfIpLockOutOfResourceSource }
+        STATUS      current
+        DESCRIPTION "This trap indicates that unexpected running out
+                     of hardware resources to program a Dynamic IP
+                     Lockdown rule.
+		     
+		     This notification trap is controlled by the state
+                     of 'hpicfIpLockTrapCtrl' object.
+
+                     Implementation of this trap is optional."
+        ::= { hpicfIpLockTrapsObjects 2 }
+
+    hpicfIpLockErrantNotify NOTIFICATION-TYPE
+        OBJECTS   { hpicfIpLockNotifyCount,
+                    hpicfIpLockNotifyPort,	
+                    hpicfIpLockNotifySrcIpType,
+                    hpicfIpLockNotifySrcIpAddress,
+                    hpicfIpLockNotifyDstIpType,
+                    hpicfIpLockNotifyDstIpAddress,
+                    hpicfIpLockNotifyMacAddress,
+                    hpicfIpLockNotifyPktCount }
+        STATUS      current
+        DESCRIPTION "This notification indicates a host was denied 
+                    access to the switch based on Dynamic Lockdown
+                    Protection rules.
+
+                    This notification trap is controlled by the 
+                    state of the 'hpicfIpLockTrapCtrl' object.
+
+                    Implementation of this trap is optional."
+        ::= { hpicfIpLockTrapsObjects 3 }
+
+    hpicfIpLockErrantNotifyObjects
+                   OBJECT IDENTIFIER ::= { hpicfIpLockTrapsObjects 4 }
+
+    hpicfIpLockNotifyCount OBJECT-TYPE
+        SYNTAX      Counter32
+        MAX-ACCESS  accessible-for-notify
+        STATUS      current
+        DESCRIPTION "A count of 'hpicfIpLockErrantNotify' sent from 
+                    the Dynamic Ip Lockdown Protection entity to the
+                    SNMP entity since boot."
+        ::= { hpicfIpLockErrantNotifyObjects 1 }
+
+    hpicfIpLockNotifyPort OBJECT-TYPE
+        SYNTAX      InterfaceIndex
+        MAX-ACCESS  accessible-for-notify
+        STATUS      current
+        DESCRIPTION "The port for which this 'hpicfIpLockErrantNotify'
+                    applies."
+        ::= { hpicfIpLockErrantNotifyObjects 2 }
+
+    hpicfIpLockNotifySrcIpType OBJECT-TYPE
+        SYNTAX      InetAddressType -- { ipv4(1), ipv6 (2) }
+        MAX-ACCESS  accessible-for-notify
+        STATUS      current
+        DESCRIPTION "The type of IP address contained in
+                    'hpicfIpLockNotifySrcIpAddress'.
+
+                    The only values expected are ipv4 or ipv6."
+        ::= { hpicfIpLockErrantNotifyObjects 3 }
+
+    hpicfIpLockNotifySrcIpAddress OBJECT-TYPE
+        SYNTAX      InetAddress
+        MAX-ACCESS  accessible-for-notify 
+        STATUS      current
+        DESCRIPTION "The source IP addresss for which this
+                    'hpicfIpLockErrantNotify' applies."
+        ::= { hpicfIpLockErrantNotifyObjects 4 }
+
+    hpicfIpLockNotifyDstIpType OBJECT-TYPE
+        SYNTAX      InetAddressType -- { ipv4(1), ipv6 (2) }
+        MAX-ACCESS  accessible-for-notify
+        STATUS      current
+        DESCRIPTION "The type of IP address contained in 
+                    'hpicfIpLockNotifyDstIpAddress'.
+
+                    The only values expected are ipv4 or ipv6."
+        ::= { hpicfIpLockErrantNotifyObjects 5 }
+
+    hpicfIpLockNotifyDstIpAddress OBJECT-TYPE
+        SYNTAX      InetAddress
+        MAX-ACCESS  accessible-for-notify 
+        STATUS      current
+        DESCRIPTION "The destination IP addresss for which this 
+                    'hpicfIpLockErrantNotify' applies."
+        ::= { hpicfIpLockErrantNotifyObjects 6 }
+
+    hpicfIpLockNotifyMacAddress OBJECT-TYPE
+        SYNTAX      MacAddress
+        MAX-ACCESS  accessible-for-notify
+        STATUS      current
+        DESCRIPTION "The source MAC address for which this 
+                    'hpicfIpLockErrantNotify' applies."
+        ::= { hpicfIpLockErrantNotifyObjects 7 }
+
+    hpicfIpLockNotifyPktCount  OBJECT-TYPE
+        SYNTAX Counter32
+        MAX-ACCESS accessible-for-notify
+        STATUS current
+        DESCRIPTION "This object indicates the number of packets 
+		     received from this host which were dropped."
+        ::= { hpicfIpLockErrantNotifyObjects 8 }
+
+    hpicfIpLockObjects OBJECT IDENTIFIER ::= { hpicfIpLockdown 1 }
+
+    hpicfIpLockConfig OBJECT IDENTIFIER ::= { hpicfIpLockObjects 1 }
+
+    hpicfIpLockEnable OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "The administrative status of the Dynamic IP
+                    Lockdown feature."
+        ::= { hpicfIpLockConfig 1 }
+
+    hpicfIpLockPortTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF HpicfIpLockPortEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Per-interface configuration for Dynamic IP
+                    Lockdown."
+        ::= { hpicfIpLockConfig 2 }
+
+    hpicfIpLockTrapCntl OBJECT-TYPE
+        SYNTAX      BITS {
+                           outOfResource(0)
+                    }
+        MAX-ACCESS  read-write
+        STATUS      obsolete
+        DESCRIPTION "********* THIS OBJECT IS OBSOLETED **********
+
+                    This object has been obsoleted in favour of
+                    'hpicfIpLockTrapCtrl'.
+
+                     Controls generation of SNMP traps
+                     for events defined in this MIB.
+                     The set bit means 'enabled'.
+
+                      - OutOfResource(0)
+                        The state of this bit specifies whether the
+                        notification trap is allowed to be send when
+                        one runs out of resources programming a dynamic
+                        IP Lockdown rule.."
+        ::= { hpicfIpLockConfig 3 }
+
+    hpicfIpLockTrapCtrl OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "Controls generation of SNMP notifications for 
+                    traps defined in this MIB."
+        DEFVAL      { true }
+        ::= { hpicfIpLockConfig 4 }
+
+    hpicfIpLockPortEntry OBJECT-TYPE
+        SYNTAX      HpicfIpLockPortEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Dynamic IP Lockdown configuration information 
+                    for a single port."
+        INDEX       { ifIndex }
+        ::= { hpicfIpLockPortTable 1 }
+
+    HpicfIpLockPortEntry ::=
+        SEQUENCE {
+            hpicfIpLockPortEnable            INTEGER
+        }
+
+    hpicfIpLockPortEnable OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "This object indicates whether this port is
+                    enabled for Dynamic IP Lockdown."
+        ::= { hpicfIpLockPortEntry 1 }
+
+    hpicfIpLockStatus OBJECT IDENTIFIER ::= { hpicfIpLockObjects 2 }
+
+    hpicfIpLockPortStatusTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF HpicfIpLockPortStatusEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Per-interface status for Dynamic IP
+                    Lockdown."
+        ::= { hpicfIpLockStatus 1 }
+
+    hpicfIpLockPortStatusEntry OBJECT-TYPE
+        SYNTAX      HpicfIpLockPortStatusEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Dynamic IP Lockdown status information for
+                    a single port."
+        INDEX       { ifIndex }
+        ::= { hpicfIpLockPortStatusTable 1 }
+
+    HpicfIpLockPortStatusEntry ::=
+        SEQUENCE {
+            hpicfIpLockPortOperStatus        BITS
+       }
+
+    hpicfIpLockPortOperStatus OBJECT-TYPE
+        SYNTAX      BITS {
+                        active(0),
+                        noDsnoop(1),
+                        trustedPort(2),
+                        noSnoopingVlan(3)
+                    }
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "This object indicates the various states of the
+                    current operating mode of Dynamic IP Lockdown on 
+                    this port. When no bits are set, the status of
+                    this feature shall be 'disabled'. Each status is 
+                    described below:
+                       active         - Dynamic IP Lockdown is active 
+                                        on this port.
+                       noDsnoop       - Dynamic IP Lockdown is enabled 
+                                        on this port, but DHCP Snooping 
+                                        is not globally enabled.
+                       trustedPort    - Dynamic IP Lockdown is enabled 
+                                        on this port, but is not active 
+                                        because the port is a DHCP 
+                                        Snooping trusted port.
+                       noSnoopingVlan - Dynamic IP Lockdown is enabled 
+                                        on this port, but is not active
+                                        because the port is not a 
+                                        member of any VLAN with DHCP
+                                        Snooping enabled."
+       ::= { hpicfIpLockPortStatusEntry 1 }
+
+    hpicfIpLockAddrTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF HpicfIpLockAddrEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Table of source address bindings on ports
+                    where Dynamic IP Lockdown is active that
+                    are currently permitted."
+        ::= { hpicfIpLockStatus 2 }
+
+    hpicfIpLockAddrEntry OBJECT-TYPE
+        SYNTAX      HpicfIpLockAddrEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "An entry in the table containing a single
+                    permitted source address binding."
+        INDEX       { hpicfIpLockAddrPort,
+                      hpicfIpLockAddrType,
+                      hpicfIpLockAddrIpAddress
+                    }
+        ::= { hpicfIpLockAddrTable 1 }
+
+    HpicfIpLockAddrEntry ::=
+        SEQUENCE {
+            hpicfIpLockAddrPort              InterfaceIndex,
+            hpicfIpLockAddrType              InetAddressType,
+            hpicfIpLockAddrIpAddress         InetAddress,
+            hpicfIpLockAddrVlan              VlanIndex,
+            hpicfIpLockAddrMacAddress        MacAddress,
+            hpicfIpLockResourceAvailable     TruthValue
+        }
+
+    hpicfIpLockAddrPort OBJECT-TYPE
+        SYNTAX      InterfaceIndex
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "The port that this address binding is
+                    permitted on."
+        ::= { hpicfIpLockAddrEntry 1 }
+
+    hpicfIpLockAddrType OBJECT-TYPE
+        SYNTAX      InetAddressType -- { ipv4(1), ipv6 (2) }
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "The type of IP address contained in
+                    hpicfIpLockAddrIpAddress.  The only
+                    values expected are ipv4 or ipv6."
+        ::= { hpicfIpLockAddrEntry 2 }
+
+    hpicfIpLockAddrIpAddress OBJECT-TYPE
+        SYNTAX      InetAddress
+        MAX-ACCESS  read-only 
+        STATUS      current
+        DESCRIPTION "A source IP address permitted on this
+                    port.  The type of address contained in
+                    this object is indicated by
+                    hpicfIpLockAddrType."
+        ::= { hpicfIpLockAddrEntry 3 }
+
+    hpicfIpLockAddrVlan OBJECT-TYPE
+        SYNTAX      VlanIndex
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "The VLAN ID on which this source address
+                    is permitted on this port."
+        ::= { hpicfIpLockAddrEntry 4 }
+
+    hpicfIpLockAddrMacAddress OBJECT-TYPE
+        SYNTAX      MacAddress
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "The source MAC address that is permitted
+                    for this source IP address on this port."
+        ::= { hpicfIpLockAddrEntry 5 }
+
+    hpicfIpLockResourceAvailable OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION "TRUE indicates that resources were available
+                     to add binding. FALSE indicates that resources
+                     were not available"
+        ::= { hpicfIpLockAddrEntry 6 }
+
+    hpicfIpLockConformance OBJECT IDENTIFIER ::=
+        { hpicfIpLockdown 2 }
+
+    hpicfIpLockGroups OBJECT IDENTIFIER ::=
+        { hpicfIpLockConformance 1 }
+
+    hpicfIpLockBaseGroup OBJECT-GROUP
+        OBJECTS     { hpicfIpLockEnable,
+                      hpicfIpLockPortEnable,
+                      hpicfIpLockPortOperStatus,
+                      hpicfIpLockAddrPort,
+                      hpicfIpLockAddrType,
+                      hpicfIpLockAddrIpAddress,
+                      hpicfIpLockAddrVlan,
+                      hpicfIpLockAddrMacAddress,
+                      hpicfIpLockResourceAvailable
+                    }
+        STATUS      current
+        DESCRIPTION "A collection of objects for configuring and
+                    monitoring the base Dynamic IP Lockdown
+                    functionality."
+        ::= { hpicfIpLockGroups 1 }
+
+    hpicfIpLockTrapsGroup NOTIFICATION-GROUP
+        NOTIFICATIONS { hpicfIpLockOutOfResources, hpicfIpLockErrantNotify }
+        STATUS      current
+        DESCRIPTION "A collection of trap objects for Dynamic 
+                    IP Lockdown."  
+        ::= { hpicfIpLockGroups 2 }
+
+    hpicfIpLockTrapObjectsGroup OBJECT-GROUP
+        OBJECTS     { hpicfIpLockOutOfResourceSource,
+                      hpicfIpLockNotifyCount,
+                      hpicfIpLockNotifyPort,
+                      hpicfIpLockNotifySrcIpType,
+                      hpicfIpLockNotifySrcIpAddress,
+                      hpicfIpLockNotifyDstIpType,
+                      hpicfIpLockNotifyDstIpAddress,
+                      hpicfIpLockNotifyMacAddress,
+                      hpicfIpLockNotifyPktCount,
+                      hpicfIpLockTrapCtrl
+                    }
+        STATUS      current
+        DESCRIPTION "A collection of objects for receiving notification 
+                    information in regards to the Dynamic IP Lockdown 
+                    functionality."
+        ::= { hpicfIpLockGroups 3 }
+
+    hpicfIpLockObsoleteGroup    OBJECT-GROUP
+        OBJECTS     { hpicfIpLockTrapCntl
+                    }
+        STATUS      obsolete
+        DESCRIPTION "These objects are obsolete and are no longer used." 
+        ::= { hpicfIpLockGroups 4 }
+
+    hpicfIpLockCompliances OBJECT IDENTIFIER ::=
+        { hpicfIpLockConformance 2 }
+
+    hpicfIpLockCompliance MODULE-COMPLIANCE
+        STATUS      current
+        DESCRIPTION "The compliance statement for HP ProCurve
+                    switches that support Dynamic IP Lockdown."
+        MODULE
+            MANDATORY-GROUPS { hpicfIpLockBaseGroup }
+        ::= { hpicfIpLockCompliances 1 }
+
+ END

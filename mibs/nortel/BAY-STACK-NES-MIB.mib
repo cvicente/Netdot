@@ -1,0 +1,298 @@
+
+BAY-STACK-NES-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    OBJECT-TYPE, MODULE-IDENTITY, Integer32, Unsigned32
+        FROM SNMPv2-SMI
+    RowStatus, TruthValue
+        FROM SNMPv2-TC
+    InterfaceIndex
+        FROM IF-MIB
+    bayStackMibs
+        FROM SYNOPTICS-ROOT-MIB;
+
+bayStackNesMib MODULE-IDENTITY
+    LAST-UPDATED    "200905190000Z"
+    ORGANIZATION    "Nortel Networks"
+    CONTACT-INFO    "Nortel Networks"
+    DESCRIPTION
+        "Nortel Energy Saver (NES) MIB
+
+         Copyright 2009 Nortel Networks, Inc.
+         All rights reserved.
+         This Nortel Networks SNMP Management Information Base
+         Specification embodies Nortel Networks' confidential and
+         proprietary intellectual property. Nortel Networks retains
+         all title and ownership in the Specification, including any
+         revisions.
+
+         This Specification is supplied 'AS IS,' and Nortel Networks
+         makes no warranty, either express or implied, as to the use,
+         operation, condition, or performance of the Specification."
+
+    REVISION "200905190000Z" -- 19 May 2009
+    DESCRIPTION "v1:  Initial version."
+
+    ::= { bayStackMibs 34 }
+
+bayStackNesNotifications       OBJECT IDENTIFIER ::= { bayStackNesMib 0 }
+bayStackNesObjects             OBJECT IDENTIFIER ::= { bayStackNesMib 1 }
+bayStackNesNotificationObjects OBJECT IDENTIFIER ::= { bayStackNesMib 2 }
+
+-- -------------------------------------------------------------
+-- Textual Conventions
+-- -------------------------------------------------------------
+
+-- -------------------------------------------------------------
+-- Scalar Objects
+-- -------------------------------------------------------------
+
+bsnesScalars OBJECT IDENTIFIER ::= { bayStackNesObjects 1 }
+
+bsnesEnergySaverEnabled OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object controls whether the Nortel Energy Saver feature
+         is enabled."
+    ::= { bsnesScalars 1 }
+
+bsnesPoePowerSavingEnabled OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object controls whether Nortel Energy Saver POE power saving
+         is enabled."
+    ::= { bsnesScalars 2 }
+
+bsnesEfficiencyModeEnabled OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object controls whether Nortel Energy Saver Efficiency-Mode
+         is enabled."
+    ::= { bsnesScalars 3 }
+
+bsnesEnergySaverActive OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object controls whether Nortel Energy Saver is currently active.
+         A value of true(1) indicates energy saving is active.  A value of
+         false(2) indicates energy saving is currently inactive.  The value
+         of this object will change over time as specified by the energy
+         saving schedule.  Setting this object allows energy saving to be
+         manually activated or deactivated."
+    ::= { bsnesScalars 4 }
+
+-- -------------------------------------------------------------
+-- bsnesScheduleTable
+-- -------------------------------------------------------------
+
+bsnesScheduleTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF BsnesScheduleEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "This table contains the schedule for activation and deactivation
+         of the Nortel Energy Saver feature."
+    ::= { bayStackNesObjects 2 }
+
+bsnesScheduleEntry OBJECT-TYPE
+    SYNTAX BsnesScheduleEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "An energy saver schedule entry, indicates a time to activate or
+         deactivate energy savings."
+    INDEX { bsnesScheduleDay, bsnesScheduleHour, bsnesScheduleMinute }
+    ::= { bsnesScheduleTable 1 }
+
+BsnesScheduleEntry ::=
+    SEQUENCE {
+        bsnesScheduleDay       INTEGER,
+        bsnesScheduleHour      Integer32,
+        bsnesScheduleMinute    Integer32,
+        bsnesScheduleAction    INTEGER,
+        bsnesScheduleRowStatus RowStatus
+    }
+
+bsnesScheduleDay OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    monday(1),
+                    tuesday(2),
+                    wednesday(3),
+                    thursday(4),
+                    friday(5),
+                    saturday(6),
+                    sunday(7)
+                }
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Day on which this schedule entry takes effect."
+    ::= { bsnesScheduleEntry 1 }
+
+bsnesScheduleHour OBJECT-TYPE
+    SYNTAX      Integer32 (0..23)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Hour on which this schedule entry takes effect.  A value of 0 means
+         12am midnight.  A value of 12 means 12pm noon."
+    ::= { bsnesScheduleEntry 2 }
+
+bsnesScheduleMinute OBJECT-TYPE
+    SYNTAX      Integer32 (0..59)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "Minute on which this schedule entry takes effect."
+    ::= { bsnesScheduleEntry 3 }
+ 
+bsnesScheduleAction OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    activate(1),
+                    deactivate(2)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "The action taken when this schedule entry takes effect.  Indicates
+         whether energy savings will be activated or deactivated."
+    ::= { bsnesScheduleEntry 4 }
+
+bsnesScheduleRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "Used to create/delete schedule entries."
+    ::= { bsnesScheduleEntry 5 }
+
+-- -------------------------------------------------------------
+-- bsnesInterfaceTable
+-- -------------------------------------------------------------
+
+bsnesInterfaceTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF BsnesInterfaceEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "This table contains per-port NES settings."
+    ::= { bayStackNesObjects 3 }
+
+bsnesInterfaceEntry OBJECT-TYPE
+    SYNTAX BsnesInterfaceEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "NES settings for a port."
+    INDEX { bsnesInterfaceIndex }
+    ::= { bsnesInterfaceTable 1 }
+
+BsnesInterfaceEntry ::=
+    SEQUENCE {
+        bsnesInterfaceIndex                InterfaceIndex,
+        bsnesInterfaceEnergySaverEnabled   TruthValue,
+        bsnesInterfaceEnergySaverPoeStatus INTEGER
+    }
+
+bsnesInterfaceIndex OBJECT-TYPE
+    SYNTAX      InterfaceIndex
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The ifIndex value of an interface."
+    ::= { bsnesInterfaceEntry 1 }
+
+bsnesInterfaceEnergySaverEnabled OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "Indicates whether the Nortel Energy Saver feature is enabled for
+         this interface."
+    ::= { bsnesInterfaceEntry 2 }
+
+bsnesInterfaceEnergySaverPoeStatus OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    enabled(1),
+                    disabled(2),
+                    notApplicable(3)
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the Nortel Energy Saver PoE status for this interface."
+    ::= { bsnesInterfaceEntry 3 }
+
+-- -------------------------------------------------------------
+-- bsnesSavingsTable
+-- -------------------------------------------------------------
+
+bsnesSavingsTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF BsnesSavingsEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "This table contains per-unit information about the amount of power
+         being saved by NES."
+    ::= { bayStackNesObjects 4 }
+
+bsnesSavingsEntry OBJECT-TYPE
+    SYNTAX BsnesSavingsEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Information about the amount of power being saved for a unit."
+    INDEX { bsnesSavingsUnitIndex }
+    ::= { bsnesSavingsTable 1 }
+
+BsnesSavingsEntry ::=
+    SEQUENCE {
+        bsnesSavingsUnitIndex   Unsigned32,
+        bsnesSavingsUnitSavings Unsigned32,
+        bsnesSavingsPoeSavings  Unsigned32
+    }
+
+bsnesSavingsUnitIndex OBJECT-TYPE
+    SYNTAX      Unsigned32 (1..8)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The unit number."
+    ::= { bsnesSavingsEntry 1 }
+
+bsnesSavingsUnitSavings OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the amount of switch capacity power being saved on this
+         unit.  The value of this object is 1/10 watts."
+    ::= { bsnesSavingsEntry 2 }
+
+bsnesSavingsPoeSavings OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "Indicates the amount of PoE power being saved on this unit.  The
+         value of this object is 1/10 watts."
+    ::= { bsnesSavingsEntry 3 }
+
+-- -------------------------------------------------------------
+-- Notification Objects
+-- -------------------------------------------------------------
+
+-- -------------------------------------------------------------
+-- Notifications
+-- -------------------------------------------------------------
+
+END
+

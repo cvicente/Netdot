@@ -1,0 +1,188 @@
+
+
+CHASSIS-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+        MODULE-IDENTITY,OBJECT-TYPE         
+			FROM SNMPv2-SMI
+        DisplayString
+                  FROM SNMPv2-TC
+       NOTIFICATION-GROUP
+                  FROM SNMPv2-CONF 
+        ntEnterpriseDataTasmanMgmt   
+                  FROM NT-ENTERPRISE-DATA-MIB
+	Integer32	FROM SNMPv2-SMI;
+
+nnchassisMib MODULE-IDENTITY 
+        LAST-UPDATED "0001270000Z"
+        ORGANIZATION ""
+        CONTACT-INFO
+		" "
+        DESCRIPTION
+        	"Listing and brief description of product model numbers."
+        REVISION  "0001270000Z"
+        DESCRIPTION
+        	"Initial version of this MIB module."
+        ::= { ntEnterpriseDataTasmanMgmt 2 }
+
+
+
+nnchassisModel OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (0..32)) 
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "The chassis model of the system."
+        ::= { nnchassisMib 1 }
+
+nnchassisOperStatus OBJECT-TYPE
+        SYNTAX         INTEGER {
+                            normal(1),
+                            operdown(2),
+                            admindown(3),
+                            hotswap(4),
+                            boot(5),
+                            other(6)
+                        } 
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "The operational status of the chassis."
+        ::= { nnchassisMib 2 }
+nnchassisSerialNumber OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (0..30))
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "The serial number of the chassis."
+        ::= { nnchassisMib 3 }
+
+nnchassisRev OBJECT-TYPE
+        SYNTAX          DisplayString 
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "The Revision of the chassis."
+        ::= { nnchassisMib 4 }
+nnchassisInfoTable  OBJECT-TYPE
+        SYNTAX          SEQUENCE OF NNChassisInfoEntry
+        MAX-ACCESS      not-accessible  
+        STATUS          current
+        DESCRIPTION     " Table displaying chassis information such as 
+                          slot/subslot information, cardtype/status,  
+                          FPGA and CPLD revisions." 
+        ::= { nnchassisMib 5 }
+nnchassisInfoEntry OBJECT-TYPE
+        SYNTAX          NNChassisInfoEntry 
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION     " Each chassis entry reresents the slot/subslot , 
+                          the card in the slot and related information."
+        INDEX           { nnchassisInfoSlotSubSlotIndex}
+        ::= { nnchassisInfoTable 1 }
+NNChassisInfoEntry ::=
+        SEQUENCE {
+                    nnchassisInfoSlotSubSlotIndex   Integer32,  
+                    nnchassisInfoSlotSubSlotString  DisplayString,     
+                    nnchassisInfoCardType           DisplayString,
+                    nnchassisInfoCardStatus         INTEGER, 
+                    nnchassisInfoModelNumber        DisplayString,
+                    nnchassisInfoSerialNumber       DisplayString,
+                    nnchassisInfoFPGARev            DisplayString, 
+                    nnchassisInfoFPGAEngRev         DisplayString,
+                    nnchassisInfoCPLDRev            DisplayString, 
+                    nnchassisInfoCPLDEngRev         DisplayString 
+         }
+nnchassisInfoSlotSubSlotIndex OBJECT-TYPE
+        SYNTAX          Integer32 
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "The slot/subslot index uniquely identifies 
+                         the entry in the table."
+        ::= { nnchassisInfoEntry 1 }
+nnchassisInfoSlotSubSlotString OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (0..30))
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "String representation for the slot/subslot."
+        ::= { nnchassisInfoEntry 2 }
+nnchassisInfoCardType OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (0..30))
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "The card Type in the slot/subslot."
+        ::= { nnchassisInfoEntry 3 }
+nnchassisInfoCardStatus OBJECT-TYPE
+        SYNTAX          INTEGER {
+                            empty(1),
+                            operdown(2),
+                            admindown(3),
+                            hotswap(4),
+                            normal(5),
+                            unknown(6),
+                            other(7)
+                        } 
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "The card status  reveals the admin and Oper 
+                         status of the card in the slot/subslot."
+        ::= { nnchassisInfoEntry 4 }
+nnchassisInfoModelNumber  OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (0..30))
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "The model number of the card."
+        ::= { nnchassisInfoEntry 5 }
+nnchassisInfoSerialNumber OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (0..30))
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "The serial number of the card."
+        ::= { nnchassisInfoEntry 6 }
+nnchassisInfoFPGARev OBJECT-TYPE
+        SYNTAX          DisplayString 
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "The FPGA revision of the card"
+        ::= { nnchassisInfoEntry 7 }
+nnchassisInfoFPGAEngRev OBJECT-TYPE
+        SYNTAX          DisplayString 
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "The FPGA eng revision of the card"
+        ::= { nnchassisInfoEntry 8 }
+nnchassisInfoCPLDRev OBJECT-TYPE
+        SYNTAX          DisplayString 
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "The CPLD revision of the card"
+        ::= { nnchassisInfoEntry 9 }
+nnchassisInfoCPLDEngRev OBJECT-TYPE
+        SYNTAX          DisplayString 
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "The CPLD eng revision of the card"
+        ::= { nnchassisInfoEntry 10 }
+
+
+
+nnSFPTraps OBJECT IDENTIFIER ::= { nnchassisMib 6 }
+nnSFPNotifications  OBJECT IDENTIFIER ::= { nnSFPTraps 0 }
+nnSFPTrapVariables  OBJECT IDENTIFIER ::= { nnSFPTraps 1 }
+
+
+nnSFPStatusStr       OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (1..8))
+        MAX-ACCESS      accessible-for-notify
+        STATUS          current
+        DESCRIPTION     "Status of SFP." 
+         ::= { nnSFPTrapVariables  1 }
+
+nnSFPUpTrap	NOTIFICATION-TYPE
+      OBJECTS	{ nnSFPStatusStr } 
+	STATUS	current
+      DESCRIPTION	"Trap being generated when a SFP connection is up."
+      ::= { nnSFPNotifications  1 }
+
+nnSFPDownTrap	NOTIFICATION-TYPE
+      OBJECTS	{ nnSFPStatusStr } 
+	STATUS	current
+      DESCRIPTION	"Trap being generated when a SFP connection is down."
+      ::= { nnSFPNotifications  2 }
+END

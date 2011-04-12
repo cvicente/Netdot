@@ -1,0 +1,2144 @@
+
+DSX-TE3-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY,OBJECT-TYPE, 
+    NOTIFICATION-TYPE,Integer32,Unsigned32
+        FROM SNMPv2-SMI
+    LEDState,nndsxT3E3IfGroup
+        FROM DSX-TC-MIB
+    DisplayString,TruthValue
+        FROM SNMPv2-TC
+    NOTIFICATION-GROUP 
+        FROM SNMPv2-CONF
+    ntEnterpriseDataTasmanInterfaces 
+	  FROM NT-ENTERPRISE-DATA-MIB;
+     
+nndsxT3E3MIB MODULE-IDENTITY
+    LAST-UPDATED "0008180000Z"
+    ORGANIZATION "Nortel Networks"
+    CONTACT-INFO
+        	" Nortel Networks
+        	8200 Dixie Road
+        	Brampton, Ontario L6T 5P6
+        	Canada        
+        	1-800-4Nortel 
+        	www.nortelnetworks.com "
+    DESCRIPTION
+            "Interface MIB definitions for T3/E3 interface modules."
+    REVISION "0008180000Z"
+    DESCRIPTION
+            "Initial revision."
+    ::= { nndsxT3E3IfGroup 1 }
+    
+-- TE3 interface group. 
+nndsxT3E3Traps  OBJECT IDENTIFIER ::= { nndsxT3E3IfGroup 2}
+
+nndsxT3E3TrapVariables OBJECT IDENTIFIER  ::= { nndsxT3E3Traps 1}
+nndsxT3E3Notifications OBJECT IDENTIFIER ::= {nndsxT3E3Traps 0}
+-- TE3 Interface sub-group definitions.
+ 
+nndsxT3E3IfConfigGroup     OBJECT IDENTIFIER ::= { nndsxT3E3MIB 1 }
+nndsxT3E3IfStatusGroup     OBJECT IDENTIFIER ::= { nndsxT3E3MIB 2 }
+nndsxT3E3IfStatsGroup      OBJECT IDENTIFIER ::= { nndsxT3E3MIB 3 }
+
+-- DSX TE3 interface configuration group definitions.
+
+-- DSX TE3 interface line configuration table.
+
+nndsxT3E3IfConfigLineTable OBJECT-TYPE
+    SYNTAX      		 SEQUENCE OF NnDsxT3E3IfConfigLineEntry
+    MAX-ACCESS  		 not-accessible
+    STATUS      		 current
+    DESCRIPTION
+     	"A list of T3/E3 interfaces currently configured."
+    ::= { nndsxT3E3IfConfigGroup 1 }
+
+nndsxT3E3IfConfigLineEntry OBJECT-TYPE
+    SYNTAX      		 NnDsxT3E3IfConfigLineEntry
+    MAX-ACCESS  		 not-accessible
+    STATUS      		 current
+    DESCRIPTION
+     	"An entry containing configuration information for each 
+	currently active T3/E3 interface."
+    INDEX   		 { nndsxT3E3IfIndex }
+    ::= { nndsxT3E3IfConfigLineTable 1 }
+
+NnDsxT3E3IfConfigLineEntry ::=
+    SEQUENCE {
+      nndsxT3E3IfIndex                        Integer32,
+      nndsxT3E3IfConfigLineType               INTEGER,
+      nndsxT3E3IfConfigLineCode               INTEGER,
+      nndsxT3E3IfConfigCableLength            INTEGER,
+      nndsxT3E3IfConfigTransmitClock          INTEGER
+ --   nndsxT3E3IfConfigDS3ScramblingMode      INTEGER,
+ --   nndsxT3E3IfConfigDS3ScramblingEnable    TruthValue,
+ --   nndsxT3E3IfConfigDS3DsuBandwidth        INTEGER,
+ --   nndsxT3E3IfConfigDS3ActualBandwidth     INTEGER,
+ --   nndsxT3E3IfConfigDS3Timeslots           INTEGER
+    }
+nndsxT3E3IfIndex 	OBJECT-TYPE
+    SYNTAX      	Integer32
+    MAX-ACCESS  	accessible-for-notify
+    STATUS      	current
+    DESCRIPTION
+    	"An integer value that is an index to the entries of
+      ifTable (MIB-II) whose interface type is ds3." 
+    ::= { nndsxT3E3IfConfigLineEntry 1 }
+    
+nndsxT3E3IfConfigLineType OBJECT-TYPE
+    SYNTAX      	INTEGER 
+                	{
+                    linetype-m13        (2),
+                    linetype-cbitparity (4)
+                	}
+    MAX-ACCESS  	read-write
+    STATUS      	current
+    DESCRIPTION
+    	"This variable indicates the variety of T3/E3 
+	C-bit or E3 application implementing this 
+	interface. The type of interface affects the 
+	interpretation of the usage and error 
+	statistics. The rate of T3/E3 is 44.736 Mbps
+      and E3 is 34.368 Mbps. 
+               
+	The values, in sequence, describe:
+		linetype-m13            ANSI T1.107-1988
+      linetype-cbitparity     ANSI T1.107a-1990"
+
+   
+    ::= { nndsxT3E3IfConfigLineEntry 2 }
+    
+nndsxT3E3IfConfigLineCode OBJECT-TYPE
+    SYNTAX      	INTEGER 
+                	{
+                    linecode-b3zs (2),
+                    linecode-hdb3 (3)
+                	}
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+      "This variable describes the variety of zero 
+	code suppression used on this interface, which 
+	in turn affects a number of its characteristics.
+
+      linecode-B3ZS and linecode-HDB3 refer to the use 
+	of specified patterns of normal bits and bipolar 
+	violations that are used to replace sequences 
+	of zero bits of a specified length."
+    ::= { nndsxT3E3IfConfigLineEntry 3 }
+
+nndsxT3E3IfConfigCableLength 	OBJECT-TYPE
+    SYNTAX      	INTEGER 
+                	{
+                    cable-length-0-to-225  (1),
+                    cable-length-226-to-450(2)
+                	}
+    MAX-ACCESS  	read-write
+    STATUS      	current
+    DESCRIPTION
+	"The length of the T3/E3 line in feet. This
+      object provides information for line build out
+      circuitry if it exists and can use this object to
+      adjust the line build out."
+    ::= { nndsxT3E3IfConfigLineEntry 4 }
+    
+nndsxT3E3IfConfigTransmitClock 	OBJECT-TYPE
+    SYNTAX      	INTEGER
+                	{
+                    timing-line     (1),
+                    timing-internal (2)
+                	}
+    MAX-ACCESS  	read-write
+    STATUS      	current
+    DESCRIPTION
+     	"The source of transmit clock. It is derived  
+	from the recovered receive clock of another 
+      T3/E3 interface."
+    ::= { nndsxT3E3IfConfigLineEntry 5 } 
+
+--nndsxT3E3IfConfigDS3ScramblingMode OBJECT-TYPE
+--    SYNTAX      INTEGER
+--                {
+--                  mode-0  (1),
+--                  mode-1  (2),
+--                  mode-2  (3),
+--                  mode-3  (4),
+--                  mode-4  (5),
+--                  mode-5  (6)
+--                }
+--    MAX-ACCESS  read-write
+--    STATUS      current
+--    DESCRIPTION
+--     	"Scrambling mode."
+--    ::= { nndsxT3E3IfConfigLineEntry 6 } 
+
+--nndsxT3E3IfConfigDS3ScramblingEnable 	OBJECT-TYPE
+--    SYNTAX      	TruthValue
+--    MAX-ACCESS  	read-write
+--    STATUS      	current
+--    DESCRIPTION
+--     	"To enable or disable scrambling. This is applicable
+--	only to clear channel TE3."
+--    ::= { nndsxT3E3IfConfigLineEntry 7 } 
+
+--nndsxT3E3IfConfigDS3DsuBandwidth OBJECT-TYPE
+--    SYNTAX      INTEGER (1..44210)
+--    MAX-ACCESS  read-write
+--    STATUS      current
+--    DESCRIPTION
+--     	"Dsu Bandwidth in Kbps as configured by the user. Used for configuring subrate on an
+--	 unchannlized DS3 interface. Instead of using this MIB object, subrate can be configured
+--	 using the MIB object dsxT3E3IfConfigDS3Timeslots also."
+--    ::= { nndsxT3E3IfConfigLineEntry 8 } 
+
+--nndsxT3E3IfConfigDS3ActualBandwidth OBJECT-TYPE
+--    SYNTAX      INTEGER (1..44210)
+--    MAX-ACCESS  read-only
+--    STATUS      current
+--    DESCRIPTION
+--     	"Dsu Bandwidth configured by the user using the MIB object dsxT3E3IfConfigDS3DsuBandwidth
+--	 may call for internal rounding off based on the dsxT3E3IfConfigDS3ScramblingMode used.
+--         This may be needed, because, each of the modes, allows bandwidth to be configured
+-- 	 in unique steps. If the user configured Dsu bandwidth falls btw two steps, as allowed 
+--	 by the given vendor type, the bandwidth will be stepped up to match the nearest higher
+--	 value. The rounded off value is reflected as actual bandwidth in this MIB object. The
+--	 DS3 interface actually operates in this bandwidth."
+--    ::= { nndsxT3E3IfConfigLineEntry 9 } 
+
+--nndsxT3E3IfConfigDS3Timeslots OBJECT-TYPE
+--    SYNTAX      INTEGER (1..588)
+--    MAX-ACCESS  read-write
+--    STATUS      current
+--    DESCRIPTION
+--     	"Used to configure subrate on an unchannelized DS3 interface using timeslots. This can
+--	 be used instead of configuring subrate in terms of bandwidth using the MIB object 
+--	 dsxT3E3IfConfigDS3DsuBandwidth. This option could be more useful if the DS3 interface
+--	 of a product is connected to an external CSU/DSU. The external CSU/DSU made by
+--	 vendors Digital Link, Larscom, Adtran and Verilink allow subrate to be configured 
+--	 only in terms of timeslots rather than bandwidth. In this case, the product
+--	 could be configured using the timeslots.
+--
+--	 The permissible range of timeslots varies for each mode in the MIB object 
+--	 dsxT3E3IfConfigDS3ScramblingMode.
+--
+--	 mode-0 (Digital Link)  1-147
+--	 mode-1 (Kentrox)       Not Applicable
+--	 mode-2 (Larscom)       1-14
+--	 mode-3 (Adtran)        1-588
+--	 mode-4 (Verilink)      1-28
+--	 mode-5 (Tiara)	      Not Applicable
+--
+--	 Note that in modes 1 and 5, timeslots configuration is not supported."
+--    ::= { nndsxT3E3IfConfigLineEntry 10 } 
+
+-- DSX TE3 interface MDL configuration table.
+
+-- This table is applicable only for those interfaces whose
+-- LineType is cbitparity.
+
+
+-- DSX TE3 interface alarm configuration table.
+
+nndsxT3E3IfAlarmConfigGroup OBJECT IDENTIFIER ::= {nndsxT3E3IfConfigGroup 3 }
+
+-- DSX TE3 alarm threshold congiguration table.
+-- In order to configure a alarm threshold, all the columns 
+-- are mandatory and failure to proide all the columns will
+-- result in badValue error.
+
+
+nndsxT3E3IfAlarmThresholdConfigTable 	OBJECT-TYPE
+    SYNTAX      		SEQUENCE OF NnDsxT3E3IfAlarmThresholdConfigEntry
+    MAX-ACCESS  		not-accessible
+    STATUS      		current
+    DESCRIPTION
+     	"A list of TE3 interface alarm threshold configuration."
+    ::= { nndsxT3E3IfAlarmConfigGroup 1 }
+
+nndsxT3E3IfAlarmThresholdConfigEntry 	OBJECT-TYPE
+    SYNTAX      		NnDsxT3E3IfAlarmThresholdConfigEntry
+    MAX-ACCESS  		not-accessible
+    STATUS      		current
+    DESCRIPTION
+    	"An entry containing alarm configuration information 
+	for each currently active TE3 interface."
+    INDEX 			{ nndsxT3E3IfIndex, nndsxT3E3IfAlarmThresholdConfigIndex }
+    ::= { nndsxT3E3IfAlarmThresholdConfigTable 1 }
+
+NnDsxT3E3IfAlarmThresholdConfigEntry ::=
+    SEQUENCE {
+        nndsxT3E3IfAlarmThresholdConfigIndex             Integer32,
+        nndsxT3E3IfAlarmThresholdConfigObject            INTEGER,
+        nndsxT3E3IfAlarmThresholdConfigSamplingInterval  INTEGER,
+        nndsxT3E3IfAlarmThresholdConfigSampleType        INTEGER,
+--        nndsxT3E3IfAlarmThresholdConfigStartupType       TruthValue,
+        nndsxT3E3IfAlarmThresholdConfigRisingThreshold   Integer32,
+        nndsxT3E3IfAlarmThresholdConfigFallingThreshold  Integer32,
+        nndsxT3E3IfAlarmThresholdConfigEnable            TruthValue
+    }
+
+nndsxT3E3IfAlarmThresholdConfigIndex 	OBJECT-TYPE
+    SYNTAX      				Integer32
+    MAX-ACCESS  				not-accessible
+    STATUS      				current
+    DESCRIPTION
+   	"Index value of the threshold configuration."
+    ::= { nndsxT3E3IfAlarmThresholdConfigEntry 1 }
+
+nndsxT3E3IfAlarmThresholdConfigObject OBJECT-TYPE
+    SYNTAX      	INTEGER
+               	{
+                 	  te3-object-lcv  (1),
+                 	  te3-object-fbe  (2),
+                 	  te3-object-pbe  (3),
+                    te3-object-cpbe (4),
+                    te3-object-febe (5),
+                    te3-object-exz  (6),
+                    te3-object-cofa (7)
+                	}
+    MAX-ACCESS  	read-write
+    STATUS      	current
+    DESCRIPTION
+  	"Configurable variables for the threshold alarm configuration."
+    ::= { nndsxT3E3IfAlarmThresholdConfigEntry 2 }
+
+nndsxT3E3IfAlarmThresholdConfigSamplingInterval	OBJECT-TYPE
+    SYNTAX      	INTEGER (1..65535)
+    MAX-ACCESS  	read-write
+    STATUS      	current
+    DESCRIPTION
+ 	 "Sampling interval for the threshold alarm."
+    ::= { nndsxT3E3IfAlarmThresholdConfigEntry 3 }
+
+nndsxT3E3IfAlarmThresholdConfigSampleType OBJECT-TYPE
+    SYNTAX      	INTEGER
+                	{
+                    sample-absolute  (1),
+                    sample-delta   (2)
+                	}
+    MAX-ACCESS  	read-write
+    STATUS      	current
+    DESCRIPTION
+    	"Sampling type for the threshold alarm."
+    ::= { nndsxT3E3IfAlarmThresholdConfigEntry 4 }
+
+--dsxT3E3IfAlarmThresholdConfigStartupType OBJECT-TYPE
+--    SYNTAX      	TruthValue
+--    MAX-ACCESS  	read-write
+--    STATUS     	 current
+--    DESCRIPTION
+--     	"Startup Type for the threashold alarm."
+--    ::= { dsxT3E3IfAlarmThresholdConfigEntry 5 }
+
+nndsxT3E3IfAlarmThresholdConfigRisingThreshold OBJECT-TYPE
+    SYNTAX      	Integer32
+    MAX-ACCESS  	read-write
+    STATUS      	current
+    DESCRIPTION
+   	"Rising threshold."
+    ::= { nndsxT3E3IfAlarmThresholdConfigEntry 5 }
+
+nndsxT3E3IfAlarmThresholdConfigFallingThreshold OBJECT-TYPE
+    SYNTAX      	Integer32
+    MAX-ACCESS  	read-write
+    STATUS      	current
+    DESCRIPTION
+   	"Falling threshold."
+    ::= { nndsxT3E3IfAlarmThresholdConfigEntry 6 }
+
+nndsxT3E3IfAlarmThresholdConfigEnable OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+            "Config Enable: If TRUE then configure the
+             threshold. FALSE then remove the threshold."
+    ::= { nndsxT3E3IfAlarmThresholdConfigEntry 7 }
+
+-- DSX TE3 interface Test configuration table.
+
+nndsxT3E3IfTestConfigTable 	OBJECT-TYPE
+    SYNTAX      			SEQUENCE OF NnDsxT3E3IfTestConfigEntry
+    MAX-ACCESS  			not-accessible
+    STATUS      			current
+    DESCRIPTION
+     	"A list of TE3 interface test configuration."
+    ::= { nndsxT3E3IfConfigGroup 4 }
+
+nndsxT3E3IfTestConfigEntry 	OBJECT-TYPE
+    SYNTAX      			NnDsxT3E3IfTestConfigEntry
+    MAX-ACCESS  			not-accessible
+    STATUS      			current
+    DESCRIPTION
+    	"An entry containing test configuration for each currently 
+       active TE3 interface."
+    AUGMENTS 			{ nndsxT3E3IfConfigLineEntry }
+    ::= { nndsxT3E3IfTestConfigTable 1 }
+
+NnDsxT3E3IfTestConfigEntry ::=
+    SEQUENCE {
+        nndsxT3E3IfTestConfigType       INTEGER,
+        nndsxT3E3IfTestConfigLoopCode   INTEGER,
+        nndsxT3E3IfTestConfigPattern    INTEGER,
+        nndsxT3E3IfTestConfigTime       Unsigned32
+    }
+
+nndsxT3E3IfTestConfigType OBJECT-TYPE
+    SYNTAX       INTEGER
+                 {
+                   no-test                 (1),
+                   payload-loopback-test   (2),
+                   line-loopback-test      (3),
+                   local-loopback-test     (4),
+                   internal-loopback-test  (5),
+                   pattern-test            (7),
+                   remote-lpup-test        (8),
+                   remote-lpdn-test        (9)
+                 }
+    MAX-ACCESS  	read-write
+    STATUS      	current
+    DESCRIPTION
+   	"Test type for the TE3 interface. Only TestType is 
+	mandatory to perform no-test, payload-loopback-test, 
+	line-loopback-test, local-loopback-test or
+        internal-loopback-test.
+             
+	ConfigLoopCode is mandatory to perform 
+	remote-lpup-test and remote-lpdn-test.
+
+        ConfigPattern and ConfigTime are mandatory to perform
+        pattern test on T3.
+
+        The pattern-test, payload-loopback-test,
+        local-loopback-test and internal-loopback-test are
+        applicable only on Clear channel T3 interface.
+        "
+    ::= { nndsxT3E3IfTestConfigEntry 1 }
+    
+nndsxT3E3IfTestConfigLoopCode 	OBJECT-TYPE
+    SYNTAX      	INTEGER
+                	{
+                    loopcode-none    (1),
+                    loopcode-feac    (2)
+                	}
+    MAX-ACCESS  	read-write
+    STATUS      	current
+    DESCRIPTION
+   	"Loopback code."
+    ::= { nndsxT3E3IfTestConfigEntry 2 }
+
+nndsxT3E3IfTestConfigPattern 	OBJECT-TYPE
+    SYNTAX        INTEGER
+                  {
+		    no-pattern			(0),
+                    pattern-all-ones            (1),
+                    pattern-all-zeros           (2),
+                    reserved1                   (3),
+                    reserved2                   (4),
+                    reserved3                   (5),
+                    reserved4                   (6),
+                    reserved5                   (7),
+                    reserved6                   (8),
+                    reserved7                   (9),
+                    reserved9                   (10),
+                    reserved10                  (11),
+                    reserved11                  (12),
+                    pattern-215minus1           (13),
+                    reserved12                  (14),
+                    pattern-qrw                 (15),
+                    pattern-223minus1           (16)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+            "Bit Pattern type used in testing T3 for Pattern Test."
+    ::= { nndsxT3E3IfTestConfigEntry 3 }
+
+nndsxT3E3IfTestConfigTime OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+            "When set to 0, test time is unlimited.
+	     Otherwise duration of test, specified in seconds."
+    ::= { nndsxT3E3IfTestConfigEntry 4 }
+    
+    
+-- DSX TE3 interface status group definitions.
+
+nndsxT3E3IfStatusTable 	OBJECT-TYPE
+    SYNTAX      	SEQUENCE OF NnDsxT3E3IfStatusEntry
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+   	"A list of TE3 interface status entries."
+    ::= { nndsxT3E3IfStatusGroup 1 }
+
+nndsxT3E3IfStatusEntry 	OBJECT-TYPE
+    SYNTAX      		NnDsxT3E3IfStatusEntry
+    MAX-ACCESS  		not-accessible
+    STATUS      		current
+    DESCRIPTION
+     	"An entry containing the status entry for each 
+	currently active TE3 interface."
+    AUGMENTS 		{ nndsxT3E3IfConfigLineEntry }
+    ::= { nndsxT3E3IfStatusTable 1 }
+
+NnDsxT3E3IfStatusEntry ::=
+    SEQUENCE {
+        nndsxT3E3IfStatusLineStatus     BITS,
+        nndsxT3E3IfStatusTransmitClock  INTEGER
+    }
+
+nndsxT3E3IfStatusLineStatus OBJECT-TYPE
+    SYNTAX      BITS
+                {
+                    reserved           (0),
+                    reserved1          (1),
+                    reserved2          (2),
+                    reserved3          (3),
+                    reserved4          (4),
+                    reserved5          (5),
+                    reserved6          (6),
+                    reserved7          (7),
+                    sendPattern        (8),
+                    sendTE3Code        (9),
+                    sendResetCode      (10),
+                    sendPayloadCode    (11),
+                    sendLineCode       (12),
+                    reserved8          (13),
+                    febeStatus         (14),
+                    pdeStatus          (15),
+                    lorcStatus         (16),
+                    reserved9          (17),
+                    reserved10         (18),
+                    rfebeStatus        (19),
+                    risStatus          (20),
+                    rexzStatus         (21),
+                    reserved11         (22),
+                    rcvTestCode        (23),
+                    loopbackStatus     (24),
+                    rlosStatus         (25),
+                    rlofStatus         (26),
+                    taisStatus         (27),
+                    raisStatus         (28),
+                    traiStatus         (29),
+                    rraiStatus         (30),
+                    no-alarm           (31)
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+    	"Line  Status of the T3/E3 interface.
+		sendPattern     - TRUE if the line transmiting bit pattern,
+		sendTE3Code     - sending T3/E3 code,
+		sendResetCode   - transmits Reset Code if it is TRUE,
+		sendPayloadcode - transmits the payload code,
+		sendLinecode    - transmitts the line code,
+		febe	-  Far End Block Error,
+		pde   -  pulse Density code transmission,
+		lorc  -  loss of recieve clock,
+		rfebe -  recieve far end block error,
+		ris   -  recieve Idle signal,
+		rexz	-  recieve exessive zeros,
+		rcvTestCode - recieve test code,
+		loopback    - loopback status ,
+		rlos		- recieve loss of signal,
+		rlof		- recieve loss of frame,
+		tais		- transmit alarm indication signal,
+		rais		- recieve alarm indication signal,
+		trai		- transmit remote alarm indication,
+		rrai		- recieve remote alarm indication,
+		"
+    ::= { nndsxT3E3IfStatusEntry 1 }
+
+nndsxT3E3IfStatusTransmitClock 	OBJECT-TYPE
+    SYNTAX      	INTEGER
+                	{
+                    timing-line     (1),
+                    timing-internal (2)
+                	}
+    MAX-ACCESS  	read-only 
+    STATUS      	current
+    DESCRIPTION
+ 	"The source of tranmit clock.
+   
+      'timing-line' indicates that the recovered 
+      receive clock is used as the transmit clock.
+
+      'timing-internal' indicates that a local clock
+      source is used."
+
+    ::= { nndsxT3E3IfStatusEntry 2 }
+    
+    
+-- DSX T3/E3 interface alarm status group definitions.
+
+nndsxT3E3IfAlarmStatusTable 	OBJECT-TYPE
+    SYNTAX      			SEQUENCE OF NnDsxT3E3IfAlarmStatusEntry
+    MAX-ACCESS  			not-accessible
+    STATUS      			current
+    DESCRIPTION
+   	"A list of T3/E3 interface status entries."
+    ::= { nndsxT3E3IfStatusGroup 2 }
+
+nndsxT3E3IfAlarmStatusEntry 	OBJECT-TYPE
+    SYNTAX      			NnDsxT3E3IfAlarmStatusEntry
+    MAX-ACCESS  			not-accessible
+    STATUS      			current
+    DESCRIPTION
+   	"An entry containing the status entry for each 
+	currently active T3/E3 interface."
+    AUGMENTS { nndsxT3E3IfConfigLineEntry }
+    ::= { nndsxT3E3IfAlarmStatusTable 1 }
+
+NnDsxT3E3IfAlarmStatusEntry ::=
+    SEQUENCE {
+        nndsxT3E3IfAlarmStatusAlarmStatus       BITS,
+        nndsxT3E3IfAlarmStatusThresholdStatus   BITS
+    }
+
+nndsxT3E3IfAlarmStatusAlarmStatus OBJECT-TYPE
+    SYNTAX      			BITS
+                			{
+                    		  rraiAlarm           (0),
+                    		  traiAlarm           (1),
+                    		  raisAlarm           (2),
+                    		  taisAlarm           (3),
+                    		  rlofAlarm           (4),
+                    		  rlosAlarm           (5),
+                    		  loopbackStateAlarm  (6),
+                    		  rcvTestCode         (7),
+                    		  rbluAlarm           (8),
+                    		  risAlarm            (9),
+                    		  rexzAlarm           (10),
+                    		  rfbeAlarm           (11),
+                    		  rpeAlarm            (12),
+                    		  rcpeAlarm           (13),
+                    		  lorcAlarm           (14),
+                    		  tpdeAlarm           (15),
+                    		  tfebeAlarm          (16)
+                			}
+    MAX-ACCESS  			read-only
+    STATUS      			current
+    DESCRIPTION
+    	"Current status of all the T3/E3 interface alarms.
+			RRAI 		- Recieve Remote Alarm Indication,
+			TRAI		- Transmit Remote Alarm Indication,
+			TAIS		- Transmit Alarm Indication Siganl, 
+			RLOF		- Recieve Loss Of Frame,
+			RLOS		- Recieve Loss Of Sync,
+			Loopback	- Status of Loop back,
+			rcvTestCode - Recieve Test Code,
+			rblu		- Recieve Blue Alarm,
+			RIS			- Recieve Idle Signal,
+			REXZ		- Recieve Excessive Zeros,
+			RFBE		- Recieve Frame Bit Error,
+			RPE			- Recieve Parity Error,
+			RCPE		- Recieve C-Parity Error,
+			LORC		- Loss Of Recive Clock (LORC),
+			TPDE		- transmit pulse density,
+			RAIS		- Recieve Alarm Indication Signal,
+			TFEBE		- Transmit Far End Block Alarm."
+    ::= { nndsxT3E3IfAlarmStatusEntry 1 }
+
+nndsxT3E3IfAlarmStatusThresholdStatus OBJECT-TYPE
+    SYNTAX      		BITS
+                		{
+                    	  threshold1  (0),
+                    	  threshold2  (1),
+                          threshold3  (2),
+                    	  threshold4  (3),
+                    	  threshold5  (4),
+                    	  threshold6  (5),
+                    	  threshold7  (6),
+                    	  threshold8  (7),
+                    	  threshold9  (8),
+                    	  threshold10 (9)
+               		 }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+   	"Current status of all the configured threshold alarms."
+    ::= { nndsxT3E3IfAlarmStatusEntry 2 }
+
+-- DSX T3/E3 interface test status group definitions.
+
+nndsxT3E3IfTestStatusTable	OBJECT-TYPE
+    SYNTAX      			SEQUENCE OF NnDsxT3E3IfTestStatusEntry
+    MAX-ACCESS  			not-accessible
+    STATUS      			current
+    DESCRIPTION
+	"A list of T3/E3 interface test status entries."
+    ::= { nndsxT3E3IfStatusGroup 3 }
+
+nndsxT3E3IfTestStatusEntry 	OBJECT-TYPE
+    SYNTAX      			NnDsxT3E3IfTestStatusEntry
+    MAX-ACCESS  			not-accessible
+    STATUS      			current
+    DESCRIPTION
+    	"An entry containing the status entry for each 
+	currently active T3/E3 interface."
+    AUGMENTS { nndsxT3E3IfConfigLineEntry }
+    ::= { nndsxT3E3IfTestStatusTable 1 }
+
+NnDsxT3E3IfTestStatusEntry ::=
+    SEQUENCE {
+        nndsxT3E3IfTestStatusTestType           INTEGER,
+        nndsxT3E3IfTestStatusTestState          INTEGER,
+        nndsxT3E3IfTestStatusLoopCode           INTEGER
+    }
+-- Satish IDC-Bangalore Bug#5509
+-- Begin 
+nndsxT3E3IfTestStatusTestType 	OBJECT-TYPE
+    SYNTAX      	INTEGER 
+                	{
+                  no-test           (1),
+				  payload-loopback  (2),
+				  line-loopback     (3),
+				  local-loopback    (4),
+				  int-loopback      (5),
+				  other-loopback    (6),
+				  testtype-pattern  (7),
+				  remote-lpup       (8),
+				  remote-lpdn       (9)
+				   }
+-- End 
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+   	"The test type."
+    ::= { nndsxT3E3IfTestStatusEntry 1 }
+
+nndsxT3E3IfTestStatusTestState 	OBJECT-TYPE
+    SYNTAX      	INTEGER
+                	{
+                    state-idle       (1),
+                   state-searching   (2),
+                   state-locked      (3),
+                   state-relocked    (4),
+                   state-in-progress (5),
+                   state-passed      (6),
+                   state-failed      (7)
+                	}
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"State of the test invoked."
+    ::= { nndsxT3E3IfTestStatusEntry 2 }
+-- Satish IDC-Bangalore Bug#5509
+-- Begin 
+nndsxT3E3IfTestStatusLoopCode 	OBJECT-TYPE
+    SYNTAX      	INTEGER
+                	{
+				   loopcode-none   (1),
+                   loopcode-feac   (2)
+               	}
+--End 
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"Line code for loop back test."
+    ::= { nndsxT3E3IfTestStatusEntry 3 }
+    
+-- T3/E3 last test result table.
+
+nndsxT3E3IfLastTestResultTable 	OBJECT-TYPE
+    SYNTAX      	SEQUENCE OF NnDsxT3E3IfLastTestResultEntry
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+    	"A list of T3/E3 interface test status entries."
+    ::= { nndsxT3E3IfStatusGroup 4 }
+
+nndsxT3E3IfLastTestResultEntry 	OBJECT-TYPE
+    SYNTAX      	NnDsxT3E3IfLastTestResultEntry
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+    	"An entry containing the status entry for each 
+	currently active T3/E3 interface."
+    AUGMENTS { nndsxT3E3IfConfigLineEntry }
+    ::= { nndsxT3E3IfLastTestResultTable 1 }
+
+NnDsxT3E3IfLastTestResultEntry ::=
+    SEQUENCE {
+        nndsxT3E3IfLastTestResultTestType       INTEGER,
+        nndsxT3E3IfLastTestResultTestState      INTEGER,
+        nndsxT3E3IfLastTestResultLoopCode       INTEGER
+    }
+-- Satish IDC-Bangalore Bug#5509
+-- Begin 
+nndsxT3E3IfLastTestResultTestType 	OBJECT-TYPE
+    SYNTAX      	INTEGER 
+                	{
+                 no-test           (1),
+				 payload-loopback  (2),
+				 line-loopback     (3),
+				 local-loopback    (4),
+				 int-loopback      (5),
+				 other-loopback    (6),
+				 testtype-pattern  (7),
+				 remote-lpup       (8),
+				 remote-lpdn       (9)
+				  }
+-- End 
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+   	"The test type."
+    ::= { nndsxT3E3IfLastTestResultEntry 1 }
+
+nndsxT3E3IfLastTestResultTestState 	OBJECT-TYPE
+    SYNTAX      	INTEGER
+                	{
+                    state-idle        (1),
+                    state-searching   (2),
+       		    state-locked      (3),
+                    state-relocked    (4),
+                    state-in-progress (5),
+                    state-passed      (6),
+                    state-failed      (7)
+                	}
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+   	"State of the test invoked."
+    ::= { nndsxT3E3IfLastTestResultEntry 2 }
+
+nndsxT3E3IfLastTestResultLoopCode 	OBJECT-TYPE
+    SYNTAX      	INTEGER
+                	{
+                    loopcode-none (1),
+                    loopcode-feac (2)
+                	}
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The loopcode used to loopback the T3/E3 interface 
+	in previous test."
+    ::= { nndsxT3E3IfLastTestResultEntry 3 }
+    
+-- DSX T3/E3 stats group definitions.
+
+-- Table to store the valid intervals of archive stats tables.
+
+nndsxT3E3IfArchiveStatsValidIntervalsTable OBJECT-TYPE
+    SYNTAX      	SEQUENCE OF NnDsxT3E3IfArchiveStatsValidIntervalsEntry
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+    	"A list of T3/E3 interface ValidIntervals entries."
+    ::= { nndsxT3E3IfStatsGroup 1 }
+
+nndsxT3E3IfArchiveStatsValidIntervalsEntry  OBJECT-TYPE
+    SYNTAX      	NnDsxT3E3IfArchiveStatsValidIntervalsEntry
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+   	"An entry containing a valid intervals entry for each currently 
+	active T3/E3 interface."
+    AUGMENTS 	{ nndsxT3E3IfConfigLineEntry }
+    ::= { nndsxT3E3IfArchiveStatsValidIntervalsTable 1 }
+
+NnDsxT3E3IfArchiveStatsValidIntervalsEntry ::=
+    SEQUENCE {
+        nndsxT3E3IfAnsiArchiveStatsValidIntervals        Unsigned32, 
+        nndsxT3E3IfIetfArchiveStatsValidIntervals        Unsigned32, 
+        nndsxT3E3IfUserTotalStatsValidDays               Unsigned32, 
+        nndsxT3E3IfUserArchiveStatsValidIntervals        Integer32
+    }
+    
+nndsxT3E3IfAnsiArchiveStatsValidIntervals OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"Archive Stats Valid Interval for ANSI."
+    ::= { nndsxT3E3IfArchiveStatsValidIntervalsEntry 1 }
+    
+nndsxT3E3IfIetfArchiveStatsValidIntervals OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"Archive stats valid interval for IETF."
+    ::= { nndsxT3E3IfArchiveStatsValidIntervalsEntry 2 }
+    
+nndsxT3E3IfUserTotalStatsValidDays OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+   	"User total stats valid days."
+    ::= { nndsxT3E3IfArchiveStatsValidIntervalsEntry 3 }
+    
+nndsxT3E3IfUserArchiveStatsValidIntervals OBJECT-TYPE
+    SYNTAX   	Integer32
+    MAX-ACCESS  	read-write
+    STATUS      	current
+    DESCRIPTION
+    	"User archive stats valid interval. Setting this 
+	variable to 0 will clear the user statistics tables."
+    ::= { nndsxT3E3IfArchiveStatsValidIntervalsEntry 4 }
+
+
+-- Error event statistics table.
+
+nndsxT3E3IfErrorEventStatsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnDsxT3E3IfErrorEventStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+     	"A list of T3/E3 interface error events entries."
+    ::= { nndsxT3E3IfStatsGroup 2 }
+
+nndsxT3E3IfErrorEventStatsEntry  OBJECT-TYPE
+    SYNTAX      NnDsxT3E3IfErrorEventStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+   	"An entry containing error events that occured on 
+	the T3/E3 interface."
+    AUGMENTS { nndsxT3E3IfConfigLineEntry }
+    ::= { nndsxT3E3IfErrorEventStatsTable 1 }
+
+NnDsxT3E3IfErrorEventStatsEntry ::=
+    SEQUENCE {
+        nndsxT3E3IfErrorEventStatsPBE     Unsigned32,
+        nndsxT3E3IfErrorEventStatsFEBE    Unsigned32
+    }
+nndsxT3E3IfErrorEventStatsPBE OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION 
+	"Parity bit error events count."
+    ::= { nndsxT3E3IfErrorEventStatsEntry 2 }
+
+nndsxT3E3IfErrorEventStatsFEBE OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+    	"Far end block error (FEBE) event count."
+    ::= { nndsxT3E3IfErrorEventStatsEntry 3 }
+
+-- DSX T3/E3 stats group definitions.
+
+nndsxT3E3IfAnsiStatsGroup   OBJECT IDENTIFIER   ::= { nndsxT3E3IfStatsGroup 3 }
+nndsxT3E3IfIetfStatsGroup   OBJECT IDENTIFIER   ::= { nndsxT3E3IfStatsGroup 4 }
+nndsxT3E3IfUserStatsGroup   OBJECT IDENTIFIER   ::= { nndsxT3E3IfStatsGroup 5 }
+
+
+-- DSX T3/E3 ANSI statistics group definitions.
+
+-- ANSI current stats table.
+
+nndsxT3E3IfAnsiCurrentStatsTable OBJECT-TYPE
+    SYNTAX      	SEQUENCE OF NnDsxT3E3IfAnsiCurrentStatsEntry
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+   	"A list of T3/E3 interface current 15-minute interval 
+	statistics entries."
+    ::= { nndsxT3E3IfAnsiStatsGroup 1 }
+
+nndsxT3E3IfAnsiCurrentStatsEntry  OBJECT-TYPE
+    SYNTAX      	NnDsxT3E3IfAnsiCurrentStatsEntry
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+   	"An entry containing status entry for each currently 
+	active T3/E3 interface."
+    AUGMENTS 	{ nndsxT3E3IfConfigLineEntry }
+    ::= { nndsxT3E3IfAnsiCurrentStatsTable 1 }
+
+NnDsxT3E3IfAnsiCurrentStatsEntry ::=
+    SEQUENCE {
+        nndsxT3E3IfAnsiCurrentStatsUASState       TruthValue,
+        nndsxT3E3IfAnsiCurrentStatsTimeInCurrent  Unsigned32,
+        nndsxT3E3IfAnsiCurrentPathStatsCV         Unsigned32,
+        nndsxT3E3IfAnsiCurrentPathStatsES         Unsigned32,
+        nndsxT3E3IfAnsiCurrentPathStatsSES        Unsigned32,
+        nndsxT3E3IfAnsiCurrentPathStatsSAS        Unsigned32,
+        nndsxT3E3IfAnsiCurrentPathStatsUAS        Unsigned32,
+        nndsxT3E3IfAnsiCurrentLineStatsCV         Unsigned32,
+        nndsxT3E3IfAnsiCurrentLineStatsES         Unsigned32,
+        nndsxT3E3IfAnsiCurrentLineStatsSES        Unsigned32
+    }
+    
+nndsxT3E3IfAnsiCurrentStatsUASState 	OBJECT-TYPE
+    SYNTAX      	TruthValue
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"Current state of availablity of the T3/E3 line."
+    ::= { nndsxT3E3IfAnsiCurrentStatsEntry 1 }
+
+nndsxT3E3IfAnsiCurrentStatsTimeInCurrent 	OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"Current time for statistics."
+    ::= { nndsxT3E3IfAnsiCurrentStatsEntry 2 }
+
+nndsxT3E3IfAnsiCurrentPathStatsCV OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+   	"The number of path coding violations encountered 
+	by a T3/E3 interface in the current 15-minute
+	interval."
+    ::= { nndsxT3E3IfAnsiCurrentStatsEntry 3 }
+
+nndsxT3E3IfAnsiCurrentPathStatsES 	OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+   	"The number of errored seconds encountered  by
+	a T3/E3 interface in the current 15-minute 
+	interval."
+    ::= { nndsxT3E3IfAnsiCurrentStatsEntry 4 }
+
+nndsxT3E3IfAnsiCurrentPathStatsSES 	OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of severely errored seconds 
+	encountered by a T3/E3 interface in 
+	the current 15-minute interval."
+    ::= { nndsxT3E3IfAnsiCurrentStatsEntry 5 }
+
+nndsxT3E3IfAnsiCurrentPathStatsSAS 	OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of severely errored framing seconds
+      encountered by a T3/E3 interface in the current
+      15-minute interval."
+    ::= { nndsxT3E3IfAnsiCurrentStatsEntry 6 }
+
+nndsxT3E3IfAnsiCurrentPathStatsUAS OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of unavailable seconds encountered
+      by a T3/E3 interface in the current 15-minute 
+	interval."
+                
+    ::= { nndsxT3E3IfAnsiCurrentStatsEntry 7 }
+
+    
+nndsxT3E3IfAnsiCurrentLineStatsCV 	OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+  	"The number of path coding violations encountered
+      by a T3/E3 interface in the current 15-minute 
+      interval."
+    ::= { nndsxT3E3IfAnsiCurrentStatsEntry 8 }
+
+nndsxT3E3IfAnsiCurrentLineStatsES 	OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+	"The number of errored seconds encountered by
+      a T3/E3 interface in the current 15-minute 
+      interval."
+    ::= { nndsxT3E3IfAnsiCurrentStatsEntry 9 }
+
+nndsxT3E3IfAnsiCurrentLineStatsSES 	OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of severely errored seconds encountered  
+      by a T3/E3 interface in the current 15-minute 
+      interval."
+    ::= { nndsxT3E3IfAnsiCurrentStatsEntry 10 }
+
+-- ANSI total stats table.
+
+nndsxT3E3IfAnsiTotalStatsTable 	OBJECT-TYPE
+    SYNTAX      	SEQUENCE OF NnDsxT3E3IfAnsiTotalStatsEntry
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+    	"Entries of total statistics collected over past 
+	24 hours on a T3/E3 interface."
+    ::= { nndsxT3E3IfAnsiStatsGroup 2 }
+
+nndsxT3E3IfAnsiTotalStatsEntry  OBJECT-TYPE
+    SYNTAX      	NnDsxT3E3IfAnsiTotalStatsEntry
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+    	"An entry containing the status entry for each 
+	currently active T3/E3 interface."
+    AUGMENTS { nndsxT3E3IfConfigLineEntry }
+    ::= { nndsxT3E3IfAnsiTotalStatsTable 1 }
+
+NnDsxT3E3IfAnsiTotalStatsEntry ::=
+    SEQUENCE {
+        nndsxT3E3IfAnsiTotalPathStatsCV     Unsigned32,
+        nndsxT3E3IfAnsiTotalPathStatsES     Unsigned32,
+        nndsxT3E3IfAnsiTotalPathStatsSES    Unsigned32,
+        nndsxT3E3IfAnsiTotalPathStatsSAS  	Unsigned32,
+        nndsxT3E3IfAnsiTotalPathStatsUAS    Unsigned32,
+        nndsxT3E3IfAnsiTotalLineStatsCV     Unsigned32,
+        nndsxT3E3IfAnsiTotalLineStatsES     Unsigned32,
+        nndsxT3E3IfAnsiTotalLineStatsSES    Unsigned32
+    }
+    
+nndsxT3E3IfAnsiTotalPathStatsCV 	OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of path coding violations encountered  
+      by a T3/E3 interface in the previous 24-hour 
+	interval."
+    ::= { nndsxT3E3IfAnsiTotalStatsEntry 1 }
+
+nndsxT3E3IfAnsiTotalPathStatsES OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of errored seconds encountered by a
+      T3/E3 interface in the previous 24-hour interval."
+    ::= { nndsxT3E3IfAnsiTotalStatsEntry 2 }
+
+nndsxT3E3IfAnsiTotalPathStatsSES 	OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of severely errored seconds encountered  
+      by a T3/E3 interface in the previous 24-hour 
+      interval."
+    ::= { nndsxT3E3IfAnsiTotalStatsEntry 3 }
+
+nndsxT3E3IfAnsiTotalPathStatsSAS 	OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of severely alarm aeconds encountered  
+      by a T3/E3 interface in the previous 24-hour 
+      interval."
+    ::= { nndsxT3E3IfAnsiTotalStatsEntry 4 }
+
+nndsxT3E3IfAnsiTotalPathStatsUAS 	OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+   	"The number of unavailable seconds encountered
+      by a T3/E3 interface in the previous 24-hour 
+	interval."
+                
+    ::= { nndsxT3E3IfAnsiTotalStatsEntry 5 }
+
+nndsxT3E3IfAnsiTotalLineStatsCV OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of path coding violations encountered  
+      by a T3/E3 interface in the previous 24-hour 
+      interval. "
+    ::= { nndsxT3E3IfAnsiTotalStatsEntry 6 }
+
+nndsxT3E3IfAnsiTotalLineStatsES OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of errored seconds encountered 
+	by a T3/E3 interface in the previous 24-hour 
+	interval."
+    ::= { nndsxT3E3IfAnsiTotalStatsEntry 7 }
+
+nndsxT3E3IfAnsiTotalLineStatsSES 	OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of severely errored seconds encountered  
+      by a T3/E3 interface in the previous 24-hour 
+	interval."
+    ::= { nndsxT3E3IfAnsiTotalStatsEntry 8 }
+
+
+-- ANSI ARCHIVE INTERVAL STATISTICS TABLE
+
+nndsxT3E3IfAnsiArchiveIntervalStatsTable OBJECT-TYPE
+    SYNTAX      	SEQUENCE OF NnDsxT3E3IfAnsiArchiveIntervalStatsEntry
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+     	"A list of T3/E3 interface archive statistics entries."
+    ::= { nndsxT3E3IfAnsiStatsGroup 3 }
+
+nndsxT3E3IfAnsiArchiveIntervalStatsEntry  OBJECT-TYPE
+    SYNTAX      	NnDsxT3E3IfAnsiArchiveIntervalStatsEntry
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+     	"An entry containing the status entry for each currently active 
+      T3/E3 interface."
+    INDEX { nndsxT3E3IfIndex, nndsxT3E3IfAnsiArchiveStatsInterval }
+    ::= { nndsxT3E3IfAnsiArchiveIntervalStatsTable 1 }
+
+NnDsxT3E3IfAnsiArchiveIntervalStatsEntry ::=
+    SEQUENCE {
+        nndsxT3E3IfAnsiArchiveStatsInterval            Unsigned32,
+        nndsxT3E3IfAnsiArchiveIntervalPathStatsCV      Unsigned32,
+        nndsxT3E3IfAnsiArchiveIntervalPathStatsES      Unsigned32,
+        nndsxT3E3IfAnsiArchiveIntervalPathStatsSES     Unsigned32,
+        nndsxT3E3IfAnsiArchiveIntervalPathStatsSAS     Unsigned32,
+        nndsxT3E3IfAnsiArchiveIntervalPathStatsUAS     Unsigned32,
+        nndsxT3E3IfAnsiArchiveIntervalLineStatsCV      Unsigned32,
+        nndsxT3E3IfAnsiArchiveIntervalLineStatsES      Unsigned32,
+        nndsxT3E3IfAnsiArchiveIntervalLineStatsSES     Unsigned32
+    }
+
+nndsxT3E3IfAnsiArchiveStatsInterval 	OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+    	"Entries of the ANSI archive statistics collected 
+	for T3/E3 a interface."
+    ::= { nndsxT3E3IfAnsiArchiveIntervalStatsEntry 1 }
+    
+nndsxT3E3IfAnsiArchiveIntervalPathStatsCV 	OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of path coding violations encountered  
+      by a T3/E3 interface in the current interval."
+            
+    ::= { nndsxT3E3IfAnsiArchiveIntervalStatsEntry 2 }
+
+nndsxT3E3IfAnsiArchiveIntervalPathStatsES OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+     	"The number of errored seconds encountered by
+      a T3/E3 interface in the current interval."
+    ::= { nndsxT3E3IfAnsiArchiveIntervalStatsEntry 3 }
+
+nndsxT3E3IfAnsiArchiveIntervalPathStatsSES OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+   	"The number of severely errored seconds encountered 
+      by a T3/E3 interface in the current interval."
+    ::= { nndsxT3E3IfAnsiArchiveIntervalStatsEntry 4 }
+
+nndsxT3E3IfAnsiArchiveIntervalPathStatsSAS OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of severely errored framing seconds
+      encountered by a T3/E3 interface in the current
+      interval."
+    ::= { nndsxT3E3IfAnsiArchiveIntervalStatsEntry 5 }
+
+nndsxT3E3IfAnsiArchiveIntervalPathStatsUAS OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of unavailable seconds encountered
+      by a T3/E3 interface in the current interval."
+    ::= { nndsxT3E3IfAnsiArchiveIntervalStatsEntry 6 }
+
+nndsxT3E3IfAnsiArchiveIntervalLineStatsCV OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+     	"The number of path coding violations encountered  
+      by a T3/E3 interface in the current interval."
+             
+    ::= { nndsxT3E3IfAnsiArchiveIntervalStatsEntry 7 }
+
+nndsxT3E3IfAnsiArchiveIntervalLineStatsES OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+     	"The number of errored seconds encountered by
+      a T3/E3 interface in the current interval."
+    ::= { nndsxT3E3IfAnsiArchiveIntervalStatsEntry 8 }
+
+nndsxT3E3IfAnsiArchiveIntervalLineStatsSES OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of severely errored seconds encountered  
+      by a T3/E3 interface in the current interval."  
+                
+    ::= { nndsxT3E3IfAnsiArchiveIntervalStatsEntry 9 }
+
+
+-- IETF stats group.
+
+-- IETF current stats table.
+nndsxT3E3IfIetfCurrentStatsTable OBJECT-TYPE
+    SYNTAX      	SEQUENCE OF NnDsxT3E3IfIetfCurrentStatsEntry
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+    	"A list of the current 15-minute IETF-based statistics
+	collected for T3/E3 interface."
+    ::= { nndsxT3E3IfIetfStatsGroup 1 }
+
+nndsxT3E3IfIetfCurrentStatsEntry  OBJECT-TYPE
+    SYNTAX      	NnDsxT3E3IfIetfCurrentStatsEntry
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+     	"An entry containing the status entry for each 
+	currently active T3/E3 interface."
+    AUGMENTS { nndsxT3E3IfConfigLineEntry }
+    ::= { nndsxT3E3IfIetfCurrentStatsTable 1 }
+
+NnDsxT3E3IfIetfCurrentStatsEntry ::=
+    SEQUENCE {
+        nndsxT3E3IfIetfCurrentStatsUASState        TruthValue,
+        nndsxT3E3IfIetfCurrentStatsTimeInCurrent   Unsigned32,
+        nndsxT3E3IfIetfCurrentStatsPES             Unsigned32,
+        nndsxT3E3IfIetfCurrentStatsPSES            Unsigned32,
+        nndsxT3E3IfIetfCurrentStatsSEFS            Unsigned32,
+        nndsxT3E3IfIetfCurrentStatsUAS             Unsigned32,
+        nndsxT3E3IfIetfCurrentStatsLCV             Unsigned32,
+        nndsxT3E3IfIetfCurrentStatsPCV             Unsigned32,
+        nndsxT3E3IfIetfCurrentStatsLES             Unsigned32,
+        nndsxT3E3IfIetfCurrentStatsCCV             Unsigned32,
+        nndsxT3E3IfIetfCurrentStatsCES             Unsigned32,
+        nndsxT3E3IfIetfCurrentStatsCSES            Unsigned32        
+    }
+    
+nndsxT3E3IfIetfCurrentStatsUASState OBJECT-TYPE
+    SYNTAX   	TruthValue
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"Current state of availablity of the interface."
+    ::= { nndsxT3E3IfIetfCurrentStatsEntry 1 }
+    
+nndsxT3E3IfIetfCurrentStatsTimeInCurrent OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS     	current
+    DESCRIPTION
+     	"The number of seconds that have elapsed since 
+      the beginning of the current IETF 
+	error-measurement period. "
+    ::= { nndsxT3E3IfIetfCurrentStatsEntry 2 }
+    
+nndsxT3E3IfIetfCurrentStatsPES OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+   	"The number of IETF parity errored seconds encountered  
+      by a T3/E3 interface."
+    ::= { nndsxT3E3IfIetfCurrentStatsEntry 3 }
+
+nndsxT3E3IfIetfCurrentStatsPSES OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of parity severely errored seconds
+      encountered by a T3/E3 interface."
+    ::= { nndsxT3E3IfIetfCurrentStatsEntry 4 }
+
+nndsxT3E3IfIetfCurrentStatsSEFS OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of IETF severely errored framing
+      seconds encountered by a T3/E3 interface."
+    ::= { nndsxT3E3IfIetfCurrentStatsEntry 5 }
+
+nndsxT3E3IfIetfCurrentStatsUAS OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of unavailable seconds encountered
+      by a T3/E3 interface."
+    ::= { nndsxT3E3IfIetfCurrentStatsEntry 6 }
+
+nndsxT3E3IfIetfCurrentStatsLCV OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of line code violations encountered
+      by a T3/E3 interface."
+    ::= { nndsxT3E3IfIetfCurrentStatsEntry 7 }
+
+nndsxT3E3IfIetfCurrentStatsPCV OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of IETF path coding violations,
+      encountered by a T3/E3 interface that are 
+	reported via the far-end block-error count."
+    ::= { nndsxT3E3IfIetfCurrentStatsEntry 8 }
+
+
+nndsxT3E3IfIetfCurrentStatsLES OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+   	"The number of IETF line errored seconds 
+	encountered by a T3/E3 interface."
+   ::= { nndsxT3E3IfIetfCurrentStatsEntry 9 }
+
+nndsxT3E3IfIetfCurrentStatsCCV OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+   	"The number of IETF C-bit coding violations
+      encountered by a T3/E3 interface."
+   ::= { nndsxT3E3IfIetfCurrentStatsEntry 10 }
+    
+nndsxT3E3IfIetfCurrentStatsCES OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of IETF C-bit errored seconds  
+      encountered by a T3/E3 interface."
+   ::= { nndsxT3E3IfIetfCurrentStatsEntry 11 }
+    
+nndsxT3E3IfIetfCurrentStatsCSES OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of IETF C-Bit severely errored seconds."
+   ::= { nndsxT3E3IfIetfCurrentStatsEntry 12 }
+
+ 
+-- IETF total stats table.
+
+nndsxT3E3IfIetfTotalStatsTable OBJECT-TYPE
+    SYNTAX      	SEQUENCE OF NnDsxT3E3IfIetfTotalStatsEntry
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+    	"A list of entries for statistics collected over 
+	24 hours."
+    ::= { nndsxT3E3IfIetfStatsGroup 2 }
+
+nndsxT3E3IfIetfTotalStatsEntry  OBJECT-TYPE
+    SYNTAX      	NnDsxT3E3IfIetfTotalStatsEntry
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+    	"An entry containing the status entry for each 
+	currently active T3/E3 interface."
+    AUGMENTS { nndsxT3E3IfConfigLineEntry }
+    ::= { nndsxT3E3IfIetfTotalStatsTable 1 }
+
+NnDsxT3E3IfIetfTotalStatsEntry ::=
+    SEQUENCE {
+        nndsxT3E3IfIetfTotalStatsPES        Unsigned32,
+        nndsxT3E3IfIetfTotalStatsPSES       Unsigned32,
+        nndsxT3E3IfIetfTotalStatsSEFS       Unsigned32,
+        nndsxT3E3IfIetfTotalStatsUAS        Unsigned32,
+        nndsxT3E3IfIetfTotalStatsLCV        Unsigned32,
+        nndsxT3E3IfIetfTotalStatsPCV        Unsigned32,
+        nndsxT3E3IfIetfTotalStatsLES        Unsigned32,
+        nndsxT3E3IfIetfTotalStatsCCV        Unsigned32,
+        nndsxT3E3IfIetfTotalStatsCES        Unsigned32,
+        nndsxT3E3IfIetfTotalStatsCSES       Unsigned32        
+    }
+    
+nndsxT3E3IfIetfTotalStatsPES OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"Total number of IETF errored seconds encountered  
+      by a T3/E3 interface during past 24 hours."
+    ::= { nndsxT3E3IfIetfTotalStatsEntry 1 }
+
+nndsxT3E3IfIetfTotalStatsPSES OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"Total number of IETF severely errored seconds
+      encountered by a T3/E3 interface during past 
+	24 hours."
+    ::= { nndsxT3E3IfIetfTotalStatsEntry 2 }
+
+nndsxT3E3IfIetfTotalStatsSEFS OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"Total number of IETF severely errored framing
+      seconds encountered by a T3/E3 interface during
+	the past 24 hours."
+    ::= { nndsxT3E3IfIetfTotalStatsEntry 3 }
+
+nndsxT3E3IfIetfTotalStatsUAS OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+     	"Total number of unavailable seconds encountered
+	by a T3/E3 interface during past 24 hours."
+    ::= { nndsxT3E3IfIetfTotalStatsEntry 4 }
+
+nndsxT3E3IfIetfTotalStatsLCV OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS     	 current
+    DESCRIPTION
+    	"Total number of line code violations encountered 
+	by a T3/E3 interface during past 24 hours."
+    ::= { nndsxT3E3IfIetfTotalStatsEntry 5 }
+
+nndsxT3E3IfIetfTotalStatsPCV OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+   	"Total number of IETF path coding violations 
+	encountered by a T3/E3 interface during past 
+	24 hours."
+    ::= { nndsxT3E3IfIetfTotalStatsEntry 6 }
+
+
+nndsxT3E3IfIetfTotalStatsLES OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"Total number of IETF line errored seconds 
+	encountered by a T3/E3 interface during past 
+	24 hours."
+   ::= { nndsxT3E3IfIetfTotalStatsEntry 7 }
+
+nndsxT3E3IfIetfTotalStatsCCV OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"Total number of IETF C-bit parity code violation
+	encountered by a T3/E3 interface during past 
+	24 hours."
+   ::= { nndsxT3E3IfIetfTotalStatsEntry 8 }
+    
+nndsxT3E3IfIetfTotalStatsCES OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"Total number of IETF C-bit parity errored seconds
+	encountered by a T3/E3 interface during past 
+	24 hours."
+   ::= { nndsxT3E3IfIetfTotalStatsEntry 9 }
+    
+nndsxT3E3IfIetfTotalStatsCSES OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"Total number of IETF C-bit parity severely errored 
+	seconds encountered by a T3/E3 interface during past 
+	24 hours."
+   ::= { nndsxT3E3IfIetfTotalStatsEntry 10 }
+
+
+--  IETF archive stats table.
+
+nndsxT3E3IfIetfArchiveStatsTable OBJECT-TYPE
+    SYNTAX      	SEQUENCE OF NnDsxT3E3IfIetfArchiveStatsEntry
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+    	"A list of T3/E3 interface IETF archive statistics entries."
+    ::= { nndsxT3E3IfIetfStatsGroup 3 }
+
+nndsxT3E3IfIetfArchiveStatsEntry  OBJECT-TYPE
+    SYNTAX      	NnDsxT3E3IfIetfArchiveStatsEntry
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+    	"An entry containing status entry for each currently active 
+      T3/E3 interface."
+    INDEX { nndsxT3E3IfIndex, nndsxT3E3IfIetfArchiveStatsInterval }
+    ::= { nndsxT3E3IfIetfArchiveStatsTable 1 }
+
+NnDsxT3E3IfIetfArchiveStatsEntry ::=
+    SEQUENCE {
+        nndsxT3E3IfIetfArchiveStatsInterval  Unsigned32, 
+        nndsxT3E3IfIetfArchiveStatsPES       Unsigned32,
+        nndsxT3E3IfIetfArchiveStatsPSES      Unsigned32,
+        nndsxT3E3IfIetfArchiveStatsSEFS      Unsigned32,
+        nndsxT3E3IfIetfArchiveStatsUAS       Unsigned32,
+        nndsxT3E3IfIetfArchiveStatsLCV       Unsigned32,
+        nndsxT3E3IfIetfArchiveStatsPCV       Unsigned32,
+        nndsxT3E3IfIetfArchiveStatsLES       Unsigned32,
+        nndsxT3E3IfIetfArchiveStatsCCV       Unsigned32,
+        nndsxT3E3IfIetfArchiveStatsCES       Unsigned32,
+        nndsxT3E3IfIetfArchiveStatsCSES      Unsigned32        
+    }
+    
+nndsxT3E3IfIetfArchiveStatsInterval OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+    	"The total number of intervals for which statistics
+      would be collected."
+    ::= { nndsxT3E3IfIetfArchiveStatsEntry 1 }
+    
+nndsxT3E3IfIetfArchiveStatsPES OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of IETF errored seconds encountered  
+      by a T3/E3 interface."
+    ::= { nndsxT3E3IfIetfArchiveStatsEntry 2 }
+
+nndsxT3E3IfIetfArchiveStatsPSES OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+     	"The number of IETF severely errored seconds
+      encountered by a T3/E3 interface."
+    ::= { nndsxT3E3IfIetfArchiveStatsEntry 3 }
+
+nndsxT3E3IfIetfArchiveStatsSEFS OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+     	"The number of IETF severely errored framing
+      seconds encountered by a T3/E3 interface."
+    ::= { nndsxT3E3IfIetfArchiveStatsEntry 4 }
+
+nndsxT3E3IfIetfArchiveStatsUAS OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of unavailable seconds encountered
+      by a T3/E3 interface."
+    ::= { nndsxT3E3IfIetfArchiveStatsEntry 5 }
+
+nndsxT3E3IfIetfArchiveStatsLCV OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of line code violations encountered
+      by a T3/E3 interface."
+    ::= { nndsxT3E3IfIetfArchiveStatsEntry 6 }
+
+nndsxT3E3IfIetfArchiveStatsPCV OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+     	"The number of IETF path coding violations,
+	encountered by a T3/E3 interface that are reported 
+      via the far-end block-error count."
+                
+    ::= { nndsxT3E3IfIetfArchiveStatsEntry 7 }
+
+
+nndsxT3E3IfIetfArchiveStatsLES OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of IETF line errored seconds
+      encountered by a T3/E3 interface."
+   ::= { nndsxT3E3IfIetfArchiveStatsEntry 8 }
+
+nndsxT3E3IfIetfArchiveStatsCCV OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of IETF C-bit parity code violations
+	encountered by a T3/E3 interface."
+   ::= { nndsxT3E3IfIetfArchiveStatsEntry 9 }
+    
+nndsxT3E3IfIetfArchiveStatsCES OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of IETF C-bit parity errored seconds
+	encountered by a T3/E3 interface."
+   ::= { nndsxT3E3IfIetfArchiveStatsEntry 10 }
+    
+nndsxT3E3IfIetfArchiveStatsCSES OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of IETF C-bit parity severrly errored 
+	seconds encountered by a T3/E3 interface."
+   ::= { nndsxT3E3IfIetfArchiveStatsEntry 11 }    
+   
+-- USER Stats Group
+
+-- USER Current Stats Table
+
+nndsxT3E3IfUserCurrentStatsTable OBJECT-TYPE
+    SYNTAX      	SEQUENCE OF NnDsxT3E3IfUserCurrentStatsEntry
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+    	"A list of T3/E3 interface user current 15-minute 
+	interval statistics entries."
+    ::= { nndsxT3E3IfUserStatsGroup 1 }
+
+nndsxT3E3IfUserCurrentStatsEntry  OBJECT-TYPE
+    SYNTAX      	NnDsxT3E3IfUserCurrentStatsEntry
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+    	"An entry containing status entry for each currently active 
+      T3/E3 interface."
+    AUGMENTS 	{ nndsxT3E3IfConfigLineEntry }
+    ::= { nndsxT3E3IfUserCurrentStatsTable 1 }
+
+NnDsxT3E3IfUserCurrentStatsEntry ::=
+    SEQUENCE {
+        nndsxT3E3IfUserCurrentStatsUASState        TruthValue,
+        nndsxT3E3IfUserCurrentStatsTimeInCurrent   Unsigned32,
+        nndsxT3E3IfUserCurrentStatsLCV             Unsigned32,
+        nndsxT3E3IfUserCurrentStatsFBE             Unsigned32,
+        nndsxT3E3IfUserCurrentStatsPBE             Unsigned32,
+        nndsxT3E3IfUserCurrentStatsCPBE            Unsigned32,
+        nndsxT3E3IfUserCurrentStatsFEBE            Unsigned32,
+        nndsxT3E3IfUserCurrentStatsCOFA            Unsigned32
+    }
+     
+nndsxT3E3IfUserCurrentStatsUASState OBJECT-TYPE
+    SYNTAX      	TruthValue
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The current status of availablity of the T3/E3 
+	interface."
+    ::= { nndsxT3E3IfUserCurrentStatsEntry 1 }
+
+nndsxT3E3IfUserCurrentStatsTimeInCurrent OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+   	"The number of seconds that have elapsed since
+             the beginning of the current error-measurement
+             period."
+    ::= { nndsxT3E3IfUserCurrentStatsEntry 2 }
+
+nndsxT3E3IfUserCurrentStatsLCV OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+     	"The number of line code violations encountered
+      by a T3/E3 interface."
+    ::= { nndsxT3E3IfUserCurrentStatsEntry 3 }
+
+nndsxT3E3IfUserCurrentStatsFBE OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of frame bit errors encountered
+      by a T3/E3 interface."
+    ::= { nndsxT3E3IfUserCurrentStatsEntry 4 }
+
+nndsxT3E3IfUserCurrentStatsPBE OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of parity bit errors encountered
+      by a T3/E3 interface."
+    ::= { nndsxT3E3IfUserCurrentStatsEntry 5 }
+
+nndsxT3E3IfUserCurrentStatsCPBE OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of C-parity bit errors encountered
+      by a T3/E3 interface."
+    ::= { nndsxT3E3IfUserCurrentStatsEntry 6 }
+
+nndsxT3E3IfUserCurrentStatsFEBE OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of far end block errors encountered
+      by a T3/E3 interface."
+    ::= { nndsxT3E3IfUserCurrentStatsEntry 7 }
+
+
+nndsxT3E3IfUserCurrentStatsCOFA OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of change of frame alignment
+	encountered by a T3/E3 interface."
+   ::= { nndsxT3E3IfUserCurrentStatsEntry 9 }
+    
+
+ 
+-- User lifetime stats table.
+ 
+nndsxT3E3IfUserLifetimeStatsTable OBJECT-TYPE
+     SYNTAX      	SEQUENCE OF NnDsxT3E3IfUserLifetimeStatsEntry
+     MAX-ACCESS  	not-accessible
+     STATUS      	current
+    DESCRIPTION
+   	"A list of T3/E3 interface statistics entries 
+	collected since the system was powered on."
+    ::= { nndsxT3E3IfUserStatsGroup 3 }
+
+nndsxT3E3IfUserLifetimeStatsEntry  OBJECT-TYPE
+    SYNTAX      	NnDsxT3E3IfUserLifetimeStatsEntry
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+    	"An entry containing status entry for each currently active 
+      T3/E3 interface."
+    AUGMENTS { nndsxT3E3IfConfigLineEntry }
+    ::= { nndsxT3E3IfUserLifetimeStatsTable 1 }
+
+NnDsxT3E3IfUserLifetimeStatsEntry ::=
+    SEQUENCE {
+        nndsxT3E3IfUserLifetimeStatsUAS    Unsigned32,
+        nndsxT3E3IfUserLifetimeStatsLCV    Unsigned32,
+        nndsxT3E3IfUserLifetimeStatsLES    Unsigned32,
+        nndsxT3E3IfUserLifetimeStatsFBE    Unsigned32,        
+        nndsxT3E3IfUserLifetimeStatsPBE    Unsigned32,        
+        nndsxT3E3IfUserLifetimeStatsCPBE   Unsigned32,        
+        nndsxT3E3IfUserLifetimeStatsFEBE   Unsigned32,        
+        nndsxT3E3IfUserLifetimeStatsCOFA   Unsigned32
+    }
+    
+
+nndsxT3E3IfUserLifetimeStatsUAS OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"Total number of unavailable seconds encountered
+      by a T3/E3 interface since the interface came up."
+    ::= { nndsxT3E3IfUserLifetimeStatsEntry 4 }
+
+nndsxT3E3IfUserLifetimeStatsLCV OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"Total number of line code violations encountered
+      by a T3/E3 interface since the interface came up."
+    ::= { nndsxT3E3IfUserLifetimeStatsEntry 5 }
+
+
+nndsxT3E3IfUserLifetimeStatsLES OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"Total number of line errored seconds encountered
+      by a T3/E3 interface since the interface came up."
+   ::= { nndsxT3E3IfUserLifetimeStatsEntry 7}
+nndsxT3E3IfUserLifetimeStatsFBE OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"Total number of frame bit errors encountered
+      by a T3/E3 interface since the interface came up."
+   ::= { nndsxT3E3IfUserLifetimeStatsEntry 10 } 
+
+nndsxT3E3IfUserLifetimeStatsPBE OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    "Total number of parity bit errors encountered
+    by a T3/E3 interface since the interface came up."
+   ::= { nndsxT3E3IfUserLifetimeStatsEntry 11 }    
+   
+nndsxT3E3IfUserLifetimeStatsCPBE OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"Total number of C-bit parity errors encountered
+	by a T3/E3 interface since the interface came up."
+   ::= { nndsxT3E3IfUserLifetimeStatsEntry 12 }    
+   
+nndsxT3E3IfUserLifetimeStatsFEBE OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"Total number of far end block errors encountered
+      by a T3/E3 interface since the interface came up."
+   ::= { nndsxT3E3IfUserLifetimeStatsEntry 13 }    
+   
+nndsxT3E3IfUserLifetimeStatsCOFA OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"Total number of frame alignment changes
+	encountered by a T3/E3 interface since the 
+	interface came up."
+   ::= { nndsxT3E3IfUserLifetimeStatsEntry 15 }    
+   
+-- USER archive stats table.
+
+nndsxT3E3IfUserArchiveStatsTable OBJECT-TYPE
+    SYNTAX      	SEQUENCE OF NnDsxT3E3IfUserArchiveStatsEntry
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+    	"A list of T3/E3 interface user archive statistics 
+	entries."
+    ::= { nndsxT3E3IfUserStatsGroup 4 }
+
+nndsxT3E3IfUserArchiveStatsEntry  OBJECT-TYPE
+    SYNTAX      	NnDsxT3E3IfUserArchiveStatsEntry
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+    	"An entry containing a status entry for each 
+	currently active T3/E3 interface."
+    INDEX { nndsxT3E3IfIndex, nndsxT3E3IfUserArchiveStatsInterval }
+    ::= { nndsxT3E3IfUserArchiveStatsTable 1 }
+
+NnDsxT3E3IfUserArchiveStatsEntry ::=
+    SEQUENCE {
+        nndsxT3E3IfUserArchiveStatsInterval  Unsigned32, 
+        nndsxT3E3IfUserArchiveStatsLCV       Unsigned32,
+        nndsxT3E3IfUserArchiveStatsFBE       Unsigned32,
+        nndsxT3E3IfUserArchiveStatsPBE       Unsigned32,
+        nndsxT3E3IfUserArchiveStatsCPBE      Unsigned32,
+        nndsxT3E3IfUserArchiveStatsFEBE      Unsigned32,
+        nndsxT3E3IfUserArchiveStatsCOFA      Unsigned32   
+    }
+    
+nndsxT3E3IfUserArchiveStatsInterval OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+   	"The total number of intervals for which statistics
+      would be collected."
+    ::= { nndsxT3E3IfUserArchiveStatsEntry 1 }
+    
+nndsxT3E3IfUserArchiveStatsLCV OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of line code violations encountered
+      by a T3/E3 interface."
+    ::= { nndsxT3E3IfUserArchiveStatsEntry 2 }
+
+nndsxT3E3IfUserArchiveStatsFBE OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of frame bit errors encountered
+      by  a T3/E3 interface."
+    ::= { nndsxT3E3IfUserArchiveStatsEntry 3 }
+
+nndsxT3E3IfUserArchiveStatsPBE OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of parity bit errors encountered
+      by  a T3/E3 interface."
+    ::= { nndsxT3E3IfUserArchiveStatsEntry 4 }
+
+nndsxT3E3IfUserArchiveStatsCPBE OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of C parity bit errors encountered
+      by a T3/E3 interface."
+    ::= { nndsxT3E3IfUserArchiveStatsEntry 5 }
+
+nndsxT3E3IfUserArchiveStatsFEBE OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of far end block errors encountered
+      by a T3/E3 interface."
+    ::= { nndsxT3E3IfUserArchiveStatsEntry 6 }
+
+
+nndsxT3E3IfUserArchiveStatsCOFA OBJECT-TYPE
+    SYNTAX      	Unsigned32
+    MAX-ACCESS  	read-only
+    STATUS      	current
+    DESCRIPTION
+    	"The number of change of frame alignment encountered
+      by a T3/E3 interface."
+   ::= { nndsxT3E3IfUserArchiveStatsEntry 8 }
+
+-- TRAP definition and related TRAP variable definitions for T3E3 Interface.
+--
+--
+
+nndsxT3E3Number   	OBJECT-TYPE
+    SYNTAX  	DisplayString (SIZE(0..15))
+    MAX-ACCESS  	accessible-for-notify
+    STATUS  	current
+    DESCRIPTION
+     	"This variable indicates the T3/E3 interface number from 
+      where this alarm originated."
+    ::= { nndsxT3E3TrapVariables 1}
+
+nndsxT3E3AlarmType	OBJECT-TYPE
+    SYNTAX  	INTEGER {
+                	te3-alarm-rais (1),
+                	te3-alarm-roof (2),
+                	te3-alarm-rrai (3),
+                	te3-alarm-ris  (4),
+                	te3-alarm-rlos (5),
+                	te3-alarm-rlof (6),
+                	te3-alarm-rexz (7),
+                	te3-alarm-rfebe (8),
+                	te3-alarm-rpe  (9),
+                	te3-alarm-rcpe (10),
+                	te3-alarm-lorc (11),
+                	te3-alarm-tpde (12),
+                	te3-alarm-tais (13),
+                	te3-alarm-trai (14),
+                	te3-alarm-tfebe (15),
+                        te3-alarm-ibtest (16),
+                	te1-alarm-threshold1 (17),
+                	te1-alarm-threshold2 (18),
+                	te1-alarm-threshold3 (19),
+                	te1-alarm-threshold4 (20),
+                	te1-alarm-threshold5 (21),
+                	te1-alarm-threshold6 (22),
+                	te1-alarm-threshold7 (23),
+                	te1-alarm-threshold8 (24),
+                	te1-alarm-threshold9 (25),
+                	te1-alarm-threshold10 (26)
+
+                	}
+    MAX-ACCESS  	accessible-for-notify
+    STATUS  	current
+    DESCRIPTION
+    	"Alarm status T3/E3 interface
+                  RRAI            - Recieve Receive Alarm Indication,
+                  TRAI            - Transmit Receive Alarm Indication,
+                  TAIS            - Transmit Alarm Indication Siganl,
+                  RLOF            - Recieve Loss Of Frame,
+                  RLOS            - Recieve Loss Of Sync,
+                  Loopback        - Status of Loop back,
+                  rcvTestCode     - Receive Test Code,
+                  rblu            - Receive Blue Alarm,
+                  RIS             - Receive Idle Signal,
+                  REXZ            - Receive Excessive Zeros,
+                  RFBE            - Receive Frame Bit Error,
+                  RPE             - Receive Parity Error,
+                  RCPE            - Receive C-Parity Error,
+                  LORC            - Loss Of Receive Clock (LORC),
+                  TPDE            - transmit pulse density,
+                  RAIS            - Recieve Alarm Indication Signal,
+                  TFEBE           - Transmit Far End Block Alarm,
+                  Threshold 1-10  - TRUE if it is configured.
+                                "
+    ::= { nndsxT3E3TrapVariables 2}
+
+nndsxT3E3AlarmOnTrap NOTIFICATION-TYPE 
+    OBJECTS {
+                nndsxT3E3IfIndex,
+                nndsxT3E3Number,
+                nndsxT3E3AlarmType 
+                }
+		STATUS current 
+    DESCRIPTION
+  	"T3/E3 interface alarm trap for Alarm On state."
+             --#TYPE "T3/E3 Alarm On state"
+             --#SUMMARY "T3/E3 Alarm On trap sent from Interface index: %s T3/E3 number: %s with the Alarm type: %s"
+             --#ARGUMENTS {0,1,2}
+             --#SEVERITY MAJOR
+    ::= {nndsxT3E3Notifications 1}
+
+nndsxT3E3AlarmOffTrap NOTIFICATION-TYPE
+    OBJECTS {
+                nndsxT3E3IfIndex,
+                nndsxT3E3Number,
+                nndsxT3E3AlarmType 
+                }
+           STATUS current         
+	   DESCRIPTION
+    	"T3/E3 interface alarm trap for Alarm Off state."
+             --#TYPE "T3/E3 Alarm Off state"
+             --#SUMMARY "T3/E3 Alarm Off trap sent from Interface index: %s T3/E3 number: %s with the Alarm type: %s"
+             --#ARGUMENTS {0,1,2}
+             --#SEVERITY NORMAL
+    ::= {nndsxT3E3Notifications 2}
+
+nndsxT3E3NotificationGroup NOTIFICATION-GROUP
+NOTIFICATIONS{
+			nndsxT3E3AlarmOnTrap,
+			nndsxT3E3AlarmOffTrap
+			}
+STATUS current
+DESCRIPTION
+"dsxT3E3 Notification Group"
+::={nndsxT3E3IfGroup 3}
+END
+

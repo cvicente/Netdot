@@ -6,7 +6,7 @@ IANA-GMPLS-TC-MIB DEFINITIONS ::= BEGIN
 
    ianaGmpls MODULE-IDENTITY
        LAST-UPDATED
-                  "200702270000Z" -- 27 February 2007 00:00:00 GMT
+                  "201004310000Z" -- 13 April 2010
        ORGANIZATION
                   "IANA"
        CONTACT-INFO
@@ -14,7 +14,7 @@ IANA-GMPLS-TC-MIB DEFINITIONS ::= BEGIN
                    Postal: 4676 Admiralty Way, Suite 330
                            Marina del Rey, CA 90292
                    Tel:    +1 310 823 9358
-                   E-Mail: iana@iana.org"
+                   E-Mail: iana&iana.org"
        DESCRIPTION
          "Copyright (C) The IETF Trust (2007).  The initial version
           of this MIB module was published in RFC 4802.  For full legal
@@ -22,7 +22,19 @@ IANA-GMPLS-TC-MIB DEFINITIONS ::= BEGIN
           may be available on:
           http://www.ietf.org/copyrights/ianamib.html"
 
-          REVISION
+         REVISION
+           "201004130000Z" -- 13 April 2010
+         DESCRIPTION
+           "Added LSP Encoding Type tunnelLine(14), Switching Type evpl(30)."
+         REVISION
+           "201002220000Z" -- 22 February 2010
+         DESCRIPTION
+           "Added missing Administrative Status Information Flags 25, 26, and 28."
+         REVISION
+           "201002190000Z" -- 19 February 2010
+         DESCRIPTION
+           "Added dcsc(125)."
+         REVISION
            "200702270000Z" -- 27 February 2007 00:00:00 GMT
          DESCRIPTION
            "Initial version issued as part of RFC 4802."
@@ -54,7 +66,7 @@ IANA-GMPLS-TC-MIB DEFINITIONS ::= BEGIN
              IANA.)
 
              Requests for new values should be made to IANA via
-             email (iana@iana.org)."
+             email (iana&iana.org)."
        REFERENCE
             "1. Generalized Multi-Protocol Label Switching (GMPLS)
                 Signaling Functional Description, RFC 3471, section
@@ -76,7 +88,8 @@ IANA-GMPLS-TC-MIB DEFINITIONS ::= BEGIN
                   tunnelLspFiberChannel(11),   -- Fiber Channel
 
                   tunnelDigitalPath(12),       -- Digital Path
-                  tunnelOpticalChannel(13)     -- Optical Channel
+                  tunnelOpticalChannel(13),    -- Optical Channel
+                  tunnelLine(14)               -- Line
                 }
 
    IANAGmplsSwitchingTypeTC ::= TEXTUAL-CONVENTION
@@ -104,7 +117,7 @@ IANA-GMPLS-TC-MIB DEFINITIONS ::= BEGIN
              IANA.)
 
              Requests for new values should be made to IANA via
-             email (iana@iana.org)."
+             email (iana&iana.org)."
        REFERENCE
             "1. Routing Extensions in Support of Generalized
                 Multi-Protocol Label Switching, RFC 4202, section 2.4.
@@ -117,8 +130,10 @@ IANA-GMPLS-TC-MIB DEFINITIONS ::= BEGIN
                   psc2(2),      -- Packet-Switch-Capable 2
                   psc3(3),      -- Packet-Switch-Capable 3
                   psc4(4),      -- Packet-Switch-Capable 4
+                  evpl(30),     -- Ethernet Virtual Private Line
                   l2sc(51),     -- Layer-2-Switch-Capable
                   tdm(100),     -- Time-Division-Multiplex
+                  dcsc(125),    -- Data Channel Switching Capable
                   lsc(150),     -- Lambda-Switch-Capable
                   fsc(200)      -- Fiber-Switch-Capable
                 }
@@ -148,7 +163,7 @@ IANA-GMPLS-TC-MIB DEFINITIONS ::= BEGIN
              IANA.)
 
              Requests for new values should be made to IANA via
-             email (iana@iana.org)."
+             email (iana&iana.org)."
         REFERENCE
             "1. Generalized Multi-Protocol Label Switching (GMPLS)
                 Signaling Functional Description, RFC 3471, section
@@ -242,7 +257,7 @@ IANA-GMPLS-TC-MIB DEFINITIONS ::= BEGIN
              IANA.)
 
              Requests for new values should be made to IANA via
-             email (iana@iana.org)."
+             email (iana&iana.org)."
         REFERENCE
             "1. Generalized Multi-Protocol Label Switching (GMPLS)
                 Signaling Functional Description, RFC 3471, section 8.
@@ -277,10 +292,10 @@ IANA-GMPLS-TC-MIB DEFINITIONS ::= BEGIN
                   reserved22(22), -- reserved
                   reserved23(23), -- reserved
                   reserved24(24), -- reserved
-                  reserved25(25), -- reserved
-                  reserved26(26), -- reserved
-                  reserved27(27), -- Inhibit Alarm bit (RFC 4783)
-                  reserved28(28), -- reserved
+                  handover(25), -- Handover bit (RFC 5852)
+                  lockout(26), -- Lockout bit (RFC 4872)
+                  inhibitAlarmCommunication(27), -- Inhibit Alarm bit (RFC 4783)
+                  callControl(28), -- Call control bit (RFC 4974)
                   testing(29), -- Testing bit (RFC 3473)
                   administrativelyDown(30), -- Admin down (RFC 3473)
                   deleteInProgress(31) -- Delete bit (RFC 3473)

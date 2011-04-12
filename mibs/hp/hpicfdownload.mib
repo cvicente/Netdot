@@ -14,7 +14,7 @@
 
 
        hpicfDownloadMib MODULE-IDENTITY
-            LAST-UPDATED "200504042143Z"  -- April 4, 2005
+            LAST-UPDATED "200804040000Z"  -- April 4, 2008
             ORGANIZATION "Hewlett Packard Company,
                           Procurve Networking Business" 
             CONTACT-INFO
@@ -25,6 +25,13 @@
                     "This MIB module manages the network download
                     capabilities for devices in the HP Integrated
                     Communication Facility product line."
+
+            REVISION     "200804040000Z"  -- April 04, 2008
+            DESCRIPTION  "Objects hpicfDownloadTftp6Config & 
+                          hpicfDownloadTftp6SeverConfig are deprecated."
+
+            REVISION     "200711051616Z"  -- November 5, 2007
+            DESCRIPTION  "Added scalar object hpicfDownloadConfigFileUpdateEnabled."
 
             REVISION     "200011032216Z"  -- November 3, 2000
             DESCRIPTION  "Updated division name."
@@ -547,8 +554,9 @@
                         enabled(2)
                     }
         MAX-ACCESS  read-write
-        STATUS      current
-        DESCRIPTION "This object allows switch to enable or disable
+        STATUS      deprecated 
+        DESCRIPTION "********* THIS OBJECT IS DEPRECATED ********
+                     This object allows switch to enable or disable
                      tftp. Default value is 2. Cannot be enabled if
                      sftp is enabled."
         ::= { hpicfDownload 7 }
@@ -556,12 +564,23 @@
         hpicfDownloadTftp6ServerConfig OBJECT-TYPE
         SYNTAX      TruthValue
         MAX-ACCESS  read-write
-        STATUS      current
-        DESCRIPTION "When this is true(1), the TFTP server is enabled
+        STATUS      deprecated
+        DESCRIPTION "********* THIS OBJECT IS DEPRECATED ********
+                     When this is true(1), the TFTP server is enabled
                      and will process incoming requests. When this is 
                      false(2), the TFTP server will be shut down and 
                      will not accept incoming connections."
         ::= { hpicfDownload 8 }
+
+        hpicfDownloadConfigFileUpdateEnabled OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "This object facilitates enabling/disabling
+                     configuration file update through DHCP. By default,
+                     this is enabled."
+        ::= { hpicfDownload 10 }
+
 --
 
 -- Download Table 
@@ -607,7 +626,9 @@
                hpicfDownloadInetPassesLeft         Integer32,
                hpicfDownloadInetOctetCount         Integer32,
                hpicfDownloadInetDestination        DisplayString,
-               hpicfDownloadInetOpType             INTEGER
+               hpicfDownloadInetOpType             INTEGER,
+               hpicfDownloadInetFileType           INTEGER,
+               hpicfDownloadInetFileModeType       INTEGER
            }
      hpicfDownloadInetIndex OBJECT-TYPE
            SYNTAX     Integer32 
@@ -619,7 +640,7 @@
  
       hpicfDownloadInetTAddressType OBJECT-TYPE
            SYNTAX     InetAddressType
-           MAX-ACCESS read-write
+           MAX-ACCESS read-write 
            STATUS     current
            DESCRIPTION
                    "The type of address in the corresponding
@@ -658,7 +679,7 @@
     
        hpicfDownloadInetOwnerAddressType OBJECT-TYPE
            SYNTAX     InetAddressType
-           MAX-ACCESS read-write
+           MAX-ACCESS read-write 
            STATUS     current
            DESCRIPTION
                    "The type of address in the corresponding
@@ -678,7 +699,7 @@
                                             
        hpicfDownloadInetSourcePort OBJECT-TYPE
            SYNTAX     Integer32 (0..65535)
-           MAX-ACCESS read-write
+           MAX-ACCESS read-write 
            STATUS     current
            DESCRIPTION
                    "The port of the management station 
@@ -687,7 +708,7 @@
 
        hpicfDownloadInetDestinationPort OBJECT-TYPE
            SYNTAX     Integer32 (0..65535)
-           MAX-ACCESS read-write
+           MAX-ACCESS read-write 
            STATUS     current
            DESCRIPTION
                    "The port of the management station 
@@ -700,7 +721,7 @@
                           tftp(2),
                           xmodem(3)
                       }
-           MAX-ACCESS read-write
+           MAX-ACCESS read-write 
            STATUS     current
            DESCRIPTION
                    "The FileTransfer Method used by the management station
@@ -862,12 +883,16 @@
            DESCRIPTION
                    "The destination of the download file on the agent.
                    The allowable destination names depend on the type
-                   of agent being downloaded.  In all cases, a
-                   destination of '/os/primary' or '/os/secondary'
-     indicates that this is a download of the agent's
-                   firmware image.  The agent will use '/os/primary' 
-     as the default value for this object when the row
-                   is created. 
+                   of agent being downloaded. 
+                   In case of firmware download,destination can be
+                   '/os/primary' or '/os/secondary'
+                   The agent will use '/os/primary' as the default 
+                   value for this object when the row is created.
+                   In case of downloading a config file, this object
+                   is set to the name of the config file on the switch
+                   to where it should be downloaded.
+                   In case of downloading the startup config, this
+                   object is nulled out as it is not used.
 
                    ICF router agents also allow a download of a config
                    file.  Currently, the name of the config file on the
@@ -884,13 +909,42 @@
                                ftget(1),
                                ftput(2)
                               }
-           MAX-ACCESS read-write
+           MAX-ACCESS read-write 
            STATUS     current 
            DESCRIPTION
-                   "The OpType which is used for Geting or Puting 
-                                                                            file from to the server."  
+                   "The OpType which is used for Geting or Putting 
+                   firmware and config from/to the TFTP server."  
            ::= { hpicfDownloadInetEntry 17 }
 
+
+       hpicfDownloadInetFileType OBJECT-TYPE
+           SYNTAX     INTEGER {
+                          flash(1),
+                          startUpConfig(2),
+                          runningConfig(3),
+                          config(4)
+                      }
+           MAX-ACCESS read-create
+           STATUS     current
+           DESCRIPTION
+                   "The FileType used by the management station
+                    to initiate the upload/download attempt.
+                    OpType-ftput is not supported for flash.
+                    OpType-ftget is not supported for runningConfig"
+           ::= { hpicfDownloadInetEntry 18}
+
+   
+       hpicfDownloadInetFileModeType OBJECT-TYPE
+           SYNTAX     INTEGER {
+                        unix(1),
+                        pc(2)
+                      }
+           MAX-ACCESS read-create
+           STATUS     current
+           DESCRIPTION
+                   "The FileModeType used by the management station
+                    to initiate the download attempt."
+           ::= { hpicfDownloadInetEntry 19}
        -- conformance information
 
        hpicfDownloadConformance

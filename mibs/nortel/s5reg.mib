@@ -8,13 +8,13 @@ IMPORTS
         FROM S5-ROOT-MIB;
 
 s5RegMib MODULE-IDENTITY
-       LAST-UPDATED    "200705080000Z"
+       LAST-UPDATED    "200910130000Z"
        ORGANIZATION    "Nortel Networks"
        CONTACT-INFO    "Nortel Networks"
        DESCRIPTION
            "S5000 Registration MIB
 
-            Copyright 1996 - 2006 Nortel Networks, Inc.
+            Copyright 1996 - 2009 Nortel Networks, Inc.
             All rights reserved.
             This Bay Networks SNMP Management Information Base Specification
             (Specification) embodies Bay Networks' confidential and
@@ -25,6 +25,46 @@ s5RegMib MODULE-IDENTITY
             This Specification is supplied 'AS IS,' and Bay Networks makes
             no warranty, either express or implied, as to the use,
             operation, condition, or performance of the Specification."
+      
+       REVISION "200910130000Z" -- 13 Oct 2009	
+       DESCRIPTION "Version 233:  Added s5ChasComBrdGbic-EX."
+      
+       REVISION "200906090000Z" -- 09 Jun 2009	
+       DESCRIPTION "Version 232:  Added regs for WC8180."
+      
+       REVISION "200905280000Z" -- 28 May 2009	
+       DESCRIPTION "Version 231:  Fixup HW CPLD OIDs."
+      
+       REVISION "200904150000Z" -- 15 Apr 2009	
+       DESCRIPTION "Version 230:  Added secondary flash registrations for ESU."
+      
+       REVISION "200903300000Z" -- 30 Mar 2009	
+       DESCRIPTION "Version 229:  Added CPU, Board1 and Board2 sensors for ESU.
+                                  Added HW CPLD Store for ESU"
+
+       REVISION "200812160000Z" -- 16 Dec 2008	
+       DESCRIPTION "Version 228:  Changed ers64xx to ers66xx."
+
+       REVISION "200811210000Z" -- 21 Nov 2008	
+       DESCRIPTION "Version 227:  Added additional regs for 56xx pwr supplies."
+
+       REVISION "200810290000Z" -- 29 Oct 2008	
+       DESCRIPTION "Version 226:  Added registrations for ERS64xx."
+
+       REVISION "200810140000Z" -- 14 Oct 2008	
+       DESCRIPTION "Version 225:  Added registrations for ERS4524-GT-PWR."
+
+       REVISION "200805220000Z" -- 22 May 2008	
+       DESCRIPTION "Version 224:  Added additional registrations for ERS56xx."
+
+       REVISION "200711210000Z" -- 21 Nov 2007	
+       DESCRIPTION "Version 223:  Added registrations for new GBIC types."
+
+       REVISION "200710160000Z" -- 16 Oct 2007	
+       DESCRIPTION "Version 222:  Added registrations for ESU1860/1880."
+
+       REVISION "200706040000Z" -- 04 June 2007
+       DESCRIPTION "Version 221:  Added registrations for ERS56xx."
 
        REVISION "200705080000Z" -- 08 May 2007
        DESCRIPTION "Version 220:  Added registrations for USB."
@@ -595,6 +635,8 @@ s5ChasTypeERS4526T-PWR
     OBJECT IDENTIFIER ::= { s5ChasTypeERS45xx 9 }
 s5ChasTypeERS4526T
     OBJECT IDENTIFIER ::= { s5ChasTypeERS45xx 10 }
+s5ChasTypeERS4524GT-PWR
+    OBJECT IDENTIFIER ::= { s5ChasTypeERS45xx 11 }
 
 -- The chassis types for ERS 25xx
 s5ChasTypeERS25xx
@@ -608,7 +650,51 @@ s5ChasTypeERS2500-50T
 s5ChasTypeERS2500-50T-PWR
     OBJECT IDENTIFIER ::= { s5ChasTypeERS25xx 4 }
 
+-- The chassis types for ERS 56xx
+s5ChasTypeERS56xx
+    OBJECT IDENTIFIER ::= { s5ChasTypeVal 103 }
+s5ChasTypeERS5698-TFD-PWR
+    OBJECT IDENTIFIER ::= { s5ChasTypeERS56xx 1 }
+s5ChasTypeERS5698-TFD
+    OBJECT IDENTIFIER ::= { s5ChasTypeERS56xx 2 }
+s5ChasTypeERS5650-TD-PWR
+    OBJECT IDENTIFIER ::= { s5ChasTypeERS56xx 3 }
+s5ChasTypeERS5650-TD
+    OBJECT IDENTIFIER ::= { s5ChasTypeERS56xx 4 }
+s5ChasTypeERS5632-FD
+    OBJECT IDENTIFIER ::= { s5ChasTypeERS56xx 5 }
 
+-- The chassis types for ESU1860
+s5ChasTypeESU1860
+    OBJECT IDENTIFIER ::= { s5ChasTypeVal 104 }
+s5ChasTypeESU1860S
+    OBJECT IDENTIFIER ::= { s5ChasTypeESU1860 1 }
+s5ChasTypeESU1860B
+    OBJECT IDENTIFIER ::= { s5ChasTypeESU1860 2 }
+s5ChasTypeESU1860T
+    OBJECT IDENTIFIER ::= { s5ChasTypeESU1860 3 }
+s5ChasTypeESU1860V
+    OBJECT IDENTIFIER ::= { s5ChasTypeESU1860 4 }
+
+-- The chassis types for ESU1880
+s5ChasTypeESU1880
+    OBJECT IDENTIFIER ::= { s5ChasTypeVal 105 }
+s5ChasTypeESU1880S
+    OBJECT IDENTIFIER ::= { s5ChasTypeESU1880 1 }
+
+-- The chassis types for ERS 66xx
+s5ChasTypeERS66xx
+    OBJECT IDENTIFIER ::= { s5ChasTypeVal 106 }
+s5ChasTypeERS642-XSGT
+    OBJECT IDENTIFIER ::= { s5ChasTypeERS66xx 1 }
+s5ChasTypeERS6632-XTS
+    OBJECT IDENTIFIER ::= { s5ChasTypeERS66xx 2 }
+
+-- The chassis types for WC 8xxx
+s5ChasTypeWC8xxx
+    OBJECT IDENTIFIER ::= { s5ChasTypeVal 107 }
+s5ChasTypeWC8180
+    OBJECT IDENTIFIER ::= { s5ChasTypeWC8xxx 1 }
 
 -- Registrations for Chassis Group Types
 -- (values for object s5ChasGrpType)
@@ -1433,6 +1519,210 @@ s5ChasComERS4526T-PWRPwr-Main -- Unit Power Supply
 s5ChasComERS4526T-PWRPwr-RedundFeed -- Redundant Power Supply Feed
     OBJECT IDENTIFIER ::= { s5ChasComERS4526T-PWRPwr 2 }
 
+-- ERS 5698-TFD-PWR Power Supply (Botany Bay)
+s5ChasComERS5698-TFD-PWRPwr
+    OBJECT IDENTIFIER ::= { s5ChasComMPwr 104 }
+s5ChasComERS5698-TFD-PWRPwr-Main -- Unit Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5698-TFD-PWRPwr 1 }
+s5ChasComERS5698-TFD-PWRPwr-RedundFeed -- Redundant Power Supply Feed
+    OBJECT IDENTIFIER ::= { s5ChasComERS5698-TFD-PWRPwr 2 }
+s5ChasComERS5698-TFD-PWRPwr-None -- No Power Supply installed
+    OBJECT IDENTIFIER ::= { s5ChasComERS5698-TFD-PWRPwr 3 }
+s5ChasComERS5698-TFD-PWRPwr-AC-DC-12V-300W -- AC-DC-12V-300W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5698-TFD-PWRPwr 4 }
+s5ChasComERS5698-TFD-PWRPwr-DC-DC-12V-300W -- DC-DC-12V-300W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5698-TFD-PWRPwr 5 }
+s5ChasComERS5698-TFD-PWRPwr-AC-DC-48V-600W -- AC-DC-48V-600W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5698-TFD-PWRPwr 6 }
+s5ChasComERS5698-TFD-PWRPwr-DC-DC-48V-600W -- DC-DC-48V-600W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5698-TFD-PWRPwr 7 }
+s5ChasComERS5698-TFD-PWRPwr-AC-DC-48V-1000W -- AC-DC-48V-1000W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5698-TFD-PWRPwr 8 }
+s5ChasComERS5698-TFD-PWRPwr-DC-DC-48V-1000W -- DC-DC-48V-1000W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5698-TFD-PWRPwr 9 }
+
+-- ERS 5698-TFD Power Supply (Botany Bay)
+s5ChasComERS5698-TFDPwr
+    OBJECT IDENTIFIER ::= { s5ChasComMPwr 105 }
+s5ChasComERS5698-TFDPwr-Main -- Unit Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5698-TFDPwr 1 }
+s5ChasComERS5698-TFDPwr-RedundFeed -- Redundant Power Supply Feed
+    OBJECT IDENTIFIER ::= { s5ChasComERS5698-TFDPwr 2 }
+s5ChasComERS5698-TFDPwr-None -- No Power Supply installed
+    OBJECT IDENTIFIER ::= { s5ChasComERS5698-TFDPwr 3 }
+s5ChasComERS5698-TFDPwr-AC-DC-12V-300W -- AC-DC-12V-300W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5698-TFDPwr 4 }
+s5ChasComERS5698-TFDPwr-DC-DC-12V-300W -- DC-DC-12V-300W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5698-TFDPwr 5 }
+s5ChasComERS5698-TFDPwr-AC-DC-48V-600W -- AC-DC-48V-600W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5698-TFDPwr 6 }
+s5ChasComERS5698-TFDPwr-DC-DC-48V-600W -- DC-DC-48V-600W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5698-TFDPwr 7 }
+s5ChasComERS5698-TFDPwr-AC-DC-48V-1000W -- AC-DC-48V-1000W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5698-TFDPwr 8 }
+s5ChasComERS5698-TFDPwr-DC-DC-48V-1000W -- DC-DC-48V-1000W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5698-TFDPwr 9 }
+
+-- ERS 5650-TD-PWR Power Supply (Botany Bay)
+s5ChasComERS5650-TD-PWRPwr
+    OBJECT IDENTIFIER ::= { s5ChasComMPwr 106 }
+s5ChasComERS5650-TD-PWRPwr-Main -- Unit Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5650-TD-PWRPwr 1 }
+s5ChasComERS5650-TD-PWRPwr-RedundFeed -- Redundant Power Supply Feed
+    OBJECT IDENTIFIER ::= { s5ChasComERS5650-TD-PWRPwr 2 }
+s5ChasComERS5650-TD-PWRPwr-None -- No Power Supply installed
+    OBJECT IDENTIFIER ::= { s5ChasComERS5650-TD-PWRPwr 3 }
+s5ChasComERS5650-TD-PWRPwr-AC-DC-12V-300W -- AC-DC-12V-300W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5650-TD-PWRPwr 4 }
+s5ChasComERS5650-TD-PWRPwr-DC-DC-12V-300W -- DC-DC-12V-300W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5650-TD-PWRPwr 5 }
+s5ChasComERS5650-TD-PWRPwr-AC-DC-48V-600W -- AC-DC-48V-600W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5650-TD-PWRPwr 6 }
+s5ChasComERS5650-TD-PWRPwr-DC-DC-48V-600W -- DC-DC-48V-600W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5650-TD-PWRPwr 7 }
+s5ChasComERS5650-TD-PWRPwr-AC-DC-48V-1000W -- AC-DC-48V-1000W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5650-TD-PWRPwr 8 }
+s5ChasComERS5650-TD-PWRPwr-DC-DC-48V-1000W -- DC-DC-48V-1000W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5650-TD-PWRPwr 9 }
+
+-- ERS 5650-TD Power Supply (Botany Bay)
+s5ChasComERS5650-TDPwr
+    OBJECT IDENTIFIER ::= { s5ChasComMPwr 107 }
+s5ChasComERS5650-TDPwr-Main -- Unit Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5650-TDPwr 1 }
+s5ChasComERS5650-TDPwr-RedundFeed -- Redundant Power Supply Feed
+    OBJECT IDENTIFIER ::= { s5ChasComERS5650-TDPwr 2 }
+s5ChasComERS5650-TDPwr-None -- No Power Supply installed
+    OBJECT IDENTIFIER ::= { s5ChasComERS5650-TDPwr 3 }
+s5ChasComERS5650-TDPwr-AC-DC-12V-300W -- AC-DC-12V-300W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5650-TDPwr 4 }
+s5ChasComERS5650-TDPwr-DC-DC-12V-300W -- DC-DC-12V-300W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5650-TDPwr 5 }
+s5ChasComERS5650-TDPwr-AC-DC-48V-600W -- AC-DC-48V-600W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5650-TDPwr 6 }
+s5ChasComERS5650-TDPwr-DC-DC-48V-600W -- DC-DC-48V-600W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5650-TDPwr 7 }
+s5ChasComERS5650-TDPwr-AC-DC-48V-1000W -- AC-DC-48V-1000W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5650-TDPwr 8 }
+s5ChasComERS5650-TDPwr-DC-DC-48V-1000W -- DC-DC-48V-1000W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5650-TDPwr 9 }
+
+-- ERS 5632-FD Power Supply (Botany Bay)
+s5ChasComERS5632-FDPwr
+    OBJECT IDENTIFIER ::= { s5ChasComMPwr 108 }
+s5ChasComERS5632-FDPwr-Main -- Unit Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5632-FDPwr 1 }
+s5ChasComERS5632-FDPwr-RedundFeed -- Redundant Power Supply Feed
+    OBJECT IDENTIFIER ::= { s5ChasComERS5632-FDPwr 2 }
+s5ChasComERS5632-FDPwr-None -- No Power Supply installed
+    OBJECT IDENTIFIER ::= { s5ChasComERS5632-FDPwr 3 }
+s5ChasComERS5632-FDPwr-AC-DC-12V-300W -- AC-DC-12V-300W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5632-FDPwr 4 }
+s5ChasComERS5632-FDPwr-DC-DC-12V-300W -- DC-DC-12V-300W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5632-FDPwr 5 }
+s5ChasComERS5632-FDPwr-AC-DC-48V-600W -- AC-DC-48V-600W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5632-FDPwr 6 }
+s5ChasComERS5632-FDPwr-DC-DC-48V-600W -- DC-DC-48V-600W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5632-FDPwr 7 }
+s5ChasComERS5632-FDPwr-AC-DC-48V-1000W -- AC-DC-48V-1000W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5632-FDPwr 8 }
+s5ChasComERS5632-FDPwr-DC-DC-48V-1000W -- DC-DC-48V-1000W Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS5632-FDPwr 9 }
+
+-- ESU1860S Power Supply 
+s5ChasComESU1860SPwr
+    OBJECT IDENTIFIER ::= { s5ChasComMPwr 109 }
+s5ChasComESU1860SPwr-Main-DC -- Unit Power Supply DC
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860SPwr 1 }
+s5ChasComESU1860SPwr-Main-AC -- Unit Power Supply AC
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860SPwr 2 }
+s5ChasComESU1860SPwr-RedundFeed-DC -- Redundant Power Supply Feed DC
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860SPwr 3 }
+s5ChasComESU1860SPwr-RedundFeed-AC -- Redundant Power Supply Feed AC
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860SPwr 4 }
+
+
+-- ESU1860B Power Supply 
+s5ChasComESU1860BPwr
+    OBJECT IDENTIFIER ::= { s5ChasComMPwr 110 }
+s5ChasComESU1860BPwr-Main-DC -- Unit Power Supply DC
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860BPwr 1 }
+s5ChasComESU1860BPwr-Main-AC -- Unit Power Supply AC
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860BPwr 2 }
+s5ChasComESU1860BPwr-RedundFeed-DC -- Redundant Power Supply Feed DC
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860BPwr 3 }
+s5ChasComESU1860BPwr-RedundFeed-AC -- Redundant Power Supply Feed AC
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860BPwr 4 }
+
+
+-- ESU1860T Power Supply 
+s5ChasComESU1860TPwr
+    OBJECT IDENTIFIER ::= { s5ChasComMPwr 111 }
+s5ChasComESU1860TPwr-Main-DC -- Unit Power Supply DC
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860TPwr 1 }
+s5ChasComESU1860TPwr-Main-AC -- Unit Power Supply AC
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860TPwr 2 }
+s5ChasComESU1860TPwr-RedundFeed-DC -- Redundant Power Supply Feed DC
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860TPwr 3 }
+s5ChasComESU1860TPwr-RedundFeed-AC -- Redundant Power Supply Feed AC
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860TPwr 4 }
+
+-- ESU1860V Power Supply 
+s5ChasComESU1860VPwr
+    OBJECT IDENTIFIER ::= { s5ChasComMPwr 112 }
+s5ChasComESU1860VPwr-Main-DC -- Unit Power Supply DC
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860VPwr 1 }
+s5ChasComESU1860VPwr-Main-AC -- Unit Power Supply AC
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860VPwr 2 }
+s5ChasComESU1860VPwr-RedundFeed-DC -- Redundant Power Supply Feed DC
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860VPwr 3 }
+s5ChasComESU1860VPwr-RedundFeed-AC -- Redundant Power Supply Feed AC
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860VPwr 4 }
+
+-- ESU1880S Power Supply 
+s5ChasComESU1880SPwr
+    OBJECT IDENTIFIER ::= { s5ChasComMPwr 113 }
+s5ChasComESU1880SPwr-Main-DC -- Unit Power Supply DC
+    OBJECT IDENTIFIER ::= { s5ChasComESU1880SPwr 1 }
+s5ChasComESU1880SPwr-Main-AC -- Unit Power Supply AC
+    OBJECT IDENTIFIER ::= { s5ChasComESU1880SPwr 2 }
+s5ChasComESU1880SPwr-RedundFeed-DC -- Redundant Power Supply Feed DC
+    OBJECT IDENTIFIER ::= { s5ChasComESU1880SPwr 3 }
+s5ChasComESU1880SPwr-RedundFeed-AC -- Redundant Power Supply Feed AC
+    OBJECT IDENTIFIER ::= { s5ChasComESU1880SPwr 4 }
+
+-- ERS 4524GT-PWR Power Supply (Botany Bay)
+s5ChasComERS4524GT-PWRPwr
+    OBJECT IDENTIFIER ::= { s5ChasComMPwr 114 }
+s5ChasComERS4524GT-PWRPwr-Main -- Unit Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS4524GT-PWRPwr 1 }
+s5ChasComERS4524GT-PWRPwr-RedundFeed -- Redundant Power Supply Feed
+    OBJECT IDENTIFIER ::= { s5ChasComERS4524GT-PWRPwr 2 }
+
+-- ERS 6628XSGT Power Supply (Botany Bay)
+s5ChasComERS6628XSGTPwr
+    OBJECT IDENTIFIER ::= { s5ChasComMPwr 115 }
+s5ChasComERS6628XSGTPwr-Main -- Unit Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS6628XSGTPwr 1 }
+s5ChasComERS6628XSGTPwr-RedundFeed -- Redundant Power Supply Feed
+    OBJECT IDENTIFIER ::= { s5ChasComERS6628XSGTPwr 2 }
+
+-- ERS 6632XSGT Power Supply (Botany Bay)
+s5ChasComERS6632XTSPwr
+    OBJECT IDENTIFIER ::= { s5ChasComMPwr 116 }
+s5ChasComERS6632XTSPwr-Main -- Unit Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComERS6632XTSPwr 1 }
+s5ChasComERS6632XTSPwr-RedundFeed -- Redundant Power Supply Feed
+    OBJECT IDENTIFIER ::= { s5ChasComERS6632XTSPwr 2 }
+
+-- WC 8xxx Power Supply (Bonaire)
+s5ChasComWC8180Pwr
+    OBJECT IDENTIFIER ::= { s5ChasComMPwr 117 }
+s5ChasComWC8180Pwr-Main -- Unit Power Supply
+    OBJECT IDENTIFIER ::= { s5ChasComWC8180Pwr 1 }
+s5ChasComWC8180Pwr-RedundFeed -- Redundant Power Supply Feed
+    OBJECT IDENTIFIER ::= { s5ChasComWC8180Pwr 2 }
+
 
 -- Model 5000 (721-018) 950 Watt AC Chassis Power Supply with
 -- internal fan and temperature sensor (but returning a differnt ID)
@@ -1606,6 +1896,86 @@ s5ChasComM5000TmpSnrA
 -- Model 5005 (900-???) Chassis temperature sensor
 s5ChasComM5005TmpSnrA
     OBJECT IDENTIFIER ::= { s5ChasComM5005TmpSnr 1 }
+
+-- Model ESU1860S Chassis temperature sensor
+s5ChasComESU1860STmpSnr
+    OBJECT IDENTIFIER ::= { s5ChasComMTmpSnr 18 }
+
+-- Model ESU1860S CPU temperature sensor
+s5ChasComESU1860STmpSnrCPU
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860STmpSnr 1 }
+
+-- Model ESU1860S Board1 temperature sensor
+s5ChasComESU1860STmpSnrBoard1
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860STmpSnr 2 }
+
+-- Model ESU1860S Board2 temperature sensor
+s5ChasComESU1860STmpSnrBoard2
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860STmpSnr 3 }
+
+-- Model ESU1860B Chassis temperature sensor
+s5ChasComESU1860BTmpSnr
+    OBJECT IDENTIFIER ::= { s5ChasComMTmpSnr 19 }
+
+-- Model ESU1860B CPU temperature sensor
+s5ChasComESU1860BTmpSnrCPU
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860BTmpSnr 1 }
+
+-- Model ESU1860B Board1 temperature sensor
+s5ChasComESU1860BTmpSnrBoard1
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860BTmpSnr 2 }
+
+-- Model ESU1860B Board2 temperature sensor
+s5ChasComESU1860BTmpSnrBoard2
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860BTmpSnr 3 }
+
+-- Model ESU1860T Chassis temperature sensor
+s5ChasComESU1860TTmpSnr
+    OBJECT IDENTIFIER ::= { s5ChasComMTmpSnr 20 }
+
+-- Model ESU1860T CPU temperature sensor
+s5ChasComESU1860TTmpSnrCPU
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860TTmpSnr 1 }
+
+-- Model ESU1860T Board1 temperature sensor
+s5ChasComESU1860TTmpSnrBoard1
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860TTmpSnr 2 }
+
+-- Model ESU1860T Board2 temperature sensor
+s5ChasComESU1860TTmpSnrBoard2
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860TTmpSnr 3 }
+
+-- Model ESU1860V Chassis temperature sensor
+s5ChasComESU1860VTmpSnr
+    OBJECT IDENTIFIER ::= { s5ChasComMTmpSnr 21 }
+
+-- Model ESU1860V CPU temperature sensor
+s5ChasComESU1860VTmpSnrCPU
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860VTmpSnr 1 }
+
+-- Model ESU1860V Board1 temperature sensor
+s5ChasComESU1860VTmpSnrBoard1
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860VTmpSnr 2 }
+
+-- Model ESU1860V Board2 temperature sensor
+s5ChasComESU1860VTmpSnrBoard2
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860VTmpSnr 3 }
+
+-- Model ESU1880S Chassis temperature sensor
+s5ChasComESU1880STmpSnr
+    OBJECT IDENTIFIER ::= { s5ChasComMTmpSnr 22 }
+
+-- Model ESU1880S CPU temperature sensor
+s5ChasComESU1880STmpSnrCPU
+    OBJECT IDENTIFIER ::= { s5ChasComESU1880STmpSnr 1 }
+
+-- Model ESU1880S Board1 temperature sensor
+s5ChasComESU1880STmpSnrBoard1
+    OBJECT IDENTIFIER ::= { s5ChasComESU1880STmpSnr 2 }
+
+-- Model ESU1880S Board2 temperature sensor
+s5ChasComESU1880STmpSnrBoard2
+    OBJECT IDENTIFIER ::= { s5ChasComESU1880STmpSnr 3 }
 
 -- Chassis level Fans
 s5ChasComFan OBJECT IDENTIFIER ::= { s5ChasComTypeVal 4 }
@@ -2013,6 +2383,89 @@ s5ChasComERS4526T-PWRFan
 s5ChasComERS4526T-PWRUnitFan
     OBJECT IDENTIFIER ::= { s5ChasComERS4526T-PWRFan 1 }
 
+-- ERS5698-TFD-PWR Switch Fan
+s5ChasComERS5698-TFD-PWRFan
+    OBJECT IDENTIFIER ::= { s5ChasComMFan 104 }
+s5ChasComERS5698-TFD-PWRUnitFan
+    OBJECT IDENTIFIER ::= { s5ChasComERS5698-TFD-PWRFan 1 }
+
+-- ERS5698-TFD Switch Fan
+s5ChasComERS5698-TFDFan
+    OBJECT IDENTIFIER ::= { s5ChasComMFan 105 }
+s5ChasComERS5698-TFDUnitFan
+    OBJECT IDENTIFIER ::= { s5ChasComERS5698-TFDFan 1 }
+
+-- ERS5650-TD-PWR Switch Fan
+s5ChasComERS5650-TD-PWRFan
+    OBJECT IDENTIFIER ::= { s5ChasComMFan 106 }
+s5ChasComERS5650-TD-PWRUnitFan
+    OBJECT IDENTIFIER ::= { s5ChasComERS5650-TD-PWRFan 1 }
+
+-- ERS5650-TD Switch Fan
+s5ChasComERS5650-TDFan
+    OBJECT IDENTIFIER ::= { s5ChasComMFan 107 }
+s5ChasComERS5650-TDUnitFan
+    OBJECT IDENTIFIER ::= { s5ChasComERS5650-TDFan 1 }
+
+-- ERS5632-FD Switch Fan
+s5ChasComERS5632-FDFan
+    OBJECT IDENTIFIER ::= { s5ChasComMFan 108 }
+s5ChasComERS5632-FDUnitFan
+    OBJECT IDENTIFIER ::= { s5ChasComERS5632-FDFan 1 }
+
+-- ESU1860S Switch Fan
+s5ChasComESU1860SFan
+    OBJECT IDENTIFIER ::= { s5ChasComMFan 109 }
+s5ChasComESU1860SUnitFan
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860SFan 1 }
+
+-- ESU1860B Switch Fan
+s5ChasComESU1860BFan
+    OBJECT IDENTIFIER ::= { s5ChasComMFan 110 }
+s5ChasComESU1860BUnitFan
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860BFan 1 }
+
+-- ESU1860T Switch Fan
+s5ChasComESU1860TFan
+    OBJECT IDENTIFIER ::= { s5ChasComMFan 111 }
+s5ChasComESU1860TUnitFan
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860TFan 1 }
+
+-- ESU1860V Switch Fan
+s5ChasComESU1860VFan
+    OBJECT IDENTIFIER ::= { s5ChasComMFan 112 }
+s5ChasComESU1860VUnitFan
+    OBJECT IDENTIFIER ::= { s5ChasComESU1860VFan 1 }
+
+-- ESU1880S Switch Fan
+s5ChasComESU1880SFan
+    OBJECT IDENTIFIER ::= { s5ChasComMFan 113 }
+s5ChasComESU1880SUnitFan
+    OBJECT IDENTIFIER ::= { s5ChasComESU1880SFan 1 }
+
+-- ERS4524GT-PWR Switch Fan
+s5ChasComERS4524GT-PWRFan
+    OBJECT IDENTIFIER ::= { s5ChasComMFan 114 }
+s5ChasComERS4524GT-PWRUnitFan
+    OBJECT IDENTIFIER ::= { s5ChasComERS4524GT-PWRFan 1 }
+
+-- ERS6628XSGT Switch Fan
+s5ChasComERS6628XSGTFan
+    OBJECT IDENTIFIER ::= { s5ChasComMFan 115 }
+s5ChasComERS6628XSGTUnitFan
+    OBJECT IDENTIFIER ::= { s5ChasComERS6628XSGTFan 1 }
+
+-- ERS6632XTS Switch Fan
+s5ChasComERS6632XTSFan
+    OBJECT IDENTIFIER ::= { s5ChasComMFan 116 }
+s5ChasComERS6632XTSUnitFan
+    OBJECT IDENTIFIER ::= { s5ChasComERS6632XTSFan 1 }
+
+-- WC8180 Switch Fan
+s5ChasComWC8180Fan
+    OBJECT IDENTIFIER ::= { s5ChasComMFan 117 }
+s5ChasComWC8180UnitFan
+    OBJECT IDENTIFIER ::= { s5ChasComWC8180Fan 1 }
 
 
 -- Model 5000 (900-003) Chassis fan
@@ -4440,6 +4893,10 @@ s5ChasComBrdGbic-10G-SR      OBJECT IDENTIFIER ::= { s5ChasComBrdGbic 10 }
 s5ChasComBrdGbic-10G-LR      OBJECT IDENTIFIER ::= { s5ChasComBrdGbic 11 }
 s5ChasComBrdGbic-10G-ER      OBJECT IDENTIFIER ::= { s5ChasComBrdGbic 12 }
 s5ChasComBrdGbic-10G-LX4     OBJECT IDENTIFIER ::= { s5ChasComBrdGbic 13 }
+s5ChasComBrdGbic-10G-ZR      OBJECT IDENTIFIER ::= { s5ChasComBrdGbic 14 }
+s5ChasComBrdGbic-10G-LRM     OBJECT IDENTIFIER ::= { s5ChasComBrdGbic 15 }
+s5ChasComBrdGbic-T1          OBJECT IDENTIFIER ::= { s5ChasComBrdGbic 16 }
+s5ChasComBrdGbic-EX          OBJECT IDENTIFIER ::= { s5ChasComBrdGbic 17 }
 
 -- OPTera Metro 1450 Ethernet Service Module
 s5ChasComBrdMetro1450ESM-12T2GBIC
@@ -5102,6 +5559,230 @@ s5ChasComBrdERS4526T-PWRStoreDram -- DRAM storage
 s5ChasComBrdUsb OBJECT IDENTIFIER ::= { s5ChasComMod 780 }
 s5ChasComBrdUsb-None   OBJECT IDENTIFIER ::= { s5ChasComBrdUsb 1 }
 s5ChasComBrdUsb-Flash  OBJECT IDENTIFIER ::= { s5ChasComBrdUsb 2 }
+
+-- ERS5698-TFD-PWR
+s5ChasComBrdERS5698-TFD-PWR
+    OBJECT IDENTIFIER ::= { s5ChasComMod 781 }
+s5ChasComBrdERS5698-TFD-PWRStore -- storage areas
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS5698-TFD-PWR 0 }
+s5ChasComBrdERS5698-TFD-PWRStoreFlash -- FLASH image storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS5698-TFD-PWRStore 1 }
+s5ChasComBrdERS5698-TFD-PWRStoreBootFW -- Boot Firmware storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS5698-TFD-PWRStore 2 }
+s5ChasComBrdERS5698-TFD-PWRStoreDram -- DRAM storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS5698-TFD-PWRStore 3 }
+s5ChasComBrdERS5698-TFD-PWRStorePol -- POL Firmware storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS5698-TFD-PWRStore 4 }
+s5ChasComBrdERS5698-TFD-PWRStoreSecondaryFlash -- Secondary FLASH image storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS5698-TFD-PWRStore 5 }
+
+-- ERS5698-TFD
+s5ChasComBrdERS5698-TFD
+    OBJECT IDENTIFIER ::= { s5ChasComMod 782 }
+s5ChasComBrdERS5698-TFDStore -- storage areas
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS5698-TFD 0 }
+s5ChasComBrdERS5698-TFDStoreFlash -- FLASH image storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS5698-TFDStore 1 }
+s5ChasComBrdERS5698-TFDStoreBootFW -- Boot Firmware storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS5698-TFDStore 2 }
+s5ChasComBrdERS5698-TFDStoreDram -- DRAM storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS5698-TFDStore 3 }
+s5ChasComBrdERS5698-TFDStoreSecondaryFlash -- Secondary FLASH image storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS5698-TFDStore 5 }
+
+-- ERS5650-TD-PWR
+s5ChasComBrdERS5650-TD-PWR
+    OBJECT IDENTIFIER ::= { s5ChasComMod 783 }
+s5ChasComBrdERS5650-TD-PWRStore -- storage areas
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS5650-TD-PWR 0 }
+s5ChasComBrdERS5650-TD-PWRStoreFlash -- FLASH image storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS5650-TD-PWRStore 1 }
+s5ChasComBrdERS5650-TD-PWRStoreBootFW -- Boot Firmware storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS5650-TD-PWRStore 2 }
+s5ChasComBrdERS5650-TD-PWRStoreDram -- DRAM storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS5650-TD-PWRStore 3 }
+s5ChasComBrdERS5650-TD-PWRStorePol -- POL Firmware storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS5650-TD-PWRStore 4 }
+s5ChasComBrdERS5650-TD-PWRStoreSecondaryFlash -- Secondary FLASH image storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS5650-TD-PWRStore 5 }
+
+-- ERS5650-TD
+s5ChasComBrdERS5650-TD
+    OBJECT IDENTIFIER ::= { s5ChasComMod 784 }
+s5ChasComBrdERS5650-TDStore -- storage areas
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS5650-TD 0 }
+s5ChasComBrdERS5650-TDStoreFlash -- FLASH image storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS5650-TDStore 1 }
+s5ChasComBrdERS5650-TDStoreBootFW -- Boot Firmware storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS5650-TDStore 2 }
+s5ChasComBrdERS5650-TDStoreDram -- DRAM storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS5650-TDStore 3 }
+s5ChasComBrdERS5650-TDStoreSecondaryFlash -- Secondary FLASH image storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS5650-TDStore 5 }
+
+-- ERS5632-FD
+s5ChasComBrdERS5632-FD
+    OBJECT IDENTIFIER ::= { s5ChasComMod 785 }
+s5ChasComBrdERS5632-FDStore -- storage areas
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS5632-FD 0 }
+s5ChasComBrdERS5632-FDStoreFlash -- FLASH image storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS5632-FDStore 1 }
+s5ChasComBrdERS5632-FDStoreBootFW -- Boot Firmware storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS5632-FDStore 2 }
+s5ChasComBrdERS5632-FDStoreDram -- DRAM storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS5632-FDStore 3 }
+s5ChasComBrdERS5632-FDStoreSecondaryFlash -- Secondary FLASH image storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS5632-FDStore 5 }
+
+-- ESU1860S
+s5ChasComBrdESU1860S
+    OBJECT IDENTIFIER ::= { s5ChasComMod 786 }
+s5ChasComBrdESU1860SStore -- storage areas
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1860S 0 }
+s5ChasComBrdESU1860SStoreFlash -- FLASH image storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1860SStore 1 }
+s5ChasComBrdESU1860SStoreBootFW -- Boot Firmware storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1860SStore 2 }
+s5ChasComBrdESU1860SStoreDram -- DRAM storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1860SStore 3 }
+s5ChasComBrdESU1860SStoreSecondaryFlash -- Secondary FLASH image storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1860SStore 5 }
+s5ChasComBrdESU1860SStoreCpld -- HW CPLD
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1860SStore 6 }
+
+-- ESU1860B
+s5ChasComBrdESU1860B
+    OBJECT IDENTIFIER ::= { s5ChasComMod 787 }
+s5ChasComBrdESU1860BStore -- storage areas
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1860B 0 }
+s5ChasComBrdESU1860BStoreFlash -- FLASH image storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1860BStore 1 }
+s5ChasComBrdESU1860BStoreBootFW -- Boot Firmware storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1860BStore 2 }
+s5ChasComBrdESU1860BStoreDram -- DRAM storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1860BStore 3 }
+s5ChasComBrdESU1860BStoreSecondaryFlash -- Secondary FLASH image storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1860BStore 5 }
+s5ChasComBrdESU1860BStoreCpld -- HW CPLD
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1860BStore 6 }
+
+-- ESU1860T
+s5ChasComBrdESU1860T
+    OBJECT IDENTIFIER ::= { s5ChasComMod 788 }
+s5ChasComBrdESU1860TStore -- storage areas
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1860T 0 }
+s5ChasComBrdESU1860TStoreFlash -- FLASH image storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1860TStore 1 }
+s5ChasComBrdESU1860TStoreBootFW -- Boot Firmware storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1860TStore 2 }
+s5ChasComBrdESU1860TStoreDram -- DRAM storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1860TStore 3 }
+s5ChasComBrdESU1860TStoreSecondaryFlash -- Secondary FLASH image storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1860TStore 5 }
+s5ChasComBrdESU1860TStoreCpld -- HW CPLD
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1860TStore 6 }
+
+-- ESU1860V
+s5ChasComBrdESU1860V
+    OBJECT IDENTIFIER ::= { s5ChasComMod 789 }
+s5ChasComBrdESU1860VStore -- storage areas
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1860V 0 }
+s5ChasComBrdESU1860VStoreFlash -- FLASH image storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1860VStore 1 }
+s5ChasComBrdESU1860VStoreBootFW -- Boot Firmware storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1860VStore 2 }
+s5ChasComBrdESU1860VStoreDram -- DRAM storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1860VStore 3 }
+s5ChasComBrdESU1860VStoreSecondaryFlash -- Secondary FLASH image storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1860VStore 5 }
+s5ChasComBrdESU1860VStoreCpld -- HW CPLD
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1860VStore 6 }
+
+-- ESU1880S
+s5ChasComBrdESU1880S
+    OBJECT IDENTIFIER ::= { s5ChasComMod 790 }
+s5ChasComBrdESU1880SStore -- storage areas
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1880S 0 }
+s5ChasComBrdESU1880SStoreFlash -- FLASH image storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1880SStore 1 }
+s5ChasComBrdESU1880SStoreBootFW -- Boot Firmware storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1880SStore 2 }
+s5ChasComBrdESU1880SStoreDram -- DRAM storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1880SStore 3 }
+s5ChasComBrdESU1880SStoreSecondaryFlash -- Secondary FLASH image storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1880SStore 5 }
+s5ChasComBrdESU1880SStoreCpld -- HW CPLD
+    OBJECT IDENTIFIER ::= { s5ChasComBrdESU1880SStore 6 }
+
+-- 2 port 1000BASE Combo Module MDA
+s5ChasComBrdESU1860-2TX-FX
+    OBJECT IDENTIFIER ::= { s5ChasComMod 791 }
+
+-- 2-Port Stacking Module MDA
+s5ChasComBrdESU1880-2ST
+    OBJECT IDENTIFIER ::= { s5ChasComMod 792 }
+
+-- Daisy-Chain Module MDA
+s5ChasComBrdESU1880-2DC
+    OBJECT IDENTIFIER ::= { s5ChasComMod 793 }
+
+-- 2-Port 10Gigabit XFP Module MDA
+s5ChasComBrdESU1880-2XFP
+    OBJECT IDENTIFIER ::= { s5ChasComMod 794 }
+
+-- ERS4524GT-PWR
+s5ChasComBrdERS4524GT-PWR
+    OBJECT IDENTIFIER ::= { s5ChasComMod 795 }
+s5ChasComBrdERS4524GT-PWRStore -- storage areas
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS4524GT-PWR 0 }
+s5ChasComBrdERS4524GT-PWRStoreFlash -- FLASH image storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS4524GT-PWRStore 1 }
+s5ChasComBrdERS4524GT-PWRStoreBootFW -- Boot Firmware storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS4524GT-PWRStore 2 }
+s5ChasComBrdERS4524GT-PWRStoreDram -- DRAM storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS4524GT-PWRStore 3 }
+
+-- ERS6628XSGT
+s5ChasComBrdERS6628XSGT
+    OBJECT IDENTIFIER ::= { s5ChasComMod 796 }
+s5ChasComBrdERS6628XSGTStore -- storage areas
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS6628XSGT 0 }
+s5ChasComBrdERS6628XSGTStoreFlash -- FLASH image storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS6628XSGTStore 1 }
+s5ChasComBrdERS6628XSGTStoreBootFW -- Boot Firmware storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS6628XSGTStore 2 }
+s5ChasComBrdERS6628XSGTStoreDram -- DRAM storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS6628XSGTStore 3 }
+s5ChasComBrdERS6628XSGTStoreSecondaryFlash -- Secondary FLASH image storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS6628XSGTStore 5 }
+
+-- ERS6632XTS
+s5ChasComBrdERS6632XTS
+    OBJECT IDENTIFIER ::= { s5ChasComMod 797 }
+s5ChasComBrdERS6632XTSStore -- storage areas
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS6632XTS 0 }
+s5ChasComBrdERS6632XTSStoreFlash -- FLASH image storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS6632XTSStore 1 }
+s5ChasComBrdERS6632XTSStoreBootFW -- Boot Firmware storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS6632XTSStore 2 }
+s5ChasComBrdERS6632XTSStoreDram -- DRAM storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS6632XTSStore 3 }
+s5ChasComBrdERS6632XTSStoreSecondaryFlash -- Secondary FLASH image storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdERS6632XTSStore 5 }
+
+-- WC8180
+s5ChasComBrdWC8180
+    OBJECT IDENTIFIER ::= { s5ChasComMod 798 }
+s5ChasComBrdWC8180Store -- storage areas
+    OBJECT IDENTIFIER ::= { s5ChasComBrdWC8180 0 }
+s5ChasComBrdWC8180StoreFlash -- FLASH image storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdWC8180Store 1 }
+s5ChasComBrdWC8180StoreBootFW -- Boot Firmware storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdWC8180Store 2 }
+s5ChasComBrdWC8180StoreDram -- DRAM storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdWC8180Store 3 }
+s5ChasComBrdWC8180StoreSecondaryFlash -- Secondary FLASH image storage
+    OBJECT IDENTIFIER ::= { s5ChasComBrdWC8180Store 5 }
 
 END
 

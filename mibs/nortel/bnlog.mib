@@ -1,31 +1,43 @@
 BN-LOG-MESSAGE-MIB DEFINITIONS ::= BEGIN
 
 IMPORTS
-    MODULE-COMPLIANCE,
-    OBJECT-GROUP
-        FROM SNMPv2-CONF
-    MODULE-IDENTITY,
-    OBJECT-TYPE,
-    NOTIFICATION-TYPE,
-    TimeTicks,
-    IpAddress,
-    Integer32
+    MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
+    TimeTicks, IpAddress, Integer32
         FROM SNMPv2-SMI
     bnLogMsg
         FROM S5-ROOT-MIB
-    DisplayString,
-    TruthValue,
-    DateAndTime
-        FROM SNMPv2-TC;
+    DisplayString, TruthValue, DateAndTime, RowStatus
+        FROM SNMPv2-TC
+    InetAddressType, InetAddress
+        FROM INET-ADDRESS-MIB;
 
 bnLogMsgMIB       MODULE-IDENTITY
-    LAST-UPDATED "200505040000Z"
+    LAST-UPDATED "201006290000Z"
     ORGANIZATION "Nortel Networks"
     CONTACT-INFO "Global Optical Customer Service
                         Tel:   1-800 (ASK-TRAN) or
                                1-800 (ASK-ETAS)"
     DESCRIPTION  "The management information definitions for the
                   Bay Networks log message facility."
+
+    REVISION "201006290000Z" -- 29 June 2010
+    DESCRIPTION "v10:  Added bnLogMsgBufferMsgType."
+
+    REVISION "200904150000Z" -- 15 April 2009
+    DESCRIPTION "v9:  Added fltNone."
+
+    REVISION "200904140000Z" -- 14 April 2009
+    DESCRIPTION "v8:  Added bnLogMsgRemoteSyslogFacility."
+
+    REVISION "200903310000Z" -- 31 March 2009
+    DESCRIPTION "v7:  Added bnLogMsgRemoteServerTable."
+
+    REVISION "200903230000Z" -- 23 March 2009
+    DESCRIPTION "v6:  Added bnLogMsgRemoteSyslogSecondaryInetAddressType and
+                            bnLogMsgRemoteSyslogSecondaryInetAddress."
+
+    REVISION "200709040000Z" -- 04 September 2007
+    DESCRIPTION "v5:  Added IPv6 support."
 
     REVISION "200505040000Z" -- 04 May 2005
     DESCRIPTION "v4:  Added ranges to INDEX objects."
@@ -111,7 +123,7 @@ bnLogMsgBufferMaxSize OBJECT-TYPE
     ::= { bnLogMsgMIBObjects 2 }
 
 bnLogMsgBufferCurSize OBJECT-TYPE
-    SYNTAX       INTEGER (0..200)
+    SYNTAX       Integer32 (0..200)
     MAX-ACCESS   read-only
     STATUS       current
     DESCRIPTION "The current number of log messages in the volatile
@@ -214,7 +226,7 @@ bnLogMsgBufferClearMsgs OBJECT-TYPE
     ::= { bnLogMsgMIBObjects 7 }
 
 bnLogMsgBufferNonVolCurSize OBJECT-TYPE
-    SYNTAX       INTEGER (0..50)
+    SYNTAX       Integer32 (0..50)
     MAX-ACCESS   read-only
     STATUS       current
     DESCRIPTION "The current number of log messages that are present
@@ -285,7 +297,9 @@ BnLogMsgBufferEntry ::= SEQUENCE
         bnLogMsgBufferMsgParam1      Integer32,
         bnLogMsgBufferMsgParam2      Integer32,
         bnLogMsgBufferMsgParam3      Integer32,
-        bnLogMsgBufferMsgUtcTime     DateAndTime
+        bnLogMsgBufferMsgUtcTime     DateAndTime,
+        bnLogMsgBufferMsgType        INTEGER
+
     }
 
 bnLogMsgBufferMsgIndex OBJECT-TYPE
@@ -332,7 +346,7 @@ bnLogMsgBufferMsgSrc OBJECT-TYPE
 bnLogMsgBufferMsgCode OBJECT-TYPE
     SYNTAX       Integer32
     MAX-ACCESS   read-only
-    STATUS       current
+    STATUS       current  
     DESCRIPTION "The message code indicating the originator of and
                  the reason why a log message has been generated.
                  This code, coupled with the log message parameters
@@ -395,29 +409,44 @@ bnLogMsgBufferMsgUtcTime OBJECT-TYPE
                  Coordinated Time) when the log entry was created."
     ::= { bnLogMsgBufferEntry 10 }
 
+bnLogMsgBufferMsgType OBJECT-TYPE
+    SYNTAX       INTEGER {
+                     msgTypeCritical(1),
+                     msgTypeSerious(2),
+                     msgTypeInformational(3),
+                     msgTypeNone(4)
+                 }
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION  "The message type indicates whether this message
+                  is classified as 'critical', 'serious' or 
+                  'informational'."
+    ::= { bnLogMsgBufferEntry 11 }
+
 
 bnLogMsgRemoteSyslogEnabled OBJECT-TYPE
-        SYNTAX      TruthValue
-        MAX-ACCESS  read-write
-        STATUS      current
-        DESCRIPTION "This object controls whether remote logging of
-                     log messages using the remote syslog facility
-                     is enabled.  The value of this object may not
-                     be true(2) if the value of the remote syslog
-                     address object is 0.0.0.0."
-        DEFVAL { false }
-        ::= { bnLogMsgMIBObjects 11 }
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION "This object controls whether remote logging of
+                 log messages using the remote syslog facility
+                 is enabled.  The value of this object may not
+                 be true(2) if the value of the remote syslog
+                 address object is 0.0.0.0."
+    DEFVAL { false }
+    ::= { bnLogMsgMIBObjects 11 }
 
 bnLogMsgRemoteSyslogAddress OBJECT-TYPE
-        SYNTAX      IpAddress
-        MAX-ACCESS  read-write
-        STATUS      current
-        DESCRIPTION "The IP address to which log messages are sent
-                     using the remote syslog facility.  The value
-                     of this object may not be 0.0.0.0 if the value
-                     of bnLogMsgRemoteSyslogEnabled is true(2)."
-        DEFVAL { '00000000'H }
-        ::= { bnLogMsgMIBObjects 12 }
+    SYNTAX      IpAddress
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION "The IP address to which log messages are sent
+                 using the remote syslog facility.  If the value
+                 of this object is 0.0.0.0, the refer to the values
+                 of bnLogMsgRemoteSyslogInetAddressType and
+                 bnLogMsgRemoteSyslogInetAddress."
+    DEFVAL { '00000000'H }
+    ::= { bnLogMsgMIBObjects 12 }
 
 bnLogMsgRemoteSyslogSaveTargets OBJECT-TYPE
     SYNTAX       INTEGER {
@@ -464,6 +493,175 @@ bnLogMsgClearMessageBuffers OBJECT-TYPE
                  messages from non-volatile storage."
     ::= { bnLogMsgMIBObjects 14 }
 
+bnLogMsgRemoteSyslogInetAddressType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION "The type of the IP address contained in the object
+                 bnLogMsgRemoteSyslogInetAddress.  Together, these two
+                 objects specify the IP address to which log messages
+                 are sent using the remote syslog facility.  The value
+                 of this object may not be unknown(0) if the value
+                 of bnLogMsgRemoteSyslogEnabled is true(2)."
+    DEFVAL { unknown }
+    ::= { bnLogMsgMIBObjects 15 }
+
+bnLogMsgRemoteSyslogInetAddress OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION "The IP address to which log messages are sent
+                 using the remote syslog facility."
+    DEFVAL { ''H }
+    ::= { bnLogMsgMIBObjects 16 }
+
+bnLogMsgRemoteSyslogSecondaryInetAddressType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The type of the IP address contained in the object
+        bnLogMsgRemoteSyslogSecondaryInetAddress.  Together, these two objects
+        specify a second IP address to which log messages are sent using the
+        remote syslog facility.  If the value of this object is unknown(0),
+        then messages are not sent to this address."
+    DEFVAL { unknown }
+    ::= { bnLogMsgMIBObjects 17 }
+
+bnLogMsgRemoteSyslogSecondaryInetAddress OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION "The IP address to which log messages are sent
+                 using the remote syslog facility."
+    DEFVAL { ''H }
+    ::= { bnLogMsgMIBObjects 18 }
+
+
+-- ===========================================================================
+-- bnLogMsgRemoteServerTable
+-- ===========================================================================
+
+bnLogMsgRemoteServerTable OBJECT-TYPE
+    SYNTAX       SEQUENCE OF BnLogMsgRemoteServerEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "A table of remote logging server addresses."
+    ::= { bnLogMsgMIBObjects 19 }
+
+bnLogMsgRemoteServerEntry OBJECT-TYPE
+    SYNTAX       BnLogMsgRemoteServerEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION "A remote logging server address."
+    INDEX       { bnLogMsgRemoteServerAddressType,
+                  bnLogMsgRemoteServerAddress }
+    ::= { bnLogMsgRemoteServerTable 1 }
+
+BnLogMsgRemoteServerEntry ::= SEQUENCE
+    {
+        bnLogMsgRemoteServerAddressType InetAddressType,
+        bnLogMsgRemoteServerAddress     InetAddress,
+        bnLogMsgRemoteServerEnabled     TruthValue,
+        bnLogMsgRemoteServerSaveTargets INTEGER,
+        bnLogMsgRemoteServerRowStatus   RowStatus
+    }
+
+bnLogMsgRemoteServerAddressType OBJECT-TYPE
+    SYNTAX       InetAddressType
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "The type of address represented by this entry.  The value of this
+        object indicates the format of the value of the corresponding instance
+        of bnLogMsgRemoteServerAddress.  Currently only the values ipv4(1)
+        and ipv6(2) are allowed for this object."
+    ::= { bnLogMsgRemoteServerEntry 1 }
+
+bnLogMsgRemoteServerAddress OBJECT-TYPE
+    SYNTAX       InetAddress (SIZE(4|16))
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "The address represented by this entry."
+    ::= { bnLogMsgRemoteServerEntry 2 }
+
+bnLogMsgRemoteServerEnabled OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "Indicates whether this server is enabled."
+    DEFVAL { true }
+    ::= { bnLogMsgRemoteServerEntry 3 }
+
+bnLogMsgRemoteServerSaveTargets OBJECT-TYPE
+    SYNTAX       INTEGER {
+                     msgTypeCritical(1),
+                     msgTypeSerious(2),
+                     msgTypeInformational(3),
+                     msgTypeNone(4)
+                 }
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION "This object determines the type of log messages that
+                 will be sent to a remote syslog server when they occur.
+                 Messages are classified based on their type. Selecting
+                 a type value causes all log messages that have an
+                 associated value less than or equal to the type
+                 value specified to be sent when the log message is
+                 entered into the system. For example, specifying
+                 the value msgTypeCritical(1) causes only messages
+                 classified as 'critical' to be sent to the remote
+                 syslog server. Specifying msgTypeSerious(2) causes
+                 'critical' and 'serious' messages to be sent.
+                 Specifying msgTypeNone(4) means that no log messages
+                 will be sent to the remote syslog server."
+    DEFVAL       { msgTypeCritical }
+    ::= { bnLogMsgRemoteServerEntry 4 }
+
+bnLogMsgRemoteServerRowStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "This object is used to create/delete entries in this table."
+    ::= { bnLogMsgRemoteServerEntry 5 }
+
+bnLogMsgRemoteSyslogFacility OBJECT-TYPE
+    SYNTAX      INTEGER {
+		    fltKernel(1),
+		    fltUserLevel(2),
+	            fltMailSystem(3),
+		    fltDaemon(4),
+		    fltSecAuthor(5),
+		    fltMsgGenInt(6),
+		    fltLinePrinter(7),
+		    fltNetNews(8),
+		    fltUUCP(9),
+		    fltClockDaemon(10),
+		    fltSecAuthor2(11),
+		    fltFTPDaemon(12),
+		    fltNTP(13),
+		    fltLogAudit(14),
+		    fltLogAlert(15),
+		    fltClockDaemon2(16),
+		    fltLocal0(17),
+		    fltLocal1(18),
+	 	    fltLocal2(19),
+		    fltLocal3(20),
+		    fltLocal4(21),
+		    fltLocal5(22),
+		    fltLocal6(23),
+		    fltLocal7(24),
+		    fltNone(25)
+		}
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION "The facility against which remote logging is done."
+    DEFVAL { fltDaemon }
+    ::= { bnLogMsgMIBObjects 20 }
 
 
 

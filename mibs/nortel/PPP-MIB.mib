@@ -1,0 +1,346 @@
+
+PPP-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+	MODULE-IDENTITY,OBJECT-TYPE, 
+	IpAddress,Integer32,Counter32  
+               FROM SNMPv2-SMI
+	DisplayString                 
+               FROM RFC1213-MIB
+	nnbundleId
+               FROM BUNDLE-MIB
+        ntEnterpriseDataTasmanMgmt   
+               FROM NT-ENTERPRISE-DATA-MIB;
+
+nnpppMib MODULE-IDENTITY
+	LAST-UPDATED "0002010000Z" 
+	ORGANIZATION "Nortel Networks"
+	CONTACT-INFO
+        	" Nortel Networks
+        	8200 Dixie Road
+        	Brampton, Ontario L6T 5P6
+        	Canada        
+        	1-800-4Nortel 
+        	www.nortelnetworks.com "
+	DESCRIPTION
+		"The MIB module defines the managed objects for 
+        	enterrpise PPP/MLPPP. "
+      REVISION  "0002010000Z"
+      DESCRIPTION  
+            "Initial Revision."
+        ::= { ntEnterpriseDataTasmanMgmt 14 }
+
+-- PPP Table definition
+--
+-- pppTable contains configurable parameters for PPP and
+-- MLPPP configuration. The index to the table is bundleId which
+-- uniquely identifies the PPP/MLPPP bundle. bundleId is an unique 
+-- integer assigned to each bundle during creation and it has a 
+-- one-to-one mapping to the name of the bundle. The entries in 
+-- the pppTable are created implicitly once the bundle is encapsulated 
+-- to PPP. MLPPP parameters can be configured only for MLPPP bundles. 
+
+nnpppTable 	OBJECT-TYPE
+	SYNTAX		SEQUENCE OF NnPppTableEntry
+	MAX-ACCESS	not-accessible
+	STATUS 		current
+	DESCRIPTION
+		"This table contains configurable parameters related to 
+                PPP/MLPPP bundle."
+	::= {nnpppMib 1}
+
+nnpppTableEntry	OBJECT-TYPE
+	SYNTAX			NnPppTableEntry
+	MAX-ACCESS		not-accessible
+	STATUS			current
+	DESCRIPTION
+                "An entry in the PPP Table which contains the configuration
+                for a particular bundle instance identified by the bundleId." 
+	INDEX	{ nnbundleId }
+	::= {nnpppTable 1}
+
+NnPppTableEntry ::= SEQUENCE {
+        nnpppMtu    		DisplayString,
+        nnpppMru    		DisplayString,
+        nnmlpppMrru       	DisplayString,  
+        nnmlpppSeq    		INTEGER,
+        nnmlpppSegmentThreshold   Integer32,
+        nnmlpppDiffDelay  	Integer32,
+        nnmlpppDiscriminator      DisplayString,
+        nnpppNegotiatePeerIpAddr	IpAddress,
+        nnpppSrcIpAddr		IpAddress,
+        nnpppPeerIpAddr		IpAddress
+	}
+
+nnpppMtu	OBJECT-TYPE
+	SYNTAX	DisplayString	
+	MAX-ACCESS	read-write
+	STATUS	current
+	DESCRIPTION 
+		"Minimum, default and maximum packet sizes to be sent 
+		separated by hyphens."
+	DEFVAL { "64-1500-4096" }
+	::= { nnpppTableEntry 1}
+
+nnpppMru	OBJECT-TYPE
+	SYNTAX	DisplayString	
+	MAX-ACCESS	read-write
+	STATUS	current
+	DESCRIPTION 
+		"Minimum, default and maximum packet sizes to be  
+		received separated by hyphens."
+	DEFVAL { "46-1500-4096" }
+	::= { nnpppTableEntry 2}
+
+nnmlpppMrru	OBJECT-TYPE
+	SYNTAX	DisplayString	
+	MAX-ACCESS	read-write
+	STATUS	current
+	DESCRIPTION 
+		"Maximum received reconstructed unit - maximum number 
+		of octets in the information fields of reassembled packets.
+                This variable can be set only if the bundle is multi-link."
+	DEFVAL { "1500-1524-8192" }
+	::= {nnpppTableEntry 3}
+
+nnmlpppSeq	OBJECT-TYPE
+	SYNTAX INTEGER {
+		short(1),
+		long(2)
+		}
+	MAX-ACCESS	read-write
+	STATUS	current
+	DESCRIPTION 
+		"MLPPP sequence number length (short = 12 bits ; long = 
+		24 bits. This variable can be set only if the bundle is 
+                multi-link."
+	DEFVAL { long }
+	::= { nnpppTableEntry 4}
+
+
+nnmlpppSegmentThreshold	OBJECT-TYPE
+	SYNTAX	Integer32 
+	MAX-ACCESS	read-write
+	STATUS	current
+	DESCRIPTION 
+		"Segmentation threshold - number of octets a packet must 
+		exceed before being fragmented for transmission. This 
+                variable can be set only if the bundle is multi-link."
+	DEFVAL { 512 }
+	::= { nnpppTableEntry 5}
+
+
+nnmlpppDiffDelay	OBJECT-TYPE
+	SYNTAX	Integer32 (0..128)
+	MAX-ACCESS	read-write
+	STATUS	current
+	DESCRIPTION 
+		"Tolerance, in milliseconds, to differential delay 
+		between links. If The differential delay exceeds this 
+                limit, the corresponding link will be removed from the 
+                bundle. This variable can be set only if the bundle is 
+                multi-link."
+	DEFVAL {128}
+	::= { nnpppTableEntry 6}
+
+-- madhu-fix for bug #7279: 
+-- changed mlpppDiscriminator syntax from IpAddress to DisplayString
+-- and accordingly changed the DESCRIPTION for this OID.
+nnmlpppDiscriminator	OBJECT-TYPE
+	SYNTAX		DisplayString	
+	MAX-ACCESS	read-write
+	STATUS	current
+	DESCRIPTION 
+		"Value of MLPPP discriminator. This value will be an 
+		 IP Address for a Numbered MLPPP Bundle, whereas it 
+		 will be a random number for an Unnumbered MLPPP 
+		 Bundle. This variable can be set only if the bundle 
+		 is multi-link."
+	::= { nnpppTableEntry 7}
+
+nnpppNegotiatePeerIpAddr  OBJECT-TYPE
+        SYNTAX          IpAddress
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "The PPP bundle's peer destination IP address.
+			Used to negotiate the Ip address for peer.
+			Use 0.0.0.0 to unconfigure"
+        DEFVAL          { 0 }  
+        ::= { nnpppTableEntry 8}
+
+nnpppSrcIpAddr  OBJECT-TYPE
+        SYNTAX          IpAddress
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "The PPP bundle's source destination IP address.
+			Used to negotiate the source Ip address with peer.
+			Use 0.0.0.0 to unconfigure.
+			Specify ff.ff.ff.ff to use source forwarding 
+			address of the bundle. Note:set will fail if 
+			source forwarding address is not already defined. 
+			Source forwarding is valid only in ipmux mode 
+			(non routing mode)."
+        DEFVAL          { 0 }  
+        ::= { nnpppTableEntry 9}
+
+nnpppPeerIpAddr  OBJECT-TYPE
+        SYNTAX          IpAddress
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "The PPP bundle's negotiated peer destination 
+			IP address. Negotiated address given by the peer."
+        DEFVAL          { 0 }  
+        ::= { nnpppTableEntry 10}
+
+-- PppStatsTable Definition
+--
+-- pppStats Table contains the statistics counters for the PPP/MLPPP 
+-- encapsulated bundles. 
+
+nnpppStatsTable 	OBJECT-TYPE
+	SYNTAX		SEQUENCE OF NnPppStatsTableEntry
+	MAX-ACCESS	not-accessible
+	STATUS 		current
+	DESCRIPTION
+		"This table contains the statistics for PPP/MLPPP bundles."
+	::= {nnpppMib 2}
+
+nnpppStatsTableEntry	OBJECT-TYPE
+	SYNTAX			NnPppStatsTableEntry
+	MAX-ACCESS		not-accessible
+	STATUS			current
+	DESCRIPTION
+		"An entry in the PPP Statistics Table which contains 
+                the statistics for a particular bundle instance 
+                identified by the bundleId." 
+	INDEX	{ nnbundleId }
+	::= {nnpppStatsTable 1}
+
+NnPppStatsTableEntry ::= SEQUENCE {
+        nnpppStatsBytesRxLastBootOrClear    Counter32,
+        nnpppStatsBytesTxLastBootOrClear    Counter32,
+        nnpppStatsPktsRxLastBootOrClear  Counter32,
+        nnpppStatsPktsTxLastBootOrClear  Counter32,
+        nnpppStatsErrPktsRxLastBootOrClear  Counter32,
+        nnpppStatsUpDownStatesLastBootOrClear  Counter32,
+        nnpppStatsBytesRxLastFiveMins  Counter32,
+        nnpppStatsBytesTxLastFiveMins  Counter32,
+        nnpppStatsPktsRxLastFiveMins  Counter32,
+        nnpppStatsPktsTxLastFiveMins Counter32,
+        nnpppStatsErrPktsRxLastFiveMins  Counter32,
+        nnpppStatsUpDownStatesLastFiveMins Counter32
+	}
+	
+nnpppStatsBytesRxLastBootOrClear	OBJECT-TYPE
+	SYNTAX	Counter32
+	MAX-ACCESS	read-only
+	STATUS	current
+	DESCRIPTION 
+		"This counter has the number of bytes received 
+                on this bundle since it was last booted or cleared."
+	::= { nnpppStatsTableEntry 1 }
+
+nnpppStatsBytesTxLastBootOrClear	OBJECT-TYPE
+	SYNTAX	Counter32
+	MAX-ACCESS	read-only
+	STATUS	current
+	DESCRIPTION 
+		"This counter has the number of bytes transmitted 
+                on this bundle since it was last booted or cleared."
+	::= { nnpppStatsTableEntry 2 }
+
+nnpppStatsPktsRxLastBootOrClear	OBJECT-TYPE
+	SYNTAX	Counter32
+	MAX-ACCESS	read-only
+	STATUS	current
+	DESCRIPTION 
+		"This counter has the number of packets received 
+                on this bundle since it was last booted or cleared."
+	::= { nnpppStatsTableEntry 3 }
+
+nnpppStatsPktsTxLastBootOrClear	OBJECT-TYPE
+	SYNTAX	Counter32
+	MAX-ACCESS	read-only
+	STATUS	current
+	DESCRIPTION 
+		"This counter has the number of packets transmitted 
+                on this bundle since it was last booted or cleared."
+	::= { nnpppStatsTableEntry 4 }
+
+nnpppStatsErrPktsRxLastBootOrClear	OBJECT-TYPE
+	SYNTAX	Counter32
+	MAX-ACCESS	read-only
+	STATUS	current
+	DESCRIPTION 
+		"This counter has the number of error packets 
+                received on this bundle since it was last booted 
+                or cleared."
+	::= { nnpppStatsTableEntry 5 }
+
+nnpppStatsUpDownStatesLastBootOrClear	OBJECT-TYPE
+	SYNTAX	Counter32
+	MAX-ACCESS	read-only
+	STATUS	current
+	DESCRIPTION 
+		"This variable has the count on the number of 
+                times this PPP/MLPPP bundle have made the 'Down' 
+                to 'Up' and 'Up' to 'Down' transitions  since it 
+                was last booted or cleared."
+	::= { nnpppStatsTableEntry 6 }
+
+nnpppStatsBytesRxLastFiveMins	OBJECT-TYPE
+	SYNTAX	Counter32
+	MAX-ACCESS	read-only
+	STATUS	current
+	DESCRIPTION 
+		"This counter has the number of bytes received on 
+                 this bundle in the last 5 minutes."
+	::= { nnpppStatsTableEntry 7 }
+
+nnpppStatsBytesTxLastFiveMins	OBJECT-TYPE
+	SYNTAX	Counter32
+	MAX-ACCESS	read-only
+	STATUS	current
+	DESCRIPTION 
+		"This counter has the number of bytes transmitted 
+                on this bundle in the last 5 minutes."
+	::= { nnpppStatsTableEntry 8 }
+
+nnpppStatsPktsRxLastFiveMins	OBJECT-TYPE
+	SYNTAX	Counter32
+	MAX-ACCESS	read-only
+	STATUS	current
+	DESCRIPTION 
+		"This counter has the number of packets received on 
+                this bundle in the last 5 minutes."
+	::= { nnpppStatsTableEntry 9 }
+
+nnpppStatsPktsTxLastFiveMins	OBJECT-TYPE
+	SYNTAX	Counter32
+	MAX-ACCESS	read-only
+	STATUS	current
+	DESCRIPTION 
+		"This counter has the number of packets transmitted on 
+                this bundle in the last 5 minutes."
+	::= { nnpppStatsTableEntry 10 }
+
+nnpppStatsErrPktsRxLastFiveMins	OBJECT-TYPE
+	SYNTAX	Counter32
+	MAX-ACCESS	read-only
+	STATUS	current
+	DESCRIPTION 
+		"This counter has the number of error packets received 
+                on this bundle in the last 5 minutes."
+	::= { nnpppStatsTableEntry 11 }
+
+nnpppStatsUpDownStatesLastFiveMins	OBJECT-TYPE
+	SYNTAX	Counter32
+	MAX-ACCESS	read-only
+	STATUS	current
+	DESCRIPTION 
+		"This variable has the count on the number of times 
+                this PPP/MLPPP bundle have made the 'Down' to 'Up' 
+                and 'Up' to 'Down' transitions  in the last 5 minutes."
+	::= { nnpppStatsTableEntry 12 }
+
+END

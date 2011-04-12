@@ -8,13 +8,13 @@ IMPORTS
         FROM SNMPv2-TC;
 
 synoptics MODULE-IDENTITY
-       LAST-UPDATED    "200703090000Z"
+       LAST-UPDATED    "201002220000Z"
        ORGANIZATION    "Nortel Networks"
        CONTACT-INFO    "Nortel Networks"
        DESCRIPTION
            "SynOptics Root MIB
 
-            Copyright 1996 - 2007 Nortel Networks, Inc.
+            Copyright 1996 - 2010 Nortel Networks, Inc.
             All rights reserved.
             This Nortel Networks SNMP Management Information Base Specification
             (Specification) embodies Nortel Networks' confidential and
@@ -25,6 +25,104 @@ synoptics MODULE-IDENTITY
             This Specification is supplied 'AS IS,' and Nortel Networks makes
             no warranty, either express or implied, as to the use,
             operation, condition, or performance of the Specification."
+
+       REVISION "201002220000Z" -- 22 Feb 2010
+       DESCRIPTION "Version 266:  Added additional chassis types."
+
+       REVISION "200912150000Z" -- 15 December 2009
+       DESCRIPTION "Version 265:  Added bayStackBridgeExtMib."
+
+       REVISION "200908200000Z" -- 20 August 2009
+       DESCRIPTION "Version 264:  Added bayStackEdmMib."
+
+       REVISION "200907240000Z" -- 24 July 2009
+       DESCRIPTION "Version 263:  Added bayStackIpFwdNhMib."
+
+       REVISION "200905190000Z" -- 19 May 2009
+       DESCRIPTION "Version 262:  Added bayStackNesMib."
+
+       REVISION "200905080000Z" -- 08 May 2009
+       DESCRIPTION "Version 261:  Added WC8xxx definitions."
+
+       REVISION "200903300000Z" -- 30 March 2009
+       DESCRIPTION "Version 260:  Added bayStackLldpExtMedMib"
+
+       REVISION "200902200000Z" -- 02 February 2009
+       DESCRIPTION "Version 259:  Added MESU2400"
+
+       REVISION "200812160000Z" -- 16 December 2008
+       DESCRIPTION "Version 258:  Changed ers64xx to ers66xx."
+
+       REVISION "200811190000Z" -- 19 November 2008
+       DESCRIPTION "Version 257:  Added bayStackIgmpExtMib."
+
+       REVISION "200810290000Z" -- 29 October 2008
+       DESCRIPTION "Version 256:  Added support for ERS 64xx."
+
+       REVISION "200810170000Z" -- 17 October 2008
+       DESCRIPTION "Version 255:  Added bayStackNotifyControlMib."
+
+       REVISION "200810160000Z" -- 16 October 2008
+       DESCRIPTION "Version 254:  Changed nortelWirelessMibs to nortelWlanMibs."
+
+       REVISION "200810140000Z" -- 14 October 2008
+       DESCRIPTION "Version 253:  Added support for ERS4524-GT-PWR."
+
+       REVISION "200808150000Z" -- 15 August 2008
+       DESCRIPTION "Version 252:  Added sreg-NortelMX2800."
+
+       REVISION "200804220000Z" -- 22 April 2008
+       DESCRIPTION "Version 251:  Added nortelWirelessMibs branch.
+                                  Added bayStackDdiSfpMib."
+
+       REVISION "200803260000Z" -- 26 March 2008
+       DESCRIPTION "Version 250:  Fix typo."
+
+       REVISION "200803240000Z" -- 24 March 2008
+       DESCRIPTION "Version 249:  Added mMERS8603R."
+
+       REVISION "200801210000Z" -- 21 January 2008
+       DESCRIPTION "Version 248:  Added bayStackPimExtMib and
+                                  bayStackPortMirroringMib"
+
+       REVISION "200712070000Z" -- 07 December 2007
+       DESCRIPTION "Version 247:  Added mMERS8611co."
+
+       REVISION "200711070000Z" -- 07 November 2007
+       DESCRIPTION "Version 246:  Added mMERS64000."
+
+       REVISION "200709280000Z" -- 28 September 2007
+       DESCRIPTION "Version 245:  Added branches under bayStackMibs."
+
+       REVISION "200709240000Z" -- 24 September 2007
+       DESCRIPTION "Version 244:  Changed mNVSS5000 to mVSS5000."
+
+       REVISION "200709190000Z" -- 19 September 2007
+       DESCRIPTION "Version 243:  Added ESU sysObjectID values."
+
+       REVISION "200707130000Z" -- 13 July 2007
+       DESCRIPTION "Version 242:  Updated ESU chassis IDs."
+
+       REVISION "200706290000Z" -- 29 June 2007
+       DESCRIPTION "Version 241:  Added bayUnicastStormControlMib."
+
+       REVISION "200706010000Z" -- 01 June 2007
+       DESCRIPTION "Version 240:  Fix typo."
+
+       REVISION "200705290000Z" -- 29 May 2007
+       DESCRIPTION "Version 239:  Change 4526GWX to 4526GTX."
+
+       REVISION "200705240000Z" -- 24 May 2007
+       DESCRIPTION "Version 238:  Added definitions for mNVSS5000."
+
+       REVISION "200705230000Z" -- 23 May 2007
+       DESCRIPTION "Version 237:  Added definitions for MERS and ERS56xx."
+
+       REVISION "200704030000Z" -- 03 April 2007
+       DESCRIPTION "Version 236:  Added bayStackRadiusMib."
+
+       REVISION "200703090001Z" -- 09 Mar 2007
+       DESCRIPTION "Version 235:  Added bayStackSourceGuardMib."
 
        REVISION "200703090000Z" -- 09 Mar 2007
        DESCRIPTION "Version 234:  Added additional BSG definitions."
@@ -39,7 +137,7 @@ synoptics MODULE-IDENTITY
        DESCRIPTION "Version 231:  Added BSG definitions."
 
        REVISION "200611140000Z" -- 11 Nov 2006
-       DESCRIPTION "Version 230:  Added definitions for bayStackErrorMessageMib."
+       DESCRIPTION "Version 230:  Added bayStackErrorMessageMib."
 
        REVISION "200609010000Z" -- 01 Sept 2006
        DESCRIPTION "Version 229:  Added definitions for ERS2500."
@@ -125,7 +223,7 @@ synoptics MODULE-IDENTITY
 
 SnpxBackplaneType ::=  TEXTUAL-CONVENTION
     STATUS current
-    DESCRIPTION ""
+    DESCRIPTION "This type is used to specify a concentrator backplane."
     SYNTAX INTEGER {
 	other(1),		-- none of the following
 	eth(2),			-- ethernet
@@ -143,12 +241,10 @@ SnpxBackplaneType ::=  TEXTUAL-CONVENTION
                                 -- with redundant powersupply
 	enetFastGigEnet(12)	-- ethernet, fast, and gigabit ethernet
 	}
--- This type is used to specify a concentrator backplane.
-
 
 SnpxChassisType ::=  TEXTUAL-CONVENTION
     STATUS current
-    DESCRIPTION ""
+    DESCRIPTION "SONMP chassis identifiers"
     SYNTAX INTEGER {
 	other(1),		-- none of the following
 	m3000(2),		-- product 3000
@@ -310,11 +406,37 @@ SnpxChassisType ::=  TEXTUAL-CONVENTION
         mERS2500-26T-PWR(160),      -- Ethernet Routing Switch 2500-26T-PWR
         mERS2500-50T(161),          -- Ethernet Routing Switch 2500-50T
         mERS2500-50T-PWR(162),      -- Ethernet Routing Switch 2500-50T-PWR
-        mERS4526GWX-PWR(167),       -- Ethernet Routing Switch 4526GWX-PWR
-        mERS4526GWX(166),           -- Ethernet Routing Switch 4526GWX
-        mERS4524GT(165),            -- Ethernet Routing Switch 4524GT
+        mERS4526T(163),             -- Ethernet Routing Switch 4526T
         mERS4526T-PWR(164),         -- Ethernet Routing Switch 4526T-PWR
-        mERS4526T(163)              -- Ethernet Routing Switch 4526T
+        mERS4524GT(165),            -- Ethernet Routing Switch 4524GT
+        mERS4526GTX(166),           -- Ethernet Routing Switch 4526GTX
+        mERS4526GTX-PWR(167),       -- Ethernet Routing Switch 4526GTX-PWR
+        mMetroNext(168),            -- MetroNext
+        mMERS4600(169),             -- MERS 4600
+        mESU1860T(170),             -- ESU 1860T
+        mESU1880S(171),             -- ESU 1880S
+        mERS5698TFD-PWR(172),       -- Ethernet Routing Switch 5698TFD-PWR
+        mERS5698TFD(173),           -- Ethernet Routing Switch 5698TFD
+        mERS5650TD-PWR(174),        -- Ethernet Routing Switch 5650TD-PWR
+        mERS5650TD(175),            -- Ethernet Routing Switch 5650TD
+        mERS5632FD(176),            -- Ethernet Routing Switch 5632FD
+        mVSS5000(177),              -- Nortel Virtual Services Switch 5000
+        mESU1860V(178),             -- ESU 1860V
+        mESU1860S(179),             -- ESU 1860S
+        mESU1860B(180),             -- ESU 1860B
+        mMERS64000(181),            -- Metro Ethernet Routing Switch 64000
+        mMERS8611c0(182),           -- Metro Ethernet Routing Switch 8611co
+        mMERS8603R(183),            -- Metro Ethernet Routing Switch 8603-R
+        mERS4524GT-PWR(184),        -- Ethernet Routing Switch 4524GT-PWR
+        mERS6628XSGT(185),          -- Ethernet Routing Switch 6628XSGT
+        mERS6632XTS(186),           -- Ethernet Routing Switch 6632XTS
+        mMESU2400(187),             -- MESU 2400
+        mWC8180(188),               -- WC 8180
+   	mERS8603r(190),             -- Ethernet Routing Switch 8003-R
+	mERS8803r(191),             -- Ethernet Routing 8803r L3 switch
+	mERS8806(192),              -- Ethernet Routing 8806 L3 switch
+	mERS8810(193),              -- Ethernet Routing 8810 L3 switch
+	mERS8810co(194)             -- Ethernet Routing 8810r L3 switch
         }
 
 -- Top Branches under "synoptics"
@@ -325,6 +447,7 @@ registration         OBJECT IDENTIFIER ::= { synoptics 3 }
 policy               OBJECT IDENTIFIER ::= { synoptics 4 }
 bayStackMibs         OBJECT IDENTIFIER ::= { synoptics 5 }
 ntwsTrapezeNetworks  OBJECT IDENTIFIER ::= { synoptics 6 }
+nortelWlanMibs       OBJECT IDENTIFIER ::= { synoptics 7 }
 
 
 -- Branches under "products"
@@ -675,6 +798,7 @@ sreg-NortelWLAN2360 OBJECT IDENTIFIER ::= { sreg-NortelWLAN 2 }
 sreg-NortelWLAN2361 OBJECT IDENTIFIER ::= { sreg-NortelWLAN 3 }
 sreg-NortelWLAN2370 OBJECT IDENTIFIER ::= { sreg-NortelWLAN 4 }
 sreg-NortelWLAN2380 OBJECT IDENTIFIER ::= { sreg-NortelWLAN 5 }
+sreg-NortelMX2800   OBJECT IDENTIFIER ::= { sreg-NortelWLAN 8 }
 
 -- SMB BES
 sreg-SMB-BES OBJECT IDENTIFIER ::= { registration 68 }
@@ -726,8 +850,9 @@ sreg-ERS-4526GTX     OBJECT IDENTIFIER ::= { sreg-ERS-45xx 7 }
 sreg-ERS-4524GT      OBJECT IDENTIFIER ::= { sreg-ERS-45xx 8 }
 sreg-ERS-4526T-PWR   OBJECT IDENTIFIER ::= { sreg-ERS-45xx 9 }
 sreg-ERS-4526T       OBJECT IDENTIFIER ::= { sreg-ERS-45xx 10 }
+sreg-ERS-4524GT-PWR  OBJECT IDENTIFIER ::= { sreg-ERS-45xx 11 }
 
--- ERS 25xx Series)
+-- ERS 25xx Series
 sreg-ERS-25xx OBJECT IDENTIFIER ::= { registration 72 }
 sreg-ERS-2500-26T      OBJECT IDENTIFIER ::= { sreg-ERS-25xx 1 }
 sreg-ERS-2500-26T-PWR  OBJECT IDENTIFIER ::= { sreg-ERS-25xx 2 }
@@ -741,6 +866,32 @@ sreg-SMB-BSG8EW OBJECT IDENTIFIER ::= { sreg-SMB-BSG 2 }
 sreg-SMB-BSG12AW OBJECT IDENTIFIER ::= { sreg-SMB-BSG 3 }
 sreg-SMB-BSG12TW OBJECT IDENTIFIER ::= { sreg-SMB-BSG 4 }
 sreg-SMB-BSG12EW OBJECT IDENTIFIER ::= { sreg-SMB-BSG 5 }
+
+-- ERS 56xx Series
+sreg-ERS-56xx OBJECT IDENTIFIER ::= { registration 74 }
+sreg-ERS-5698-TFD-PWR  OBJECT IDENTIFIER ::= { sreg-ERS-56xx 1 }
+sreg-ERS-5698-TFD      OBJECT IDENTIFIER ::= { sreg-ERS-56xx 2 }
+sreg-ERS-5650-TD-PWR   OBJECT IDENTIFIER ::= { sreg-ERS-56xx 3 }
+sreg-ERS-5650-TD       OBJECT IDENTIFIER ::= { sreg-ERS-56xx 4 }
+sreg-ERS-5632-FD       OBJECT IDENTIFIER ::= { sreg-ERS-56xx 5 }
+
+-- ESU 18xx Series
+sreg-ESU-18xx OBJECT IDENTIFIER ::= { registration 75 }
+sreg-ESU-1860-T  OBJECT IDENTIFIER ::= { sreg-ESU-18xx 1 }
+sreg-ESU-1880-S  OBJECT IDENTIFIER ::= { sreg-ESU-18xx 2 }
+sreg-ESU-1860-V  OBJECT IDENTIFIER ::= { sreg-ESU-18xx 3 }
+sreg-ESU-1860-S  OBJECT IDENTIFIER ::= { sreg-ESU-18xx 4 }
+sreg-ESU-1860-B  OBJECT IDENTIFIER ::= { sreg-ESU-18xx 5 }
+
+-- ERS 66xx Series
+sreg-ERS-66xx OBJECT IDENTIFIER ::= { registration 76 }
+sreg-ERS-6628-XSGT OBJECT IDENTIFIER ::= { sreg-ERS-66xx 1 }
+sreg-ERS-6632-XTS  OBJECT IDENTIFIER ::= { sreg-ERS-66xx 2 }
+
+-- WC 8xxx Series
+sreg-WC-8xxx OBJECT IDENTIFIER ::= { registration 77 }
+sreg-WC-8180 OBJECT IDENTIFIER ::= { sreg-WC-8xxx 1 }
+
 
 -- ---------------------------------------------------------
 -- Branches under 'policy'
@@ -768,6 +919,34 @@ sreg-SMB-BSG12EW OBJECT IDENTIFIER ::= { sreg-SMB-BSG 5 }
 -- bayStackDhcpSnoopingMib       OBJECT IDENTIFIER ::= { bayStackMibs 17 }
 -- bayStackArpInspectionMib      OBJECT IDENTIFIER ::= { bayStackMibs 18 }
 -- bayStackErrorMessageMib       OBJECT IDENTIFIER ::= { bayStackMibs 19 }
+-- bayStackSourceGuardMib        OBJECT IDENTIFIER ::= { bayStackMibs 20 }
+-- bayStackRadiusMib             OBJECT IDENTIFIER ::= { bayStackMibs 21 }
+-- bayUnicastStormControlMib     OBJECT IDENTIFIER ::= { bayStackMibs 22 }
+-- bayStackSourceGuardMib        OBJECT IDENTIFIER ::= { bayStackMibs 20 }
+-- bayStackRadiusMib             OBJECT IDENTIFIER ::= { bayStackMibs 21 }
+-- bayUnicastStormControlMib     OBJECT IDENTIFIER ::= { bayStackMibs 22 }
+-- bayStackRrpMib                OBJECT IDENTIFIER ::= { bayStackMibs 23 }
+-- bayStackQInQMib               OBJECT IDENTIFIER ::= { bayStackMibs 24 }
+-- bayStackRapidPingMib          OBJECT IDENTIFIER ::= { bayStackMibs 25 }
+-- bayStackRbsMib                OBJECT IDENTIFIER ::= { bayStackMibs 26 }
+-- bayStackPimExtMib             OBJECT IDENTIFIER ::= { bayStackMibs 27 }
+-- bayStackPortMirroringMib      OBJECT IDENTIFIER ::= { bayStackMibs 28 }
+-- bayStackDdiSfpMib             OBJECT IDENTIFIER ::= { bayStackMibs 29 }
+-- bayStackVdslExtMib            OBJECT IDENTIFIER ::= { bayStackMibs 30 }
+-- bayStackNotifyControlMib      OBJECT IDENTIFIER ::= { bayStackMibs 31 }
+-- bayStackIgmpExtMib            OBJECT IDENTIFIER ::= { bayStackMibs 32 }
+-- bayStackLldpExtMedMib         OBJECT IDENTIFIER ::= { bayStackMibs 33 }
+-- bayStackNesMib                OBJECT IDENTIFIER ::= { bayStackMibs 34 }
+-- bayStackIpFwdNhMib            OBJECT IDENTIFIER ::= { bayStackMibs 35 }
+-- bayStackEdmMib                OBJECT IDENTIFIER ::= { bayStackMibs 36 }
+-- bayStackBridgeExtMib          OBJECT IDENTIFIER ::= { bayStackMibs 37 }
+
+
+-- ---------------------------------------------------------
+-- Branches under 'nortelWlanMibs'
+-- ---------------------------------------------------------
+-- 
+-- 
 
 
 END

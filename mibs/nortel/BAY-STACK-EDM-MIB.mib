@@ -1,0 +1,74 @@
+
+BAY-STACK-EDM-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    OBJECT-TYPE, MODULE-IDENTITY
+        FROM SNMPv2-SMI
+    bayStackMibs
+        FROM SYNOPTICS-ROOT-MIB;
+
+bayStackEdmMib MODULE-IDENTITY
+    LAST-UPDATED    "200908200000Z"
+    ORGANIZATION    "Nortel Networks"
+    CONTACT-INFO    "Nortel Networks"
+    DESCRIPTION
+        "Nortel Energy Saver (NES) MIB
+
+         Copyright 2009 Nortel Networks, Inc.
+         All rights reserved.
+         This Nortel Networks SNMP Management Information Base
+         Specification embodies Nortel Networks' confidential and
+         proprietary intellectual property. Nortel Networks retains
+         all title and ownership in the Specification, including any
+         revisions.
+
+         This Specification is supplied 'AS IS,' and Nortel Networks
+         makes no warranty, either express or implied, as to the use,
+         operation, condition, or performance of the Specification."
+
+    REVISION "200908200000Z" -- 20 August 2009
+    DESCRIPTION "v1:  Initial version."
+
+    ::= { bayStackMibs 36 }
+
+bayStackEdmNotifications OBJECT IDENTIFIER ::= { bayStackEdmMib 0 }
+bayStackEdmObjects       OBJECT IDENTIFIER ::= { bayStackEdmMib 1 }
+
+-- -------------------------------------------------------------
+-- Textual Conventions
+-- -------------------------------------------------------------
+
+-- -------------------------------------------------------------
+-- Scalar Objects
+-- -------------------------------------------------------------
+
+bsEdmScalars OBJECT IDENTIFIER ::= { bayStackEdmObjects 1 }
+
+bsEdmHelpFilePath OBJECT-TYPE
+    SYNTAX      OCTET STRING (SIZE(0..327))
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object is used to specify the location of the EDM help file.
+         The value is an ASCII string similar to a URL, and must be in one
+         of the following formats:
+           - 'usb://<filename>' - the help file is located on the usb port
+                          of the switch, if not in stack, or on the usb 
+                          port of the base unit, if in stack.
+           - 'usb://<unit-number>/<filename>' - the help file is located
+                          on the usb port of the switch, if not in stack,
+                          or on the usb port of the specified unit,
+                          if in stack. The unit number must be between 1 
+                          and 8.
+           - 'tftp://<ip-address>/<filename>' - the help file is located
+                          on the TFTP server at the specified IP address.
+           - 'tftp://<hostname>/<filename>' - the help file is located on
+                          the TFTP server at the specified host. The hostname
+                          must have at most 64 characters in length.
+
+         In each of the supported formats, the filename must have at most
+         255 characters in length."
+    ::= { bsEdmScalars 1 }
+
+END
+

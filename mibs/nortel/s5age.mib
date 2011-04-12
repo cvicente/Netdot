@@ -13,16 +13,20 @@ IMPORTS
     InterfaceIndex
         FROM IF-MIB
     PortList, VlanId
-        FROM Q-BRIDGE-MIB;
+        FROM Q-BRIDGE-MIB
+    Ipv6Address, Ipv6AddressPrefix
+        FROM IPV6-TC
+    InetAddressType, InetAddress
+        FROM INET-ADDRESS-MIB;
 
 s5AgentMib MODULE-IDENTITY
-       LAST-UPDATED    "200705110000Z"
+       LAST-UPDATED    "201004150000Z"
        ORGANIZATION    "Nortel Networks"
        CONTACT-INFO    "Nortel Networks"
        DESCRIPTION
            "S5000 Agent MIB
 
-            Copyright 1995 - 2007 Nortel Networks, Inc.
+            Copyright 1995 - 2010 Nortel Networks, Inc.
             All rights reserved.
             This Bay Networks SNMP Management Information Base Specification
             (Specification) embodies Bay Networks' confidential and
@@ -33,6 +37,94 @@ s5AgentMib MODULE-IDENTITY
             This Specification is supplied 'AS IS,' and Bay Networks makes
             no warranty, either express or implied, as to the use,
             operation, condition, or performance of the Specification."
+
+       REVISION "201004150000Z" -- 14 April 2010
+       DESCRIPTION "Version 208:  Added -1 to range for recurring daylight
+                    savings start and end week, to refer to last week of
+                    a month."
+
+       REVISION "201001290000Z" -- 29 January 2010
+       DESCRIPTION "Version 207:  Changed ssa enumeration to nsna."
+
+       REVISION "200912140000Z" -- 14 December 2009
+       DESCRIPTION "Version 206:  Added wireless(49)."
+
+       REVISION "200911160000Z" -- 16 November 2009
+       DESCRIPTION "Version 205:  Added unicastStormControl(48)."
+
+       REVISION "200910230000Z" -- 23 October 2009
+       DESCRIPTION "Version 204:  Added enumerations to
+                                  s5AgAsciiConfigScriptOperStatus."
+
+       REVISION "200910200000Z" -- 20 October 2009
+       DESCRIPTION "Version 203:  Added energySaver(47) enumeration."
+
+       REVISION "200909240000Z" -- 24 September 2009
+       DESCRIPTION "Version 202:  Added objects for IPv6 CPU and stack
+                                  addresses, net masks, and default gateway."
+
+       REVISION "200909100000Z" -- 10 September 2009
+       DESCRIPTION "Version 201:  Added s5AgSysOperationalLicense and
+                                  s5AgSysInstalledLicense."
+
+       REVISION "200907230000Z" -- 23 July 2009
+       DESCRIPTION "Version 200:  Added uploadVerbose enumeration to
+                                  s5AgAsciiConfigScriptManual, and added
+                                  s5AgAsciiConfigScriptApplications."
+
+       REVISION "200907130000Z" -- 13 July 2009
+       DESCRIPTION "Version 199:  Added support for verbose acg upload."
+
+       REVISION "200906070000Z" -- 07 June 2009
+       DESCRIPTION "Version 198:  Added support for recurring DST."
+
+       REVISION "200901050000Z" -- 05 January 2009
+       DESCRIPTION "Version 197:  Removed s5AgSysAssetId."
+
+       REVISION "200810210000Z" -- 21 October 2008
+       DESCRIPTION "Version 196:  Added s5AgSysAssetId."
+
+       REVISION "200807240001Z" -- 24 July 2008
+       DESCRIPTION "Version 195:  Changed several objects from INTEGER
+                                  to Integer32 (SMIv2 compliance)."
+
+       REVISION "200807240000Z" -- 24 July 2008
+       DESCRIPTION "Version 194:  Added s5AgSysTelnetSessionLoginAuthenType
+                                  and s5AgSysSerialConsoleLoginAuthenType.
+                                  Add s5AgSysSshAuthKeyFilename.
+                                  Add dnldSshAuthKeyFromUsb value in
+                                  s5AgInfoFileAction."
+
+       REVISION "200803040000Z" -- 04 March 2008
+       DESCRIPTION "Version 193:  Fixed description of
+                                  s5AgSysAutoUnitReplacementSaveEnabled."
+
+       REVISION "200801280000Z" -- 28 January 2008
+       DESCRIPTION "Version 192:  Remove changes from version 191, not needed."
+
+       REVISION "200801250000Z" -- 25 January 2008
+       DESCRIPTION "Version 191:  Add support for primary/secondary
+                                  image download/boot."
+
+       REVISION "200712100000Z" -- 10 December 2007
+       DESCRIPTION "Version 190:  Add s5AgSysTftpServerInetAddressType and
+                                      s5AgSysTftpServerInetAddress."
+
+       REVISION "200712050000Z" -- 05 December 2007
+       DESCRIPTION "Version 189:  Add s5AgSysAutoUnitReplacementForceSave."
+
+       REVISION "200711040000Z" -- 04 November 2007
+       DESCRIPTION "Version 188:  Add s5AgSysAutoUnitReplacementSaveEnabled
+                                  and s5AgSysAutoUnitReplacementRestore."
+
+       REVISION "200709190000Z" -- 19 September 2007
+       DESCRIPTION "Version 187:  Add s5AgSysJumboFramesEnabled."
+
+       REVISION "200709040000Z" -- 04 September 2007
+       DESCRIPTION "Version 186:  Add more objects for IPv6 support."
+
+       REVISION "200708210000Z" -- 21 August 2007
+       DESCRIPTION "Version 185:  Add objects for IPv6 support."
 
        REVISION "200705110000Z" -- 11 May 2007
        DESCRIPTION "Version 184:  Add objects for timezone acronyms."
@@ -74,14 +166,16 @@ s5AgentMib MODULE-IDENTITY
        DESCRIPTION "Version 174:  Clarified descriptions."
 
        REVISION "200604050000Z" -- 05 Apr 2006
-       DESCRIPTION "Version 173:  Added copyConfigToNvram enumeration to s5AgInfoFileAction."
+       DESCRIPTION "Version 173:  Added copyConfigToNvram enumeration to
+                                  s5AgInfoFileAction."
 
        REVISION "200603220000Z" -- 07 Mar 2006
        DESCRIPTION "Version 172:  Add s5AgSysSpanningTreeAdminCompatibility and
                                   s5AgSysSpanningTreeOperCompatibility."
 
        REVISION "200603070000Z" -- 07 Mar 2006
-       DESCRIPTION "Version 171:  Add support for upload/downloading license files."
+       DESCRIPTION "Version 171:  Add support for upload/downloading license
+                                  files."
 
        REVISION "200602140000Z" -- 14 Feb 2006
        DESCRIPTION "Version 170:  Allow more lines in banner table."
@@ -90,7 +184,8 @@ s5AgentMib MODULE-IDENTITY
        DESCRIPTION "Version 169:  Added s5AgSysSpanningTreePortMode."
 
        REVISION "200509300000Z" -- 09 Sep 2005
-       DESCRIPTION "Version 168:  Add default(3) to s5AgSysAutoUnitReplacementEnabled."
+       DESCRIPTION "Version 168:  Add default(3) to
+                                  s5AgSysAutoUnitReplacementEnabled."
 
        REVISION "200505130000Z" -- 13 May 2005
        DESCRIPTION "Version 167:  Expand range of s5AgSysUsbTargetUnit."
@@ -102,7 +197,8 @@ s5AgentMib MODULE-IDENTITY
        DESCRIPTION "Version 165:  Fleshed out support for USB flash dongles."
 
        REVISION "200504220000Z" -- 22 Apr 2005
-       DESCRIPTION "Version 164:  Added s5AgSysSpanningTreePathCostCalculationMode."
+       DESCRIPTION "Version 164:  Added
+                                  s5AgSysSpanningTreePathCostCalculationMode."
  
        REVISION "200503240000Z" -- 24 Mar 2005
        DESCRIPTION "Version 163:  Added dnldImgFromUsb, upldImgToUsb,
@@ -124,7 +220,8 @@ s5AgentMib MODULE-IDENTITY
                                   Added Daylight Savings group."
 
        REVISION "200406180000Z" -- 18 June 2004
-       DESCRIPTION "Version 158:  Added 'disabled(3)' option to s5AgBannerControl"
+       DESCRIPTION "Version 158:  Added 'disabled(3)' option to
+                                  s5AgBannerControl"
 
        REVISION "200305290000Z" -- 29 May 2003
        DESCRIPTION "v153:  Conversion to SMIv2, Added s5AgentSsl group"
@@ -153,7 +250,7 @@ s5AgentAsciiConfig OBJECT IDENTIFIER ::= { s5Agent 11 }
 -- Hardware Information
 
 s5AgMyGrpIndx OBJECT-TYPE
-	SYNTAX	INTEGER (1..32767)
+	SYNTAX	Integer32 (1..32767)
 	MAX-ACCESS	read-only
 	STATUS	current
 	DESCRIPTION
@@ -162,7 +259,7 @@ s5AgMyGrpIndx OBJECT-TYPE
 	::= { s5AgentHw 1 }
 
 s5AgMyComIndx OBJECT-TYPE
-	SYNTAX	INTEGER (1..32767)
+	SYNTAX	Integer32 (1..32767)
 	MAX-ACCESS	read-only
 	STATUS	current
 	DESCRIPTION
@@ -559,7 +656,7 @@ s5AgInfoCurDfltGwAddr OBJECT-TYPE
 	::= { s5AgentGbl 13 }
 
 s5AgInfoDramUsage  OBJECT-TYPE
-	SYNTAX	INTEGER  (-1..100)
+	SYNTAX	Integer32  (-1..100)
 	MAX-ACCESS	read-only
 	STATUS	current
 	DESCRIPTION
@@ -662,7 +759,7 @@ s5AgInfoImgType OBJECT-TYPE
       ::= { s5AgentGbl 18 }
 
 s5AgInfoScheduleBootTime OBJECT-TYPE
-        SYNTAX  INTEGER (0..10080)
+        SYNTAX  Integer32 (0..10080)
         MAX-ACCESS  read-write
         STATUS  current
         DESCRIPTION
@@ -705,7 +802,7 @@ s5AgInfoScheduleBootCancel OBJECT-TYPE
         ::= { s5AgentGbl 20 }
   
 s5AgInfoNumBootBanks OBJECT-TYPE
-        SYNTAX  INTEGER (0..255)
+        SYNTAX  Integer32 (0..255)
         MAX-ACCESS  read-only
         STATUS  current
         DESCRIPTION
@@ -719,7 +816,7 @@ s5AgInfoNumBootBanks OBJECT-TYPE
  
  
 s5AgInfoNextBootBank OBJECT-TYPE
-        SYNTAX  INTEGER (0..255)
+        SYNTAX  Integer32 (0..255)
         MAX-ACCESS  read-write
         STATUS  current
         DESCRIPTION
@@ -736,7 +833,7 @@ s5AgInfoNextBootBank OBJECT-TYPE
  
  
 s5AgInfoDstLoadBank OBJECT-TYPE
-        SYNTAX  INTEGER (0..255)
+        SYNTAX  Integer32 (0..255)
         MAX-ACCESS  read-write
         STATUS  current
         DESCRIPTION
@@ -770,7 +867,8 @@ s5AgInfoFileAction OBJECT-TYPE
            upldLicense(19),
            dnldLicenseFromUsb(20),
            upldLicenseToUsb(21),
-           copyConfigToNvram(22)
+           copyConfigToNvram(22),
+           dnldSshAuthKeyFromUsb(23)
            }
     MAX-ACCESS read-write
     STATUS current
@@ -815,7 +913,9 @@ s5AgInfoFileAction OBJECT-TYPE
             dnldLicenseFromUsb(20) .. download license file from USB port
             upldLicenseToUsb(21) .... upload license file to USB port
             copyConfigToNvram(22) ... copy the current running configuration
-                                      into NVRAM"
+                                      into NVRAM
+            dnldSshAuthKeyFromUsb(23).. download SSH authentication key from
+                                      USB port"
     ::= {s5AgentGbl 24}
 
 
@@ -1053,15 +1153,15 @@ s5AgOthIfEntry OBJECT-TYPE
 	::= { s5AgOthIfTable 1 }
 
 S5AgOthIfEntry ::= SEQUENCE {
-	s5AgOthIfGrpIndx INTEGER,
-	s5AgOthIfComIndx INTEGER,
+	s5AgOthIfGrpIndx Integer32,
+	s5AgOthIfComIndx Integer32,
 	s5AgOthIfIndx InterfaceIndex,
 	s5AgOthIfIpAddr IpAddress,
 	s5AgOthIfIpxAddr IpxAddress
 	}
 
 s5AgOthIfGrpIndx OBJECT-TYPE
-	SYNTAX	INTEGER (1..32767)
+	SYNTAX	Integer32 (1..32767)
 	MAX-ACCESS	read-only
 	STATUS	current
 	DESCRIPTION
@@ -1070,7 +1170,7 @@ s5AgOthIfGrpIndx OBJECT-TYPE
 	::= { s5AgOthIfEntry 1 }
 
 s5AgOthIfComIndx OBJECT-TYPE
-	SYNTAX	INTEGER (1..32767)
+	SYNTAX	Integer32 (1..32767)
 	MAX-ACCESS	read-only
 	STATUS	current
 	DESCRIPTION
@@ -1201,13 +1301,13 @@ s5AgDataCollectEntry OBJECT-TYPE
 	::= { s5AgDataCollectTable 1 }
 
 S5AgDataCollectEntry ::= SEQUENCE {
-	s5AgDataCollectIfIndex INTEGER,
+	s5AgDataCollectIfIndex Integer32,
 	s5AgDataCollectSnTimeStamp TimeTicks,
 	s5AgDataCollectNetworkAddrStatus INTEGER
 	}
 
 s5AgDataCollectIfIndex OBJECT-TYPE
-	SYNTAX	INTEGER (0..255)
+	SYNTAX	Integer32 (0..255)
 	MAX-ACCESS	read-only
 	STATUS	current
 	DESCRIPTION
@@ -1272,7 +1372,8 @@ s5AgUnAuthIpAddr OBJECT-TYPE
 		a VarBind in an Authentication Trap PDU. A get
 		request will return the last value used, and will
 		return the null address 0.0.0.0 if no IP
-		authentication traps have been sent."
+		authentication traps have been sent, or if the
+                address is not an IPv4 address."
 	::= { s5AgentInfo 8 }
 
 s5AgUnAuthIpxAddr OBJECT-TYPE
@@ -1484,6 +1585,28 @@ s5AgTrapFilterGlobalStatus    OBJECT-TYPE
                 except for traps that are enabled in the 
                 s5AgTrapFilterTable are enabled."
         ::= { s5AgentInfo 12 }
+
+s5AgUnAuthInetAddressType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the type of address stored in the related
+         object s5AgUnAuthInetAddress."
+    ::= { s5AgentInfo 13 }
+
+s5AgUnAuthInetAddress OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This object contains the IP address of the last station that tried
+         to access this agent with an invalid community string. This object
+         is used as a VarBind in an Authentication Trap PDU. A get request
+         will return the last value used, or will return and empty address
+         (zero length octet string) if no IP authentication traps have been
+         sent."
+    ::= { s5AgentInfo 14 }
  
 
 
@@ -1491,7 +1614,7 @@ s5AgTrapFilterGlobalStatus    OBJECT-TYPE
 -- Trap Receiver Table
 
 s5AgTrpRcvrMaxEnt OBJECT-TYPE
-	SYNTAX	INTEGER (0..255)
+	SYNTAX	Integer32 (0..255)
 	MAX-ACCESS	read-only
 	STATUS	current
 	DESCRIPTION
@@ -1500,7 +1623,7 @@ s5AgTrpRcvrMaxEnt OBJECT-TYPE
 	::= { s5AgentMgmt 1 }
 
 s5AgTrpRcvrCurEnt OBJECT-TYPE
-	SYNTAX	INTEGER (0..255)
+	SYNTAX	Integer32 (0..255)
 	MAX-ACCESS	read-only
 	STATUS	current
 	DESCRIPTION
@@ -1509,7 +1632,7 @@ s5AgTrpRcvrCurEnt OBJECT-TYPE
 	::= { s5AgentMgmt 2 }
 
 s5AgTrpRcvrNext OBJECT-TYPE
-	SYNTAX	INTEGER (0..255)
+	SYNTAX	Integer32 (0..255)
 	MAX-ACCESS	read-only
 	STATUS	current
 	DESCRIPTION
@@ -1542,7 +1665,7 @@ s5AgTrpRcvrEntry OBJECT-TYPE
 	::= { s5AgTrpRcvrTable 1 }
 
 S5AgTrpRcvrEntry ::= SEQUENCE {
-	s5AgTrpRcvrIndx INTEGER,
+	s5AgTrpRcvrIndx Integer32,
 	s5AgTrpRcvrStatus INTEGER,
 	s5AgTrpRcvrAddrType INTEGER,
 	s5AgTrpRcvrNetAddr OCTET STRING,
@@ -1551,7 +1674,7 @@ S5AgTrpRcvrEntry ::= SEQUENCE {
 	}
 
 s5AgTrpRcvrIndx OBJECT-TYPE
-	SYNTAX	INTEGER (1..255)
+	SYNTAX	Integer32 (1..255)
 	MAX-ACCESS	read-only
 	STATUS	current
 	DESCRIPTION
@@ -1650,32 +1773,55 @@ s5AgTrpRcvrAgeTime OBJECT-TYPE
 s5AgRemoteLoginMgmt OBJECT IDENTIFIER ::= { s5AgentMgmt 5 }
 
 s5AgRemoteLoginIp OBJECT-TYPE
-	SYNTAX	IpAddress
-	MAX-ACCESS	read-only
-	STATUS	current
-	DESCRIPTION
-		"This value indicates the last IP address remote login to this system.  "
-	::= { s5AgRemoteLoginMgmt 1 }
+    SYNTAX      IpAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This value indicates the last IP address remote login to
+         this system.  If the last such address is not an IPv4
+         address, the value will be 0.0.0.0."
+    ::= { s5AgRemoteLoginMgmt 1 }
 
 s5AgRemoteLoginStatus OBJECT-TYPE
-	SYNTAX	INTEGER {
-               statusUnknown (1),
-               successful (2),
-               passwordFail (3),
-               loginTimeout (4),
-               loginInactivityTimeout(5),
-               telnetSessionExisted (6),
-               nonAllowedIPaddr (7),
-               localConsoleBusy (8),
-               excessiveLoginFail (9),
-               accessPermissionOff (10),
-	       loginLogout (11)
-            } 
-	MAX-ACCESS	read-only
-	STATUS	current
-	DESCRIPTION
-		"This value indicates the status of remote login to this system.  "
-	::= { s5AgRemoteLoginMgmt 2 }
+    SYNTAX      INTEGER {
+                    statusUnknown (1),
+                    successful (2),
+                    passwordFail (3),
+                    loginTimeout (4),
+                    loginInactivityTimeout(5),
+                    telnetSessionExisted (6),
+                    nonAllowedIPaddr (7),
+                    localConsoleBusy (8),
+                    excessiveLoginFail (9),
+                    accessPermissionOff (10),
+                    loginLogout (11)
+                } 
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This value indicates the status of remote login to
+         this system."
+    ::= { s5AgRemoteLoginMgmt 2 }
+
+s5AgRemoteLoginInetAddressType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This value indicates the type of the last IP address remote
+         login to this system.  The indicates the type of address
+         contained in s5AgRemoteLoginInetAddress."
+    ::= { s5AgRemoteLoginMgmt 3 }
+
+s5AgRemoteLoginInetAddress OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This value indicates the last IP address remote login to this
+         system.  The type of address is specified in
+         s5AgRemoteLoginInetAddressType."
+    ::= { s5AgRemoteLoginMgmt 4 }
 
 
 -- Miscellaneous System-wide settings
@@ -1735,7 +1881,9 @@ s5AgSysTftpServerAddress OBJECT-TYPE
 	STATUS	current
 	DESCRIPTION
             "The IP address of the TFTP server for all TFTP operations.
-             If not used, then the value is 0.0.0.0"
+             If not used, then the value is 0.0.0.0.  Further, if the
+             value of s5AgTftpServerInetAddressType is not ipv4(1), then
+             the value of this object must be 0.0.0.0."
 	::= { s5AgentSystem 5 }
 
 s5AgSysAsciiConfigFilename OBJECT-TYPE
@@ -1841,7 +1989,7 @@ s5AgSysCpuNetMask OBJECT-TYPE
 	::= { s5AgentSystem 12 }
 
 s5AgSysManagementVlanId OBJECT-TYPE
-	SYNTAX	INTEGER (1..4094)
+	SYNTAX	Integer32 (1..4094)
 	MAX-ACCESS	read-write
 	STATUS	current
 	DESCRIPTION
@@ -1849,7 +1997,7 @@ s5AgSysManagementVlanId OBJECT-TYPE
 	::= { s5AgentSystem 13 }
 
 s5AgSysBinaryConfigUnitNumber OBJECT-TYPE
-      SYNTAX      INTEGER (0..255)
+      SYNTAX      Integer32 (0..255)
       MAX-ACCESS      read-write
       STATUS      current
       DESCRIPTION
@@ -1861,7 +2009,7 @@ s5AgSysBinaryConfigUnitNumber OBJECT-TYPE
       ::= { s5AgentSystem 14 }
 
 s5AgSysStackInsertionUnitNumber OBJECT-TYPE
-      SYNTAX      INTEGER (0..255)
+      SYNTAX      Integer32 (0..255)
       MAX-ACCESS      read-write
       STATUS      current
       DESCRIPTION
@@ -1947,7 +2095,9 @@ s5AgSysAsciiConfigManualUpload OBJECT-TYPE
                       inProgress(2),
                       failed(3),
                       uploadNow(4),
-                      uploadToUsb(5)
+                      uploadToUsb(5),
+                      uploadVerboseNow(6),
+                      uploadVerboseToUsb(7)
                    }
 	MAX-ACCESS read-write
 	STATUS     deprecated
@@ -1956,7 +2106,7 @@ s5AgSysAsciiConfigManualUpload OBJECT-TYPE
              upload an ASCII configuration file.  The value of
              this object when retrieved can be either passed(1),
              inProgress(2) or failed(3).  Setting this object to
-             downloadNow(4) will initiate a manual ASCII
+             uploadNow(4) will initiate a manual ASCII
              configuration file upload to a TFTP server.  Setting
              this object to uploadToUsb(5) will initiate a manual
              ASCII configuration file upload to a USB flash dongle.
@@ -2132,6 +2282,254 @@ s5AgSysVlanConfigControl OBJECT-TYPE
                              port to VLAN and changing tagging"
       ::= { s5AgentSystem 33 }
 
+s5AgSysJumboFramesEnabled OBJECT-TYPE
+      SYNTAX      TruthValue
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+            "This object controls whether jumbo frames are supported."
+      ::= { s5AgentSystem 34 }
+
+s5AgSysAutoUnitReplacementSaveEnabled OBJECT-TYPE
+      SYNTAX      TruthValue
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+            "This object indicates whether auto-unit-replacement automatic
+             saving of unit images to the base unit is enabled."
+      DEFVAL { true }
+      ::= { s5AgentSystem 35 }
+
+s5AgSysAutoUnitReplacementRestore OBJECT-TYPE
+      SYNTAX      Integer32 (0..8)
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+            "This object is used to force the configuration of a unit to be
+             restored from the saved configuration on the base unit.  Setting
+             the value to a unit number will force the configuration to be
+             restored on that unit.  The value on retrieval is always 0."
+      DEFVAL { 0 }
+      ::= { s5AgentSystem 36 }
+
+s5AgSysAutoUnitReplacementForceSave OBJECT-TYPE
+      SYNTAX      Integer32 (0..8)
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+            "This object is used to force the configuration of a non-base
+             unit to be saved to the base unit.  Setting it to a particular
+             unit number will force the save of that unit's configuration
+             to the base unit.  When queried, the object always returns the
+             value 0."
+      DEFVAL { 0 }
+      ::= { s5AgentSystem 37 }
+
+s5AgSysTftpServerInetAddressType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object indicates the type of address stored in the related
+         object s5AgSysTftpServerInetAddress."
+    ::= { s5AgentSystem 38 }
+
+s5AgSysTftpServerInetAddress OBJECT-TYPE
+    SYNTAX      InetAddress
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object contains the IP address of the TFTP server for all
+         TFTP operations."
+    ::= { s5AgentSystem 39 }
+
+s5AgSysTelnetSessionLoginAuthenType OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    none(1),
+                    local(2),
+                    radius(3),
+                    tacacs(4)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object controls the authentication method used for telnet
+         session logins.  The values of this object have the following meanings:
+             none(1) ---- No username/password is required for login.
+             local(2) --- The locally configured usernames/passwords are used
+                          to authenticate login attempts.
+             radius(3) -- The configured RADIUS server is contacted to
+                          authenticate login attempts.
+             tacacs(4) -- The configured TACACS+ server is contacted to
+                          authenticate login attempts."
+    ::= { s5AgentSystem 40 }
+
+s5AgSysSerialConsoleLoginAuthenType OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    none(1),
+                    local(2),
+                    radius(3),
+                    tacacs(4)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object controls the authentication method used for serial
+         console logins.  The values of this object have the following meanings:
+             none(1) ---- No username/password is required for login.
+             local(2) --- The locally configured usernames/passwords are used
+                          to authenticate login attempts.
+             radius(3) -- The configured RADIUS server is contacted to
+                          authenticate login attempts.
+             tacacs(4) -- The configured TACACS+ server is contacted to
+                          authenticate login attempts."
+    ::= { s5AgentSystem 41 }
+
+s5AgSysSshAuthKeyFilename OBJECT-TYPE
+    SYNTAX      DisplayString (SIZE (0..128))
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+         "Name of the Ssh authentication key file that will be downloaded 
+          when the s5AgInfoFileAction object is set to dnldSshAuthKeyFromUsb(23).
+          When not used, the value is a zero length string."
+    ::= { s5AgentSystem 42 }
+
+s5AgSysAsciiConfigManualUploadApplications OBJECT-TYPE
+	SYNTAX     BITS {
+                       ieee802dot1ab(0),
+                       aaur(1),
+                       adac(2),
+                       arpInspection(3),
+                       assetId(4),
+                       aur(5),
+                       banner(6),
+                       brouter(7),
+                       cops(8),
+                       core(9),
+                       defaultCmdInterface(10),
+                       dhcpRelay(11),
+                       dhcpSnooping(12),
+                       eap(13),
+                       esu(14),
+                       interface(15),
+                       ip(16),
+                       ipSourceGuard(17),
+                       ipfix(18),
+                       ipmc(19),
+                       ipmgr(20),
+                       ipv6(21),
+                       l3(22),
+                       l3Protocols(23),
+                       lacp(24),
+                       logging(25),
+                       macSecurity(26),
+                       mlt(27),
+                       pim(28),
+                       poe(29),
+                       portMirroring(30),
+                       pvst(31),
+                       qos(32),
+                       rateLimit(33),
+                       rmon(34),
+                       rtc(35),
+                       slpp(36),
+                       snmp(37),
+                       smlt(38),
+                       nsna(39),
+                       ssh(40),
+                       ssl(41),
+                       stack(42),
+                       stkmon(43),
+                       stp(44),
+                       vlacp(45),
+                       vlan(46),
+                       energySaver(47),
+                       unicastStormControl(48),
+                       wireless(49)
+                   }
+	MAX-ACCESS read-write
+	STATUS     current
+	DESCRIPTION
+            "This objects is used to specify the set of applications to
+             be included an an ASCII configure file when it is uploaded."
+	::= { s5AgentSystem 43 }
+
+s5AgSysOperationalLicense OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    basic(1),
+                    advanced(2),
+                    premier(3)
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+         "The type of license currently in effect."
+    ::= { s5AgentSystem 44 }
+
+s5AgSysInstalledLicense OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    basic(1),
+                    advanced(2),
+                    premier(3)
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The type of license currently installed."
+    ::= { s5AgentSystem 45 }
+
+s5AgSysCpuIpv6Address OBJECT-TYPE
+    SYNTAX      Ipv6Address
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The system's CPU IPv6 address.  Note that for a stackable
+         system in standalone mode, this will be the standalone
+         IPv6 address, but in stack mode, this will be the stack IPv6
+         address.  I.e., this is always the IPv6 address at which
+         the system is reachable.  Setting this object will modify
+         the corresponding IPv6 address."
+    ::= { s5AgentSystem 46 }
+
+s5AgSysStackIpv6Address OBJECT-TYPE
+    SYNTAX      Ipv6Address
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The stack IPv6 address of a stackable system.  A non-stackable
+         system should never return an instance of this object, nor allow
+         writes to this object.  Note that in standalone mode, this will
+         still be the stack IPv6 address, even though it is not in use.
+         When in stack mode, the IPv6 address of individual units can be
+         found in the s5ChasComTable in the s5Chassis MIB (and note that
+         these addresses will not be in use when in stack mode)."
+    ::= { s5AgentSystem 47 }
+
+s5AgSysCpuIpv6NetMask OBJECT-TYPE
+    SYNTAX      Ipv6AddressPrefix
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The system's CPU IPv6 subnet mask."
+    ::= { s5AgentSystem 48 }
+
+s5AgSysStackIpv6NetMask OBJECT-TYPE
+    SYNTAX      Ipv6AddressPrefix
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The system's CPU IPv6 subnet mask."
+    ::= { s5AgentSystem 49 }
+
+s5AgSysIpv6DefaultGateway OBJECT-TYPE
+    SYNTAX      Ipv6Address
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The system's IPv6 default gateway."
+    ::= { s5AgentSystem 50 }
+
 --
 -- Custom Banner Group
 --
@@ -2175,7 +2573,7 @@ s5AgCustomBannerEntry OBJECT-TYPE
 S5AgCustomBannerEntry ::=
       SEQUENCE {
           s5AgCustomBannerType  INTEGER,
-          s5AgCustomBannerId    INTEGER,
+          s5AgCustomBannerId    Integer32,
           s5AgCustomBannerLine  DisplayString
       }
 
@@ -2195,7 +2593,7 @@ s5AgCustomBannerType OBJECT-TYPE
       ::= { s5AgCustomBannerEntry 1 }
 
 s5AgCustomBannerId OBJECT-TYPE
-      SYNTAX      INTEGER (1..19)
+      SYNTAX      Integer32 (1..19)
       MAX-ACCESS      not-accessible
       STATUS      current
       DESCRIPTION "Identifies the line of text within a custom banner."
@@ -2262,8 +2660,10 @@ s5AgSntpPrimaryServerAddress OBJECT-TYPE
       MAX-ACCESS      read-write
       STATUS      current
       DESCRIPTION
-          "The IP address of the primary SNTP server.  If this value is 0, 
-           synchronization to this server is not attempted."
+          "The IPv4 address of the primary SNTP server.  If this value is
+           0.0.0.0, refer to the values of these objects:
+               s5AgSntpPrimaryServerInetAddressType
+               s5AgSntpPrimaryServerInetAddress"
       ::= { s5AgentSntp 2 }
 
 s5AgSntpSecondaryServerAddress OBJECT-TYPE
@@ -2271,12 +2671,14 @@ s5AgSntpSecondaryServerAddress OBJECT-TYPE
       MAX-ACCESS      read-write
       STATUS      current
       DESCRIPTION
-          "The IP address of the secondary SNTP server.  If this value is 0, 
-           synchronization to this server is not attempted."
+          "The IPv4 address of the secondary SNTP server.  If this value is
+           0.0.0.0, refer to the values of these objects:
+               s5AgSntpSecondaryServerInetAddressType
+               s5AgSntpSecondaryServerInetAddress"
       ::= { s5AgentSntp 3 }
 
 s5AgSntpSyncInterval OBJECT-TYPE
-      SYNTAX      INTEGER (0..168)
+      SYNTAX      Integer32 (0..168)
       UNITS       "Hours"
       MAX-ACCESS      read-write
       STATUS      current
@@ -2316,9 +2718,11 @@ s5AgSntpLastSyncSource OBJECT-TYPE
       MAX-ACCESS      read-only
       STATUS      current
       DESCRIPTION
-          "This object returns the IP source address of the NTP server
-           with which this device last synchronized.  If the device has never
-           synchronized, this value will be 0.0.0.0."
+          "This object returns the IPv4 source address of the NTP server
+           with which this device last synchronized.  If the value of
+           this object is 0.0.0.0, refer to the values of these objects:
+               s5AgSntpLastSyncSourceInetAddressType
+               s5AgSntpLastSyncSourceInetAddress"
       ::= { s5AgentSntp 7 }
 
 s5AgSntpNextSyncTime OBJECT-TYPE
@@ -2403,6 +2807,67 @@ s5AgSntpTimeZoneAcronym OBJECT-TYPE
           "This object contains a time zone acronym.  It is not used
            for any operational purposes, it is only used for display."
       ::= { s5AgentSntp 14 }
+
+s5AgSntpPrimaryServerInetAddressType OBJECT-TYPE
+      SYNTAX      InetAddressType
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+          "The type of internet address contained in the object
+           s5AgSntpPrimaryServerInetAddress.  Together, these two objects
+           specify the IP address of the primary SNTP server.  If the
+           value of this object is unknown(0), then synchronization to
+           this server is not attempted."
+      ::= { s5AgentSntp 15 }
+
+s5AgSntpPrimaryServerInetAddress OBJECT-TYPE
+      SYNTAX      InetAddress
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+          "The IP address of the primary SNTP server."
+      ::= { s5AgentSntp 16 }
+
+s5AgSntpSecondaryServerInetAddressType OBJECT-TYPE
+      SYNTAX      InetAddressType
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+          "The type of internet address contained in the object
+           s5AgSntpSecondaryServerInetAddress.  Together, these two objects
+           specify the IP address of the secondary SNTP server.  If the
+           value of this object is unknown(0), then synchronization to
+           this server is not attempted."
+      ::= { s5AgentSntp 17 }
+
+s5AgSntpSecondaryServerInetAddress OBJECT-TYPE
+      SYNTAX      InetAddress
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+          "The IP address of the secondary SNTP server."
+      ::= { s5AgentSntp 18 }
+
+s5AgSntpLastSyncSourceInetAddressType OBJECT-TYPE
+      SYNTAX      InetAddressType
+      MAX-ACCESS  read-only
+      STATUS      current
+      DESCRIPTION
+          "The type of internet address contained in the object
+           s5AgSntpLastSyncSourceInetAddress.  Together, these two objects
+           specify the IP address of the NTP server with which this device
+           last synchronized.  If the device has never synchronized, the
+           value of this object will be unknown(0)."
+      ::= { s5AgentSntp 19 }
+
+s5AgSntpLastSyncSourceInetAddress OBJECT-TYPE
+      SYNTAX      InetAddress
+      MAX-ACCESS  read-only
+      STATUS      current
+      DESCRIPTION
+          "The IP source address of the NTP server with which this device
+           last synchronized."
+      ::= { s5AgentSntp 20 }
 
 
 --
@@ -2636,9 +3101,11 @@ s5AgDaylightSavingsRecurring OBJECT-TYPE
       DESCRIPTION
           "This object specifies whether the Daylight Savings start
            and end times are yearly reoccuring times, or a single
-           occurrence on specific dates.  IF the value is true(1),
-           then the values of s5AgDaylightSavingsStartYear and
-           s5AgDaylightSavingsEndYear will be ignored."
+           occurrence on specific dates.  If the value is true(1),
+           then the objects from s5AgDaylightSavingsStartMonth through
+           s5AgDaylightSavingsEndYear are ignored, and instead, the
+           objects from s5AgDaylightSavingsRecurringStartWeek through
+           s5AgDaylightSavingsRecurringOffset are used."
       ::= { s5AgentDaylightSavings 13 }
 
 s5AgDaylightSavingsTimeZoneAcronym OBJECT-TYPE
@@ -2649,6 +3116,160 @@ s5AgDaylightSavingsTimeZoneAcronym OBJECT-TYPE
           "This object contains a time zone acronym.  It is not used
            for any operational purposes, it is only used for display."
       ::= { s5AgentDaylightSavings 14 }
+
+s5AgDaylightSavingsRecurringStartWeek OBJECT-TYPE
+      SYNTAX      Integer32 (-1|1..5)
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+          "This object specifies the week of the month when Daylight Savings
+           time will start.  A value of -1 means the last week of the month.
+           This object is only used when the value of
+           s5AgDaylightSavingsRecurring is true(1)."
+      ::= { s5AgentDaylightSavings 15 }
+
+s5AgDaylightSavingsRecurringStartDay OBJECT-TYPE
+      SYNTAX      INTEGER {
+                      monday(1),
+                      tuesday(2),
+                      wednesday(3),
+                      thrusday(4),
+                      friday(5),
+                      saturday(6),
+                      sunday(7)
+                  }
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+          "This object specifies the day of the week when Daylight Savings
+           time will start.  This is only used when the value of
+           s5AgDaylightSavingsRecurring is true(1)."
+      ::= { s5AgentDaylightSavings 16 }
+
+s5AgDaylightSavingsRecurringStartMonth OBJECT-TYPE
+      SYNTAX      INTEGER {
+                      january(1),
+                      february(2),
+                      march(3),
+                      april(4),
+                      may(5),
+                      june(6),
+                      july(7),
+                      august(8),
+                      september(9),
+                      october(10),
+                      november(11),
+                      december(12)
+                  }
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+          "This object specifies the month when Daylight Savings time
+           will start.  This is only used when the value of
+           s5AgDaylightSavingsRecurring is true(1)."
+      ::= { s5AgentDaylightSavings 17 }
+
+s5AgDaylightSavingsRecurringStartHour OBJECT-TYPE
+      SYNTAX      Integer32 (0..23)
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+          "This object specifies the hour when Daylight Savings time
+           will start.  This is only used when the value of
+           s5AgDaylightSavingsRecurring is true(1)."
+      ::= { s5AgentDaylightSavings 18 }
+
+s5AgDaylightSavingsRecurringStartMinute OBJECT-TYPE
+      SYNTAX      Integer32 (0..59)
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+          "This object specifies the minute when Daylight Savings time
+           will start.  This is only used when the value of
+           s5AgDaylightSavingsRecurring is true(1)."
+      ::= { s5AgentDaylightSavings 19 }
+
+s5AgDaylightSavingsRecurringEndWeek OBJECT-TYPE
+      SYNTAX      Integer32 (-1|1..5)
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+          "This object specifies the week of the month when Daylight Savings
+           time will end.  A value of -1 means the last week of the month.
+           This object is only used when the value of
+           s5AgDaylightSavingsRecurring is true(1)."
+      ::= { s5AgentDaylightSavings 20 }
+
+s5AgDaylightSavingsRecurringEndDay OBJECT-TYPE
+      SYNTAX      INTEGER {
+                      monday(1),
+                      tuesday(2),
+                      wednesday(3),
+                      thrusday(4),
+                      friday(5),
+                      saturday(6),
+                      sunday(7)
+                  }
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+          "This object specifies the day of the week when Daylight Savings
+           time will end.  This is only used when the value of
+           s5AgDaylightSavingsRecurring is true(1)."
+      ::= { s5AgentDaylightSavings 21 }
+
+s5AgDaylightSavingsRecurringEndMonth OBJECT-TYPE
+      SYNTAX      INTEGER {
+                      january(1),
+                      february(2),
+                      march(3),
+                      april(4),
+                      may(5),
+                      june(6),
+                      july(7),
+                      august(8),
+                      september(9),
+                      october(10),
+                      november(11),
+                      december(12)
+                  }
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+          "This object specifies the month when Daylight Savings time
+           will end.  This is only used when the value of
+           s5AgDaylightSavingsRecurring is true(1)."
+      ::= { s5AgentDaylightSavings 22 }
+
+s5AgDaylightSavingsRecurringEndHour OBJECT-TYPE
+      SYNTAX      Integer32 (0..23)
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+          "This object specifies the hour when Daylight Savings time
+           will end.  This is only used when the value of
+           s5AgDaylightSavingsRecurring is true(1)."
+      ::= { s5AgentDaylightSavings 23 }
+
+s5AgDaylightSavingsRecurringEndMinute OBJECT-TYPE
+      SYNTAX      Integer32 (0..59)
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+          "This object specifies the minute when Daylight Savings time
+           will end.  This is only used when the value of
+           s5AgDaylightSavingsRecurring is true(1)."
+      ::= { s5AgentDaylightSavings 24 }
+
+s5AgDaylightSavingsRecurringOffset OBJECT-TYPE
+      SYNTAX      Integer32 (1..1440)
+      MAX-ACCESS  read-write
+      STATUS      current
+      DESCRIPTION
+          "This object specifies the offset when Daylight Savings time
+           will end.  This is only used when the value of
+           s5AgDaylightSavingsRecurring is true(1)."
+      ::= { s5AgentDaylightSavings 25 }
 
 
 --
@@ -2776,12 +3397,13 @@ s5AgAsciiConfigScriptEntry OBJECT-TYPE
     ::= { s5AgAsciiConfigScriptTable 1 }
 
 S5AgAsciiConfigScriptEntry ::= SEQUENCE {
-    s5AgAsciiConfigScriptIndex            Integer32,
-    s5AgAsciiConfigScriptBootPriority     Integer32,
-    s5AgAsciiConfigScriptSource           OCTET STRING,
-    s5AgAsciiConfigScriptManual           INTEGER,
-    s5AgAsciiConfigScriptOperStatus       INTEGER,
-    s5AgAsciiConfigScriptLastStatusChange Integer32
+    s5AgAsciiConfigScriptIndex              Integer32,
+    s5AgAsciiConfigScriptBootPriority       Integer32,
+    s5AgAsciiConfigScriptSource             OCTET STRING,
+    s5AgAsciiConfigScriptManual             INTEGER,
+    s5AgAsciiConfigScriptOperStatus         INTEGER,
+    s5AgAsciiConfigScriptLastStatusChange   Integer32,
+    s5AgAsciiConfigScriptUploadApplications BITS
     }
 
 s5AgAsciiConfigScriptIndex OBJECT-TYPE
@@ -2838,7 +3460,8 @@ s5AgAsciiConfigScriptManual OBJECT-TYPE
     SYNTAX      INTEGER {
                             other(1),
                             download(2),
-                            upload(3)
+                            upload(3),
+                            uploadVerbose(4)
                         }
     MAX-ACCESS  read-write
     STATUS      current
@@ -2869,7 +3492,10 @@ s5AgAsciiConfigScriptOperStatus OBJECT-TYPE
                             manualDownloadFailed(7),
                             manualUploadPassed(8),
                             manualUploadInProgress(9),
-                            manualUploadFailed(10)
+                            manualUploadFailed(10),
+                            manualUploadVerbosePassed(11),
+                            manualUploadVerboseInProgress(12),
+                            manualUploadVerboseFailed(13)
                         }
     MAX-ACCESS  read-only
     STATUS      current
@@ -2890,6 +3516,66 @@ s5AgAsciiConfigScriptLastStatusChange OBJECT-TYPE
          instance of s5AgAsciiConfigScriptOperStatus changed.  If that value
          is other(1), then the value of this object will be 0."
     ::= { s5AgAsciiConfigScriptEntry 6 }
+
+s5AgAsciiConfigScriptUploadApplications OBJECT-TYPE
+    SYNTAX     BITS {
+                       ieee802dot1ab(0),
+                       aaur(1),
+                       adac(2),
+                       arpInspection(3),
+                       assetId(4),
+                       aur(5),
+                       banner(6),
+                       brouter(7),
+                       cops(8),
+                       core(9),
+                       defaultCmdInterface(10),
+                       dhcpRelay(11),
+                       dhcpSnooping(12),
+                       eap(13),
+                       esu(14),
+                       interface(15),
+                       ip(16),
+                       ipSourceGuard(17),
+                       ipfix(18),
+                       ipmc(19),
+                       ipmgr(20),
+                       ipv6(21),
+                       l3(22),
+                       l3Protocols(23),
+                       lacp(24),
+                       logging(25),
+                       macSecurity(26),
+                       mlt(27),
+                       pim(28),
+                       poe(29),
+                       portMirroring(30),
+                       pvst(31),
+                       qos(32),
+                       rateLimit(33),
+                       rmon(34),
+                       rtc(35),
+                       slpp(36),
+                       snmp(37),
+                       smlt(38),
+                       nsna(39),
+                       ssh(40),
+                       ssl(41),
+                       stack(42),
+                       stkmon(43),
+                       stp(44),
+                       vlacp(45),
+                       vlan(46),
+                       energySaver(47),
+                       unicastStormControl(48),
+                       wireless(49)
+                   }
+    MAX-ACCESS read-write
+    STATUS     current
+    DESCRIPTION
+        "This objects is used to specify the set of applications to
+         be included an an ASCII configuration file when it is uploaded."
+    ::= { s5AgAsciiConfigScriptEntry 7 }
 
 END
 

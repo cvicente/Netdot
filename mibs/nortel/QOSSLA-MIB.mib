@@ -1,0 +1,131 @@
+
+QOSSLA-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+        OBJECT-TYPE,IpAddress,Counter32,Integer32,
+        MODULE-IDENTITY,NOTIFICATION-TYPE
+                FROM SNMPv2-SMI
+        DisplayString,TruthValue,
+	  RowStatus,TEXTUAL-CONVENTION
+                FROM SNMPv2-TC
+	  NOTIFICATION-GROUP 
+		    FROM SNMPv2-CONF
+	ntEnterpriseDataTasmanMgmt
+	          FROM NT-ENTERPRISE-DATA-MIB;
+
+nnqosSLAMib MODULE-IDENTITY 
+  	LAST-UPDATED "0008180000Z"
+  	ORGANIZATION "Nortel Networks"
+	CONTACT-INFO
+        	" Nortel Networks
+        	8200 Dixie Road
+        	Brampton, Ontario L6T 5P6
+        	Canada        
+        	1-800-4Nortel 
+        	www.nortelnetworks.com "
+  	DESCRIPTION
+  		"QosSLA group MIBs"
+  	REVISION "0008180000Z"
+  	DESCRIPTION
+  		"Initial version of this MIB module."
+        ::= { ntEnterpriseDataTasmanMgmt 24}
+
+
+nnqosSLANotifications       OBJECT IDENTIFIER ::= {nnqosSLAMib  1}
+nnqosSLANotificationsVars OBJECT IDENTIFIER ::= { nnqosSLAMib  2 }
+nnqosSLATraps             OBJECT IDENTIFIER ::={nnqosSLANotifications 0}
+
+nnqosSlaIndex 	OBJECT-TYPE
+	SYNTAX  		 INTEGER(1..1000)
+	MAX-ACCESS      	accessible-for-notify
+	STATUS        	current
+	DESCRIPTION
+	"Index of the SLA set."
+	::= { nnqosSLANotificationsVars 1 }
+
+nnqosSlaThresholdType 	OBJECT-TYPE
+	SYNTAX  		 INTEGER
+	{
+	    average(1),
+	    immediate(2),
+	    consecutive(3),
+    	    xofy(4)
+        }
+	MAX-ACCESS      	accessible-for-notify
+	STATUS        	current
+	DESCRIPTION
+	"Threshhold type"
+	::= { nnqosSLANotificationsVars 2 }
+
+nnqosSlaEffectType 	OBJECT-TYPE
+	SYNTAX  		 INTEGER
+	{
+	    jitterAvg(1),
+	    jitterAvgSrcDest(2),
+	    jitterAvgDestSrc(3),
+	    jitterMaxPosSrcDest(4),
+	    jitterMaxPosDestSrc(5),
+	    jitterMaxNegSrcDest(6),
+	    jitterMaxNegDestSrc(7),
+	    delayAvg(8),
+	    delayAvgSrcDest(9),
+	    delayAvgDestSrc(10),
+	    delayMaxSrcDest(11),
+	    delayMaxDestSrc(12),
+	    packetLoss(13),
+	    packetOutOfOrder(14),
+	    packetLateArrival(15),
+	    responseTime(16),
+	    timeout(17)
+	}
+	MAX-ACCESS      	accessible-for-notify
+	STATUS        	current
+	DESCRIPTION
+	"The SLA parameter that caused the Trap generation."
+	::= { nnqosSLANotificationsVars 3 }
+
+nnqosSlaThresholdValue1 	OBJECT-TYPE
+	SYNTAX  		 Integer32
+	MAX-ACCESS      	accessible-for-notify
+	STATUS        	current
+	DESCRIPTION
+	"Threshold value 1."
+	::= { nnqosSLANotificationsVars 4 }
+
+nnqosSlaThresholdValue2 	OBJECT-TYPE
+	SYNTAX  		 Integer32
+	MAX-ACCESS      	accessible-for-notify
+	STATUS        	current
+	DESCRIPTION
+	"Threshold value 2."
+	::= { nnqosSLANotificationsVars 5 }
+        
+ nnqosSLANotification NOTIFICATION-TYPE
+    	OBJECTS { 
+		    nnqosSlaIndex , 
+		    nnqosSlaThresholdType,
+		    nnqosSlaEffectType,
+		    nnqosSlaThresholdValue1,
+		    nnqosSlaThresholdValue2
+		}
+	STATUS current
+	DESCRIPTION
+		"
+		A  QOS SLA Notification is sent when threshold violation occurs.
+		"
+             --#TYPE "SLA Threshold vioaltion"
+             --#SUMMARY "SLA Threshold vioaltion occured with %d Index %d Thresholdtype %d Effect %d ThresholdValue1 %d Thresholdvalue2"
+             --#ARGUMENTS {0,1,2,3,4}
+             --#SEVERITY MINOR            
+	::= {nnqosSLATraps 1}
+	
+nnqosNotificationGroup NOTIFICATION-GROUP
+	NOTIFICATIONS
+	{
+	    nnqosSLANotification
+	}
+	STATUS current
+	DESCRIPTION "System Notification group"
+	::={nnqosSLAMib 3}
+
+END

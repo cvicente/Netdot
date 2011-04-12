@@ -1,0 +1,1192 @@
+Wellfleet-PGM-MIB DEFINITIONS ::= BEGIN
+
+    IMPORTS
+      OBJECT-TYPE
+        FROM RFC-1212
+      IpAddress, Counter, Gauge
+        FROM RFC1155-SMI
+      wfPgmGroup
+        FROM Wellfleet-COMMON-MIB;
+
+    wfPgm       OBJECT IDENTIFIER ::= { wfPgmGroup 1 }
+
+    wfPgmCreate OBJECT-TYPE
+        SYNTAX  INTEGER {
+                    created(1),
+                    deleted(2)
+                }
+        ACCESS  read-write
+        STATUS  mandatory
+        DESCRIPTION
+                "Create/Delete parameter. Default is created.
+                Users perform a set operation on this
+                object in order to create/delete PGM."
+        DEFVAL  { created }
+        ::= { wfPgm 1 }
+
+    wfPgmEnable OBJECT-TYPE
+        SYNTAX  INTEGER {
+                enabled(1),
+                disabled(2)
+                }
+        ACCESS  read-write
+        STATUS  mandatory
+        DESCRIPTION
+                "Enable/Disable Parameter indicates whether
+                this PGM record is enabled or disabled."
+        DEFVAL  { disabled }
+        ::= { wfPgm 2 }
+
+    wfPgmState OBJECT-TYPE
+        SYNTAX  INTEGER {
+                    up(1),
+                    down(2),
+                    init(3),
+                    notpres(4)
+                }
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The current state of the entire PGM."
+        DEFVAL  { notpres }
+        ::= { wfPgm 3 }
+
+    wfPgmDebug OBJECT-TYPE
+        SYNTAX  INTEGER
+        ACCESS  read-write
+        STATUS  mandatory
+        DESCRIPTION
+                "This is a debug field for PGM. Setting bits
+                cause pgm to gernerate certain log messages.
+                This field will NOT restart PGM.
+                The follow bits maybe set in any combination
+                (LS stands for least significant):
+
+                0x00000001 for no display
+                0x00000002 for interface to MTM
+                0x00000004 for session addition
+                0x00000008 for session deletion
+                0x00000010 for retransmit state addition
+                0x00000020 for retransmit state deletion
+                0x00000040 for retransmit state timeout
+                0x00000080 for cache env
+                0x00000100 for "
+
+        ::= { wfPgm 4 }
+
+    wfPgmSessionLifeTime  OBJECT-TYPE
+--        SYNTAX  INTEGER(600..2147483647)
+        SYNTAX  INTEGER(0..2147483647)
+        ACCESS  read-write
+        STATUS  mandatory
+        DESCRIPTION
+                "The length of the idle time (seconds) for which a 
+                 PGM session will be aged out. An idle PGM session means 
+                 there is no SPM message received from the upstream."
+        DEFVAL  { 300 }
+--        DEFVAL  { 600 }
+        ::= { wfPgm 5 }
+
+    wfPgmNnakGenerate  OBJECT-TYPE
+        SYNTAX  INTEGER {
+                enabled(1),
+                disabled(2)
+                }
+        ACCESS  read-write
+        STATUS  mandatory
+        DESCRIPTION
+                "Router will send NNAK when received the redirect NCF 
+                 if this parameter is set to enabled." 
+        DEFVAL  { enabled }
+        ::= { wfPgm 6 }
+
+    wfPgmMaxReXmitStates OBJECT-TYPE
+        SYNTAX  INTEGER(0..2147483647)
+        ACCESS  read-write
+        STATUS  mandatory
+        DESCRIPTION
+                "The Maxium number of retransmit state entries 
+                 per slot. If no value is set means network element
+                 has no limitation on this mib."
+        ::= { wfPgm 7 }
+
+    wfPgmTotalReXmitStates OBJECT-TYPE
+        SYNTAX  Gauge
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of retransmit state entries 
+                 in retransmit state table."
+        ::= { wfPgm 8 }
+
+    wfPgmMaxSessions OBJECT-TYPE
+        SYNTAX  INTEGER(0..2147483647)
+        ACCESS  read-write
+        STATUS  mandatory
+        DESCRIPTION
+                "The Maxium number of source path state sessions 
+                 per slot. If no value is set means network element
+                 has no limitation on this mib."
+        DEFVAL  { 100 }
+        ::= { wfPgm 9 }
+
+    wfPgmTotalSessions OBJECT-TYPE
+        SYNTAX  Gauge
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of source path session entries 
+                 currently in PGM session table"
+        ::= { wfPgm 10 }
+
+    wfPgmTotalReXmitStatesTimedOut OBJECT-TYPE
+        SYNTAX  Gauge
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of retransmit state entries got
+                 removed becuase of timed-out (no correspondent
+                 RDATA received)." 
+        ::= { wfPgm 11 }
+
+    wfPgmTotalUniqueNaks OBJECT-TYPE
+        SYNTAX  Gauge
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of unique Naks received."
+        ::= { wfPgm 12 }
+
+    wfPgmTotalUniqueParityNaks OBJECT-TYPE
+        SYNTAX  Gauge
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of unique Parity Naks received."
+        ::= { wfPgm 13 }
+
+    wfPgmMaxNakRate OBJECT-TYPE
+        SYNTAX  INTEGER (0..2147483647)
+        ACCESS  read-write
+        STATUS  mandatory
+        DESCRIPTION
+                "The maximum number allowed of Nak per second."
+        DEFVAL { 100 }
+        ::= { wfPgm 14 }
+
+    wfPgmIfTable OBJECT-TYPE
+        SYNTAX  SEQUENCE OF WfPgmIfEntry
+        ACCESS  not-accessible
+        STATUS  mandatory
+        DESCRIPTION
+                "Table of PGM Interface Statistics"
+        ::= { wfPgmGroup 2 }
+
+    wfPgmIfEntry OBJECT-TYPE
+        SYNTAX  WfPgmIfEntry
+        ACCESS  not-accessible
+        STATUS  mandatory
+        DESCRIPTION
+                "A PGM Interface Statistics entry"
+        INDEX   { wfPgmIfCct }
+        ::= { wfPgmIfTable 1 }
+
+    WfPgmIfEntry ::= SEQUENCE {
+            wfPgmIfCreate
+                INTEGER,
+            wfPgmIfEnable
+                INTEGER,
+            wfPgmIfState
+                INTEGER,
+            wfPgmIfCct
+                INTEGER,
+            wfPgmIfNakReXmitInterval
+               INTEGER,
+            wfPgmIfMaxNakReXmitRate
+               INTEGER,
+            wfPgmIfNakRdataInterval
+               INTEGER,
+            wfPgmIfNakEliminateInterval
+               INTEGER,
+            wfPgmIfTotalReXmitStates
+                Counter,
+            wfPgmIfTotalReXmitTimedOut
+                Counter,
+            wfPgmIfInSpms
+                Counter,
+            wfPgmIfOutSpms
+                Counter,
+            wfPgmIfInParitySpms
+                Counter, 
+            wfPgmIfOutParitySpms
+                Counter,
+            wfPgmIfInSpmPortErrors
+                Counter,
+            wfPgmIfInRdata
+                Counter,
+            wfPgmIfOutRdata
+                Counter,
+            wfPgmIfInParityRdata
+                Counter,
+            wfPgmIfOutParityRdata
+                Counter,
+            wfPgmIfInRdataPortErrors
+                Counter,
+            wfPgmIfInRdataNoSessionErrors
+                Counter,
+            wfPgmIfUniqueNaks
+                Counter,
+            wfPgmIfInNaks
+                Counter,
+            wfPgmIfOutNaks
+                Counter,
+            wfPgmIfUniqueParityNaks
+                Counter,
+            wfPgmIfInParityNaks
+                Counter,
+            wfPgmIfOutParityNaks
+                Counter,
+            wfPgmIfInNakPortErrors
+                Counter,
+            wfPgmIfInNakNoSessionErrors
+                Counter,
+            wfPgmIfInNakSeqErrors
+                Counter,
+            wfPgmIfInParityNakTgErrors
+                Counter,
+            wfPgmIfInNnaks
+                Counter,
+            wfPgmIfOutNnaks
+                Counter,
+            wfPgmIfInParityNnaks
+                Counter,
+            wfPgmIfOutParityNnaks
+                Counter,
+            wfPgmIfInNnakPortErrors
+                Counter,
+            wfPgmIfInNnakNoSessionErrors
+                Counter,
+            wfPgmIfInNcfs
+                Counter,
+            wfPgmIfOutNcfs
+               Counter,
+            wfPgmIfInParityNcfs
+                Counter,
+            wfPgmIfOutParityNcfs
+               Counter,
+            wfPgmIfInNcfPortErrors
+               Counter,
+            wfPgmIfInNcfNoSessionErrors
+               Counter,
+            wfPgmIfInRedirectNcfs
+               Counter
+        }
+    wfPgmIfCreate OBJECT-TYPE
+        SYNTAX  INTEGER {
+                    created(1),
+                    deleted(2)
+                }
+        ACCESS  read-write
+        STATUS  mandatory
+        DESCRIPTION
+                "Create or delete"
+        DEFVAL  { created }
+        ::= { wfPgmIfEntry 1 }
+
+    wfPgmIfEnable OBJECT-TYPE
+        SYNTAX  INTEGER {
+                    enabled(1),
+                    disabled(2)
+                }
+        ACCESS  read-write
+        STATUS  mandatory
+        DESCRIPTION
+                "not used. enabled/Disabled parameter."
+        DEFVAL  { disabled } 
+        ::= { wfPgmIfEntry 2 }
+
+
+    wfPgmIfState OBJECT-TYPE
+        SYNTAX  INTEGER {
+                    up(1),
+                    down(2),
+                    init(3),
+                    notpres(4)
+                }
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The current state of the PGM interface."
+        DEFVAL  { notpres }
+        ::= { wfPgmIfEntry 3 }
+
+    wfPgmIfCct OBJECT-TYPE
+        SYNTAX  INTEGER
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The PGM circuit number"
+        ::= { wfPgmIfEntry 4 }
+
+    wfPgmIfNakReXmitInterval  OBJECT-TYPE
+--        SYNTAX  INTEGER(1000..2147483647)
+        SYNTAX  INTEGER(100..2147483647)
+        ACCESS  read-write
+        STATUS  mandatory
+        DESCRIPTION
+                "The length of time (milliseconds) for which a
+                 network element will retransmit a NAK while waiting for a
+                 corresponding NCF. This interval
+                 is counted down from the transmission of a NAK"
+        DEFVAL  { 1000 }
+        ::= { wfPgmIfEntry 5 }
+
+--    wfPgmIfMaxNakReXmitCount  OBJECT-TYPE
+    wfPgmIfMaxNakReXmitRate  OBJECT-TYPE
+        SYNTAX  INTEGER(1..2147483647)
+        ACCESS  read-write
+        STATUS  mandatory
+        DESCRIPTION
+                "The maximum retries of NAK restransmission per second is allowed.  "
+        DEFVAL  { 2  }
+        ::= { wfPgmIfEntry 6 }
+
+    wfPgmIfNakRdataInterval  OBJECT-TYPE
+        SYNTAX  INTEGER(1..2147483647)
+        ACCESS  read-write
+        STATUS  mandatory
+        DESCRIPTION
+                "The length of time (seconds) for which a
+                 network element will wait for the corresponding
+                 RDATA. This interval is counted down from the time
+                 a matching NCF is received."
+        DEFVAL  { 10 }
+--        DEFVAL  { 60 }
+        ::= { wfPgmIfEntry 7  }
+
+    wfPgmIfNakEliminateInterval OBJECT-TYPE
+        SYNTAX  INTEGER(0..2147483647)
+        ACCESS  read-write
+        STATUS  mandatory
+        DESCRIPTION
+                "The length of time (seconds) for which a
+                 network element will suspend NAK elimanation for
+                 the specific TSI/SQN.
+                 .This interval is counted down from the time
+                 the first NAK is establish. This value must be
+                 smaller than wfPgmNakRdataInterval. If the value
+                 of this parameter is set to 1 then all the duplicate
+                 NAKs will be elimanated."
+        DEFVAL  { 5 } 
+--        DEFVAL  { 10 } 
+        ::= { wfPgmIfEntry 8  }
+
+    wfPgmIfTotalReXmitStates OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total retransmit state entries for this interface."
+        ::= { wfPgmIfEntry 9 }
+ 
+    wfPgmIfTotalReXmitTimedOut OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total time-outed retransmit state entries for
+                 this interface."
+        ::= { wfPgmIfEntry 10 }
+
+    wfPgmIfInSpms OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of SPM received on the PGM interface."
+        ::= { wfPgmIfEntry 11 }
+
+    wfPgmIfOutSpms OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of SPM sent out from the PGM interface."
+        ::= { wfPgmIfEntry 12 }
+
+    wfPgmIfInParitySpms OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of parity SPM received on the PGM interface"
+        ::= { wfPgmIfEntry 13 }
+
+    wfPgmIfOutParitySpms OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of parity SPM sent out from the PGM interface"
+        ::= { wfPgmIfEntry 14 }
+
+    wfPgmIfInSpmPortErrors  OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+               "The number of received SPM discarded on the PGM interface for 
+               the wrong inbound"
+        ::= { wfPgmIfEntry 15 }
+
+    wfPgmIfInRdata OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of RDATA received on the PGM interface"
+        ::= { wfPgmIfEntry 16 }
+
+    wfPgmIfOutRdata OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of RDATA sent out from the PGM interface"
+        ::= { wfPgmIfEntry 17 }
+
+    wfPgmIfInParityRdata OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of Parity RDATA received on the PGM interface"
+        ::= { wfPgmIfEntry 18 }
+
+    wfPgmIfOutParityRdata OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of parity RDATA sent out from the PGM 
+                 interface"
+        ::= { wfPgmIfEntry 19 }
+
+    wfPgmIfInRdataPortErrors OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The number of received RDATA discarded because of wrong 
+                 inbound"
+        ::= { wfPgmIfEntry 20 }
+
+    wfPgmIfInRdataNoSessionErrors OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The number of received RDATA discarded because of no session"
+        ::= { wfPgmIfEntry 21 }
+
+    wfPgmIfUniqueNaks OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of unique NAKs received for this interface."
+        ::= { wfPgmIfEntry 22 }
+
+    wfPgmIfInNaks OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of NAK received on the PGM interface"
+        ::= { wfPgmIfEntry 23 }
+
+    wfPgmIfOutNaks OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of NAK sent out from the PGM interface"
+        ::= { wfPgmIfEntry 24 }
+
+    wfPgmIfUniqueParityNaks OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of unique parity NAKs received for
+                 this interface."
+        ::= { wfPgmIfEntry 25 }
+
+    wfPgmIfInParityNaks OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of parity NAK received on the PGM interface"
+        ::= { wfPgmIfEntry 26 }
+
+    wfPgmIfOutParityNaks OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of parity NAK sent out from the PGM interface"
+        ::= { wfPgmIfEntry 27 }
+
+    wfPgmIfInNakPortErrors OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The number of received NAK discarded because of wrong outbound"
+        ::= { wfPgmIfEntry 28 }
+
+    wfPgmIfInNakNoSessionErrors OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The number of received NAK Discarded because of no session"
+        ::= { wfPgmIfEntry 29 }
+
+    wfPgmIfInNakSeqErrors OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The number of received NAK Discarded because of out of 
+                 sequence (out of retransmit window)."
+        ::= { wfPgmIfEntry 30 }
+
+    wfPgmIfInParityNakTgErrors OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The number of received parity NAK Discarded because of out of
+                 parity TG window."
+        ::= { wfPgmIfEntry 31 }
+
+    wfPgmIfInNnaks OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of NNAK received on the PGM interface"
+        ::= { wfPgmIfEntry 32 }
+
+    wfPgmIfOutNnaks OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of NNAK sent out from the PGM interface"
+        ::= { wfPgmIfEntry 33 }
+
+    wfPgmIfInParityNnaks OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of parity NNAK received on the PGM interface"
+        ::= { wfPgmIfEntry 34 }
+
+    wfPgmIfOutParityNnaks OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of parity NNAK sent out from the PGM 
+                 interface"
+        ::= { wfPgmIfEntry 35 }
+
+    wfPgmIfInNnakPortErrors OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The number of received NNAK discarded because of wrong 
+                 mcast outbound"
+        ::= { wfPgmIfEntry 36 }
+
+    wfPgmIfInNnakNoSessionErrors OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The number of received NNAK discarded because of no session"
+        ::= { wfPgmIfEntry 37 }
+
+    wfPgmIfInNcfs OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of  NCF received on the PGM interface"
+        ::= { wfPgmIfEntry 38 }
+
+    wfPgmIfOutNcfs OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of NCF sent out from the PGM interface"
+        ::= { wfPgmIfEntry 39 }
+
+    wfPgmIfInParityNcfs OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of  parity NCF received on the PGM interface"
+        ::= { wfPgmIfEntry 40 }
+
+    wfPgmIfOutParityNcfs OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of parity NCF sent out from the PGM interface"
+        ::= { wfPgmIfEntry 41 }
+
+    wfPgmIfInNcfPortErrors OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The number of received NCF discarded because of the wrong 
+                 inbound"
+        ::= { wfPgmIfEntry 42 }
+
+    wfPgmIfInNcfNoSessionErrors OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The number of received NCF discarded because of no session"
+        ::= { wfPgmIfEntry 43 }
+
+    wfPgmIfInRedirectNcfs OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The number of redirected NCF received on the PGM interface"
+        ::= { wfPgmIfEntry 44 }
+
+
+    wfPgmSessionTable OBJECT-TYPE
+        SYNTAX  SEQUENCE OF WfPgmSessionEntry
+        ACCESS  not-accessible
+        STATUS  mandatory
+        DESCRIPTION
+                "Table of PGM flow for each (port,global id)"
+        ::= { wfPgmGroup 3 }
+
+    wfPgmSessionEntry OBJECT-TYPE
+        SYNTAX  WfPgmSessionEntry
+        ACCESS  not-accessible
+        STATUS  mandatory
+        DESCRIPTION
+                "A PGM Session entry"
+        INDEX   { wfPgmSessionSource,
+                  wfPgmSessionGroup,
+                  wfPgmSessionSourcePort,
+                  wfPgmSessionGlobalId}
+        ::= { wfPgmSessionTable 1 }
+
+    WfPgmSessionEntry ::= SEQUENCE {
+            wfPgmSessionSource
+                IpAddress,
+            wfPgmSessionGroup
+                IpAddress,
+            wfPgmSessionSourcePort
+                INTEGER,
+            wfPgmSessionGlobalId
+                OCTET STRING,
+            wfPgmSessionUpstreamAddress
+                IpAddress,
+            wfPgmSessionUpstreamIfCct
+                INTEGER,
+            wfPgmSessionTrailEdgeSeq
+                Counter,
+            wfPgmSessionIncrSeq
+                Counter,
+            wfPgmSessionLeadEdgeSeq
+                Counter,
+            wfPgmSessionInSpms
+                Counter,
+            wfPgmSessionOutSpms
+                Counter,
+            wfPgmSessionInParitySpms
+                Counter,
+            wfPgmSessionOutParitySpms
+                Counter,
+            wfPgmSessionTotalReXmitStates
+                Counter,
+            wfPgmSessionTotalReXmitTimedOut
+                Counter,
+            wfPgmSessionInRdata 
+                Counter,
+            wfPgmSessionOutRdata
+                Counter,
+            wfPgmSessionInParityRdata 
+                Counter,
+            wfPgmSessionOutParityRdata
+                Counter,
+            wfPgmSessionInRdataNoStateErrors
+                Counter,
+            wfPgmSessionUniqueNaks
+                Counter,
+            wfPgmSessionInNaks
+                Counter,
+            wfPgmSessionOutNaks
+                Counter, 
+            wfPgmSessionUniqueParityNaks
+                Counter,
+            wfPgmSessionInParityNaks
+                Counter,
+            wfPgmSessionOutParityNaks
+                Counter, 
+            wfPgmSessionInNakSeqErrors
+                Counter,
+            wfPgmSessionInNnaks
+                Counter,
+            wfPgmSessionOutNnaks
+                Counter,
+            wfPgmSessionInParityNnaks
+                Counter,
+            wfPgmSessionOutParityNnaks
+                Counter,
+            wfPgmSessionInNcfs
+                Counter,
+            wfPgmSessionOutNcfs
+                Counter,
+            wfPgmSessionInParityNcfs
+                Counter,
+            wfPgmSessionOutParityNcfs
+                Counter,
+            wfPgmSessionInRedirectNcfs
+                Counter
+        }
+
+    wfPgmSessionSource OBJECT-TYPE
+        SYNTAX  IpAddress
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The source IP address of this entry."
+        ::= { wfPgmSessionEntry 1 }
+
+    wfPgmSessionGroup OBJECT-TYPE
+        SYNTAX  IpAddress
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The destination group address of this entry"
+        ::= { wfPgmSessionEntry 2 }
+
+    wfPgmSessionSourcePort OBJECT-TYPE
+        SYNTAX  INTEGER
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The source port of this pgm session"
+        ::= { wfPgmSessionEntry 3 }
+
+    wfPgmSessionGlobalId OBJECT-TYPE
+        SYNTAX  OCTET STRING (SIZE (6))
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The Global ID this entry"
+        ::= { wfPgmSessionEntry 4 }
+
+    wfPgmSessionUpstreamAddress OBJECT-TYPE
+        SYNTAX  IpAddress
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The IP address of the upstream interface for the entry."
+        ::= { wfPgmSessionEntry 5 }
+
+    wfPgmSessionUpstreamIfCct OBJECT-TYPE
+        SYNTAX  INTEGER
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The circuit number of the upstream intf for the entry."
+        ::= { wfPgmSessionEntry 6 }
+
+    wfPgmSessionTrailEdgeSeq OBJECT-TYPE
+        SYNTAX  Counter 
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The trailing edge sequence of the transfer window."
+        ::= { wfPgmSessionEntry 7 }
+
+    wfPgmSessionIncrSeq OBJECT-TYPE
+        SYNTAX  Counter 
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The increase sequnce number in the transfer window."
+        ::= { wfPgmSessionEntry 8 }
+
+    wfPgmSessionLeadEdgeSeq OBJECT-TYPE
+        SYNTAX  Counter 
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The leading edge sequence of the transfer window."
+        ::= { wfPgmSessionEntry 9 }
+
+    wfPgmSessionInSpms OBJECT-TYPE
+        SYNTAX  Counter 
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of SPMs received for this session."
+        ::= { wfPgmSessionEntry 10 }
+ 
+    wfPgmSessionOutSpms OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of SPMs sent out for this session."
+        ::= { wfPgmSessionEntry 11 }
+
+    wfPgmSessionInParitySpms OBJECT-TYPE
+        SYNTAX  Counter 
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of ParityS PMs received for this session."
+        ::= { wfPgmSessionEntry 12 }
+
+    wfPgmSessionOutParitySpms OBJECT-TYPE
+        SYNTAX  Counter 
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of Parity SPMs sent out for this session."
+        ::= { wfPgmSessionEntry 13 }
+
+    wfPgmSessionTotalReXmitStates OBJECT-TYPE
+        SYNTAX  Counter 
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total retransmit state entries for this session."
+        ::= { wfPgmSessionEntry 14 }
+
+    wfPgmSessionTotalReXmitTimedOut OBJECT-TYPE
+        SYNTAX  Counter 
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total time-outed retransmit state entries for 
+                 this session."
+        ::= { wfPgmSessionEntry 15 }
+
+    wfPgmSessionInRdata OBJECT-TYPE
+        SYNTAX  Counter 
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of RDATAs  received for this session."
+        ::= { wfPgmSessionEntry 16 }
+
+    wfPgmSessionOutRdata OBJECT-TYPE
+        SYNTAX  Counter 
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of RDATAs sent out from this session."
+        ::= { wfPgmSessionEntry 17 }
+
+    wfPgmSessionInParityRdata OBJECT-TYPE
+        SYNTAX  Counter 
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of parity RDATAs  received for this session."
+        ::= { wfPgmSessionEntry 18 }
+
+    wfPgmSessionOutParityRdata OBJECT-TYPE
+        SYNTAX  Counter 
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of parity RDATAs sent out from this session."
+        ::= { wfPgmSessionEntry 19 }
+
+    wfPgmSessionInRdataNoStateErrors OBJECT-TYPE
+        SYNTAX  Counter 
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of received RDATA discarded 
+                 for no Retransmit state."
+        ::= { wfPgmSessionEntry 20 }
+
+    wfPgmSessionUniqueNaks OBJECT-TYPE
+        SYNTAX  Counter 
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of unique NAKs received for this session."
+        ::= { wfPgmSessionEntry 21 }
+
+    wfPgmSessionInNaks OBJECT-TYPE
+        SYNTAX  Counter 
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of NAKs received for this session."
+        ::= { wfPgmSessionEntry 22 }
+
+    wfPgmSessionOutNaks OBJECT-TYPE
+        SYNTAX  Counter 
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of NAKs sent out from this session."
+        ::= { wfPgmSessionEntry 23 }
+
+    wfPgmSessionUniqueParityNaks OBJECT-TYPE
+        SYNTAX  Counter 
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of unique parity NAKs received for 
+                 this session."
+        ::= { wfPgmSessionEntry 24 }
+
+    wfPgmSessionInParityNaks OBJECT-TYPE
+        SYNTAX  Counter 
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of parity NAKs received for this session."
+        ::= { wfPgmSessionEntry 25 }
+
+    wfPgmSessionOutParityNaks OBJECT-TYPE
+        SYNTAX  Counter 
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of parity NAKs sent out from this session."
+        ::= { wfPgmSessionEntry 26 }
+
+    wfPgmSessionInNakSeqErrors OBJECT-TYPE
+        SYNTAX  Counter 
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of received NAKs discarded 
+                 because of out of sequence (out of retransmit window)."
+        ::= { wfPgmSessionEntry 27 }
+
+    wfPgmSessionInNnaks OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of NNAKs received  for  this session."
+        ::= { wfPgmSessionEntry 28 }
+
+    wfPgmSessionOutNnaks OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of NNAKs sent out from this session."
+        ::= { wfPgmSessionEntry 29 }
+
+    wfPgmSessionInParityNnaks OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of parity NNAKs received  for  this session."
+        ::= { wfPgmSessionEntry 30 }
+
+    wfPgmSessionOutParityNnaks OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of Parity NNAKs sent out from this session."
+        ::= { wfPgmSessionEntry 31 }
+
+    wfPgmSessionInNcfs OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of Ncfs received for  this session."
+        ::= { wfPgmSessionEntry 32 }
+
+    wfPgmSessionOutNcfs OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of Ncfs sent out from  this session."
+        ::= { wfPgmSessionEntry 33 }
+
+    wfPgmSessionInParityNcfs OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of Parity Ncfs received for  this session."
+        ::= { wfPgmSessionEntry 34 }
+
+    wfPgmSessionOutParityNcfs OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of Parity Ncfs sent out from  this session."
+        ::= { wfPgmSessionEntry 35 }
+
+     wfPgmSessionInRedirectNcfs OBJECT-TYPE
+        SYNTAX  Counter
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The total number of redirect Ncfs received for  this session."
+        ::= { wfPgmSessionEntry 36 }
+
+
+    wfPgmReXmitTable OBJECT-TYPE
+        SYNTAX  SEQUENCE OF WfPgmReXmitEntry
+        ACCESS  not-accessible
+        STATUS  mandatory
+        DESCRIPTION
+                "Table of PGM Retransmit state"
+        ::= { wfPgmGroup 4 }
+
+    wfPgmReXmitEntry OBJECT-TYPE
+        SYNTAX  WfPgmReXmitEntry
+        ACCESS  not-accessible
+        STATUS  mandatory
+        DESCRIPTION
+                "A PGM ReXmit entry"
+        INDEX   { wfPgmReXmitSource,
+                  wfPgmReXmitGroup,
+                  wfPgmReXmitSourcePort,
+                  wfPgmReXmitGlobalId,
+                  wfPgmReXmitSelectiveSeqNum,
+                  wfPgmReXmitParityTgSeqNum}
+        ::= { wfPgmReXmitTable 1 }
+
+    WfPgmReXmitEntry ::= SEQUENCE {
+            wfPgmReXmitSource
+                IpAddress,
+            wfPgmReXmitGroup
+                IpAddress,
+            wfPgmReXmitSourcePort
+                INTEGER,
+            wfPgmReXmitGlobalId
+                OCTET STRING,
+            wfPgmReXmitSelectiveSeqNum
+                INTEGER,
+            wfPgmReXmitParityTgSeqNum
+                INTEGER,
+            wfPgmReXmitReqParityTgCount
+                INTEGER,
+            wfPgmReXmitUpStreamCct
+                INTEGER,
+            wfPgmReXmitDownStream
+                OCTET STRING
+            }
+
+    wfPgmReXmitSource OBJECT-TYPE
+        SYNTAX  IpAddress
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The source IP address of this entry."
+        ::= { wfPgmReXmitEntry 1 }
+
+    wfPgmReXmitGroup OBJECT-TYPE
+        SYNTAX  IpAddress
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The destination group address of this entry"
+        ::= { wfPgmReXmitEntry 2 }
+
+    wfPgmReXmitSourcePort OBJECT-TYPE
+        SYNTAX  INTEGER
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The source port of this pgm retransmit state"
+        ::= { wfPgmReXmitEntry 3 }
+
+    wfPgmReXmitGlobalId OBJECT-TYPE
+        SYNTAX  OCTET STRING (SIZE (6))
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The Global ID this entry"
+        ::= { wfPgmReXmitEntry 4 }
+
+    wfPgmReXmitSelectiveSeqNum OBJECT-TYPE
+        SYNTAX  INTEGER
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The Selected Sequence number for this entry."
+        ::= { wfPgmReXmitEntry 5 }
+
+    wfPgmReXmitParityTgSeqNum OBJECT-TYPE
+        SYNTAX  INTEGER
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The Requested Parity Tg sequence number for this entry.
+                 this value will be the same as wfPgmSessionParityTgSeq."
+        ::= { wfPgmReXmitEntry 6 }
+
+    wfPgmReXmitReqParityTgCount OBJECT-TYPE
+        SYNTAX  INTEGER
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The Requested number of missing  Parity packets of 
+                 specific Tg. The largest counter of the received NAK
+                 will be stored in this mib."
+        ::= { wfPgmReXmitEntry 7 }
+
+    wfPgmReXmitUpStreamCct OBJECT-TYPE
+        SYNTAX  INTEGER
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "The upstream interface circuit number."
+        ::= { wfPgmReXmitEntry 8 }
+
+    wfPgmReXmitDownStream OBJECT-TYPE
+        SYNTAX  OCTET STRING
+        ACCESS  read-only
+        STATUS  mandatory
+        DESCRIPTION
+                "list of downstream intfs for this entry. Each one is
+                 in the format of (intf_addr(u_int32) and intf_cct(u_int16)"
+        ::= { wfPgmReXmitEntry 9 }
+            
+
+END  -- Wellfleet-PGM-MIB
+

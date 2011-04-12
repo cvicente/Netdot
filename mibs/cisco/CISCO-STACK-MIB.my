@@ -3,7 +3,7 @@
 --
 -- June 1995, Fei Xu
 --
--- Copyright (c) 1995-2007 by cisco Systems, Inc.
+-- Copyright (c) 1995-2010 by cisco Systems, Inc.
 -- All rights reserved.
 -- *****************************************************************
 --
@@ -32,7 +32,7 @@ IMPORTS
                 FROM CISCO-VTP-MIB;
 
 ciscoStackMIB MODULE-IDENTITY
-        LAST-UPDATED        "200712120000Z"
+        LAST-UPDATED        "201002010000Z"
         ORGANIZATION        "Cisco Systems, Inc."
         CONTACT-INFO
                 "       Cisco Systems
@@ -50,6 +50,11 @@ ciscoStackMIB MODULE-IDENTITY
         DESCRIPTION
                 "This MIB provides configuration and runtime status for
                  chassis, modules, ports, etc. on the Catalyst systems."
+
+        REVISION "201002010000Z"
+        DESCRIPTION
+                 "Modified moduleType to include:
+                 'wsx6708a10ge', 'wsx671610t'."
 
         REVISION "200712120000Z"
         DESCRIPTION
@@ -2872,7 +2877,9 @@ moduleType OBJECT-TYPE
                 wsx6724sfp(1010),    -- 24 port 1000Base FX (SFP GBIC)
                 wsx670810ge(1016),   -- 8 port X2 10 GE with DFC
                 vss72010g(1021),     -- Supervisor Mod 720 10G
+                wsx6708a10ge(1023),  -- 8 port X2 10 GE
                 wsx671610ge(1027),   -- 16 port 10 GE
+                wsx671610t(1033),    -- 16 port 10G RJ-45
 
                 -- constellation 2 WAN module
                 wsx65822pa(1101),    -- Enhanced FlexWAN Module
@@ -13041,5 +13048,6 @@ ipPermitGroup3 OBJECT-GROUP
                         specific host."
         ::= { ciscoStackMIBGroups 78 }         
 END
+
 
 

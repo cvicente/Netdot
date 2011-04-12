@@ -3,7 +3,12 @@
 --
 -- July 1997, Johnny Chan
 --
--- Copyright (c) 1997-2006 by cisco Systems, Inc.
+-- The following line marks this file as a single-source file which
+-- will be kept in-sync among all single-source branches:
+--
+-- EDGE_SERVICES_SINGLESOURCE_FILE
+--
+-- Copyright (c) 1997-2006, 2009 by cisco Systems, Inc.
 -- All rights reserved.
 --
 -- *****************************************************************
@@ -41,7 +46,7 @@ IMPORTS
                 FROM CISCO-SMI;
 
 ciscoVpdnMgmtMIB MODULE-IDENTITY
-        LAST-UPDATED    "200705070000Z"
+        LAST-UPDATED    "200906160000Z"
         ORGANIZATION    "Cisco Systems, Inc."
         CONTACT-INFO
                 "       Cisco Systems
@@ -107,20 +112,6 @@ ciscoVpdnMgmtMIB MODULE-IDENTITY
         4) The VPDN failure history table identifies the last failure
            recorded per user and provides relevant information.
      "
-        REVISION        "200705070000Z"
-        DESCRIPTION
-            "Added the dead cache trap support to this MIB, which generated
-             LSG table dead cache related notifications.
-
-             In the VPDN load sharing table (LSG), an IP address entry is
-             marked as a dead cache entry if it is unreachable during the
-             L2 tunnel establishment.
-
-             The IP address is unmarked as dead cache in one of these conditions:
-             - tunnel busy timer expires, or
-             - dead cache is cleared manually.
-            "
-            
         REVISION        "200601200000Z"
         DESCRIPTION
             "Obsoleted the following deprecated L2F specific objects.
@@ -307,9 +298,6 @@ cvpdnTemplateInfo          OBJECT IDENTIFIER
 cvpdnMultilinkInfo         OBJECT IDENTIFIER
         ::= { ciscoVpdnMgmtMIBObjects 6 }
 
-cvpdnTrapDeadcacheInfo     OBJECT IDENTIFIER
-        ::= { ciscoVpdnMgmtMIBObjects 7 }
-
 -- ******************************************************************
 -- * System Wide VPDN Information
 -- ******************************************************************
@@ -373,7 +361,10 @@ CvpdnSystemEntry ::=
             cvpdnSystemTunnelType        TunnelType,
             cvpdnSystemTunnelTotal       Gauge32,
             cvpdnSystemSessionTotal      Gauge32,
-            cvpdnSystemDeniedUsersTotal  Counter32
+            cvpdnSystemDeniedUsersTotal  Counter32,
+            cvpdnSystemInitialConnReq    Counter32,
+            cvpdnSystemSuccessConnReq    Counter32,
+            cvpdnSystemFailedConnReq     Counter32
         }
 
 cvpdnSystemTunnelType OBJECT-TYPE
@@ -414,6 +405,39 @@ cvpdnSystemDeniedUsersTotal OBJECT-TYPE
              tunnels of this tunnel type since last system
              re-initialization."
         ::= { cvpdnSystemEntry 4 }
+
+cvpdnSystemInitialConnReq OBJECT-TYPE
+        SYNTAX      Counter32
+        UNITS       "attempts"
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The total number tunnel connection attempts on all the VPDN
+             tunnels of this tunnel type since last system
+             re-initialization."
+        ::= { cvpdnSystemEntry 5 }
+
+cvpdnSystemSuccessConnReq OBJECT-TYPE
+        SYNTAX      Counter32
+        UNITS       "attempts"
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The total number tunnel Successful connection attempts in VPDN
+             tunnels of this tunnel type since last system
+             re-initialization."
+        ::= { cvpdnSystemEntry 6 }
+
+cvpdnSystemFailedConnReq OBJECT-TYPE
+        SYNTAX      Counter32
+        UNITS       "attempts"
+        MAX-ACCESS  read-only
+        STATUS      current
+        DESCRIPTION
+            "The total number tunnel Failed connection attempts in VPDN
+             tunnels of this tunnel type since last system
+             re-initialization."
+        ::= { cvpdnSystemEntry 7 }
 
 -- Objects indicating whether the specified notifications are enabled
 -- or not.
@@ -1956,38 +1980,6 @@ cvpdnUnameToFailHistDestInetAddr OBJECT-TYPE
                  cvpdnUnameToFailHistDestInetType."
         ::= { cvpdnUserToFailHistInfoEntry 16 }
 
--- ******************************************************************
--- * VPDN dead cache trap Information
--- ******************************************************************
-
-cvpdnLnsIpAddress OBJECT-TYPE
-       SYNTAX      IpAddress
-       MAX-ACCESS  accessible-for-notify
-       STATUS      current
-       DESCRIPTION
-               "The destination IP address of the dead cache entry
-                in the Load Sharing Group table."
-       ::= { cvpdnTrapDeadcacheInfo 1 }
-       
-cvpdnDeadcacheEventType OBJECT-TYPE
-       SYNTAX      INTEGER {
-                       added(1),
-                       deleted(2),
-                       cleared(3)
-                   }
-       MAX-ACCESS  accessible-for-notify
-       STATUS      current
-       DESCRIPTION
-               "Dead cache entry event type:
-                added   - an entry in the LSG table goes into Down
-                          status, which marks it a dead cache entry.
-                deleted - an entry in the LSG table leaves the Down
-                          status, which deletes the dead cache entry
-                          from the table.
-                cleared - an entry in the LSG table is manually
-                          cleared by a user."
-       ::= { cvpdnTrapDeadcacheInfo 2 }
-
 -- *********************************************************************
 -- * Notifications
 -- *********************************************************************
@@ -1997,7 +1989,8 @@ ciscoVpdnMgmtMIBNotifs OBJECT IDENTIFIER
 
 cvpdnNotifSessionID OBJECT-TYPE
         SYNTAX      Integer32 (0..65535)
-        MAX-ACCESS  accessible-for-notify
+        --MAX-ACCESS  accessible-for-notify
+        MAX-ACCESS  read-only
         STATUS      current
         DESCRIPTION
                 "This object contains the local session ID of the L2X
@@ -2012,7 +2005,8 @@ cvpdnNotifSessionEvent OBJECT-TYPE
                         pwUp(3),
                         pwDown(4)
                     }
-        MAX-ACCESS  accessible-for-notify
+        --MAX-ACCESS  accessible-for-notify
+        MAX-ACCESS  read-only
         STATUS      current
         DESCRIPTION
                 "Indicates the event that generated the L2X session
@@ -2045,20 +2039,6 @@ cvpdnNotifSession NOTIFICATION-TYPE
                  indicated session ID and Xconnect VCID."
        ::= { ciscoVpdnMgmtMIBNotifs 3 }
 
-cvpdnTrapDeadcacheEvent NOTIFICATION-TYPE
-       OBJECTS {
-           cvpdnLnsIpAddress,
-           cvpdnDeadcacheEventType
-       }
-       STATUS       current
-       DESCRIPTION
-               "Dead cache trap.
-                The trap indicates a change of a dead cache entry
-                in the Load Sharing Group table.  It includes
-                the ip address of the associated LNS and
-                the type of event."
-       ::= { ciscoVpdnMgmtMIBNotifs 4 }
-       
 -- ******************************************************************
 -- * VPDN Template Information Table
 -- ******************************************************************
@@ -2457,9 +2437,7 @@ ciscoVpdnMgmtMIBComplianceRev5 MODULE-COMPLIANCE
                         cvpdnNotifEnabledGroup,
                         cvpdnSessionNotifGroup,
                         cvpdnConfigGroup,
-                        cvpdnMultilinkGroupRev1,
-                        cvpdnTrapDeadcacheGroup,
-                        cvpdnTrapDeadcacheNotifGroup
+                        cvpdnMultilinkGroupRev1
                 }
         ::= { ciscoVpdnMgmtMIBCompliances 6 }
 
@@ -2552,7 +2530,10 @@ cvpdnSystemGroup OBJECT-GROUP
         OBJECTS {
             cvpdnSystemTunnelTotal,
             cvpdnSystemSessionTotal,
-            cvpdnSystemDeniedUsersTotal
+            cvpdnSystemDeniedUsersTotal,
+            cvpdnSystemInitialConnReq,
+            cvpdnSystemSuccessConnReq,
+            cvpdnSystemFailedConnReq
         }
         STATUS current
         DESCRIPTION
@@ -2771,23 +2752,4 @@ cvpdnTunnelAttrGroupRev1 OBJECT-GROUP
              information for multiple tunnel types."
         ::= { ciscoVpdnMgmtMIBGroups 16 }
 
-cvpdnTrapDeadcacheGroup OBJECT-GROUP
-        OBJECTS {
-            cvpdnLnsIpAddress,
-            cvpdnDeadcacheEventType
-         }
-        STATUS current
-        DESCRIPTION
-            "A collection of objects used in the dead cache trap."
-        ::= { ciscoVpdnMgmtMIBGroups 17 }
-        
-cvpdnTrapDeadcacheNotifGroup NOTIFICATION-GROUP
-        NOTIFICATIONS {
-            cvpdnTrapDeadcacheEvent
-        }
-        STATUS current
-        DESCRIPTION
-            "A collection of objects used by the dead cache trap."
-        ::= { ciscoVpdnMgmtMIBGroups 18 }
-        
 END

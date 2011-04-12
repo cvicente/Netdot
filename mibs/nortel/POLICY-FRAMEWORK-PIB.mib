@@ -1,0 +1,656 @@
+
+POLICY-FRAMEWORK-PIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    Unsigned32, Integer32, MODULE-IDENTITY, 
+    OBJECT-TYPE      
+            FROM SNMPv2-SMI
+    MODULE-COMPLIANCE, OBJECT-GROUP
+            FROM SNMPv2-CONF
+    TruthValue, TEXTUAL-CONVENTION
+            FROM SNMPv2-TC
+    SnmpAdminString
+            FROM SNMP-FRAMEWORK-MIB
+    policy
+            FROM SYNOPTICS-ROOT-MIB;
+
+policyFrameworkPib  MODULE-IDENTITY
+    LAST-UPDATED "200407200000Z"
+    ORGANIZATION "IETF RAP WG"
+    CONTACT-INFO "
+                  Michael Fine
+                  Cisco Systems, Inc.
+                  170 West Tasman Drive
+                  San Jose, CA  95134-1706 USA
+                  Phone: +1 408 527 8218
+                  Email: mfine@cisco.com
+
+                  Keith McCloghrie
+                  Cisco Systems, Inc.
+                  170 West Tasman Drive,
+                  San Jose, CA 95134-1706 USA
+                  Phone: +1 408 526 5260
+                  Email: kzm@cisco.com
+
+                  John Seligson
+                  Nortel Networks, Inc.
+                  4401 Great America Parkway
+                  Santa Clara, CA 95054 USA
+                  Phone: +1 408 495 2992
+                  Email: jseligso@nortelnetworks.com"
+    DESCRIPTION
+            "A PIB module containing the base set of policy
+             rule classes that are required for support of
+             all policies."
+
+    REVISION "200407200000Z" -- 20 July 2004
+    DESCRIPTION "Version 3: Added version info"  
+
+    ::= { policy 1 }
+
+policyBasePibClass  
+             OBJECT IDENTIFIER ::= { policyFrameworkPib 1 }
+
+--
+-- Textual Conventions
+--
+
+--
+-- Interface Role and Role Combination
+--
+
+Role ::= TEXTUAL-CONVENTION
+    STATUS       current
+    DESCRIPTION
+        "A role represents a functionality characteristic or
+        capability of a resource to which policies are applied.
+
+        The only valid character set is US-ASCII. Valid characters
+        are a-z, A-Z, 0-9, period, hyphen and underscore. A role
+        must always start with a letter (a-z or A-Z)."
+
+    SYNTAX   OCTET STRING (SIZE (1..32))
+
+RoleCombination ::= TEXTUAL-CONVENTION
+    STATUS       current
+    DESCRIPTION
+        "An octet string containing concatenated Roles. For the
+        format specification of roles, refer to the 'Role' TEXTUAL-
+        CONVENTION. A valid Role Combination must be formed by a set
+        of valid Roles, concatenated by the US-ASCII character '+',
+        where the roles are in lexicographic order from minimum to
+        maximum. For example, 'a+b' and 'b+a' are NOT different
+        role-combinations; rather, they are different formatting of
+        the same (one) role-combination.
+
+        Notice the roles within a role-combination are in
+        Lexicographic order from minimum to maximum, hence, we
+        declare:
+
+        'a+b' is the valid formatting of the role-combination,
+        'b+a' is an invalid formatting of the role-combination.
+
+        Notice the need of zero-length role-combination as the role-
+        combination of interfaces to which no roles have been
+        assigned. This role-combination is also known as the 'null'
+        role-combination. (Note the deliberate use of lower case
+        letters to avoid confusion with the US-ASCII NULL character
+        which has a value of zero but length of one)."
+
+    SYNTAX   OCTET STRING (SIZE (0..255))
+
+--
+-- Policy Instance Index (from RAP SPPI)
+--
+
+PolicyInstanceId ::= TEXTUAL-CONVENTION
+    STATUS       current
+    DESCRIPTION
+        "The textual convention for use by an attribute which is used
+        as the instance-identifying index of a PRC, i.e., an attribute
+        named in an INDEX clause.  The value of an attribute with this
+        syntax is always greater than zero.
+
+        PRIs of the same PRC need not have contiguous values for their
+        instance-identifying attribute."
+
+    SYNTAX Unsigned32 (1..4294967295)
+
+--
+-- PRC Support Table
+--
+
+policyPrcSupportTable OBJECT-TYPE
+    SYNTAX         SEQUENCE OF PolicyPrcSupportEntry
+    MAX-ACCESS     not-accessible
+    STATUS         current
+    DESCRIPTION
+        "Each instance of this class specifies a PRC that the device
+        supports and a bit string to indicate the attributes of the
+        class that are supported.  These PRIs are sent to the PDP to
+        indicate to the PDP which PRCs, and which attributes of these
+        PRCs, the device supports. This table can also be downloaded 
+        by a network manager when static configuration is used.
+
+        All install and install-notify PRCs supported by the device 
+        must be represented in this table."
+
+    ::= { policyBasePibClass 1 }
+
+policyPrcSupportEntry OBJECT-TYPE
+    SYNTAX         PolicyPrcSupportEntry
+    MAX-ACCESS     not-accessible
+    STATUS         current
+    DESCRIPTION
+        "An instance of the policyPrcSupport class that identifies a
+        specific policy class and associated attributes as supported
+        by the device."
+
+    INDEX { policyPrcSupportPrid }
+    ::= { policyPrcSupportTable 1 }
+
+PolicyPrcSupportEntry ::= SEQUENCE {
+        policyPrcSupportPrid           PolicyInstanceId,
+        policyPrcSupportSupportedPrc   OBJECT IDENTIFIER,
+        policyPrcSupportSupportedAttrs OCTET STRING,
+        policyPrcSupportMaxPris        Unsigned32
+}
+
+policyPrcSupportPrid OBJECT-TYPE
+    SYNTAX         PolicyInstanceId
+    MAX-ACCESS     not-accessible
+    STATUS         current
+    DESCRIPTION
+        "An arbitrary integer index that uniquely identifies an
+        instance of the policyPrcSupport class."
+
+    ::= { policyPrcSupportEntry 1 }
+
+policyPrcSupportSupportedPrc OBJECT-TYPE
+    SYNTAX         OBJECT IDENTIFIER
+    MAX-ACCESS     read-only
+    STATUS         current
+    DESCRIPTION
+        "The object identifier of a supported PRC. There may not 
+        be more than one instance of the policyPrcSupport class with 
+        the same value of policyPrcSupportSupportedPrc."
+
+    ::= { policyPrcSupportEntry 2 }
+
+policyPrcSupportSupportedAttrs OBJECT-TYPE
+    SYNTAX         OCTET STRING
+    MAX-ACCESS     read-only
+    STATUS         current
+    DESCRIPTION
+        "A bit string representing the supported attributes of the
+        class that is identified by the policyPrcSupportSupportedPrc
+        object. 
+
+        Each bit of this bit mask corresponds to a class attribute,
+        with the most significant bit of the i-th octet of this octet
+        string corresponding to the (8*i - 7)-th attribute, and the
+        least significant bit of the i-th octet corresponding to the
+        (8*i)-th class attribute. Each bit of this bit mask specifies 
+        whether or not the corresponding class attribute is currently 
+        supported, with a '1' indicating support and a '0' indicating 
+        no support. If the value of this bit mask is N bits long and
+        there are more than N class attributes then the bit mask is
+        logically extended with 0's to the required length."
+
+    ::= { policyPrcSupportEntry 3 }
+
+policyPrcSupportMaxPris OBJECT-TYPE
+    SYNTAX         Unsigned32
+    MAX-ACCESS     read-only
+    STATUS         current
+    DESCRIPTION
+        "A non-negative value indicating the maximum numbers of
+        policy rule instances that can be installed in the identified
+        policy rule class. Note that actual number of PRIs that can
+        be installed in a PRC at any given time may be less than
+        this value based on the current operational state (e.g.,
+        resources currently consumed) of the device."
+
+    ::= { policyPrcSupportEntry 4 }
+
+--
+-- PIB Incarnation Table
+--
+
+policyPibIncarnationTable OBJECT-TYPE
+    SYNTAX         SEQUENCE OF PolicyPibIncarnationEntry
+    MAX-ACCESS     not-accessible
+    STATUS         current
+    DESCRIPTION
+        "This class contains a single policy rule instance that
+        identifies the current incarnation of the PIB and the PDP
+        or network manager that installed this incarnation.  The 
+        instance of this class is reported to the PDP at client 
+        connect time so that the PDP can (attempt to) ascertain the 
+        current state of the PIB. A network manager may use the
+        instance to determine the state of the device with regard
+        to existing NMS interactions."
+
+    ::= { policyBasePibClass 2 }
+
+policyPibIncarnationEntry OBJECT-TYPE
+    SYNTAX         PolicyPibIncarnationEntry
+    MAX-ACCESS     not-accessible
+    STATUS         current
+    DESCRIPTION
+        "An instance of the policyPibIncarnation class. Only
+        one instance of this policy class is ever instantiated."
+
+    INDEX { policyPibIncarnationPrid }
+    ::= { policyPibIncarnationTable 1 }
+
+PolicyPibIncarnationEntry ::= SEQUENCE {
+        policyPibIncarnationPrid      PolicyInstanceId,
+        policyPibIncarnationName      SnmpAdminString,
+        policyPibIncarnationId        OCTET STRING,
+        policyPibIncarnationLongevity INTEGER,
+        policyPibIncarnationTtl       Unsigned32,
+        policyPibIncarnationActive    TruthValue
+}
+
+policyPibIncarnationPrid OBJECT-TYPE
+    SYNTAX         PolicyInstanceId
+    MAX-ACCESS     not-accessible
+    STATUS         current
+    DESCRIPTION
+        "An index to uniquely identify an instance of this
+        policy class."
+
+    ::= { policyPibIncarnationEntry 1 }
+
+policyPibIncarnationName OBJECT-TYPE
+    SYNTAX         SnmpAdminString
+    MAX-ACCESS     read-write
+    STATUS         current
+    DESCRIPTION
+        "The name of the entity that installed the current 
+        incarnation of the PIB into the device. The name may 
+        reference a PDP when dynamic configuration is being 
+        used or a network manager when static configuration 
+        is being used. By default, it is the zero length 
+        string."
+
+    ::= { policyPibIncarnationEntry 2 }
+
+policyPibIncarnationId OBJECT-TYPE
+    SYNTAX         OCTET STRING
+    MAX-ACCESS     read-write
+    STATUS         current
+    DESCRIPTION
+        "An ID to identify the current incarnation.  It has meaning
+        to the PDP/manager that installed the PIB and perhaps its 
+        standby PDPs/managers. By default, it is the zero-length 
+        string."
+
+    ::= { policyPibIncarnationEntry 3 }
+
+policyPibIncarnationLongevity OBJECT-TYPE
+    SYNTAX         INTEGER {
+                        expireNever(1),
+                        expireImmediate(2),
+                        expireOnTimeout(3)
+                   }
+    MAX-ACCESS     read-write
+    STATUS         current
+    DESCRIPTION
+        "This attribute controls what the PEP does with the
+        downloaded policy on receipt of a Client Close message or a
+        loss of connection to the PDP.
+
+        If set to expireNever, the PEP continues to operate with the
+        installed policy indefinitely.  If set to expireImmediate, the
+        PEP immediately expires the policy obtained from the PDP and
+        installs policy from local configuration.  If set to
+        expireOnTimeout, the PEP continues to operate with the
+        policy installed by the PDP for a period of time specified by
+        policyPibIncarnationTtl.  After this time (and it has not
+        reconnected to the original or new PDP) the PEP expires this
+        policy and reverts to local configuration.
+
+        For all cases, it is the responsibility of the PDP to check
+        the incarnation and download new policy, if necessary, on a
+        reconnect.
+
+        Policy enforcement timing only applies to policies that have
+        been installed dynamically (e.g., by a PDP via COPS)."
+
+    ::= { policyPibIncarnationEntry 4 }
+
+policyPibIncarnationTtl OBJECT-TYPE
+    SYNTAX         Unsigned32
+    MAX-ACCESS     read-write
+    STATUS         current
+    DESCRIPTION
+        "The number of seconds after a Client Close or TCP timeout
+        for which the PEP continues to enforce the policy in the PIB.
+        After this interval, the PIB is considered expired and the
+        device no longer enforces the policy installed in the PIB.
+
+        This attribute is only meaningful if
+        policyPibIncarnationLongevity is set to expireOnTimeout."
+
+    ::= { policyPibIncarnationEntry 5 }
+
+policyPibIncarnationActive OBJECT-TYPE
+    SYNTAX         TruthValue
+    MAX-ACCESS     read-write
+    STATUS         current
+    DESCRIPTION
+        "If this attribute is set to TRUE, then the PIB instance
+        to which this PRI belongs becomes the active PIB instance.
+        The previous active instance becomes inactive and the
+        policyPibIncarnationActive attribute in that PIB instance is
+        automatically set to false."
+
+    ::= { policyPibIncarnationEntry 6 }
+
+--
+-- Device Identification Table
+--
+-- This table supports the ability to export general
+-- purpose device information to facilitate efficient
+-- communication between the device and a PDP
+--
+
+policyDeviceIdentificationTable OBJECT-TYPE
+    SYNTAX         SEQUENCE OF PolicyDeviceIdentificationEntry
+    MAX-ACCESS     not-accessible
+    STATUS         current
+    DESCRIPTION
+        "This class contains a single policy rule instance that
+        contains device-specific information that is used to
+        facilitate efficient policy installation by a PDP. The
+        instance of this class is reported to the PDP at client
+        connect time so that the PDP can take into account certain
+        device characteristics during policy installation."
+
+    ::= { policyBasePibClass 3 }
+
+policyDeviceIdentificationEntry OBJECT-TYPE
+    SYNTAX         PolicyDeviceIdentificationEntry
+    MAX-ACCESS     not-accessible
+    STATUS         current
+    DESCRIPTION
+        "An instance of the policyDeviceIdentification class. Only
+        one instance of this policy class is ever instantiated."
+
+    INDEX { policyDeviceIdentificationPrid }
+    ::= { policyDeviceIdentificationTable 1 }
+
+PolicyDeviceIdentificationEntry ::= SEQUENCE {
+        policyDeviceIdentificationPrid   PolicyInstanceId,
+        policyDeviceIdentificationDescr  SnmpAdminString,
+        policyDeviceIdentificationMaxMsg Unsigned32
+}
+
+policyDeviceIdentificationPrid OBJECT-TYPE
+    SYNTAX         PolicyInstanceId
+    MAX-ACCESS     not-accessible
+    STATUS         current
+    DESCRIPTION
+        "An index to uniquely identify an instance of this
+        policy class."
+
+    ::= { policyDeviceIdentificationEntry 1 }
+
+policyDeviceIdentificationDescr OBJECT-TYPE
+    SYNTAX         SnmpAdminString (SIZE(0..255))
+    MAX-ACCESS     read-only
+    STATUS         current
+    DESCRIPTION
+        "A textual description of the PEP. This
+        value should include the name and version
+        identification of the PEP's hardware and
+        software."
+
+    ::= { policyDeviceIdentificationEntry 2 }
+
+policyDeviceIdentificationMaxMsg OBJECT-TYPE
+    SYNTAX         Unsigned32
+    MAX-ACCESS     read-only
+    STATUS         current
+    DESCRIPTION
+        "The maximum message size, in octets, that the device
+        is capable of processing. Received messages with a
+        size in excess of this value must cause the PEP to return an
+        error to the PDP containing the global error code
+        'maxMsgSizeExceeded'."
+
+    ::= { policyDeviceIdentificationEntry 3 }
+
+--
+-- Policy Component Limitations Table
+--
+-- This table supports the ability to export information
+-- detailing policy class/attribute implementation limitations
+-- to the policy management system.
+--
+
+policyCompLimitsTable OBJECT-TYPE
+    SYNTAX         SEQUENCE OF PolicyCompLimitsEntry
+    MAX-ACCESS     not-accessible
+    STATUS         current
+    DESCRIPTION
+        "Each instance of this class identifies a policy class or
+        attribute and a limitation related to the implementaion of
+        the class/attribute in the device. Additional information
+        providing guidance related to the limitation may also be
+        present. These PRIs are sent to the PDP to indicate which
+        PRCs or PRC attributes the device supports in a restricted
+        manner."
+
+    ::= { policyBasePibClass 4 }
+
+policyCompLimitsEntry OBJECT-TYPE
+    SYNTAX         PolicyCompLimitsEntry
+    MAX-ACCESS     not-accessible
+    STATUS         current
+    DESCRIPTION
+        "An instance of the policyCompLimits class that identifies
+        a PRC or PRC attribute and a limitation related to the PRC
+        or PRC attribute implementation supported by the device.
+        All PRIs of this class represent errors that would be
+        returned in relation to the identified component for policy
+        installation requests that don't abide by the restrictions
+        indicated by the error code and, possibly, a provided
+        guidance value."
+
+    INDEX { policyCompLimitsPrid }
+    ::= { policyCompLimitsTable 1 }
+
+PolicyCompLimitsEntry ::= SEQUENCE {
+        policyCompLimitsPrid      PolicyInstanceId,
+        policyCompLimitsComponent OBJECT IDENTIFIER,
+        policyCompLimitsType      Integer32,
+        policyCompLimitsGuidance  OCTET STRING
+}
+
+policyCompLimitsPrid OBJECT-TYPE
+    SYNTAX         PolicyInstanceId
+    MAX-ACCESS     not-accessible
+    STATUS         current
+    DESCRIPTION
+        "An arbitrary integer index that uniquely identifies an
+        instance of the policyCompLimits class."
+
+    ::= { policyCompLimitsEntry 1 }
+
+policyCompLimitsComponent OBJECT-TYPE
+    SYNTAX         OBJECT IDENTIFIER
+    MAX-ACCESS     read-only
+    STATUS         current
+    DESCRIPTION
+        "The object identifier of a PRC or PRC attribute that
+        is supported in some limited fashion with regard to it's
+        definition in the associated PIB module. The same PRC or
+        PRC attribute identifier may appear in the table several
+        times, once for each implementation limitation
+        acknowledged by the device."
+
+    ::= { policyCompLimitsEntry 2 }
+
+policyCompLimitsType OBJECT-TYPE
+    SYNTAX         Integer32
+    MAX-ACCESS     read-only
+    STATUS         current
+    DESCRIPTION
+        "A value describing an implementation limitation for the
+        device related to the PRC or PRC attribute identified by
+        the policyCompLimitsComponent data in this class instance.
+        Values for this object are derived from the defined
+        error values associated with the PRC of the identified
+        attribute or the PRC itself. All genericPrc and specificPrc
+        (defined in a PRC INSTALL-ERRORS clause) error codes
+        represent valid limitation type values.
+
+        For example, an implementation of the qosIpAce class may
+        be limited in several ways, such as address mask, protocol
+        and Layer 4 port options. These limitations could be
+        exported using this table with the following instances:
+
+        Prid       Component            Type              Guidance
+         1   'qosIpAceDstAddrMask'  'valueSupLimited'    0xFFFFFFFF
+         2   'qosIpAceSrcAddrMask'  'valueSupLimited'    0xFFFFFFFF
+         3   'qosIpAceProtocol'     'valueSupLimited'      0x06 -- TCP
+         4   'qosIpAceProtocol'     'valueSupLimited'      0x17 -- UDP
+         5   'qosIpAceDstL4PortMin' 'invalidDstL4PortData'
+         6   'qosIpAceDstL4PortMax' 'invalidDstL4PortData'
+         7   'qosIpAcePermit'       'enumSupLimited'       'true'
+
+        The above entries describe a number of limitations that
+        may be in effect for the qosIpAce class on a given device.
+        The limitations include restrictions on acceptable values
+        for certain attributes and indications of the relationship
+        between related attributes."
+
+    ::= { policyCompLimitsEntry 3 }
+
+policyCompLimitsGuidance OBJECT-TYPE
+    SYNTAX         OCTET STRING (SIZE(0..64))
+    MAX-ACCESS     read-only
+    STATUS         current
+    DESCRIPTION
+        "A value used to convey additional information related
+        to the implementation limitation noted by the
+        policyCompLimitsType attribute. The value of this
+        attribute must interpreted in the context of the
+        policyCompLimitsType value. Note that a guidance value
+        will not necessarily be provided for all exported
+        limitations.
+
+        Well-known genericPrc error codes that are applicable
+        to all PRCs, such as 'attrValueSupLimited' and
+        'attrEnumSupLimited', have guidance value semantics
+        as follows:
+
+             genericPrc               Guidance Semantics
+         attrValueSupLimited    Integer32 (4 octets) with supported
+                                value
+         attrEnumSupLimited     Integer32 (4 octets) with supported
+                                enumeration
+         attrMaxLengthExceeded  Integer32 (4 octets) with maximum
+                                supported length for attribute
+
+        The specificPrc error codes have the semantics of the
+        associated guidance value specified where the
+        installation error is defined if appropriate. Errors
+        for which the  semantics of the guidance value are not
+        specified require this value to be treated in an
+        implementation dependent manner."
+
+    ::= { policyCompLimitsEntry 4 }
+
+--
+-- Conformance Section
+--
+
+policyBasePibConformance  
+                OBJECT IDENTIFIER ::= { policyFrameworkPib 2 }
+
+policyBasePibCompliances 
+                OBJECT IDENTIFIER ::= { policyBasePibConformance 1 }
+policyBasePibGroups      
+                OBJECT IDENTIFIER ::= { policyBasePibConformance 2 }
+
+policyBasePibCompliance MODULE-COMPLIANCE
+    STATUS  current
+    DESCRIPTION
+            "Describes the requirements for conformance to the
+            Policy Framework PIB."
+
+    MODULE  -- this module
+        MANDATORY-GROUPS { policyPrcSupportGroup,
+                           policyPibIncarnationGroup,
+                           policyDeviceIdentificationGroup,
+                           policyCompLimitsGroup }
+
+        OBJECT        policyPibIncarnationLongevity
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Install support is not required."
+
+        OBJECT        policyPibIncarnationTtl
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Install support is not required."
+
+        OBJECT        policyPibIncarnationActive
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Install support is not required."
+
+    ::= { policyBasePibCompliances 1 }
+
+policyPrcSupportGroup OBJECT-GROUP
+    OBJECTS {
+             policyPrcSupportSupportedPrc,
+             policyPrcSupportSupportedAttrs,
+             policyPrcSupportMaxPris
+    }
+    STATUS  current
+    DESCRIPTION
+            "Objects from the policyPrcSupportTable."
+
+    ::= { policyBasePibGroups 1 }
+
+policyPibIncarnationGroup OBJECT-GROUP
+    OBJECTS {
+             policyPibIncarnationName,
+             policyPibIncarnationId,
+             policyPibIncarnationLongevity,
+             policyPibIncarnationTtl,
+             policyPibIncarnationActive
+    }
+    STATUS  current
+    DESCRIPTION
+            "Objects from the policyPibIncarnationTable."
+
+    ::= { policyBasePibGroups 2 }
+
+policyDeviceIdentificationGroup OBJECT-GROUP
+    OBJECTS {
+             policyDeviceIdentificationDescr,
+             policyDeviceIdentificationMaxMsg
+    }
+    STATUS  current
+    DESCRIPTION
+            "Objects from the policyDeviceIdentificationTable."
+
+    ::= { policyBasePibGroups 3 }
+
+policyCompLimitsGroup OBJECT-GROUP
+    OBJECTS {
+             policyCompLimitsComponent,
+             policyCompLimitsType,
+             policyCompLimitsGuidance
+    }
+    STATUS  current
+    DESCRIPTION
+            "Objects from the policyCompLimitsTable."
+
+    ::= { policyBasePibGroups 4 }
+
+END
+

@@ -1,0 +1,230 @@
+DT-MIB DEFINITIONS ::= BEGIN
+    IMPORTS
+     Integer32, Gauge32, OBJECT-TYPE, MODULE-IDENTITY
+            FROM SNMPv2-SMI
+     DisplayString, TruthValue
+            FROM SNMPv2-TC
+
+     hpSwitch
+            FROM HP-ICF-OID;
+--  Icf Switch Specific 
+    hpConfig      OBJECT IDENTIFIER ::= { hpSwitch 7 }
+
+    hpSwitchConfig   OBJECT IDENTIFIER ::= { hpConfig 1 }
+
+     hpSwitchDt  MODULE-IDENTITY
+             LAST-UPDATED "200710271800Z"
+             ORGANIZATION "Hewlett-Packard Company"
+             CONTACT-INFO "pandaj 
+             Postal : Hewlett-Pacakrd Company
+           
+             8000 Foothills Blvd.  
+             Roseville, CA 95747 
+             E-mail: jayashree.panda@hp.com" 
+           DESCRIPTION "The MIB module contains HP proprietary DT Mib" 
+           REVISION    "200710271800Z" 
+           DESCRIPTION "Initial revision." ::= { hpSwitchConfig 27 } 
+
+    hpSwitchISCPortIndex  OBJECT-TYPE
+           SYNTAX     Integer32 (0..65535)
+           MAX-ACCESS      read-write
+           STATUS     current 
+           DESCRIPTION "The ifIndex value of Inter Switch Connection 
+           Port. Default value 0, means there is no ISC port
+           configured"
+           ::= { hpSwitchDt 1}
+           
+    hpSwitchRemoteISCPortIndex  OBJECT-TYPE
+          SYNTAX     Integer32 (0..65535) 
+          MAX-ACCESS      read-only
+          STATUS     current 
+          DESCRIPTION "The LPORT value of remote switch Inter Switch 
+           Connection Port. Default value 0, means there is no ISC 
+           port configured"
+          ::= { hpSwitchDt 2}
+
+
+hpSwitchDtLacpStatus    OBJECT IDENTIFIER ::= { hpSwitchDt 3}
+
+--
+-- The DT LACP Local table
+--
+
+hpSwitchDtLacpStatusLocalTable OBJECT-TYPE
+	 
+  SYNTAX    SEQUENCE OF HpSwitchDtLacpStatusLocalEntry
+  MAX-ACCESS     not-accessible
+  STATUS   current 
+  DESCRIPTION "This table holds the lacp status information of all ports that are 
+  	  	members of trunks configured as type 'distributed-lacp'"
+  ::= { hpSwitchDtLacpStatus 1 }
+            
+hpSwitchDtLacpStatusLocalEntry  OBJECT-TYPE
+
+   SYNTAX     HpSwitchDtLacpStatusLocalEntry
+   MAX-ACCESS     not-accessible
+   STATUS     current
+   DESCRIPTION "The lacp status information of each local port that is part of 
+    		a trunk configured as type 'distributed-lacp'"
+   INDEX { hpSwitchDtLacpLocalIfIndex }
+   ::= {  hpSwitchDtLacpStatusLocalTable 1}      
+
+HpSwitchDtLacpStatusLocalEntry ::= 
+      SEQUENCE {
+       hpSwitchDtLacpLocalIfIndex            Integer32, 
+       hpSwitchDtLacpLocalIfName             DisplayString,
+       hpSwitchDtLacpLocalIfLacpEnable       Integer32,
+       hpSwitchDtLacpLocalIfTrunkGroup       Integer32,
+       hpSwitchDtLacpLocalIfLacpPortStatus   Integer32,
+       hpSwitchDtLacpLocalIfLacpPartner      Integer32,
+       hpSwitchDtLacpLocalIfLacpStatus       Integer32   
+ }
+	
+hpSwitchDtLacpLocalIfIndex OBJECT-TYPE
+    SYNTAX     Integer32
+    MAX-ACCESS read-only 
+    STATUS     current
+    DESCRIPTION
+            "The ifIndex value of the local interface."
+    ::= { hpSwitchDtLacpStatusLocalEntry 1 }
+    
+hpSwitchDtLacpLocalIfName OBJECT-TYPE
+    SYNTAX     DisplayString
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+            "The ifName value of the local interface."
+    ::= { hpSwitchDtLacpStatusLocalEntry 2 }
+    
+hpSwitchDtLacpLocalIfLacpEnable OBJECT-TYPE
+    SYNTAX     Integer32
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+            "The lacp configuration for the local interface"
+    ::= { hpSwitchDtLacpStatusLocalEntry 3 }
+    
+hpSwitchDtLacpLocalIfTrunkGroup OBJECT-TYPE
+    SYNTAX     Integer32
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+            "The trunk group information of the local interface."
+    ::= { hpSwitchDtLacpStatusLocalEntry 4 }    
+    
+hpSwitchDtLacpLocalIfLacpPortStatus OBJECT-TYPE
+    SYNTAX     Integer32
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+            "The lacp port status information of the local interface."
+    ::= { hpSwitchDtLacpStatusLocalEntry 5 }        
+    
+hpSwitchDtLacpLocalIfLacpPartner OBJECT-TYPE
+    SYNTAX     Integer32
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+            "The lacp partner information of the local interface."
+    ::= { hpSwitchDtLacpStatusLocalEntry 6 }           
+    
+ hpSwitchDtLacpLocalIfLacpStatus OBJECT-TYPE
+    SYNTAX     Integer32
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+            "The lacp status information of the local interface."
+    ::= { hpSwitchDtLacpStatusLocalEntry 7 }     
+    
+--
+-- The DT LACP Peer table
+--    
+    
+hpSwitchDtLacpStatusPeerTable OBJECT-TYPE
+	 
+  SYNTAX    SEQUENCE OF HpSwitchDtLacpStatusPeerEntry
+  MAX-ACCESS     not-accessible
+  STATUS     current
+  DESCRIPTION "This table holds the lacp status information of all ports that are 
+  	  	members of trunks configured as type 'distributed-lacp'"
+  ::= { hpSwitchDtLacpStatus 2 }
+            
+hpSwitchDtLacpStatusPeerEntry  OBJECT-TYPE
+
+   SYNTAX     HpSwitchDtLacpStatusPeerEntry
+   MAX-ACCESS     not-accessible
+   STATUS     current
+   DESCRIPTION "The lacp status information of each Peer port that is part of 
+    		a trunk configured as type 'distributed-lacp'"
+   INDEX { hpSwitchDtLacpPeerIfIndex }
+   ::= {  hpSwitchDtLacpStatusPeerTable 1}      
+	
+HpSwitchDtLacpStatusPeerEntry ::= SEQUENCE {
+       hpSwitchDtLacpPeerIfIndex            Integer32, 
+       hpSwitchDtLacpPeerIfName             DisplayString,
+       hpSwitchDtLacpPeerIfLacpEnable       Integer32,
+       hpSwitchDtLacpPeerIfTrunkGroup       Integer32,
+       hpSwitchDtLacpPeerIfLacpPortStatus   Integer32,
+       hpSwitchDtLacpPeerIfLacpPartner      Integer32,
+       hpSwitchDtLacpPeerIfLacpStatus       Integer32   
+ }
+	
+hpSwitchDtLacpPeerIfIndex OBJECT-TYPE
+    SYNTAX     Integer32
+    MAX-ACCESS read-only 
+    STATUS     current
+    DESCRIPTION
+            "The ifIndex value of the Peer interface."
+    ::= { hpSwitchDtLacpStatusPeerEntry 1 }
+    
+hpSwitchDtLacpPeerIfName OBJECT-TYPE
+    SYNTAX     DisplayString
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+            "The ifName value of the Peer interface."
+    ::= { hpSwitchDtLacpStatusPeerEntry 2 }
+    
+hpSwitchDtLacpPeerIfLacpEnable OBJECT-TYPE
+    SYNTAX     Integer32
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+            "The lacp configuration for the Peer interface"
+    ::= { hpSwitchDtLacpStatusPeerEntry 3 }
+    
+hpSwitchDtLacpPeerIfTrunkGroup OBJECT-TYPE
+    SYNTAX     Integer32
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+            "The trunk group information of the Peer interface."
+    ::= { hpSwitchDtLacpStatusPeerEntry 4 }    
+    
+hpSwitchDtLacpPeerIfLacpPortStatus OBJECT-TYPE
+    SYNTAX     Integer32
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+            "The lacp port status information of the Peer interface."
+    ::= { hpSwitchDtLacpStatusPeerEntry 5 }        
+    
+hpSwitchDtLacpPeerIfLacpPartner OBJECT-TYPE
+    SYNTAX     Integer32
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+            "The lacp partner information of the Peer interface."
+    ::= { hpSwitchDtLacpStatusPeerEntry 6 }           
+    
+ hpSwitchDtLacpPeerIfLacpStatus OBJECT-TYPE
+    SYNTAX     Integer32
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+            "The lacp status information of the Peer interface."
+    ::= { hpSwitchDtLacpStatusPeerEntry 7 }     
+    
+        
+ 
+END

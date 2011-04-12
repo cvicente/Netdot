@@ -1,0 +1,438 @@
+
+ENVIRONMENT-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+        OBJECT-TYPE,MODULE-IDENTITY,Integer32,
+        Gauge32,NOTIFICATION-TYPE 
+                FROM SNMPv2-SMI
+        TEXTUAL-CONVENTION,TruthValue
+                FROM SNMPv2-TC
+ 	  NOTIFICATION-GROUP
+                FROM SNMPv2-CONF
+	ntEnterpriseDataTasmanMgmt
+	          FROM NT-ENTERPRISE-DATA-MIB;
+
+nnenvironmentMib MODULE-IDENTITY 
+  	LAST-UPDATED    "0008180000Z"
+  	ORGANIZATION "Nortel Networks"
+	CONTACT-INFO
+        	" Nortel Networks
+        	8200 Dixie Road
+        	Brampton, Ontario L6T 5P6
+        	Canada        
+        	1-800-4Nortel 
+        	www.nortelnetworks.com "
+  	DESCRIPTION
+  		""
+  	REVISION	"0008180000Z"
+  	DESCRIPTION
+  		"Initial version of Environment MIB."
+          ::= { ntEnterpriseDataTasmanMgmt 3 }
+
+EnvState ::= TEXTUAL-CONVENTION
+    STATUS  current
+    DESCRIPTION
+   	"Represents the state of a device being monitored."
+    SYNTAX INTEGER 
+        {
+	normal(1),
+	warning(2),
+	critical(3),
+	fail(4),
+	turned-off(5)
+	}
+
+EnvInstalled ::= TEXTUAL-CONVENTION
+    STATUS  current
+    DESCRIPTION
+   	"Installed flag for power supply."
+    SYNTAX INTEGER 
+        {
+	not-installed(1),
+	installed(2)
+	}
+
+EnvStatus ::= TEXTUAL-CONVENTION
+    STATUS  current
+    DESCRIPTION
+   	"Installed flag for power supply."
+    SYNTAX INTEGER 
+        {
+	absent(1),
+	failed(2),
+	normal(3)
+	}
+
+EnvType ::= TEXTUAL-CONVENTION
+    STATUS  current
+    DESCRIPTION
+   	"Installed flag for power supply."
+    SYNTAX INTEGER 
+        {
+	supply-AC-ONLY(1),
+	supply-AC-PoE(2),
+	supply-DC(3),
+	unknown(4)
+
+--	unknown(1),
+--	minus48VDC(2),
+--        supplyAC(3),
+--        dualDC(4),
+--        supplyAC-DC(5)
+	}
+
+nnenvObjects 		OBJECT IDENTIFIER ::= { nnenvironmentMib 1 }
+nnenvNotificationEnables	OBJECT IDENTIFIER ::= { nnenvironmentMib 2 }
+nnenvNotifications	OBJECT IDENTIFIER ::= { nnenvironmentMib 3 }
+nnenvTraps                OBJECT IDENTIFIER ::= {nnenvNotifications 0}
+nnenvTempSensorGroup      OBJECT IDENTIFIER ::= { nnenvObjects 1 }
+
+
+
+--
+-- envObjects group contains the management objects that 
+-- decribe the current environmental state of the system, 
+-- such as voltage, temperature, fan, power supply, etc.
+-- 
+
+
+nnenvTempSensorValue 	OBJECT-TYPE
+	SYNTAX     		Gauge32
+--	UNITS      		"degrees Celsius"
+	MAX-ACCESS 		read-only
+	STATUS     		current
+	DESCRIPTION
+		"
+		The Average value of the temperature sensors.
+		"
+	::=  { nnenvTempSensorGroup 1 }
+
+
+nnenvTempSensorState 	OBJECT-TYPE
+	SYNTAX     		EnvState
+	MAX-ACCESS 		read-only
+	STATUS     		current
+	DESCRIPTION
+		"
+		The Average status of the temperature sensors.
+		"
+	::= { nnenvTempSensorGroup 2 }
+
+
+nnenvFanTable OBJECT-TYPE
+        SYNTAX        	SEQUENCE OF NnEnvFanEntry
+        MAX-ACCESS    	not-accessible
+        STATUS        	current
+        DESCRIPTION   "A list of fan unit entries."
+        ::= { nnenvObjects 2 }
+
+nnenvFanEntry OBJECT-TYPE
+        SYNTAX        	NnEnvFanEntry
+        MAX-ACCESS    	not-accessible
+        STATUS        	current
+        DESCRIPTION   "Entry containing information about a fan
+                      within the chassis."
+        INDEX         	{ nnenvFanUnitIndex }
+        ::= { nnenvFanTable 1 }
+
+NnEnvFanEntry ::=
+        SEQUENCE {
+                nnenvFanUnitIndex	INTEGER,
+                nnenvFanState		EnvState
+                }
+
+nnenvFanUnitIndex 		OBJECT-TYPE
+        SYNTAX        	INTEGER(0 ..1)
+        MAX-ACCESS    	accessible-for-notify
+        STATUS        	current
+        DESCRIPTION   "The index to access an entry in the table.
+			"
+        ::= { nnenvFanEntry 1 }
+nnenvFanState 		OBJECT-TYPE
+	SYNTAX     		EnvState
+	MAX-ACCESS 		read-only
+	STATUS     		current
+	DESCRIPTION
+		"
+		The current state of fan 0, normal/fail.
+		"
+	::= { nnenvFanEntry 2 }
+
+nnenvPwrsupPowerFailCount OBJECT-TYPE
+	SYNTAX		Integer32
+	MAX-ACCESS	 	read-only
+	STATUS		current
+	DESCRIPTION	"Number of failures of either power supply 
+			since boot-up."
+	::= { nnenvObjects 3 }
+
+nnenvPwrsupTable		OBJECT-TYPE
+	SYNTAX		SEQUENCE OF NnEnvPwrsupEntry
+	MAX-ACCESS		not-accessible
+	STATUS		current
+	DESCRIPTION	"A list of power supply status information."
+	::= { nnenvObjects 4 }
+
+nnenvPwrsupEntry		OBJECT-TYPE
+	SYNTAX		NnEnvPwrsupEntry
+	MAX-ACCESS		not-accessible
+	STATUS		current
+	DESCRIPTION	"Entry containing power supply information."
+	INDEX			{ nnenvPwrsupIndex }
+	::= { nnenvPwrsupTable 1 }
+
+NnEnvPwrsupEntry ::=
+	SEQUENCE {
+		nnenvPwrsupIndex		INTEGER,
+		nnenvPwrsupInstalled	EnvInstalled,
+		nnenvPwrsupStatus	EnvStatus,
+		nnenvPwrsupType	EnvType,
+		nnenvPwrsupUptime		Integer32,
+		nnenvPwrsupDowntime       Integer32 
+	}
+
+nnenvPwrsupIndex		OBJECT-TYPE
+	SYNTAX		INTEGER (1..2)
+	MAX-ACCESS      accessible-for-notify
+	STATUS		current
+	DESCRIPTION	"Index to access entry."
+	::= { nnenvPwrsupEntry 1 }
+
+nnenvPwrsupInstalled	OBJECT-TYPE
+	SYNTAX	EnvInstalled
+	MAX-ACCESS		read-only
+	STATUS		current
+	DESCRIPTION	"Power supply installed flag."
+	::= { nnenvPwrsupEntry 2 }
+
+nnenvPwrsupStatus		OBJECT-TYPE
+	SYNTAX		EnvStatus
+	MAX-ACCESS		read-only
+	STATUS		current
+	DESCRIPTION	"Power supply up/down status."
+	::= { nnenvPwrsupEntry 3 }
+
+nnenvPwrsupType		OBJECT-TYPE
+	SYNTAX		EnvType
+	MAX-ACCESS		read-only
+	STATUS		current
+	DESCRIPTION	"Power supply type."
+	::= { nnenvPwrsupEntry 4 }
+
+nnenvPwrsupUptime		OBJECT-TYPE
+	SYNTAX		Integer32	
+	MAX-ACCESS		read-only
+	STATUS		current
+	DESCRIPTION	"Seconds since power supply came up."
+	::= { nnenvPwrsupEntry 5 }
+
+nnenvPwrsupDowntime		OBJECT-TYPE
+	SYNTAX		Integer32
+	MAX-ACCESS		read-only
+	STATUS		current
+	DESCRIPTION	"Seconds since power supply went down."
+	::= { nnenvPwrsupEntry 6 }
+
+	
+
+--
+-- envNotificationEnables contains the managed objects to 
+-- enable notifications when the system is shut down due 
+-- to one of the environmental causes.
+-- 
+
+nnenvEnableTemperatureNotification 	OBJECT-TYPE
+        SYNTAX 	   			TruthValue
+        MAX-ACCESS  			read-write
+        STATUS      			current
+        DESCRIPTION
+            "Indicates whether the system produces the 
+		envTemperatureNotification. The default is yes.
+		Note: implementation is TBD.
+		"
+        DEFVAL 				{ true }
+        ::= { nnenvNotificationEnables 1 }
+
+nnenvEnableFanNotification 		OBJECT-TYPE
+        SYNTAX 	   			TruthValue
+        MAX-ACCESS  			read-write
+        STATUS      			current
+        DESCRIPTION
+            "Indicates whether the system produces the 
+		envFanNotification. The default is yes.
+		"
+        DEFVAL 				{ true }
+        ::= { nnenvNotificationEnables 2 }
+
+nnenvEnablePowerNotification 		OBJECT-TYPE
+        SYNTAX 	  			TruthValue
+        MAX-ACCESS  			read-write
+        STATUS      			current
+        DESCRIPTION
+            "Indicates whether the system produces the 
+		envPowerNotification. The default is yes.
+		"
+        DEFVAL 				{ true }
+        ::= { nnenvNotificationEnables 3 }
+
+--
+-- envNotifications group is used to define shut down notifications.
+--
+
+nnenvTemperatureNotification NOTIFICATION-TYPE
+	OBJECTS {
+                nnenvTempSensorValue,
+                nnenvTempSensorState
+		}
+	STATUS current
+	DESCRIPTION
+		"
+		An envTemeratureNotification is sent if the 
+		environmental monitoring detects that the temperature 
+		is at a critical state. This may cause the system to 
+		shut down. This notification is sent only if 
+		envEnableTemperatureNotification is set to true.
+		"
+             --#TYPE "Temperature status"
+             --#SUMMARY "Temperature notification for sensor Index: %s with Value: %s and State: %s"
+             --#ARGUMENTS {0,1,2}
+             --#SEVERITY CRITICAL
+	::= {nnenvTraps 1}
+
+nnenvFanNotification NOTIFICATION-TYPE
+	OBJECTS{
+			nnenvFanUnitIndex,
+			nnenvFanState
+		}
+		STATUS current
+	DESCRIPTION
+		"
+		An envFanNotification is sent if the environmental
+		monitoring detects that a fan is in a critical state. 
+		This may cause the system to shut down. This 
+		notification is sent only if envEnableFanNotification 
+		is set to true.
+		"
+             --#TYPE "Fan state change"
+             --#SUMMARY "Fan unit index: %s State changed to: %s"
+             --#ARGUMENTS {0,1}
+             --#SEVERITY CRITICAL
+	::= {nnenvTraps 2}
+
+
+nnenvPowerSupply1DownNotification NOTIFICATION-TYPE
+	OBJECTS{
+			nnenvPwrsupPowerFailCount,
+			nnenvPwrsupIndex,
+			nnenvPwrsupInstalled,
+			nnenvPwrsupStatus,
+			nnenvPwrsupType,
+			nnenvPwrsupUptime,
+			nnenvPwrsupDowntime
+
+		}
+		STATUS current
+	DESCRIPTION
+		"
+		An envPowerNotification is sent if the environmental
+		monitoring detects that a power supply has changed status. 
+		This notification is sent only if 
+		envEnablePowerNotification is set to true.
+		"
+             --#TYPE "Power supply 1 down"
+             --#SUMMARY "Power supply 1 down. Fail count: %s Index: %s Installed: %s Status: %s Type: %s Uptime: %s Downtime: %s"
+             --#ARGUMENTS {0,1,2,3,4,5,6}
+             --#SEVERITY MAJOR
+	::= {nnenvTraps 3}
+
+
+nnenvPowerSupply1UpNotification NOTIFICATION-TYPE
+	OBJECTS{
+			nnenvPwrsupPowerFailCount,
+			nnenvPwrsupIndex,
+			nnenvPwrsupInstalled,
+			nnenvPwrsupStatus,
+			nnenvPwrsupType,
+			nnenvPwrsupUptime,
+			nnenvPwrsupDowntime
+
+		}
+		STATUS current
+	DESCRIPTION
+		"
+		An envPowerNotification is sent if the environmental
+		monitoring detects that a power supply has changed status. 
+		This notification is sent only if 
+		envEnablePowerNotification is set to true.
+		"
+             --#TYPE "Power supply 1 Up"
+             --#SUMMARY "Power supply 1 up. Fail count: %s Index: %s Installed: %s Status: %s Type: %s Uptime: %s Downtime: %s"
+             --#ARGUMENTS {0,1,2,3,4,5,6}
+             --#SEVERITY NORMAL                       
+	::= {nnenvTraps 4}
+
+
+nnenvPowerSupply2DownNotification NOTIFICATION-TYPE
+	OBJECTS{
+			nnenvPwrsupPowerFailCount,
+			nnenvPwrsupIndex,
+			nnenvPwrsupInstalled,
+			nnenvPwrsupStatus,
+			nnenvPwrsupType,
+			nnenvPwrsupUptime,
+			nnenvPwrsupDowntime
+
+		}
+		STATUS current 
+		DESCRIPTION
+		"
+		An envPowerNotification is sent if the environmental
+		monitoring detects that a power supply has changed status. 
+		This notification is sent only if 
+		envEnablePowerNotification is set to true.
+		"
+             --#TYPE "Power supply 2 down"
+             --#SUMMARY "Power supply 2 down. Fail count: %s Index: %s Installed: %s Status: %s Type: %s Uptime: %s Downtime: %s"
+             --#ARGUMENTS {0,1,2,3,4,5,6}
+             --#SEVERITY MAJOR                        
+	::= {nnenvTraps 5}
+
+
+nnenvPowerSupply2UpNotification NOTIFICATION-TYPE 
+	OBJECTS{
+			nnenvPwrsupPowerFailCount,
+			nnenvPwrsupIndex,
+			nnenvPwrsupInstalled,
+			nnenvPwrsupStatus,
+			nnenvPwrsupType,
+			nnenvPwrsupUptime,
+			nnenvPwrsupDowntime
+
+		}
+		STATUS current 
+		DESCRIPTION "
+		An envPowerNotification is sent if the environmental
+		monitoring detects that a power supply has changed status. 
+		This notification is sent only if 
+		envEnablePowerNotification is set to true.
+		"
+             --#TYPE "Power supply 2 Up"
+             --#SUMMARY "Power supply 2 up. Fail count: %s Index: %s Installed: %s Status: %s Type: %s Uptime: %s Downtime: %s"
+             --#ARGUMENTS {0,1,2,3,4,5,6}
+             --#SEVERITY NORMAL                        
+	::= {nnenvTraps 6}
+nnenvironementNotificationGroup NOTIFICATION-GROUP
+NOTIFICATIONS {
+			nnenvTemperatureNotification,
+			nnenvFanNotification,
+			nnenvPowerSupply1DownNotification,
+			nnenvPowerSupply1UpNotification,
+			nnenvPowerSupply2DownNotification,
+			nnenvPowerSupply2UpNotification
+}
+STATUS current
+DESCRIPTION
+"THE Envrionment MIB Notification Group"
+::={nnenvironmentMib 4}
+
+END

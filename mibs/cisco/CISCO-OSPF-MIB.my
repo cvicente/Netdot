@@ -3,7 +3,7 @@
 --
 -- August 2002, Muthukumar Subramanian
 --
--- Copyright (c) 2002 by Cisco Systems, Inc.
+-- Copyright (c) 2003, 2005 by Cisco Systems, Inc.
 -- All rights reserved.
 --
 -- Most of MIB definitions in this MIB module is based on the 
@@ -33,11 +33,13 @@ IMPORTS
      AreaID, RouterID, PositiveInteger, HelloRange,
      UpToMaxAge, Metric
                   FROM OSPF-MIB
+     InetAddress, InetAddressType
+                  FROM INET-ADDRESS-MIB
      ciscoExperiment
                   FROM CISCO-SMI;
 
 cospf MODULE-IDENTITY
-        LAST-UPDATED "200301280000Z"
+        LAST-UPDATED "200307180000Z"
         ORGANIZATION "Cisco Systems, Inc."
         CONTACT-INFO
                 "       Cisco Systems
@@ -57,6 +59,12 @@ cospf MODULE-IDENTITY
                 the IETF draft 
                 < draft-ietf-ospf-mib-update-05.txt > . 
                 Support for OSPF Sham link is also added"
+        REVISION        "200307180000Z"
+        DESCRIPTION
+                "+Deprecated cospfShamLinkTable.
+                 +Added cospfShamLinksTable.
+                 +Added cospfShamLinkNbrTable.
+                 +Fixed indentation and spelling."
         REVISION        "200301280000Z"
         DESCRIPTION
                 "Initial version of the MIB module."
@@ -81,9 +89,9 @@ cospfGeneralGroup OBJECT IDENTIFIER ::= { cospf 1 }
            destination. When cospfRFC1583Compatibility is set to
            disabled, preference will be driven first by type of
            path using cost only to break ties."
-         REFERENCE
+        REFERENCE
             "OSPF Version 2, Section 16.4.1 External path preferences"
-         ::= { cospfGeneralGroup 1 }
+        ::= { cospfGeneralGroup 1 }
 
    cospfOpaqueLsaSupport  OBJECT-TYPE
         SYNTAX       TruthValue
@@ -138,12 +146,11 @@ cospfGeneralGroup OBJECT IDENTIFIER ::= { cospf 1 }
         MAX-ACCESS   not-accessible
         STATUS       current
         DESCRIPTION
-           "Information describing the configured parame-
-           ters and cumulative statistics of the router's
-           attached areas."
+           "Information describing the configured parameters 
+           and cumulative statistics of the router's attached 
+           areas."
         REFERENCE
-           "OSPF Version 2, Section 6 The Area Data Struc-
-           ture"
+           "OSPF Version 2, Section 6 The Area Data Structure"
         ::= { cospf 2 }
 
    cospfAreaEntry OBJECT-TYPE
@@ -151,9 +158,9 @@ cospfGeneralGroup OBJECT IDENTIFIER ::= { cospf 1 }
         MAX-ACCESS   not-accessible
         STATUS       current
         DESCRIPTION
-           "Information describing the configured parame-
-           ters and cumulative statistics of one of the
-           router's attached areas."
+           "Information describing the configured parameters and 
+           cumulative statistics of one of the router's attached 
+           areas."
         AUGMENTS     { ospfAreaEntry }
         ::= { cospfAreaTable 1 }
 
@@ -251,8 +258,7 @@ cospfGeneralGroup OBJECT IDENTIFIER ::= { cospf 1 }
            "The OSPF Process's Link State Database. This 
             table is meant for Opaque LSA's"
         REFERENCE
-           "OSPF Version 2, Section 12 Link State Adver-
-           tisements"
+           "OSPF Version 2, Section 12 Link State Advertisements"
         ::= { cospf 3 }
 
    cospfLsdbEntry OBJECT-TYPE
@@ -261,8 +267,9 @@ cospfGeneralGroup OBJECT IDENTIFIER ::= { cospf 1 }
         STATUS   current
         DESCRIPTION
            "A single Link State Advertisement."
-       INDEX { ospfLsdbAreaId, cospfLsdbType,
-               ospfLsdbLsid, ospfLsdbRouterId }
+        INDEX { ospfLsdbAreaId, cospfLsdbType,
+                ospfLsdbLsid,
+                ospfLsdbRouterId }
         ::= { cospfLsdbTable 1 }
 
    CospfLsdbEntry ::=
@@ -288,8 +295,7 @@ cospfGeneralGroup OBJECT IDENTIFIER ::= { cospf 1 }
         STATUS       current
         DESCRIPTION
            "The type of the link state advertisement.
-           Each link state type has a separate advertise-
-           ment format."
+           Each link state type has a separate advertisement format."
         REFERENCE
            "OSPF Version 2, Appendix A.4.1 The  Link  State
            Advertisement header
@@ -309,15 +315,15 @@ cospfGeneralGroup OBJECT IDENTIFIER ::= { cospf 1 }
         STATUS   current
         DESCRIPTION
            "The sequence number field is a  signed  32-bit
-           integer.   It  is used to detect old and dupli-
-           cate link state advertisements.  The  space  of
+           integer.   It  is used to detect old and duplicate
+           link state advertisements.  The  space  of
            sequence  numbers  is  linearly  ordered.   The
            larger the sequence number the more recent  the
            advertisement."
-       REFERENCE
-          "OSPF Version  2,  Section  12.1.6  LS  sequence
-          number"
-      ::= { cospfLsdbEntry 2 }
+        REFERENCE
+           "OSPF Version  2,  Section  12.1.6  LS  sequence
+           number"
+        ::= { cospfLsdbEntry 2 }
 
 
     cospfLsdbAge OBJECT-TYPE
@@ -325,11 +331,11 @@ cospfGeneralGroup OBJECT IDENTIFIER ::= { cospf 1 }
         MAX-ACCESS   read-only
         STATUS   current
         DESCRIPTION
-           "This field is the age of the link state adver-
-           tisement in seconds."
-       REFERENCE
-          "OSPF Version 2, Section 12.1.1 LS age"
-      ::= { cospfLsdbEntry 3 }
+           "This field is the age of the link state advertisement in
+           seconds."
+        REFERENCE
+           "OSPF Version 2, Section 12.1.1 LS age"
+        ::= { cospfLsdbEntry 3 }
 
     cospfLsdbChecksum OBJECT-TYPE
         SYNTAX   Integer32 (0..2147483647)
@@ -341,12 +347,12 @@ cospfGeneralGroup OBJECT IDENTIFIER ::= { cospf 1 }
            age field.  The age field is excepted  so  that
            an   advertisement's  age  can  be  incremented
            without updating the  checksum.   The  checksum
-           used  is  the same that is used for ISO connec-
-           tionless datagrams; it is commonly referred  to
+           used  is  the same that is used for ISO connectionless
+           datagrams; it is commonly referred  to
            as the Fletcher checksum."
-       REFERENCE
-          "OSPF Version 2, Section 12.1.7 LS checksum"
-      ::= { cospfLsdbEntry 4 }
+        REFERENCE
+           "OSPF Version 2, Section 12.1.7 LS checksum"
+        ::= { cospfLsdbEntry 4 }
 
 
     cospfLsdbAdvertisement OBJECT-TYPE
@@ -356,10 +362,9 @@ cospfGeneralGroup OBJECT IDENTIFIER ::= { cospf 1 }
         DESCRIPTION
            "The entire Link State Advertisement, including
            its header."
-       REFERENCE
-          "OSPF Version 2, Section 12  Link  State  Adver-
-          tisements"
-      ::= { cospfLsdbEntry 5 }
+        REFERENCE
+           "OSPF Version 2, Section 12  Link  State  Adverisements"
+        ::= { cospfLsdbEntry 5 }
 
 --  OSPF Interface Table
 
@@ -412,13 +417,12 @@ cospfGeneralGroup OBJECT IDENTIFIER ::= { cospf 1 }
         MAX-ACCESS   read-only
         STATUS       current
         DESCRIPTION
-           "The 32-bit unsigned sum of the link-state ad-
-           vertisements' LS checksums contained in this
-           interface's link-local link state database.
-           The sum can be used to determine if there has
-           been a change in the interface's link state data-
-           base, and to compare the interface link-state database of
-           routers attached to the same subnet."
+           "The 32-bit unsigned sum of the link-state advertisements'
+           LS checksums contained in this interface's link-local link 
+           state database. The sum can be used to determine if there has
+           been a change in the interface's link state database, and to
+           compare the interface link-state database of routers 
+           attached to the same subnet."
         REFERENCE
            "The OSPF Opaque LSA Option (RFC 2370)" 
         ::= { cospfIfEntry 2 }
@@ -475,12 +479,12 @@ cospfGeneralGroup OBJECT IDENTIFIER ::= { cospf 1 }
         MAX-ACCESS   read-only
         STATUS       current
         DESCRIPTION
-           "The 32-bit unsigned sum of the link-state ad-
-           vertisements' LS checksums contained in this
+           "The 32-bit unsigned sum of the link-state advertisements'
+           LS checksums contained in this
            virtual interface's link-local link state database.
            The sum can be used to determine if there has
-           been a change in the virtual interface's link state data-
-           base, and to compare the virtual interface link-state
+           been a change in the virtual interface's link state database,
+           and to compare the virtual interface link-state
            database of the virtual neighbors."
         REFERENCE
            "The OSPF Opaque LSA Option (RFC 2370)" 
@@ -492,27 +496,28 @@ cospfGeneralGroup OBJECT IDENTIFIER ::= { cospf 1 }
 --      The Sham Link Table describes the sham
 --      links that the OSPF Process is configured to
 --      carry on.
+--      This table is deprecated by cospfShamLinksTable.
 
     cospfShamLinkTable OBJECT-TYPE
         SYNTAX   SEQUENCE OF CospfShamLinkEntry
         MAX-ACCESS   not-accessible
-        STATUS   current
+        STATUS   deprecated
         DESCRIPTION
            "Information about this router's sham links"
-       REFERENCE
-          "IETF draft draft-rosen-vpns-ospf-bgp-mpls-05.txt"
-      ::= { cospf 6 }
+        REFERENCE
+           "IETF draft draft-rosen-vpns-ospf-bgp-mpls-05.txt"
+        ::= { cospf 6 }
 
 
     cospfShamLinkEntry OBJECT-TYPE
         SYNTAX   CospfShamLinkEntry
         MAX-ACCESS   not-accessible
-        STATUS   current
+        STATUS   deprecated
         DESCRIPTION
            "Information about a single sham link"
         INDEX { cospfShamLinkAreaId, cospfShamLinkLocalIpAddress,
-               cospfShamLinkNeighborId }
-       ::= { cospfShamLinkTable 1 }
+                cospfShamLinkNeighborId }
+        ::= { cospfShamLinkTable 1 }
 
 CospfShamLinkEntry ::=
     SEQUENCE {
@@ -534,74 +539,74 @@ CospfShamLinkEntry ::=
             Counter32,
         cospfShamLinkMetric
             Metric
-              }
+        }
 
     cospfShamLinkAreaId OBJECT-TYPE
         SYNTAX   AreaID
         MAX-ACCESS   not-accessible
-        STATUS   current
+        STATUS   deprecated
         DESCRIPTION
            "The  Transit  Area  that  the   Virtual   Link
            traverses.  By definition, this is not 0.0.0.0"
-       ::= { cospfShamLinkEntry 1 }
+        ::= { cospfShamLinkEntry 1 }
 
    cospfShamLinkLocalIpAddress OBJECT-TYPE
         SYNTAX   IpAddress
         MAX-ACCESS  not-accessible 
-        STATUS   current
+        STATUS   deprecated
         DESCRIPTION
            "The Local IP address of the sham link."
-       ::= { cospfShamLinkEntry 2 }
+        ::= { cospfShamLinkEntry 2 }
 
     cospfShamLinkNeighborId OBJECT-TYPE
         SYNTAX   RouterID
         MAX-ACCESS   not-accessible
-        STATUS   current
+        STATUS   deprecated
         DESCRIPTION
            "The Router ID of the other end router of the sham
            link."
-       ::= { cospfShamLinkEntry 3 }
+        ::= { cospfShamLinkEntry 3 }
 
 
     cospfShamLinkRetransInterval OBJECT-TYPE
         SYNTAX   UpToMaxAge
         MAX-ACCESS   read-only
-        STATUS   current
+        STATUS   deprecated
         DESCRIPTION
-           "The number of seconds between  link-state  ad-
-           vertisement  retransmissions,  for  adjacencies
+           "The number of seconds between  link-state  advertisement
+           retransmissions,  for  adjacencies
            belonging to this  link.   This  value  is also
            used when retransmitting database description  
            and  link-state  request  packets. This value  
            should  be well over the expected round trip
            time."
-       DEFVAL { 5 }
-       ::= { cospfShamLinkEntry 4 }
+        DEFVAL { 5 }
+        ::= { cospfShamLinkEntry 4 }
 
 
     cospfShamLinkHelloInterval OBJECT-TYPE
         SYNTAX   HelloRange
         MAX-ACCESS   read-only
-        STATUS   current
+        STATUS   deprecated
         DESCRIPTION
            "The length of time, in  seconds,  between  the
            Hello  packets that the router sends on the sham
            link."
-       DEFVAL { 10 }
-       ::= { cospfShamLinkEntry 5 }
+        DEFVAL { 10 }
+        ::= { cospfShamLinkEntry 5 }
 
 
     cospfShamLinkRtrDeadInterval OBJECT-TYPE
         SYNTAX   PositiveInteger
         MAX-ACCESS   read-only
-        STATUS   current
+        STATUS   deprecated
         DESCRIPTION
            "The number of seconds that  a  router's  Hello
-           packets  have  not been seen before it's neigh-
-           bors declare the router down.  This  should  be
+           packets  have  not been seen before it's neighbors
+           declare the router down.  This  should  be
            some  multiple  of  the  Hello  interval."
-       DEFVAL { 40 }
-       ::= { cospfShamLinkEntry 6 }
+        DEFVAL { 40 }
+        ::= { cospfShamLinkEntry 6 }
 
 
     cospfShamLinkState OBJECT-TYPE
@@ -610,29 +615,362 @@ CospfShamLinkEntry ::=
                     pointToPoint (4)     -- as the ospfIfTable
                   }
         MAX-ACCESS   read-only
-        STATUS   current
+        STATUS   deprecated
         DESCRIPTION
            "OSPF sham link states."
-       DEFVAL   { down }
-       ::= { cospfShamLinkEntry 7 }
+        DEFVAL   { down }
+        ::= { cospfShamLinkEntry 7 }
 
 
     cospfShamLinkEvents OBJECT-TYPE
+        SYNTAX   Counter32
+        MAX-ACCESS   read-only
+        STATUS   deprecated
+        DESCRIPTION
+           "The number of state changes or error events on
+           this sham link"
+        ::= { cospfShamLinkEntry 8 }
+
+    cospfShamLinkMetric OBJECT-TYPE
+        SYNTAX   Metric
+        MAX-ACCESS   read-only
+        STATUS   deprecated
+        DESCRIPTION
+           "The Metric to be advertised."
+        ::= { cospfShamLinkEntry 9 }
+
+--  OSPF Sham Links Table
+--     This table describes sham links that this OSPF process is
+--     configured for.
+--     The OSPF sham link feature allows two VPN sites that wish
+--     to be in a same OSPF area to interconnect using MPLS/VPN. 
+--     Sham links achieve this by building a virtual connection
+--     on top of the MPLS/VPN tunnel between two PE routers and 
+--     propagating OSPF packets over this virtual connection. 
+--     This connection, referred as sham link, is between two 
+--     PE routers.
+
+    cospfShamLinksTable OBJECT-TYPE
+        SYNTAX   SEQUENCE OF CospfShamLinksEntry
+        MAX-ACCESS   not-accessible
+        STATUS   current
+        DESCRIPTION
+           "Information about this router's sham links."
+        REFERENCE
+           "IETF draft draft-rosen-vpns-ospf-bgp-mpls-05.txt"
+        ::= { cospf 11 }
+
+
+    cospfShamLinksEntry OBJECT-TYPE
+        SYNTAX   CospfShamLinksEntry
+        MAX-ACCESS   not-accessible
+        STATUS   current
+        DESCRIPTION
+           "Information about a single sham link."
+        INDEX { cospfShamLinksAreaId,
+                cospfShamLinksLocalIpAddrType,
+                cospfShamLinksLocalIpAddr,
+                cospfShamLinksRemoteIpAddrType,
+                cospfShamLinksRemoteIpAddr }
+        ::= { cospfShamLinksTable 1 }
+
+CospfShamLinksEntry ::=
+    SEQUENCE {
+        cospfShamLinksAreaId
+            AreaID,
+        cospfShamLinksLocalIpAddrType
+            InetAddressType,
+        cospfShamLinksLocalIpAddr
+            InetAddress,
+        cospfShamLinksRemoteIpAddrType
+            InetAddressType,
+        cospfShamLinksRemoteIpAddr
+            InetAddress,
+        cospfShamLinksRetransInterval
+           UpToMaxAge,
+        cospfShamLinksHelloInterval
+            HelloRange,
+        cospfShamLinksRtrDeadInterval
+            PositiveInteger,
+        cospfShamLinksState
+            INTEGER,
+        cospfShamLinksEvents
+            Counter32,
+        cospfShamLinksMetric
+            Metric
+        }
+
+    cospfShamLinksAreaId OBJECT-TYPE
+        SYNTAX   AreaID
+        MAX-ACCESS   not-accessible
+        STATUS   current
+        DESCRIPTION
+           "The area that this sham link is part of."
+        ::= { cospfShamLinksEntry 1 }
+
+   cospfShamLinksLocalIpAddrType OBJECT-TYPE
+        SYNTAX   InetAddressType
+        MAX-ACCESS  not-accessible 
+        STATUS   current
+        DESCRIPTION
+           "The type of internet address of this sham link's local IP
+           address."
+        ::= { cospfShamLinksEntry 2 }
+
+   cospfShamLinksLocalIpAddr OBJECT-TYPE
+        SYNTAX   InetAddress
+        MAX-ACCESS  not-accessible 
+        STATUS   current
+        DESCRIPTION
+           "The Local IP address of the sham link."
+        ::= { cospfShamLinksEntry 3 }
+
+    cospfShamLinksRemoteIpAddrType OBJECT-TYPE
+        SYNTAX   InetAddressType
+        MAX-ACCESS   not-accessible
+        STATUS   current
+        DESCRIPTION
+           "The type of internet address of this sham link's remote IP
+           address."
+        ::= { cospfShamLinksEntry 4 }
+
+
+    cospfShamLinksRemoteIpAddr OBJECT-TYPE
+        SYNTAX   InetAddress
+        MAX-ACCESS   not-accessible
+        STATUS   current
+        DESCRIPTION
+           "The IP address of the other end router of the sham link."
+        ::= { cospfShamLinksEntry 5 }
+
+    cospfShamLinksRetransInterval OBJECT-TYPE
+        SYNTAX   UpToMaxAge
+        MAX-ACCESS   read-only
+        STATUS   current
+        DESCRIPTION
+           "The number of seconds between  link-state  advertisement
+           retransmissions, for adjacencies belonging to this link.
+           This value is also used when retransmitting database 
+           description and link-state request packets. This value
+           should be well over the expected round trip time."
+        DEFVAL { 5 }
+        ::= { cospfShamLinksEntry 6 }
+
+    cospfShamLinksHelloInterval OBJECT-TYPE
+        SYNTAX   HelloRange
+        MAX-ACCESS   read-only
+        STATUS   current
+        DESCRIPTION
+           "The length of time, in  seconds,  between  the
+           Hello  packets that the router sends on the sham
+           link."
+        DEFVAL { 10 }
+        ::= { cospfShamLinksEntry 7 }
+
+
+    cospfShamLinksRtrDeadInterval OBJECT-TYPE
+        SYNTAX   PositiveInteger
+        MAX-ACCESS   read-only
+        STATUS   current
+        DESCRIPTION
+           "The number of seconds that  a  router's  Hello
+           packets  have  not been seen before it's neighbors
+           declare the router down.  This  should  be
+           some  multiple  of  the  Hello  interval."
+        DEFVAL { 40 }
+        ::= { cospfShamLinksEntry 8 }
+
+
+    cospfShamLinksState OBJECT-TYPE
+        SYNTAX   INTEGER    {
+                    down (1),            -- these use the same encoding
+                    pointToPoint (4)     -- as the ospfIfTable
+                  }
+        MAX-ACCESS   read-only
+        STATUS   current
+        DESCRIPTION
+           "OSPF sham link states."
+        DEFVAL   { down }
+        ::= { cospfShamLinksEntry 9 }
+
+
+    cospfShamLinksEvents OBJECT-TYPE
         SYNTAX   Counter32
         MAX-ACCESS   read-only
         STATUS   current
         DESCRIPTION
            "The number of state changes or error events on
            this sham link"
-       ::= { cospfShamLinkEntry 8 }
+        ::= { cospfShamLinksEntry 10 }
 
-    cospfShamLinkMetric OBJECT-TYPE
+    cospfShamLinksMetric OBJECT-TYPE
         SYNTAX   Metric
         MAX-ACCESS   read-only
         STATUS   current
         DESCRIPTION
            "The Metric to be advertised."
-      ::= { cospfShamLinkEntry 9 }
+        ::= { cospfShamLinksEntry 11 }
+
+
+--  OSPF Sham Link Neighbor Table
+--     This table describes all sham link neighbors.
+
+    cospfShamLinkNbrTable OBJECT-TYPE
+        SYNTAX   SEQUENCE OF CospfShamLinkNbrEntry
+        MAX-ACCESS   not-accessible
+        STATUS   current
+        DESCRIPTION
+           "A table of sham link neighbor information."
+        REFERENCE
+          "IETF draft draft-rosen-vpns-ospf-bgp-mpls-05.txt"
+       ::= { cospf 10 }
+
+
+     cospfShamLinkNbrEntry OBJECT-TYPE
+         SYNTAX   CospfShamLinkNbrEntry
+         MAX-ACCESS   not-accessible
+         STATUS   current
+         DESCRIPTION
+             "Sham link neighbor information."
+         INDEX { cospfShamLinksLocalIpAddrType,
+                 cospfShamLinksLocalIpAddr,
+                 cospfShamLinkNbrArea, 
+                 cospfShamLinkNbrIpAddrType,
+                 cospfShamLinkNbrIpAddr}
+         ::= { cospfShamLinkNbrTable 1 }
+
+     CospfShamLinkNbrEntry ::=
+         SEQUENCE {
+             cospfShamLinkNbrArea
+                 AreaID,
+             cospfShamLinkNbrIpAddrType
+                 InetAddressType,
+             cospfShamLinkNbrIpAddr
+                 InetAddress,
+             cospfShamLinkNbrRtrId
+                 RouterID,
+             cospfShamLinkNbrOptions
+                 Integer32,
+             cospfShamLinkNbrState
+                 INTEGER,
+             cospfShamLinkNbrEvents
+                 Counter32,
+             cospfShamLinkNbrLsRetransQLen
+                 Gauge32,
+             cospfShamLinkNbrHelloSuppressed
+                 TruthValue
+             }
+
+     cospfShamLinkNbrArea OBJECT-TYPE
+         SYNTAX   AreaID
+         MAX-ACCESS   not-accessible
+         STATUS   current
+         DESCRIPTION
+            "The area to which the sham link is part of."
+         ::= { cospfShamLinkNbrEntry 1 }
+
+     cospfShamLinkNbrIpAddrType OBJECT-TYPE
+         SYNTAX   InetAddressType
+         MAX-ACCESS   not-accessible
+         STATUS   current
+         DESCRIPTION
+            "The type of internet address of this sham link neighbor's
+            IP address."
+         ::= { cospfShamLinkNbrEntry 2 }
+
+
+     cospfShamLinkNbrIpAddr OBJECT-TYPE
+         SYNTAX   InetAddress
+         MAX-ACCESS   not-accessible
+         STATUS   current
+         DESCRIPTION
+            "The IP address this sham link neighbor is using."
+         ::= { cospfShamLinkNbrEntry 3 }
+
+     cospfShamLinkNbrRtrId OBJECT-TYPE
+         SYNTAX   RouterID
+         MAX-ACCESS   read-only
+         STATUS   current
+         DESCRIPTION
+            "A 32-bit integer uniquely identifying the neighboring
+            router." 
+         ::= { cospfShamLinkNbrEntry 4 }
+
+     cospfShamLinkNbrOptions OBJECT-TYPE
+         SYNTAX   Integer32 (0..255)
+         MAX-ACCESS   read-only
+         STATUS   current
+         DESCRIPTION
+            "A Bit Mask corresponding to the neighbor's options
+            field.
+
+            Bit 1, if set, indicates that the  system  will
+            operate  on  Type of Service metrics other than
+            TOS 0.  If zero, the neighbor will  ignore  all
+            metrics except the TOS 0 metric.
+
+            Bit 2, if set, indicates  that  the  system  is
+            Network  Multicast  capable; ie, that it implements 
+            OSPF Multicast Routing."
+
+         ::= { cospfShamLinkNbrEntry 5 }
+
+
+     cospfShamLinkNbrState OBJECT-TYPE
+         SYNTAX   INTEGER    {
+                     down (1),
+                     attempt (2),
+                     init (3),
+                     twoWay (4),
+                     exchangeStart (5),
+                     exchange (6),
+                     loading (7),
+                     full (8)
+                  } 
+         MAX-ACCESS   read-only
+         STATUS   current
+         DESCRIPTION
+            "The state of this sham link neighbor relation-
+            ship."
+         REFERENCE
+            "OSPF Version 2, Section 10.1 Neighbor states."
+         ::= { cospfShamLinkNbrEntry 6 }
+
+
+     cospfShamLinkNbrEvents OBJECT-TYPE
+         SYNTAX   Counter32
+         MAX-ACCESS   read-only
+         STATUS   current
+         DESCRIPTION
+            "The number of  times  this sham link has changed
+            state or an error has occurred."
+         ::= { cospfShamLinkNbrEntry 7 }
+
+
+     cospfShamLinkNbrLsRetransQLen OBJECT-TYPE
+         SYNTAX   Gauge32
+         MAX-ACCESS   read-only
+         STATUS   current
+         DESCRIPTION
+            "The  current  length  of  the   retransmission
+            queue. The retransmission queue is maintained for
+            LSAs that have been flooded but not acknowledged
+            on this adjacency."
+         REFERENCE
+            "OSPF Version 2, Section 13.6 Retransmitting LSAs."
+         ::= { cospfShamLinkNbrEntry 8 }
+
+
+     cospfShamLinkNbrHelloSuppressed OBJECT-TYPE
+         SYNTAX   TruthValue
+         MAX-ACCESS   read-only
+         STATUS   current
+         DESCRIPTION
+            "Indicates whether Hellos are being  suppressed
+            to the neighbor."
+         ::= { cospfShamLinkNbrEntry 9 }
+
+
 
 --  OSPF Link State Database, Link-Local for non-virtual links
 
@@ -652,8 +990,8 @@ CospfShamLinkEntry ::=
            "The OSPF Process's Link-Local Link State Database
            for non-virtual links."
         REFERENCE
-           "OSPF Version 2, Section 12 Link State Adver-
-           tisements and The OSPF Opaque LSA Option"
+           "OSPF Version 2, Section 12 Link State Advertisements 
+           and The OSPF Opaque LSA Option"
         ::= { cospf 7 }
 
    cospfLocalLsdbEntry OBJECT-TYPE
@@ -720,8 +1058,7 @@ CospfShamLinkEntry ::=
         STATUS       current
         DESCRIPTION
            "The type of the link state advertisement.
-           Each link state type has a separate advertise-
-           ment format."
+           Each link state type has a separate advertisement format."
         REFERENCE
            "OSPF Version 2, Appendix A.4.1 The  Link  State
            Advertisement header and "
@@ -762,8 +1099,8 @@ CospfShamLinkEntry ::=
         STATUS       current
         DESCRIPTION
            "The sequence number field is a signed 32-bit
-           integer. It is used to detect old and dupli-
-           cate link state advertisements. The space of
+           integer. It is used to detect old and duplicate link
+           state advertisements. The space of
            sequence numbers is linearly ordered. The
            larger the sequence number the more recent the
            advertisement."
@@ -779,8 +1116,8 @@ CospfShamLinkEntry ::=
         MAX-ACCESS   read-only
         STATUS       current
         DESCRIPTION
-           "This field is the age of the link state adver-
-           tisement in seconds."
+           "This field is the age of the link state advertisement 
+           in seconds."
         REFERENCE
            "OSPF Version 2, Section 12.1.1 LS age"
         ::= { cospfLocalLsdbEntry 7 }
@@ -795,8 +1132,8 @@ CospfShamLinkEntry ::=
            age field. The age field is excepted so that
            an advertisement's age can be incremented
            without updating the checksum. The checksum
-           used is the same that is used for ISO connec-
-           tionless datagrams; it is commonly referred  to
+           used is the same that is used for ISO connectionless
+           datagrams; it is commonly referred  to
            as the Fletcher checksum."
         REFERENCE
            "OSPF Version 2, Section 12.1.7 LS checksum"
@@ -810,8 +1147,7 @@ CospfShamLinkEntry ::=
            "The entire Link State Advertisement, including
            its header."
         REFERENCE
-           "OSPF Version 2, Section 12 Link State Adver-
-           tisements"
+           "OSPF Version 2, Section 12 Link State Advertisements"
         ::= { cospfLocalLsdbEntry 9 }
 
 
@@ -832,8 +1168,8 @@ CospfShamLinkEntry ::=
            "The OSPF Process's Link-Local Link State Database
            for virtual links."
         REFERENCE
-           "OSPF Version 2, Section 12 Link State Adver-
-           tisements and The OSPF Opaque LSA Option"
+           "OSPF Version 2, Section 12 Link State Advertisements 
+           and The OSPF Opaque LSA Option"
         ::= { cospf 8 }
 
    cospfVirtLocalLsdbEntry OBJECT-TYPE
@@ -899,8 +1235,7 @@ CospfShamLinkEntry ::=
         STATUS       current
         DESCRIPTION
            "The type of the link state advertisement.
-           Each  link state type has a separate advertise-
-           ment format."
+           Each  link state type has a separate advertisement format."
         REFERENCE
            "OSPF Version 2, Appendix A.4.1 The  Link  State
            Advertisement header and "
@@ -941,8 +1276,8 @@ CospfShamLinkEntry ::=
         STATUS       current
         DESCRIPTION
            "The sequence number field is a  signed  32-bit
-           integer. It is used to detect old and dupli-
-           cate link state advertisements. The space of
+           integer. It is used to detect old and duplicate
+           link state advertisements. The space of
            sequence numbers is linearly ordered. The
            larger the sequence number the more recent the
            advertisement."
@@ -958,8 +1293,8 @@ CospfShamLinkEntry ::=
         MAX-ACCESS   read-only
         STATUS       current
         DESCRIPTION
-           "This field is the age of the link state adver-
-           tisement in seconds."
+           "This field is the age of the link state advertisement
+           in seconds."
         REFERENCE
            "OSPF Version 2, Section 12.1.1 LS age"
         ::= { cospfVirtLocalLsdbEntry 7 }
@@ -974,8 +1309,8 @@ CospfShamLinkEntry ::=
            age field. The age field is excepted so that
            an advertisement's age can be incremented
            without updating the checksum. The checksum
-           used is the same that is used for ISO connec-
-           tionless datagrams; it is commonly referred  to
+           used is the same that is used for ISO connectionless
+           datagrams; it is commonly referred  to
            as the Fletcher checksum."
         REFERENCE
            "OSPF Version 2, Section 12.1.7 LS checksum"
@@ -989,8 +1324,7 @@ CospfShamLinkEntry ::=
            "The entire Link State Advertisement, including
            its header."
         REFERENCE
-           "OSPF Version 2, Section 12 Link State Adver-
-           tisements"
+           "OSPF Version 2, Section 12 Link State Advertisements"
         ::= { cospfVirtLocalLsdbEntry 9 }
 
 
@@ -1004,9 +1338,11 @@ cospfCompliances OBJECT IDENTIFIER ::= { cospfConformance 2 }
 -- compliance statements
 
    cospfCompliance MODULE-COMPLIANCE
-        STATUS       current
+        STATUS       deprecated
         DESCRIPTION
-           "The compliance statement."
+           "The compliance statements for agents that support the 
+           Cisco OSPF MIB. These compliance statements are deprecated
+           by cospfComplianceRev1."
         MODULE        -- this module
         MANDATORY-GROUPS {
            cospfBasicGroup,
@@ -1030,6 +1366,34 @@ cospfCompliances OBJECT IDENTIFIER ::= { cospfConformance 2 }
               their per-link link state database for virtual links."
         ::= { cospfCompliances 1 }
 
+   cospfComplianceRev1 MODULE-COMPLIANCE
+        STATUS       current
+        DESCRIPTION
+           "The compliance statements for agents that support the 
+           Cisco OSPF MIB."
+        MODULE        -- this module
+        MANDATORY-GROUPS {
+           cospfBasicGroup,
+           cospfAreaGroup,
+           cospfIfGroup,
+           cospfVirtIfGroup,
+           cospfShamLinksGroup,
+           cospfShamLinkNbrGroup
+           }
+        GROUP  cospfLsdbGroup
+           DESCRIPTION
+              "This group is mandatory for OSPF systems that display
+              their per-area link state database."
+        GROUP  cospfLocalLsdbGroup
+           DESCRIPTION
+              "This group is mandatory for OSPF systems that display
+              their per-link link state database for non-virtual
+              links."
+        GROUP  cospfVirtLocalLsdbGroup
+           DESCRIPTION
+              "This group is mandatory for OSPF systems that display
+              their per-link link state database for virtual links."
+        ::= { cospfCompliances 2 }
 
 --  units of conformance
 
@@ -1122,18 +1486,47 @@ cospfCompliances OBJECT IDENTIFIER ::= { cospfConformance 2 }
            "These objects are required for OSPF systems."
         ::= { cospfGroups 7 }
 
+--  cospfShamLinkGroup is deprecated by cospfShamLinksGroup 
    cospfShamLinkGroup    OBJECT-GROUP
         OBJECTS {
-        cospfShamLinkRetransInterval,
-        cospfShamLinkHelloInterval,
-        cospfShamLinkRtrDeadInterval,
-        cospfShamLinkState,
-        cospfShamLinkEvents,
-        cospfShamLinkMetric
+           cospfShamLinkRetransInterval,
+           cospfShamLinkHelloInterval,
+           cospfShamLinkRtrDeadInterval,
+           cospfShamLinkState,
+           cospfShamLinkEvents,
+           cospfShamLinkMetric
+           }
+        STATUS       deprecated
+        DESCRIPTION
+           "These objects are required for OSPF systems."
+        ::= { cospfGroups 8 }
+
+   cospfShamLinkNbrGroup    OBJECT-GROUP
+        OBJECTS {
+           cospfShamLinkNbrRtrId,
+           cospfShamLinkNbrOptions,
+           cospfShamLinkNbrState,
+           cospfShamLinkNbrEvents,
+           cospfShamLinkNbrLsRetransQLen,
+           cospfShamLinkNbrHelloSuppressed
            }
         STATUS       current
         DESCRIPTION
            "These objects are required for OSPF systems."
-        ::= { cospfGroups 8 }
+        ::= { cospfGroups 9 }
+
+   cospfShamLinksGroup    OBJECT-GROUP
+        OBJECTS {
+           cospfShamLinksRetransInterval,
+           cospfShamLinksHelloInterval,
+           cospfShamLinksRtrDeadInterval,
+           cospfShamLinksState,
+           cospfShamLinksEvents,
+           cospfShamLinksMetric
+           }
+        STATUS       current
+        DESCRIPTION
+           "These objects are required for OSPF systems."
+        ::= { cospfGroups 10 }
 
 END

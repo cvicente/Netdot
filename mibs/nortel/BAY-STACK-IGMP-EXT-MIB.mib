@@ -1,0 +1,236 @@
+
+BAY-STACK-IGMP-EXT-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    OBJECT-TYPE, MODULE-IDENTITY, Integer32, Counter32, Gauge32
+        FROM SNMPv2-SMI
+    RowStatus
+        FROM SNMPv2-TC
+    InetAddressType, InetAddress
+        FROM INET-ADDRESS-MIB
+    PortList
+        FROM Q-BRIDGE-MIB
+    bayStackMibs
+        FROM SYNOPTICS-ROOT-MIB;
+
+bayStackIgmpExtMib MODULE-IDENTITY
+    LAST-UPDATED "200910260000Z"
+    ORGANIZATION "Nortel Ltd."
+    CONTACT-INFO "nortel.com"
+    DESCRIPTION
+        "This MIB module is an extension to the standard IGMP MIBs."
+
+    REVISION    "200910260000Z"  -- October 26, 2009
+    DESCRIPTION "Ver 3:  Added bsIgmpExtAvailableHardwareResources."
+
+    REVISION    "200901190000Z"  -- January 19, 2009
+    DESCRIPTION "Ver 2:  Added bsIgmpExtFilterProfileClearStats and
+                               bsIgmpExtFilterProfileDroppedPackets.
+                         Expanded range of bsIgmpExtFilterProfileId."
+
+    REVISION    "200811190000Z"  -- November 19, 2008
+    DESCRIPTION "Ver 1:  Initial version."
+
+    ::= { bayStackMibs 32 }
+
+bsIgmpExtNotifications OBJECT IDENTIFIER ::= { bayStackIgmpExtMib 0 }
+bsIgmpExtObjects       OBJECT IDENTIFIER ::= { bayStackIgmpExtMib 1 }
+
+-- ===========================================================================
+-- IGMP filter profile table
+-- ===========================================================================
+
+bsIgmpExtFilterProfileTable   OBJECT-TYPE
+    SYNTAX SEQUENCE OF BsIgmpExtFilterProfileEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "This table contains IGMP filter profile information."
+    ::= { bsIgmpExtObjects 1 }
+
+bsIgmpExtFilterProfileEntry OBJECT-TYPE
+    SYNTAX       BsIgmpExtFilterProfileEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "An entry representing an IGMP filter profile."
+    INDEX { bsIgmpExtFilterProfileId }
+    ::= { bsIgmpExtFilterProfileTable 1 }
+
+BsIgmpExtFilterProfileEntry ::=
+    SEQUENCE {
+        bsIgmpExtFilterProfileId             Integer32,
+        bsIgmpExtFilterProfileType           INTEGER,
+        bsIgmpExtFilterProfilePortList       PortList,
+        bsIgmpExtFilterProfileRowStatus      RowStatus,
+        bsIgmpExtFilterProfileDroppedPackets Counter32
+    }
+
+bsIgmpExtFilterProfileId OBJECT-TYPE
+    SYNTAX      Integer32 (1..65535)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A unique integer value used to identify entries in this table."
+    ::= { bsIgmpExtFilterProfileEntry 1 }
+
+bsIgmpExtFilterProfileType OBJECT-TYPE
+    SYNTAX       INTEGER {
+                     permit(1),
+                     deny(2)
+                 }
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "This value indicates whether IGMP messages from the address ranges
+         in this profile are allowed or denied."
+    DEFVAL { deny }
+    ::= { bsIgmpExtFilterProfileEntry 2 }
+
+bsIgmpExtFilterProfilePortList OBJECT-TYPE
+    SYNTAX       PortList
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "The list of ports to which this profile applies."
+    DEFVAL       { ''h }
+    ::= { bsIgmpExtFilterProfileEntry 3 }
+
+bsIgmpExtFilterProfileRowStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "This object is used to create/delete entries in this table."
+    ::= { bsIgmpExtFilterProfileEntry 4 }
+
+bsIgmpExtFilterProfileDroppedPackets OBJECT-TYPE
+    SYNTAX       Counter32
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "The number of packets that were matched by this profile and
+         dropped."
+    ::= { bsIgmpExtFilterProfileEntry 5 }
+
+-- ===========================================================================
+-- IGMP filter profile address range table
+-- ===========================================================================
+
+bsIgmpExtFilterRangeTable   OBJECT-TYPE
+    SYNTAX SEQUENCE OF BsIgmpExtFilterRangeEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "This table contains IGMP filter profile address ranges."
+    ::= { bsIgmpExtObjects 2 }
+
+bsIgmpExtFilterRangeEntry OBJECT-TYPE
+    SYNTAX       BsIgmpExtFilterRangeEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "An entry containing an IGMP filter profile address range."
+    INDEX { bsIgmpExtFilterProfileId, bsIgmpExtFilterRangeId }
+    ::= { bsIgmpExtFilterRangeTable 1 }
+
+BsIgmpExtFilterRangeEntry ::=
+    SEQUENCE {
+        bsIgmpExtFilterRangeId           Integer32,
+        bsIgmpExtFilterRangeAddressType  InetAddressType,
+        bsIgmpExtFilterRangeAddressStart InetAddress,
+        bsIgmpExtFilterRangeAddressEnd   InetAddress,
+        bsIgmpExtFilterRangeRowStatus    RowStatus
+    }
+
+bsIgmpExtFilterRangeId OBJECT-TYPE
+    SYNTAX      Integer32 (1..255)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "An integer value used to uniquely identify entries in this table
+         within a particular IGMP filter profile."
+    ::= { bsIgmpExtFilterRangeEntry 1 }
+
+bsIgmpExtFilterRangeAddressType OBJECT-TYPE
+    SYNTAX       InetAddressType
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "This value indicates the type of address contained in the
+         corresponding instances of bsIgmpExtFilterRangeAddressStart and
+         bsIgmpExtFilterRangeAddressEnd.  Currently only values of ipv4(1)
+         and ipv6(2) are allowed."
+    ::= { bsIgmpExtFilterRangeEntry 2 }
+
+bsIgmpExtFilterRangeAddressStart OBJECT-TYPE
+    SYNTAX       InetAddress
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "The starting address of this range.  Only multicast addresses
+         are allowed."
+    ::= { bsIgmpExtFilterRangeEntry 3 }
+
+bsIgmpExtFilterRangeAddressEnd OBJECT-TYPE
+    SYNTAX       InetAddress
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "The ending address of this range.  Only multicast addresses
+         are allowed."
+    ::= { bsIgmpExtFilterRangeEntry 4 }
+
+bsIgmpExtFilterRangeRowStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "This object is used to create/delete entries in this table."
+    ::= { bsIgmpExtFilterRangeEntry 5 }
+
+-- ===========================================================================
+-- IGMP filter profile scalar objects
+-- ===========================================================================
+
+bsIgmpExtFilterProfileScalars OBJECT IDENTIFIER ::= { bsIgmpExtObjects 3 }
+
+bsIgmpExtFilterProfileClearStats OBJECT-TYPE
+    SYNTAX      Integer32 (0..65535)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object is used to clear IGMP profile statistics.  Setting it
+         to a particular profile ID will clear statistics for that profile.
+         Setting it to 0 will clear statistics for all profiles.  When read,
+         the value is always 0."
+    ::= { bsIgmpExtFilterProfileScalars 1 }
+
+-- ===========================================================================
+-- IGMP scalar objects
+-- ===========================================================================
+
+bsIgmpExtScalars OBJECT IDENTIFIER ::= { bsIgmpExtObjects 4 }
+
+bsIgmpExtAvailableHardwareResources OBJECT-TYPE
+    SYNTAX      Gauge32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "This object returns the number of available hardware resources for
+         IGMP."
+    ::= { bsIgmpExtScalars 1 }
+
+bsIgmpExtHardwareCompatibilityMode OBJECT-TYPE
+    SYNTAX      INTEGER {
+                          ers5510(1),
+                          nonErs5510(2)
+                        }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object is used to set the 5510 hardware compatilibity mode for IGMP."
+    ::= { bsIgmpExtScalars 2 }
+
+END
+

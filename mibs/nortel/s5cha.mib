@@ -16,13 +16,13 @@ IMPORTS
 		FROM S5-TCS-MIB;
 
 s5ChasMib MODULE-IDENTITY
-       LAST-UPDATED    "200505110000Z"
+       LAST-UPDATED    "200805220000Z"
        ORGANIZATION    "Nortel Networks"
        CONTACT-INFO    "Nortel Networks"
        DESCRIPTION
            "5000 Chassis MIB
 
-           Copyright 1995-2004 Nortel Networks, Inc.
+           Copyright 1995-2008 Nortel Networks, Inc.
            All rights reserved.
            This Nortel Networks SNMP Management Information Base Specification
            (Specification) embodies Nortel Networks' confidential and
@@ -33,6 +33,12 @@ s5ChasMib MODULE-IDENTITY
            This Specification is supplied 'AS IS', and Nortel Networks makes
            no warranty, either express or implied, as to the use,
            operation, condition, or performance of the Specification."
+
+     REVISION "200805220000Z" -- May 22, 2008
+     DESCRIPTION "Version 142:  Added s5ChasComRunningSoftwareVer."
+
+     REVISION "200802200000Z" -- Feb 20, 2008
+     DESCRIPTION "Version 141:  Added objects for memory utilization in MegaBytes."
 
      REVISION "200505110000Z" -- May 11, 2005
      DESCRIPTION "Version 140:  Fix support for USB flash dongles."
@@ -407,7 +413,9 @@ S5ChasComEntry ::= SEQUENCE {
         s5ChasComBaseNumPorts    Integer32,
         s5ChasComTotalNumPorts   Integer32,
 
-        s5ChasComIpAddress       IpAddress
+        s5ChasComIpAddress       IpAddress,
+
+	s5ChasComRunningSoftwareVer  DisplayString
 	}
 
 s5ChasComGrpIndx OBJECT-TYPE
@@ -681,6 +689,17 @@ s5ChasComIpAddress OBJECT-TYPE
              Note that for a stackable system in stack mode, this will be
              the standalone IP address for individual units in the stack."
 	::= { s5ChasComEntry 18 }
+
+s5ChasComRunningSoftwareVer OBJECT-TYPE
+	SYNTAX	DisplayString (SIZE(0..32))
+	MAX-ACCESS	read-only
+	STATUS	current
+	DESCRIPTION
+		"The version number of the software image running on this
+                component/sub-component.
+		If not available, the value is a zero length
+		string."
+	::= { s5ChasComEntry 19 }
 
 
 
@@ -1371,7 +1390,9 @@ S5ChasUtilEntry ::= SEQUENCE {
         s5ChasUtilCPUUsageLast24Hours   Gauge32,
         s5ChasUtilMemoryAvailable       Gauge32,
         s5ChasUtilMemoryMinAvailable    Gauge32,
-        s5ChasUtilCPUUsageLast10Seconds Gauge32
+        s5ChasUtilCPUUsageLast10Seconds Gauge32,
+	s5ChasUtilMemoryTotalMB		Gauge32,
+	s5ChasUtilMemoryAvailableMB	Gauge32
         }
 
 s5ChasUtilGrpIndx OBJECT-TYPE
@@ -1479,7 +1500,23 @@ s5ChasUtilCPUUsageLast10Seconds OBJECT-TYPE
          busy over the last 10 seconds."
     ::= {s5ChasUtilEntry 11}
 
+s5ChasUtilMemoryTotalMB OBJECT-TYPE
+    SYNTAX  Gauge32 (0..1024)
+    UNITS   "MegaBytes"
+    MAX-ACCESS  read-only
+    STATUS  current
+    DESCRIPTION
+            "This object returns the total RAM of unit."
+    ::= { s5ChasUtilEntry 12 }
 
+s5ChasUtilMemoryAvailableMB OBJECT-TYPE
+    SYNTAX  Gauge32 (0..1024)
+    UNITS   "MegaBytes"
+    MAX-ACCESS  read-only
+    STATUS  current
+    DESCRIPTION
+            "This object returns the available RAM of unit."
+    ::= { s5ChasUtilEntry 13 }
 
 
 

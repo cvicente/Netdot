@@ -1,8 +1,8 @@
 HP-ICF-PROVIDER-BRIDGE DEFINITIONS ::= BEGIN
 
     IMPORTS
-        hpSwitch            
-            FROM HP-ICF-OID            
+	hpSwitch
+	    FROM HP-ICF-OID
         OBJECT-TYPE, MODULE-IDENTITY
             FROM SNMPv2-SMI
         TruthValue
@@ -16,7 +16,7 @@ HP-ICF-PROVIDER-BRIDGE DEFINITIONS ::= BEGIN
 
 
     hpicfProviderBridge MODULE-IDENTITY
-        LAST-UPDATED "200608150000Z"  -- August 15, 2006
+        LAST-UPDATED "200810010000Z"  -- Oct 01, 2008
         ORGANIZATION "Hewlett-Packard Company
                       Procurve Networking Business"
         CONTACT-INFO "Hewlett-Packard Company
@@ -25,6 +25,9 @@ HP-ICF-PROVIDER-BRIDGE DEFINITIONS ::= BEGIN
         DESCRIPTION  "This MIB module contains the HP 'version'
                       of the standard Provider Bridge MIB and 
                       the proprietary extensions to it."
+        
+        REVISION     "200810010000Z"  -- Oct 01, 2008
+        DESCRIPTION  "Added hpSwitch to imports section."
         
         REVISION     "200608150000Z"  -- August 15, 2006
         DESCRIPTION  "Initial revision."
@@ -82,8 +85,9 @@ HP-ICF-PROVIDER-BRIDGE DEFINITIONS ::= BEGIN
         DESCRIPTION "Defines the 2-byte ethertype for provider tagged frames.
 	             The default is 0x88a8. 
                      Changing from one tag-type to another with a given 
-                     hpicfProviderBridgeType configuration will reboot the
-                     device and the new tag-type will take effect subsequently."
+                     hpicfProviderBridgeType configuration will save current
+                     configurations and reboot the device, the new tag-type
+                     will take effect subsequently."
         DEFVAL     { 34984 }
         ::= { hpicfProviderBridgeBase 2 }
 

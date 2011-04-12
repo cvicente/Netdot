@@ -1,0 +1,1169 @@
+
+
+BUNDLE-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+        MODULE-IDENTITY,OBJECT-TYPE,OBJECT-IDENTITY,NOTIFICATION-TYPE, 
+	  mib-2,IpAddress,Integer32,TimeTicks,Counter32    
+            	FROM SNMPv2-SMI
+        TruthValue,RowStatus,DisplayString
+               	FROM SNMPv2-TC
+        NOTIFICATION-GROUP
+                  FROM SNMPv2-CONF
+        ntEnterpriseDataTasmanMgmt 	
+	            FROM NT-ENTERPRISE-DATA-MIB;
+
+nnbundleMib MODULE-IDENTITY
+        LAST-UPDATED	"9907010000Z" 
+        ORGANIZATION	"Nortel Networks"
+	  CONTACT-INFO
+        	" Nortel Networks
+        	8200 Dixie Road
+        	Brampton, Ontario L6T 5P6
+        	Canada        
+        	1-800-4Nortel 
+        	www.nortelnetworks.com "        
+        DESCRIPTION
+        	"Bundle MIB for defining bundle parameters"
+        REVISION	"9904230000Z"        
+	  DESCRIPTION
+        	"Initial version of this MIB module."
+        ::= { ntEnterpriseDataTasmanMgmt 13 } 
+
+-- bundleTable definition
+-- The following bundle table lists all parameters associated with a 
+-- bundle.  Items such as encapsulation, IP address, and subnet mask
+-- need to have proper values for the bundle to function properly.
+-- Default values may not work.
+
+nnbundleTable         OBJECT-TYPE
+        SYNTAX          SEQUENCE OF NnBundleTableEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION 
+                        "Bundle management related 
+                        parameters are defined in this table."
+        ::= {nnbundleMib 1}
+
+nnbundleTableEntry    OBJECT-TYPE
+        SYNTAX          	NnBundleTableEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION     "Bundle parameter entries are listed in this 
+                        table."
+        INDEX           { nnbundleId }
+        ::= {nnbundleTable 1}
+
+NnBundleTableEntry ::= SEQUENCE {
+		nnbundleId                         	Integer32,
+		nnbundleName                       	DisplayString,
+		nnbundleContact                    	DisplayString,
+		nnbundleDescr                     	DisplayString,
+		nnbundleEncapsulation             INTEGER,
+		nnbundleDropEs                     	Integer32,
+		nnbundleDropSes                    	Integer32,
+		nnbundleDropUas                    	Integer32,
+		nnbundleDropEev                    	Integer32,
+		nnbundleDropBes                    	Integer32,
+		nnbundleDropBbe                    	Integer32,
+		nnbundleDropLofc                   	Integer32,
+		nnbundleDropBpv                    	Integer32,
+		nnbundleDropCss                    	Integer32,
+		nnbundleDropOof                    	Integer32,
+		nnbundleDropCrc                    	Integer32,
+		nnbundleIpAddr                     	IpAddress,
+		nnbundleSubnetMask              	IpAddress,
+		nnbundleSrcForwardingAddrPrimary   	IpAddress,
+		nnbundleSrcForwardingAddrSecondary 	IpAddress,
+		nnbundleRestoreMethod          	INTEGER,
+		nnbundleLinkRestoralTime      	Integer32,
+		nnbundleStatus                        INTEGER,
+		nnbundleLinkRestore              	OCTET STRING (SIZE (4)),
+		nnbundleNoOfLinks                  	Integer32,
+		nnbundleTotalBw                    	Integer32,
+		nnbundleRowStatus                 	RowStatus,
+		nnbundleIpUnnumbered         	DisplayString,
+		nnbundleIpMulticast                	INTEGER,
+		nnbundleDirectedBcast            	INTEGER,
+		nnbundleIcmpUnreachable       	INTEGER,
+		nnbundleIcmpRedirect             	INTEGER,
+		nnbundleClearCounters           	Integer32,
+		nnbundleTrackHoldDownTimer  INTEGER,
+		nnbundleDropPackets           Counter32
+        }
+
+nnbundleId            OBJECT-TYPE
+        SYNTAX          Integer32 
+        MAX-ACCESS      not-accessible  
+        STATUS          current
+        DESCRIPTION     "bundleId is the identifier of a bundle. To 
+                        configure a bundle, this parameter must be 
+                        used as the index. This is assigned internally 
+                        by the system. Whenever a row creation 
+                        needs to occur in the bundleTable, the 
+                        bundleId is entered as 65535."
+        ::= { nnbundleTableEntry 1}
+
+nnbundleName          OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (1..8))
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "Name of the bundle. To configure a bundle, 
+                        this parameter must be set. That is, a 
+                        descriptive name should be given to a bundle. 
+                        The maximum length of a bundle name is 8 
+                        characters. This parameter is set once during 
+                        the creation of a bundle. A bundle can not be 
+                        renamed." 
+        ::= { nnbundleTableEntry 2}
+
+nnbundleContact       OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (1..15))
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "Name of the person who can be contacted 
+                        for information about the bundle. The maximum 
+                        length for this parameter is 15 characters. 
+                        This parameter can be set after the bundle 
+                        is named and before the links are assigned."
+        DEFVAL          { "" }
+        ::= { nnbundleTableEntry 3}
+
+nnbundleDescr         OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (1..76))
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "Brief description of the bundle. The maximum 
+                        length of this parameter is 25 characters. 
+                        This parameter can be set after the bundle
+                        is named and before the links are assigned."
+        DEFVAL          { "" }
+        ::= { nnbundleTableEntry 4 }
+
+nnbundleEncapsulation OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        noEncap(1),
+                        ppp(2),
+                        hdlc(3),
+                        frameRelay(4)
+                    }
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "Specifies the type of protocol encapsulation 
+                        for the bundle. To configure protocol-specific 
+                        parameters for a bundle, the bundle must first 
+                        be encapsulated with that protocol. To 
+                        unconfigure the encapsulation type, this 
+                        variable should be set to noEncap."
+        DEFVAL          { noEncap }
+        ::= { nnbundleTableEntry 5 }
+
+nnbundleDropEs        OBJECT-TYPE
+        SYNTAX          Integer32
+        UNITS           "seconds"
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "The length of time in seconds that the error 
+                        condition Errored Seconds exists before a link is 
+                        dropped. This parameter can be configured only 
+                        for multilink bundles and after the 
+                        bundle is encapsulated." 
+        DEFVAL          { 0 } 
+        ::= { nnbundleTableEntry 6}
+
+nnbundleDropSes       OBJECT-TYPE
+        SYNTAX          Integer32
+        UNITS           "seconds"
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "The length of time in seconds that the error
+                        condition Severely Errored Seconds exists 
+                        before a link is dropped. This parameter can 
+                        be configured only for multilink bundles and 
+                        after the bundle is encapsulated."
+        DEFVAL          { 0 } 
+    ::= { nnbundleTableEntry 7}
+
+nnbundleDropUas       OBJECT-TYPE
+        SYNTAX          Integer32
+        UNITS           "seconds"
+
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "The length of time in seconds that the error
+                        condition Unavailable Seconds exists before a 
+                        link is dropped. This parameter can be 
+                        configured only for multilink bundles and 
+                        after the bundle is encapsulated."
+        DEFVAL          { 0 } 
+        ::= { nnbundleTableEntry 8}
+
+nnbundleDropEev       OBJECT-TYPE
+        SYNTAX          Integer32
+        UNITS           "seconds"
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "The length of time in seconds that the error
+                        condition ESF Error Events exists before a 
+                        link is dropped. This parameter can be 
+                        configured only for multilink bundles and 
+                        after the bundle is encapsulated."
+        DEFVAL          { 0 } 
+        ::= { nnbundleTableEntry 9}
+
+nnbundleDropBes       OBJECT-TYPE
+        SYNTAX          Integer32
+        UNITS           "seconds"
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "The length of time in seconds that the error
+                        condition Bursty Errored Seconds 
+			(Applicable only for T1 links) exists before a 
+                        link is dropped. This parameter can be 
+                        configured only for multilink bundles and 
+                        after the bundle is encapsulated."
+        DEFVAL          { 0 } 
+        ::= { nnbundleTableEntry 10}
+
+nnbundleDropBbe       OBJECT-TYPE
+        SYNTAX          Integer32
+        UNITS           "seconds"
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "The length of time in seconds that the error
+                        condition Threshold for Background Blocked Errors 
+			(Applicable only for E1 links) exists before a 
+                        link is dropped. This parameter can be 
+                        configured only for multilink bundles and 
+                        after the bundle is encapsulated."
+        DEFVAL          { 0 } 
+        ::= { nnbundleTableEntry 11}
+
+nnbundleDropLofc       OBJECT-TYPE
+        SYNTAX          Integer32
+        UNITS           "seconds"
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "The length of time in seconds that the error
+                        condition Loss Of Frame Count exists before a 
+                        link is dropped. This parameter can be 
+                        configured only for multilink bundles and 
+                        after the bundle is encapsulated."
+        DEFVAL          { 0 } 
+        ::= { nnbundleTableEntry 12}
+
+nnbundleDropBpv       OBJECT-TYPE
+        SYNTAX          Integer32
+        UNITS           "seconds"
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "The length of time in seconds that the error
+                        condition BiPolar Violation exists before a 
+                        link is dropped. This parameter can be 
+                        configured only for multilink bundles and 
+                        after the bundle is encapsulated."
+        DEFVAL          { 0 } 
+        ::= { nnbundleTableEntry 13}
+
+nnbundleDropCss       OBJECT-TYPE
+        SYNTAX          Integer32
+        UNITS           "seconds"
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "The length of time in seconds that the error
+                        condition Controlled Slip Second exists before a 
+                        link is dropped. This parameter can be 
+                        configured only for multilink bundles and 
+                        after the bundle is encapsulated."
+        DEFVAL          { 0 } 
+        ::= { nnbundleTableEntry 14}
+
+nnbundleDropOof       OBJECT-TYPE
+        SYNTAX          Integer32
+        UNITS           "seconds"
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "The length of time in seconds that the error
+                        condition  Out Of Frame exists before a 
+                        link is dropped. This parameter can be 
+                        configured only for multilink bundles and 
+                        after the bundle is encapsulated."
+        DEFVAL          { 0 } 
+        ::= { nnbundleTableEntry 15}
+
+nnbundleDropCrc       OBJECT-TYPE
+        SYNTAX          Integer32
+        UNITS           "seconds"
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "The length of time in seconds that the error
+                        condition Cyclic Redundancy Check exists before a 
+                        link is dropped. This parameter can be 
+                        configured only for multilink bundles and 
+                        after the bundle is encapsulated."
+        DEFVAL          { 0 } 
+        ::= { nnbundleTableEntry 16}
+
+nnbundleIpAddr        OBJECT-TYPE
+        SYNTAX          IpAddress
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "The bundle's source IP address. This is one 
+                        of the parameters required to set up IP 
+                        multiplexing for a bundle. This parameter 
+                        can be configured only when the bundle is 
+                        encapsulated. Also the parameters bundleIpAddr 
+                        and bundleSubnetMask have to be set together 
+                        during the same request. To unconfigure the IP 
+                        address, a set operation is performed with 
+                        the value 0.0.0.0" 
+        DEFVAL          { 0 }  
+        ::= { nnbundleTableEntry 17}
+
+nnbundleSubnetMask    OBJECT-TYPE
+        SYNTAX          IpAddress
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "This parameter represents the source subnet 
+                        mask address. This is one of the parameters 
+                        required to set up IP multiplexing for a 
+                        bundle. This parameter is set along with the 
+                        bundleIpAddr parameter during the same 
+                        request." 
+        DEFVAL          { 0 }  
+        ::= { nnbundleTableEntry 18}
+
+nnbundleSrcForwardingAddrPrimary  OBJECT-TYPE
+        SYNTAX          IpAddress
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "The bundle's destination IP address. This is 
+                        one of the parameters required to set up IP 
+                        multiplexing for a bundle. This parameter can 
+                        be configured when the bundle has been 
+                        configured for IP multiplexing. To unconfigure 
+                        the source forwarding address, a set operation 
+                        is performed with the value 0.0.0.0. This is
+                        the primary source forwarding address" 
+        DEFVAL          { 0 }  
+        ::= { nnbundleTableEntry 19}
+
+nnbundleSrcForwardingAddrSecondary OBJECT-TYPE
+        SYNTAX          IpAddress
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "The bundle's secondary or backup destination 
+                        address. This address will be used only if  
+                        the primary address uses an ethernet interface
+                        and failover is enabled on that interface and
+                        the interface goes down. The secondary source
+                        forwarding address is an optional parameter, 
+                        it should be a gateway on the alternate
+                        ethernet This parameter is set along with the
+                        primary source forwarding address parameter. 
+                        To unconfigure this parameter a set operation 
+                        is performed with the value 0.0.0.0 for the
+                        primary address, or a primary address is set
+                        with no secondary, or both primary and 
+                        secondary are set to 0.0.0.0"
+        DEFVAL          { 0 }  
+        ::= { nnbundleTableEntry 20}
+
+nnbundleRestoreMethod OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        manual(1),
+                        automatic(2)}
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "bundleRestoreMethod defines how a dropped 
+                        link of a multilink bundle will be restored. 
+                        It can be done either manually or 
+                        automatically. If the restore mode is 
+                        automatic, the parameter bundleLinkRestoralTime 
+                        should be set (in seconds) during the same 
+                        request." 
+        DEFVAL          { automatic }
+        ::= { nnbundleTableEntry 21}
+
+nnbundleLinkRestoralTime  OBJECT-TYPE
+        SYNTAX          Integer32
+        UNITS           "seconds"
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "Error-free time interval (in seconds) that 
+                        must pass before a link is automatically 
+                        restored. This parameter can be set when the 
+                        bundleRestoreMethod is automatic." 
+        DEFVAL          { 120 }
+        ::= { nnbundleTableEntry 22 }
+
+nnbundleStatus        OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        enable(1),
+                        disable(2)
+                    }
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "bundleStatus shutdowns the bundle. Although 
+                        the default is 'enable,' the bundle remains 
+                        disabled until all necessary parameters are 
+                        present" 
+        DEFVAL          { enable }
+        ::= { nnbundleTableEntry 23 }
+
+nnbundleLinkRestore   OBJECT-TYPE
+        SYNTAX          OCTET STRING (SIZE (4)) 
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "bundleLinkRestore specifies the links to be 
+                        restored manually. This parameter is configured 
+                        when the value of bundleRestoreMethod is manual. 
+                        The user needs to specify the link/s to be 
+                        restored. LSB in the OCTET STRING represents 
+                        T1 Number 1. For example, to restore links 1-4 
+                        the value should be set to 000F"
+        ::= { nnbundleTableEntry 24 }
+
+nnbundleNoOfLinks     OBJECT-TYPE
+        SYNTAX          Integer32
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Indicates the number of links configured in 
+                        the bundle." 
+        ::= { nnbundleTableEntry 25 }
+
+nnbundleTotalBw       OBJECT-TYPE
+        SYNTAX          Integer32
+        UNITS           "kbps"
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Indicates the total bandwidth for this bundle.
+                        The bundle bandwidth is the aggregated band-
+                        widths of all the links assigned to a 
+                        particular bundle." 
+    ::= { nnbundleTableEntry 26 }
+
+nnbundleRowStatus OBJECT-TYPE
+        SYNTAX          RowStatus
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "bundleRowStatus is used to add/delete a row 
+                        in the table. Adding or deleting a row 
+                        corresponds to creating a bundle or deleting
+                        a bundle.  In order to add a row to the bundle 
+                        table, a set on this parameter should be done 
+                        with the value 4 (createAndGo) and 
+                        bundleId parameter set with the value of 65535. 
+                        A request to create a row can be 
+                        completed successfully only if a set on the 
+                        bundleRowStatus and a set on the bundleName 
+                        come in the same request. To delete a row 
+                        this parameter has to be set with the value 6
+                        (destroy)." 
+        ::= { nnbundleTableEntry 27}
+
+nnbundleIpUnnumbered      OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (1..8))
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "Name of the bundle. To configure unnumbered,
+                        this parameter must be set. 
+                        The maximum length of a bundle name is 8 
+                        characters. "
+        ::= { nnbundleTableEntry 28}
+
+nnbundleIpMulticast OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        noMcast(0),
+                        pass(1),
+                        block(2),
+                        ospfrip2(3)
+                    }
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "Specifies the Ip multicast operation."
+        DEFVAL          { noMcast }
+        ::= { nnbundleTableEntry 29 }
+
+nnbundleDirectedBcast   OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        disable(0),
+                        enable(1)
+                    }
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "Enable/disable forwarding of directed broadcasts
+			 on this interface."
+        DEFVAL          { enable }
+        ::= { nnbundleTableEntry 30 }
+
+nnbundleIcmpUnreachable   OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        disable(0),
+                        enable(1)
+                    }
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "Enable/disable ICMP destination unreachable messages
+                         on this interface"
+        DEFVAL          { enable }
+        ::= { nnbundleTableEntry 31 }
+
+nnbundleIcmpRedirect   OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        disable(0),
+                        enable(1)
+                    }
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "Enable/disable ICMP redirect messages on this
+                         on this interface"
+        DEFVAL          { enable }
+        ::= { nnbundleTableEntry 32 }
+
+nnbundleClearCounters 	OBJECT-TYPE
+	SYNTAX  	Integer32
+	MAX-ACCESS  	read-create
+	STATUS  	current
+	DESCRIPTION	"Perform a clearing of the counters operation"
+	::= { nnbundleTableEntry 33 }
+
+nnbundleTrackHoldDownTimer OBJECT-TYPE
+        SYNTAX          INTEGER (1..100)
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "Indicates the tracking hold down timer."
+        DEFVAL          { 5 }
+    ::= { nnbundleTableEntry 34 }
+
+nnbundleDropPackets  OBJECT-TYPE
+        SYNTAX Counter32
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION     "The number of packets dropped by a WAN interface 
+        when the agent encounters packet drops due to lack of buffer availability for transmission etc. Also, packets may be          dropped for various reasons like Buffer over flow, packet too long, CRC errors, invalid packet length, system 
+        errors etc. This list is only a subset of  the numerous reasons for the packets that can be dropped by the agent per         interface"
+    ::= { nnbundleTableEntry 35 }
+    
+-- bundleLinkTable definition
+nnbundleLinkTable     OBJECT-TYPE
+        SYNTAX          SEQUENCE OF NnBundleLinkEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION     "All the parameters related to the assigned 
+                        links of a bundle are defined in 
+                        bundleLinkTable. A row in this table can be 
+                        created when a bundle with the corresponding 
+                        bundleId already exists in the bundleTable."
+        ::= { nnbundleMib 2 }
+
+nnbundleLinkEntry     OBJECT-TYPE
+        SYNTAX          NnBundleLinkEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION     "Link parameters that relate to a 
+                        given bundle are specified in this table."
+        INDEX           { nnbundleId , nnbundleLinkT1Num }
+        ::= { nnbundleLinkTable 1 }
+
+NnBundleLinkEntry ::= SEQUENCE {
+        nnbundleLinkT1Num         Integer32,  
+        nnbundleLinkTimeSlots     OCTET STRING (SIZE (4)),
+        nnbundleLinkType          INTEGER,
+        nnbundleLinkSpeed         INTEGER,
+        nnbundleLinkInvertedData  TruthValue,
+        nnbundleLinkPhysIfNum    Integer32,
+        nnbundleLinkDiffDelay     Integer32,
+        nnbundleLinkBw            Integer32,
+        nnbundleLinkStatus        INTEGER,
+        nnbundleLinkRowStatus     RowStatus
+        }
+
+nnbundleLinkT1Num     OBJECT-TYPE
+        SYNTAX          Integer32 
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION     "bundleLinkT1Num is the number of the T1 link 
+                        being added to a specific bundle. For example, 
+                        to assign link number 4, the value of this 
+                        parameter should be set to 4. However, the 
+                        design of SNMP's link creation is different 
+                        from that of the system CLI. In SNMP, only 
+                        one link can be created at a time whereas in 
+                        the system CLI, multiple links can be 
+                        configured in a single request. This parameter 
+                        is mandatory for row creation in the interfaces 
+                        with CT3 and T1 link types ."      
+       ::= { nnbundleLinkEntry 1 }
+
+nnbundleLinkTimeSlots OBJECT-TYPE
+        SYNTAX          OCTET STRING (SIZE (4)) 
+        MAX-ACCESS      read-create 
+        STATUS          current
+        DESCRIPTION     "bundleLinkTimeSlots indicates the DS0 channels 
+                        in a fractional T1 link. The LSB in the OCTET 
+                        STRING represents DS0 channel number 1. For 
+                        example, to assign DS0 channels 1-4, the value 
+                        of this parameter should be set to 000F"
+        DEFVAL          { "00ffffff" }
+        ::= { nnbundleLinkEntry 2 }
+
+
+nnbundleLinkType      OBJECT-TYPE
+        SYNTAX          INTEGER {
+                            ct3(1),
+                            t1(2),
+                            e1(3),
+                            hssi(4),
+                            t3(5),
+                            v35(6),
+				    ft1(7),
+				    fe1(8),
+				    x21(9),
+				    s530(10),
+				    s530A(11),
+				    s449(12),
+				    s232(13)
+                        }
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "bundleLinkType specifies the interface type 
+                        (i.e.,CT3,T1,T3,HSSI,V35,X21,S530,S530A,S449,S232 etc.,) 
+                        of the link being assigned to the bundle. This is a 
+                        mandatory parameter for Row creation in the 
+                        bundleLinkTable." 
+        ::= { nnbundleLinkEntry 3 }
+
+
+nnbundleLinkSpeed     OBJECT-TYPE
+        SYNTAX          INTEGER {
+                            kbps56(1),
+                            kbps64(2),
+				    notApplicable(3)
+                        }
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "The bundleLinkSpeed specifies the transmission 
+                        speed of all DS0 channels in a bundle." 
+        DEFVAL          { 2 }
+        ::= { nnbundleLinkEntry 4 }
+
+nnbundleLinkInvertedData  OBJECT-TYPE
+        SYNTAX          TruthValue
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "Setting bundleLinkInvertedData parameter to 
+                        true will have the system invert data on all 
+                        DS0 channels before transmission. Data 
+                        inversion is used only for HDLC-encapsulated 
+                        bundles." 
+        DEFVAL          { false }
+        ::= { nnbundleLinkEntry 5 }
+
+nnbundleLinkPhysIfNum OBJECT-TYPE
+        SYNTAX          Integer32
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "bundleLinkPhysIfNum specifies the interface
+                        number of the interface type such as CT3, 
+                        HSSI, T3 on which this link is being created. 
+                        This variable holds significance only for 
+                        link types CT3, HSSI and T3. It is a 
+                        mandatory variable for row creation for link 
+                        types CT3, HSSI, and T3."
+        DEFVAL          { 0 }
+        ::= { nnbundleLinkEntry 6 }
+    
+nnbundleLinkDiffDelay OBJECT-TYPE
+        SYNTAX          Integer32
+        UNITS           "milli-seconds"
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "bundleLinkDiffDelay specifies the maximum 
+                        differential delay allowed on the links in a 
+                        multilink bundle.  If the packet delay on any 
+                        link exceeds the differential delay set for a 
+                        bundle, that link is dropped from the bundle." 
+        ::= { nnbundleLinkEntry 7}
+
+nnbundleLinkBw        OBJECT-TYPE
+        SYNTAX          Integer32
+        UNITS           "kbps"
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "bundleLinkBw indicates the bandwidth of the 
+                        link.  The bandwidth of an individual link 
+                        depends upon its configuration.  For example, 
+                        in a link of type T1, its bandwidth will 
+                        depend upon whether the link is a full T1 or 
+                        a fractional T1 consisting of 24 DS0 timeslots."
+        ::= { nnbundleLinkEntry 8}
+
+nnbundleLinkStatus    OBJECT-TYPE
+        SYNTAX          INTEGER {
+                            up(1),
+                            down(2)
+                        }   
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "bundleLinkStatus indicates whether a 
+                        particular link in a bundle is up or down.  
+                        The link can go down due to various reasons 
+                        such as differential delay, a broken link, 
+                        or negotiation problems at the far end."
+        ::= { nnbundleLinkEntry 9}
+
+nnbundleLinkRowStatus OBJECT-TYPE
+        SYNTAX          RowStatus
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "bundleLinkRowStatus is used to add or delete 
+                        a row in the table. To create a row, this 
+                        parameter is set to value 4(createAndGo). To 
+                        delete a row, this parameter is set to a value 
+                        6(destroy)." 
+        ::= { nnbundleLinkEntry 10}
+
+-- bundleTrackTable definition
+nnbundleTrackTable        OBJECT-TYPE
+        SYNTAX          SEQUENCE OF NnBundleTrackEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION     "All the parameters related to bundle
+                        tracking are includede in BundleTrackTable."
+        ::= { nnbundleMib 3 }
+
+nnbundleTrackEntry     OBJECT-TYPE
+        SYNTAX          NnBundleTrackEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION     "Bundle Track parameters that relate to a 
+                        given bundle are specified in this table."
+        INDEX           { nnbundleId , nntrackIntfId }
+        ::= { nnbundleTrackTable 1 }
+
+NnBundleTrackEntry ::= SEQUENCE {
+        nntrackIntfId             Integer32,
+        nntrackIntfName           DisplayString,
+        nntrackIntfStatus         INTEGER,
+        nntrackIntfRowStatus      RowStatus
+        }
+
+nntrackIntfId            OBJECT-TYPE
+        SYNTAX          Integer32 
+        MAX-ACCESS      not-accessible  
+        STATUS          current
+        DESCRIPTION     "trackIntfId is the identifier of the
+                         bundle being tracked."
+        ::= { nnbundleTrackEntry 1 } 
+        
+nntrackIntfName          OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (1..8))
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "Name of the bundle being tracked."
+        ::= { nnbundleTrackEntry 2 }
+
+
+nntrackIntfStatus        OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        up(1),
+                        down(2)
+                    }
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "bundleStatus displays the status of the
+                         bundle being tracked."
+        ::= { nnbundleTrackEntry 3 }
+
+nntrackIntfRowStatus      OBJECT-TYPE
+        SYNTAX          RowStatus
+        MAX-ACCESS      read-create   
+        STATUS          current
+        DESCRIPTION   
+            "Used to configure or delete a tracking interface. To configure
+            a interface, set the value of this object to createAndGo. To delete
+            a interface, set the value of this object to destroy."
+        ::= { nnbundleTrackEntry 4 }
+    
+-- Loopback Interface Table
+
+nnloopbackIfTable	OBJECT-TYPE
+        SYNTAX		SEQUENCE OF NnLoopbackIfTableEntry
+        MAX-ACCESS	not-accessible
+        STATUS		current
+        DESCRIPTION	"A list of Loopback Interface table entries 
+			for this entity. "
+	::= { nnbundleMib 4 }
+
+nnloopbackIfTableEntry    OBJECT-TYPE
+        SYNTAX          NnLoopbackIfTableEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION     "Loopback Interface parameter entries are 
+			listed in this table."
+        INDEX           { nnloopbackIfId }
+        ::= {nnloopbackIfTable 1}
+
+NnLoopbackIfTableEntry ::= SEQUENCE {
+        nnloopbackIfId		Integer32,
+        nnloopbackIfName		DisplayString,
+        nnloopbackIfIpAddr	IpAddress,
+        nnloopbackIfSubnetMask	IpAddress,
+        nnloopbackIfStatus	INTEGER,
+        nnloopbackIfRowStatus	RowStatus
+        }
+nnloopbackIfId            OBJECT-TYPE
+        SYNTAX          Integer32 
+        MAX-ACCESS      not-accessible  
+        STATUS          current
+        DESCRIPTION     "loopbackIfId is the identifier of a loopback
+			Interface. To configure a loopback, this 
+			parameter must be used as the index. This is 
+			assigned internally by the system. Whenever a 
+			row creation needs to occur in the 
+			loopbackIfTable, the loopbackIfId is entered 
+			as 65535."
+        ::= { nnloopbackIfTableEntry 1}
+
+nnloopbackIfName          OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (1..8))
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "Name of the loopback If. To configure a 
+			loopback Interface,this parameter must be set.
+			That is, a descriptive name should be given to
+			a loopback inteface. The maximum length of a 
+			name is 8 characters. This parameter is set 
+			once during the creation of a loopback If. 
+			A loopback can not be renamed." 
+        ::= { nnloopbackIfTableEntry 2}
+nnloopbackIfIpAddr        OBJECT-TYPE
+        SYNTAX          IpAddress
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "The loopback's source IP address. This is one 
+                        of the parameters required to set up loopback
+			interface. The parameters loopbackIfIpAddr 
+                        and loopbackIfSubnetMask have to be set 
+			together during the same request. 
+			To unconfigure the IP address, a set operation
+			is performed with the value 0.0.0.0" 
+        DEFVAL          { 0 }  
+        ::= { nnloopbackIfTableEntry 3}
+
+nnloopbackIfSubnetMask    OBJECT-TYPE
+        SYNTAX          IpAddress
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "This parameter represents the source subnet 
+                        mask address. This is one of the parameters 
+                        required to set up loopback interface. 
+                        This parameter is set along with the 
+                        loopbackIfIpAddr parameter during the same 
+                        request." 
+        DEFVAL          { 0 }  
+        ::= { nnloopbackIfTableEntry 4}
+
+nnloopbackIfStatus        OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        up(1),
+                        down(2)
+                    }
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "loopbackIfStatus shows the current status
+			of the loopback interface."
+        DEFVAL          { up }
+        ::= { nnloopbackIfTableEntry 5 }
+
+nnloopbackIfRowStatus OBJECT-TYPE
+        SYNTAX          RowStatus
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "loopbackIfRowStatus is used to add/delete a 
+			row  In the table. Adding or deleting a row 
+                        corresponds to creating a loopback or deleting
+                        a loopback. In order to add a row to the 
+			loopback table, a set on this parameter should
+			be done with the value 4 (createAndGo) and 
+                        loopbackIfId parameter set with the value 
+			of 65535. 
+ 			A request to create a row can be 
+                        completed successfully only if a set on the 
+                        loopbackIfRowStatus and a set on the 
+			loopbackIfName come in the same request. 
+			To delete a row this parameter has to be set
+			with the value 6
+                        (destroy)." 
+        ::= { nnloopbackIfTableEntry 6}
+
+-- TRAP definitions for the Bundle Up/Down status
+--
+--
+nnbundleTraps  OBJECT IDENTIFIER ::= { nnbundleMib 5}
+nnbundleNotifications  OBJECT IDENTIFIER ::= {nnbundleTraps 0}
+nnbundleTrapVariables  OBJECT IDENTIFIER  ::= {nnbundleTraps 1}
+
+nnenableBundleUpDownNotification 	OBJECT-TYPE
+    	SYNTAX          		TruthValue
+    	MAX-ACCESS      		read-write
+    	STATUS          		current
+    	DESCRIPTION
+               "Indicates whether the system produces the
+                BundleDownTrap & BundleUpTrap . The default is yes.
+                "
+ 	DEFVAL { true }
+    	::= { nnbundleTraps 2 }
+
+nnbundleNameStr       OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (1..8))
+        MAX-ACCESS      accessible-for-notify
+        STATUS          current
+        DESCRIPTION     "Name of the bundle going UP/DOWN.
+                        " 
+        ::= { nnbundleTrapVariables 1}
+
+nnbundleDownCause   OBJECT-TYPE
+    SYNTAX  INTEGER {
+                admin-delete (1),
+                admin-down (2),
+                l1-failures (3),
+                l2-negotiation-fail (4),
+                bcp-negotiation-fail (5),
+                l3-negotiation-fail (6),
+                bundle-track-down (7)
+                }
+        MAX-ACCESS  accessible-for-notify
+        STATUS  current
+        DESCRIPTION
+             "Reason for the bundle going down
+                admin_delete - bundle has been deleted by administrator,
+                admin_down - bundle has been disabled administratively,
+                l1-failure - Layer 1 failures (physical links), 
+			including physical alarms, errors,etc. If a bundle
+			is a multilink bundle, then the bundle will go down
+			if all the inks go down. In case of MFR 
+			bundles, bundles behave according to the 
+			bandwidth class settings.
+                l2-failure - Layer 2 related failures: LCP for PPP and  
+			LMI for FR bundles.
+                bcp-negotiation-fail - BCP negotiation failures on PPP bundles.
+                l3-failure - Layer 3 related failures. NCP for PPP. Incase of 
+			FR bundles, the layer 3 negotiation failures 
+			will not bring the bundle down.
+                bundle-track-down - Bundle is disabled by bundle tracking,
+                "
+        ::= { nnbundleTrapVariables 2}
+
+nnbundleContactInfo       OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (1..15))
+        MAX-ACCESS      accessible-for-notify
+        STATUS          current
+        DESCRIPTION     "Name of the person who can be contacted 
+                        for information about the bundle.
+			"
+        ::= { nnbundleTrapVariables 3}
+
+nnbundleDescrInfo         OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (1..25))
+        MAX-ACCESS      accessible-for-notify
+        STATUS          current
+        DESCRIPTION     "Brief description of the bundle.
+			"
+        ::= { nnbundleTrapVariables 4}
+
+nnbundleDownTrap NOTIFICATION-TYPE
+        OBJECTS {
+                nnbundleNameStr,
+                nnbundleDownCause,
+                nnbundleContactInfo,
+                nnbundleDescrInfo       
+                } 
+
+	STATUS current
+
+        DESCRIPTION
+             "Trap being generated when a bundle goes down."
+
+       ::= {nnbundleNotifications 1}
+
+nnbundleUpTrap NOTIFICATION-TYPE
+        OBJECTS {
+	       nnbundleNameStr,
+        	nnbundleContactInfo,
+          	nnbundleDescrInfo
+	}
+        STATUS current
+
+        DESCRIPTION
+             "Trap being generated when a bundle comes up."
+        ::= {nnbundleNotifications 2}
+
+-- TRAP definitions for the Link Up/Down status
+--
+--
+nnenableLinkUpDownNotification 	OBJECT-TYPE
+    	SYNTAX          		TruthValue
+    	MAX-ACCESS      		read-write
+    	STATUS          		current
+    	DESCRIPTION
+               "Indicates whether the system produces the
+                linkDownTrap & linkUpTrap . The default is yes.
+                "
+ 	DEFVAL { true }
+    	::= { nnbundleTraps 3 }
+
+nnlinkNum     OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (1..15))
+        MAX-ACCESS      accessible-for-notify
+        STATUS          current
+        DESCRIPTION     "linkNum is the number of the T1/E1 link.
+                        "      
+       ::= { nnbundleTrapVariables 5 }
+
+nnlinkType      OBJECT-TYPE
+        SYNTAX		INTEGER {
+				t1(1),
+				t1-within-ct3(2),
+				e1(3),
+				e1-within-ce3(4),
+				t3(5),
+				hssi(6),
+				v35(7),
+				ft1(8),
+				fe1(9),
+				x21(10),
+				s530(11),
+				s530A(12),
+				s449(13),
+				s232(14)
+                        }
+        MAX-ACCESS      accessible-for-notify
+        STATUS          current
+        DESCRIPTION     "linkType specifies the interface type 
+                        (i.e., CT3, T1, FT1, T3, E1, FE1, v35 and HSSI) of the link.
+                        " 
+        ::= { nnbundleTrapVariables 6 }
+
+nnlinkCt3Num OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (1..15))
+        MAX-ACCESS      accessible-for-notify
+        STATUS          current
+        DESCRIPTION     "linkCt3Num specifies the interface
+                        number of the CT3/CE3 interface.
+                        This variable holds significance only for 
+                        link type  t1-within-ct3 and e1-within-ce3.
+			"
+        ::= { nnbundleTrapVariables 7 }
+
+nnlinkDownCause   OBJECT-TYPE
+    SYNTAX  INTEGER {
+                admin-delete (1),
+                admin-down (2),
+                drop-config (3),
+                diffdelay (4),
+                l1-failures (5)
+                }
+        MAX-ACCESS  accessible-for-notify
+        STATUS  current
+        DESCRIPTION
+             "Reason for the bundle going down
+                admin-delete - link has been removed/deleted from the 
+			bundle by the administrator,
+                admin-down - physical link has been disabled administratively
+			from module configuration commands, 
+			e.g. 'no enable t1 1'
+                drop-config - link has been removed from the bundle due to 
+			event being triggered by the error threshold 
+			configuration for the link. e.g. 'drop es 10'
+			command setting from the bundle configuration
+			commands.
+                l1-failure - Layer 1 failures (physical links), including 
+			physical alarms, excessive errors,etc.
+                "
+        ::= { nnbundleTrapVariables 8}
+
+nnlinkBundleName          OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE(0..8))
+        MAX-ACCESS      accessible-for-notify
+        STATUS          current
+        DESCRIPTION     "Name of the bundle in which the link belongs to.
+                        " 
+        ::= { nnbundleTrapVariables 9 }
+
+nnlinkCircuitId  OBJECT-TYPE
+    SYNTAX         DisplayString (SIZE(0..64))
+    MAX-ACCESS    accessible-for-notify 
+    STATUS         current
+    DESCRIPTION    "Configured cuircuit Id of the link"
+    ::= { nnbundleTrapVariables 10}
+
+nnlinkContactInfo  OBJECT-TYPE
+    SYNTAX            DisplayString (SIZE(0..64))
+    MAX-ACCESS       accessible-for-notify 
+    STATUS            current
+    DESCRIPTION       "Configured contact string of the link"
+    ::= { nnbundleTrapVariables 11}
+
+nnlinkNameInfo          OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE(0..16))
+        MAX-ACCESS     accessible-for-notify 
+        STATUS          current
+        DESCRIPTION     "Name of the link"
+        ::= { nnbundleTrapVariables 12 }
+
+nnlinkDescrInfo         OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (1..25))
+        MAX-ACCESS     accessible-for-notify 
+        STATUS          current
+        DESCRIPTION     "Brief description of link"
+        ::= { nnbundleTrapVariables 13 }
+
+nnlinkDownTrap NOTIFICATION-TYPE
+        OBJECTS {
+		nnlinkNum,
+		nnlinkType,
+		nnlinkCt3Num,
+		nnlinkDownCause,
+		nnlinkBundleName,
+		nnlinkCircuitId,
+		nnlinkContactInfo,
+		nnlinkNameInfo,
+		nnlinkDescrInfo
+	}
+       STATUS current
+        DESCRIPTION
+             "Trap being generated when a link from a bundle goes down."
+        ::= {nnbundleNotifications 3}
+
+nnlinkUpTrap NOTIFICATION-TYPE
+
+OBJECTS {
+		nnlinkNum,
+		nnlinkType,
+		nnlinkCt3Num,
+		nnlinkBundleName,
+		nnlinkCircuitId,
+		nnlinkContactInfo,
+		nnlinkNameInfo,
+		nnlinkDescrInfo
+	}
+ STATUS current
+        DESCRIPTION
+             "Trap being generated when a link whihin a bundle comes up."
+        ::= {nnbundleNotifications 4}
+nnbundleNotificationGroup NOTIFICATION-GROUP
+NOTIFICATIONS {
+		nnbundleDownTrap,
+		nnbundleUpTrap,
+		nnlinkDownTrap,
+		nnlinkUpTrap 
+	      }
+
+	  STATUS current
+	  DESCRIPTION
+	  "The BUNDLE MIB Notification Group."
+	  ::={nnbundleMib 6}
+
+END

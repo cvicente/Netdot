@@ -1,11 +1,11 @@
 -- *****************************************************************
 -- CISCO-CDMA-PDSN-MIB.my:  CDMA PDSN Management MIB
--- Jan. 2000, Ying He, Christian Pechard, Thamilarasu K, 
---            Kirit B. Joshi, Hong Luo
+-- Jan. 2000, Ying He, Christian Pechard, Thamilarasu K,  
+--            Kirit B. Joshi, Hong Luo, Srinivas goud Aileni 
 --
--- Copyright (c) 2000-2003, 2004, 2005 by Cisco Systems, Inc.
--- All rights reserved.
--- 
+-- Copyright (c) 2000-2003, 2004, 2005, 2009 by Cisco Systems, Inc. 
+-- All rights reserved. 
+--
 -- *****************************************************************
 
 CISCO-CDMA-PDSN-MIB DEFINITIONS ::= BEGIN
@@ -46,7 +46,7 @@ IMPORTS
 
   
 ciscoCdmaPdsnMIB MODULE-IDENTITY
-         LAST-UPDATED    "200502020000Z"
+         LAST-UPDATED    "200908050000Z"
          ORGANIZATION    "Cisco Systems, Inc."
          CONTACT-INFO
                  "        Cisco Systems
@@ -263,7 +263,9 @@ ciscoCdmaPdsnMIB MODULE-IDENTITY
                                     data service.
 
                     SPI             Security Parameter Index."
-
+         REVISION        "200908050000Z"
+         DESCRIPTION
+                  "Added enumeration 'collocated' for cCdmaClusterRole object."
          REVISION        "200502020000Z"
          DESCRIPTION
                   "Added new objects for PCF and Service option based
@@ -6380,7 +6382,7 @@ cCdmaPcfSoRpSessUpdBadReqFails OBJECT-TYPE
 -- ******************************************************************
 
 cCdmaPcfSoPppSetupStatsTable       OBJECT-TYPE
-         SYNTAX      SEQUENCE OF CCdmaExtPcfSoPppSetupStatsEntry
+         SYNTAX      SEQUENCE OF CCdmaExtPcfSoPppSetupStatsEntry 
          MAX-ACCESS  not-accessible
          STATUS      current
          DESCRIPTION
@@ -6391,7 +6393,7 @@ cCdmaPcfSoPppSetupStatsTable       OBJECT-TYPE
          ::= { cCdmaPcfSoPppSetupStats 1 }
 
 cCdmaPcfSoPppSetupStatsEntry   OBJECT-TYPE
-         SYNTAX      CCdmaExtPcfSoPppSetupStatsEntry
+         SYNTAX      CCdmaExtPcfSoPppSetupStatsEntry 
          MAX-ACCESS  not-accessible
          STATUS      current
          DESCRIPTION
@@ -6561,7 +6563,8 @@ cCdmaClusterRole OBJECT-TYPE
          SYNTAX      INTEGER {
                        notApply(0),
                        controller(1),
-                       member(2)
+                       member(2),
+                       collocated(3)
                      }
          MAX-ACCESS  read-only
          STATUS      current
@@ -6574,7 +6577,9 @@ cCdmaClusterRole OBJECT-TYPE
                     - 'controller' indicates this PDSN is the controller
                       of this cluster.
                     - 'member' indicates this PDSN is a member of
-                      this cluster."
+                      this cluster.
+                    - 'collocated' indicates this PDSN is both controller and
+                      a member of this cluster."
          ::= { cCdmaClusterCommon 2 }
 
 -- ************************************************************************
@@ -9368,4 +9373,3 @@ cCdmaPdsnPcfSoRpRegGroupSup1 OBJECT-GROUP
          ::= { cCdmaPdsnMIBGroups 14 }
          
 END
-

@@ -1,10 +1,10 @@
 -- *****************************************************************
 -- CISCO-ITP-GSCCP-MIB: Itp signalling Connection Control Part
 -- MIB for SS7 Gateway
---
+--   
 -- December 2002, Shekhar Acharya, John Linton
---
--- Copyright (c) 2002-2003, 2004, 2005, 2007 by Cisco Systems Inc.
+--   
+-- Copyright (c) 2002-2010 by Cisco Systems Inc.
 -- All rights reserved.
 -- ****************************************************************
 
@@ -18,6 +18,15 @@ IMPORTS
     OBJECT-TYPE,
     Unsigned32
         FROM SNMPv2-SMI
+    MODULE-COMPLIANCE,
+    NOTIFICATION-GROUP,
+    OBJECT-GROUP
+        FROM SNMPv2-CONF
+    RowStatus,
+    TimeStamp,
+    TruthValue,
+    TEXTUAL-CONVENTION
+        FROM SNMPv2-TC
     CItpTcDisplayPC,
     CItpTcGtaLongAddr,
     CItpTcGtaLongDisplay,
@@ -36,23 +45,14 @@ IMPORTS
     cgspEventSequenceNumber,
     cgspInstNetwork
         FROM CISCO-ITP-GSP-MIB
-    RowStatus,
-    TimeStamp,
-    TruthValue,
-    TEXTUAL-CONVENTION
-        FROM SNMPv2-TC
-    MODULE-COMPLIANCE,
-    NOTIFICATION-GROUP,
-    OBJECT-GROUP
-        FROM SNMPv2-CONF
-    ciscoMgmt
-        FROM CISCO-SMI
     EntPhysicalIndexOrZero
-        FROM CISCO-TC;
+        FROM CISCO-TC
+    ciscoMgmt
+        FROM CISCO-SMI;
 
 
 ciscoGsccpMIB MODULE-IDENTITY
-    LAST-UPDATED    "200511100000Z"
+    LAST-UPDATED    "201003050000Z"
     ORGANIZATION    "Cisco Systems, Inc."
     CONTACT-INFO
             "Cisco Systems, Inc
@@ -144,6 +144,45 @@ ciscoGsccpMIB MODULE-IDENTITY
           UDTS  - unitdata service message
           XUDT  - extended unitdata message
           XUDTS - extended unitdata service message"
+    REVISION        "200911080000Z"
+    DESCRIPTION
+        "Following additional objects are added.
+        cgsccpGttSelTable object:
+            cgsccpGttNextSelName,cgsccpGttNextSelRefed"
+    REVISION        "200905250000Z"
+    DESCRIPTION
+        "Added wrr(6) into CgsccpGttMultInd for GTT
+        weighted loadshare"
+    REVISION        "200811240000Z"
+    DESCRIPTION
+        "Following additional objects are added.
+        cgsccpInstTable objects:
+        cgsccpInstReassUnsup, cgsccpInstReassFail
+        cgsccpInstSegUnsup, cgsccpInstSegFail.
+
+        CgsccpGttMapTable objects:
+        cgsccpGttMapCongLvl1, cgsccpGttMapCongLvl2,
+        cgsccpGttMapCongLvl3, cgsccpGttMapSSPRcvd,
+        cgsccpGttMapSSARcvd.
+
+        CgsccpGttErrorsTable objects:
+        cgsccpGttErrorsReassUnsupported,
+        cgsccpGttErrorsReassFailure,
+        cgsccpGttErrorsSegUnsupported,
+        cgsccpGttErrorsSegFailure.
+
+        cgsccpSSNTable objects:
+        cgsccpSSNNumProhibits,
+        cgsccpSSNClassNumAllows
+
+        cgsccpSSNClassTable objects:
+        cgsccpSSNClassUDTMsgsSent, cgsccpSSNClassUDTMsgsRcvd,
+        cgsccpSSNClassXUDTMsgsSent, cgsccpSSNClassXUDTMsgsRcvd,
+        cgsccpSSNClassLUDTMsgsSent, cgsccpSSNClassLUDTMsgsRcvd.
+
+        Notification objects:
+        ciscoGsccpSegReassUnsup, ciscoGsccpSOGReceived,
+        ciscoGsccpRmtCongestion, ciscoGsccpLocalSsStateChange."
     REVISION        "200511100000Z"
     DESCRIPTION
         "Clarify description for CgsccpGttQOS textual
@@ -259,6 +298,15 @@ cgsccpGttAppGr2  OBJECT IDENTIFIER
 cgsccpGttErrors  OBJECT IDENTIFIER
     ::= { ciscoGsccpMIBObjects 12 }
 
+cgsccpSSN  OBJECT IDENTIFIER
+    ::= { ciscoGsccpMIBObjects 13 }
+
+cgsccpClassSsn  OBJECT IDENTIFIER
+    ::= { ciscoGsccpMIBObjects 14 }
+
+cgsccpNotificationsInfo  OBJECT IDENTIFIER
+    ::= { ciscoGsccpMIBObjects 15 }
+
 
 -- ********************************************************************
 -- *                                                                  *
@@ -315,7 +363,7 @@ CgsccpGttAppCost ::= TEXTUAL-CONVENTION
     DESCRIPTION
         "The cost associated with an entry in SCCP GTT
         Application Group."
-    SYNTAX          Unsigned32 (1..8 )
+    SYNTAX          Unsigned32 (1..8)
 
 CgsccpGttAppType ::= TEXTUAL-CONVENTION
     STATUS          current
@@ -413,13 +461,16 @@ CgsccpGttMultInd ::= TEXTUAL-CONVENTION
         'dominant' : The application is dominant
         'cost'     : The application uses cost
         'cgpa'     : The application is shared and uses calling
-                     party address and weighting factor."
+                     party address and weighting factor.
+        'wrr'      : The application is shared and uses weighting
+                     factor"
     SYNTAX          INTEGER  {
                         solitary(1),
                         shared(2),
                         dominant(3),
                         cost(4),
-                        cgpa(5)
+                        cgpa(5),
+                        wrr(6)
                     }
 
 CgsccpGttMapCongStatus ::= TEXTUAL-CONVENTION
@@ -441,14 +492,14 @@ CgsccpGttTransType ::= TEXTUAL-CONVENTION
     STATUS          current
     DESCRIPTION
         "The SCCP GTT Translation Type (TT)."
-    SYNTAX          Unsigned32 (0..255 )
+    SYNTAX          Unsigned32 (0..255)
 
 CgsccpGttQOS ::= TEXTUAL-CONVENTION
     STATUS          current
     DESCRIPTION
         "The SCCP GTT Quality of Service (QOS).  The '255' value
         indicates that QOS is not configured."
-    SYNTAX          Unsigned32 (0..255 )
+    SYNTAX          Unsigned32 (0..255)
 
 CgsccpGttGlobalTitleInd ::= TEXTUAL-CONVENTION
     STATUS          current
@@ -471,7 +522,24 @@ CgsccpGttGlobalTitleInd ::= TEXTUAL-CONVENTION
          Specifications of Signalling System No. 7 - Signalling
          Connection Control Part (SCCP) section 3.4.1 Address
          Indicator."
-    SYNTAX          Unsigned32 (0..255 )
+    SYNTAX          Unsigned32 (0..255)
+
+CgsccpClass ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION
+        "The SCCP class of service involved
+        'class0' : class 0 of SCCP 
+        'class1' : class 1 of SCCP 
+        'class2' : class 2 of SCCP 
+        'class3' : class 3 of SCCP 
+        'class4' : class 4 of SCCP"
+    SYNTAX          INTEGER  {
+                        class0(1),
+                        class1(2),
+                        class2(3),
+                        class3(4),
+                        class4(5)
+                    }
 
 -- *************************************************************
 -- *                                                           *
@@ -480,17 +548,17 @@ CgsccpGttGlobalTitleInd ::= TEXTUAL-CONVENTION
 -- *************************************************************
 
 cgsccpGttTranslateSample OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..60 )
+    SYNTAX          Unsigned32 (1..60)
     UNITS           "seconds"
     MAX-ACCESS      read-write
     STATUS          current
     DESCRIPTION
         "The length of the sample interval used to collect
-        number of maximum Global Title Translations per second."
+        number of maximum Global Title Translations per second." 
     ::= { cgsccpScalars 1 }
 
 cgsccpGttTranslatePeriod OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..3600 )
+    SYNTAX          Unsigned32 (1..3600)
     UNITS           "seconds"
     MAX-ACCESS      read-write
     STATUS          current
@@ -498,7 +566,7 @@ cgsccpGttTranslatePeriod OBJECT-TYPE
         "The length of the period used to collect the maximum
         Global Title Translations rate.  Samples are calculated
         for the time period specified by the
-        cgsccpGttTranslateSample object."
+        cgsccpGttTranslateSample object." 
     ::= { cgsccpScalars 2 }
 
 cgsccpGttMapStateNotifEnabled OBJECT-TYPE
@@ -513,7 +581,7 @@ cgsccpGttMapStateNotifEnabled OBJECT-TYPE
                 generation is enabled.
         'false' Indicates that the ciscoGsccpGttMapStateChange
                 notification generation is disabled."
-    DEFVAL          { false }
+    DEFVAL          { false } 
     ::= { cgsccpScalars 3 }
 
 cgsccpGttLoadTableNotifEnabled OBJECT-TYPE
@@ -528,7 +596,7 @@ cgsccpGttLoadTableNotifEnabled OBJECT-TYPE
                 notification generation is enabled.
         'false' Indicates that the ciscoGsccpGttLoadTable
                 notification generation is disabled."
-    DEFVAL          { false }
+    DEFVAL          { false } 
     ::= { cgsccpScalars 4 }
 
 cgsccpGttTransErrorsNotifEnabled OBJECT-TYPE
@@ -545,22 +613,22 @@ cgsccpGttTransErrorsNotifEnabled OBJECT-TYPE
                notification generation is enabled.
         'false' Indicates that the ciscoGsccpGttErrors
                notification generation is disabled."
-    DEFVAL          { false }
+    DEFVAL          { false } 
     ::= { cgsccpScalars 5 }
 
 cgsccpGttErrorPeriod OBJECT-TYPE
-    SYNTAX          Unsigned32 (30..3600 )
+    SYNTAX          Unsigned32 (30..3600)
     UNITS           "seconds"
     MAX-ACCESS      read-write
     STATUS          current
     DESCRIPTION
         "The length of the sample window used to collect
         global title translations errors."
-    DEFVAL          { 300 }
+    DEFVAL          { 300 } 
     ::= { cgsccpScalars 6 }
 
 cgsccpGttErrorRecoveryCount OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..10 )
+    SYNTAX          Unsigned32 (1..10)
     UNITS           "windows"
     MAX-ACCESS      read-write
     STATUS          current
@@ -569,7 +637,7 @@ cgsccpGttErrorRecoveryCount OBJECT-TYPE
         error free before the ciscoGsccpGttErrors notifications
         will be generated indicating end of global title
         translation errors condition."
-    DEFVAL          { 3 }
+    DEFVAL          { 3 } 
     ::= { cgsccpScalars 7 }
 -- *************************************************************
 -- *                                                           *
@@ -578,7 +646,7 @@ cgsccpGttErrorRecoveryCount OBJECT-TYPE
 -- *************************************************************
 
 cgsccpInstTable OBJECT-TYPE
-    SYNTAX          SEQUENCE OF CgsccpInstTableEntry
+    SYNTAX          SEQUENCE OF CgsccpInstTableEntry 
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
@@ -593,7 +661,7 @@ cgsccpInstTableEntry OBJECT-TYPE
     DESCRIPTION
         "Global Title information per instance of
         signalling point."
-    INDEX           { cgspInstNetwork }
+    INDEX           { cgspInstNetwork } 
     ::= { cgsccpInstTable 1 }
 
 CgsccpInstTableEntry ::= SEQUENCE {
@@ -639,7 +707,11 @@ CgsccpInstTableEntry ::= SEQUENCE {
         cgsccpInstRowStatus          RowStatus,
         cgsccpInstPrefTableEntries   Gauge32,
         cgsccpInstQ752Unqualified    Counter32,
-        cgsccpInstErrorIndicator     TruthValue
+        cgsccpInstErrorIndicator     TruthValue,
+        cgsccpInstReassUnsup         Counter32,
+        cgsccpInstReassFail          Counter32,
+        cgsccpInstSegUnsup           Counter32,
+        cgsccpInstSegFail            Counter32
 }
 
 cgsccpInstTotalMsgs OBJECT-TYPE
@@ -653,7 +725,7 @@ cgsccpInstTotalMsgs OBJECT-TYPE
     REFERENCE
         "ITU  Q752 Monitoring and Measurements for Signalling
          System No. 7(SS7) Network Table 9.  ANSI GR-82-CORE
-         6.4.3 Translation Type Measurements item 1."
+         6.4.3 Translation Type Measurements item 1." 
     ::= { cgsccpInstTableEntry 1 }
 
 cgsccpInstLocalMsgs OBJECT-TYPE
@@ -666,7 +738,7 @@ cgsccpInstLocalMsgs OBJECT-TYPE
         handled from a local subsystem(Q752/9.4)."
     REFERENCE
         "ITU  Q752 Monitoring and Measurements for Signalling
-         System No. 7(SS7) Network Table 9."
+         System No. 7(SS7) Network Table 9." 
     ::= { cgsccpInstTableEntry 2 }
 
 cgsccpInstTotalGttMsgs OBJECT-TYPE
@@ -681,7 +753,7 @@ cgsccpInstTotalGttMsgs OBJECT-TYPE
     REFERENCE
         "ITU  Q752 Monitoring and Measurements for Signalling
          System No. 7(SS7) Network Table 9.  ANSI GR-82-CORE
-         6.4.2 System Total Measurements Item 7."
+         6.4.2 System Total Measurements Item 7." 
     ::= { cgsccpInstTableEntry 3 }
 
 cgsccpInstUDTMsgsSent OBJECT-TYPE
@@ -694,7 +766,7 @@ cgsccpInstUDTMsgsSent OBJECT-TYPE
         unitdata (UDT) message is sent (Q752/9 bis.1)."
     REFERENCE
         "ITU  Q752 Monitoring and Measurements for Signalling
-         System No. 7(SS7) Network Table 9."
+         System No. 7(SS7) Network Table 9." 
     ::= { cgsccpInstTableEntry 4 }
 
 cgsccpInstUDTSMsgsSent OBJECT-TYPE
@@ -707,7 +779,7 @@ cgsccpInstUDTSMsgsSent OBJECT-TYPE
         service (UDTS) message is sent (Q752/9 bis.2)."
     REFERENCE
         "ITU  Q752 Monitoring and Measurements for Signalling
-         System No. 7(SS7) Network Table 9."
+         System No. 7(SS7) Network Table 9." 
     ::= { cgsccpInstTableEntry 5 }
 
 cgsccpInstUDTSMsgsAttempted OBJECT-TYPE
@@ -720,7 +792,7 @@ cgsccpInstUDTSMsgsAttempted OBJECT-TYPE
         service (UDTS) message attempted, but may or may
         not be sent.  The actual number of unitdata
         service (UDTS) message sent is reflected in the
-        cgsccpInstUDTSMsgsSent object."
+        cgsccpInstUDTSMsgsSent object." 
     ::= { cgsccpInstTableEntry 6 }
 
 cgsccpInstUDTMsgsRcvd OBJECT-TYPE
@@ -733,7 +805,7 @@ cgsccpInstUDTMsgsRcvd OBJECT-TYPE
         (UDT) message is received (Q752/9 bis.3)."
     REFERENCE
         "ITU  Q752 Monitoring and Measurements for Signalling
-         System No. 7(SS7) Network Table 9."
+         System No. 7(SS7) Network Table 9." 
     ::= { cgsccpInstTableEntry 7 }
 
 cgsccpInstUDTSMsgsRcvd OBJECT-TYPE
@@ -746,7 +818,7 @@ cgsccpInstUDTSMsgsRcvd OBJECT-TYPE
         service (UDTS) message is received  (Q752/9 bis.4)."
     REFERENCE
         "ITU  Q752 Monitoring and Measurements for Signalling
-         System No. 7(SS7) Network Table 9."
+         System No. 7(SS7) Network Table 9." 
     ::= { cgsccpInstTableEntry 8 }
 
 cgsccpInstXUDTMsgsSent OBJECT-TYPE
@@ -759,7 +831,7 @@ cgsccpInstXUDTMsgsSent OBJECT-TYPE
         unitdata (XUDT) message is sent (Q752/9 bis.13)."
     REFERENCE
         "ITU  Q752 Monitoring and Measurements for Signalling
-         System No. 7(SS7) Network Table 9."
+         System No. 7(SS7) Network Table 9." 
     ::= { cgsccpInstTableEntry 9 }
 
 cgsccpInstXUDTSMsgsAttempted OBJECT-TYPE
@@ -772,7 +844,7 @@ cgsccpInstXUDTSMsgsAttempted OBJECT-TYPE
         unitdata service (XUDTS) message attempted, but may
         or may not be sent.  The actual number of extended
         unitdata service (UDTS) message sent is reflected
-        in the cgsccpInstXUDTMsgsSent object."
+        in the cgsccpInstXUDTMsgsSent object." 
     ::= { cgsccpInstTableEntry 10 }
 
 cgsccpInstXUDTSMsgsSent OBJECT-TYPE
@@ -786,7 +858,7 @@ cgsccpInstXUDTSMsgsSent OBJECT-TYPE
         (Q752/9 bis.14)."
     REFERENCE
         "ITU  Q752 Monitoring and Measurements for Signalling
-         System No. 7(SS7) Network Table 9."
+         System No. 7(SS7) Network Table 9." 
     ::= { cgsccpInstTableEntry 11 }
 
 cgsccpInstXUDTMsgsRcvd OBJECT-TYPE
@@ -799,7 +871,7 @@ cgsccpInstXUDTMsgsRcvd OBJECT-TYPE
         unitdata (XUDT) message is received (Q752/9 bis.15)."
     REFERENCE
         "ITU  Q752 Monitoring and Measurements for Signalling
-         System No. 7(SS7) Network Table 9."
+         System No. 7(SS7) Network Table 9." 
     ::= { cgsccpInstTableEntry 12 }
 
 cgsccpInstXUDTSMsgsRcvd OBJECT-TYPE
@@ -813,7 +885,7 @@ cgsccpInstXUDTSMsgsRcvd OBJECT-TYPE
         (Q752/9 bis.16)."
     REFERENCE
         "ITU  Q752 Monitoring and Measurements for Signalling
-         System No. 7(SS7) Network Table 9."
+         System No. 7(SS7) Network Table 9." 
     ::= { cgsccpInstTableEntry 13 }
 
 cgsccpInstLUDTMsgsSent OBJECT-TYPE
@@ -826,7 +898,7 @@ cgsccpInstLUDTMsgsSent OBJECT-TYPE
         unitdata (LUDT) message is sent (Q752/9 bis.17)."
     REFERENCE
         "ITU  Q752 Monitoring and Measurements for Signalling
-         System No. 7(SS7) Network Table 9."
+         System No. 7(SS7) Network Table 9." 
     ::= { cgsccpInstTableEntry 14 }
 
 cgsccpInstLUDTSMsgsSent OBJECT-TYPE
@@ -840,7 +912,7 @@ cgsccpInstLUDTSMsgsSent OBJECT-TYPE
         (Q752/9 bis.18)."
     REFERENCE
         "ITU  Q752 Monitoring and Measurements for Signalling
-         System No. 7(SS7) Network Table 9."
+         System No. 7(SS7) Network Table 9." 
     ::= { cgsccpInstTableEntry 15 }
 
 cgsccpInstLUDTMsgsRcvd OBJECT-TYPE
@@ -853,7 +925,7 @@ cgsccpInstLUDTMsgsRcvd OBJECT-TYPE
         unitdata (LUDT) message is received (Q752/9 bis.19)."
     REFERENCE
         "ITU  Q752 Monitoring and Measurements for Signalling
-         System No. 7(SS7) Network Table 9."
+         System No. 7(SS7) Network Table 9." 
     ::= { cgsccpInstTableEntry 16 }
 
 cgsccpInstLUDTSMsgsRcvd OBJECT-TYPE
@@ -867,7 +939,7 @@ cgsccpInstLUDTSMsgsRcvd OBJECT-TYPE
         (Q752/9 bis.20)."
     REFERENCE
         "ITU  Q752 Monitoring and Measurements for Signalling
-         System No. 7(SS7) Network Table 9."
+         System No. 7(SS7) Network Table 9." 
     ::= { cgsccpInstTableEntry 17 }
 
 cgsccpInstCrToMtp OBJECT-TYPE
@@ -881,7 +953,7 @@ cgsccpInstCrToMtp OBJECT-TYPE
         include ISDN-UP with embedded CRs (Q752/9 bis.5)."
     REFERENCE
         "ITU  Q752 Monitoring and Measurements for Signalling
-         System No. 7(SS7) Network Table 9."
+         System No. 7(SS7) Network Table 9." 
     ::= { cgsccpInstTableEntry 18 }
 
 cgsccpInstCrefToMtp OBJECT-TYPE
@@ -894,7 +966,7 @@ cgsccpInstCrefToMtp OBJECT-TYPE
         Refusal (CREF) message is sent to MTP (Q752/9 bis.6)."
     REFERENCE
         "ITU  Q752 Monitoring and Measurements for Signalling
-         System No. 7(SS7) Network Table 9."
+         System No. 7(SS7) Network Table 9." 
     ::= { cgsccpInstTableEntry 19 }
 
 cgsccpInstCrFromMtp OBJECT-TYPE
@@ -908,7 +980,7 @@ cgsccpInstCrFromMtp OBJECT-TYPE
         includes ISDN- UP with embedded CRs (Q752/9 bis.7)."
     REFERENCE
         "ITU  Q752 Monitoring and Measurements for Signalling
-         System No. 7(SS7) Network Table 9."
+         System No. 7(SS7) Network Table 9." 
     ::= { cgsccpInstTableEntry 20 }
 
 cgsccpInstCrefFromMtp OBJECT-TYPE
@@ -922,7 +994,7 @@ cgsccpInstCrefFromMtp OBJECT-TYPE
         MTP (Q752/9 bis.8)."
     REFERENCE
         "ITU  Q752 Monitoring and Measurements for Signalling
-         System No. 7(SS7) Network Table 9."
+         System No. 7(SS7) Network Table 9." 
     ::= { cgsccpInstTableEntry 21 }
 
 cgsccpInstRsrToMtp OBJECT-TYPE
@@ -935,7 +1007,7 @@ cgsccpInstRsrToMtp OBJECT-TYPE
         (RSR) message is sent to MTP (Q752/9 bis.9)."
     REFERENCE
         "ITU  Q752 Monitoring and Measurements for Signalling
-         System No. 7(SS7) Network Table 9."
+         System No. 7(SS7) Network Table 9." 
     ::= { cgsccpInstTableEntry 22 }
 
 cgsccpInstRsrFromMtp OBJECT-TYPE
@@ -948,7 +1020,7 @@ cgsccpInstRsrFromMtp OBJECT-TYPE
         (RSR) message is received from MTP (Q752/9 bis.10)."
     REFERENCE
         "ITU  Q752 Monitoring and Measurements for Signalling
-         System No. 7(SS7) Network Table 9."
+         System No. 7(SS7) Network Table 9." 
     ::= { cgsccpInstTableEntry 23 }
 
 cgsccpInstErrToMtp OBJECT-TYPE
@@ -961,7 +1033,7 @@ cgsccpInstErrToMtp OBJECT-TYPE
         (ERR) message is sent to MTP (Q752/9 bis.11)."
     REFERENCE
         "ITU  Q752 Monitoring and Measurements for Signalling
-         System No. 7(SS7) Network Table 9."
+         System No. 7(SS7) Network Table 9." 
     ::= { cgsccpInstTableEntry 24 }
 
 cgsccpInstErrFromMtp OBJECT-TYPE
@@ -974,7 +1046,7 @@ cgsccpInstErrFromMtp OBJECT-TYPE
         (ERR) message is received from MTP (Q752/9 bis.12)."
     REFERENCE
         "ITU  Q752 Monitoring and Measurements for Signalling
-         System No. 7(SS7) Network Table 9."
+         System No. 7(SS7) Network Table 9." 
     ::= { cgsccpInstTableEntry 25 }
 
 cgsccpInstQ752T7E1 OBJECT-TYPE
@@ -992,7 +1064,7 @@ cgsccpInstQ752T7E1 OBJECT-TYPE
     REFERENCE
         "Q752 - Monitoring and measurements for SS7 Network
          table 7 entry 1. ANSI GR-82-CORE 6.4.2 System Total
-         Measurements Item 8."
+         Measurements Item 8." 
     ::= { cgsccpInstTableEntry 26 }
 
 cgsccpInstInvalidGttFormat OBJECT-TYPE
@@ -1009,7 +1081,7 @@ cgsccpInstInvalidGttFormat OBJECT-TYPE
     REFERENCE
         "Q752 - Monitoring and measurements for SS7 Network
          table 7 entry 8. ANSI GR-82-CORE
-         6.4.2 System Total Measurements Item 9."
+         6.4.2 System Total Measurements Item 9." 
     ::= { cgsccpInstTableEntry 27 }
 
 cgsccpInstQ752T7E13 OBJECT-TYPE
@@ -1022,7 +1094,7 @@ cgsccpInstQ752T7E13 OBJECT-TYPE
         hop count violation is found in the MSU."
     REFERENCE
         "Q752 - Monitoring and measurements for SS7 Network
-         table 7 entry 13"
+         table 7 entry 13" 
     ::= { cgsccpInstTableEntry 28 }
 
 cgsccpInstMapNotFound OBJECT-TYPE
@@ -1034,7 +1106,7 @@ cgsccpInstMapNotFound OBJECT-TYPE
         "This counter is incremented every time a global
         title translation is successful to a certain
         PC/SSN but it was not found in the GTT
-        Mated Application table."
+        Mated Application table." 
     ::= { cgsccpInstTableEntry 29 }
 
 cgsccpInstQ752T7E7 OBJECT-TYPE
@@ -1048,7 +1120,7 @@ cgsccpInstQ752T7E7 OBJECT-TYPE
         unequipped subsystem (SS)."
     REFERENCE
         "Q752 - Monitoring and measurements for SS7 Network
-         table 7 entry 13"
+         table 7 entry 13" 
     ::= { cgsccpInstTableEntry 30 }
 
 cgsccpInstGttConfigStatus OBJECT-TYPE
@@ -1057,7 +1129,7 @@ cgsccpInstGttConfigStatus OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "The status of the current load or status from
-        the prior load operation."
+        the prior load operation." 
     ::= { cgsccpInstTableEntry 31 }
 
 cgsccpInstConfigTS OBJECT-TYPE
@@ -1075,7 +1147,7 @@ cgsccpInstConfigTS OBJECT-TYPE
         re-initialization, then this object contains the
         sysUpTime at the time when this occurred. This value
         can be used to prevent unnecessary walks of the
-        these tables."
+        these tables." 
     ::= { cgsccpInstTableEntry 32 }
 
 cgsccpInstGttConfigTS OBJECT-TYPE
@@ -1084,7 +1156,7 @@ cgsccpInstGttConfigTS OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "The value of sysUpTime at the time of the last
-        load of the GTT table using file format."
+        load of the GTT table using file format." 
     ::= { cgsccpInstTableEntry 33 }
 
 cgsccpInstLastURL OBJECT-TYPE
@@ -1092,7 +1164,7 @@ cgsccpInstLastURL OBJECT-TYPE
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
-        "The URL used to load GTT tables."
+        "The URL used to load GTT tables." 
     ::= { cgsccpInstTableEntry 34 }
 
 cgsccpInstConPcTableEntries OBJECT-TYPE
@@ -1104,7 +1176,7 @@ cgsccpInstConPcTableEntries OBJECT-TYPE
         "The number of entries in the cgsccpGttConPcTable
         Table for this instance.  Or in other words,
         the number concerned point-code entries for this
-        signalling point."
+        signalling point." 
     ::= { cgsccpInstTableEntry 35 }
 
 cgsccpInstMapTableEntries OBJECT-TYPE
@@ -1116,7 +1188,7 @@ cgsccpInstMapTableEntries OBJECT-TYPE
         "The number of entries in the cgsccpGttMapTable
         Table for this instance.  Or in other words,
         the number of GTT Mated Application entries
-        for this signalling point."
+        for this signalling point." 
     ::= { cgsccpInstTableEntry 36 }
 
 cgsccpInstGtaTableEntries OBJECT-TYPE
@@ -1128,7 +1200,7 @@ cgsccpInstGtaTableEntries OBJECT-TYPE
         "The number of entries in the cgsccpGttGtaTable
         Table for this instance.  Or in other words,
         the number of GTT Global Title Address Table
-        entries for this signalling point."
+        entries for this signalling point." 
     ::= { cgsccpInstTableEntry 37 }
 
 cgsccpInstSelTableEntries OBJECT-TYPE
@@ -1140,7 +1212,7 @@ cgsccpInstSelTableEntries OBJECT-TYPE
         "The number of entries in the cgsccpGttSelTable
         Table for this instance.  Or in other words,
         the number of GTT Selector Table entries for
-        this signalling point."
+        this signalling point." 
     ::= { cgsccpInstTableEntry 38 }
 
 cgsccpInstAppGrTableEntries OBJECT-TYPE
@@ -1152,7 +1224,7 @@ cgsccpInstAppGrTableEntries OBJECT-TYPE
         "The number of entries in the cgsccpGttAppGrTable
         Table for this instance.  Or in other words,
         the number of GTT Application Group Table entries
-        for this signalling point."
+        for this signalling point." 
     ::= { cgsccpInstTableEntry 39 }
 
 cgsccpInstRowStatus OBJECT-TYPE
@@ -1162,7 +1234,7 @@ cgsccpInstRowStatus OBJECT-TYPE
     DESCRIPTION
         "The object is used by a management station to
         create or delete the row entry in cgsccpInstTable
-        following the RowStatus textual convention."
+        following the RowStatus textual convention." 
     ::= { cgsccpInstTableEntry 40 }
 
 cgsccpInstPrefTableEntries OBJECT-TYPE
@@ -1174,7 +1246,7 @@ cgsccpInstPrefTableEntries OBJECT-TYPE
         "The number of entries in the cgsccpGttPref2Table
         Table for this instance.  Or in other words,
         the number of GTT prefix conversion table entries
-        for this signalling point."
+        for this signalling point." 
     ::= { cgsccpInstTableEntry 41 }
 
 cgsccpInstQ752Unqualified OBJECT-TYPE
@@ -1185,7 +1257,7 @@ cgsccpInstQ752Unqualified OBJECT-TYPE
     DESCRIPTION
         "This counter is incremented every time a global
         title translation is unsuccessful and the error
-        type not covered by other specific error types."
+        type not covered by other specific error types." 
     ::= { cgsccpInstTableEntry 42 }
 
 cgsccpInstErrorIndicator OBJECT-TYPE
@@ -1196,9 +1268,47 @@ cgsccpInstErrorIndicator OBJECT-TYPE
         "This object indicates whether global title
         translation errors have occurred in last interval
         specified by the cgsccpGttErrorPeriod object."
-    DEFVAL          { false }
+    DEFVAL          { false } 
     ::= { cgsccpInstTableEntry 43 }
 
+cgsccpInstReassUnsup OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This counter is incremented every time a SCCP message
+        is dropped due to an unsupported reassembly feature
+        at this instance." 
+    ::= { cgsccpInstTableEntry 44 }
+
+cgsccpInstReassFail OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This counter is incremented every time a SCCP message
+        is dropped due to a reassembly failure at this instance." 
+    ::= { cgsccpInstTableEntry 45 }
+
+cgsccpInstSegUnsup OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This counter is incremented every time a SCCP message
+        is dropped due to an unsupported segmentation feature
+        at this instance." 
+    ::= { cgsccpInstTableEntry 46 }
+
+cgsccpInstSegFail OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This counter is incremented every time a SCCP message
+        is dropped due to a segmentation failure at this instance." 
+    ::= { cgsccpInstTableEntry 47 }
+ 
 
 -- *************************************************************
 -- *                                                           *
@@ -1207,7 +1317,7 @@ cgsccpInstErrorIndicator OBJECT-TYPE
 -- *************************************************************
 
 cgsccpGttConPcTable OBJECT-TYPE
-    SYNTAX          SEQUENCE OF CgsccpGttConPcTableEntry
+    SYNTAX          SEQUENCE OF CgsccpGttConPcTableEntry 
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
@@ -1224,7 +1334,7 @@ cgsccpGttConPcTableEntry OBJECT-TYPE
                         cgspInstNetwork,
                         cgsccpGttConPcListName,
                         cgsccpGttConPointCode
-                    }
+                    } 
     ::= { cgsccpGttConPcTable 1 }
 
 CgsccpGttConPcTableEntry ::= SEQUENCE {
@@ -1238,7 +1348,7 @@ cgsccpGttConPcListName OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "The name of the Concerned Point Code list."
+        "The name of the Concerned Point Code list." 
     ::= { cgsccpGttConPcTableEntry 1 }
 
 cgsccpGttConPointCode OBJECT-TYPE
@@ -1246,7 +1356,7 @@ cgsccpGttConPointCode OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "The concerned point code for SCCP GTT."
+        "The concerned point code for SCCP GTT." 
     ::= { cgsccpGttConPcTableEntry 2 }
 
 cgsccpGttConPcRowStatus OBJECT-TYPE
@@ -1256,9 +1366,9 @@ cgsccpGttConPcRowStatus OBJECT-TYPE
     DESCRIPTION
         "The object is used by a management station to
         create or delete the row entry in cgsccpGttConPcTable
-        following the RowStatus textual convention."
+        following the RowStatus textual convention." 
     ::= { cgsccpGttConPcTableEntry 3 }
-
+ 
 
 -- *************************************************************
 -- *                                                           *
@@ -1271,7 +1381,7 @@ cgsccpGttConPcRowStatus OBJECT-TYPE
 -- *************************************************************
 
 cgsccpGttAppGrTable OBJECT-TYPE
-    SYNTAX          SEQUENCE OF CgsccpGttAppGrTableEntry
+    SYNTAX          SEQUENCE OF CgsccpGttAppGrTableEntry 
     MAX-ACCESS      not-accessible
     STATUS          deprecated
     DESCRIPTION
@@ -1289,7 +1399,7 @@ cgsccpGttAppGrTableEntry OBJECT-TYPE
                         cgsccpGttAppGrName,
                         cgsccpGttAppGrCost,
                         cgsccpGttAppGrEntNum
-                    }
+                    } 
     ::= { cgsccpGttAppGrTable 1 }
 
 CgsccpGttAppGrTableEntry ::= SEQUENCE {
@@ -1314,7 +1424,7 @@ cgsccpGttAppGrName OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          deprecated
     DESCRIPTION
-        "The GTT Application Group name."
+        "The GTT Application Group name." 
     ::= { cgsccpGttAppGrTableEntry 1 }
 
 cgsccpGttAppGrCost OBJECT-TYPE
@@ -1322,16 +1432,16 @@ cgsccpGttAppGrCost OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          deprecated
     DESCRIPTION
-        "The cost for the item in the GTT Application Group."
+        "The cost for the item in the GTT Application Group." 
     ::= { cgsccpGttAppGrTableEntry 2 }
 
 cgsccpGttAppGrEntNum OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..65535 )
+    SYNTAX          Unsigned32 (0..65535)
     MAX-ACCESS      not-accessible
     STATUS          deprecated
     DESCRIPTION
         "The entry number used to identify each application
-        group entry that have the same cost."
+        group entry that have the same cost." 
     ::= { cgsccpGttAppGrTableEntry 3 }
 
 cgsccpGttAppGrType OBJECT-TYPE
@@ -1339,7 +1449,7 @@ cgsccpGttAppGrType OBJECT-TYPE
     MAX-ACCESS      read-create
     STATUS          deprecated
     DESCRIPTION
-        "The type of the item in the GTT Application Group."
+        "The type of the item in the GTT Application Group." 
     ::= { cgsccpGttAppGrTableEntry 4 }
 
 cgsccpGttAppGrPc OBJECT-TYPE
@@ -1353,7 +1463,7 @@ cgsccpGttAppGrPc OBJECT-TYPE
         is required when entry is created.  Otherwise,
         this value does not apply and can default to
         zero."
-    DEFVAL          { 0 }
+    DEFVAL          { 0 } 
     ::= { cgsccpGttAppGrTableEntry 5 }
 
 cgsccpGttAppGrSsn OBJECT-TYPE
@@ -1364,7 +1474,7 @@ cgsccpGttAppGrSsn OBJECT-TYPE
         "The subsystem number (SSN) specified by the item
         in the GTT Application Group. It is valid only when
         cgsccpGttAppGrType is 'pcssn'. Otherwise it is zero."
-    DEFVAL          { 0 }
+    DEFVAL          { 0 } 
     ::= { cgsccpGttAppGrTableEntry 6 }
 
 cgsccpGttAppGrRi OBJECT-TYPE
@@ -1373,7 +1483,7 @@ cgsccpGttAppGrRi OBJECT-TYPE
     STATUS          deprecated
     DESCRIPTION
         "The routing indicator (RI) specified by the item
-        in the GTT Application Group."
+        in the GTT Application Group." 
     ::= { cgsccpGttAppGrTableEntry 7 }
 
 cgsccpGttAppGrMult OBJECT-TYPE
@@ -1381,16 +1491,16 @@ cgsccpGttAppGrMult OBJECT-TYPE
     MAX-ACCESS      read-create
     STATUS          deprecated
     DESCRIPTION
-        "The multiplicity of the GTT Application Group."
+        "The multiplicity of the GTT Application Group." 
     ::= { cgsccpGttAppGrTableEntry 8 }
 
 cgsccpGttAppGrRefCount OBJECT-TYPE
-    SYNTAX          Gauge32 (0..2147483647 )
+    SYNTAX          Gauge32 (0..2147483647)
     MAX-ACCESS      read-only
     STATUS          deprecated
     DESCRIPTION
         "The number of global title addresses referring to
-        this application group."
+        this application group." 
     ::= { cgsccpGttAppGrTableEntry 9 }
 
 cgsccpGttAppGrAsName OBJECT-TYPE
@@ -1402,7 +1512,7 @@ cgsccpGttAppGrAsName OBJECT-TYPE
         in the GTT Application Group. It is valid only when
         cgsccpGttAppGrType is 'as'. Otherwise it
         is a zero length string."
-    DEFVAL          { "" }
+    DEFVAL          { "" } 
     ::= { cgsccpGttAppGrTableEntry 10 }
 
 cgsccpGttAppGrNewSsn OBJECT-TYPE
@@ -1413,7 +1523,7 @@ cgsccpGttAppGrNewSsn OBJECT-TYPE
         "The new subsystem number (SSN) specified by the item
         in the GTT Application Group.  It is valid only when
         cgsccpGttAppGrType is 'as'.  Otherwise it is zero."
-    DEFVAL          { 0 }
+    DEFVAL          { 0 } 
     ::= { cgsccpGttAppGrTableEntry 11 }
 
 cgsccpGttAppGrNumUsed OBJECT-TYPE
@@ -1422,7 +1532,7 @@ cgsccpGttAppGrNumUsed OBJECT-TYPE
     STATUS          deprecated
     DESCRIPTION
         "The number of times this item in the GTT Application
-        Group is used successfully."
+        Group is used successfully." 
     ::= { cgsccpGttAppGrTableEntry 12 }
 
 cgsccpGttAppGrRowStatus OBJECT-TYPE
@@ -1432,7 +1542,7 @@ cgsccpGttAppGrRowStatus OBJECT-TYPE
     DESCRIPTION
         "The object is used by a management station to
         create or delete the row entry in cgsccpGttAppGrTable
-        following the RowStatus textual convention."
+        following the RowStatus textual convention." 
     ::= { cgsccpGttAppGrTableEntry 13 }
 
 cgsccpGttAppGrNetwork OBJECT-TYPE
@@ -1443,9 +1553,9 @@ cgsccpGttAppGrNetwork OBJECT-TYPE
         "The processing of global title translation may
         result in a packet being transferred from one
         network to another.  This object specifies
-        the target network."
+        the target network." 
     ::= { cgsccpGttAppGrTableEntry 14 }
-
+ 
 
 -- *************************************************************
 -- *                                                           *
@@ -1454,7 +1564,7 @@ cgsccpGttAppGrNetwork OBJECT-TYPE
 -- *************************************************************
 
 cgsccpGttMapTable OBJECT-TYPE
-    SYNTAX          SEQUENCE OF CgsccpGttMapTableEntry
+    SYNTAX          SEQUENCE OF CgsccpGttMapTableEntry 
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
@@ -1471,7 +1581,7 @@ cgsccpGttMapTableEntry OBJECT-TYPE
                         cgspInstNetwork,
                         cgsccpGttMapPc,
                         cgsccpGttMapSsn
-                    }
+                    } 
     ::= { cgsccpGttMapTable 1 }
 
 CgsccpGttMapTableEntry ::= SEQUENCE {
@@ -1499,7 +1609,12 @@ CgsccpGttMapTableEntry ::= SEQUENCE {
         cgsccpGttMapQ752T7E6      Counter32,
         cgsccpGttMapRefCount      Gauge32,
         cgsccpGttMapCongStatus    CgsccpGttMapCongStatus,
-        cgsccpGttMapRowStatus     RowStatus
+        cgsccpGttMapRowStatus     RowStatus,
+        cgsccpGttMapCongLvl1      Counter32,
+        cgsccpGttMapCongLvl2      Counter32,
+        cgsccpGttMapCongLvl3      Counter32,
+        cgsccpGttMapSSPRcvd       Counter32,
+        cgsccpGttMapSSARcvd       Counter32
 }
 
 cgsccpGttMapPc OBJECT-TYPE
@@ -1507,7 +1622,7 @@ cgsccpGttMapPc OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "The point code for GTT MAP entry."
+        "The point code for GTT MAP entry." 
     ::= { cgsccpGttMapTableEntry 1 }
 
 cgsccpGttMapSsn OBJECT-TYPE
@@ -1515,7 +1630,7 @@ cgsccpGttMapSsn OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "The subsystem number (SSN) for GTT MAP entry."
+        "The subsystem number (SSN) for GTT MAP entry." 
     ::= { cgsccpGttMapTableEntry 2 }
 
 cgsccpGttMapDisplayPC OBJECT-TYPE
@@ -1523,7 +1638,7 @@ cgsccpGttMapDisplayPC OBJECT-TYPE
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
-        "The MAP point code in display format."
+        "The MAP point code in display format." 
     ::= { cgsccpGttMapTableEntry 3 }
 
 cgsccpGttMapDisplaySS OBJECT-TYPE
@@ -1531,7 +1646,7 @@ cgsccpGttMapDisplaySS OBJECT-TYPE
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
-        "The MAP subsystem number in display format."
+        "The MAP subsystem number in display format." 
     ::= { cgsccpGttMapTableEntry 4 }
 
 cgsccpGttMapType OBJECT-TYPE
@@ -1539,7 +1654,7 @@ cgsccpGttMapType OBJECT-TYPE
     MAX-ACCESS      read-create
     STATUS          current
     DESCRIPTION
-        "The GTT MAP subsystem type."
+        "The GTT MAP subsystem type." 
     ::= { cgsccpGttMapTableEntry 5 }
 
 cgsccpGttMapPcStatus OBJECT-TYPE
@@ -1547,7 +1662,7 @@ cgsccpGttMapPcStatus OBJECT-TYPE
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
-        "The GTT MAP point code status."
+        "The GTT MAP point code status." 
     ::= { cgsccpGttMapTableEntry 6 }
 
 cgsccpGttMapSsStatus OBJECT-TYPE
@@ -1555,7 +1670,7 @@ cgsccpGttMapSsStatus OBJECT-TYPE
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
-        "The GTT MAP subsystem status."
+        "The GTT MAP subsystem status." 
     ::= { cgsccpGttMapTableEntry 7 }
 
 cgsccpGttMapMultInd OBJECT-TYPE
@@ -1563,7 +1678,7 @@ cgsccpGttMapMultInd OBJECT-TYPE
     MAX-ACCESS      read-create
     STATUS          current
     DESCRIPTION
-        "The GTT mated application multiplicity indicator."
+        "The GTT mated application multiplicity indicator." 
     ::= { cgsccpGttMapTableEntry 8 }
 
 cgsccpGttMapBackupPc OBJECT-TYPE
@@ -1574,7 +1689,7 @@ cgsccpGttMapBackupPc OBJECT-TYPE
         "The backup point code for the mated Application.
         The special value of zero indicates that no backup
         point code has been specified."
-    DEFVAL          { 0 }
+    DEFVAL          { 0 } 
     ::= { cgsccpGttMapTableEntry 9 }
 
 cgsccpGttMapBackupSsn OBJECT-TYPE
@@ -1586,7 +1701,7 @@ cgsccpGttMapBackupSsn OBJECT-TYPE
         Application.  The special value of zero indicates
         that no backup subsystem number has been
         specified."
-    DEFVAL          { 0 }
+    DEFVAL          { 0 } 
     ::= { cgsccpGttMapTableEntry 10 }
 
 cgsccpGttMapConPcList OBJECT-TYPE
@@ -1597,7 +1712,7 @@ cgsccpGttMapConPcList OBJECT-TYPE
         "The concerned point code list for the mated
         Application.  The null string indicates that
         no concerned point code list has been specified."
-    DEFVAL          { "" }
+    DEFVAL          { "" } 
     ::= { cgsccpGttMapTableEntry 11 }
 
 cgsccpGttMapReRouteOnCong OBJECT-TYPE
@@ -1608,7 +1723,7 @@ cgsccpGttMapReRouteOnCong OBJECT-TYPE
         "The GTT Mated App re-route on congestion truth value.
         'true'  Re-routing on congestion is enabled.
         'false' Re-routing on congestion is disabled."
-    DEFVAL          { false }
+    DEFVAL          { false } 
     ::= { cgsccpGttMapTableEntry 12 }
 
 cgsccpGttMapAdjacent OBJECT-TYPE
@@ -1619,7 +1734,7 @@ cgsccpGttMapAdjacent OBJECT-TYPE
         "The GTT Mated App Point Code adjacent truth value.
         'true'  Indicates that MAP PC is adjacent.
         'false' Indicates that MAP PC is not adjacent."
-    DEFVAL          { false }
+    DEFVAL          { false } 
     ::= { cgsccpGttMapTableEntry 13 }
 
 cgsccpGttMapLastSsUsed OBJECT-TYPE
@@ -1629,7 +1744,7 @@ cgsccpGttMapLastSsUsed OBJECT-TYPE
     DESCRIPTION
         "The GTT MAP last subsystem used truth value.
         'true'  It is the last used subsystem.
-        'false' It is not the last used subsystem."
+        'false' It is not the last used subsystem." 
     ::= { cgsccpGttMapTableEntry 14 }
 
 cgsccpGttMapUsed OBJECT-TYPE
@@ -1639,7 +1754,7 @@ cgsccpGttMapUsed OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "This counter is incremented every time a message is
-        routed by the GTT Mated Application."
+        routed by the GTT Mated Application." 
     ::= { cgsccpGttMapTableEntry 15 }
 
 cgsccpGttMapAltUsed OBJECT-TYPE
@@ -1651,7 +1766,7 @@ cgsccpGttMapAltUsed OBJECT-TYPE
         "This counter is incremented every time a message is
         re-routed on congestion by the GTT Mated Application."
     REFERENCE
-        "ANSI GR-82-CORE 6.4.2 System Total Measurements Item 12."
+        "ANSI GR-82-CORE 6.4.2 System Total Measurements Item 12." 
     ::= { cgsccpGttMapTableEntry 16 }
 
 cgsccpGttMapSccpUnavail OBJECT-TYPE
@@ -1661,7 +1776,7 @@ cgsccpGttMapSccpUnavail OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "This counter is incremented every time a SCCP
-        is unavailable at the GTT Mated Application."
+        is unavailable at the GTT Mated Application." 
     ::= { cgsccpGttMapTableEntry 17 }
 
 cgsccpGttMapQ752T7E3Fail OBJECT-TYPE
@@ -1674,7 +1789,7 @@ cgsccpGttMapQ752T7E3Fail OBJECT-TYPE
         layer failed at the GTT Mated Application."
     REFERENCE
         "Q752 - Monitoring and measurements for SS7 Network
-         table 7 entry 3"
+         table 7 entry 3" 
     ::= { cgsccpGttMapTableEntry 18 }
 
 cgsccpGttMapQ752T7E3Un OBJECT-TYPE
@@ -1684,7 +1799,7 @@ cgsccpGttMapQ752T7E3Un OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "This counter is incremented every time a point code
-        is unavailable at the GTT Mated Application."
+        is unavailable at the GTT Mated Application." 
     ::= { cgsccpGttMapTableEntry 19 }
 
 cgsccpGttMapQ752T7E4 OBJECT-TYPE
@@ -1697,7 +1812,7 @@ cgsccpGttMapQ752T7E4 OBJECT-TYPE
         is congested at the GTT Mated Application."
     REFERENCE
         "Q752 - Monitoring and measurements for SS7 Network
-         table 7 entry 4"
+         table 7 entry 4" 
     ::= { cgsccpGttMapTableEntry 20 }
 
 cgsccpGttMapQ752T7E5 OBJECT-TYPE
@@ -1710,7 +1825,7 @@ cgsccpGttMapQ752T7E5 OBJECT-TYPE
         is unavailable at the GTT Mated Application."
     REFERENCE
         "Q752 - Monitoring and measurements for SS7 Network
-         table 7 entry 5"
+         table 7 entry 5" 
     ::= { cgsccpGttMapTableEntry 21 }
 
 cgsccpGttMapQ752T7E6 OBJECT-TYPE
@@ -1723,16 +1838,16 @@ cgsccpGttMapQ752T7E6 OBJECT-TYPE
         is congested at the GTT Mated Application."
     REFERENCE
         "Q752 - Monitoring and measurements for SS7 Network
-         table 7 entry 6"
+         table 7 entry 6" 
     ::= { cgsccpGttMapTableEntry 22 }
 
 cgsccpGttMapRefCount OBJECT-TYPE
-    SYNTAX          Gauge32 (0..2147483647 )
+    SYNTAX          Gauge32 (0..2147483647)
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
         "The number of global title addresses referring to this
-        MAP entry."
+        MAP entry." 
     ::= { cgsccpGttMapTableEntry 23 }
 
 cgsccpGttMapCongStatus OBJECT-TYPE
@@ -1740,7 +1855,7 @@ cgsccpGttMapCongStatus OBJECT-TYPE
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
-        "The status of congestion level for this MAP point code."
+        "The status of congestion level for this MAP point code." 
     ::= { cgsccpGttMapTableEntry 24 }
 
 cgsccpGttMapRowStatus OBJECT-TYPE
@@ -1750,9 +1865,59 @@ cgsccpGttMapRowStatus OBJECT-TYPE
     DESCRIPTION
         "The object is used by a management station to
         create or delete the row entry in cgsccpGttMapTable
-        following the RowStatus textual convention."
+        following the RowStatus textual convention." 
     ::= { cgsccpGttMapTableEntry 25 }
 
+cgsccpGttMapCongLvl1 OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This counter is incremented every time a congestion
+        of level 1 is experienced by the remote Signalling  
+        point corresponding to this MAP entry." 
+    ::= { cgsccpGttMapTableEntry 26 }
+
+cgsccpGttMapCongLvl2 OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This counter is incremented every time a congestion
+        of level 2 is experienced by the remote Signalling
+        point corresponding to this MAP entry." 
+    ::= { cgsccpGttMapTableEntry 27 }
+
+cgsccpGttMapCongLvl3 OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This counter is incremented every time a congestion
+        of level 3 is experienced by the remote Signalling
+        point corresponding to this MAP entry." 
+    ::= { cgsccpGttMapTableEntry 28 }
+
+cgsccpGttMapSSPRcvd OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This counter is incremented every time a subsystem
+        prohibited message is received from the remote Signalling
+        point corresponding to this MAP entry." 
+    ::= { cgsccpGttMapTableEntry 29 }
+
+cgsccpGttMapSSARcvd OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This counter is incremented every time a subsystem
+        allowed message is received from the remote Signalling
+        point corresponding to this MAP entry." 
+    ::= { cgsccpGttMapTableEntry 30 }
+ 
 
 -- *************************************************************
 -- *                                                           *
@@ -1761,7 +1926,7 @@ cgsccpGttMapRowStatus OBJECT-TYPE
 -- *************************************************************
 
 cgsccpGttSelTable OBJECT-TYPE
-    SYNTAX          SEQUENCE OF CgsccpGttSelTableEntry
+    SYNTAX          SEQUENCE OF CgsccpGttSelTableEntry 
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
@@ -1780,7 +1945,7 @@ cgsccpGttSelTableEntry OBJECT-TYPE
                         cgsccpGttSelNAI,
                         cgsccpGttSelNP,
                         cgsccpGttSelGTI
-                    }
+                    } 
     ::= { cgsccpGttSelTable 1 }
 
 CgsccpGttSelTableEntry ::= SEQUENCE {
@@ -1795,7 +1960,9 @@ CgsccpGttSelTableEntry ::= SEQUENCE {
         cgsccpGttSelRefCount     Gauge32,
         cgsccpGttSelPrePrefConv  CgsccpGttPrefName,
         cgsccpGttSelPostPrefConv CgsccpGttPrefName,
-        cgsccpGttSelRowStatus    RowStatus
+        cgsccpGttSelRowStatus    RowStatus,
+        cgsccpGttNextSelName     CgsccpGttSelName,
+        cgsccpGttNextSelRefed    Gauge32
 }
 
 cgsccpGttSelTT OBJECT-TYPE
@@ -1803,7 +1970,7 @@ cgsccpGttSelTT OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "Translation Type (TT) for this GTT Selector."
+        "Translation Type (TT) for this GTT Selector." 
     ::= { cgsccpGttSelTableEntry 1 }
 
 cgsccpGttSelNAI OBJECT-TYPE
@@ -1811,7 +1978,7 @@ cgsccpGttSelNAI OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "Nature of Address Indicator (NAI) for GTT Selector."
+        "Nature of Address Indicator (NAI) for GTT Selector." 
     ::= { cgsccpGttSelTableEntry 2 }
 
 cgsccpGttSelNP OBJECT-TYPE
@@ -1819,7 +1986,7 @@ cgsccpGttSelNP OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "Numbering Plan (NP) for this GTT Selector."
+        "Numbering Plan (NP) for this GTT Selector." 
     ::= { cgsccpGttSelTableEntry 3 }
 
 cgsccpGttSelGTI OBJECT-TYPE
@@ -1828,7 +1995,7 @@ cgsccpGttSelGTI OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "Global Title Indicator (GTI) for
-        this GTT Selector."
+        this GTT Selector." 
     ::= { cgsccpGttSelTableEntry 4 }
 
 cgsccpGttSelName OBJECT-TYPE
@@ -1836,7 +2003,7 @@ cgsccpGttSelName OBJECT-TYPE
     MAX-ACCESS      read-create
     STATUS          current
     DESCRIPTION
-        "The name of the GTT selector."
+        "The name of the GTT selector." 
     ::= { cgsccpGttSelTableEntry 5 }
 
 cgsccpGttSelNumPerf OBJECT-TYPE
@@ -1845,7 +2012,7 @@ cgsccpGttSelNumPerf OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "This counter is incremented every time a global title
-        translations is performed using this GTT Selector."
+        translations is performed using this GTT Selector." 
     ::= { cgsccpGttSelTableEntry 6 }
 
 cgsccpGttQ752T7E2 OBJECT-TYPE
@@ -1859,7 +2026,7 @@ cgsccpGttQ752T7E2 OBJECT-TYPE
     REFERENCE
         "Q752 - Monitoring and measurements for SS7 Network
            table 7 entry 2. ANSI GR-82-CORE 6.4.2 System
-           Total Measurements Item 10."
+           Total Measurements Item 10." 
     ::= { cgsccpGttSelTableEntry 7 }
 
 cgsccpGttSelQOS OBJECT-TYPE
@@ -1868,16 +2035,16 @@ cgsccpGttSelQOS OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "The SCCP GTT Selector specifies the QOS."
-    DEFVAL          { 255 }
+    DEFVAL          { 255 } 
     ::= { cgsccpGttSelTableEntry 8 }
 
 cgsccpGttSelRefCount OBJECT-TYPE
-    SYNTAX          Gauge32 (0..2147483647 )
+    SYNTAX          Gauge32 (0..2147483647)
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
         "The number of entries in the global title addresses
-        that belong to this selector."
+        that belong to this selector." 
     ::= { cgsccpGttSelTableEntry 9 }
 
 cgsccpGttSelPrePrefConv OBJECT-TYPE
@@ -1891,7 +2058,7 @@ cgsccpGttSelPrePrefConv OBJECT-TYPE
         translation.  The null string indicates
         that a prefix conversion table has not been
         specified."
-    DEFVAL          { "" }
+    DEFVAL          { "" } 
     ::= { cgsccpGttSelTableEntry 10 }
 
 cgsccpGttSelPostPrefConv OBJECT-TYPE
@@ -1905,7 +2072,7 @@ cgsccpGttSelPostPrefConv OBJECT-TYPE
         translation.  The null string indicates
         that a post conversion table has not been
         specified."
-    DEFVAL          { "" }
+    DEFVAL          { "" } 
     ::= { cgsccpGttSelTableEntry 11 }
 
 cgsccpGttSelRowStatus OBJECT-TYPE
@@ -1915,9 +2082,25 @@ cgsccpGttSelRowStatus OBJECT-TYPE
     DESCRIPTION
         "The object is used by a management station to
         create or delete the row entry in cgsccpGttSelTable
-        following the RowStatus textual convention."
+        following the RowStatus textual convention." 
     ::= { cgsccpGttSelTableEntry 12 }
 
+cgsccpGttNextSelName OBJECT-TYPE
+    SYNTAX          CgsccpGttSelName
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "The name of GTT next selector table." 
+    ::= { cgsccpGttSelTableEntry 13 }
+
+cgsccpGttNextSelRefed OBJECT-TYPE
+    SYNTAX          Gauge32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The counter that table was referenced." 
+    ::= { cgsccpGttSelTableEntry 14 }
+ 
 
 -- *************************************************************
 -- *                                                           *
@@ -1926,7 +2109,7 @@ cgsccpGttSelRowStatus OBJECT-TYPE
 -- *************************************************************
 
 cgsccpGttGtaTable OBJECT-TYPE
-    SYNTAX          SEQUENCE OF CgsccpGttGtaTableEntry
+    SYNTAX          SEQUENCE OF CgsccpGttGtaTableEntry 
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
@@ -1946,7 +2129,7 @@ cgsccpGttGtaTableEntry OBJECT-TYPE
                         cgsccpGttSelNP,
                         cgsccpGttSelGTI,
                         cgsccpGttGtaAddr
-                    }
+                    } 
     ::= { cgsccpGttGtaTable 1 }
 
 CgsccpGttGtaTableEntry ::= SEQUENCE {
@@ -1973,7 +2156,7 @@ cgsccpGttGtaAddr OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "The Global Title Address is 8 octets
-        of the Called Party Address (CDPA)."
+        of the Called Party Address (CDPA)." 
     ::= { cgsccpGttGtaTableEntry 1 }
 
 cgsccpGttGtaSelName OBJECT-TYPE
@@ -1982,7 +2165,7 @@ cgsccpGttGtaSelName OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "The Global Title Address selector name from
-        cgsccpGttSelTable."
+        cgsccpGttSelTable." 
     ::= { cgsccpGttGtaTableEntry 2 }
 
 cgsccpGttGtaResType OBJECT-TYPE
@@ -1990,7 +2173,7 @@ cgsccpGttGtaResType OBJECT-TYPE
     MAX-ACCESS      read-create
     STATUS          current
     DESCRIPTION
-        "The SCCP Global Title Translation result type."
+        "The SCCP Global Title Translation result type." 
     ::= { cgsccpGttGtaTableEntry 3 }
 
 cgsccpGttGtaResPc OBJECT-TYPE
@@ -2001,7 +2184,7 @@ cgsccpGttGtaResPc OBJECT-TYPE
         "When the GTA translates to a point code,
         it has a valid point code and cgsccpGttGtaResType
         is 'pc'. Otherwise it is zero."
-    DEFVAL          { 0 }
+    DEFVAL          { 0 } 
     ::= { cgsccpGttGtaTableEntry 4 }
 
 cgsccpGttGtaResMap OBJECT-TYPE
@@ -2013,7 +2196,7 @@ cgsccpGttGtaResMap OBJECT-TYPE
         optional SSN, it has a valid point code and
         cgsccpGttGtaResType is 'pcssn'. Otherwise it is
         zero."
-    DEFVAL          { 0 }
+    DEFVAL          { 0 } 
     ::= { cgsccpGttGtaTableEntry 5 }
 
 cgsccpGttGtaResAppGroup OBJECT-TYPE
@@ -2026,7 +2209,7 @@ cgsccpGttGtaResAppGroup OBJECT-TYPE
         cgsccpGttGtaResType is 'app'.  The null string
         indicates that an application group has not been
         specified."
-    DEFVAL          { "" }
+    DEFVAL          { "" } 
     ::= { cgsccpGttGtaTableEntry 6 }
 
 cgsccpGttGtaTTorSSN OBJECT-TYPE
@@ -2038,11 +2221,11 @@ cgsccpGttGtaTTorSSN OBJECT-TYPE
         cgsccpGttGtaTTorSSNvalue specifies the SCCP GTT
         Translation Type (TT). When this object is 'ssn',
         the object cgsccpGttGtaTTorSSNvalue specifies
-        the SCCP SubSystem Number (SSN)."
+        the SCCP SubSystem Number (SSN)." 
     ::= { cgsccpGttGtaTableEntry 7 }
 
 cgsccpGttGtaTTorSSNvalue OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..255 )
+    SYNTAX          Unsigned32 (0..255)
     MAX-ACCESS      read-create
     STATUS          current
     DESCRIPTION
@@ -2052,7 +2235,7 @@ cgsccpGttGtaTTorSSNvalue OBJECT-TYPE
         cgsccpGttGtaTTorSSN is 'ssn'.
         A zero value specifies that the TT or the SSN is not
         applicable for this GTA entry."
-    DEFVAL          { 0 }
+    DEFVAL          { 0 } 
     ::= { cgsccpGttGtaTableEntry 8 }
 
 cgsccpGttGtaRoutingInd OBJECT-TYPE
@@ -2066,7 +2249,7 @@ cgsccpGttGtaRoutingInd OBJECT-TYPE
         this object has a valid routing indicator.
 
         When cgsccpGttGtaResType is 'app' or 'as',
-        the routing indicator is not applicable."
+        the routing indicator is not applicable." 
     ::= { cgsccpGttGtaTableEntry 9 }
 
 cgsccpGttGtaQOS OBJECT-TYPE
@@ -2075,7 +2258,7 @@ cgsccpGttGtaQOS OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "The SCCP GTT GTA specifies the QOS."
-    DEFVAL          { 255 }
+    DEFVAL          { 255 } 
     ::= { cgsccpGttGtaTableEntry 10 }
 
 cgsccpGttGtaAddrDisp OBJECT-TYPE
@@ -2086,7 +2269,7 @@ cgsccpGttGtaAddrDisp OBJECT-TYPE
         "The ASCII display string of Global Title Address
         up to 64 hex digits of the Called Party Address
         (CDPA). A zero length string specifies a
-        default GTA value for the selector."
+        default GTA value for the selector." 
     ::= { cgsccpGttGtaTableEntry 11 }
 
 cgsccpGttGtaAddrLen OBJECT-TYPE
@@ -2096,7 +2279,7 @@ cgsccpGttGtaAddrLen OBJECT-TYPE
     DESCRIPTION
         "The number of hex digits in the Global Title
         Address of the Called Party Address (CDPA).
-        For a default GTA, the address length is zero."
+        For a default GTA, the address length is zero." 
     ::= { cgsccpGttGtaTableEntry 12 }
 
 cgsccpGttGtaAsName OBJECT-TYPE
@@ -2109,7 +2292,7 @@ cgsccpGttGtaAsName OBJECT-TYPE
         Otherwise it is a zero length string.  The null string
         indicates that a application server name has not been
         specified."
-    DEFVAL          { "" }
+    DEFVAL          { "" } 
     ::= { cgsccpGttGtaTableEntry 13 }
 
 cgsccpGttGtaRowStatus OBJECT-TYPE
@@ -2119,7 +2302,7 @@ cgsccpGttGtaRowStatus OBJECT-TYPE
     DESCRIPTION
         "The object is used by a management station to
         create or delete the row entry in cgsccpGttGtaTable
-        following the RowStatus textual convention."
+        following the RowStatus textual convention." 
     ::= { cgsccpGttGtaTableEntry 14 }
 
 cgsccpGttGtaNetwork OBJECT-TYPE
@@ -2130,9 +2313,9 @@ cgsccpGttGtaNetwork OBJECT-TYPE
         "The processing of global title translation may
         result in a packet being transferred from one
         network to another.  This object specifies
-        the target network."
+        the target network." 
     ::= { cgsccpGttGtaTableEntry 15 }
-
+ 
 
 -- *************************************************************
 -- *                                                           *
@@ -2144,7 +2327,7 @@ cgsccpGttGtaNetwork OBJECT-TYPE
 -- *************************************************************
 
 cgsccpGttPrefTable OBJECT-TYPE
-    SYNTAX          SEQUENCE OF CgsccpGttPrefTableEntry
+    SYNTAX          SEQUENCE OF CgsccpGttPrefTableEntry 
     MAX-ACCESS      not-accessible
     STATUS          deprecated
     DESCRIPTION
@@ -2178,7 +2361,7 @@ cgsccpGttPrefTableEntry OBJECT-TYPE
     INDEX           {
                         cgsccpGttPrefName,
                         cgsccpGttPrefInAddr
-                    }
+                    } 
     ::= { cgsccpGttPrefTable 1 }
 
 CgsccpGttPrefTableEntry ::= SEQUENCE {
@@ -2197,7 +2380,7 @@ cgsccpGttPrefName OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          deprecated
     DESCRIPTION
-        "The GTT Prefix Conversion table name."
+        "The GTT Prefix Conversion table name." 
     ::= { cgsccpGttPrefTableEntry 1 }
 
 cgsccpGttPrefInAddr OBJECT-TYPE
@@ -2207,7 +2390,7 @@ cgsccpGttPrefInAddr OBJECT-TYPE
     DESCRIPTION
         "If the GTA of the Called Party Address (CDPA)
         matches the digits in this object, then the
-        prefix conversion is performed."
+        prefix conversion is performed." 
     ::= { cgsccpGttPrefTableEntry 2 }
 
 cgsccpGttPrefOutAddr OBJECT-TYPE
@@ -2218,7 +2401,7 @@ cgsccpGttPrefOutAddr OBJECT-TYPE
         "If the GTA of the Called Party Address (CDPA)
         matches the digits in cgsccpGttPrefInAddr
         then this object is used in the prefix
-        conversion."
+        conversion." 
     ::= { cgsccpGttPrefTableEntry 3 }
 
 cgsccpGttPrefTblNAI OBJECT-TYPE
@@ -2228,7 +2411,7 @@ cgsccpGttPrefTblNAI OBJECT-TYPE
     DESCRIPTION
         "Nature of Address Indicator (NAI) for the Prefix
         Conversion Table."
-    DEFVAL          { 253 }
+    DEFVAL          { 253 } 
     ::= { cgsccpGttPrefTableEntry 4 }
 
 cgsccpGttPrefTblNP OBJECT-TYPE
@@ -2237,7 +2420,7 @@ cgsccpGttPrefTblNP OBJECT-TYPE
     STATUS          deprecated
     DESCRIPTION
         "Numbering Plan (NP) for the Prefix Conversion Table."
-    DEFVAL          { 253 }
+    DEFVAL          { 253 } 
     ::= { cgsccpGttPrefTableEntry 5 }
 
 cgsccpGttPrefItemNAI OBJECT-TYPE
@@ -2247,7 +2430,7 @@ cgsccpGttPrefItemNAI OBJECT-TYPE
     DESCRIPTION
         "Nature of Address Indicator (NAI) for the current
         item in this Prefix Conversion Table."
-    DEFVAL          { 253 }
+    DEFVAL          { 253 } 
     ::= { cgsccpGttPrefTableEntry 6 }
 
 cgsccpGttPrefItemNP OBJECT-TYPE
@@ -2257,7 +2440,7 @@ cgsccpGttPrefItemNP OBJECT-TYPE
     DESCRIPTION
         "Numbering Plan (NP) for the current item in this
         Prefix Conversion Table."
-    DEFVAL          { 253 }
+    DEFVAL          { 253 } 
     ::= { cgsccpGttPrefTableEntry 7 }
 
 cgsccpGttPrefRowStatus OBJECT-TYPE
@@ -2267,9 +2450,9 @@ cgsccpGttPrefRowStatus OBJECT-TYPE
     DESCRIPTION
         "The object is used by a management station to
         create or delete the row entry in cgsccpGttPrefTable
-        following the RowStatus textual convention."
+        following the RowStatus textual convention." 
     ::= { cgsccpGttPrefTableEntry 8 }
-
+ 
 
 -- *************************************************************
 -- *                                                           *
@@ -2278,7 +2461,7 @@ cgsccpGttPrefRowStatus OBJECT-TYPE
 -- *************************************************************
 
 cgsccpGttTranslateTable OBJECT-TYPE
-    SYNTAX          SEQUENCE OF CgsccpGttTranslateTableEntry
+    SYNTAX          SEQUENCE OF CgsccpGttTranslateTableEntry 
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
@@ -2301,7 +2484,7 @@ cgsccpGttTranslateTableEntry OBJECT-TYPE
     INDEX           {
                         cgsccpGttTranslateSlot,
                         cgsccpGttTranslateEntry
-                    }
+                    } 
     ::= { cgsccpGttTranslateTable 1 }
 
 CgsccpGttTranslateTableEntry ::= SEQUENCE {
@@ -2313,27 +2496,27 @@ CgsccpGttTranslateTableEntry ::= SEQUENCE {
 }
 
 cgsccpGttTranslateSlot OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..32767 )
+    SYNTAX          Unsigned32 (0..32767)
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
         "The slot number containing the CPU that is
-        performing Global Title translation."
+        performing Global Title translation." 
     ::= { cgsccpGttTranslateTableEntry 1 }
 
 cgsccpGttTranslateEntry OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..4294967295 )
+    SYNTAX          Unsigned32 (0..4294967295)
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
         "The entry number.  Each entry represents a period
         of time as specified by the
         cgsccpGttTranslatePeriod object.  The entries are
-        ordered from old to new."
+        ordered from old to new." 
     ::= { cgsccpGttTranslateTableEntry 2 }
 
 cgsccpGttTranslateRate OBJECT-TYPE
-    SYNTAX          Gauge32 (0..2147483647 )
+    SYNTAX          Gauge32 (0..2147483647)
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
@@ -2341,7 +2524,7 @@ cgsccpGttTranslateRate OBJECT-TYPE
         translations is calculated every second.  This object
         is the highest rate of global title translation
         encountered in the interval specified by the
-        cgsccpGttTranslatePeriod object."
+        cgsccpGttTranslatePeriod object." 
     ::= { cgsccpGttTranslateTableEntry 3 }
 
 cgsccpGttTranslateTS OBJECT-TYPE
@@ -2350,7 +2533,7 @@ cgsccpGttTranslateTS OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "This timestamp indicates when time period ended
-        for this sample."
+        for this sample." 
     ::= { cgsccpGttTranslateTableEntry 4 }
 
 cgsccpGttTranslatePhysicalIndex OBJECT-TYPE
@@ -2366,9 +2549,9 @@ cgsccpGttTranslatePhysicalIndex OBJECT-TYPE
         in this entry correspond to more than one physical entity
         (or to no physical entity), or if the entPhysicalTable is
         not supported on the SNMP agent, the value of this object
-        must be zero."
+        must be zero." 
     ::= { cgsccpGttTranslateTableEntry 5 }
-
+ 
 
 -- *************************************************************
 -- *                                                           *
@@ -2377,7 +2560,7 @@ cgsccpGttTranslatePhysicalIndex OBJECT-TYPE
 -- *************************************************************
 
 cgsccpGttPref2Table OBJECT-TYPE
-    SYNTAX          SEQUENCE OF CgsccpGttPref2TableEntry
+    SYNTAX          SEQUENCE OF CgsccpGttPref2TableEntry 
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
@@ -2415,7 +2598,7 @@ cgsccpGttPref2TableEntry OBJECT-TYPE
                         cgspInstNetwork,
                         cgsccpGttPref2Name,
                         cgsccpGttPref2InAddr
-                    }
+                    } 
     ::= { cgsccpGttPref2Table 1 }
 
 CgsccpGttPref2TableEntry ::= SEQUENCE {
@@ -2435,7 +2618,7 @@ cgsccpGttPref2Name OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "The GTT Prefix Conversion table name."
+        "The GTT Prefix Conversion table name." 
     ::= { cgsccpGttPref2TableEntry 1 }
 
 cgsccpGttPref2InAddr OBJECT-TYPE
@@ -2445,7 +2628,7 @@ cgsccpGttPref2InAddr OBJECT-TYPE
     DESCRIPTION
         "If the GTA of the Called Party Address (CDPA)
         matches the digits in this object, then the
-        prefix conversion is performed."
+        prefix conversion is performed." 
     ::= { cgsccpGttPref2TableEntry 2 }
 
 cgsccpGttPref2OutAddr OBJECT-TYPE
@@ -2456,7 +2639,7 @@ cgsccpGttPref2OutAddr OBJECT-TYPE
         "If the GTA of the Called Party Address (CDPA)
         matches the digits in cgsccpGttPref2InAddr
         then this object is used in the prefix
-        conversion."
+        conversion." 
     ::= { cgsccpGttPref2TableEntry 3 }
 
 cgsccpGttPref2TblNAI OBJECT-TYPE
@@ -2466,7 +2649,7 @@ cgsccpGttPref2TblNAI OBJECT-TYPE
     DESCRIPTION
         "Nature of Address Indicator (NAI) for the Prefix
         Conversion Table."
-    DEFVAL          { 253 }
+    DEFVAL          { 253 } 
     ::= { cgsccpGttPref2TableEntry 4 }
 
 cgsccpGttPref2TblNP OBJECT-TYPE
@@ -2475,7 +2658,7 @@ cgsccpGttPref2TblNP OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "Numbering Plan (NP) for the Prefix Conversion Table."
-    DEFVAL          { 253 }
+    DEFVAL          { 253 } 
     ::= { cgsccpGttPref2TableEntry 5 }
 
 cgsccpGttPref2ItemNAI OBJECT-TYPE
@@ -2485,7 +2668,7 @@ cgsccpGttPref2ItemNAI OBJECT-TYPE
     DESCRIPTION
         "Nature of Address Indicator (NAI) for the current
         item in this Prefix Conversion Table."
-    DEFVAL          { 253 }
+    DEFVAL          { 253 } 
     ::= { cgsccpGttPref2TableEntry 6 }
 
 cgsccpGttPref2ItemNP OBJECT-TYPE
@@ -2495,7 +2678,7 @@ cgsccpGttPref2ItemNP OBJECT-TYPE
     DESCRIPTION
         "Numbering Plan (NP) for the current item in this
         Prefix Conversion Table."
-    DEFVAL          { 253 }
+    DEFVAL          { 253 } 
     ::= { cgsccpGttPref2TableEntry 7 }
 
 cgsccpGttPref2RowStatus OBJECT-TYPE
@@ -2505,7 +2688,7 @@ cgsccpGttPref2RowStatus OBJECT-TYPE
     DESCRIPTION
         "The object is used by a management station to
         create or delete the row entry in cgsccpGttPref2Table
-        following the RowStatus textual convention."
+        following the RowStatus textual convention." 
     ::= { cgsccpGttPref2TableEntry 8 }
 
 cgsccpGttPref2EncodingScheme OBJECT-TYPE
@@ -2526,9 +2709,9 @@ cgsccpGttPref2EncodingScheme OBJECT-TYPE
         bcdOdd   - Use BCD odd encoding scheme.
         bcdEven  - Use BCD even encoding scheme.
         national - national specific."
-    REFERENCE       "E.164 and E.214 address formats and Q.713"
+    REFERENCE       "E.164 and E.214 address formats and Q.713" 
     ::= { cgsccpGttPref2TableEntry 9 }
-
+ 
 
 -- *************************************************************
 -- *                                                           *
@@ -2541,7 +2724,7 @@ cgsccpGttPref2EncodingScheme OBJECT-TYPE
 -- *************************************************************
 
 cgsccpGttAppGr2Table OBJECT-TYPE
-    SYNTAX          SEQUENCE OF CgsccpGttAppGr2TableEntry
+    SYNTAX          SEQUENCE OF CgsccpGttAppGr2TableEntry 
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
@@ -2558,7 +2741,7 @@ cgsccpGttAppGr2TableEntry OBJECT-TYPE
                         cgspInstNetwork,
                         cgsccpGttAppGr2Name,
                         cgsccpGttAppGr2EntNum
-                    }
+                    } 
     ::= { cgsccpGttAppGr2Table 1 }
 
 CgsccpGttAppGr2TableEntry ::= SEQUENCE {
@@ -2584,7 +2767,7 @@ cgsccpGttAppGr2Name OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "The GTT Application Group name."
+        "The GTT Application Group name." 
     ::= { cgsccpGttAppGr2TableEntry 1 }
 
 cgsccpGttAppGr2EntNum OBJECT-TYPE
@@ -2593,7 +2776,7 @@ cgsccpGttAppGr2EntNum OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "The entry number is an arbitrary number. It is used
-        to identify each application group entry."
+        to identify each application group entry." 
     ::= { cgsccpGttAppGr2TableEntry 2 }
 
 cgsccpGttAppGr2Mult OBJECT-TYPE
@@ -2601,7 +2784,7 @@ cgsccpGttAppGr2Mult OBJECT-TYPE
     MAX-ACCESS      read-create
     STATUS          current
     DESCRIPTION
-        "The multiplicity of the GTT Application Group."
+        "The multiplicity of the GTT Application Group." 
     ::= { cgsccpGttAppGr2TableEntry 3 }
 
 cgsccpGttAppGr2Type OBJECT-TYPE
@@ -2609,7 +2792,7 @@ cgsccpGttAppGr2Type OBJECT-TYPE
     MAX-ACCESS      read-create
     STATUS          current
     DESCRIPTION
-        "The type of the item in the GTT Application Group."
+        "The type of the item in the GTT Application Group." 
     ::= { cgsccpGttAppGr2TableEntry 4 }
 
 cgsccpGttAppGr2Cost OBJECT-TYPE
@@ -2620,11 +2803,11 @@ cgsccpGttAppGr2Cost OBJECT-TYPE
         "The cost for the item in the GTT Application Group.
         When the cgsccpGttAppGr2Mult object has 'cost'
         value, this object is required when entry is created.
-        Otherwise, this value does not apply."
+        Otherwise, this value does not apply." 
     ::= { cgsccpGttAppGr2TableEntry 5 }
 
 cgsccpGttAppGr2Weight OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..999 )
+    SYNTAX          Unsigned32 (0..999)
     MAX-ACCESS      read-create
     STATUS          current
     DESCRIPTION
@@ -2633,7 +2816,7 @@ cgsccpGttAppGr2Weight OBJECT-TYPE
         object has 'cgpa' value, this object is required when
         entry is created. Otherwise, this value does not
         apply and can default zero."
-    DEFVAL          { 0 }
+    DEFVAL          { 0 } 
     ::= { cgsccpGttAppGr2TableEntry 6 }
 
 cgsccpGttAppGr2Pc OBJECT-TYPE
@@ -2647,7 +2830,7 @@ cgsccpGttAppGr2Pc OBJECT-TYPE
         is required when entry is created.  Otherwise,
         this value does not apply and can default to
         zero."
-    DEFVAL          { 0 }
+    DEFVAL          { 0 } 
     ::= { cgsccpGttAppGr2TableEntry 7 }
 
 cgsccpGttAppGr2Ssn OBJECT-TYPE
@@ -2658,7 +2841,7 @@ cgsccpGttAppGr2Ssn OBJECT-TYPE
         "The subsystem number (SSN) specified by the item
         in the GTT Application Group. It is valid only when
         cgsccpGttAppGr2Type is 'pcssn'. Otherwise it is zero."
-    DEFVAL          { 0 }
+    DEFVAL          { 0 } 
     ::= { cgsccpGttAppGr2TableEntry 8 }
 
 cgsccpGttAppGr2Ri OBJECT-TYPE
@@ -2667,16 +2850,16 @@ cgsccpGttAppGr2Ri OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "The routing indicator (RI) specified by the item
-        in the GTT Application Group."
+        in the GTT Application Group." 
     ::= { cgsccpGttAppGr2TableEntry 9 }
 
 cgsccpGttAppGr2RefCount OBJECT-TYPE
-    SYNTAX          Gauge32 (0..2147483647 )
+    SYNTAX          Gauge32 (0..2147483647)
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
         "The number of global title addresses referring to
-        this application group."
+        this application group." 
     ::= { cgsccpGttAppGr2TableEntry 10 }
 
 cgsccpGttAppGr2AsName OBJECT-TYPE
@@ -2688,7 +2871,7 @@ cgsccpGttAppGr2AsName OBJECT-TYPE
         in the GTT Application Group. It is valid only when
         cgsccpGttAppGr2Type is 'as'. Otherwise it
         is a zero length string."
-    DEFVAL          { "" }
+    DEFVAL          { "" } 
     ::= { cgsccpGttAppGr2TableEntry 11 }
 
 cgsccpGttAppGr2NewSsn OBJECT-TYPE
@@ -2700,7 +2883,7 @@ cgsccpGttAppGr2NewSsn OBJECT-TYPE
         in the GTT Application Group.  It is valid only when
         cgsccpGttAppGr2Type is 'as'.  Otherwise it
         is zero."
-    DEFVAL          { 0 }
+    DEFVAL          { 0 } 
     ::= { cgsccpGttAppGr2TableEntry 12 }
 
 cgsccpGttAppGr2NumUsed OBJECT-TYPE
@@ -2709,7 +2892,7 @@ cgsccpGttAppGr2NumUsed OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "The number of times this item in the GTT Application
-        Group is used successfully."
+        Group is used successfully." 
     ::= { cgsccpGttAppGr2TableEntry 13 }
 
 cgsccpGttAppGr2Network OBJECT-TYPE
@@ -2720,7 +2903,7 @@ cgsccpGttAppGr2Network OBJECT-TYPE
         "The processing of global title translation may
         result in a packet being transferred from one
         network to another.  This object specifies
-        the target network."
+        the target network." 
     ::= { cgsccpGttAppGr2TableEntry 14 }
 
 cgsccpGttAppGr2RowStatus OBJECT-TYPE
@@ -2730,9 +2913,9 @@ cgsccpGttAppGr2RowStatus OBJECT-TYPE
     DESCRIPTION
         "The object is used by a management station to
         create or delete the row entry in cgsccpGttAppGr2Table
-        following the RowStatus textual convention."
+        following the RowStatus textual convention." 
     ::= { cgsccpGttAppGr2TableEntry 15 }
-
+ 
 
 -- *************************************************************
 -- *                                                           *
@@ -2741,7 +2924,7 @@ cgsccpGttAppGr2RowStatus OBJECT-TYPE
 -- *************************************************************
 
 cgsccpGttErrorsTable OBJECT-TYPE
-    SYNTAX          SEQUENCE OF CgsccpGttErrorsTableEntry
+    SYNTAX          SEQUENCE OF CgsccpGttErrorsTableEntry 
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
@@ -2761,7 +2944,7 @@ cgsccpGttErrorsTableEntry OBJECT-TYPE
         with number of errors that occurred during last
         interval.  The length of the interval is defined by
         the cgsccpGttErrorPeriod object."
-    INDEX           { cgspInstNetwork }
+    INDEX           { cgspInstNetwork } 
     ::= { cgsccpGttErrorsTable 1 }
 
 CgsccpGttErrorsTableEntry ::= SEQUENCE {
@@ -2777,7 +2960,11 @@ CgsccpGttErrorsTableEntry ::= SEQUENCE {
         cgsccpGttErrorsDpcCongested     Gauge32,
         cgsccpGttErrorsSsCongested      Gauge32,
         cgsccpGttErrorsRouteFailure     Gauge32,
-        cgsccpGttErrorsSccpUnqualified  Gauge32
+        cgsccpGttErrorsSccpUnqualified  Gauge32,
+        cgsccpGttErrorsReassUnsupported Gauge32,
+        cgsccpGttErrorsReassFailure     Gauge32,
+        cgsccpGttErrorsSegUnsupported   Gauge32,
+        cgsccpGttErrorsSegFailure       Gauge32
 }
 
 cgsccpGttErrorsSelectorNotFound OBJECT-TYPE
@@ -2793,7 +2980,7 @@ cgsccpGttErrorsSelectorNotFound OBJECT-TYPE
         occurs when no selector is available for the
         combination of parameters provided in the MSU.
         This counter is derived from cgsccpInstQ752T7E1
-        object."
+        object." 
     ::= { cgsccpGttErrorsTableEntry 1 }
 
 cgsccpGttErrorsIncorrectFormat OBJECT-TYPE
@@ -2805,7 +2992,7 @@ cgsccpGttErrorsIncorrectFormat OBJECT-TYPE
         "This counter is incremented every time an invalid
         Global Title format is found while performing the
         global title translation.  This counter is derived
-        from cgsccpInstInvalidGttFormat object."
+        from cgsccpInstInvalidGttFormat object." 
     ::= { cgsccpGttErrorsTableEntry 2 }
 
 cgsccpGttErrorsGtaNotFound OBJECT-TYPE
@@ -2817,7 +3004,7 @@ cgsccpGttErrorsGtaNotFound OBJECT-TYPE
         "This counter is incremented every time a global title
         title translations was required and a selector was
         not found. This counter is derived from
-        cgsccpGttQ752T7E2 object."
+        cgsccpGttQ752T7E2 object." 
     ::= { cgsccpGttErrorsTableEntry 3 }
 
 cgsccpGttErrorsHopViolation OBJECT-TYPE
@@ -2828,7 +3015,7 @@ cgsccpGttErrorsHopViolation OBJECT-TYPE
     DESCRIPTION
         "This counter is incremented every time a hop count
         violation is found in the MSU.  This counter is
-        derived from cgsccpInstQ752T7E13 object."
+        derived from cgsccpInstQ752T7E13 object." 
     ::= { cgsccpGttErrorsTableEntry 4 }
 
 cgsccpGttErrorsMapNotFound OBJECT-TYPE
@@ -2841,7 +3028,7 @@ cgsccpGttErrorsMapNotFound OBJECT-TYPE
         title translation is successful to a certain
         PC/SSN but it was not found in the GTT Mated
         Application table.  This counter is derived
-        from cgsccpInstMapNotFound object."
+        from cgsccpInstMapNotFound object." 
     ::= { cgsccpGttErrorsTableEntry 5 }
 
 cgsccpGttErrorsUnequipedSS OBJECT-TYPE
@@ -2853,7 +3040,7 @@ cgsccpGttErrorsUnequipedSS OBJECT-TYPE
         "This counter is incremented every time a global
         title translation could not be performed due to an
         unequipped subsystem (SS). This counter is derived
-        from cgsccpInstQ752T7E7 object."
+        from cgsccpInstQ752T7E7 object." 
     ::= { cgsccpGttErrorsTableEntry 6 }
 
 cgsccpGttErrorsSccpUnavailable OBJECT-TYPE
@@ -2865,7 +3052,7 @@ cgsccpGttErrorsSccpUnavailable OBJECT-TYPE
         "This counter is incremented every time a SCCP is
         unavailable at the GTT Mated Application. This
         counter is derived from cgsccpGttMapSccpUnavail
-        object."
+        object." 
     ::= { cgsccpGttErrorsTableEntry 7 }
 
 cgsccpGttErrorsDpcUnavailable OBJECT-TYPE
@@ -2877,7 +3064,7 @@ cgsccpGttErrorsDpcUnavailable OBJECT-TYPE
         "This counter is incremented every time a point code
         is unavailable at the GTT Mated Application.
         This counter is derived from cgsccpGttMapQ752T7E3Un
-        object."
+        object." 
     ::= { cgsccpGttErrorsTableEntry 8 }
 
 cgsccpGttErrorsSsUnavailable OBJECT-TYPE
@@ -2888,7 +3075,7 @@ cgsccpGttErrorsSsUnavailable OBJECT-TYPE
     DESCRIPTION
         "This counter is incremented every time a subsystem
         is unavailable at the GTT Mated Application.  This
-        counter is derived from cgsccpGttMapQ752T7E5 object."
+        counter is derived from cgsccpGttMapQ752T7E5 object." 
     ::= { cgsccpGttErrorsTableEntry 9 }
 
 cgsccpGttErrorsDpcCongested OBJECT-TYPE
@@ -2899,7 +3086,7 @@ cgsccpGttErrorsDpcCongested OBJECT-TYPE
     DESCRIPTION
         "This counter is incremented every time a point code
         is congested at the GTT Mated Application.  This
-        counter is derived from cgsccpGttMapQ752T7E4 object."
+        counter is derived from cgsccpGttMapQ752T7E4 object." 
     ::= { cgsccpGttErrorsTableEntry 10 }
 
 cgsccpGttErrorsSsCongested OBJECT-TYPE
@@ -2910,7 +3097,7 @@ cgsccpGttErrorsSsCongested OBJECT-TYPE
     DESCRIPTION
         "This counter is incremented every time a subsystem is
         congested at the GTT Mated Application.  This counter
-        is derived from cgsccpGttMapQ752T7E6 object."
+        is derived from cgsccpGttMapQ752T7E6 object." 
     ::= { cgsccpGttErrorsTableEntry 11 }
 
 cgsccpGttErrorsRouteFailure OBJECT-TYPE
@@ -2921,7 +3108,7 @@ cgsccpGttErrorsRouteFailure OBJECT-TYPE
     DESCRIPTION
         "This counter is incremented every time a the MTP3 layer
         failed at the GTT Mated Application.  This counter is
-        derived from cgsccpGttMapQ752T7E3Fail object."
+        derived from cgsccpGttMapQ752T7E3Fail object." 
     ::= { cgsccpGttErrorsTableEntry 12 }
 
 cgsccpGttErrorsSccpUnqualified OBJECT-TYPE
@@ -2933,10 +3120,285 @@ cgsccpGttErrorsSccpUnqualified OBJECT-TYPE
         "This counter is incremented every time a global title
         translation is unsuccessful and the error type not
         covered by other specific error types.  This counter
-        is derived from cgsccpInstQ752Unqualified object."
+        is derived from cgsccpInstQ752Unqualified object." 
     ::= { cgsccpGttErrorsTableEntry 13 }
 
+cgsccpGttErrorsReassUnsupported OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "packets"
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION
+        "This counter is incremented every time when the
+        incoming SCCP message needs to be dropped due
+        to the unsupported reassembly feature. This
+        counter is derived from cgsccpInstReassUnsup
+        object." 
+    ::= { cgsccpGttErrorsTableEntry 14 }
 
+cgsccpGttErrorsReassFailure OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "packets"
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION
+        "This counter is incremented every time when the
+        incoming SCCP message needs to be dropped due
+        to the reassembly failure. This counter is derived 
+        from cgsccpInstReassFail object." 
+    ::= { cgsccpGttErrorsTableEntry 15 }
+
+cgsccpGttErrorsSegUnsupported OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "packets"
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION
+        "This counter is incremented every time when either
+        SCCP message from a remote node or local SCCP stack
+        needs to be dropped due to the unsupported
+        segmentation feature. This counter is derived
+        from cgsccpInstSegUnsup object." 
+    ::= { cgsccpGttErrorsTableEntry 16 }
+
+cgsccpGttErrorsSegFailure OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "packets"
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION
+        "This counter is incremented every time when either
+        SCCP message from a remote node or local SCCP stack
+        needs to be dropped due to the segmentation failure. 
+        This counter is derived from cgsccpInstSegFail object." 
+    ::= { cgsccpGttErrorsTableEntry 17 }
+ 
+
+-- *************************************************************
+-- *                                                           *
+-- * SSN measurements Table                                    *
+-- *                                                           *
+-- *************************************************************
+
+cgsccpSSNTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CgsccpSSNEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The SSN table provides a breakdown of SCCP measurements
+        at local subsystem level."
+    ::= { cgsccpSSN 1 }
+
+cgsccpSSNEntry OBJECT-TYPE
+    SYNTAX          CgsccpSSNEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Each table entry represents a specific local
+        subsystem number(SSN)."
+    INDEX           {
+                        cgspInstNetwork,
+                        cgsccpSsn
+                    } 
+    ::= { cgsccpSSNTable 1 }
+
+CgsccpSSNEntry ::= SEQUENCE {
+        cgsccpSsn             CItpTcSubSystemNumber,
+        cgsccpSSNNumProhibits Counter32,
+        cgsccpSSNNumAllows    Counter32
+}
+
+cgsccpSsn OBJECT-TYPE
+    SYNTAX          CItpTcSubSystemNumber
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The SCCP subsystem number." 
+    ::= { cgsccpSSNEntry 1 }
+
+cgsccpSSNNumProhibits OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "occurrences"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This counter is incremented every time this local subsystem
+        transitions to prohibit state at this instance (Q752/8.9)."
+    REFERENCE
+        "ITU  Q752 Monitoring and Measurements for Signalling
+         System No. 7(SS7) Network Table 8." 
+    ::= { cgsccpSSNEntry 2 }
+
+cgsccpSSNNumAllows OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "occurrences"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This counter is incremented every time this local subsystem
+        transitions to allowed state at this instance (Q752/8.10)."
+    REFERENCE
+        "ITU  Q752 Monitoring and Measurements for Signalling
+         System No. 7(SS7) Network Table 8." 
+    ::= { cgsccpSSNEntry 3 }
+ 
+
+-- *************************************************************
+-- *                                                           *
+-- * SSN Class measurements Table                              *
+-- *                                                           *
+-- *************************************************************
+
+cgsccpSSNClassTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CgsccpSSNClassEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The SSN Class table contains information about the
+        number of UDT, XUDT, LUDT messages originated and 
+        terminated for a specific SSN and class. This provides
+        the granularity of information required by Q752 elements
+        9.6 and 9.7"
+    ::= { cgsccpClassSsn 1 }
+
+cgsccpSSNClassEntry OBJECT-TYPE
+    SYNTAX          CgsccpSSNClassEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Each table entry represents a specific class
+        and subsystem number(SSN)."
+    INDEX           {
+                        cgspInstNetwork,
+                        cgsccpSsn,
+                        cgsccpClassIdx
+                    } 
+    ::= { cgsccpSSNClassTable 1 }
+
+CgsccpSSNClassEntry ::= SEQUENCE {
+        cgsccpClassIdx             CgsccpClass,
+        cgsccpSSNClassUDTMsgsSent  Counter32,
+        cgsccpSSNClassUDTMsgsRcvd  Counter32,
+        cgsccpSSNClassXUDTMsgsSent Counter32,
+        cgsccpSSNClassXUDTMsgsRcvd Counter32,
+        cgsccpSSNClassLUDTMsgsSent Counter32,
+        cgsccpSSNClassLUDTMsgsRcvd Counter32
+}
+
+cgsccpClassIdx OBJECT-TYPE
+    SYNTAX          CgsccpClass
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The SCCP Class index." 
+    ::= { cgsccpSSNClassEntry 1 }
+
+cgsccpSSNClassUDTMsgsSent OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This counter is incremented every time a unitdata (UDT)
+        message is sent for this SCCP class and SSN(Q752/9.6)."
+    REFERENCE
+        "ITU  Q752 Monitoring and Measurements for Signalling
+         System No. 7(SS7) Network Table 9." 
+    ::= { cgsccpSSNClassEntry 2 }
+
+cgsccpSSNClassUDTMsgsRcvd OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This counter is incremented every time a unitdata (UDT)
+        message is received for this SCCP class and SSN(Q752/9.7)."
+    REFERENCE
+        "ITU  Q752 Monitoring and Measurements for Signalling
+         System No. 7(SS7) Network Table 9." 
+    ::= { cgsccpSSNClassEntry 3 }
+
+cgsccpSSNClassXUDTMsgsSent OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This counter is incremented every time an extended
+        unitdata (XUDT) message is sent for this SCCP class 
+        and SSN (Q752/9.6)."
+    REFERENCE
+        "ITU  Q752 Monitoring and Measurements for Signalling
+         System No. 7(SS7) Network Table 9." 
+    ::= { cgsccpSSNClassEntry 4 }
+
+cgsccpSSNClassXUDTMsgsRcvd OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This counter is incremented every time an extended
+        unitdata (XUDT) message is received for this SCCP 
+        class and SSN (Q752/9.7)."
+    REFERENCE
+        "ITU  Q752 Monitoring and Measurements for Signalling
+         System No. 7(SS7) Network Table 9." 
+    ::= { cgsccpSSNClassEntry 5 }
+
+cgsccpSSNClassLUDTMsgsSent OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This counter is incremented every time a long
+        unitdata (LUDT) message is sent for this SCCP 
+        class and SSN (Q752/9.6)."
+    REFERENCE
+        "ITU  Q752 Monitoring and Measurements for Signalling
+         System No. 7(SS7) Network Table 9." 
+    ::= { cgsccpSSNClassEntry 6 }
+
+cgsccpSSNClassLUDTMsgsRcvd OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This counter is incremented every time a long
+        unitdata (LUDT) message is received for this 
+        SCCP class and SSN (Q752/9.7)."
+    REFERENCE
+        "ITU  Q752 Monitoring and Measurements for Signalling
+         System No. 7(SS7) Network Table 9." 
+    ::= { cgsccpSSNClassEntry 7 }
+ 
+
+
+-- *************************************************************
+-- *                                                           *
+-- * Notifications Information                                 *
+-- *                                                           *
+-- *************************************************************
+
+cgsccpLocalDisplaySS OBJECT-TYPE
+    SYNTAX          Unsigned32
+    UNITS           "seconds"
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION
+        "Local subsystem in display format." 
+    ::= { cgsccpNotificationsInfo 1 }
+
+cgsccpLocalSsStatus OBJECT-TYPE
+    SYNTAX          CgsccpGttMapSsStatus
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION
+        "Local subsystem status." 
+    ::= { cgsccpNotificationsInfo 2 }
 
 -- *************************************************************
 -- *                                                           *
@@ -3004,6 +3466,80 @@ ciscoGsccpGttErrors NOTIFICATION-TYPE
         cgsccpGttErrorRecoveryCount object has passed without
         any global title errors."
    ::= { ciscoGsccpMIBNotifs 3 }
+
+ciscoGsccpSegReassUnsup NOTIFICATION-TYPE
+    OBJECTS         {
+                        cgspEventSequenceNumber,
+                        cgspCLLICode,
+                        cgsccpInstErrorIndicator,
+                        cgsccpGttErrorsReassUnsupported,
+                        cgsccpGttErrorsReassFailure,
+                        cgsccpGttErrorsSegUnsupported,
+                        cgsccpGttErrorsSegFailure
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This notification is generated initially when a SCCP message
+        is dropped due to a segmentation or reassembly unsupported
+        or failure errors in last interval specified by the
+        cgsccpGttErrorPeriod and the cgsccpInstErrorIndicator will be
+        set to true.  The notification will also be generated after
+        the number of recovery intervals as specified by the
+        cgsccpGttErrorRecoveryCount object has passed without any
+        segmentation or reassembly unsupported errors."
+   ::= { ciscoGsccpMIBNotifs 4 }
+
+ciscoGsccpSOGReceived NOTIFICATION-TYPE
+    OBJECTS         {
+                        cgspEventSequenceNumber,
+                        cgspCLLICode,
+                        cgsccpGttMapDisplayPC,
+                        cgsccpGttMapDisplaySS
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This notification is generated initially when a Subsystem
+        Out-of-Service Grant is sent in response to a Subsystem
+        Out-of-Service Request message. The affected PC and affected
+        SSN are provided with this notification."
+   ::= { ciscoGsccpMIBNotifs 5 }
+
+ciscoGsccpRmtCongestion NOTIFICATION-TYPE
+    OBJECTS         {
+                        cgspEventSequenceNumber,
+                        cgspCLLICode,
+                        cgsccpGttMapDisplayPC,
+                        cgsccpGttMapCongStatus,
+                        cgsccpGttMapCongLvl1,
+                        cgsccpGttMapCongLvl2,
+                        cgsccpGttMapCongLvl3
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This notification is generated initially when congestion is
+        experienced in the remote SCCP component for the first time in
+        last interval specified by the cgsccpGttErrorPeriod.  The
+        notification is generated after the number of recovery intervals
+        as specified by the cgsccpGttErrorRecoveryCount object has
+        passed without any congestion errors and total number of local
+        congestion observed for different congestion levels at the end
+        of the interval along with the latest known congestion status
+        for that remote signalling point will be provided."
+   ::= { ciscoGsccpMIBNotifs 6 }
+
+ciscoGsccpLocalSsStateChange NOTIFICATION-TYPE
+    OBJECTS         {
+                        cgspEventSequenceNumber,
+                        cgspCLLICode,
+                        cgsccpLocalDisplaySS,
+                        cgsccpLocalSsStatus
+                    }
+    STATUS          current
+    DESCRIPTION
+        "The notification generated when a local application subsystem
+        changes to a new state.  The subsystem number and the latest
+        subsystem state will be provided in this notification."
+   ::= { ciscoGsccpMIBNotifs 7 }
 -- *******************************************************************
 -- *
 -- *  Conformance Information
@@ -4172,7 +4708,7 @@ ciscoGsccpMIBComplianceRev4 MODULE-COMPLIANCE
     ::= { ciscoGsccpMIBCompliances 5 }
 
 ciscoGsccpMIBComplianceRev5 MODULE-COMPLIANCE
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The compliance statement for entities which implement
         the CISCO-ITP-GSCCP-MIB.my MIB"
@@ -4417,6 +4953,527 @@ ciscoGsccpMIBComplianceRev5 MODULE-COMPLIANCE
     DESCRIPTION
         "Create/Write access is not required."
     ::= { ciscoGsccpMIBCompliances 6 }
+
+ciscoGsccpMIBComplianceRev6 MODULE-COMPLIANCE
+    STATUS          deprecated
+    DESCRIPTION
+        "The compliance statement for entities which implement
+        the CISCO-ITP-GSCCP-MIB.my MIB"
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        ciscoGsccpGlobalEntryGroupRev1,
+                        ciscoGsccpGttConPcGroup,
+                        ciscoGsccpGttMapGroup,
+                        ciscoGsccpGttSelGroup,
+                        ciscoGsccpGttPrefGroupRev1,
+                        ciscoGsccpNotificationsGroup,
+                        ciscoGsccpInstTableEntryGroupRev1,
+                        ciscoGsccpGttGtaGroupRev2,
+                        ciscoGsccpGttAppGroupRev3,
+                        ciscoGsccpNotificationsGroupSup1,
+                        ciscoGsccpGttErrorsGroup,
+                        ciscoGsccpGttPrefGroupSup1,
+                        ciscoGsccpGlobalEntryGroupSup1,
+                        ciscoGsccpInstTableEntryGroupSup1,
+                        ciscoGsccpGttMapGroupSup1,
+                        ciscoGsccpGttErrorsGroupSup1,
+                        ciscoGsccpGttSsnGroup,
+                        ciscoGsccpGttSsnClassGroup,
+                        ciscoGsccpNotificationsInfoGroup,
+                        ciscoGsccpNotificationsGroupSup2
+                    }
+
+    OBJECT          cgsccpGttTranslateSample
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cgsccpGttTranslatePeriod
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cgsccpInstRowStatus
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttAppGr2Mult
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttAppGr2Type
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttAppGr2Cost
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttAppGr2Weight
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttAppGr2Pc
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttAppGr2Ssn
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttAppGr2Ri
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttAppGr2AsName
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttAppGr2NewSsn
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttAppGr2Network
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttAppGr2RowStatus
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttMapType
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttMapMultInd
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttMapBackupPc
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttMapBackupSsn
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttMapConPcList
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttMapReRouteOnCong
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttMapAdjacent
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttMapRowStatus
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttSelName
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttSelQOS
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttSelPrePrefConv
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttSelPostPrefConv
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttSelRowStatus
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttGtaSelName
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttGtaResType
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttGtaResPc
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttGtaResMap
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttGtaResAppGroup
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttGtaTTorSSN
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttGtaTTorSSNvalue
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttGtaRoutingInd
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttGtaQOS
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttGtaAsName
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttGtaRowStatus
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttPref2OutAddr
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttPref2TblNAI
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttPref2TblNP
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttPref2ItemNAI
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttPref2ItemNP
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttPref2RowStatus
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttPref2EncodingScheme
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+    ::= { ciscoGsccpMIBCompliances 7 }
+
+ciscoGsccpMIBComplianceRev7 MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for entities which implement
+        the CISCO-ITP-GSCCP-MIB.my MIB."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        ciscoGsccpGlobalEntryGroupRev1,
+                        ciscoGsccpGttConPcGroup,
+                        ciscoGsccpGttMapGroup,
+                        ciscoGsccpGttSelGroup,
+                        ciscoGsccpGttPrefGroupRev1,
+                        ciscoGsccpNotificationsGroup,
+                        ciscoGsccpInstTableEntryGroupRev1,
+                        ciscoGsccpGttGtaGroupRev2,
+                        ciscoGsccpGttAppGroupRev3,
+                        ciscoGsccpNotificationsGroupSup1,
+                        ciscoGsccpGttErrorsGroup,
+                        ciscoGsccpGttPrefGroupSup1,
+                        ciscoGsccpGlobalEntryGroupSup1,
+                        ciscoGsccpInstTableEntryGroupSup1,
+                        ciscoGsccpGttMapGroupSup1,
+                        ciscoGsccpGttErrorsGroupSup1,
+                        ciscoGsccpGttSsnGroup,
+                        ciscoGsccpGttSsnClassGroup,
+                        ciscoGsccpNotificationsInfoGroup,
+                        ciscoGsccpNotificationsGroupSup2,
+                        ciscoGsccpGttSelGroupSup1
+                    }
+
+    OBJECT          cgsccpGttTranslateSample
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cgsccpGttTranslatePeriod
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cgsccpInstRowStatus
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttAppGr2Mult
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttAppGr2Type
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttAppGr2Cost
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttAppGr2Weight
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttAppGr2Pc
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttAppGr2Ssn
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttAppGr2Ri
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttAppGr2AsName
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttAppGr2NewSsn
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttAppGr2Network
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttAppGr2RowStatus
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttMapType
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttMapMultInd
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttMapBackupPc
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttMapBackupSsn
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttMapConPcList
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttMapReRouteOnCong
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttMapAdjacent
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttMapRowStatus
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttSelName
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttSelQOS
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttSelPrePrefConv
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttSelPostPrefConv
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttSelRowStatus
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttGtaSelName
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttGtaResType
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttGtaResPc
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttGtaResMap
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttGtaResAppGroup
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttGtaTTorSSN
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttGtaTTorSSNvalue
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttGtaRoutingInd
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttGtaQOS
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttGtaAsName
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttGtaRowStatus
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttPref2OutAddr
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttPref2TblNAI
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttPref2TblNP
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttPref2ItemNAI
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttPref2ItemNP
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttPref2RowStatus
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttPref2EncodingScheme
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttNextSelName
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          cgsccpGttNextSelRefed
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+    ::= { ciscoGsccpMIBCompliances 8 }
 
 -- Units of Conformance
 
@@ -4784,4 +5841,115 @@ ciscoGsccpGlobalEntryGroupSup1 OBJECT-GROUP
         "SCCP translation physical index."
     ::= { ciscoGsccpMIBGroups 19 }
 
+ciscoGsccpInstTableEntryGroupSup1 OBJECT-GROUP
+    OBJECTS         {
+                        cgsccpInstReassUnsup,
+                        cgsccpInstReassFail,
+                        cgsccpInstSegUnsup,
+                        cgsccpInstSegFail
+                    }
+    STATUS          current
+    DESCRIPTION
+        "SCCP Instance table additional objects."
+    ::= { ciscoGsccpMIBGroups 20 }
+
+ciscoGsccpGttMapGroupSup1 OBJECT-GROUP
+    OBJECTS         {
+                        cgsccpGttMapCongLvl1,
+                        cgsccpGttMapCongLvl2,
+                        cgsccpGttMapCongLvl3,
+                        cgsccpGttMapSSPRcvd,
+                        cgsccpGttMapSSARcvd
+                    }
+    STATUS          current
+    DESCRIPTION
+        "SCCP GTT Mated Application additional objects."
+    ::= { ciscoGsccpMIBGroups 21 }
+
+ciscoGsccpGttErrorsGroupSup1 OBJECT-GROUP
+    OBJECTS         {
+                        cgsccpGttErrorsReassUnsupported,
+                        cgsccpGttErrorsReassFailure,
+                        cgsccpGttErrorsSegUnsupported,
+                        cgsccpGttErrorsSegFailure
+                    }
+    STATUS          current
+    DESCRIPTION
+        "SCCP GTT additional error objects."
+    ::= { ciscoGsccpMIBGroups 22 }
+
+ciscoGsccpGttSsnGroup OBJECT-GROUP
+    OBJECTS         {
+                        cgsccpSSNNumProhibits,
+                        cgsccpSSNNumAllows
+                    }
+    STATUS          current
+    DESCRIPTION
+        "SCCP SSN measurement objects."
+    ::= { ciscoGsccpMIBGroups 23 }
+
+ciscoGsccpGttSsnClassGroup OBJECT-GROUP
+    OBJECTS         {
+                        cgsccpSSNClassUDTMsgsSent,
+                        cgsccpSSNClassUDTMsgsRcvd,
+                        cgsccpSSNClassXUDTMsgsSent,
+                        cgsccpSSNClassXUDTMsgsRcvd,
+                        cgsccpSSNClassLUDTMsgsSent,
+                        cgsccpSSNClassLUDTMsgsRcvd
+                    }
+    STATUS          current
+    DESCRIPTION
+        "SCCP SSN Class measurement objects."
+    ::= { ciscoGsccpMIBGroups 24 }
+
+ciscoGsccpNotificationsInfoGroup OBJECT-GROUP
+    OBJECTS         {
+                        cgsccpLocalDisplaySS,
+                        cgsccpLocalSsStatus
+                    }
+    STATUS          current
+    DESCRIPTION
+        "SCCP notification information objects."
+    ::= { ciscoGsccpMIBGroups 25 }
+
+ciscoGsccpNotificationsGroupSup2 NOTIFICATION-GROUP
+   NOTIFICATIONS    {
+                        ciscoGsccpSegReassUnsup,
+                        ciscoGsccpSOGReceived,
+                        ciscoGsccpRmtCongestion,
+                        ciscoGsccpLocalSsStateChange
+                    }
+    STATUS          current
+    DESCRIPTION
+        "SCCP additional notification objects."
+    ::= { ciscoGsccpMIBGroups 26 }
+
+ciscoGsccpGttSelGroupSup1 OBJECT-GROUP
+    OBJECTS         {
+                        cgsccpGttNextSelName,
+                        cgsccpGttNextSelRefed
+                    }
+    STATUS          current
+    DESCRIPTION
+        "SCCP GTT selector table additional objects."
+    ::= { ciscoGsccpMIBGroups 27 }
+
 END
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

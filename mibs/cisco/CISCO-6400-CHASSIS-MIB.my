@@ -3,7 +3,7 @@
 --
 -- Aug 1998, Eric Chen
 --
--- Copyright (c) 1998 by cisco Systems, Inc.
+-- Copyright (c) 1998-1999, 2000, 2001 by cisco Systems, Inc.
 -- All rights reserved.
 -- **********************************************************************
 --
@@ -32,7 +32,7 @@ IMPORTS
 		FROM CISCO-SMI;
 
 cisco6400ChassisMIB	MODULE-IDENTITY
-	LAST-UPDATED	"9801080000Z"
+	LAST-UPDATED	"200110220000Z"
 	ORGANIZATION    "Cisco Systems, Inc."
 	CONTACT-INFO
 		"	Cisco Systems
@@ -46,7 +46,24 @@ cisco6400ChassisMIB	MODULE-IDENTITY
  
                 E-mail: cs-atm@cisco.com"
 	DESCRIPTION
+		"Add nrpSwitchoverAlarm,
+		     nrpSecondaryFailureAlarm,
+		     nrpSecondaryRemovedAlarm, and
+		     nrpMismatchAlarm."
+	REVISION	"200110220000Z"
+	DESCRIPTION
+		"Add nrpBootUpAlarm. Deprecated cisco6400ChassisMIBCompliance
+		 and cisco6400RedundantGroup.  Created cisco6400ChassisMIBCompliance
+		 and cisco6400RedundantGroup2."
+	REVISION	"200105101234Z"
+	DESCRIPTION
+		"Add diskAlarm and imageAlarm."
+	REVISION	"200009251234Z"
+	DESCRIPTION
 		"6400 Chassis MIB."
+	REVISION	"9903220000Z"
+	DESCRIPTION
+		"Add Signal Fail BER."
 	REVISION	"9808050000Z"
 	DESCRIPTION
 		"Update chassis alarm threshold setup range & main-cpu auto-sync
@@ -214,7 +231,7 @@ c64SlotConfigPrefIndex	OBJECT-TYPE
 				  secondarySlot(2)
 				}
 	MAX-ACCESS	read-create
-	STATUS		current
+	STATUS		deprecated
 	DESCRIPTION	"This object specify which slot in the pair
 			 of redundancy to be used as prefer slot.
 
@@ -226,7 +243,10 @@ c64SlotConfigPrefIndex	OBJECT-TYPE
 			 secondarySlot(2) is to use the slot referred by
 			 	c64Slot2Index.
 
-			 The default is primarySlot(1)."
+			 The default is primarySlot(1).
+			 
+			 The slot prefer feature is removed and the 
+			 the object is deprecated"
 	::= { c64SlotConfigEntry 5 }
 
 c64SlotSwitchOver	OBJECT-TYPE
@@ -392,7 +412,7 @@ c64SubSlotConfigPrefIndex OBJECT-TYPE
 				secondarySubslot(2)
 			}
 	MAX-ACCESS	read-create
-	STATUS		current
+	STATUS		deprecated
 	DESCRIPTION	"This object specify which sub-slot in the pair of
 			 redundancy to be used as prefer sub-slot.
 
@@ -407,7 +427,10 @@ c64SubSlotConfigPrefIndex OBJECT-TYPE
 			 	c64SubSlotConfigModule2Index and
 			 	c64SubSlotConfigSubModule2Index.
 
-			 The default is primarySubslot(1)."
+			 The default is primarySubslot(1).
+			
+			 The subslot prefer feature is removed and the object
+			 is deprecated"
 	::= { c64SubSlotConfigEntry 8 }
 
 c64SubSlotSwitchOver 	OBJECT-TYPE
@@ -657,6 +680,8 @@ C64SonetAPSConfigEntry ::= SEQUENCE {
 		c64SonetAPSBERThreshold
 			INTEGER,
 		c64SonetAPSSwitchCmd
+			INTEGER,
+		c64SonetAPSSFBERThreshold
 			INTEGER
 		}
 
@@ -721,6 +746,16 @@ c64SonetAPSSwitchCmd	OBJECT-TYPE
 				Clears all posted APS priority requests in
 				this channel."
 	::= { c64SonetAPSConfigEntry 3 }
+
+c64SonetAPSSFBERThreshold	OBJECT-TYPE
+	SYNTAX		INTEGER (3..5)
+	MAX-ACCESS	read-create
+	STATUS		current
+	DESCRIPTION	"This is object is used to set the Signal Fail 
+			 Bit-Error-Rate threshold at which an APS 
+			 request of priority 'Signal Fail' will be posted.
+			 3 => 10E-3, 4 => 10E-4, 5 => 10E-5"
+	::= { c64SonetAPSConfigEntry 4 }
 
 -- Sonet APS Stats Table
 
@@ -1185,9 +1220,36 @@ c64ChassisAlarmType 	OBJECT-TYPE
                                 networkClockAlarm(13),
 						  -- Network clock alarm
 				nrpSARFail(14),	  -- NRP SAR down
-				nrpPAMDataError(15)
+				nrpPAMDataError(15),
 						  -- NRP driver, invalid PAM
 						  -- data or can't access
+				diskAlarm(16),    -- Primary and 
+						  -- secondary disk
+						  -- status (missing,
+						  -- not functional, 
+						  -- nearly full and 
+						  -- full)
+				imageAlarm(17),   -- no downloadable 
+						  -- image found for 
+						  -- slots
+				nrpBootUpAlarm(18),
+						  -- NRP not boot up
+
+				nrpSwitchoverAlarm(19),
+						  -- NRP redundant pair
+						  -- switchover
+
+				nrpSecondaryFailureAlarm(20),
+						  -- NRP redundant pair
+						  -- secondary failure
+
+				nrpSecondaryRemovedAlarm(21),
+						  -- NRP redundant pair
+						  -- secondary removed
+
+				nrpMismatchAlarm(22)
+						  -- NRP redundant pair
+						  -- mismatch types
 			}
 	MAX-ACCESS	read-only
 	STATUS		current
@@ -1238,32 +1300,33 @@ cisco6400ChassisMIBGroups		OBJECT IDENTIFIER ::= { cisco6400ChassisMIBConformanc
 
 -- compliance statements
 
-cisco6400ChassisMIBCompliance MODULE-COMPLIANCE
+-- cisco6400ChassisMIBCompliance  MODULE-COMPLIANCE 
+-- (deprecated:  moved to end of module)
+
+cisco6400ChassisMIBCompliance2 MODULE-COMPLIANCE
 	STATUS	current
 	DESCRIPTION
 		"The compliance statement for 6400s, used in Santa NSP, which
 		 implement the Cisco 6400 Chassis MIB"
 	MODULE	-- this module
 	MANDATORY-GROUPS {
-		cisco6400RedundantGroup,
+		cisco6400RedundantGroup2,
 		cisco6400ChassisMIBGroup
 		}
-	::= { cisco6400ChassisMIBCompliances 1 }
+	::= { cisco6400ChassisMIBCompliances 2 }
 
 -- units of conformance
 
-cisco6400RedundantGroup OBJECT-GROUP
+cisco6400RedundantGroup2 OBJECT-GROUP
 	OBJECTS {
 		c64MainCPUConfigAutoSync,
 		c64MainCPUSwitchOver,
 		c64Slot1Name,
 		c64Slot2Name,
-		c64SlotConfigPrefIndex,
 		c64SlotSwitchOver,
 		c64SlotConfigStatus,
 		c64SubSlot1Name,
 		c64SubSlot2Name,
-		c64SubSlotConfigPrefIndex,
 		c64SubSlotSwitchOver,
 		c64SubSlotConfigStatus,
 		c64Port1Name,
@@ -1274,6 +1337,7 @@ cisco6400RedundantGroup OBJECT-GROUP
 		c64SonetAPSMode,
 		c64SonetAPSBERThreshold,
 		c64SonetAPSSwitchCmd,
+		c64SonetAPSSFBERThreshold,
 		c64SonetAPSWorkSectionStatus,
 		c64SonetAPSWorkLineStatus,
 		c64SonetAPSWorkPathStatus,
@@ -1298,7 +1362,7 @@ cisco6400RedundantGroup OBJECT-GROUP
 	DESCRIPTION
 		"A collection of objects providing satan redundancy config.
 		 and information."
-	::= { cisco6400ChassisMIBGroups 1 }
+	::= { cisco6400ChassisMIBGroups 3 }
 
 cisco6400ChassisMIBGroup OBJECT-GROUP
 	OBJECTS {
@@ -1320,5 +1384,76 @@ cisco6400ChassisMIBGroup OBJECT-GROUP
 		"A collection of objects providing santa telco alarm
 		 information."
 	::= { cisco6400ChassisMIBGroups 2 }
+
+-- Deprecated definitions
+
+cisco6400ChassisMIBCompliance MODULE-COMPLIANCE
+	STATUS	deprecated
+	DESCRIPTION
+		"The compliance statement for 6400s, used in Santa NSP, which
+		 implement the Cisco 6400 Chassis MIB.
+		   
+		 This compliance statement is deprecated as some objects were 
+		 deprecated in cisco6400RedundantGroup."
+	MODULE	-- this module
+	MANDATORY-GROUPS {
+		cisco6400RedundantGroup,
+		cisco6400ChassisMIBGroup
+		}
+	::= { cisco6400ChassisMIBCompliances 1 }
+
+-- units of conformance
+
+cisco6400RedundantGroup OBJECT-GROUP
+	OBJECTS {
+		c64MainCPUConfigAutoSync,
+		c64MainCPUSwitchOver,
+		c64Slot1Name,
+		c64Slot2Name,
+		c64SlotConfigPrefIndex,
+		c64SlotSwitchOver,
+		c64SlotConfigStatus,
+		c64SubSlot1Name,
+		c64SubSlot2Name,
+ 		c64SubSlotConfigPrefIndex,
+		c64SubSlotSwitchOver,
+		c64SubSlotConfigStatus,
+		c64Port1Name,
+		c64Port2Name,
+		c64PortConfigPrefIndex,
+		c64PortSwitchOver,
+		c64PortConfigStatus,
+		c64SonetAPSMode,
+		c64SonetAPSBERThreshold,
+		c64SonetAPSSwitchCmd,
+		c64SonetAPSSFBERThreshold,
+		c64SonetAPSWorkSectionStatus,
+		c64SonetAPSWorkLineStatus,
+		c64SonetAPSWorkPathStatus,
+		c64SonetAPSWorkSectionBIPE,
+		c64SonetAPSWorkLineBIPE,
+		c64SonetAPSWorkLineFEBE,
+		c64SonetAPSWorkPathBIPE,
+		c64SonetAPSWorkPathFEBE,
+		c64SonetAPSWorkPortStatus,
+		c64SonetAPSProtectSectionStatus,
+		c64SonetAPSProtectLineStatus,
+		c64SonetAPSProtectPathStatus,
+		c64SonetAPSProtectSectionBIPE,
+		c64SonetAPSProtectLineBIPE,
+		c64SonetAPSProtectLineFEBE,
+		c64SonetAPSProtectPathBIPE,
+		c64SonetAPSProtectPathFEBE,
+		c64SonetAPSProtectPortStatus,
+		c64SonetAPSChannelStatus
+	}
+	STATUS	deprecated
+	DESCRIPTION
+		"A collection of objects providing satan redundancy config.
+		 and information.
+		 This RFC 2155-level group was deprecated when the 
+		 c64SlotConfigPrefIndex and c64SubSlotConfigPrefIndex 
+		 objects were deprecated."
+	::= { cisco6400ChassisMIBGroups 1 }
 
 END

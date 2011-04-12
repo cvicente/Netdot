@@ -1,0 +1,895 @@
+
+NTN-QOS-POLICY-EXT-PIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE
+            FROM SNMPv2-SMI
+    MODULE-COMPLIANCE, OBJECT-GROUP
+            FROM SNMPv2-CONF
+    TruthValue, TEXTUAL-CONVENTION,
+    RowStatus, StorageType
+            FROM SNMPv2-TC
+    PolicyInstanceId, RoleCombination
+            FROM POLICY-FRAMEWORK-PIB
+    QosInterfaceQueueCount, qosActionEntry,
+    qosInterfaceTypeEntry
+            FROM QOS-POLICY-IP-PIB
+    QosIeee802Cos, qos802DscpMappingEntry,
+    qos802AceEntry
+            FROM QOS-POLICY-802-PIB
+    policy
+            FROM SYNOPTICS-ROOT-MIB;
+
+ntnQosPolicyExtPib  MODULE-IDENTITY
+    LAST-UPDATED "200407200000Z"     -- July 20, 2004
+    ORGANIZATION "Nortel Networks, Inc."
+    CONTACT-INFO "
+                  John Seligson
+                  Nortel Networks, Inc.
+                  4401 Great America Parkway
+                  Santa Clara, CA 95054 USA
+                  Phone: +1 408 495 2992
+                  Email: jseligso@nortelnetworks.com"
+    DESCRIPTION
+            "The Nortel Network's PIB module containing 
+             extensions to the base PIB modules (Framework,
+             IP QoS, 802 QoS) produced by the IETF."
+
+    REVISION "200407200000Z" -- 20 July 2004
+    DESCRIPTION "Version 3: Added version info"  
+
+    ::= { policy 4 }
+
+ntnQosPolicyExtPibClasses 
+            OBJECT IDENTIFIER ::= { ntnQosPolicyExtPib 1 }
+
+--
+-- Textual Conventions
+--
+
+--
+-- Drop Precedence
+--
+
+DropPrecedence ::= TEXTUAL-CONVENTION
+    STATUS       current
+    DESCRIPTION
+        "An integer that indicates the drop precedence value.
+        Traffic associated with a lower drop precedence is
+        generally given priority over traffic with a higher
+        drop precedence during resource allocation."
+
+    SYNTAX INTEGER (1..8)
+
+--
+-- The Nortel Networks QoS Interface Extensions Group
+--
+
+ntnQosIfParametersExt 
+            OBJECT IDENTIFIER ::= { ntnQosPolicyExtPibClasses 1 }
+
+--
+-- Nortel Networks 802.1D User Priority Assignment Table
+--
+-- Supports the assignment of 802.1D user priority (Pri) 
+-- values to queues for each interface type.
+--
+
+ntnQosIfPriAssignmentTable OBJECT-TYPE
+    SYNTAX         SEQUENCE OF NtnQosIfPriAssignmentEntry
+    MAX-ACCESS     not-accessible
+    STATUS         current
+    DESCRIPTION
+        "Supports the assignment of 802.1D user priority 
+        values to a queue for each interface with a specific 
+        role combination. There will be 8 instances of this 
+        class for each supported role combination."
+
+    ::= { ntnQosIfParametersExt 1 }
+
+ntnQosIfPriAssignmentEntry OBJECT-TYPE
+    SYNTAX         NtnQosIfPriAssignmentEntry
+    MAX-ACCESS     not-accessible
+    STATUS         current
+    DESCRIPTION
+        "An instance of the ntnQosIfPriAssignment class."
+
+    INDEX { ntnQosIfPriAssignmentId }
+    ::= { ntnQosIfPriAssignmentTable 1 }
+
+NtnQosIfPriAssignmentEntry ::= SEQUENCE {
+        ntnQosIfPriAssignmentId          PolicyInstanceId,
+        ntnQosIfPriAssignmentRoles       RoleCombination,
+        ntnQosIfPriAssignmentPri         QosIeee802Cos,
+        ntnQosIfPriAssignmentQueue       QosInterfaceQueueCount,
+        ntnQosIfPriAssignmentStorageType StorageType,
+        ntnQosIfPriAssignmentStatus      RowStatus
+}
+
+ntnQosIfPriAssignmentId OBJECT-TYPE
+    SYNTAX         PolicyInstanceId
+    MAX-ACCESS     not-accessible
+    STATUS         current
+    DESCRIPTION
+        "An index that is used to uniquely identify the 
+        instance of the ntnQosIfPriAssignment class."
+
+    ::= { ntnQosIfPriAssignmentEntry 1 }
+
+ntnQosIfPriAssignmentRoles OBJECT-TYPE
+    SYNTAX         RoleCombination
+    MAX-ACCESS     read-create
+    STATUS         current
+    DESCRIPTION
+        "The role combination with which an interface must be 
+        configured to support the Pri-to-queue assignment 
+        described by this instance. The specified role
+        combination must be defined in the qosInterfaceType
+        table prior to being referenced by this entry.
+        Otherwise a 'priAssociationUnknown(3)' error code
+        will be returned."
+
+    ::= { ntnQosIfPriAssignmentEntry 2 }
+
+ntnQosIfPriAssignmentPri OBJECT-TYPE
+    SYNTAX         QosIeee802Cos
+    MAX-ACCESS     read-create
+    STATUS         current
+    DESCRIPTION
+        "The 802.1D user priority to which this class 
+        instance applies."
+
+    ::= { ntnQosIfPriAssignmentEntry 3 }
+
+ntnQosIfPriAssignmentQueue OBJECT-TYPE
+    SYNTAX         QosInterfaceQueueCount
+    MAX-ACCESS     read-create
+    STATUS         current
+    DESCRIPTION
+        "The specific queue, within the queue set that is
+        associated with the interface set identified by the
+        ntnQosIfPriAssignmentRoles tag, on which traffic 
+        with the specified user priority, dictated by the 
+        ntnQosIfPriAssignmentPri value, is placed. Failure 
+        to specify an appropriate queue results in a
+        'priAssociationConflict(4)' error indication being 
+        returned."
+
+    ::= { ntnQosIfPriAssignmentEntry 4 }
+
+ntnQosIfPriAssignmentStorageType OBJECT-TYPE
+    SYNTAX         StorageType
+    MAX-ACCESS     read-create
+    STATUS         current
+    DESCRIPTION
+        "The storage type for this conceptual row.
+
+        Conceptual rows having the value permanent(4) need not
+        allow write-access to any columnar objects in the row.
+
+        This object may not be modified if the associated
+        ntnQosIfPriAssignmentStatus object is equal to active(1)."
+
+    DEFVAL  { volatile }
+    ::= { ntnQosIfPriAssignmentEntry 5 }
+
+ntnQosIfPriAssignmentStatus OBJECT-TYPE
+    SYNTAX         RowStatus
+    MAX-ACCESS     read-create
+    STATUS         current
+    DESCRIPTION
+        "The status of this row.
+
+        An entry may not exist in the active state unless all
+        objects in the entry have an appropriate value. Row
+        creation using only default values is supported."
+
+    ::= { ntnQosIfPriAssignmentEntry 6 }
+
+--
+-- Nortel Networks Interface Type Extension Table
+--
+-- Supports augmenting the information regarding the 
+-- interface roles and queue set assignment.
+--
+
+ntnQosInterfaceTypeExtTable OBJECT-TYPE
+    SYNTAX         SEQUENCE OF NtnQosInterfaceTypeExtEntry
+    MAX-ACCESS     not-accessible
+    STATUS         current
+    DESCRIPTION
+        "Supports augmenting the information regarding
+        the interface roles and queue set assignments."
+
+    ::= { ntnQosIfParametersExt 2 }
+
+ntnQosInterfaceTypeExtEntry OBJECT-TYPE
+    SYNTAX         NtnQosInterfaceTypeExtEntry
+    MAX-ACCESS     not-accessible
+    STATUS         current
+    DESCRIPTION
+        "An instance of the ntnQosInterfaceTypeExt class."
+
+    AUGMENTS { qosInterfaceTypeEntry }
+    ::= { ntnQosInterfaceTypeExtTable 1 }
+
+NtnQosInterfaceTypeExtEntry ::= SEQUENCE {
+        ntnQosInterfaceTypeExtIfClass INTEGER
+}
+
+ntnQosInterfaceTypeExtIfClass OBJECT-TYPE
+    SYNTAX         INTEGER {
+                       core(1),    -- Trusted traffic
+                       access(2)   -- Non-trusted traffic
+                   }
+    MAX-ACCESS     read-create
+    STATUS         current
+    DESCRIPTION
+        "A value describing the overall classification of
+        traffic received on interfaces with the given role
+        combination. Traffic received on core (i.e., trusted)
+        interfaces may be processed differently and be subject
+        to different restrictions that traffic received on
+        access (i.e., non-trusted) interfaces. The treatment
+        of traffic based on interface class is implementation
+        dependent."
+
+    ::= { ntnQosInterfaceTypeExtEntry 1 }
+
+--
+
+--
+-- Nortel Networks 802.1p DSCP Mapping Extension Table
+--
+-- Supports augmenting the information regarding the 
+-- mapping of DSCPs to 802.1p and drop precedence values.
+--
+
+ntnQosIfDscpMappingExtTable OBJECT-TYPE
+    SYNTAX         SEQUENCE OF NtnQosIfDscpMappingExtEntry
+    MAX-ACCESS     not-accessible
+    STATUS         current
+    DESCRIPTION
+        "Supports augmenting the information regarding
+        the mapping of DSCP values to 802.1p user priority
+        and drop precedence values."
+
+    ::= { ntnQosIfParametersExt 3 }
+
+ntnQosIfDscpMappingExtEntry OBJECT-TYPE
+    SYNTAX         NtnQosIfDscpMappingExtEntry
+    MAX-ACCESS     not-accessible
+    STATUS         current
+    DESCRIPTION
+        "An instance of the ntnQosIfDscpMappingExt class."
+
+    AUGMENTS { qos802DscpMappingEntry }
+    ::= { ntnQosIfDscpMappingExtTable 1 }
+
+NtnQosIfDscpMappingExtEntry ::= SEQUENCE {
+        ntnQosIfDscpMappingExtDropPrec DropPrecedence
+}
+
+ntnQosIfDscpMappingExtDropPrec OBJECT-TYPE
+    SYNTAX         DropPrecedence
+    MAX-ACCESS     read-create
+    STATUS         current
+    DESCRIPTION
+        "The drop precedence value to use for traffic with the
+        associated DSCP value."
+
+    ::= { ntnQosIfDscpMappingExtEntry 1 }
+
+--
+-- The Nortel Networks QOS Action Extensions Group
+--
+
+ntnQosActionExt 
+            OBJECT IDENTIFIER ::= { ntnQosPolicyExtPibClasses 2 }
+
+--
+-- The Nortel Networks QoS Action Extension Table
+--
+-- The NTN QoS Action Extension Table describes actions that 
+-- are associated with all ACL defintions. These actions augment
+-- the standard actions specified in the QOS-POLICY-IP-PIB. An 
+-- action specification may be simple (i.e., a single action) 
+-- or complex (i.e., multiple actions that are performed in 
+-- "parallel"). 
+--
+
+ntnQosActionExtTable OBJECT-TYPE
+    SYNTAX         SEQUENCE OF NtnQosActionExtEntry
+    MAX-ACCESS     not-accessible
+    STATUS         current
+    DESCRIPTION
+        "Contains the current set of configured general action
+        extensions. The actions are associated with all types 
+        ACLs during operation."
+
+    ::= { ntnQosActionExt 1 }
+
+ntnQosActionExtEntry OBJECT-TYPE
+    SYNTAX         NtnQosActionExtEntry
+    MAX-ACCESS     not-accessible
+    STATUS         current
+    DESCRIPTION
+        "General action extensions. Each entry specifies an instance
+        of the ntnQosActionExt class which describes (potentially) 
+        several distinct action attributes. Each action is taken 
+        individually regarding the data in question. Several actions 
+        can be taken for a single frame.
+
+        An instance of this class can not be deleted while the 
+        correspond qosActionTable instance exists."
+
+    AUGMENTS { qosActionEntry }
+    ::= { ntnQosActionExtTable 1 }
+
+NtnQosActionExtEntry ::= SEQUENCE {
+        ntnQosActionExtAssignFlowId    INTEGER,
+        ntnQosActionExtCopyToCpu       TruthValue,
+        ntnQosActionExtMirrorFrame     TruthValue,
+        ntnQosActionExtSetDropPrec     INTEGER,
+        ntnQosActionExtUpdatePri       INTEGER,
+        ntnQosActionExtMirrorDirection INTEGER
+}
+
+ntnQosActionExtAssignFlowId OBJECT-TYPE
+    SYNTAX         INTEGER (-1 | 1..65535)
+    MAX-ACCESS     read-create
+    STATUS         current
+    DESCRIPTION
+        "This action attribute, when specified, will cause
+        the packet being evaluated to be associated with the
+        specified flow identifier. Flow identifiers may be 
+        used to facilitate traffic shaping and other 
+        implementation specific operations at the egress 
+        interface.
+
+        Setting this attribute to -1 indicates that flow
+        identification is not in use at the present time."
+
+    ::= { ntnQosActionExtEntry 1 }
+
+ntnQosActionExtCopyToCpu OBJECT-TYPE
+    SYNTAX         TruthValue
+    MAX-ACCESS     read-create
+    STATUS         current
+    DESCRIPTION
+        "This action attribute, when specified, will cause
+        the packet being evaluated to be sent to the CPU
+        for further processing. Extreme care should be taken
+        when setting this object to 'true(1)' since this action
+        may adversely affect resource availability in the
+        system impacting overall system operation.
+
+        A value of 'false(2)' indicates that this action will
+        not be initiated."
+
+    ::= { ntnQosActionExtEntry 2 }
+
+ntnQosActionExtMirrorFrame OBJECT-TYPE
+    SYNTAX         TruthValue
+    MAX-ACCESS     read-create
+    STATUS         current
+    DESCRIPTION
+        "This action attribute, when specified, will cause
+        the packet being evaluated to be sent to a predefined
+        egress port for transmission in addition to the normal
+        processing associated with the packet.
+
+        Specification of the egress port or ports that will
+        serve as the destination for mirrored data is beyond
+        the scope of this document. Furthermore, note that
+        data mirroring can potentially consume substantial
+        resources at the egress. Oversubscription issues 
+        should be considered prior to specifying this action.
+
+        Also note that the mirroring direction attribute in 
+        this same ntnQosActionExt entry determines the 
+        data that is mirrored. The packet that was 'received' 
+        by the device will be mirrored (i.e., packet 
+        modifications that may occur during processing will 
+        not appear in the mirrored data) when the mirroring 
+        direction attribute has the value 'ingress(1)'. The 
+        packet that is to be 'transmitted' by the device will 
+        be mirrored (i.e., packet modifications that may occur 
+        during processing will appear in the mirrored data) 
+        when the mirroring direction attribute has the value 
+        'egress(2)'.
+
+        A value of 'false(2)' indicates that this action will
+        not be initiated."
+
+    ::= { ntnQosActionExtEntry 3 }
+
+ntnQosActionExtSetDropPrec OBJECT-TYPE
+    SYNTAX         INTEGER {
+                       dropPrec1(1), 
+                       dropPrec2(2), 
+                       dropPrec3(3), 
+                       dropPrec4(4), 
+                       dropPrec5(5), 
+                       dropPrec6(6), 
+                       dropPrec7(7), 
+                       dropPrec8(8), 
+                       useDefault(9),
+                       ignore(10),
+                       useEgressMap(11)
+                   }
+    MAX-ACCESS     read-create
+    STATUS         current
+    DESCRIPTION
+        "This action attribute, when specified, will cause
+        the packet being evaluated to be associated with the
+        specified relative drop precedence. The relative drop
+        precedence may be used to determine traffic 
+        precedence relative to other traffic being processed 
+        by the device and other implementation specific 
+        operations at the egress interface.
+
+        A low value for drop precedence equates to the traffic
+        receiving a higher priority in terms of processing.
+        In other words, traffic with a drop precedence of 1
+        is treated with the highest processing priority while
+        traffic with a drop precedence of 8 receives the
+        lowest processing priority.
+
+        Specifying a value equal to useDefault(9) means that
+        the value for this attribute will be assigned based
+        on default information maintained in the system. The
+        value specified in the 'UpdateDSCP' attribute will
+        be used to determine the default drop precedence. Note
+        that specifying useDefault(9) means that assignment
+        of a value for this attribute is implementation
+        dependent.
+
+        Specifying a value equal to ignore(10) means that
+        no action will be taken related to this attribute. 
+        Note that the results of classification where
+        actions specifying ignore(10) are applied are 
+        implementation dependent.
+
+        Specifying a value equal to useEgressMap(11) means that
+        the value for this attribute will be assigned based
+        on DSCP-to-drop precedence egress map information 
+        maintained in the system. The DSCP value in received
+        traffic will be used to determine the drop precedence.
+        Note that specifying useEgressMap(11) means that assignment
+        of a value for this attribute is implementation
+        dependent."
+
+    ::= { ntnQosActionExtEntry 4 }
+
+ntnQosActionExtUpdatePri OBJECT-TYPE
+    SYNTAX         INTEGER {
+                       markAsPriority0(1), 
+                       markAsPriority1(2), 
+                       markAsPriority2(3), 
+                       markAsPriority3(4), 
+                       markAsPriority4(5), 
+                       markAsPriority5(6), 
+                       markAsPriority6(7), 
+                       markAsPriority7(8), 
+                       useDefault(9),
+                       ignore(10),
+                       useEgressMap(11)
+                   }
+    MAX-ACCESS     read-create
+    STATUS         current
+    DESCRIPTION
+        "This action attribute, when specified, will cause the
+        value contained in the user priority field of the 802.1Q
+        frame to be updated based on the value of this object.
+        No action is taken if the frame is untagged.
+
+        Specifying a value equal to useDefault(9) means that
+        the value for this attribute will be assigned based
+        on default information maintained in the system. The
+        value specified in the 'UpdateDSCP' attribute will
+        be used to determine the default drop precedence. Note
+        that specifying useDefault(9) means that assignment
+        of a value for this attribute is implementation
+        dependent.
+
+        Specifying a value equal to ignore(10) means that
+        no action will be taken related to this attribute. 
+        Note that the results of classification where
+        actions specifying ignore(10) are applied are 
+        implementation dependent.
+
+        Specifying a value equal to useEgressMap(11) means that
+        the value for this attribute will be assigned based
+        on DSCP-to-drop precedence egress map information 
+        maintained in the system. The DSCP value in received
+        traffic will be used to determine the drop precedence.
+        Note that specifying useEgressMap(11) means that assignment
+        of a value for this attribute is implementation
+        dependent."
+
+    ::= { ntnQosActionExtEntry 5 }
+
+ntnQosActionExtMirrorDirection OBJECT-TYPE
+    SYNTAX         INTEGER {
+                       ingress(1), 
+                       egress(2)
+                   }
+    MAX-ACCESS     read-create
+    STATUS         current
+    DESCRIPTION
+        "This action attribute, when specified, will determine
+        where a snapshot of a packet being mirrored will be
+        taken for mirroring purposes. The packet that was 
+        'received' by the device will be mirrored (i.e., packet 
+        modifications that may occur during processing will not 
+        appear in the mirrored data) when the direction attribute 
+        has the value 'ingress(1)'. The packet that is to be 
+        'transmitted' by the device will be mirrored (i.e., packet 
+        modifications that may occur during processing will appear 
+        in the mirrored data) when the direction attribute has 
+        the value 'egress(2)'.
+
+        Note that the value of this attribute is only considered
+        if the ntnQosActionExtMirrorFrame attribute is 'true'."
+
+    DEFVAL { ingress }
+    ::= { ntnQosActionExtEntry 6 }
+
+--
+-- The Nortel Networks QOS 802 Filter Extensions Group
+--
+
+ntnQos802FilterExt
+            OBJECT IDENTIFIER ::= { ntnQosPolicyExtPibClasses 3 }
+
+--
+-- The Nortel Networks QoS 802 Filter Extension Table
+--
+-- The NTN QoS 802 Filter Extension Table describes filter options
+-- that are used to classify traffic based on certain criteria.
+-- These filter options augment the standard 802 filter options
+-- specified in the QOS-POLICY-802-PIB.
+--
+
+ntnQos802FilterExtTable OBJECT-TYPE
+    SYNTAX         SEQUENCE OF NtnQos802FilterExtEntry
+    MAX-ACCESS     not-accessible
+    STATUS         current
+    DESCRIPTION
+        "Contains the current set of configured 802 filter
+        extensions."
+
+    ::= { ntnQos802FilterExt 1 }
+
+ntnQos802FilterExtEntry OBJECT-TYPE
+    SYNTAX         NtnQos802FilterExtEntry
+    MAX-ACCESS     not-accessible
+    STATUS         current
+    DESCRIPTION
+        "Global (802) filter extensions. Each entry specifies an
+        instance of the ntnQos802FilterExt class which describes
+        (potentially) several distinct filter attributes.
+
+        An instance of this class can not be deleted while the
+        correspond qos802AceTable instance exists."
+
+    AUGMENTS { qos802AceEntry }
+    ::= { ntnQos802FilterExtTable 1 }
+
+NtnQos802FilterExtEntry ::= SEQUENCE {
+        ntnQos802FilterDscp         INTEGER,
+        ntnQos802FilterProtocol     INTEGER,
+        ntnQos802FilterDstL4PortMin INTEGER,
+        ntnQos802FilterDstL4PortMax INTEGER,
+        ntnQos802FilterSrcL4PortMin INTEGER,
+        ntnQos802FilterSrcL4PortMax INTEGER,
+        ntnQos802FilterVlanIdSet    OCTET STRING
+}
+
+ntnQos802FilterDscp OBJECT-TYPE
+    SYNTAX         INTEGER (-1 | 0..63)
+    MAX-ACCESS     read-create
+    STATUS         current
+    DESCRIPTION
+        "The value that the DSCP in the packet can have and
+        match this filter. A value of -1 indicates that a specific
+        DSCP value has not been defined and thus all DSCP values
+        are considered a match."
+
+    ::= { ntnQos802FilterExtEntry 1 }
+
+ntnQos802FilterProtocol OBJECT-TYPE
+    SYNTAX         INTEGER (0..255)
+    MAX-ACCESS     read-create
+    STATUS         current
+    DESCRIPTION
+        "The IP protocol to match against the packet's protocol.
+        Valid only when applied against IP traffic. A value of
+        zero means match all."
+
+    ::= { ntnQos802FilterExtEntry 2 }
+
+ntnQos802FilterDstL4PortMin OBJECT-TYPE
+    SYNTAX         INTEGER (0..65535)
+    MAX-ACCESS     read-create
+    STATUS         current
+    DESCRIPTION
+        "The minimum value that the packet's layer 4 destination
+        port number can have and match this filter. Valid only
+        when applied against IP traffic flows. The value of
+        this attribute must be less-than-or-equal-to the value of
+        the corresponding ntnQos802FilterDstL4PortMax attribute."
+
+    ::= { ntnQos802FilterExtEntry 3 }
+
+ntnQos802FilterDstL4PortMax OBJECT-TYPE
+    SYNTAX         INTEGER (0..65535)
+    MAX-ACCESS     read-create
+    STATUS         current
+    DESCRIPTION
+        "The maximum value that the packet's layer 4 destination
+        port number can have and match this filter. Valid only
+        when applied against IP traffic flows. The value of
+        this attribute must be greater-than-or-equal-to the value
+        of the corresponding ntnQos802FilterDstL4PortMin attribute."
+
+    ::= { ntnQos802FilterExtEntry 4 }
+
+ntnQos802FilterSrcL4PortMin OBJECT-TYPE
+    SYNTAX         INTEGER (0..65535)
+    MAX-ACCESS     read-create
+    STATUS         current
+    DESCRIPTION
+        "The minimum value that the packet's layer 4 source port
+        number can have and match this filter. Valid only
+        when applied against IP traffic flows. The value of this
+        attribute must be less-than-or-equal-to the value of
+        the corresponding ntnQos802FilterSrcL4PortMax attribute."
+
+    ::= { ntnQos802FilterExtEntry 5 }
+
+ntnQos802FilterSrcL4PortMax OBJECT-TYPE
+    SYNTAX         INTEGER (0..65535)
+    MAX-ACCESS     read-create
+    STATUS         current
+    DESCRIPTION
+        "The maximum value that the packet's layer 4 source port
+        number can have and match this filter. Valid only
+        when applied against IP traffic flows. The value of this
+        attribute must be greater-than-or-equal-to the value of
+        the corresponding ntnQos802FilterSrcL4PortMin attribute."
+
+    ::= { ntnQos802FilterExtEntry 6 }
+
+ntnQos802FilterVlanIdSet OBJECT-TYPE
+    SYNTAX         OCTET STRING (SIZE(0..256))
+    MAX-ACCESS     read-create
+    STATUS         current
+    DESCRIPTION
+        "This attribute is used to specify a set of VLAN IDs
+        against which the traffic being classified is compared.
+        Packets that contain a VLAN ID equal to one of the VLAN 
+        IDs in this set match this component of an 802 filter.
+
+        The format of this octet string is a series of two-byte
+        (16 bit) values with each octet tuple identifying a
+        single VLAN ID in the set. Therefore, the length of the
+        octet string value of this object is always either zero
+        or an even number of octets (e.g., 2, 4, 6, 20). As with
+        most sets, ordering within the set (octet string) is
+        unimportant. For example, a set specifying three VLAN 
+        IDs (8, 35 and 4012) might be specified as follows:
+
+           Octets:   1   |  2   |  3   |  4   |  5   |  6
+           ------------------------------------------------
+           Values:  0x00 | 0x23 | 0x00 | 0x08 | 0x0F | 0xAC 
+           ------------------------------------------------
+           VLAN ID:     35      |      8      |    4012  
+
+        The supported maximum length of this attribute depends
+        on the maximum number of VLANs that may be included in
+        a set for filtering purposes. This length is thus
+        implementation dependent.
+
+        Note that this attribute and the qos802AceVlanId
+        attribute are mutually exclusive. The value of the
+        qos802AceVlanId component of the augmented filter
+        entry must be set to 'ignore' (i.e., -1) if the length
+        of this set is non-zero. Otherwise entry creation will 
+        fail."  
+
+    ::= { ntnQos802FilterExtEntry 7 }
+
+--
+-- Conformance Section
+--
+
+ntnQosPolicyExtPibConformance 
+                OBJECT IDENTIFIER ::= { ntnQosPolicyExtPib 2 }
+
+ntnQosPolicyExtPibCompliances
+                OBJECT IDENTIFIER ::= { ntnQosPolicyExtPibConformance 1 }
+ntnQosPolicyExtPibGroups
+                OBJECT IDENTIFIER ::= { ntnQosPolicyExtPibConformance 2 }
+
+ntnQosPolicyExtPibCompliance MODULE-COMPLIANCE
+    STATUS  current
+    DESCRIPTION
+            "Describes the requirements for conformance to the
+            Nortel Networks QoS Policy Extension PIB."
+
+    MODULE  -- this module
+
+        GROUP   ntnQosIfPriAssignmentGroup
+        DESCRIPTION
+            "The ntnQosIfPriAssignmentGroup is mandatory if 
+            mapping 802.1 user priority values to queues is
+            supported."
+
+        OBJECT        ntnQosIfPriAssignmentRoles
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        OBJECT        ntnQosIfPriAssignmentPri
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        OBJECT        ntnQosIfPriAssignmentQueue
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        OBJECT        ntnQosIfPriAssignmentStorageType
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required, nor is
+                     support for the nonVolatile(2) enumeration."
+
+        OBJECT        ntnQosIfPriAssignmentStatus
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        GROUP   ntnQosInterfaceTypeExtGroup
+        DESCRIPTION
+            "The ntnQosInterfaceTypeExtTable is optional."
+
+        OBJECT        ntnQosInterfaceTypeExtIfClass
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        GROUP   ntnQosIfDscpMappingExtGroup
+        DESCRIPTION
+            "The ntnQosIfDscpMappingExtGroup is optional."
+
+        OBJECT        ntnQosIfDscpMappingExtDropPrec
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        GROUP   ntnQosActionExtGroup
+        DESCRIPTION
+            "The ntnQosActionExtGroup is optional."
+
+        OBJECT        ntnQosActionExtAssignFlowId
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        OBJECT        ntnQosActionExtCopyToCpu
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        OBJECT        ntnQosActionExtMirrorFrame
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        OBJECT        ntnQosActionExtSetDropPrec
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        OBJECT        ntnQosActionExtUpdatePri
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        OBJECT        ntnQosActionExtMirrorDirection
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        GROUP   ntnQos802FilterExtGroup
+        DESCRIPTION
+            "The ntnQos802FilterExtGroup is optional."
+
+        OBJECT        ntnQos802FilterDscp
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        OBJECT        ntnQos802FilterProtocol
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        OBJECT        ntnQos802FilterDstL4PortMin
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        OBJECT        ntnQos802FilterDstL4PortMax
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        OBJECT        ntnQos802FilterSrcL4PortMin
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        OBJECT        ntnQos802FilterSrcL4PortMax
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        OBJECT        ntnQos802FilterVlanIdSet
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+    ::= { ntnQosPolicyExtPibCompliances 1 }
+
+ntnQosIfPriAssignmentGroup OBJECT-GROUP
+    OBJECTS {
+             ntnQosIfPriAssignmentRoles,
+             ntnQosIfPriAssignmentPri,
+             ntnQosIfPriAssignmentQueue,
+             ntnQosIfPriAssignmentStorageType,
+             ntnQosIfPriAssignmentStatus
+    }
+    STATUS  current
+    DESCRIPTION
+            "Objects from the ntnQosIfPriAssignmentTable."
+
+    ::= { ntnQosPolicyExtPibGroups 1 }
+
+ntnQosInterfaceTypeExtGroup OBJECT-GROUP
+    OBJECTS {
+             ntnQosInterfaceTypeExtIfClass
+    }
+    STATUS  current
+    DESCRIPTION
+            "Objects from the ntnQosInterfaceTypeExtTable."
+
+    ::= { ntnQosPolicyExtPibGroups 2 }
+
+ntnQosIfDscpMappingExtGroup OBJECT-GROUP
+    OBJECTS {
+             ntnQosIfDscpMappingExtDropPrec
+    }
+    STATUS  current
+    DESCRIPTION
+            "Objects from the ntnQosIfDscpMappingExtTable."
+
+    ::= { ntnQosPolicyExtPibGroups 3 }
+
+ntnQosActionExtGroup OBJECT-GROUP
+    OBJECTS {
+             ntnQosActionExtAssignFlowId,
+             ntnQosActionExtCopyToCpu,
+             ntnQosActionExtMirrorFrame,
+             ntnQosActionExtSetDropPrec,
+             ntnQosActionExtUpdatePri,
+             ntnQosActionExtMirrorDirection
+    }
+    STATUS  current
+    DESCRIPTION
+            "Objects from the ntnQosActionExtTable."
+
+    ::= { ntnQosPolicyExtPibGroups 4 }
+
+ntnQos802FilterExtGroup OBJECT-GROUP
+    OBJECTS {
+             ntnQos802FilterDscp,
+             ntnQos802FilterProtocol,
+             ntnQos802FilterDstL4PortMin,
+             ntnQos802FilterDstL4PortMax,
+             ntnQos802FilterSrcL4PortMin,
+             ntnQos802FilterSrcL4PortMax,
+             ntnQos802FilterVlanIdSet
+    }
+    STATUS  current
+    DESCRIPTION
+            "Objects from the ntnQos802FilterExtTable."
+
+    ::= { ntnQosPolicyExtPibGroups 5 }
+
+END
+

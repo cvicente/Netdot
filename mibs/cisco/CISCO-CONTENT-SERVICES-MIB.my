@@ -38,12 +38,14 @@ IMPORTS
         FROM MPLS-VPN-MIB
     entPhysicalIndex
         FROM ENTITY-MIB
+    SnmpAdminString
+        FROM SNMP-FRAMEWORK-MIB
     ciscoMgmt
         FROM CISCO-SMI;
 
 
 ciscoContentServicesMIB MODULE-IDENTITY
-    LAST-UPDATED    "200901280000Z"
+    LAST-UPDATED    "200908120000Z"
     ORGANIZATION    "Cisco Systems, Inc."
     CONTACT-INFO
             "Cisco Systems
@@ -87,7 +89,67 @@ ciscoContentServicesMIB MODULE-IDENTITY
                           online service.
           AdControl  The Cisco product to enable service providers to
                      share subscriber data with advertising providers 
-                     in a controlled and secure manner."
+                     in a controlled and secure manner.
+
+          Gx         Gx is a reference point located between the Policy
+                     and Charging Rules Function (PCRF) and the Policy
+                     and Charging Enforcement Function (PCEF). Three
+                     types of networks namely, 3G UMTS, 4G LTE and 4G
+                     WiMax use the 3GPP Gx interface as the standard
+                     policy control interface.
+
+          NBAR       Network Based Application Recognition."
+    REVISION        "200908120000Z"
+    DESCRIPTION
+        "Added ccsProtocolStatsTable with following objects:
+        ccspsTransaction
+        ccspsHCTransaction
+        ccspsTransactionRate
+        ccspsTransactionRateHighWater
+        ccspsTransactionRateHighWaterResetTime
+        ccspsTransactionRateHighWaterTime
+        ccspsSubOutPackets
+        ccspsHCSubOutPackets
+        ccspsSubOutPacketRate
+        ccspsSubOutPacketRateHighWater
+        ccspsSubOutPacketRateHighWaterResetTime
+        ccspsSubOutPacketRateHighWaterTime
+        ccspsNetOutPackets
+        ccspsHCNetOutPackets
+        ccspsNetOutPacketRate
+        ccspsNetOutPacketRateHighWater
+        ccspsNetOutPacketRateHighWaterResetTime
+        ccspsNetOutPacketRateHighWaterTime
+        ccspsSubOutBytes
+        ccspsHCSubOutBytes
+        ccspsSubOutBitRate
+        ccspsSubOutBitRateHighWater
+        ccspsSubOutBitRateHighWaterResetTime
+        ccspsSubOutBitRateHighWaterTime
+        ccspsNetOutBytes
+        ccspsHCNetOutBytes
+        ccspsNetOutBitRate
+        ccspsNetOutBitRateHighWater
+        ccspsNetOutBitRateHighWaterResetTime
+        ccspsNetOutBitRateHighWaterTime
+        Added ccsLoadStatGxEventTable with following objects:
+        ccsLoadStatGxEventsAllowed
+        ccsLoadStatHCGxEventsAllowed
+        ccsLoadStatGxEventsAllowedRate
+        ccsLoadStatGxEventsAllowedRateHighWater
+        ccsLoadStatHCGxEventsAllowedRateHighWater
+        ccsLoadStatGxEventsIPCQueueDepthTolerance
+        ccsLoadStatGxEventsDenied
+        ccsLoadStatHCGxEventsDenied
+        ccsLoadStatGxEventsDenialRate
+        ccsLoadStatGxEventsDenialRateHighWater
+        ccsLoadStatHCGxEventsDenialRateHighWater.
+        Added following object groups to ciscoContentServicesMIBGroups:
+        ciscoContentServiceProtocolStatsGroup
+        ciscoContentServicesLoadStatGxEventGroup
+        Added following new compliance statement to
+        ciscoContentServicesMIBCompliances:
+        ciscoContentServicesMIBComplianceRev4."
     REVISION        "200901280000Z"
     DESCRIPTION
         "Added following objects to ccsGlobalCfgTable:
@@ -1673,6 +1735,417 @@ ccsLoadStatistics  OBJECT IDENTIFIER
 
 -- *************************************************************
 -- *                                                           *
+-- *      Table of Protocol Stats                              *
+-- *                                                           *
+-- *************************************************************
+
+ccsProtocolStatsTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CcsProtocolStatsEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table contains the traffic related statistics for two
+        categories of protocols. The first category of protocols are
+        identified using the protocol handlers of the entity which
+        provides the content services. These typically includes
+        protocols like http, ftp, rtsp, sip, pop3, imap, smtp and wap
+        which use well-known ports and for which deep packet inspection
+        upto the application layer has been performed. The second
+        category contains those protocols which have been identified
+        using the NBAR classification engine and are known as NBAR
+        protocols. These typically consist of the various peer-to-peer
+        (P2P) protocols which do not use a standard port range.
+        This table is indexed on entPhysicalIndex which identifies the
+        entity that provides the content services, ccspsInspectionMethod
+        which denotes the type of inspection method used to identify the
+        protocol, and ccspsProtocolName which is the name of the
+        protocol."
+    ::= { ccsStats 6 }
+
+ccsProtocolStatsEntry OBJECT-TYPE
+    SYNTAX          CcsProtocolStatsEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Each row in this table contains the traffic related statistics
+        for a supported application layer protocol.
+        An entry is added in this table when the traffic for a given
+        protocol passes for the first time through the entity which
+        provides the content services. An entry is deleted from this
+        table when the corresponding entity denoted by the
+        entPhysicalIndex is removed from the entityMIB."
+    INDEX           {
+                        entPhysicalIndex,
+                        ccspsInspectionMethod,
+                        ccspsProtocolName
+                    } 
+    ::= { ccsProtocolStatsTable 1 }
+
+CcsProtocolStatsEntry ::= SEQUENCE {
+        ccspsInspectionMethod                   INTEGER,
+        ccspsProtocolName                       SnmpAdminString,
+        ccspsTransaction                        Counter32,
+        ccspsHCTransaction                      Counter64,
+        ccspsTransactionRate                    Gauge32,
+        ccspsTransactionRateHighWater           Gauge32,
+        ccspsTransactionRateHighWaterResetTime  TimeStamp,
+        ccspsTransactionRateHighWaterTime       TimeStamp,
+        ccspsSubOutPackets                      Counter32,
+        ccspsHCSubOutPackets                    Counter64,
+        ccspsSubOutPacketRate                   Gauge32,
+        ccspsSubOutPacketRateHighWater          Gauge32,
+        ccspsSubOutPacketRateHighWaterResetTime TimeStamp,
+        ccspsSubOutPacketRateHighWaterTime      TimeStamp,
+        ccspsNetOutPackets                      Counter32,
+        ccspsHCNetOutPackets                    Counter64,
+        ccspsNetOutPacketRate                   Gauge32,
+        ccspsNetOutPacketRateHighWater          Gauge32,
+        ccspsNetOutPacketRateHighWaterResetTime TimeStamp,
+        ccspsNetOutPacketRateHighWaterTime      TimeStamp,
+        ccspsSubOutBytes                        Counter32,
+        ccspsHCSubOutBytes                      Counter64,
+        ccspsSubOutBitRate                      Gauge32,
+        ccspsSubOutBitRateHighWater             Gauge32,
+        ccspsSubOutBitRateHighWaterResetTime    TimeStamp,
+        ccspsSubOutBitRateHighWaterTime         TimeStamp,
+        ccspsNetOutBytes                        Counter32,
+        ccspsHCNetOutBytes                      Counter64,
+        ccspsNetOutBitRate                      Gauge32,
+        ccspsNetOutBitRateHighWater             Gauge32,
+        ccspsNetOutBitRateHighWaterResetTime    TimeStamp,
+        ccspsNetOutBitRateHighWaterTime         TimeStamp
+}
+
+ccspsInspectionMethod OBJECT-TYPE
+    SYNTAX          INTEGER  {
+                        system(1),
+                        nbar(2)
+                    }
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This object denotes the type of inspection method used to
+        identify the protocol:
+        'system' - Inspection method used for protocols which have been
+        identified using the protocol handler of the entity which
+        provides the content services.
+        'nbar' - Inspection method used for NBAR protocols which have
+        been identified using the NBAR classification engine." 
+    ::= { ccsProtocolStatsEntry 1 }
+
+ccspsProtocolName OBJECT-TYPE
+    SYNTAX          SnmpAdminString (SIZE  (1..64))
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The value of the protocol name is the case sensitive protocol
+        name used in the configuration of the entity which provides the
+        content services. This protocol name should be consistent
+        between other management interfaces that use a string identifier
+        for the protocol. For example, this protocol name should match
+        the protocol name options available through the CLI." 
+    ::= { ccsProtocolStatsEntry 2 }
+
+ccspsTransaction OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "transactions"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Total number of transactions for a given protocol. The
+        definition of a transaction varies according to the type of
+        protocol." 
+    ::= { ccsProtocolStatsEntry 3 }
+
+ccspsHCTransaction OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "transactions"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Total number of transactions for a given protocol. This object is
+        a 64-bit version of ccspsTransaction." 
+    ::= { ccsProtocolStatsEntry 4 }
+
+ccspsTransactionRate OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "transactions per second"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of transactions per second for the given protocol." 
+    ::= { ccsProtocolStatsEntry 5 }
+
+ccspsTransactionRateHighWater OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "transactions per second"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The highest number of transactions per second as reported by
+        ccspsTransactionRate. The only write operation allowed is to
+        reset the value to 0." 
+    ::= { ccsProtocolStatsEntry 6 }
+
+ccspsTransactionRateHighWaterResetTime OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The time stamp at which the transactions per second as indicated
+        by ccspsTransactionRate was last reset to 0." 
+    ::= { ccsProtocolStatsEntry 7 }
+
+ccspsTransactionRateHighWaterTime OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The time stamp at which the transactions per second as indicated
+        by ccspsTransactionRate was maximum." 
+    ::= { ccsProtocolStatsEntry 8 }
+
+ccspsSubOutPackets OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Total number of outgoing subscriber packets. Outgoing
+        subscriber packets are the packets going from the subscriber to
+        the network through the entity which provides the content
+        services." 
+    ::= { ccsProtocolStatsEntry 9 }
+
+ccspsHCSubOutPackets OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Total number of outgoing subscriber packets. This object is a
+        64-bit version of ccspsSubOutPackets." 
+    ::= { ccsProtocolStatsEntry 10 }
+
+ccspsSubOutPacketRate OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "packets per second"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of outgoing subscriber packets per second." 
+    ::= { ccsProtocolStatsEntry 11 }
+
+ccspsSubOutPacketRateHighWater OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "packets per second"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The highest number of outgoing subscriber packets per second as
+        reported by ccspsSubOutPacketRate. The only write operation
+        allowed is to reset the value to 0." 
+    ::= { ccsProtocolStatsEntry 12 }
+
+ccspsSubOutPacketRateHighWaterResetTime OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The time stamp at which the outgoing subscriber packets per
+        second as indicated by ccspsSubOutPacketRate was last reset to
+        0." 
+    ::= { ccsProtocolStatsEntry 13 }
+
+ccspsSubOutPacketRateHighWaterTime OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The time stamp at which the packets per second as indicated by
+        ccspsSubOutPacketRate was maximum." 
+    ::= { ccsProtocolStatsEntry 14 }
+
+ccspsNetOutPackets OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Total number of outgoing network packets. Outgoing network
+        packet are the packets going from the network to the subscriber
+        through the entity which provides the content services." 
+    ::= { ccsProtocolStatsEntry 15 }
+
+ccspsHCNetOutPackets OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Total number of outgoing network packets. This object is a
+        64-bit version of ccspsNetOutPackets." 
+    ::= { ccsProtocolStatsEntry 16 }
+
+ccspsNetOutPacketRate OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "packets per second"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of outgoing network packets per second." 
+    ::= { ccsProtocolStatsEntry 17 }
+
+ccspsNetOutPacketRateHighWater OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "packets per second"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The highest number of outgoing network packets per second as
+        reported by ccspsNetOutPacketRate. The only write operation
+        allowed is to reset the value to 0." 
+    ::= { ccsProtocolStatsEntry 18 }
+
+ccspsNetOutPacketRateHighWaterResetTime OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The time stamp at which the outgoing network packets per second
+        as indicated by ccspsNetOutPacketRate was last reset to 0." 
+    ::= { ccsProtocolStatsEntry 19 }
+
+ccspsNetOutPacketRateHighWaterTime OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The time stamp at which the outgoing network packets per second
+        as indicated by ccspsNetOutPacketRate was maximum." 
+    ::= { ccsProtocolStatsEntry 20 }
+
+ccspsSubOutBytes OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Total number of outgoing subscriber bytes. Outgoing subscriber
+        bytes are the bytes going from the subscriber to the network
+        through the entity which provides the content services." 
+    ::= { ccsProtocolStatsEntry 21 }
+
+ccspsHCSubOutBytes OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Total number of outgoing subscriber bytes. This object is a
+        64-bit version of ccspsSubOutBytes." 
+    ::= { ccsProtocolStatsEntry 22 }
+
+ccspsSubOutBitRate OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "bits per second"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of outgoing subscriber bits per second." 
+    ::= { ccsProtocolStatsEntry 23 }
+
+ccspsSubOutBitRateHighWater OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "bits per second"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The highest number of outgoing subscriber bits per second as
+        reported by ccspsSubOutBitRate. The only write operation allowed
+        is to reset the value to 0." 
+    ::= { ccsProtocolStatsEntry 24 }
+
+ccspsSubOutBitRateHighWaterResetTime OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The time stamp at which the outgoing subscriber bits per second
+        as indicated by ccspsSubOutBitRate was last reset to 0." 
+    ::= { ccsProtocolStatsEntry 25 }
+
+ccspsSubOutBitRateHighWaterTime OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The time stamp at which the outgoing subscriber bits per second
+        as indicated by ccspsSubOutBitRate was maximum." 
+    ::= { ccsProtocolStatsEntry 26 }
+
+ccspsNetOutBytes OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Total number of outgoing network bytes. Outgoing network bytes
+        are the bytes going from the network to the subscriber through
+        the entity which provides the content services." 
+    ::= { ccsProtocolStatsEntry 27 }
+
+ccspsHCNetOutBytes OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Total number of outgoing network bytes. This object is a 64-bit
+        version of ccspsNetOutBytes." 
+    ::= { ccsProtocolStatsEntry 28 }
+
+ccspsNetOutBitRate OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "bits per second"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of outgoing network bits per second." 
+    ::= { ccsProtocolStatsEntry 29 }
+
+ccspsNetOutBitRateHighWater OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "bits per second"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The highest number of outgoing network bits per second as
+        reported by ccspsNetOutBitRate. The only write operation allowed
+        is to reset the value to 0." 
+    ::= { ccsProtocolStatsEntry 30 }
+
+ccspsNetOutBitRateHighWaterResetTime OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The time stamp at which the outgoing network bits per second as
+        indicated by ccspsNetOutBitRate was last reset to 0." 
+    ::= { ccsProtocolStatsEntry 31 }
+
+ccspsNetOutBitRateHighWaterTime OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The time stamp at which the outgoing network bits per second as
+        indicated by ccspsNetOutBitRate was maximum." 
+    ::= { ccsProtocolStatsEntry 32 }
+ 
+
+-- *************************************************************
+-- *                                                           *
 -- *      Table of Radius Load Statistics                      *
 -- *                                                           *
 -- *************************************************************
@@ -2444,6 +2917,158 @@ ccsLoadStatHCQuotaMgrMsgsDenialRateHighWater OBJECT-TYPE
         "This object is a 64-bit version of
         ccsLoadStatQuotaMgrMsgsDenialRateHighWater." 
     ::= { ccsLoadStatQuotaMgrEntry 11 }
+ 
+
+-- *************************************************************
+-- *                                                           *
+-- *      Table of GX Event Load Statistics               *
+-- *                                                           *
+-- *************************************************************
+
+ccsLoadStatGxEventTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CcsLoadStatGxEventEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table contains the load statistical information related to
+        Gx Events. A Gx Event is a notification which is generated from
+        the PCEF to the PCRF. Examples of these events include exceeding
+        of time threshold, volume threshold etc.
+        This table is indexed at entPhysicalIndex which identifies the
+        entity that provides the content services."
+    ::= { ccsLoadStatistics 6 }
+
+ccsLoadStatGxEventEntry OBJECT-TYPE
+    SYNTAX          CcsLoadStatGxEventEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Each row in this table contains load statistics related to Gx
+        Events. An entry will be added to this table, when the entity
+        that provides the content services is identified and modelled in
+        entityMIB, and removed when the corresponding entity will be
+        deleted from entityMIB."
+    INDEX           { entPhysicalIndex } 
+    ::= { ccsLoadStatGxEventTable 1 }
+
+CcsLoadStatGxEventEntry ::= SEQUENCE {
+        ccsLoadStatGxEventsAllowed                Counter32,
+        ccsLoadStatHCGxEventsAllowed              Counter64,
+        ccsLoadStatGxEventsAllowedRate            Gauge32,
+        ccsLoadStatGxEventsAllowedRateHighWater   Gauge32,
+        ccsLoadStatHCGxEventsAllowedRateHighWater Counter64,
+        ccsLoadStatGxEventsIPCQueueDepthTolerance Integer32,
+        ccsLoadStatGxEventsDenied                 Counter32,
+        ccsLoadStatHCGxEventsDenied               Counter64,
+        ccsLoadStatGxEventsDenialRate             Gauge32,
+        ccsLoadStatGxEventsDenialRateHighWater    Gauge32,
+        ccsLoadStatHCGxEventsDenialRateHighWater  Counter64
+}
+
+ccsLoadStatGxEventsAllowed OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "notifications"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of Gx Events allowed." 
+    ::= { ccsLoadStatGxEventEntry 1 }
+
+ccsLoadStatHCGxEventsAllowed OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "notifications"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsLoadStatGxEventsAllowed." 
+    ::= { ccsLoadStatGxEventEntry 2 }
+
+ccsLoadStatGxEventsAllowedRate OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "notifications per second"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of Gx Events allowed per second." 
+    ::= { ccsLoadStatGxEventEntry 3 }
+
+ccsLoadStatGxEventsAllowedRateHighWater OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "notifications per second"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The highest number of Gx Events allowed per second
+        as reported by ccsLoadStatGxEventsAllowedRate." 
+    ::= { ccsLoadStatGxEventEntry 4 }
+
+ccsLoadStatHCGxEventsAllowedRateHighWater OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "notifications per second"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsLoadStatGxEventsAllowedRateHighWater." 
+    ::= { ccsLoadStatGxEventEntry 5 }
+
+ccsLoadStatGxEventsIPCQueueDepthTolerance OBJECT-TYPE
+    SYNTAX          Integer32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Maximum queue depth for Gx Events in the IPC
+        queue." 
+    ::= { ccsLoadStatGxEventEntry 6 }
+
+ccsLoadStatGxEventsDenied OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "notifications"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of Gx Events denied." 
+    ::= { ccsLoadStatGxEventEntry 7 }
+
+ccsLoadStatHCGxEventsDenied OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "notifications"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsLoadStatGxEventsDenied." 
+    ::= { ccsLoadStatGxEventEntry 8 }
+
+ccsLoadStatGxEventsDenialRate OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "notifications per second"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Number of Gx Events denied per second." 
+    ::= { ccsLoadStatGxEventEntry 9 }
+
+ccsLoadStatGxEventsDenialRateHighWater OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "notifications per second"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The highest number of Gx Events denied per second
+        as reported by ccsLoadStatQuotaMgrMsgsDenialRate." 
+    ::= { ccsLoadStatGxEventEntry 10 }
+
+ccsLoadStatHCGxEventsDenialRateHighWater OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "notifications per second"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is a 64-bit version of
+        ccsLoadStatGxEventsDenialRateHighWater." 
+    ::= { ccsLoadStatGxEventEntry 11 }
  
 
 -- *************************************************************
@@ -3235,7 +3860,7 @@ ciscoContentServicesMIBComplianceRev2 MODULE-COMPLIANCE
     ::= { ciscoContentServicesMIBCompliances 3 }
 
 ciscoContentServicesMIBComplianceRev3 MODULE-COMPLIANCE
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The compliance statement for entities which implement
         the Cisco Content Services MIB."
@@ -3305,6 +3930,106 @@ ciscoContentServicesMIBComplianceRev3 MODULE-COMPLIANCE
     DESCRIPTION
         "Write access is not required."
     ::= { ciscoContentServicesMIBCompliances 4 }
+
+ciscoContentServicesMIBComplianceRev4 MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for entities which implement
+        the Cisco Content Services MIB. This compliance statement
+        deprecates the ciscoContentServicesMIBComplianceRev3."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        ciscoContentServicesGlobalCfgGroup,
+                        ciscoContentServicesGlobalStatsGroup,
+                        ciscoContentServicesBMAGroup,
+                        ciscoContentServicesQuotaMgrGroup,
+                        ciscoContentServicesUserDbGroup,
+                        ciscoContentServicesNotifEnableGroup,
+                        ciscoContentServicesNotifGroup,
+                        ciscoContentServicesLoadStatRadiusGroup,
+                        ciscoContentServicesLoadStatUserDBGroup,
+                        ciscoContentServicesLoadStatSessionGroup,
+                        ciscoContentServicesLoadStatBMAGroup,
+                        ciscoContentServicesLoadStatQuotaMgrGroup,
+                        ciscoContentServicesGlobalStatsGroupSup1,
+                        ciscoContentServicesBMAGroupSup1,
+                        ciscoContentServicesQuotaMgrGroupSup1,
+                        ciscoContentServicesGlobalCfgGroupSup1,
+                        ciscoContentServicesNotifEnableGroupSup1,
+                        ciscoContentServicesNotifGroupSup1,
+                        ciscoContentServicesGlobalCfgGroupSup2,
+                        ciscoContentServicesNotifEnableGroupSup2,
+                        ciscoContentServicesNotifGroupSup2,
+                        ciscoContentServicesNotifInfoGroup,
+                        ciscoContentServiceProtocolStatsGroup,
+                        ciscoContentServicesLoadStatGxEventGroup
+                    }
+
+    OBJECT          ccsBMAHighWater
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          ccsQuotaMgrHighWater
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          ccsBMAPriority
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          ccsQuotaMgrPriority
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Create/Write access is not required."
+
+    OBJECT          ccsBMARowStatus
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          ccsQuotaMgrRowStatus
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          ccsgsGTPBMARateInterval
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          ccsgsGTPQuotaMgrRateInterval
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          ccspsTransactionRateHighWater
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          ccspsSubOutPacketRateHighWater
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          ccspsNetOutPacketRateHighWater
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          ccspsSubOutBitRateHighWater
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          ccspsNetOutBitRateHighWater
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+    ::= { ciscoContentServicesMIBCompliances 5 }
 
 -- units of conformance
 
@@ -3660,4 +4385,66 @@ ciscoContentServicesNotifInfoGroup OBJECT-GROUP
         "Collection of objects providing info for notifications."
     ::= { ciscoContentServicesMIBGroups 23 }
 
+ciscoContentServiceProtocolStatsGroup OBJECT-GROUP
+    OBJECTS         {
+                        ccspsTransaction,
+                        ccspsHCTransaction,
+                        ccspsTransactionRate,
+                        ccspsTransactionRateHighWater,
+                        ccspsTransactionRateHighWaterResetTime,
+                        ccspsTransactionRateHighWaterTime,
+                        ccspsSubOutPackets,
+                        ccspsHCSubOutPackets,
+                        ccspsSubOutPacketRate,
+                        ccspsSubOutPacketRateHighWater,
+                        ccspsSubOutPacketRateHighWaterResetTime,
+                        ccspsSubOutPacketRateHighWaterTime,
+                        ccspsNetOutPackets,
+                        ccspsHCNetOutPackets,
+                        ccspsNetOutPacketRate,
+                        ccspsNetOutPacketRateHighWater,
+                        ccspsNetOutPacketRateHighWaterResetTime,
+                        ccspsNetOutPacketRateHighWaterTime,
+                        ccspsSubOutBytes,
+                        ccspsHCSubOutBytes,
+                        ccspsSubOutBitRate,
+                        ccspsSubOutBitRateHighWater,
+                        ccspsSubOutBitRateHighWaterResetTime,
+                        ccspsSubOutBitRateHighWaterTime,
+                        ccspsNetOutBytes,
+                        ccspsHCNetOutBytes,
+                        ccspsNetOutBitRate,
+                        ccspsNetOutBitRateHighWater,
+                        ccspsNetOutBitRateHighWaterResetTime,
+                        ccspsNetOutBitRateHighWaterTime
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects providing the traffic related protocol
+        statistics."
+    ::= { ciscoContentServicesMIBGroups 24 }
+
+ciscoContentServicesLoadStatGxEventGroup OBJECT-GROUP
+    OBJECTS         {
+                        ccsLoadStatGxEventsAllowed,
+                        ccsLoadStatHCGxEventsAllowed,
+                        ccsLoadStatGxEventsAllowedRate,
+                        ccsLoadStatGxEventsAllowedRateHighWater,
+                        ccsLoadStatHCGxEventsAllowedRateHighWater,
+                        ccsLoadStatGxEventsIPCQueueDepthTolerance,
+                        ccsLoadStatGxEventsDenied,
+                        ccsLoadStatHCGxEventsDenied,
+                        ccsLoadStatGxEventsDenialRate,
+                        ccsLoadStatGxEventsDenialRateHighWater,
+                        ccsLoadStatHCGxEventsDenialRateHighWater
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects providing load statistics for Gx
+        Events."
+    ::= { ciscoContentServicesMIBGroups 25 }
+
 END
+
+
+

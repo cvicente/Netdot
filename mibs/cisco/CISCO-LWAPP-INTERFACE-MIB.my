@@ -1,0 +1,248 @@
+-- *******************************************************************
+-- CISCO-LWAPP-INTERFACE-MIB.my
+-- Ambika Prasad Mohanty,Arun Kumar A
+--   
+-- *******************************************************************
+
+CISCO-LWAPP-INTERFACE-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY,
+    OBJECT-TYPE,
+    Unsigned32
+        FROM SNMPv2-SMI
+    MODULE-COMPLIANCE,
+    OBJECT-GROUP
+        FROM SNMPv2-CONF
+    TruthValue
+        FROM SNMPv2-TC
+    ciscoMgmt
+        FROM CISCO-SMI;
+
+
+-- ********************************************************************
+-- *  MODULE IDENTITY
+-- ********************************************************************
+
+ciscoLwappInterfaceMIB MODULE-IDENTITY
+    LAST-UPDATED    "200901090000Z"
+    ORGANIZATION    "Cisco Systems Inc."
+    CONTACT-INFO
+            "Cisco Systems,
+            Customer Service
+            Postal: 170 West Tasman Drive
+            San Jose, CA  95134
+            USA
+            Tel: +1 800 553-NETS
+
+            Email: cs-wnbu-snmp@cisco.com"
+    DESCRIPTION
+        "This MIB is intended to be implemented on all those
+        devices operating as Central Controllers (CC)  that
+        terminate the Light Weight Access Point Protocol
+        tunnel from Cisco Light-weight LWAPP Access Points.
+
+        This MIB helps to manage the WLANs on the controller.
+
+        The relationship between CC and the LWAPP APs
+        can be depicted as follows:
+
+        +......+     +......+     +......+           +......+
+        +      +     +      +     +      +           +      +
+        +  CC  +     +  CC  +     +  CC  +           +  CC  +
+        +      +     +      +     +      +           +      +
+        +......+     +......+     +......+           +......+
+        ..            .             .                 .
+        ..            .             .                 .
+        .  .            .             .                 .
+        .    .            .             .                 .
+        .      .            .             .                 .
+        .        .            .             .                 .
+        +......+ +......+     +......+      +......+          +......+
+        +      + +      +     +      +      +      +          +      +
+        +  AP  + +  AP  +     +  AP  +      +  AP  +          +  AP  +
+        +      + +      +     +      +      +      +          +      +
+        +......+ +......+     +......+      +......+          +......+
+        .              .             .                 .
+        .  .              .             .                 .
+        .    .              .             .                 .
+        .      .              .             .                 .
+        .        .              .             .                 .
+        +......+ +......+     +......+      +......+          +......+
+        +      + +      +     +      +      +      +          +      +
+        +  MN  + +  MN  +     +  MN  +      +  MN  +          +  MN  +
+        +      + +      +     +      +      +      +          +      +
+        +......+ +......+     +......+      +......+          +......+
+
+        The LWAPP tunnel exists between the controller and
+        the APs.  The MNs communicate with the APs through
+        the protocol defined by the 802.11 standard.
+
+        LWAPP APs, upon bootup, discover and join one of the
+        controllers and the controller pushes the configuration,
+        that includes the WLAN parameters, to the LWAPP APs.
+        The APs then encapsulate all the 802.11 frames from
+        wireless clients inside LWAPP frames and forward
+        the LWAPP frames to the controller.
+
+                           GLOSSARY
+
+        Access Point ( AP )
+
+        An entity that contains an 802.11 medium access
+        control ( MAC ) and physical layer ( PHY ) interface
+        and provides access to the distribution services via
+        the wireless medium for associated clients.  
+
+        LWAPP APs encapsulate all the 802.11 frames in
+        LWAPP frames and sends it to the controller to which
+        it is logically connected to.
+
+        Central Controller ( CC )
+
+        The central entity that terminates the LWAPP protocol
+        tunnel from the LWAPP APs.  Throughout this MIB,
+        this entity also referred to as 'controller'.
+
+        Light Weight Access Point Protocol ( LWAPP ) 
+
+        This is a generic protocol that defines the
+        communication between the Access Points and the
+        controllers.
+
+        Mobile Node ( MN )
+
+        A roaming 802.11 wireless device in a wireless
+        network associated with an access point. 
+
+        REFERENCE
+
+        [1] Wireless LAN Medium Access Control ( MAC ) and
+        Physical Layer ( PHY ) Specifications.
+
+        [2] Draft-obara-capwap-lwapp-00.txt, IETF Light 
+        Weight Access Point Protocol"
+    REVISION        "200901090000Z"
+    DESCRIPTION
+        "Initial version of this MIB module."
+    ::= { ciscoMgmt 686 }
+
+
+ciscoLwappInterfaceMIBNotifs  OBJECT IDENTIFIER
+    ::= { ciscoLwappInterfaceMIB 0 }
+
+ciscoLwappInterfaceMIBObjects  OBJECT IDENTIFIER
+    ::= { ciscoLwappInterfaceMIB 1 }
+
+ciscoLwappInterfaceMIBConform  OBJECT IDENTIFIER
+    ::= { ciscoLwappInterfaceMIB 2 }
+
+ciscoLwappInterfaceConfig  OBJECT IDENTIFIER
+    ::= { ciscoLwappInterfaceMIBObjects 1 }
+
+-- ********************************************************************
+
+clInterfaceConfigTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF ClInterfaceConfigEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table represents the configuration of all the
+        interfaces, both the static and the dynamic 
+        interfaces, on the Wireless LAN Controller(WLC)."
+    ::= { ciscoLwappInterfaceConfig 1 }
+
+clInterfaceConfigEntry OBJECT-TYPE
+    SYNTAX          ClInterfaceConfigEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This represents an entry in the clInterfaceConfigTable.
+        Each entry corresponds to an interface, indicated by
+        clInterfaceName."
+    INDEX           { clInterfaceName } 
+    ::= { clInterfaceConfigTable 1 }
+
+ClInterfaceConfigEntry ::= SEQUENCE {
+        clInterfaceName             OCTET STRING,
+        clInterfaceWired            TruthValue,
+        clInterfaceQuarantineVlanId Unsigned32
+}
+
+clInterfaceName OBJECT-TYPE
+    SYNTAX          OCTET STRING (SIZE  (1..32))
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This object represents the name of the interface
+        on the controller." 
+    ::= { clInterfaceConfigEntry 1 }
+
+clInterfaceWired OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object indicates whether the interface
+        represented by clInterfaceName, will be used
+        for the wireless clients that are connected
+        to the WLC or will be used for the                   
+        wired clients connected to the WLC."
+    DEFVAL          { false } 
+    ::= { clInterfaceConfigEntry 2 }
+
+clInterfaceQuarantineVlanId OBJECT-TYPE
+    SYNTAX          Unsigned32
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object represents the quarantine vlan id
+        of the interface.
+        If the value is zero,then it means the interface is
+        non-quarantine and the client traffic through this interface
+        need not pass through any security checks.
+        If the value is non-zero, then it means the interface
+        is quarantine and the client traffic through this interface 
+        should pass through the security check and there should be
+        an access vlan mapped to this quarantine vlan id, in the
+        security device."
+    DEFVAL          { 0 } 
+    ::= { clInterfaceConfigEntry 3 }
+ 
+
+-- ********************************************************************
+-- *    Compliance statements
+-- ********************************************************************
+
+ciscoLwappInterfaceMIBCompliances  OBJECT IDENTIFIER
+    ::= { ciscoLwappInterfaceMIBConform 1 }
+
+ciscoLwappInterfaceMIBGroups  OBJECT IDENTIFIER
+    ::= { ciscoLwappInterfaceMIBConform 2 }
+
+
+ciscoLwappInterfaceMIBCompliance MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for the SNMP entities that
+        implement the ciscoLwappInterfaceMIB module."
+    MODULE          -- this module
+    MANDATORY-GROUPS { ciscoLwappInterfaceConfigGroup }
+    ::= { ciscoLwappInterfaceMIBCompliances 1 }
+
+-- ********************************************************************
+-- *    Units of conformance
+-- ********************************************************************
+
+ciscoLwappInterfaceConfigGroup OBJECT-GROUP
+    OBJECTS         {
+                        clInterfaceWired,
+                        clInterfaceQuarantineVlanId
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This collection of objects represent the
+        configuration of interfaces on the controller."
+    ::= { ciscoLwappInterfaceMIBGroups 1 }
+
+END

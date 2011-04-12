@@ -1,0 +1,1059 @@
+HP-ICF-DHCP-SNOOP-MIB DEFINITIONS ::= BEGIN
+
+    IMPORTS
+        hpSwitch            
+            FROM HP-ICF-OID            
+        ifIndex, InterfaceIndex            
+            FROM IF-MIB            
+        InetAddressType, InetAddress            
+            FROM INET-ADDRESS-MIB            
+        VlanIndex            
+            FROM Q-BRIDGE-MIB            
+        SnmpAdminString            
+            FROM SNMP-FRAMEWORK-MIB            
+        OBJECT-GROUP, MODULE-COMPLIANCE, NOTIFICATION-GROUP            
+            FROM SNMPv2-CONF            
+        Unsigned32, Counter32, OBJECT-TYPE, MODULE-IDENTITY, NOTIFICATION-TYPE            
+            FROM SNMPv2-SMI            
+        TruthValue, RowStatus, MacAddress, DateAndTime            
+            FROM SNMPv2-TC;
+
+
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34
+    hpicfIpDhcpSnoop MODULE-IDENTITY 
+        LAST-UPDATED "200708010000Z"      -- August 01, 2007 at 00:00 GMT
+        ORGANIZATION 
+            "Hewlett-Packard Company
+            Procurve Networking Business"
+        CONTACT-INFO 
+            "Hewlett-Packard Company
+            8000 Foothills Blvd.
+            Roseville, CA 95747"
+        DESCRIPTION 
+            "This MIB module contains HP proprietary
+            objects for managing DHCP Snooping."
+    REVISION "200708240000Z"      -- August 24, 2007 at 00:00 GMT
+        DESCRIPTION 
+            "Added hpicfDhcpSnoopErrantReply notification."
+        REVISION "200603180038Z"      -- March 18, 2006 at 00:38 GMT
+        DESCRIPTION 
+            "Initial revision."
+        REVISION "200607060038Z"      -- July 06, 2006 at 00:38 GMT
+        DESCRIPTION 
+            "Add support for static IP address bindings."
+        ::= { hpSwitch 34 }
+
+    
+--
+-- Node definitions
+--
+
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.0
+    hpicfDhcpSnoopNotifications OBJECT IDENTIFIER ::= { hpicfIpDhcpSnoop 0 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.0.1
+    hpicfDhcpSnoopErrantReply NOTIFICATION-TYPE
+    OBJECTS { hpicfDhcpSnoopNotifyCount, hpicfDhcpSnoopErrantSrcMAC, 
+        hpicfDhcpSnoopErrantSrcIPType, hpicfDhcpSnoopErrantSrcIP }
+        STATUS current
+        DESCRIPTION 
+            "An hpicfDhcpSnoopErrantReply notification signifies that
+            the DHCP snooping entity has detected and dropped an
+            errant DHCP response packet."
+        ::= { hpicfDhcpSnoopNotifications 1 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1
+    hpicfIpDhcpSnoopObjects OBJECT IDENTIFIER ::= { hpicfIpDhcpSnoop 1 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1
+    hpicfIpDhcpSnoopConfig OBJECT IDENTIFIER ::= { hpicfIpDhcpSnoopObjects 1 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1.1
+    hpicfDhcpSnoopGlobalCfg OBJECT IDENTIFIER ::= { hpicfIpDhcpSnoopConfig 1 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1.1.1
+    hpicfDhcpSnoopEnable OBJECT-TYPE
+        SYNTAX TruthValue
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+            "The administrative status of the DHCP Snooping
+            feature."
+        ::= { hpicfDhcpSnoopGlobalCfg 1 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1.1.2
+    hpicfDhcpSnoopVlanEnable OBJECT-TYPE
+        SYNTAX OCTET STRING (SIZE (512))
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+            "The administrative status for DHCP Snooping on
+            each VLAN.  There will be one bit in this string
+            for each possible VLAN ID.  Each octet within this
+            value specifies a set of eight VLANs, with the first
+            octet specifying VLAN IDs 1 through 8, the second
+            octet specifying VLAN IDs 9 through 16, etc.  Within
+            each octet, the most significant bit represents the
+            lowest numbered VLAN ID, and the least significant
+            bit represents the highest numbered VLAN ID.  Thus,
+            each possible VLAN ID of the bridge is represented by
+            a single bit within the value of this object.  If
+            that bit has a value of '1', then DHCP Snooping is 
+            enabled on that VLAN; DHCP SNooping is not enabled
+            on the VLAN its bit has a value of '0'."
+        ::= { hpicfDhcpSnoopGlobalCfg 2 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1.1.3
+    hpicfDhcpSnoopVerifyMac OBJECT-TYPE
+        SYNTAX TruthValue
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+            "When this variable is set to 'true', DHCP Snooping
+            will verify that the MAC address in the chaddr field
+            of the DHCP header matches the source MAC address in
+            all DHCP packets received on untrusted ports.  When
+            this variable is set to 'false', DHCP Snooping will
+            omit this check.  The value of this variable is
+            ignored when DHCP Snooping is disabled."
+        ::= { hpicfDhcpSnoopGlobalCfg 3 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1.1.4
+    hpicfDhcpSnoopDatabaseFile OBJECT-TYPE
+        SYNTAX SnmpAdminString
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+            "A location to store the lease database, or
+            to retrieve it after a reboot.  The location
+            must be given in the form of a Uniform
+            Resource Locator (URL) as defined in RFC
+            2396.  The allowed character sets and the
+            encoding rules defined in RFC 2396 section 2
+            apply."
+        ::= { hpicfDhcpSnoopGlobalCfg 4 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1.1.5
+    hpicfDhcpSnoopDatabaseWriteDelay OBJECT-TYPE
+        SYNTAX Unsigned32 (15..86400)
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+            "The number of seconds to delay writing the
+            DHCP lease database file after a database
+            change.  This potentially allows grouping
+            multiple database changes into a single
+            write.  The default is 300 seconds."
+        ::= { hpicfDhcpSnoopGlobalCfg 5 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1.1.6
+    hpicfDhcpSnoopDatabaseWriteTimeout OBJECT-TYPE
+        SYNTAX Unsigned32 (0..86400)
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+            "The number of seconds to wait for the
+            database file transfer to finish before
+            giving up and declaring a failure.  A
+            value of 0 means continue retrying
+            indefinitely.  The default is 300 seconds."
+        ::= { hpicfDhcpSnoopGlobalCfg 6 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1.1.7
+    hpicfDhcpSnoopOpt82Insert OBJECT-TYPE
+        SYNTAX TruthValue
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+            "When this object is set to true, DHCP snooping
+            will add a DHCP relay information option to
+            DHCP client packets that it forwards on
+            trusted ports, and will examine and strip DHCP
+            relay information options that were inserted
+            by this switch on DHCP server packets that it
+            forwards to untrusted ports.  Note that when
+            DHCP relay and DHCP snooping are both enabled,
+            and this object is set to true, relay
+            information option processing will be handled
+            by DHCP snooping, and any DHCP relay settings
+            for relay information option processing will
+            be ignored.  This object defaults to true."
+        ::= { hpicfDhcpSnoopGlobalCfg 7 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1.1.8
+    hpicfDhcpSnoopOpt82Policy OBJECT-TYPE
+        SYNTAX INTEGER
+            {
+            keep(1),
+            replace(2),
+            drop(3)
+            }
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+            "This object configures the behavior of DHCP
+            snooping when forwarding a DHCP packet from
+            an untrusted port that already has a DHCP
+            relay information option present.  The
+            policies supported are:
+              keep    - forward the packet without
+                        updating the existing option
+              replace - replace the existing option
+                        with one generated by this switch
+              drop    - drop the packet
+            This policy is only applied if DHCP snooping is
+            enabled and hpicfDhcpSnoopOpt82Insert is true.
+            In all cases where this policy is applied, if
+            there is no relay information option present in
+            the received packet, DHCP snooping will add one.
+            The default policy is drop."
+        ::= { hpicfDhcpSnoopGlobalCfg 8 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1.1.9
+    hpicfDhcpSnoopOpt82RemoteId OBJECT-TYPE
+        SYNTAX INTEGER
+            {
+            mac(1),
+            subnetIP(2),
+            mgmtIP(3)
+            }
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+            "This object configures the value that will be
+            used for the remote ID suboption of the relay
+            information option that will be inserted by
+            DHCP snooping.  The possible values are:
+              mac      - switch MAC address
+              subnetIP - switch IP address on the VLAN on
+                         which the DHCP packet was received
+              mgmtIP   - switch IP address on the management
+                         VLAN
+            The value of this object is ignored unless DHCP
+            snooping is enabled and hpicfDhcpSnoopOpt82Insert
+            is true.  The default value is mac."
+        ::= { hpicfDhcpSnoopGlobalCfg 9 }
+
+    
+-- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1.1.10
+hpicfDhcpSnoopErrantReplyEnable OBJECT-TYPE
+    SYNTAX INTEGER
+        {
+        enabled(1),
+        disabled(2)
+        }
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "The operational status of hpicfDhcpSnoopErrantReply 
+        notifications.  The default value is ‘1’ (Enabled).  A value 
+        of ‘2’ represents Disabled.  Writing this object requires 
+        authentication, such as provided by SNMPv3."
+    ::= { hpicfDhcpSnoopGlobalCfg 10 }
+
+
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1.2
+    hpicfDhcpSnoopPortTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF HpicfDhcpSnoopPortEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+            "Per-interface configuration for DHCP Snooping."
+        ::= { hpicfIpDhcpSnoopConfig 2 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1.2.1
+    hpicfDhcpSnoopPortEntry OBJECT-TYPE
+        SYNTAX HpicfDhcpSnoopPortEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+            "DHCP snooping configuration information for
+            a single port."
+        INDEX { ifIndex }
+        ::= { hpicfDhcpSnoopPortTable 1 }
+
+    
+    HpicfDhcpSnoopPortEntry ::=
+        SEQUENCE { 
+            hpicfDhcpSnoopPortTrust
+                TruthValue
+         }
+
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1.2.1.1
+    hpicfDhcpSnoopPortTrust OBJECT-TYPE
+        SYNTAX TruthValue
+        MAX-ACCESS read-write
+        STATUS current
+        DESCRIPTION
+            "This object indicates whether this port is
+            trusted for DHCP snooping."
+        ::= { hpicfDhcpSnoopPortEntry 1 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1.3
+    hpicfDhcpSnoopServerTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF HpicfDhcpSnoopServerEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+            "Table of authorized DHCP server addresses."
+        ::= { hpicfIpDhcpSnoopConfig 3 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1.3.1
+    hpicfDhcpSnoopServerEntry OBJECT-TYPE
+        SYNTAX HpicfDhcpSnoopServerEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+            "A row in the table, containing the address of a
+            single authorized DHCP server."
+        INDEX { hpicfDhcpSnoopServerAddrType, hpicfDhcpSnoopServerAddress }
+        ::= { hpicfDhcpSnoopServerTable 1 }
+
+    
+    HpicfDhcpSnoopServerEntry ::=
+        SEQUENCE { 
+            hpicfDhcpSnoopServerAddrType
+                InetAddressType,
+            hpicfDhcpSnoopServerAddress
+                InetAddress,
+            hpicfDhcpSnoopServerStatus
+                RowStatus
+         }
+
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1.3.1.1
+    hpicfDhcpSnoopServerAddrType OBJECT-TYPE
+        SYNTAX InetAddressType
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+            "The type of address in
+            hpicfDhcpSnoopServerAddress."
+        ::= { hpicfDhcpSnoopServerEntry 1 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1.3.1.2
+    hpicfDhcpSnoopServerAddress OBJECT-TYPE
+        SYNTAX InetAddress
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+            "The address of a known valid DHCP server.  The
+            type of address contained in this object is
+            indicated by hpicfDhcpSnoopServerAddrType.  For
+            DHCP snooping to allow a server to client packet
+            to be forwarded, it must be received on a trusted
+            port from a server address in this table.  If this
+            table is empty, all addresses are trusted.
+            
+            Note that this feature compares the source address
+            of the received DHCP server packet against the
+            addresses in this table.  This means that this
+            table needs to contain trusted server addresses
+            as well as trusted DHCP relays that a server
+            packet may be relayed through."
+        ::= { hpicfDhcpSnoopServerEntry 2 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1.3.1.3
+    hpicfDhcpSnoopServerStatus OBJECT-TYPE
+        SYNTAX RowStatus
+        MAX-ACCESS read-create
+        STATUS current
+        DESCRIPTION
+            "The status of this DHCP server address entry.
+            Only 'active' entries are used when validating
+            DHCP server packets."
+        ::= { hpicfDhcpSnoopServerEntry 3 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1.4
+    hpicfIpStaticBindingsTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF HpicfIpStaticBindingsEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+            "A table of configured static IP address
+            bindings for this device.  Active rows in
+            this table will also be reported in the
+            hpicfDhcpSnoopBindingsTable as entries with
+            an hpicfDhcpSnoopBindingsLeaseTime of
+            0xffffffff and an hpicfDhcpSnoopBindingsType
+            of 'static'."
+        ::= { hpicfIpDhcpSnoopConfig 4 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1.4.1
+    hpicfIpStaticBindingsEntry OBJECT-TYPE
+        SYNTAX HpicfIpStaticBindingsEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+            "A row in the table, containing a single static
+            IP address binding."
+    INDEX { hpicfIpStaticBindingsVlan, hpicfIpStaticBindingsAddrType, 
+        hpicfIpStaticBindingsAddress }
+        ::= { hpicfIpStaticBindingsTable 1 }
+
+    
+    HpicfIpStaticBindingsEntry ::=
+        SEQUENCE { 
+            hpicfIpStaticBindingsVlan
+                VlanIndex,
+            hpicfIpStaticBindingsAddrType
+                InetAddressType,
+            hpicfIpStaticBindingsAddress
+                InetAddress,
+            hpicfIpStaticBindingsMacAddress
+                MacAddress,
+            hpicfIpStaticBindingsInterface
+                InterfaceIndex,
+            hpicfIpStaticBindingsStatus
+                RowStatus
+         }
+
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1.4.1.1
+    hpicfIpStaticBindingsVlan OBJECT-TYPE
+        SYNTAX VlanIndex (1..512)
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+            "The VLAN ID on which this static address
+            binding is valid."
+        ::= { hpicfIpStaticBindingsEntry 1 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1.4.1.2
+    hpicfIpStaticBindingsAddrType OBJECT-TYPE
+        SYNTAX InetAddressType
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+            "The type of IP address contained in
+            hpicfIpStaticBindingsAddress.  The only
+            values expected are ipv4 or ipv6."
+        ::= { hpicfIpStaticBindingsEntry 2 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1.4.1.3
+    hpicfIpStaticBindingsAddress OBJECT-TYPE
+        SYNTAX InetAddress
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+            "The static IP address of this binding.
+            The type of address contained in this
+            object is indicated by
+            hpicfIpStaticBindingsAddrType."
+        ::= { hpicfIpStaticBindingsEntry 3 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1.4.1.4
+    hpicfIpStaticBindingsMacAddress OBJECT-TYPE
+        SYNTAX MacAddress
+        MAX-ACCESS read-create
+        STATUS current
+        DESCRIPTION
+            "The MAC address associated with this
+            static binding on this VLAN."
+        ::= { hpicfIpStaticBindingsEntry 4 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1.4.1.5
+    hpicfIpStaticBindingsInterface OBJECT-TYPE
+        SYNTAX InterfaceIndex
+        MAX-ACCESS read-create
+        STATUS current
+        DESCRIPTION
+            "The interface that this static IP address
+            binding is valid on in this VLAN."
+        ::= { hpicfIpStaticBindingsEntry 5 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.1.4.1.6
+    hpicfIpStaticBindingsStatus OBJECT-TYPE
+        SYNTAX RowStatus
+        MAX-ACCESS read-create
+        STATUS current
+        DESCRIPTION
+            "The status of this static IP address
+            binding.  This object cannot be set to
+            'active' until valid value has been
+            configured for hpicfIpStaticBindingsMacAddress
+            and hpicfIpStaticBindingsInterface."
+        ::= { hpicfIpStaticBindingsEntry 6 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.2
+    hpicfIpDhcpSnoopStatus OBJECT IDENTIFIER ::= { hpicfIpDhcpSnoopObjects 2 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.2.1
+    hpicfDhcpSnoopGlobalStats OBJECT IDENTIFIER ::= { hpicfIpDhcpSnoopStatus 1 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.2.1.1
+    hpicfDhcpSnoopCSForwards OBJECT-TYPE
+        SYNTAX Counter32
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+            "Number of snooped DHCP packets that were successfully
+            forwarded from untrusted client ports towards trusted
+            DHCP server ports."
+        ::= { hpicfDhcpSnoopGlobalStats 1 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.2.1.2
+    hpicfDhcpSnoopCSMACMismatches OBJECT-TYPE
+        SYNTAX Counter32
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+            "Number of snooped DHCP client packets that were
+            discarded because the MAC source address of the
+            packet did not match the chaddr."
+        ::= { hpicfDhcpSnoopGlobalStats 2 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.2.1.3
+    hpicfDhcpSnoopCSUntrustedOpt82s OBJECT-TYPE
+        SYNTAX Counter32
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+            "Number of snooped DHCP client packets that were
+            discarded because they were received on an untrusted
+            port and contained a relay information option."
+        ::= { hpicfDhcpSnoopGlobalStats 3 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.2.1.4
+    hpicfDhcpSnoopCSBadReleases OBJECT-TYPE
+        SYNTAX Counter32
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+            "Number of snooped DHCP client packets that were
+            discarded because they were DHCPRELEASE or DHCPDECLINE
+            packets received on a port different from the port
+            that the address was leased to."
+        ::= { hpicfDhcpSnoopGlobalStats 4 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.2.1.5
+    hpicfDhcpSnoopCSUntrustedDestPorts OBJECT-TYPE
+        SYNTAX Counter32
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+            "Number of snooped DHCP client unicast packets that
+            were dropped because they were destined to untrusted
+            ports."
+        ::= { hpicfDhcpSnoopGlobalStats 5 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.2.1.6
+    hpicfDhcpSnoopSCForwards OBJECT-TYPE
+        SYNTAX Counter32
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+            "Number of snooped DHCP packets that were successfully
+            forwarded from trusted DHCP server ports to untrusted
+            client ports."
+        ::= { hpicfDhcpSnoopGlobalStats 6 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.2.1.7
+    hpicfDhcpSnoopSCUntrustedPorts OBJECT-TYPE
+        SYNTAX Counter32
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+            "Number of snooped DHCP server packets that were
+            dropped because they were received from untrusted
+            ports."
+        ::= { hpicfDhcpSnoopGlobalStats 7 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.2.1.8
+    hpicfDhcpSnoopSCUntrustedServers OBJECT-TYPE
+        SYNTAX Counter32
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+            "Number of snooped DHCP server packets that were
+            dropped because they were received from unauthorized
+            DHCP server addresses."
+        ::= { hpicfDhcpSnoopGlobalStats 8 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.2.1.9
+    hpicfDhcpSnoopSCOpt82Failures OBJECT-TYPE
+        SYNTAX Counter32
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+            "Number of snooped DHCP server packets that were
+            dropped because they did not contain a valid
+            relay information option."
+        ::= { hpicfDhcpSnoopGlobalStats 9 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.2.1.10
+    hpicfDhcpSnoopDBFileWriteAttempts OBJECT-TYPE
+        SYNTAX Counter32
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+            "Number of attempts that have been made to
+            write the DHCP lease database to a configured
+            file location."
+        ::= { hpicfDhcpSnoopGlobalStats 10 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.2.1.11
+    hpicfDhcpSnoopDBFileWriteFailures OBJECT-TYPE
+        SYNTAX Counter32
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+            "Number of times that an attempt to write the
+            DHCP lease database to a configured file location
+            has failed."
+        ::= { hpicfDhcpSnoopGlobalStats 11 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.2.1.12
+    hpicfDhcpSnoopDBFileReadStatus OBJECT-TYPE
+        SYNTAX INTEGER
+            {
+            notConfigured(1),
+            inProgress(2),
+            succeeded(3),
+            failed(4)
+            }
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+            "This object indicates whether we were able to
+            successfully load the DHCP lease database from
+            the configured location after the last reboot."
+        ::= { hpicfDhcpSnoopGlobalStats 12 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.2.1.13
+    hpicfDhcpSnoopDBFileWriteStatus OBJECT-TYPE
+        SYNTAX INTEGER
+            {
+            notConfigured(1),
+            delaying(2),
+            inProgress(3),
+            succeeded(4),
+            failed(5)
+            }
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+            "This object indicates whether the DHCP lease
+            database is currently synchronized with the
+            the configured file server.  'notConfigured'
+            means that we have not been configured with
+            a server location.  'delaying' means that we
+            are waiting for the write delay to expire
+            before writing the current database.
+            'inProgress' means that a lease database
+            transfer is active.  'succeeded' means that
+            all leases in our database have been written
+            to the server.  'failed' means that the last
+            attempt to write our lease database failed."
+        ::= { hpicfDhcpSnoopGlobalStats 13 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.2.1.14
+    hpicfDhcpSnoopDBFileLastWriteTime OBJECT-TYPE
+        SYNTAX DateAndTime
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+            "The time that we last successfully wrote
+            our lease database to the server.  This object
+            will contain a value of all zeroes if we have
+            not written our lease database since the last
+            reboot."
+        ::= { hpicfDhcpSnoopGlobalStats 14 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.2.2
+    hpicfDhcpSnoopBindingsTable OBJECT-TYPE
+        SYNTAX SEQUENCE OF HpicfDhcpSnoopBindingsEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+            "A table of DHCP bindings that have been learned
+            by this device."
+        ::= { hpicfIpDhcpSnoopStatus 2 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.2.2.1
+    hpicfDhcpSnoopBindingsEntry OBJECT-TYPE
+        SYNTAX HpicfDhcpSnoopBindingsEntry
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+            "A row in the table, containing a single DHCP
+            binding."
+    INDEX { hpicfDhcpSnoopBindingsVlan, hpicfDhcpSnoopBindingsMacAddress, 
+        hpicfDhcpSnoopBindingsAddrType, hpicfDhcpSnoopBindingsAddress }
+        ::= { hpicfDhcpSnoopBindingsTable 1 }
+
+    
+    HpicfDhcpSnoopBindingsEntry ::=
+        SEQUENCE { 
+            hpicfDhcpSnoopBindingsVlan
+                VlanIndex,
+            hpicfDhcpSnoopBindingsMacAddress
+                MacAddress,
+            hpicfDhcpSnoopBindingsAddrType
+                InetAddressType,
+            hpicfDhcpSnoopBindingsAddress
+                InetAddress,
+            hpicfDhcpSnoopBindingsInterface
+                InterfaceIndex,
+            hpicfDhcpSnoopBindingsLeaseTime
+                Unsigned32,
+            hpicfDhcpSnoopBindingsType
+                INTEGER
+         }
+
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.2.2.1.1
+    hpicfDhcpSnoopBindingsVlan OBJECT-TYPE
+        SYNTAX VlanIndex (1..512)
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+            "The VLAN ID on which this client binding
+            was learned."
+        ::= { hpicfDhcpSnoopBindingsEntry 1 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.2.2.1.2
+    hpicfDhcpSnoopBindingsMacAddress OBJECT-TYPE
+        SYNTAX MacAddress
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+            "The MAC address of the DHCP client that
+            this binding applies to."
+        ::= { hpicfDhcpSnoopBindingsEntry 2 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.2.2.1.3
+    hpicfDhcpSnoopBindingsAddrType OBJECT-TYPE
+        SYNTAX InetAddressType
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+            "The type of IP address contained in
+            hpicfDhcpSnoopBindingsAddress.  The only
+            values expected are ipv4 or ipv6."
+        ::= { hpicfDhcpSnoopBindingsEntry 3 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.2.2.1.4
+    hpicfDhcpSnoopBindingsAddress OBJECT-TYPE
+        SYNTAX InetAddress
+        MAX-ACCESS not-accessible
+        STATUS current
+        DESCRIPTION
+            "An IP address that has been leased to
+            this client.  The type of address contained
+            in this object is indicated by
+            hpicfDhcpSnoopBindingsAddrType."
+        ::= { hpicfDhcpSnoopBindingsEntry 4 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.2.2.1.5
+    hpicfDhcpSnoopBindingsInterface OBJECT-TYPE
+        SYNTAX InterfaceIndex
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+            "The interface that this DHCP client is connected
+            to."
+        ::= { hpicfDhcpSnoopBindingsEntry 5 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.2.2.1.6
+    hpicfDhcpSnoopBindingsLeaseTime OBJECT-TYPE
+        SYNTAX Unsigned32
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+            "The number of seconds remaining until this DHCP
+            lease times out.  A value of 0xffffffff indicates
+            an infinite lease."
+        ::= { hpicfDhcpSnoopBindingsEntry 6 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.2.2.1.7
+    hpicfDhcpSnoopBindingsType OBJECT-TYPE
+        SYNTAX INTEGER
+            {
+            dhcp(1),
+            static(2)
+            }
+        MAX-ACCESS read-only
+        STATUS current
+        DESCRIPTION
+            "This object indicates how this binding was
+            learned.  A value of 'dhcp' indicates that
+            this binding was learned by snooping a DHCP
+            lease.  A value of 'static' indicates that
+            this binding was statically configured via the
+            hpicfIpStaticBindingsTable."
+        ::= { hpicfDhcpSnoopBindingsEntry 7 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.3
+    hpicfDhcpSnoopNotifyObjects OBJECT IDENTIFIER ::= { hpicfIpDhcpSnoopObjects 3 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.3.1
+    hpicfDhcpSnoopNotifyCount OBJECT-TYPE
+        SYNTAX Counter32
+        MAX-ACCESS accessible-for-notify
+        STATUS current
+        DESCRIPTION
+            "A count of the DHCP snooping notification sent from the DHCP
+            snooping entity to the SNMP entity.  This count may be greater
+            than the count of notifications actually transmitted by the SNMP
+            entity due to rate limiting or configuration."
+        ::= { hpicfDhcpSnoopNotifyObjects 1 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.3.2
+    hpicfDhcpSnoopErrantSrcMAC OBJECT-TYPE
+        SYNTAX MacAddress
+        MAX-ACCESS accessible-for-notify
+        STATUS current
+        DESCRIPTION
+            "The MAC address received in the errant DHCP/BootP reply packet."
+        ::= { hpicfDhcpSnoopNotifyObjects 2 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.3.3
+hpicfDhcpSnoopErrantSrcIPType OBJECT-TYPE
+        SYNTAX InetAddressType
+        MAX-ACCESS accessible-for-notify
+        STATUS current
+        DESCRIPTION
+        "InetAddressType of the address reported in hpicfDhcpSnoopErrantSrcIP."
+        ::= { hpicfDhcpSnoopNotifyObjects 3 }
+
+    
+-- 1.3.6.1.4.1.11.2.14.11.5.1.34.1.3.4
+hpicfDhcpSnoopErrantSrcIP OBJECT-TYPE
+    SYNTAX InetAddress
+    MAX-ACCESS accessible-for-notify
+    STATUS current
+    DESCRIPTION
+        "The IP address received in the errant DHCP/BootP reply packet."
+    ::= { hpicfDhcpSnoopNotifyObjects 4 }
+
+
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.2
+    hpicfDhcpSnoopConformance OBJECT IDENTIFIER ::= { hpicfIpDhcpSnoop 2 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.2.1
+    hpicfIpDhcpSnoopGroups OBJECT IDENTIFIER ::= { hpicfDhcpSnoopConformance 1 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.2.1.1
+    hpicfDhcpSnoopBaseGroup OBJECT-GROUP
+    OBJECTS { hpicfDhcpSnoopEnable, hpicfDhcpSnoopVlanEnable, 
+        hpicfDhcpSnoopVerifyMac, hpicfDhcpSnoopPortTrust, 
+        hpicfDhcpSnoopCSForwards, hpicfDhcpSnoopCSMACMismatches, 
+        hpicfDhcpSnoopCSBadReleases, hpicfDhcpSnoopCSUntrustedDestPorts, 
+        hpicfDhcpSnoopSCForwards, hpicfDhcpSnoopSCUntrustedPorts
+             }
+        STATUS current
+        DESCRIPTION 
+            "A collection of objects for configuring and
+            monitoring the base DHCP snooping functionality."
+        ::= { hpicfIpDhcpSnoopGroups 1 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.2.1.2
+    hpicfDhcpSnoopOpt82Group OBJECT-GROUP
+    OBJECTS { hpicfDhcpSnoopOpt82Insert, hpicfDhcpSnoopOpt82Policy, 
+        hpicfDhcpSnoopOpt82RemoteId, hpicfDhcpSnoopCSUntrustedOpt82s, 
+        hpicfDhcpSnoopSCOpt82Failures
+             }
+        STATUS current
+        DESCRIPTION 
+            "A collection of objects for configuring and
+            monitoring DHCP snooping relay information
+            option behavior."
+        ::= { hpicfIpDhcpSnoopGroups 2 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.2.1.3
+    hpicfDhcpSnoopServersGroup OBJECT-GROUP
+        OBJECTS { hpicfDhcpSnoopServerStatus, hpicfDhcpSnoopSCUntrustedServers }
+        STATUS current
+        DESCRIPTION 
+            "A collection of objects for configuring and
+            monitoring DHCP snooping trusted servers."
+        ::= { hpicfIpDhcpSnoopGroups 3 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.2.1.4
+    hpicfDhcpSnoopDbaseFileGroup OBJECT-GROUP
+    OBJECTS { hpicfDhcpSnoopDatabaseFile, hpicfDhcpSnoopDatabaseWriteDelay, 
+        hpicfDhcpSnoopDatabaseWriteTimeout, hpicfDhcpSnoopDBFileWriteAttempts, 
+        hpicfDhcpSnoopDBFileWriteFailures, hpicfDhcpSnoopDBFileReadStatus, 
+        hpicfDhcpSnoopDBFileWriteStatus, hpicfDhcpSnoopDBFileLastWriteTime }
+        STATUS current
+        DESCRIPTION 
+            "A collection of objects for configuring and
+            monitoring DHCP snooping database file
+            management."
+        ::= { hpicfIpDhcpSnoopGroups 4 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.2.1.5
+    hpicfDhcpSnoopBindingsGroup OBJECT-GROUP
+    OBJECTS { hpicfDhcpSnoopBindingsInterface, hpicfDhcpSnoopBindingsLeaseTime, 
+        hpicfDhcpSnoopBindingsType }
+        STATUS current
+        DESCRIPTION 
+            "A collection of objects for accessing the DHCP
+            snooping lease database."
+        ::= { hpicfIpDhcpSnoopGroups 5 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.2.1.6
+    hpicfDhcpSnoopStaticBindingsGroup OBJECT-GROUP
+    OBJECTS { hpicfIpStaticBindingsMacAddress, hpicfIpStaticBindingsInterface, 
+        hpicfIpStaticBindingsStatus, hpicfDhcpSnoopBindingsType }
+        STATUS current
+        DESCRIPTION 
+            "A collection of objects for managing static
+            configuration of IP source address bindings."
+        ::= { hpicfIpDhcpSnoopGroups 6 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.2.1.7
+    hpicfDhcpSnoopNotifyObjsGroup OBJECT-GROUP
+    OBJECTS { hpicfDhcpSnoopNotifyCount, hpicfDhcpSnoopErrantSrcMAC, 
+        hpicfDhcpSnoopErrantSrcIPType, hpicfDhcpSnoopErrantSrcIP, 
+        hpicfDhcpSnoopErrantReplyEnable
+        }
+        STATUS current
+        DESCRIPTION 
+        "Group of objects used in DHCP Snooping notifications."
+        ::= { hpicfIpDhcpSnoopGroups 7 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.2.1.8
+    hpicfDhcpSnoopNotificationGroup NOTIFICATION-GROUP
+        NOTIFICATIONS { hpicfDhcpSnoopErrantReply }
+        STATUS current
+        DESCRIPTION 
+            "Description."
+        ::= { hpicfIpDhcpSnoopGroups 8 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.2.2
+    hpicfDhcpSnoopCompliances OBJECT IDENTIFIER ::= { hpicfDhcpSnoopConformance 2 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.2.2.1
+    hpicfDhcpSnoopCompliance MODULE-COMPLIANCE
+        STATUS deprecated
+        DESCRIPTION 
+            "The compliance statement for HP Routing switches
+            that support DHCP Snooping."
+        MODULE -- this module
+            MANDATORY-GROUPS { hpicfDhcpSnoopBaseGroup }
+            GROUP hpicfDhcpSnoopOpt82Group
+                DESCRIPTION 
+                    "This group is mandatory for implementations
+                    that support DHCP snooping control and
+                    processing of the DHCP relay information
+                    option."
+            GROUP hpicfDhcpSnoopServersGroup
+                DESCRIPTION 
+                    "This group is mandatory for implementations
+                    that support a DHCP trusted server list."
+            GROUP hpicfDhcpSnoopDbaseFileGroup
+                DESCRIPTION 
+                    "This group is mandatory for implementations
+                    that support saving the DHCP lease database
+                    to a remote server."
+            GROUP hpicfDhcpSnoopBindingsGroup
+                DESCRIPTION 
+                    "This group is recommended to provide
+                    management access to the lease database."
+        ::= { hpicfDhcpSnoopCompliances 1 }
+
+    
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.34.2.2.2
+    hpicfDhcpSnoopCompliance2 MODULE-COMPLIANCE
+        STATUS current
+        DESCRIPTION 
+            "The compliance statement for HP Routing switches
+            that support DHCP Snooping."
+        MODULE -- this module
+            MANDATORY-GROUPS { hpicfDhcpSnoopBaseGroup }
+            GROUP hpicfDhcpSnoopOpt82Group
+                DESCRIPTION 
+                    "This group is mandatory for implementations
+                    that support DHCP snooping control and
+                    processing of the DHCP relay information
+                    option."
+            GROUP hpicfDhcpSnoopServersGroup
+                DESCRIPTION 
+                    "This group is mandatory for implementations
+                    that support a DHCP trusted server list."
+            GROUP hpicfDhcpSnoopDbaseFileGroup
+                DESCRIPTION 
+                    "This group is mandatory for implementations
+                    that support saving the DHCP lease database
+                    to a remote server."
+            GROUP hpicfDhcpSnoopBindingsGroup
+                DESCRIPTION 
+                    "This group is recommended to provide
+                    management access to the lease database.
+                    It is mandatory for implementations that
+                    support static configuration of IP source
+                    address bindings."
+            GROUP hpicfDhcpSnoopStaticBindingsGroup
+                DESCRIPTION 
+                    "This group is mandatory for implementations
+                    that support static configuration of IP
+                    source address bindings for use in IP source
+                    filtering applications."
+        ::= { hpicfDhcpSnoopCompliances 2 }
+
+    
+
+END

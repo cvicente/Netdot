@@ -1,0 +1,52 @@
+
+      TRIPLE-DES-CONSORTIUM-MIB DEFINITIONS ::= BEGIN
+
+      IMPORTS
+          MODULE-IDENTITY, OBJECT-IDENTITY,
+          snmpModules                           FROM SNMPv2-SMI
+          AutonomousType                        FROM SNMPv2-TC
+             enterprises                        FROM SNMPv2-SMI;
+
+      tripleDESConsortiumMIB MODULE-IDENTITY
+          LAST-UPDATED "200302030000Z"          -- 03 February 2003, midnight
+          ORGANIZATION "Triple DES Consortium"
+          CONTACT-INFO "?"
+          DESCRIPTION  "Extension to the SNMP User-based Security Model
+                        to support Triple-DES EDE in 'Outside' CBC
+                        (cipher-block chaining) Mode.
+                       "
+          REVISION     "200302030000Z"          -- 03 February 2003, midnight
+          DESCRIPTION  "Initial version, published as an Internet Draft."
+          ::= { enterprises 14832 }
+
+      -- Identification of Privacy Protocols *******************************
+
+      tripleDESConsortiumPrivProtocols OBJECT IDENTIFIER ::= { tripleDESConsortiumMIB 1 }
+
+      usm3DESPrivProtocol OBJECT-IDENTITY
+          STATUS        current
+          DESCRIPTION  "The 3DES-EDE Symmetric Encryption Protocol."
+          REFERENCE    "- Data Encryption Standard, National Institute of
+                          Standards and Technology.  Federal Information
+                          Processing Standard (FIPS) Publication 46-3, (1999,
+                          pending approval).  Will supersede FIPS Publication
+                          46-2.
+
+                        - Data Encryption Algorithm, American National
+                          Standards Institute.  ANSI X3.92-1981,
+                          (December, 1980).
+
+                        - DES Modes of Operation, National Institute of
+                          Standards and Technology.  Federal Information
+                          Processing Standard (FIPS) Publication 81,
+                          (December, 1980).
+
+                        - Data Encryption Algorithm - Modes of Operation,
+                          American National Standards Institute.
+                          ANSI X3.106-1983, (May 1983).
+                       "
+          ::= { tripleDESConsortiumPrivProtocols 1 }
+
+      END
+
+ 

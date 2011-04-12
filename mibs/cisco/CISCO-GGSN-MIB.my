@@ -3,8 +3,8 @@
 -- CISCO-GGSN-MIB.my: MIB file for GGSN
 --   
 -- Dec 2001, Rajesh M. L.
---   
--- Copyright (c) 2000-2006, 2008 by Cisco Systems, Inc.
+-- Jan 2010, Raagavendran Sridharan
+-- Copyright (c) 2000-2006, 2008-2010 by Cisco Systems Inc.
 -- All rights reserved.
 -- ********************************************************************
 -- $Endlog$
@@ -25,7 +25,8 @@ IMPORTS
     OBJECT-GROUP,
     NOTIFICATION-GROUP
         FROM SNMPv2-CONF
-    InterfaceIndexOrZero
+    InterfaceIndexOrZero,
+    ifIndex
         FROM IF-MIB
     DisplayString,
     TruthValue,
@@ -50,7 +51,7 @@ IMPORTS
 
 
 cGgsnMIB MODULE-IDENTITY
-    LAST-UPDATED    "200811030000Z"
+    LAST-UPDATED    "201003230000Z"
     ORGANIZATION    "Cisco Systems, Inc."
     CONTACT-INFO
             "Cisco Systems
@@ -158,6 +159,17 @@ cGgsnMIB MODULE-IDENTITY
         [5] 3GPP: Technical Specification Group Core Network;
             Policy control over Go interface (Release 5).
             3GPP TS 29.207 V5.2.0"
+    REVISION        "201003230000Z"
+    DESCRIPTION
+        "Added the 'release100' enumeration to cGgsnVersion."
+    REVISION        "201002190000Z"
+    DESCRIPTION
+        "Added new table cGgsnGtpEncapsuTable.
+
+        Added OBJECT-GROUP cGgsnStatusGroupR90.
+
+        Added MODULE-COMPLIANCE cGgsnMIBComplianceRev9, which
+        deprecates cGgsnMIBComplianceRev8."
     REVISION        "200811030000Z"
     DESCRIPTION
         "Added the 'release90' enumeration to cGgsnVersion."
@@ -919,7 +931,7 @@ CGgsnSgsnStatEntry ::= SEQUENCE {
 }
 
 cGgsnSgsnThruPutInterval OBJECT-TYPE
-    SYNTAX          Integer32 (1..65535 )
+    SYNTAX          Integer32 (1..65535)
     UNITS           "minutes"
     MAX-ACCESS      not-accessible
     STATUS          current
@@ -931,7 +943,7 @@ cGgsnSgsnThruPutInterval OBJECT-TYPE
     ::= { cGgsnSgsnStatEntry 1 }
 
 cGgsnSgsnThruPutLastCollected OBJECT-TYPE
-    SYNTAX          Integer32 (0..65535 )
+    SYNTAX          Integer32 (0..65535)
     UNITS           "minutes"
     MAX-ACCESS      read-only
     STATUS          current
@@ -1508,7 +1520,7 @@ cGgsnIgnoredAlarms OBJECT-TYPE
     ::= { cGgsnNotifMgmt 4 }
 
 cGgsnHistNotifMaxLength OBJECT-TYPE
-    SYNTAX          Integer32 (1..2147483647 )
+    SYNTAX          Integer32 (1..2147483647)
     UNITS           "entries"
     MAX-ACCESS      read-write
     STATUS          current
@@ -1520,7 +1532,7 @@ cGgsnHistNotifMaxLength OBJECT-TYPE
     ::= { cGgsnNotifMgmt 5 }
 
 cGgsnHistNotifLatestIndex OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..4294967295 )
+    SYNTAX          Unsigned32 (1..4294967295)
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
@@ -1553,7 +1565,7 @@ cGgsnHistNotifEntry OBJECT-TYPE
 
 CGgsnHistNotifEntry ::= SEQUENCE {
         cGgsnHistNotifIndex          Unsigned32,
-        cGgsnHistNotifType           INTEGER ,
+        cGgsnHistNotifType           INTEGER,
         cGgsnHistNotifSeverity       CiscoAlarmSeverity,
         cGgsnHistNotifTimestamp      TimeStamp,
         cGgsnHistNotifGgsnIpAddrType InetAddressType,
@@ -1562,7 +1574,7 @@ CGgsnHistNotifEntry ::= SEQUENCE {
 }
 
 cGgsnHistNotifIndex OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..4294967295 )
+    SYNTAX          Unsigned32 (1..4294967295)
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
@@ -1749,7 +1761,7 @@ cGgsnDefaultIpAllocationMethod OBJECT-TYPE
     ::= { cGgsnConfigurations 1 }
 
 cGgsnIdlePdpPurgeTimer OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..255 )
+    SYNTAX          Unsigned32 (0..255)
     UNITS           "hours"
     MAX-ACCESS      read-write
     STATUS          current
@@ -2003,7 +2015,7 @@ CGgsnPlmnIpAddrRangeEntry ::= SEQUENCE {
         cGgsnPlmnAddrRangeFirstIp    InetAddress,
         cGgsnPlmnAddrRangeLastIp     InetAddress,
         cGgsnPlmnAddrRangeRowStatus  RowStatus,
-        cGgsnPlmnAddrRangeUsage      INTEGER 
+        cGgsnPlmnAddrRangeUsage      INTEGER
 }
 
 cGgsnPlmnAddrRangeIpAddrType OBJECT-TYPE
@@ -2169,7 +2181,7 @@ cGgsnPdfRowStatus OBJECT-TYPE
     ::= { cGgsnPdfEntry 5 }
 
 cGgsnPdfReconnectTimeOut OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..60 )
+    SYNTAX          Unsigned32 (1..60)
     UNITS           "minutes"
     MAX-ACCESS      read-create
     STATUS          deprecated
@@ -2183,7 +2195,7 @@ cGgsnPdfReconnectTimeOut OBJECT-TYPE
     ::= { cGgsnPdfEntry 6 }
 
 cGgsnPdfReconnectRetries OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..10  | 65535)
+    SYNTAX          Unsigned32 (0..10 | 65535)
     MAX-ACCESS      read-create
     STATUS          deprecated
     DESCRIPTION
@@ -2209,7 +2221,7 @@ cGgsnPdfReconExpPdpDelete OBJECT-TYPE
     ::= { cGgsnPdfEntry 8 }
 
 cGgsnPdfReqRetryTimeOut OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..60 )
+    SYNTAX          Unsigned32 (1..60)
     UNITS           "seconds"
     MAX-ACCESS      read-create
     STATUS          deprecated
@@ -2221,7 +2233,7 @@ cGgsnPdfReqRetryTimeOut OBJECT-TYPE
     ::= { cGgsnPdfEntry 9 }
 
 cGgsnPdfReqRetries OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..10 )
+    SYNTAX          Unsigned32 (0..10)
     MAX-ACCESS      read-create
     STATUS          deprecated
     DESCRIPTION
@@ -2316,7 +2328,7 @@ cGgsnPcscfRowStatus OBJECT-TYPE
 
 
 cGgsnMemoryThreshold OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..1024 )
+    SYNTAX          Unsigned32 (0..1024)
     UNITS           "98304Bytes"
     MAX-ACCESS      read-write
     STATUS          current
@@ -2404,7 +2416,7 @@ CGgsnPlmnEntry ::= SEQUENCE {
         cGgsnPlmnMcc       SnmpAdminString,
         cGgsnPlmnMnc       SnmpAdminString,
         cGgsnPlmnRowStatus RowStatus,
-        cGgsnPlmnScope     INTEGER 
+        cGgsnPlmnScope     INTEGER
 }
 
 cGgsnPlmnMcc OBJECT-TYPE
@@ -2463,7 +2475,7 @@ cGgsnPlmnScope OBJECT-TYPE
 
 
 cGgsnSessionTimeout OBJECT-TYPE
-    SYNTAX          Unsigned32 (0 |  30..4294967 )
+    SYNTAX          Unsigned32 (0 | 30..4294967)
     UNITS           "seconds"
     MAX-ACCESS      read-write
     STATUS          current
@@ -2478,7 +2490,7 @@ cGgsnSessionTimeout OBJECT-TYPE
     ::= { cGgsnConfigurations 14 }
 
 cGgsnThruputIntervalOne OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..65535 )
+    SYNTAX          Unsigned32 (0..65535)
     UNITS           "minutes"
     MAX-ACCESS      read-write
     STATUS          current
@@ -2507,7 +2519,7 @@ cGgsnThruputIntervalOne OBJECT-TYPE
     ::= { cGgsnConfigurations 15 }
 
 cGgsnThruputIntervalTwo OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..65535 )
+    SYNTAX          Unsigned32 (0..65535)
     UNITS           "minutes"
     MAX-ACCESS      read-write
     STATUS          current
@@ -2825,7 +2837,8 @@ cGgsnVersion OBJECT-TYPE
                         release60(6),
                         release70(7),
                         release80(8),
-                        release90(9)
+                        release90(9),
+                        release100(10)
                     }
     MAX-ACCESS      read-only
     STATUS          current
@@ -2922,7 +2935,7 @@ cGgsnGtpEncapInterface OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "This object represents the ifIndex of the interface on which
-        which gtp encapsulation is configured. Only one interface can
+        gtp encapsulation is configured. Only one interface can
         be configured with gtp encapsulation on the GGSN. A zero value
         indicates that no interface is configured with gtp 
         encapsulation." 
@@ -3013,6 +3026,48 @@ cGgsnActivatedIpv6Ms OBJECT-TYPE
         "This object represents the current number of MS with active
         IPv6 PDPs." 
     ::= { cGgsnStatus 15 }
+
+cGgsnGtpEncapsuTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CGgsnGtpEncapsuEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table contains information about ifIndex of the
+        interfaces on which gtp encapsulation is configured."
+    ::= { cGgsnStatus 16 }
+
+cGgsnGtpEncapsuEntry OBJECT-TYPE
+    SYNTAX          CGgsnGtpEncapsuEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The cGgsnGtpEncapsuEntry represents the ifIndex of the
+        interface on which gtp encapsulation is configured.
+        Only one interface can be configured with gtp
+        encapsulation on the GGSN. Entry in the table created whenever
+        interface is configured with gtp encapsulation, 
+        Entry is deleted whenever unconfiguring the gtp
+        encapsulation  from the interface."
+    INDEX           { ifIndex } 
+    ::= { cGgsnGtpEncapsuTable 1 }
+
+CGgsnGtpEncapsuEntry ::= SEQUENCE {
+        cGgsnGtpEncapsuInterface InterfaceIndexOrZero
+}
+
+cGgsnGtpEncapsuInterface OBJECT-TYPE
+    SYNTAX          InterfaceIndexOrZero
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents the ifIndex of the interface on
+        which gtp encapsulation is configured. Only one interface can
+        be configured with gtp encapsulation on the GGSN. A zero value
+        indicates that no interface is configured with gtp 
+        encapsulation." 
+    ::= { cGgsnGtpEncapsuEntry 1 }
+ 
+
 
 -- Notif Info
 
@@ -3928,6 +3983,29 @@ cGgsnMIBComplianceRev7 MODULE-COMPLIANCE
     ::= { cGgsnMIBCompliances 8 }
 
 cGgsnMIBComplianceRev8 MODULE-COMPLIANCE
+    STATUS          deprecated
+    DESCRIPTION
+        "The compliance statements for entities which
+        implement the CISCO GGSN MIB.This is deprecated by
+        cGgsnMIBComplianceRev9."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        cGgsnStatisticsGroupRev2,
+                        cGgsnNotifMgmtGroupRev2,
+                        cGgsnConfigurationsGroupRev4,
+                        cGgsnNotifGroupRev3,
+                        cGgsnStatusGroupRev1,
+                        cGgsnNotifInfoGroupRev2,
+                        cGgsnStatusGroupConfigVer,
+                        cGgsnStatisticsGroupR60,
+                        cGgsnStatusGroupR60,
+                        cGgsnNotifInfoGroupR60,
+                        cGgsnConfigurationsGroupR60Rev1,
+                        cGgsnStatusGroupR70
+                    }
+    ::= { cGgsnMIBCompliances 9 }
+
+cGgsnMIBComplianceRev9 MODULE-COMPLIANCE
     STATUS          current
     DESCRIPTION
         "The compliance statements for entities which
@@ -3945,7 +4023,8 @@ cGgsnMIBComplianceRev8 MODULE-COMPLIANCE
                         cGgsnStatusGroupR60,
                         cGgsnNotifInfoGroupR60,
                         cGgsnConfigurationsGroupR60Rev1,
-                        cGgsnStatusGroupR70
+                        cGgsnStatusGroupR70,
+                        cGgsnStatusGroupR90
                     }
 
     GROUP           cGgsnUmtsGroup
@@ -4019,7 +4098,7 @@ cGgsnMIBComplianceRev8 MODULE-COMPLIANCE
     DESCRIPTION
         "The states notInService(2), notReady(3) and
         createAndWait(5) need not be supported."
-    ::= { cGgsnMIBCompliances 9 }
+    ::= { cGgsnMIBCompliances 10 }
 
 -- units of conformance
 
@@ -4569,4 +4648,15 @@ cGgsnConfigurationsGroupRev4 OBJECT-GROUP
         "A collection of objects related with configurations on GGSN."
     ::= { cGgsnMIBGroups 28 }
 
+cGgsnStatusGroupR90 OBJECT-GROUP
+    OBJECTS         { cGgsnGtpEncapsuInterface }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects which maintains the mapping
+        between CGSN interfaces and gtp encapsulated interfaces."
+    ::= { cGgsnMIBGroups 29 }
+
 END
+
+
+

@@ -14,11 +14,9 @@ HP-USER-AUTH DEFINITIONS ::= BEGIN
         IpAddress, Integer32, Unsigned32, OBJECT-TYPE, 
         MODULE-IDENTITY, NOTIFICATION-TYPE            
             FROM SNMPv2-SMI            
-        RowStatus
+        TruthValue, MacAddress, RowStatus            
             FROM SNMPv2-TC
-        TruthValue, MacAddress            
-            FROM SNMPv2-TC
-        InetAddressType, InetAddress
+        InetAddressType, InetAddress, InetPortNumber
             FROM INET-ADDRESS-MIB;
 
 
@@ -261,7 +259,7 @@ HP-USER-AUTH DEFINITIONS ::= BEGIN
         MAX-ACCESS accessible-for-notify
         STATUS current
         DESCRIPTION
-            "The count of hpicfUsrAuthWMAFail notifications sent by the hpicfUsrAuth
+            "The count of hpicfPortSecAuthFailure notifications sent by the hpicfUsrAuth
             entity to the SNMP entity.  The actual count of notifications sent by SNMP
             may be lower due to rate limiting or configuration."
         ::= { hpicfUsrAuthSystem 10 }
@@ -415,8 +413,112 @@ HP-USER-AUTH DEFINITIONS ::= BEGIN
               DESCRIPTION 
                 "This marks the row as active/inactive." 
               ::= { hpicfUsrAuthWMAEWAServerEntry 5 }
-
     
+     -- 1.3.6.1.4.1.11.2.14.11.5.1.19.1.17
+    --
+    -- WMA Redirect Server Table
+    --
+
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.19.1.17
+    hpicfUsrAuthRedirectServerTable OBJECT-TYPE
+         SYNTAX      SEQUENCE OF HpicfUsrAuthRedirectServerEntry 
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         DESCRIPTION
+             "A table of the authentication Redirect Servers." 
+         ::= { hpicfUsrAuthSystem 17 }
+
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.19.1.17.X
+    hpicfUsrAuthRedirectServerEntry OBJECT-TYPE
+         SYNTAX      HpicfUsrAuthRedirectServerEntry 
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         DESCRIPTION
+            "Attributes of an authentication Redirect Server."
+         INDEX { hpicfUsrAuthRedirectServerIndex }
+         ::= { hpicfUsrAuthRedirectServerTable 1 }
+  
+    HpicfUsrAuthRedirectServerEntry ::= SEQUENCE {
+         hpicfUsrAuthRedirectServerIndex             Integer32, 
+         hpicfUsrAuthRedirectServerURL               OCTET STRING,
+         hpicfUsrAuthRedirectServerRowStatus         RowStatus 
+    }
+
+    hpicfUsrAuthRedirectServerIndex OBJECT-TYPE
+         SYNTAX      Integer32
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         DESCRIPTION
+            "Index into hpicfUsrAuthRedirectServerTable."
+         ::= { hpicfUsrAuthRedirectServerEntry 1 }
+         
+    hpicfUsrAuthRedirectServerURL OBJECT-TYPE
+         SYNTAX       OCTET STRING
+         MAX-ACCESS   read-create
+         STATUS       current
+         DESCRIPTION
+            "This object represents the authentication 
+             Redirect Server's complete URL for the location
+             of the redirect server login or warning page. This 
+             value must begin with 'http://' or 'https://' and
+             should include the DNS name, TCP port of the server
+             if not 80 or SSL's 443, and the page path, if necessary."
+          ::= { hpicfUsrAuthRedirectServerEntry 2 }
+    
+    hpicfUsrAuthRedirectServerRowStatus  OBJECT-TYPE
+         SYNTAX       RowStatus
+         MAX-ACCESS   read-create
+         STATUS       current
+         DESCRIPTION
+            "This object indicates the status of this entry.
+             Must NOT be active in order to modify some other 
+             column of this config entry."
+         ::= { hpicfUsrAuthRedirectServerEntry 3 }
+
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.19.1.18
+    hpicfUsrAuthRedirectServerRestrictiveFilter OBJECT-TYPE
+         SYNTAX      INTEGER {
+                       enabled(1),
+                       disabled(2)
+                     }
+         MAX-ACCESS   read-write
+         STATUS       current
+         DESCRIPTION
+            "If enabled, only the configured initial
+             web page will be returned for all client requests. The enabled state would
+             generally be used to simply display an informative warning
+             message to failed macAuth clients.  If disabled, all
+             client/redirect-server http traffic will be permitted."
+         DEFVAL { disabled }
+         ::= { hpicfUsrAuthSystem 18 }
+
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.19.1.19
+    hpicfUsrAuthRedirectServerClientTimeout OBJECT-TYPE
+         SYNTAX      Integer32
+         MAX-ACCESS  read-write
+         STATUS      current
+         DESCRIPTION
+            "The time (in seconds) that a client will be left in the
+             unauthorized authentication redirection state before 
+             being removed from the state tables, temporarily 
+             suspending further client/redirect-server http 
+             traffic. After state table removal, client is 
+             free to initiate authentication."
+         DEFVAL { 180 }
+         ::= { hpicfUsrAuthSystem 19 }
+
+    -- 1.3.6.1.4.1.11.2.14.11.5.1.19.1.20
+    hpicfUsrAuthRedirectServerAuthFailureStats OBJECT-TYPE
+         SYNTAX      Counter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+            "The total number of times clients fail authentication 
+             and initiate the authentication Redirect Server process 
+             since reboot. A single client can be counted multiple 
+             times."
+         ::= { hpicfUsrAuthSystem 20 }
+
     -- 1.3.6.1.4.1.11.2.14.11.5.1.19.2
     hpicfUsrAuthPorts OBJECT IDENTIFIER ::= { hpicfUsrAuthMIB 2 }
 
@@ -567,7 +669,7 @@ HP-USER-AUTH DEFINITIONS ::= BEGIN
 
     -- 1.3.6.1.4.1.11.2.14.11.5.1.19.3.1.1.1
     hpicfUsrAuthWebAuthClientLimit OBJECT-TYPE
-        SYNTAX Integer32 (1..32)
+        SYNTAX Integer32 (1..256)
         MAX-ACCESS read-write
         STATUS current
         DESCRIPTION
@@ -787,7 +889,7 @@ HP-USER-AUTH DEFINITIONS ::= BEGIN
 
     -- 1.3.6.1.4.1.11.2.14.11.5.1.19.4.1.1.1
     hpicfUsrAuthMacAuthClientLimit OBJECT-TYPE
-        SYNTAX Integer32 (1..32)
+        SYNTAX Integer32 (1..256)
         MAX-ACCESS read-write
         STATUS current
         DESCRIPTION
@@ -909,7 +1011,67 @@ HP-USER-AUTH DEFINITIONS ::= BEGIN
             an unauthenticated client."
         ::= { hpicfUsrAuthMacAuthConfigEntry 9 }
 
-    
+        -- 1.3.6.1.4.1.11.2.14.11.5.1.19.4.2
+    hpicfUsrAuthMacAuthClientReauthenticateTable OBJECT-TYPE
+         SYNTAX     SEQUENCE OF HpicfUsrAuthMacAuthClientReauthenticateEntry 
+         MAX-ACCESS not-accessible
+         STATUS     current
+         DESCRIPTION
+            "A table containing macAuth configuration/control variables
+             indexed by port and client MAC." 
+        ::= { hpicfUsrAuthMacAuthConfig 2 }
+
+    hpicfUsrAuthMacAuthClientReauthenticateEntry OBJECT-TYPE
+         SYNTAX     HpicfUsrAuthMacAuthClientReauthenticateEntry 
+         MAX-ACCESS not-accessible
+         STATUS     current
+         DESCRIPTION
+            "The table entry provides the means by which a macAuth 
+             client on an authentication interface can be forced to 
+             reauthenticate."
+        INDEX { hpicfUsrAuthMacAuthClientReauthenticateInterfaceIndex, 
+                hpicfUsrAuthMacAuthClientReauthenticateMacAddress}
+        ::= { hpicfUsrAuthMacAuthClientReauthenticateTable 1 }
+
+    HpicfUsrAuthMacAuthClientReauthenticateEntry ::= SEQUENCE {
+         hpicfUsrAuthMacAuthClientReauthenticateInterfaceIndex
+             InterfaceIndex,
+         hpicfUsrAuthMacAuthClientReauthenticateMacAddress
+              MacAddress,
+         hpicfUsrAuthMacAuthClientReauthenticate
+              TruthValue 
+    }
+
+    hpicfUsrAuthMacAuthClientReauthenticateInterfaceIndex OBJECT-TYPE
+         SYNTAX     InterfaceIndex 
+         MAX-ACCESS not-accessible
+         STATUS     current
+         DESCRIPTION
+            "Index of macAuth client interfaces."
+         ::= { hpicfUsrAuthMacAuthClientReauthenticateEntry 1 }
+
+   hpicfUsrAuthMacAuthClientReauthenticateMacAddress OBJECT-TYPE 
+         SYNTAX      MacAddress
+         MAX-ACCESS  not-accessible 
+         STATUS      current
+         DESCRIPTION
+            "Specifies the MAC address of the client."
+         ::= { hpicfUsrAuthMacAuthClientReauthenticateEntry 2 }
+
+   hpicfUsrAuthMacAuthClientReauthenticate  OBJECT-TYPE
+         SYNTAX      TruthValue 
+         MAX-ACCESS  read-write 
+         STATUS      current
+         DESCRIPTION
+            "The reauthentication control for this client on this 
+             authentication interface. Setting this attribute TRUE 
+             forces this authenticated macAuth client to 
+             re-authenticate. That is, the client is deauthenticated 
+             and must transmit traffic in order to trigger 
+             reauthentication. Setting this attribute FALSE has no 
+             effect." 
+         ::= { hpicfUsrAuthMacAuthClientReauthenticateEntry 3 }
+
     -- 1.3.6.1.4.1.11.2.14.11.5.1.19.5
     hpicfUsrAuthWebAuthStats OBJECT IDENTIFIER ::= { hpicfUsrAuthMIB 5 }
 

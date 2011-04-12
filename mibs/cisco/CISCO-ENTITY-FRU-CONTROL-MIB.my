@@ -43,7 +43,7 @@ IMPORTS
 
 
 ciscoEntityFRUControlMIB MODULE-IDENTITY
-    LAST-UPDATED    "200703140000Z"
+    LAST-UPDATED    "200810080000Z"
     ORGANIZATION    "Cisco Systems, Inc."
     CONTACT-INFO
             "Postal: Cisco Systems, Inc.
@@ -63,6 +63,16 @@ ciscoEntityFRUControlMIB MODULE-IDENTITY
 
         FRUs include assemblies such as power supplies, fans, 
         processor modules, interface modules, etc."
+    REVISION        "200810080000Z"
+    DESCRIPTION
+        "Added two new enumeration values
+        upgrading(22) and okButAuthFailed(23) to
+        ModuleOperType Textual Convention."
+    REVISION        "200706210000Z"
+    DESCRIPTION
+        "* Added two new enumeration values :
+        psRedundant(5) and inPwrSrcRedundant(6) to 
+        PowerRedundancyType Textual Convention."
     REVISION        "200703140000Z"
     DESCRIPTION
         "* Added cefcTotalDrawnInlineCurrent and
@@ -217,24 +227,52 @@ PowerRedundancyType ::= TEXTUAL-CONVENTION
 
         notsupported(1): Read-only operational state, indicates
             that the requested administrative state (redundant(2)
-            or combined(3)) is not supported by the system.
+            , combined(3), psRedundant(5) or inPwrSrcRedundant(6))
+            is not supported by the system.
 
         redundant(2): A single power supply output can power
             the entire system, although there are more than
             one matched supply in the system.
 
+            In the systems which support multiple level of
+            redundancy, such as input power redundancy, this
+            state indicates that redundancy is enabled on
+            all levels.
+
         combined(3): The combined output of the power supplies
             are available to operate the system when there are
             more than one matched power supply in the system.
 
+            In the platforms which support multiple level of
+            redundancy, such as input redundancy, this state
+            indicates that no redundancy on all levels.
+
         nonRedundant(4): Read-only operational state, indicates
             that there is only one power supply or there are
-            unmatched power supplies in the system."
+            unmatched power supplies in the system.
+
+        psRedundant(5): Only the power output redundancy
+            is enabled in the systems which support multiple
+            levels of redundancy.  All other types of redundancy,
+            such as input power redundancy, are disabled.
+
+            This value is only supported by the systems which
+            support multiple levels of redundancy.
+
+        inPwrSrcRedundant(6): Only the input power redundancy
+            is enabled in the systems which support multiple
+            levels of redundancy.  All other types of redundancy,
+            such as output power redundancy, are disabled.
+
+            This value is only supported by the systems which
+            support input power redundancy."
     SYNTAX          INTEGER  {
                         notsupported(1),
                         redundant(2),
                         combined(3),
-                        nonRedundant(4)
+                        nonRedundant(4),
+                        psRedundant(5),
+                        inPwrSrcRedundant(6)
                     }
 
 PowerAdminType ::= TEXTUAL-CONVENTION
@@ -453,7 +491,12 @@ ModuleOperType ::= TEXTUAL-CONVENTION
                               standby. 
                               This transitional state specifies the
                               synchronization of data between the
-                              active and standby modules."
+                              active and standby modules.
+
+        upgrading(22)         Module is upgrading.
+
+        okButAuthFailed(23)   Module is operational but did not pass 
+                              hardware integrity verification."
     SYNTAX          INTEGER  {
                         unknown(1),
                         ok(2),
@@ -475,7 +518,9 @@ ModuleOperType ::= TEXTUAL-CONVENTION
                         powerCycled(18),
                         okButPowerOverWarning(19),
                         okButPowerOverCritical(20),
-                        syncInProgress(21)
+                        syncInProgress(21),
+                        upgrading(22),
+                        okButAuthFailed(23)
                     }
 
 ModuleResetReasonType ::= TEXTUAL-CONVENTION
@@ -2676,6 +2721,3 @@ cefcFanCoolingCapGroup OBJECT-GROUP
     ::= { cefcMIBGroups 23 }
 
 END
-
-
-

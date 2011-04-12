@@ -1,0 +1,167 @@
+
+BAY-STACK-LLDP-EXT-MED-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, Integer32
+        FROM SNMPv2-SMI
+    TruthValue, RowStatus
+        FROM SNMPv2-TC
+    lldpLocPortNum
+        FROM LLDP-MIB
+    VlanIdOrAnyOrNone
+        FROM Q-BRIDGE-MIB
+    PolicyAppType
+        FROM LLDP-EXT-MED-MIB
+    Dscp
+        FROM DIFFSERV-DSCP-TC
+    bayStackMibs
+        FROM SYNOPTICS-ROOT-MIB;
+
+bayStackLldpExtMedMib MODULE-IDENTITY
+    LAST-UPDATED "200903300000Z"
+    ORGANIZATION "Nortel Ltd."
+    CONTACT-INFO "nortel.com"
+    DESCRIPTION
+        "This MIB module is an extension to the standard LLDP-EXT-MED MIB."
+
+    REVISION    "200903300000Z"  -- March 30, 2009
+    DESCRIPTION "Ver 1:  Initial version."
+
+    ::= { bayStackMibs 33 }
+
+bsLldpExtMedNotifications OBJECT IDENTIFIER ::= { bayStackLldpExtMedMib 0 }
+bsLldpExtMedObjects       OBJECT IDENTIFIER ::= { bayStackLldpExtMedMib 1 }
+
+-- ===========================================================================
+-- bsLldpXMedLocMediaPolicyTable
+-- ===========================================================================
+
+bsLldpXMedLocMediaPolicyTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF BsLldpXMedLocMediaPolicyEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "This table contains one row per policy type per port 
+             of media policy information (as a part of the MED 
+             organizational extension) on the local system known 
+             to this agent."
+    ::= { bsLldpExtMedObjects 1 }
+
+bsLldpXMedLocMediaPolicyEntry OBJECT-TYPE
+    SYNTAX      BsLldpXMedLocMediaPolicyEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Information about a particular policy on a specific 
+             port component."
+    INDEX   { lldpLocPortNum, bsLldpXMedLocMediaPolicyAppType }
+    ::= { bsLldpXMedLocMediaPolicyTable 1 }
+
+BsLldpXMedLocMediaPolicyEntry ::= SEQUENCE {
+    bsLldpXMedLocMediaPolicyAppType   PolicyAppType,
+    bsLldpXMedLocMediaPolicyVlanID    VlanIdOrAnyOrNone,
+    bsLldpXMedLocMediaPolicyPriority  Integer32,
+    bsLldpXMedLocMediaPolicyDscp      Dscp,
+    bsLldpXMedLocMediaPolicyUnknown   TruthValue,
+    bsLldpXMedLocMediaPolicyTagged    TruthValue,
+    bsLldpXMedLocMediaPolicyRowStatus RowStatus
+}
+
+bsLldpXMedLocMediaPolicyAppType OBJECT-TYPE
+    SYNTAX      PolicyAppType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The media type that defines the primary function of the
+        application for the policy advertised by an endpoint."
+    REFERENCE 
+        "ANSI/TIA-1057, Section 10.2.3.1"
+    ::= { bsLldpXMedLocMediaPolicyEntry 1 }
+
+bsLldpXMedLocMediaPolicyVlanID  OBJECT-TYPE
+    SYNTAX      VlanIdOrAnyOrNone
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "An extension of the VLAN Identifier for the port,
+        as defined in IEEE 802.1P-1998.
+
+        A value of 1 through 4094 is used to define a valid PVID.
+
+        A value of 0 shall be used if the device is using priority tagged
+        frames, meaning that only the 802.1p priority level is significant
+        and the default VID of the ingress port is being used instead.
+
+        A value of 4095 is reserved for implementation use."
+    REFERENCE 
+        " ANSI/TIA-1057, Section 10.2.3.5"
+    ::= { bsLldpXMedLocMediaPolicyEntry 2 }
+
+bsLldpXMedLocMediaPolicyPriority  OBJECT-TYPE
+    SYNTAX      Integer32 (0..7)
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object contains the value of the 802.1p priority
+        which is associated with the given port on the
+        local system."
+    REFERENCE 
+        " ANSI/TIA-1057, Section 10.2.3.6 "
+    ::= { bsLldpXMedLocMediaPolicyEntry 3 }
+
+bsLldpXMedLocMediaPolicyDscp  OBJECT-TYPE
+    SYNTAX      Dscp
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object contains the value of the Differentiated Service
+        Code Point (DSCP) as defined in IETF RFC 2474 and RFC 2475
+        which is associated with the given port on the local system."
+    REFERENCE 
+        " ANSI/TIA-1057, Section 10.2.3.7"
+    ::= { bsLldpXMedLocMediaPolicyEntry 4 }
+
+bsLldpXMedLocMediaPolicyUnknown  OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "A value of 'true' indicates that the
+        network policy for the specified application type is
+        currently unknown.  In this case, the VLAN ID, the
+        layer 2 priority and the DSCP value fields are ignored.
+        A value of 'false' indicates that this network policy
+        is defined  "
+    REFERENCE 
+        " ANSI/TIA-1057, Section 10.2.3.2"
+    ::= { bsLldpXMedLocMediaPolicyEntry 5 }
+
+bsLldpXMedLocMediaPolicyTagged  OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "A value of 'true' indicates that the application is using a 
+        tagged VLAN.
+        A value of 'false' indicates that for the specific application
+        the device either is using an untagged VLAN or does not 
+        support port based VLAN operation.  In this case, both the 
+        VLAN ID and the Layer 2 priority fields are ignored and 
+        only the DSCP value has relevance "
+    REFERENCE 
+        " ANSI/TIA-1057, Section 10.2.3.3"
+    ::= { bsLldpXMedLocMediaPolicyEntry 6 }
+
+bsLldpXMedLocMediaPolicyRowStatus  OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object is used to create/delete entries in this table.
+        Note that all columns in an entry must be set before an entry can
+        be made valid.  Also note that while an entry is valid, any column
+        in the entry may be modified."
+    ::= { bsLldpXMedLocMediaPolicyEntry 7 }
+
+END
+

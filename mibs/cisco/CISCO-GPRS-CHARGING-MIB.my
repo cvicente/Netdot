@@ -3,8 +3,10 @@
 --   
 -- June 2000, Huiyang Yang
 -- Oct 2008, Annie Mishalini Devasahayam
+-- Nov 2009, Jigar Shah
+-- May 2010, Bibhabari Praharaj
 --   
--- Copyright (c) 2001, 2002, 2004-2006, 2008 by Cisco Systems, Inc.
+-- Copyright (c) 2001, 2002, 2004-2006, 2008-2010 by Cisco Systems Inc.
 -- All rights reserved.
 -- *****************************************************************
 
@@ -41,7 +43,7 @@ IMPORTS
 
 
 ciscoGprsChargingMIB MODULE-IDENTITY
-    LAST-UPDATED    "200812120000Z"
+    LAST-UPDATED    "201006080000Z"
     ORGANIZATION    "Cisco Systems, Inc."
     CONTACT-INFO
             "Cisco Systems
@@ -79,12 +81,14 @@ ciscoGprsChargingMIB MODULE-IDENTITY
 
         Acronyms and terms: 
 
+         APN    Access Point Name
          BSS    Base Station System
          CCA    Credit Control Answer
          CDR    Call Detail Record 
          CID    Charging Identification 
          CG     Charging Gateway 
          CGF    Charging Gateway Functionality  
+         CGG    Charging Gateway Group.
          DCCA   Diameter Credit Control Application
          ETSI   European Telecommunications Standards 
                 Institute 
@@ -105,13 +109,129 @@ ciscoGprsChargingMIB MODULE-IDENTITY
          TOS    Type of Service. 
          PSD    Persistance Storage Device.
          PTC    Packet Transfer Command."
+    REVISION        "201006080000Z"
+    DESCRIPTION
+        "deprecated cgprsCgProfileContentDccaProfile.
+
+        Added cgprsCgProfileContentDccaProfileTable.
+
+        Deprecated following group and compliance
+        cgprsCgMIBExtConfigGroup
+        cgprsCgComplianceRev9
+
+        Added following group and compliance
+        cgprsCgMIBConfigGroupR100.
+        cgprsCgComplianceRev10."
+    REVISION        "201002010000Z"
+    DESCRIPTION
+        "Deprecated table cgprsCgGatewayTable and
+        cgprsCgAlarmHistTable.
+
+        Deprecated objects cgprsCgServiceMode and 
+        cgprsCgSwitchOverPriority from ciscoGprsChargingConfig.
+
+        Deprecated objects cgprsCgActiveChgGatewayAddrType,
+        cgprsCgActiveChgGatewayAddress and cgprsCgOldChgGatewayAddress
+        from ciscoGprsChargingStatus.
+
+        Added Textual-Convention CgprsCgGatewayType.
+
+        Added following tables to ciscoGprsChargingConfig:
+        cgprsCgGatewayIpTable,
+        cgprsCgGroupTable.
+
+        Added following table to ciscoGprsChargingStats:
+        cgprsCgGatewayGroupStatisticsTable.
+
+        Added following table to ciscoGprsChargingStatus:
+        cgprsCgGatewayGroupStatusTable.
+
+        Added following table to ciscoGprsChargingAlarms:
+        cgprsCgGatewayGroupAlarmHistTable.
+
+        Added table cgprsCgGatewayIpTable with following objects:
+        cgprsCgGatewayIpIndex,
+        cgprsCgGatewayIpAddrType,
+        cgprsCgGatewayIpAddr,
+        cgprsCgGatewayOperStatus,
+        cgprsCgGatewayLinkState,
+        cgprsCgGateway,
+        cgprsCgGatewayIpRowStatus
+
+        Added table cgprsCgGroupTable with following objects:
+        cgprsCgGroupIndex, 
+        cgprsCgGroupIscsi,
+        cgprsCgGroupServiceMode,
+        cgprsCgGroupSwitchOverPriority,
+        cgprsCgGroupRowStatus
+
+        Added table cgprsCgGatewayGroupStatisticsTable with following 
+        objects:
+        cgprsCgGatewayGroupCgDownTimes,
+        cgprsCgGatewayGroupAccPtNum,
+        cgprsCgGatewayGroupCdrOpenedNum,
+        cgprsCgGatewayGroupCdrClosedNum,
+        cgprsCgGatewayGroupContainerNum,
+        cgprsCgGatewayGroupServiceRecordsNum,
+        cgprsCgGatewayGroupPendingMsgNum,
+        cgprsCgGatewayGroupCdrPendingMsgIscsiNum,
+        cgprsCgGatewayGroupCdrPendingMsgCgPathNum,
+        cgprsCgGatewayGroupCdrPendingMsgMaintNum,
+        cgprsCgGatewayGroupTotalCdrOpened,
+        cgprsCgGatewayGroupTotalContainerCreated,
+        cgprsCgGatewayGroupTotalServiceRecords,
+        cgprsCgGatewayGroupTotalSentMsg,
+        cgprsCgGatewayGroupTotalSentMsgToIscsi,
+        cgprsCgGatewayGroupTotalSentMsgToCg
+
+        Added table cgprsCgGatewayGroupStatusTable with following
+        objects:
+        cgprsCgGatewayGroupStatusAddrType,
+        cgprsCgGatewayGroupStatusActiveCgAddr,
+        cgprsCgGatewayGroupStatusOldCgAddr
+
+        Added table cgprsCgGatewayGroupAlarmHistTable with following
+        objects:
+        cgprsCgGatewayGroupAlarmHistIndex,
+        cgprsCgGatewayGroupAlarmHistType,
+        cgprsCgGatewayGroupAlarmHistAddrType,
+        cgprsCgGatewayGroupAlarmHistAddress,
+        cgprsCgGatewayGroupAlarmHistSeverity,
+        cgprsCgGatewayGroupAlarmHistInfo
+
+        Added Alarm
+        cgprsCgGatewayGroupAlarmEnable
+
+        Deprecated Alarm:
+        cgprsCgAlarmEnable
+
+        Added Notification:
+        cgprsCgGatewayGroupAlarmNotif, 
+        cgprsCgGatewayGroupSwitchoverNotif, 
+        cgprsCgGatewayGroupInServiceModeNotif, 
+        cgprsCgGatewayGroupMaintenanceModeNotif
+
+        Deprecated following group and compliance
+        cgprsCgComplianceRev8,
+        cgprsCgMIBAlarmsGroupRev1,
+        cgprsCgMIBConfigGroupRev4,
+        cgprsCgMIBNotifGroupRev1.
+
+        Added following group, compliance
+        cgprsCgMIBConfigGroupRev5,
+        cgprsCgComplianceRev9,
+        cgprsCgMIBAlarmsGroupRev2,
+        cgprsCgMIBStatusGroupRev1,
+        cgprsCgMIBConfigGroupR90,
+        cgprsCgMIBStatsGroupRev3.
+        cgprsCgMIBNotifGroupRev2"
     REVISION        "200812120000Z"
     DESCRIPTION
         "Added cgprsCgProfileContentPostUserLocChange to
         cgprsCgProfileTable.
 
         Added cgprsCgServiceRecordIncludeUserLocInfo to
-        ciscoGprsChargingConfig."  
+        ciscoGprsChargingConfig."
     REVISION        "200801290000Z"
     DESCRIPTION
         "Added cgprsCgChargingSrcInterface to
@@ -333,6 +453,24 @@ CgprsCgAlarmType ::= TEXTUAL-CONVENTION
                         cgprsCgAlarmChargingDisabled(11),
                         cgprsCgAlarmChargingEnabled(12)
                     }
+
+CgprsCgGatewayType ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION
+        "Identifies the possible types of GPRS
+        charging gateway.
+
+        cgprsCgGatewayPrimary 
+         - Indicates it is a primary charging gateway.
+        cgprsCgGatewaySecondary 
+         - Indicates it is a secondary charging gateway.
+        cgprsCgGatewayTertiary
+         - Indicates it is a tertiary charging gateway."
+    SYNTAX          INTEGER  {
+                        cgprsCgGatewayPrimary(1),
+                        cgprsCgGatewaySecondary(2),
+                        cgprsCgGatewayTertiary(3)
+                    }
 -- Object definitions
 
 ciscoGprsChargingMIBObjects  OBJECT IDENTIFIER
@@ -433,7 +571,7 @@ cgprsCgCdrNonPrimaryEnable OBJECT-TYPE
     ::= { ciscoGprsChargingConfig 6 }
 
 cgprsCgCdrAggreLimit OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..255 )
+    SYNTAX          Unsigned32 (1..255)
     UNITS           "CDRs"
     MAX-ACCESS      read-write
     STATUS          current
@@ -444,7 +582,7 @@ cgprsCgCdrAggreLimit OBJECT-TYPE
     ::= { ciscoGprsChargingConfig 7 }
 
 cgprsCgTransInterval OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..4294967295 )
+    SYNTAX          Unsigned32 (1..4294967295)
     UNITS           "seconds"
     MAX-ACCESS      read-write
     STATUS          current
@@ -456,7 +594,7 @@ cgprsCgTransInterval OBJECT-TYPE
     ::= { ciscoGprsChargingConfig 8 }
 
 cgprsCgPktsQSize OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..512 )
+    SYNTAX          Unsigned32 (1..512)
     UNITS           "PDUs"
     MAX-ACCESS      read-write
     STATUS          current
@@ -467,7 +605,7 @@ cgprsCgPktsQSize OBJECT-TYPE
     ::= { ciscoGprsChargingConfig 9 }
 
 cgprsCgPathRequest OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..10 )
+    SYNTAX          Unsigned32 (0..10)
     UNITS           "minutes"
     MAX-ACCESS      read-write
     STATUS          current
@@ -479,7 +617,7 @@ cgprsCgPathRequest OBJECT-TYPE
     ::= { ciscoGprsChargingConfig 10 }
 
 cgprsCgContainerVolThresh OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..4294967295 )
+    SYNTAX          Unsigned32 (1..4294967295)
     UNITS           "bytes"
     MAX-ACCESS      read-write
     STATUS          current
@@ -490,7 +628,7 @@ cgprsCgContainerVolThresh OBJECT-TYPE
     ::= { ciscoGprsChargingConfig 11 }
 
 cgprsCgMapDataTos OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..5 )
+    SYNTAX          Unsigned32 (0..5)
     MAX-ACCESS      read-write
     STATUS          current
     DESCRIPTION
@@ -517,7 +655,7 @@ cgprsCgPathProtocol OBJECT-TYPE
     ::= { ciscoGprsChargingConfig 13 }
 
 cgprsCgServerSwitchTimeout OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..300 )
+    SYNTAX          Unsigned32 (0..300)
     UNITS           "seconds"
     MAX-ACCESS      read-write
     STATUS          current
@@ -530,7 +668,7 @@ cgprsCgServerSwitchTimeout OBJECT-TYPE
     ::= { ciscoGprsChargingConfig 14 }
 
 cgprsCgConditionLimit OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..100 )
+    SYNTAX          Unsigned32 (1..100)
     MAX-ACCESS      read-write
     STATUS          current
     DESCRIPTION
@@ -542,7 +680,7 @@ cgprsCgConditionLimit OBJECT-TYPE
     ::= { ciscoGprsChargingConfig 15 }
 
 cgprsCgGtpPrimePort OBJECT-TYPE
-    SYNTAX          Unsigned32 (1024..10000 )
+    SYNTAX          Unsigned32 (1024..10000)
     MAX-ACCESS      read-write
     STATUS          current
     DESCRIPTION
@@ -552,7 +690,7 @@ cgprsCgGtpPrimePort OBJECT-TYPE
     ::= { ciscoGprsChargingConfig 16 }
 
 cgprsCgN3BufferSize OBJECT-TYPE
-    SYNTAX          Unsigned32 (300..1460 )
+    SYNTAX          Unsigned32 (300..1460)
     UNITS           "bytes"
     MAX-ACCESS      read-write
     STATUS          current
@@ -575,7 +713,7 @@ cgprsCgChargeForRoamersOnly OBJECT-TYPE
     ::= { ciscoGprsChargingConfig 18 }
 
 cgprsCgTariffTimeMaxEntries OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..32 )
+    SYNTAX          Unsigned32 (1..32)
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
@@ -662,7 +800,7 @@ cgprsCgTariffTimeRowStatus OBJECT-TYPE
     ::= { cgprsCgTariffTimeEntry 2 }
 
 cgprsCgTariffTimeHour OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..23 )
+    SYNTAX          Unsigned32 (0..23)
     UNITS           "hours"
     MAX-ACCESS      read-create
     STATUS          current
@@ -671,7 +809,7 @@ cgprsCgTariffTimeHour OBJECT-TYPE
     ::= { cgprsCgTariffTimeEntry 3 }
 
 cgprsCgTariffTimeMin OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..59 )
+    SYNTAX          Unsigned32 (0..59)
     UNITS           "minutes"
     MAX-ACCESS      read-create
     STATUS          current
@@ -680,7 +818,7 @@ cgprsCgTariffTimeMin OBJECT-TYPE
     ::= { cgprsCgTariffTimeEntry 4 }
 
 cgprsCgTariffTimeSec OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..59 )
+    SYNTAX          Unsigned32 (0..59)
     UNITS           "seconds"
     MAX-ACCESS      read-create
     STATUS          current
@@ -694,18 +832,23 @@ cgprsCgTariffTimeSec OBJECT-TYPE
 cgprsCgGatewayTable OBJECT-TYPE
     SYNTAX          SEQUENCE OF CgprsCgGatewayEntry 
     MAX-ACCESS      not-accessible
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "Charging gateway table.
         The table contains a list of charging gateways.
         A charging gateway contains databases to store the 
-        collected G-CDRs for billing purposes."
+        collected G-CDRs for billing purposes.
+        cgprsCgGatewayTable only stores information about
+        the global default charging gateway group. However, either 
+        of global default charing gateway or charging gateway 1-29
+        can be used under an APN.
+        This table is deprecated by cgprsCgGatewayIpTable."
     ::= { ciscoGprsChargingConfig 22 }
 
 cgprsCgGatewayEntry OBJECT-TYPE
     SYNTAX          CgprsCgGatewayEntry
     MAX-ACCESS      not-accessible
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "A conceptual row in the cgprsCgGatewayTable."
     INDEX           { cgprsCgGatewayIndex } 
@@ -716,14 +859,14 @@ CgprsCgGatewayEntry ::= SEQUENCE {
         cgprsCgGatewayAddrType  InetAddressType,
         cgprsCgGatewayAddr      InetAddress,
         cgprsCgGatewayRowStatus RowStatus,
-        cgprsCgOperStatus       INTEGER ,
-        cgprsCgLinkState        INTEGER 
+        cgprsCgOperStatus       INTEGER,
+        cgprsCgLinkState        INTEGER
 }
 
 cgprsCgGatewayIndex OBJECT-TYPE
-    SYNTAX          Integer32 (1..3 )
+    SYNTAX          Integer32 (1..3)
     MAX-ACCESS      not-accessible
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "An unique identifier for the CG." 
     ::= { cgprsCgGatewayEntry 1 }
@@ -731,7 +874,7 @@ cgprsCgGatewayIndex OBJECT-TYPE
 cgprsCgGatewayAddrType OBJECT-TYPE
     SYNTAX          InetAddressType
     MAX-ACCESS      read-create
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "This object indicates the type of Internet address
         given in cgprsCgGatewayAddr." 
@@ -740,7 +883,7 @@ cgprsCgGatewayAddrType OBJECT-TYPE
 cgprsCgGatewayAddr OBJECT-TYPE
     SYNTAX          InetAddress
     MAX-ACCESS      read-create
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The IP address that is used to uniquely identify the CG." 
     ::= { cgprsCgGatewayEntry 3 }
@@ -748,7 +891,7 @@ cgprsCgGatewayAddr OBJECT-TYPE
 cgprsCgGatewayRowStatus OBJECT-TYPE
     SYNTAX          RowStatus
     MAX-ACCESS      read-create
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "This object is used to create a new row or delete an
         existing row in this table.
@@ -767,7 +910,7 @@ cgprsCgOperStatus OBJECT-TYPE
                         standby(3)
                     }
     MAX-ACCESS      read-only
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "This object is used to indicate whether the configured CG
         is active(2) or standby(3).The object will return undefined(1) 
@@ -782,7 +925,7 @@ cgprsCgLinkState OBJECT-TYPE
                         pending(3)
                     }
     MAX-ACCESS      read-only
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "This object is used to indicate the reachability of the CG.
         If the CG is reachable then this object is set to 'on'. When
@@ -815,7 +958,7 @@ cgprsCgClearCdrPartialCdr OBJECT-TYPE
     ::= { ciscoGprsChargingConfig 23 }
 
 cgprsCgSgsnChangeLimit OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..15 )
+    SYNTAX          Unsigned32 (0..15)
     MAX-ACCESS      read-write
     STATUS          deprecated
     DESCRIPTION
@@ -829,7 +972,7 @@ cgprsCgSgsnChangeLimit OBJECT-TYPE
     ::= { ciscoGprsChargingConfig 24 }
 
 cgprsCgCdrSgsnChangeLimit OBJECT-TYPE
-    SYNTAX          Integer32 (-1..15 )
+    SYNTAX          Integer32 (-1..15)
     MAX-ACCESS      read-write
     STATUS          current
     DESCRIPTION
@@ -904,7 +1047,7 @@ cgprsCgTransFormNumRespEnable OBJECT-TYPE
     ::= { ciscoGprsChargingConfig 28 }
 
 cgprsCgContainerTimeLimit OBJECT-TYPE
-    SYNTAX          Unsigned32 (0 |  5..4294967295 )
+    SYNTAX          Unsigned32 (0 | 5..4294967295)
     UNITS           "seconds"
     MAX-ACCESS      read-write
     STATUS          current
@@ -970,34 +1113,34 @@ cgprsCgProfileEntry OBJECT-TYPE
     ::= { cgprsCgProfileTable 1 }
 
 CgprsCgProfileEntry ::= SEQUENCE {
-        cgprsCgProfileNum                     Unsigned32,
-        cgprsCgProfileRowStatus               RowStatus,
-        cgprsCgProfileDesc                    SnmpAdminString,
-        cgprsCgProfileCategory                INTEGER ,
-        cgprsCgProfileCdrSuppress             TruthValue,
-        cgprsCgProfileVolumeLimit             Unsigned32,
-        cgprsCgProfileVolumeLimitReset        TruthValue,
-        cgprsCgProfileDurLimit                Unsigned32,
-        cgprsCgProfileDurLimitReset           TruthValue,
-        cgprsCgProfileTariffTime              TruthValue,
-        cgprsCgProfileSgsnChange              Integer32,
-        cgprsCgProfileCdrSuppressPrepaid      TruthValue,
-        cgprsCgProfileContentDccaProfile      SnmpAdminString,
-        cgprsCgProfileContentPostTime         Unsigned32,
-        cgprsCgProfileContentPostValTime      Unsigned32,
-        cgprsCgProfileContentPostVolume       Unsigned32,
-        cgprsCgProfileContentRulebaseId       SnmpAdminString,
-        cgprsCgProfileContentPostQosChange    TruthValue,
-        cgprsCgProfileContentPostSgsnChange   TruthValue,
-        cgprsCgProfileContentPostRatChange    TruthValue,
-        cgprsCgProfileContentPostPlmnChange   TruthValue,
-        cgprsCgProfileStorageType             StorageType,
-        cgprsCgProfileContentPostValidityTime Unsigned32,
+        cgprsCgProfileNum                      Unsigned32,
+        cgprsCgProfileRowStatus                RowStatus,
+        cgprsCgProfileDesc                     SnmpAdminString,
+        cgprsCgProfileCategory                 INTEGER,
+        cgprsCgProfileCdrSuppress              TruthValue,
+        cgprsCgProfileVolumeLimit              Unsigned32,
+        cgprsCgProfileVolumeLimitReset         TruthValue,
+        cgprsCgProfileDurLimit                 Unsigned32,
+        cgprsCgProfileDurLimitReset            TruthValue,
+        cgprsCgProfileTariffTime               TruthValue,
+        cgprsCgProfileSgsnChange               Integer32,
+        cgprsCgProfileCdrSuppressPrepaid       TruthValue,
+        cgprsCgProfileContentDccaProfile       SnmpAdminString,
+        cgprsCgProfileContentPostTime          Unsigned32,
+        cgprsCgProfileContentPostValTime       Unsigned32,
+        cgprsCgProfileContentPostVolume        Unsigned32,
+        cgprsCgProfileContentRulebaseId        SnmpAdminString,
+        cgprsCgProfileContentPostQosChange     TruthValue,
+        cgprsCgProfileContentPostSgsnChange    TruthValue,
+        cgprsCgProfileContentPostRatChange     TruthValue,
+        cgprsCgProfileContentPostPlmnChange    TruthValue,
+        cgprsCgProfileStorageType              StorageType,
+        cgprsCgProfileContentPostValidityTime  Unsigned32,
         cgprsCgProfileContentPostUserLocChange TruthValue
 }
 
 cgprsCgProfileNum OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..65535 )
+    SYNTAX          Unsigned32 (0..65535)
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
@@ -1063,7 +1206,7 @@ cgprsCgProfileCdrSuppress OBJECT-TYPE
     ::= { cgprsCgProfileEntry 5 }
 
 cgprsCgProfileVolumeLimit OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..4294967295 )
+    SYNTAX          Unsigned32 (1..4294967295)
     UNITS           "bytes"
     MAX-ACCESS      read-create
     STATUS          current
@@ -1091,7 +1234,7 @@ cgprsCgProfileVolumeLimitReset OBJECT-TYPE
     ::= { cgprsCgProfileEntry 7 }
 
 cgprsCgProfileDurLimit OBJECT-TYPE
-    SYNTAX          Unsigned32 (0 |  5..4294967295 )
+    SYNTAX          Unsigned32 (0 | 5..4294967295)
     UNITS           "minutes"
     MAX-ACCESS      read-create
     STATUS          current
@@ -1130,7 +1273,7 @@ cgprsCgProfileTariffTime OBJECT-TYPE
     ::= { cgprsCgProfileEntry 10 }
 
 cgprsCgProfileSgsnChange OBJECT-TYPE
-    SYNTAX          Integer32 (-1..15 )
+    SYNTAX          Integer32 (-1..15)
     MAX-ACCESS      read-create
     STATUS          current
     DESCRIPTION
@@ -1166,7 +1309,7 @@ cgprsCgProfileCdrSuppressPrepaid OBJECT-TYPE
 cgprsCgProfileContentDccaProfile OBJECT-TYPE
     SYNTAX          SnmpAdminString
     MAX-ACCESS      read-create
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "This object specifies a DCCA client to use to communicate
         with a DCCA server in a GGSN charging profile.
@@ -1189,7 +1332,7 @@ cgprsCgProfileContentDccaProfile OBJECT-TYPE
     ::= { cgprsCgProfileEntry 13 }
 
 cgprsCgProfileContentPostTime OBJECT-TYPE
-    SYNTAX          Unsigned32 (300..4294967295 )
+    SYNTAX          Unsigned32 (300..4294967295)
     UNITS           "seconds"
     MAX-ACCESS      read-create
     STATUS          current
@@ -1202,7 +1345,7 @@ cgprsCgProfileContentPostTime OBJECT-TYPE
     ::= { cgprsCgProfileEntry 14 }
 
 cgprsCgProfileContentPostValTime OBJECT-TYPE
-    SYNTAX          Unsigned32 (900..4294967295 )
+    SYNTAX          Unsigned32 (900..4294967295)
     UNITS           "seconds"
     MAX-ACCESS      read-create
     STATUS          deprecated
@@ -1216,7 +1359,7 @@ cgprsCgProfileContentPostValTime OBJECT-TYPE
     ::= { cgprsCgProfileEntry 15 }
 
 cgprsCgProfileContentPostVolume OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..4294967295 )
+    SYNTAX          Unsigned32 (1..4294967295)
     UNITS           "bytes"
     MAX-ACCESS      read-create
     STATUS          current
@@ -1328,7 +1471,7 @@ cgprsCgProfileStorageType OBJECT-TYPE
     ::= { cgprsCgProfileEntry 22 }
 
 cgprsCgProfileContentPostValidityTime OBJECT-TYPE
-    SYNTAX          Unsigned32 (0 |  900..4294967295 )
+    SYNTAX          Unsigned32 (0 | 900..4294967295)
     UNITS           "seconds"
     MAX-ACCESS      read-create
     STATUS          current
@@ -1342,7 +1485,7 @@ cgprsCgProfileContentPostValidityTime OBJECT-TYPE
         timeout is not configured."
     DEFVAL          { 0 } 
     ::= { cgprsCgProfileEntry 23 }
- 
+
 cgprsCgProfileContentPostUserLocChange OBJECT-TYPE
     SYNTAX          TruthValue
     MAX-ACCESS      read-create
@@ -1357,8 +1500,9 @@ cgprsCgProfileContentPostUserLocChange OBJECT-TYPE
 
         This object can be set to 'true' only when the object
         cgprsCgServiceRecordIncludeUserLocInfo is 'true'."
-    DEFVAL          { false }
+    DEFVAL          { false } 
     ::= { cgprsCgProfileEntry 24 }
+ 
 
 
 cgprsCgProfileMapTable OBJECT-TYPE
@@ -1387,7 +1531,7 @@ cgprsCgProfileMapEntry OBJECT-TYPE
     ::= { cgprsCgProfileMapTable 1 }
 
 CgprsCgProfileMapEntry ::= SEQUENCE {
-        cgprsCgProfileMapCategory INTEGER ,
+        cgprsCgProfileMapCategory INTEGER,
         cgprsCgProfileMapNum      Integer32,
         cgprsCgProfileMapOverride TruthValue,
         cgprsCgProfileMapTrusted  TruthValue,
@@ -1409,7 +1553,7 @@ cgprsCgProfileMapCategory OBJECT-TYPE
     ::= { cgprsCgProfileMapEntry 1 }
 
 cgprsCgProfileMapNum OBJECT-TYPE
-    SYNTAX          Integer32 (0..65535 )
+    SYNTAX          Integer32 (0..65535)
     MAX-ACCESS      read-write
     STATUS          deprecated
     DESCRIPTION
@@ -1458,7 +1602,7 @@ cgprsCgProfileMapTrusted OBJECT-TYPE
     ::= { cgprsCgProfileMapEntry 4 }
 
 cgprsCgProfileMapNumber OBJECT-TYPE
-    SYNTAX          Integer32 (-1..65535 )
+    SYNTAX          Integer32 (-1..65535)
     MAX-ACCESS      read-write
     STATUS          current
     DESCRIPTION
@@ -1502,7 +1646,7 @@ cgprsCgServiceMode OBJECT-TYPE
                         maintenance(2)
                     }
     MAX-ACCESS      read-write
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "This object specifies the service mode for charging. The
         charging functions in the GGSN involve mainly 
@@ -1533,7 +1677,8 @@ cgprsCgServiceMode OBJECT-TYPE
         and the normal functions will continue from thereon.
 
         When switching between modes, traps will be generated using
-        cgprsCgInServiceModeNotif and cgprsCgMaintenanceModeNotif."
+        cgprsCgInServiceModeNotif and cgprsCgMaintenanceModeNotif.
+        This object is deprecated by cgprsCgGroupServiceMode."
     DEFVAL          { operational } 
     ::= { ciscoGprsChargingConfig 33 }
 
@@ -1558,7 +1703,7 @@ cgprsCgPartialCdrGenEnable OBJECT-TYPE
 cgprsCgSwitchOverPriority OBJECT-TYPE
     SYNTAX          TruthValue
     MAX-ACCESS      read-write
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "This object is used to enable the switch over priority
         mechanism. 
@@ -1567,7 +1712,8 @@ cgprsCgSwitchOverPriority OBJECT-TYPE
                   active CG.
 
         'false' - If a higher priority CG comes up, the existing
-                  active CG continues to be active."
+                  active CG continues to be active.
+        This object is deprecated by cgprsCgGroupSwitchOverPriority."
     DEFVAL          { false } 
     ::= { ciscoGprsChargingConfig 35 }
 
@@ -1587,7 +1733,7 @@ cgprsCgCharSelectionMode OBJECT-TYPE
     ::= { ciscoGprsChargingConfig 36 }
 
 cgprsCgReconnect OBJECT-TYPE
-    SYNTAX          Integer32 (0..600 )
+    SYNTAX          Integer32 (0..600)
     UNITS           "minutes"
     MAX-ACCESS      read-write
     STATUS          current
@@ -1649,7 +1795,7 @@ cgprsCgPtcPossiblyDupEnable OBJECT-TYPE
     ::= { ciscoGprsChargingConfig 39 }
 
 cgprsCgCdrOptionServiceRecord OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..100 )
+    SYNTAX          Unsigned32 (0..100)
     MAX-ACCESS      read-write
     STATUS          current
     DESCRIPTION
@@ -1840,9 +1986,9 @@ cgprsCgCdrOptionCamelCharInfo OBJECT-TYPE
         included in G-CDRs."
     REFERENCE
         "3GPP;Technical Specification Group Services and System 
-             Aspects;Telecommunication Management;Charging Management;
-             Charging data description for the Packet Switched (PS) domain
-             (Release 5); 3GPP TS 32.215 V5.7.0"
+        Aspects;Telecommunication Management;Charging Management;
+        Charging data description for the Packet Switched (PS) domain
+        (Release 5); 3GPP TS 32.215 V5.7.0"
     DEFVAL          { false } 
     ::= { ciscoGprsChargingConfig 51 }
 
@@ -1932,7 +2078,7 @@ cgprsCgServiceRecordIncludePlmn OBJECT-TYPE
     ::= { ciscoGprsChargingConfig 57 }
 
 cgprsCgChargingSrcInterface OBJECT-TYPE
-    SYNTAX          Integer32 (-1..2147483647 )
+    SYNTAX          Integer32 (-1..2147483647)
     MAX-ACCESS      read-write
     STATUS          current
     DESCRIPTION
@@ -1952,14 +2098,313 @@ cgprsCgServiceRecordIncludeUserLocInfo OBJECT-TYPE
     MAX-ACCESS      read-write
     STATUS          current
     DESCRIPTION
-        "When this object is set to 'true', the user location information
-         of the PDP is written into the service record when there is
-         change in the user location information.
+        "When this object is set to 'true', the user location
+        information of the PDP is written into the service record
+        when there is change in the user location information.
 
-         When this object is set to 'false', the user location information
-         of the PDP is not written into the service record."
-    DEFVAL          { false }
+        When this object is set to 'false', the user location
+        information of the PDP is not written into the service
+        record."
+    DEFVAL          { false } 
     ::= { ciscoGprsChargingConfig 59 }
+
+cgprsCgGroupTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CgprsCgGroupEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Charging gateway group table.
+        The table contains a list of charging groups.
+        In each charging group, a unique primary, secondary, and
+        tertiary charging gateway, and iSCSI target can be defined
+        and associated with an APN. Charging group enables sending
+        charging records belonging to different APNs to 
+        different destinations."
+    ::= { ciscoGprsChargingConfig 60 }
+
+cgprsCgGroupEntry OBJECT-TYPE
+    SYNTAX          CgprsCgGroupEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "A conceptual row in the cgprsCgGroupTable.
+        A row is created in cgprsCgGroupTable whenever a 
+        charing group is configured, whereas a row is deleted
+        on removal/unconfiguration of a charging group."
+    INDEX           { cgprsCgGroupIndex } 
+    ::= { cgprsCgGroupTable 1 }
+
+CgprsCgGroupEntry ::= SEQUENCE {
+        cgprsCgGroupIndex              Integer32,
+        cgprsCgGroupIscsi              SnmpAdminString,
+        cgprsCgGroupServiceMode        INTEGER,
+        cgprsCgGroupSwitchOverPriority TruthValue,
+        cgprsCgGroupRowStatus          RowStatus
+}
+
+cgprsCgGroupIndex OBJECT-TYPE
+    SYNTAX          Integer32 (0..29)
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "A locally unique identifier for the charging groups
+        on GGSN.
+        Note: There is support for only 30 charging 
+        groups (0-29). Where charging group 0 is also 
+        referred as default charging gateway group." 
+    ::= { cgprsCgGroupEntry 1 }
+
+cgprsCgGroupIscsi OBJECT-TYPE
+    SYNTAX          SnmpAdminString
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the iSCSI gateway name for
+        the charging group."
+    DEFVAL          { "" } 
+    ::= { cgprsCgGroupEntry 2 }
+
+cgprsCgGroupServiceMode OBJECT-TYPE
+    SYNTAX          INTEGER  {
+                        operational(1),
+                        maintenance(2)
+                    }
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the charging service-mode for a charging
+        group. The charging functions in the GGSN involve mainly
+        collection/accumulation of CDRs and transmitting CDRs to the
+        Charging Gateways. The charging service-mode function has no
+        impact to the collection/accumulation of CDRs. The charging
+        service mode function only involves the transmission of CDRs
+        to the charging gateways. The charging service-mode has the
+        following two states:
+        'operational' : In this state, the charging group will observe 
+                        normal charging operations. That is,
+                        accumulation and transmission of CDRs to the 
+                        charging gateway will continue as is done 
+                        normally.
+        'maintenance' : In this state, transmission of CDRs to the
+                        charging gateways will not be performed;
+                        However, collection and accumulation of CDRs
+                        will continue as is done normally.
+
+        When the GGSN is in 'maintenance' mode, all the charging
+        configurations will be allowed. In the system-init phase,
+        the charging service mode CLI configs will not be handled.
+
+        The handling of 'Redirecting Request', 'Node Alive' and
+        charging gateway switchover mechanisms will not be performed
+        while the charging is in maintenance mode. After the mode is
+        changed to operational mode, the messages in the pending queue 
+        will be sent towards the newly configured active charging 
+        gateway and the normal functions will continue from thereon.
+        When switching between modes, traps will be generated using
+        cgprsCgGatewayGroupInServiceModeNotif and 
+        cgprsCgGatewayGroupMaintenanceModeNotif."
+    DEFVAL          { operational } 
+    ::= { cgprsCgGroupEntry 3 }
+
+cgprsCgGroupSwitchOverPriority OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the switch over priority
+        mechanism.
+
+        'true'  - If a higher priority CG comes up, it becomes the
+                  active CG.
+
+        'false' - If a higher priority CG comes up, the existing
+                  active CG continues to be active."
+    DEFVAL          { false } 
+    ::= { cgprsCgGroupEntry 4 }
+
+cgprsCgGroupRowStatus OBJECT-TYPE
+    SYNTAX          RowStatus
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object is used to create a new row or delete
+        an existing row in this table." 
+    ::= { cgprsCgGroupEntry 5 }
+ 
+
+-- Charging Gateway IP Table
+
+cgprsCgGatewayIpTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CgprsCgGatewayIpEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Charging gateway table.
+        The table contains a list of charging gateways.
+        A charging gateway contains databases to store the 
+        collected G-CDRs for billing purposes."
+    ::= { ciscoGprsChargingConfig 61 }
+
+cgprsCgGatewayIpEntry OBJECT-TYPE
+    SYNTAX          CgprsCgGatewayIpEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "A conceptual row in the cgprsCgGatewayIpTable."
+    INDEX           {
+                        cgprsCgGroupIndex,
+                        cgprsCgGatewayIpIndex
+                    } 
+    ::= { cgprsCgGatewayIpTable 1 }
+
+CgprsCgGatewayIpEntry ::= SEQUENCE {
+        cgprsCgGatewayIpIndex     Unsigned32,
+        cgprsCgGatewayIpAddrType  InetAddressType,
+        cgprsCgGatewayIpAddr      InetAddress,
+        cgprsCgGatewayOperStatus  INTEGER,
+        cgprsCgGatewayLinkState   INTEGER,
+        cgprsCgGateway            CgprsCgGatewayType,
+        cgprsCgGatewayIpRowStatus RowStatus
+}
+
+cgprsCgGatewayIpIndex OBJECT-TYPE
+    SYNTAX          Unsigned32 (1..4294967295)
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "An unique identifier for the CG." 
+    ::= { cgprsCgGatewayIpEntry 1 }
+
+cgprsCgGatewayIpAddrType OBJECT-TYPE
+    SYNTAX          InetAddressType
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the type of Internet address
+        given in cgprsCgGatewayIpAddr." 
+    ::= { cgprsCgGatewayIpEntry 2 }
+
+cgprsCgGatewayIpAddr OBJECT-TYPE
+    SYNTAX          InetAddress
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the IP address that is used to uniquely
+        identify the CG." 
+    ::= { cgprsCgGatewayIpEntry 3 }
+
+cgprsCgGatewayOperStatus OBJECT-TYPE
+    SYNTAX          INTEGER  {
+                        undefined(1),
+                        active(2),
+                        standby(3)
+                    }
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is used to indicate what is the operation status
+        of the configured charging gateway.
+
+        undefined(1)    The operation status of the CG is neither 
+                        active nor standby. 
+        active(2)       The operation status of the CG is active
+        standby(3)      The operation status of the CG is standby"
+    DEFVAL          { undefined } 
+    ::= { cgprsCgGatewayIpEntry 4 }
+
+cgprsCgGatewayLinkState OBJECT-TYPE
+    SYNTAX          INTEGER  {
+                        on(1),
+                        off(2),
+                        pending(3)
+                    }
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object is used to indicate the reachability of the CG.
+
+        on(1)         The CG is reachable
+        off(2)        The CG is not reachable
+        pending(3)    The CG is not reachable but the GGSN is trying to
+                      establish a connection"
+    DEFVAL          { off } 
+    ::= { cgprsCgGatewayIpEntry 5 }
+
+cgprsCgGateway OBJECT-TYPE
+    SYNTAX          CgprsCgGatewayType
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the type of GPRS charging gateway." 
+    ::= { cgprsCgGatewayIpEntry 6 }
+
+cgprsCgGatewayIpRowStatus OBJECT-TYPE
+    SYNTAX          RowStatus
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object is used to create a new row or delete an
+        existing row in this table." 
+    ::= { cgprsCgGatewayIpEntry 7 }
+ 
+
+-- Charging DCCA profile
+
+cgprsCgProfileContentDccaProfileTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CgprsCgProfileContentDccaProfileEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table contains the list of DCCA Profiles
+        configured as part of the charging profile."
+    ::= { ciscoGprsChargingConfig 62 }
+
+cgprsCgProfileContentDccaProfileEntry OBJECT-TYPE
+    SYNTAX          CgprsCgProfileContentDccaProfileEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "An Entry contains the DCCA profile name."
+    INDEX           {
+                        cgprsCgProfileNum,
+                        cgprsCgProfileContentDccaProfileName
+                    } 
+    ::= { cgprsCgProfileContentDccaProfileTable 1 }
+
+CgprsCgProfileContentDccaProfileEntry ::= SEQUENCE {
+        cgprsCgProfileContentDccaProfileName      SnmpAdminString,
+        cgprsCgProfileContentDccaProfileRowStatus RowStatus
+}
+
+cgprsCgProfileContentDccaProfileName OBJECT-TYPE
+    SYNTAX          SnmpAdminString (SIZE  (1..40))
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This object specifies a DCCA client to use to communicate
+        with a DCCA server in a GGSN charging profile.
+
+        The value must be same as an entry in cGgsnSADccaProfileTable
+        identified by cGgsnSADccaProfileName."
+    REFERENCE
+        "cGgsnSADccaProfileName is defined in
+        CISCO-GGSN-SERVICE-AWARE-MIB." 
+    ::= { cgprsCgProfileContentDccaProfileEntry 1 }
+
+cgprsCgProfileContentDccaProfileRowStatus OBJECT-TYPE
+    SYNTAX          RowStatus
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object is used to create a new row or delete an
+        existing row in this table.
+        This object must be set to 'creatAndGo' to create 
+        an entry and set to 'destroy' to delete an entry.
+
+        The value in any column may be modified any time even the
+        value of this entry rowStatus object is 'active'." 
+    ::= { cgprsCgProfileContentDccaProfileEntry 2 }
+ 
 
 
 -- Charging GW statistics
@@ -1973,7 +2418,7 @@ cgprsCgDownTimes OBJECT-TYPE
         "The number of occurrences of cgprsCgAlarmEchoFailure
         traps state transitions since system startup.
 
-        Trigger Condition: This counter is triggered when
+        Trigger Condition: This counter is incremented when
         the GGSN detects a CG has gone down.
         Condition includes, 
           a) Link state down.
@@ -2065,7 +2510,7 @@ cgprsCgSentMsgNum OBJECT-TYPE
         the CDR that was sent to the CG for which the GGSN 
         got a response back from the CG.
 
-        Trigger Condition: This counter is triggered when a CDR 
+        Trigger Condition: This counter is incremented when a CDR 
         is sent to the CG and got a positive response." 
     ::= { ciscoGprsChargingStats 7 }
 
@@ -2079,7 +2524,7 @@ cgprsCgTotalCdrOpened OBJECT-TYPE
         GGSN, either since system startup or since the last time the 
         charging statistics was cleared.
 
-        Trigger Condition: This counter is triggered when a new CDR 
+        Trigger Condition: This counter is incremented when a new CDR 
         is opened. This new CDR might be opened initially and also 
         due to the closure of the existing opened CDR." 
     ::= { ciscoGprsChargingStats 8 }
@@ -2094,7 +2539,7 @@ cgprsCgTotalContainerCreated OBJECT-TYPE
         the GGSN, either since system startup or since the last time 
         the charging statistics was cleared.
 
-        Trigger Condition: This counter is triggered when the CDR is 
+        Trigger Condition: This counter is incremented when the CDR is 
         closed or the CDR is updated." 
     ::= { ciscoGprsChargingStats 9 }
 
@@ -2108,50 +2553,391 @@ cgprsCgTotalServiceRecords OBJECT-TYPE
         created on the GGSN, either since the system startup or since
         the time the service aware feature is enabled.
 
-        Trigger Condition: This counter is triggered when the
+        Trigger Condition: This counter is incremented when the
         service record is closed." 
     ::= { ciscoGprsChargingStats 10 }
+
+cgprsCgGatewayGroupStatisticsTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CgprsCgGatewayGroupStatisticsEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table contains the charging statistics of
+        all the charging groups on this GGSN."
+    ::= { ciscoGprsChargingStats 11 }
+
+cgprsCgGatewayGroupStatisticsEntry OBJECT-TYPE
+    SYNTAX          CgprsCgGatewayGroupStatisticsEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the entry for each charging group
+        in statistics table.
+        An entry will be created in the statistics table whenever 
+        a charging group is configured, whereas an entry will be 
+        removed from the table on unconfiguration of the charging
+        group."
+    AUGMENTS           { cgprsCgGroupEntry  } 
+    ::= { cgprsCgGatewayGroupStatisticsTable 1 }
+
+CgprsCgGatewayGroupStatisticsEntry ::= SEQUENCE {
+        cgprsCgGatewayGroupCgDownTimes            Counter32,
+        cgprsCgGatewayGroupAccPtNum               Counter32,
+        cgprsCgGatewayGroupCdrOpenedNum           Unsigned32,
+        cgprsCgGatewayGroupCdrClosedNum           Unsigned32,
+        cgprsCgGatewayGroupContainerNum           Unsigned32,
+        cgprsCgGatewayGroupServiceRecordsNum      Unsigned32,
+        cgprsCgGatewayGroupPendingMsgNum          Unsigned32,
+        cgprsCgGatewayGroupCdrPendingMsgIscsiNum  Unsigned32,
+        cgprsCgGatewayGroupCdrPendingMsgCgPathNum Unsigned32,
+        cgprsCgGatewayGroupCdrPendingMsgMaintNum  Unsigned32,
+        cgprsCgGatewayGroupTotalCdrOpened         Counter32,
+        cgprsCgGatewayGroupTotalContainerCreated  Counter32,
+        cgprsCgGatewayGroupTotalServiceRecords    Counter32,
+        cgprsCgGatewayGroupTotalSentMsg           Counter32,
+        cgprsCgGatewayGroupTotalSentMsgToIscsi    Counter32,
+        cgprsCgGatewayGroupTotalSentMsgToCg       Counter32
+}
+
+cgprsCgGatewayGroupCgDownTimes OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "transitions"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the number of occurrences of
+        cgprsCgAlarmEchoFailure traps state transitions since 
+        system startup.
+
+        Trigger Condition: This counter is incremented when
+        the GGSN detects a CG has gone down.
+        Condition includes, 
+          a) Link state down.
+          b) Redirection request." 
+    ::= { cgprsCgGatewayGroupStatisticsEntry 1 }
+
+cgprsCgGatewayGroupAccPtNum OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "access-points"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the number of access points configured
+        with a charging group for which charging data is being 
+        collected.
+
+        Trigger Condition: This counter is triggered when a
+        CDR is opened for a PDP and that PDP belongs to a new
+        APN." 
+    ::= { cgprsCgGatewayGroupStatisticsEntry 2 }
+
+cgprsCgGatewayGroupCdrOpenedNum OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..4294967295)
+    UNITS           "CDRs"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the number of currently opened G-CDRs
+        on GGSN for a charging group.
+        A G-CDR shall be opened for each activated PDP context.
+
+        Trigger Condition: This counter is triggered when a new 
+        CDR is opened. This new CDR might be opened initially and 
+        also due to the closure of the existing opened CDR." 
+    ::= { cgprsCgGatewayGroupStatisticsEntry 3 }
+
+cgprsCgGatewayGroupCdrClosedNum OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..4294967295)
+    UNITS           "CDRs"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the number of currently closed G-CDRs
+        on GGSN for a charging group, which have not been sent to the
+        CG. The G-CDR shall be closed on encountering some trigger  
+        conditions. In the event that the G-CDR is closed and the
+        PDP remains active, a new G-CDR will be opened for the PDP.
+
+        Trigger Condition: This counter is triggered when the CDR 
+        is closed. The closure might be due to different trigger 
+        conditions.
+            a) Clearing of the CDR using CLI.
+            b) Tigger conditions like vloume limit, time limit, 
+               sgsn change limit, container change limit 
+               set with configuration objects.
+            c) CDR size reaches maximum." 
+    ::= { cgprsCgGatewayGroupStatisticsEntry 4 }
+
+cgprsCgGatewayGroupContainerNum OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..4294967295)
+    UNITS           "containers"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the number of currently open or closed
+        charging containers for a charging group.
+
+        Trigger Condition: This counter is triggered when the CDR 
+        is closed or the CDR is updated." 
+    ::= { cgprsCgGatewayGroupStatisticsEntry 5 }
+
+cgprsCgGatewayGroupServiceRecordsNum OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..4294967295)
+    UNITS           "records"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indcates the number of currently created
+        service records on GGSN for a charging group.
+
+        Trigger Condition: This counter is triggered when the
+        service record is closed." 
+    ::= { cgprsCgGatewayGroupStatisticsEntry 6 }
+
+cgprsCgGatewayGroupPendingMsgNum OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..4294967295)
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the number of currently pending G-CDR
+        output messages for a charging group.
+
+        Trigger Condition: This counter is triggered when the CDR 
+        is sent to the CG or iSCSI and the response from the CG or 
+        iSCSI target failed." 
+    ::= { cgprsCgGatewayGroupStatisticsEntry 7 }
+
+cgprsCgGatewayGroupCdrPendingMsgIscsiNum OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..4294967295)
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the number of currently pending G-CDR
+        output messages for a charging group in the iSCSI path.
+
+        Trigger Condition: This counter is triggered when the CDR is 
+        sent to the iSCSI and response from the iSCSI target failed." 
+    ::= { cgprsCgGatewayGroupStatisticsEntry 8 }
+
+cgprsCgGatewayGroupCdrPendingMsgCgPathNum OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..4294967295)
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of currently pending G-CDR output messages
+        for a charging group in the CG path.
+
+        Trigger Condition: This counter is triggered when the CDR 
+        is sent to the CG and response from the CG target failed." 
+    ::= { cgprsCgGatewayGroupStatisticsEntry 9 }
+
+cgprsCgGatewayGroupCdrPendingMsgMaintNum OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..4294967295)
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the number of currently pending G-CDR
+        output messages for a charging group, when the charging group 
+        service mode is maintenance.
+
+        Trigger Condition: This counter is triggered when there are 
+        pending G-CDR output messages and the charging group is moved 
+        to maintenance mode." 
+    ::= { cgprsCgGatewayGroupStatisticsEntry 10 }
+
+cgprsCgGatewayGroupTotalCdrOpened OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "CDRs"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the total number of CDRs opened on the
+        GGSN for a charging group, either since system startup or since
+        the last time the charging statistics was cleared.
+
+        Trigger Condition: This counter is incremented when a new CDR 
+        is opened. This new CDR might be opened initially and also 
+        due to the closure of the existing opened CDR." 
+    ::= { cgprsCgGatewayGroupStatisticsEntry 11 }
+
+cgprsCgGatewayGroupTotalContainerCreated OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "containers"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the total number of containers created on
+        the GGSN for a charging group, either since system startup or
+        since the last time the charging statistics was cleared.
+
+        Trigger Condition: This counter is incremented when the CDR is 
+        closed or the CDR is updated." 
+    ::= { cgprsCgGatewayGroupStatisticsEntry 12 }
+
+cgprsCgGatewayGroupTotalServiceRecords OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "records"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the total number of service records
+        created on GGSN for a charging group, either since the system 
+        startup or since the time the service aware feature is enabled.
+
+        Trigger Condition: This counter is incremented when the
+        service record is closed." 
+    ::= { cgprsCgGatewayGroupStatisticsEntry 13 }
+
+cgprsCgGatewayGroupTotalSentMsg OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the total number of G-CDR output
+        messages sent from a charging group on the GGSN since 
+        the charging service is enabled.
+
+        Trigger Condition: This counter is incremented when a CDR 
+        is sent either to a CG or an iSCSI target and got a 
+        positive response." 
+    ::= { cgprsCgGatewayGroupStatisticsEntry 14 }
+
+cgprsCgGatewayGroupTotalSentMsgToIscsi OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the total number of G-CDR output
+        messages sent from a charging group on the GGSN to an 
+        iSCSI target since the charging service is enabled.
+
+        Trigger Condition: This counter is incremented when a CDR 
+        is sent to the iSCSI target and got a positive response." 
+    ::= { cgprsCgGatewayGroupStatisticsEntry 15 }
+
+cgprsCgGatewayGroupTotalSentMsgToCg OBJECT-TYPE
+    SYNTAX          Counter32
+    UNITS           "messages"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the total number of G-CDR output
+        messages sent from a charging group on the GGSN to a 
+        CG since the charging service is enabled.
+
+        Trigger Condition: This counter is incremented when a CDR 
+        is sent to a CG and got a positive response." 
+    ::= { cgprsCgGatewayGroupStatisticsEntry 16 }
+ 
+
 
 -- Charging Gateway Status
 
 cgprsCgActiveChgGatewayAddrType OBJECT-TYPE
     SYNTAX          InetAddressType
     MAX-ACCESS      read-only
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "This object specifies the address type of the active
-        charging gateway." 
+        charging gateway. This object is deprecated by 
+        cgprsCgGatewayGroupStatusAddrType." 
     ::= { ciscoGprsChargingStatus 1 }
 
 cgprsCgActiveChgGatewayAddress OBJECT-TYPE
     SYNTAX          InetAddress
     MAX-ACCESS      read-only
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "This object specifies the address of the active charging
         gateway.
 
         The type of address will be represented by
-        cgprsCgActiveChgGatewayAddrType." 
+        cgprsCgActiveChgGatewayAddrType. This object is deprecated by
+        cgprsCgGatewayGroupStatusActiveCgAddr." 
     ::= { ciscoGprsChargingStatus 2 }
 
 cgprsCgOldChgGatewayAddress OBJECT-TYPE
     SYNTAX          InetAddress
     MAX-ACCESS      read-only
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "This object specifies the address of the previous active
         charging gateway.
         The type of address will same as the one present in 
-        cgprsCgActiveChgGatewayAddrType." 
+        cgprsCgActiveChgGatewayAddrType. This object is deprecated by 
+        cgprsCgGatewayGroupStatusOldCgAddr." 
     ::= { ciscoGprsChargingStatus 3 }
+
+cgprsCgGatewayGroupStatusTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CgprsCgGatewayGroupStatusEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Charging gateway table.
+        The table contains a list of currently active 
+        and previous active charging gateways."
+    ::= { ciscoGprsChargingStatus 4 }
+
+cgprsCgGatewayGroupStatusEntry OBJECT-TYPE
+    SYNTAX          CgprsCgGatewayGroupStatusEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "A conceptual row in the cgprsCgGatewayGroupStatusTable."
+    INDEX           { cgprsCgGroupIndex } 
+    ::= { cgprsCgGatewayGroupStatusTable 1 }
+
+CgprsCgGatewayGroupStatusEntry ::= SEQUENCE {
+        cgprsCgGatewayGroupStatusAddrType     InetAddressType,
+        cgprsCgGatewayGroupStatusActiveCgAddr InetAddress,
+        cgprsCgGatewayGroupStatusOldCgAddr    InetAddress
+}
+
+cgprsCgGatewayGroupStatusAddrType OBJECT-TYPE
+    SYNTAX          InetAddressType
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the address type of the active
+        charging gateway." 
+    ::= { cgprsCgGatewayGroupStatusEntry 1 }
+
+cgprsCgGatewayGroupStatusActiveCgAddr OBJECT-TYPE
+    SYNTAX          InetAddress
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the address of the active charging
+        gateway.
+        The type of address will be represented by
+        cgprsCgGatewayGroupStatusAddrType" 
+    ::= { cgprsCgGatewayGroupStatusEntry 2 }
+
+cgprsCgGatewayGroupStatusOldCgAddr OBJECT-TYPE
+    SYNTAX          InetAddress
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the address of the previous active
+        charging gateway.
+        The type of address will same as the one present in 
+        cgprsCgGatewayGroupStatusAddrType." 
+    ::= { cgprsCgGatewayGroupStatusEntry 3 }
+ 
+
 
 -- CG alarm history group
 
 cgprsCgAlarmEnable OBJECT-TYPE
     SYNTAX          TruthValue
     MAX-ACCESS      read-write
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The object controls the generation of
         cgprsCgAlarmNotif as follows:
@@ -2162,7 +2948,7 @@ cgprsCgAlarmEnable OBJECT-TYPE
     ::= { ciscoGprsChargingAlarms 1 }
 
 cgprsCgAlarmHistTableMax OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..4294967295 )
+    SYNTAX          Unsigned32 (1..4294967295)
     MAX-ACCESS      read-write
     STATUS          current
     DESCRIPTION
@@ -2174,17 +2960,18 @@ cgprsCgAlarmHistTableMax OBJECT-TYPE
 cgprsCgAlarmHistTable OBJECT-TYPE
     SYNTAX          SEQUENCE OF CgprsCgAlarmHistEntry 
     MAX-ACCESS      not-accessible
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "This table contains a history of all
         charging gateway and charging related alarms that 
-        were generated."
+        were generated.This table is deprecated by 
+        cgprsCgGatewayGroupAlarmHistTable"
     ::= { ciscoGprsChargingAlarms 3 }
 
 cgprsCgAlarmHistEntry OBJECT-TYPE
     SYNTAX          CgprsCgAlarmHistEntry
     MAX-ACCESS      not-accessible
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The information regarding a CG alarm.
         An entry, the oldest entry, is removed if the 
@@ -2203,9 +2990,9 @@ CgprsCgAlarmHistEntry ::= SEQUENCE {
 }
 
 cgprsCgAlarmHistIndex OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..4294967295 )
+    SYNTAX          Unsigned32 (1..4294967295)
     MAX-ACCESS      not-accessible
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "A monotonically increasing integer for the sole purpose
         of indexing the charging gateway and charging related alarms. 
@@ -2216,7 +3003,7 @@ cgprsCgAlarmHistIndex OBJECT-TYPE
 cgprsCgAlarmHistType OBJECT-TYPE
     SYNTAX          CgprsCgAlarmType
     MAX-ACCESS      read-only
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "Type of the GPRS charging gateway or charging related
         alarm." 
@@ -2225,7 +3012,7 @@ cgprsCgAlarmHistType OBJECT-TYPE
 cgprsCgAlarmHistAddrType OBJECT-TYPE
     SYNTAX          InetAddressType
     MAX-ACCESS      read-only
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "This object indicates the type of Internet address
         given in cgprsCgAlarmHistAddress." 
@@ -2234,7 +3021,7 @@ cgprsCgAlarmHistAddrType OBJECT-TYPE
 cgprsCgAlarmHistAddress OBJECT-TYPE
     SYNTAX          InetAddress
     MAX-ACCESS      read-only
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The IP address that is used to uniquely identify the CG." 
     ::= { cgprsCgAlarmHistEntry 4 }
@@ -2242,7 +3029,7 @@ cgprsCgAlarmHistAddress OBJECT-TYPE
 cgprsCgAlarmHistSeverity OBJECT-TYPE
     SYNTAX          CiscoAlarmSeverity
     MAX-ACCESS      read-only
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "This object indicates the severity of the alarm." 
     ::= { cgprsCgAlarmHistEntry 5 }
@@ -2250,7 +3037,7 @@ cgprsCgAlarmHistSeverity OBJECT-TYPE
 cgprsCgAlarmHistInfo OBJECT-TYPE
     SYNTAX          SnmpAdminString
     MAX-ACCESS      read-only
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "This object provide detailed information when a GPRS
         charging gateway or charging related alarm is generated." 
@@ -2259,13 +3046,121 @@ cgprsCgAlarmHistInfo OBJECT-TYPE
 
 
 cgprsCgAlarmHistLatestIndex OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..4294967295 )
+    SYNTAX          Unsigned32 (1..4294967295)
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
         "The value of cgprsCgAlarmHistIndex for the most recently
         created entry in cgprsCgAlarmHistTable." 
     ::= { ciscoGprsChargingAlarms 4 }
+
+cgprsCgGatewayGroupAlarmHistTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CgprsCgGatewayGroupAlarmHistEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table contains a history of all
+        charging groups and charging related alarms that 
+        were generated for the charging gateways per charging group."
+    ::= { ciscoGprsChargingAlarms 5 }
+
+cgprsCgGatewayGroupAlarmHistEntry OBJECT-TYPE
+    SYNTAX          CgprsCgGatewayGroupAlarmHistEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the information regarding a CG alarm
+        per charging group.
+        An entry is created in the table on receiving a charging 
+        gateway alarm per charging group. A CG alarm can be received 
+        for scenarios described by CgprsCgAlarmType.
+        An entry, the oldest entry, is removed if the 
+        table is full and a new entry is created 
+        in the table to accommodate a new alarm."
+    INDEX           {
+                        cgprsCgGroupIndex,
+                        cgprsCgGatewayGroupAlarmHistIndex
+                    } 
+    ::= { cgprsCgGatewayGroupAlarmHistTable 1 }
+
+CgprsCgGatewayGroupAlarmHistEntry ::= SEQUENCE {
+        cgprsCgGatewayGroupAlarmHistIndex    Unsigned32,
+        cgprsCgGatewayGroupAlarmHistType     CgprsCgAlarmType,
+        cgprsCgGatewayGroupAlarmHistAddrType InetAddressType,
+        cgprsCgGatewayGroupAlarmHistAddress  InetAddress,
+        cgprsCgGatewayGroupAlarmHistSeverity CiscoAlarmSeverity,
+        cgprsCgGatewayGroupAlarmHistInfo     SnmpAdminString
+}
+
+cgprsCgGatewayGroupAlarmHistIndex OBJECT-TYPE
+    SYNTAX          Unsigned32 (1..4294967295)
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This object indicates a monotonically increasing integer for
+        the sole purpose of indexing the charging gateway and charging 
+        related alarms in a charging group. When the index reaches the 
+        maximum value it will wrap around to one." 
+    ::= { cgprsCgGatewayGroupAlarmHistEntry 1 }
+
+cgprsCgGatewayGroupAlarmHistType OBJECT-TYPE
+    SYNTAX          CgprsCgAlarmType
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the type of GPRS, charging gateway or
+        charging related alarm." 
+    ::= { cgprsCgGatewayGroupAlarmHistEntry 2 }
+
+cgprsCgGatewayGroupAlarmHistAddrType OBJECT-TYPE
+    SYNTAX          InetAddressType
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the type of Internet address
+        given in cgprsCgGatewayGroupAlarmHistAddress." 
+    ::= { cgprsCgGatewayGroupAlarmHistEntry 3 }
+
+cgprsCgGatewayGroupAlarmHistAddress OBJECT-TYPE
+    SYNTAX          InetAddress
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the IP address that is used to
+        uniquely identify the CG." 
+    ::= { cgprsCgGatewayGroupAlarmHistEntry 4 }
+
+cgprsCgGatewayGroupAlarmHistSeverity OBJECT-TYPE
+    SYNTAX          CiscoAlarmSeverity
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the severity of the alarm." 
+    ::= { cgprsCgGatewayGroupAlarmHistEntry 5 }
+
+cgprsCgGatewayGroupAlarmHistInfo OBJECT-TYPE
+    SYNTAX          SnmpAdminString
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object provides detailed information when a GPRS
+        charging gateway or charging related alarm is generated." 
+    ::= { cgprsCgGatewayGroupAlarmHistEntry 6 }
+ 
+
+
+cgprsCgGatewayGroupAlarmEnable OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The object controls the generation of
+        cgprsCgGatewayGroupAlarmNotif as follows:
+         'true(1)' - the generation of cgprsCgGatewayGroupAlarmNotif 
+                     notifications is enabled.
+         'false(2)' - the generation of cgprsCgGatewayGroupAlarmNotif 
+                     notifications is disabled." 
+    ::= { ciscoGprsChargingAlarms 6 }
 -- Notification Definitions
 
 ciscoGprsCharNotifPrefix  OBJECT IDENTIFIER
@@ -2283,12 +3178,14 @@ cgprsCgAlarmNotif NOTIFICATION-TYPE
                         cgprsCgAlarmHistSeverity,
                         cgprsCgAlarmHistInfo
                     }
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "A cgprsCgAlarmNotif signifies that a GPRS related
         alarm is detected in the managed system.
         This alarm is sent after an entry has been added to 
-        cgprsCgAlarmHistTable."
+        cgprsCgAlarmHistTable or cgprsCgGatewayGroupAlarmHistTable.
+        This notification is deprecated by 
+        cgprsCgGatewayGroupAlarmNotif"
    ::= { ciscoGprsCharNotifs 1 }
 
 cgprsCgGatewaySwitchoverNotif NOTIFICATION-TYPE
@@ -2297,7 +3194,7 @@ cgprsCgGatewaySwitchoverNotif NOTIFICATION-TYPE
                         cgprsCgActiveChgGatewayAddress,
                         cgprsCgOldChgGatewayAddress
                     }
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "A notification of this type is generated when the
         charging gateway is switched, the new charging
@@ -2308,24 +3205,92 @@ cgprsCgGatewaySwitchoverNotif NOTIFICATION-TYPE
         The switchover will happen according to the value set
         in cgprsCgGroupSwitchOverTime and the selection of the
         new CG will be according to the value set in
-        cgprsCgSwitchOverPriority."
+        cgprsCgSwitchOverPriority.
+        Note: Selection of new CG based on the value set in 
+        cgprsCgSwitchOverPriority is only true for default 
+        charging gateway group, for other charging gateway groups
+        including defualt charging gateway group it can be determined 
+        by the value set in cgprsCgGroupSwitchOverPriority.
+        This notification is deprecated by 
+        cgprsCgGatewayGroupSwitchoverNotif"
    ::= { ciscoGprsCharNotifs 2 }
 
 cgprsCgInServiceModeNotif NOTIFICATION-TYPE
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "A notification of this type is generated when the
         GGSN charging function is in normal mode. This can
-        be identified by cgprsCgServiceMode object."
+        be identified by cgprsCgServiceMode object for default
+        charging gateway group whereas for other charging groups, 
+        including default charging gateway group it can be identfied 
+        by cgprsCgGroupServiceMode.
+        This notification is deprecated by 
+        cgprsCgGatewayGroupInServiceModeNotif"
    ::= { ciscoGprsCharNotifs 3 }
 
 cgprsCgMaintenanceModeNotif NOTIFICATION-TYPE
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "A notification of this type is generated when the
         GGSN charging function is in maintenance mode. This
-        can be identified by cgprsCgServiceMode object."
+        can be identified by cgprsCgServiceMode object for default
+        charging gateway group whereas for other charging groups, 
+        including default charging gateway group it can be identfied 
+        by cgprsCgGroupServiceMode.
+        This notification is deprecated by 
+        cgprsCgGatewayGroupMaintenanceModeNotif"
    ::= { ciscoGprsCharNotifs 4 }
+
+cgprsCgGatewayGroupAlarmNotif NOTIFICATION-TYPE
+    OBJECTS         {
+                        cgprsCgGatewayGroupAlarmHistType,
+                        cgprsCgGatewayGroupAlarmHistAddrType,
+                        cgprsCgGatewayGroupAlarmHistAddress,
+                        cgprsCgGatewayGroupAlarmHistSeverity,
+                        cgprsCgGatewayGroupAlarmHistInfo
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A cgprsCgGroupAlarmNotif signifies that a GPRS related
+        alarm is detected in the managed system.
+        This alarm is sent after an entry has been added to 
+        cgprsCgGatewayGroupAlarmHistTable."
+   ::= { ciscoGprsCharNotifs 5 }
+
+cgprsCgGatewayGroupSwitchoverNotif NOTIFICATION-TYPE
+    OBJECTS         {
+                        cgprsCgGatewayGroupStatusAddrType,
+                        cgprsCgGatewayGroupStatusActiveCgAddr,
+                        cgprsCgGatewayGroupStatusOldCgAddr
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A notification of this type is generated when the
+        charging gateway is switched, the new charging
+        gateway is identified by cgprsCgGatewayGroupStatusActiveCgAddr
+        and the old charging gateway is identified by
+        cgprsCgGatewayGroupStatusOldCgAddr."
+   ::= { ciscoGprsCharNotifs 6 }
+
+cgprsCgGatewayGroupInServiceModeNotif NOTIFICATION-TYPE
+    OBJECTS         { cgprsCgGroupServiceMode }
+    STATUS          current
+    DESCRIPTION
+        "The cgprsCgGatewayGroupInServiceModeNotif notification is
+        generated when the charging group state transitions to 
+        in-service mode, identified by the object 
+        cgprsCgGroupServiceMode"
+   ::= { ciscoGprsCharNotifs 7 }
+
+cgprsCgGatewayGroupMaintenanceModeNotif NOTIFICATION-TYPE
+    OBJECTS         { cgprsCgGroupServiceMode }
+    STATUS          current
+    DESCRIPTION
+        "The cgprsCgGatewayGroupMaintenanceModeNotif notification is
+        generated when the charging group state transitions to 
+        maintenance mode, identified by the object 
+        cgprsCgGroupServiceMode"
+   ::= { ciscoGprsCharNotifs 8 }
 -- Conformances definitions
 
 ciscoGprsCharMIBConformances  OBJECT IDENTIFIER
@@ -2547,7 +3512,7 @@ cgprsCgComplianceRev6 MODULE-COMPLIANCE
     ::= { cgprsCgMIBCompliances 7 }
 
 cgprsCgComplianceRev7 MODULE-COMPLIANCE
-    STATUS          deprecated 
+    STATUS          deprecated
     DESCRIPTION
         "The compliance statement for entities which implement the
         CISCO GPRS CHARGING MIB. This is deprecated by
@@ -2582,10 +3547,11 @@ cgprsCgComplianceRev7 MODULE-COMPLIANCE
     ::= { cgprsCgMIBCompliances 8 }
 
 cgprsCgComplianceRev8 MODULE-COMPLIANCE
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The compliance statement for entities which implement the
-        CISCO GPRS CHARGING MIB."
+        CISCO GPRS CHARGING MIB. This is deprecated by
+        cgprsCgComplianceRev9."
     MODULE          -- this module
     MANDATORY-GROUPS {
                         cgprsCgMIBConfigGroupRev4,
@@ -2614,6 +3580,167 @@ cgprsCgComplianceRev8 MODULE-COMPLIANCE
     DESCRIPTION
         "Write access is not required."
     ::= { cgprsCgMIBCompliances 9 }
+
+cgprsCgComplianceRev9 MODULE-COMPLIANCE
+    STATUS          deprecated
+    DESCRIPTION
+        "The compliance statement for entities which implement the
+        CISCO GPRS CHARGING MIB. This is deprecated by
+        cgprsCgComplianceRev10."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        cgprsCgMIBConfigGroupRev5,
+                        cgprsCgMIBStatsGroupRev2,
+                        cgprsCgMIBAlarmsGroupRev2,
+                        cgprsCgMIBNotifGroupRev2,
+                        cgprsCgMIBStatusGroupRev1,
+                        cgprsCgMIBStatusGroupR60,
+                        cgprsCgMIBExtConfigGroup,
+                        cgprsCgMIBConfigGroupR80,
+                        cgprsCgMIBConfigGroupR90,
+                        cgprsCgMIBStatsGroupRev3,
+                        cgprsCgMIBConfigProfileChangeGroupRev1
+                    }
+
+    OBJECT          cgprsCgProfileRowStatus
+    SYNTAX          INTEGER  {
+                        active(1),
+                        createAndGo(4),
+                        destroy(6)
+                    }
+    DESCRIPTION
+        "The states notInService(2), notReady(3) and
+        createAndWait(5) need not be supported."
+
+    OBJECT          cgprsCgGroupRowStatus
+    SYNTAX          INTEGER  {
+                        active(1),
+                        createAndGo(4),
+                        destroy(6)
+                    }
+    DESCRIPTION
+        "The states notInService(2), notReady(3) and
+        createAndWait(5) need not be supported."
+
+    OBJECT          cgprsCgGatewayIpRowStatus
+    SYNTAX          INTEGER  {
+                        active(1),
+                        createAndGo(4),
+                        destroy(6)
+                    }
+    DESCRIPTION
+        "The states notInService(2), notReady(3) and
+        createAndWait(5) need not be supported."
+
+    OBJECT          cgprsCgProfileStorageType
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cgprsCgGatewayIpAddrType
+    SYNTAX          INTEGER  {
+                        ipv4(1)
+                    }
+    DESCRIPTION
+        "An implementation is only required to support
+        IPv4 address type."
+
+    OBJECT          cgprsCgGatewayGroupStatusAddrType
+    SYNTAX          INTEGER  {
+                        ipv4(1)
+                    }
+    DESCRIPTION
+        "An implementation is only required to support
+        IPv4 address type."
+
+    OBJECT          cgprsCgGatewayGroupAlarmHistAddrType
+    SYNTAX          INTEGER  {
+                        ipv4(1)
+                    }
+    DESCRIPTION
+        "An implementation is only required to support
+        IPv4 address type."
+    ::= { cgprsCgMIBCompliances 10 }
+
+cgprsCgComplianceRev10 MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for entities which implement the
+        CISCO GPRS CHARGING MIB."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        cgprsCgMIBConfigGroupRev5,
+                        cgprsCgMIBStatsGroupRev2,
+                        cgprsCgMIBAlarmsGroupRev2,
+                        cgprsCgMIBNotifGroupRev2,
+                        cgprsCgMIBStatusGroupRev1,
+                        cgprsCgMIBStatusGroupR60,
+                        cgprsCgMIBConfigGroupR80,
+                        cgprsCgMIBConfigGroupR90,
+                        cgprsCgMIBStatsGroupRev3,
+                        cgprsCgMIBConfigProfileChangeGroupRev1,
+                        cgprsCgMIBConfigGroupR100
+                    }
+
+    OBJECT          cgprsCgProfileRowStatus
+    SYNTAX          INTEGER  {
+                        active(1),
+                        createAndGo(4),
+                        destroy(6)
+                    }
+    DESCRIPTION
+        "The states notInService(2), notReady(3) and
+        createAndWait(5) need not be supported."
+
+    OBJECT          cgprsCgGroupRowStatus
+    SYNTAX          INTEGER  {
+                        active(1),
+                        createAndGo(4),
+                        destroy(6)
+                    }
+    DESCRIPTION
+        "The states notInService(2), notReady(3) and
+        createAndWait(5) need not be supported."
+
+    OBJECT          cgprsCgGatewayIpRowStatus
+    SYNTAX          INTEGER  {
+                        active(1),
+                        createAndGo(4),
+                        destroy(6)
+                    }
+    DESCRIPTION
+        "The states notInService(2), notReady(3) and
+        createAndWait(5) need not be supported."
+
+    OBJECT          cgprsCgProfileStorageType
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cgprsCgGatewayIpAddrType
+    SYNTAX          INTEGER  {
+                        ipv4(1)
+                    }
+    DESCRIPTION
+        "An implementation is only required to support
+        IPv4 address type."
+
+    OBJECT          cgprsCgGatewayGroupStatusAddrType
+    SYNTAX          INTEGER  {
+                        ipv4(1)
+                    }
+    DESCRIPTION
+        "An implementation is only required to support
+        IPv4 address type."
+
+    OBJECT          cgprsCgGatewayGroupAlarmHistAddrType
+    SYNTAX          INTEGER  {
+                        ipv4(1)
+                    }
+    DESCRIPTION
+        "An implementation is only required to support
+        IPv4 address type."
+    ::= { cgprsCgMIBCompliances 11 }
 
 -- units of conformance
 
@@ -2808,10 +3935,11 @@ cgprsCgMIBAlarmsGroupRev1 OBJECT-GROUP
                         cgprsCgAlarmHistInfo,
                         cgprsCgAlarmHistLatestIndex
                     }
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "A collection of objects providing information about the
-        charging gateway and charging related alarms."
+        charging gateway and charging related alarms.
+        This group is obsoleted by cgprsCgMIBAlarmsGroupRev2"
     ::= { cgprsCgMIBGroups 8 }
 
 cgprsCgMIBConfigGroupRev3 OBJECT-GROUP
@@ -2885,7 +4013,7 @@ cgprsCgMIBNotifGroupRev1 NOTIFICATION-GROUP
                         cgprsCgInServiceModeNotif,
                         cgprsCgMaintenanceModeNotif
                     }
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "A collection of notification."
     ::= { cgprsCgMIBGroups 10 }
@@ -2914,7 +4042,7 @@ cgprsCgMIBStatusGroup OBJECT-GROUP
                         cgprsCgActiveChgGatewayAddress,
                         cgprsCgOldChgGatewayAddress
                     }
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "A collection of objects providing charging related
         status."
@@ -2969,7 +4097,7 @@ cgprsCgMIBConfigProfileChangeGroup OBJECT-GROUP
                         cgprsCgServiceRecordIncludeRat,
                         cgprsCgServiceRecordIncludePlmn
                     }
-    STATUS          deprecated 
+    STATUS          deprecated
     DESCRIPTION
         "A collection of objects providing charging related
         configuration. This is deprecated by
@@ -3034,7 +4162,7 @@ cgprsCgMIBConfigGroupRev4 OBJECT-GROUP
                         cgprsCgPtcEnable,
                         cgprsCgPtcPossiblyDupEnable
                     }
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "A collection of objects providing charging related
         configurations."
@@ -3065,7 +4193,7 @@ cgprsCgMIBExtConfigGroup OBJECT-GROUP
                         cgprsCgCdrOptionRatType,
                         cgprsCgCdrOptionUserLocInfo
                     }
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "A collection of status objects."
     ::= { cgprsCgMIBGroups 17 }
@@ -3090,10 +4218,192 @@ cgprsCgMIBConfigProfileChangeGroupRev1 OBJECT-GROUP
                         cgprsCgServiceRecordIncludePlmn,
                         cgprsCgServiceRecordIncludeUserLocInfo
                     }
-    STATUS          current 
+    STATUS          current
     DESCRIPTION
         "A collection of objects providing charging related
         configuration."
     ::= { cgprsCgMIBGroups 19 }
 
+cgprsCgMIBConfigGroupR90 OBJECT-GROUP
+    OBJECTS         {
+                        cgprsCgGatewayIpAddrType,
+                        cgprsCgGatewayIpAddr,
+                        cgprsCgGatewayOperStatus,
+                        cgprsCgGatewayLinkState,
+                        cgprsCgGateway,
+                        cgprsCgGatewayIpRowStatus,
+                        cgprsCgGroupIscsi,
+                        cgprsCgGroupServiceMode,
+                        cgprsCgGroupSwitchOverPriority,
+                        cgprsCgGroupRowStatus
+                    }
+    STATUS          current
+    DESCRIPTION
+        "Collection of objects added as part of GGSN R9.0
+        release."
+    ::= { cgprsCgMIBGroups 20 }
+
+cgprsCgMIBStatsGroupRev3 OBJECT-GROUP
+    OBJECTS         {
+                        cgprsCgGatewayGroupCgDownTimes,
+                        cgprsCgGatewayGroupAccPtNum,
+                        cgprsCgGatewayGroupCdrOpenedNum,
+                        cgprsCgGatewayGroupCdrClosedNum,
+                        cgprsCgGatewayGroupContainerNum,
+                        cgprsCgGatewayGroupServiceRecordsNum,
+                        cgprsCgGatewayGroupPendingMsgNum,
+                        cgprsCgGatewayGroupCdrPendingMsgIscsiNum,
+                        cgprsCgGatewayGroupCdrPendingMsgCgPathNum,
+                        cgprsCgGatewayGroupCdrPendingMsgMaintNum,
+                        cgprsCgGatewayGroupTotalCdrOpened,
+                        cgprsCgGatewayGroupTotalContainerCreated,
+                        cgprsCgGatewayGroupTotalServiceRecords,
+                        cgprsCgGatewayGroupTotalSentMsg,
+                        cgprsCgGatewayGroupTotalSentMsgToIscsi,
+                        cgprsCgGatewayGroupTotalSentMsgToCg
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects providing charging related
+        statistics."
+    ::= { cgprsCgMIBGroups 21 }
+
+cgprsCgMIBAlarmsGroupRev2 OBJECT-GROUP
+    OBJECTS         {
+                        cgprsCgGatewayGroupAlarmEnable,
+                        cgprsCgAlarmHistTableMax,
+                        cgprsCgGatewayGroupAlarmHistType,
+                        cgprsCgGatewayGroupAlarmHistAddrType,
+                        cgprsCgGatewayGroupAlarmHistAddress,
+                        cgprsCgGatewayGroupAlarmHistSeverity,
+                        cgprsCgGatewayGroupAlarmHistInfo
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects providing information about the
+        charging gateway and charging related alarms."
+    ::= { cgprsCgMIBGroups 22 }
+
+cgprsCgMIBStatusGroupRev1 OBJECT-GROUP
+    OBJECTS         {
+                        cgprsCgGatewayGroupStatusAddrType,
+                        cgprsCgGatewayGroupStatusActiveCgAddr,
+                        cgprsCgGatewayGroupStatusOldCgAddr
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects providing charging related
+        status."
+    ::= { cgprsCgMIBGroups 23 }
+
+cgprsCgMIBConfigGroupRev5 OBJECT-GROUP
+    OBJECTS         {
+                        cgprsCgEnable,
+                        cgprsCgCdrLocalSeqNumEnable,
+                        cgprsCgCdrNodeIdEnable,
+                        cgprsCgFlowControlEcho,
+                        cgprsCgCdrPktsStatEnable,
+                        cgprsCgCdrAggreLimit,
+                        cgprsCgTransInterval,
+                        cgprsCgPktsQSize,
+                        cgprsCgPathRequest,
+                        cgprsCgContainerVolThresh,
+                        cgprsCgMapDataTos,
+                        cgprsCgPathProtocol,
+                        cgprsCgServerSwitchTimeout,
+                        cgprsCgConditionLimit,
+                        cgprsCgGtpPrimePort,
+                        cgprsCgN3BufferSize,
+                        cgprsCgChargeForRoamersOnly,
+                        cgprsCgTariffTimeMaxEntries,
+                        cgprsCgTariffTimeNextIndex,
+                        cgprsCgTariffTimeRowStatus,
+                        cgprsCgTariffTimeHour,
+                        cgprsCgTariffTimeMin,
+                        cgprsCgTariffTimeSec,
+                        cgprsCgClearCdrPartialCdr,
+                        cgprsCgCdrSgsnChangeLimit,
+                        cgprsCgRelease,
+                        cgprsCgGtpShortHeaderEnable,
+                        cgprsCgTransFormNumRespEnable,
+                        cgprsCgContainerTimeLimit,
+                        cgprsCgProfileRowStatus,
+                        cgprsCgProfileDesc,
+                        cgprsCgProfileCategory,
+                        cgprsCgProfileCdrSuppress,
+                        cgprsCgProfileVolumeLimit,
+                        cgprsCgProfileVolumeLimitReset,
+                        cgprsCgProfileDurLimit,
+                        cgprsCgProfileDurLimitReset,
+                        cgprsCgProfileTariffTime,
+                        cgprsCgProfileSgsnChange,
+                        cgprsCgProfileMapNumber,
+                        cgprsCgProfileMapOverride,
+                        cgprsCgProfileMapTrusted,
+                        cgprsCgChargingCharReject,
+                        cgprsCgPartialCdrGenEnable,
+                        cgprsCgCharSelectionMode,
+                        cgprsCgReconnect,
+                        cgprsCgPtcEnable,
+                        cgprsCgPtcPossiblyDupEnable
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects providing charging related
+        configurations."
+    ::= { cgprsCgMIBGroups 24 }
+
+cgprsCgMIBNotifGroupRev2 NOTIFICATION-GROUP
+   NOTIFICATIONS    {
+                        cgprsCgGatewayGroupAlarmNotif,
+                        cgprsCgGatewayGroupSwitchoverNotif,
+                        cgprsCgGatewayGroupInServiceModeNotif,
+                        cgprsCgGatewayGroupMaintenanceModeNotif
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of notification."
+    ::= { cgprsCgMIBGroups 25 }
+
+cgprsCgMIBConfigGroupR100 OBJECT-GROUP
+    OBJECTS         {
+                        cgprsCgCdrOptionServiceRecord,
+                        cgprsCgPartialCdrGenEnableAll,
+                        cgprsCgProfileCdrSuppressPrepaid,
+                        cgprsCgProfileContentPostTime,
+                        cgprsCgProfileContentPostValidityTime,
+                        cgprsCgProfileContentPostVolume,
+                        cgprsCgProfileContentRulebaseId,
+                        cgprsCgCdrOptionApn,
+                        cgprsCgCdrOptionVirtualApn,
+                        cgprsCgCdrOptionApnSelMode,
+                        cgprsCgCdrOptionDynamicAddr,
+                        cgprsCgCdrOptionNip,
+                        cgprsCgCdrOptionPdpAddress,
+                        cgprsCgCdrOptionPdpType,
+                        cgprsCgCdrOptionSerMsisdn,
+                        cgprsCgCdrOptionSgsnPlmn,
+                        cgprsCgCdrOptionCamelCharInfo,
+                        cgprsCgCdrOptionImeisv,
+                        cgprsCgCdrOptionMsTimeZone,
+                        cgprsCgCdrOptionRatType,
+                        cgprsCgCdrOptionUserLocInfo,
+                        cgprsCgProfileContentDccaProfileRowStatus
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of charging related configuration objects
+        for GGSN 10.0 release."
+    ::= { cgprsCgMIBGroups 26 }
+
 END
+
+
+
+
+
+
+
+
+
+

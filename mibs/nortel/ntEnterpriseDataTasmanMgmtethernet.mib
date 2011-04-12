@@ -1,0 +1,328 @@
+
+NT-ENTERPRISE-DATA-TASMAN-MGMT-ETHERNET-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+	MODULE-IDENTITY, OBJECT-TYPE,
+		IpAddress, Integer32,Counter32				FROM SNMPv2-SMI
+	TruthValue, RowStatus, DisplayString		FROM SNMPv2-TC
+	ntEnterpriseDataTasmanInterfaces 	        FROM NT-ENTERPRISE-DATA-MIB;
+
+nnethernetMib MODULE-IDENTITY
+        LAST-UPDATED    "9907010000Z"
+		ORGANIZATION    "Nortel"
+        CONTACT-INFO
+		" "
+        DESCRIPTION     "Ethernet MIB for defining ethernet parameters"
+        REVISION        "9907010000Z"
+		DESCRIPTION
+                "Initial version of this MIB module."
+        ::= { ntEnterpriseDataTasmanInterfaces 4 }
+
+-- InterfaceIndex contains the semantics of ifIndex and
+-- should be used for any objects defined on other mib
+-- modules that need these semantics.
+
+-- NnInterfaceIndex ::= TEXTUAL-CONVENTION
+--     DISPLAY-HINT "d"
+--     STATUS       current
+--     DESCRIPTION
+--             "A unique value, greater than zero, for each interface
+--             or interface sub-layer in the managed system.  It is
+--             recommended that values are assigned contiguously
+--             starting from 1.  The value for each interface sub-
+--             layer must remain constant at least from one re-
+--             initialization of the entity's network management
+--             system to the next re-initialization."
+--     SYNTAX       Integer32 (1..2147483647)
+
+-- ethernetTable definition
+-- The following ethernet table lists all parameters associated with an
+-- ethernet.
+
+nnethernetTable		OBJECT-TYPE
+        SYNTAX          SEQUENCE OF NnEthernetTableEntry
+	MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION     "Ethernet management related
+                        parameters are defined in this table."
+        ::= {nnethernetMib 1}
+
+nnethernetTableEntry    OBJECT-TYPE
+        SYNTAX          NnEthernetTableEntry
+	MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION     "Ethernet management parameters are 
+                        listed in this table."
+        INDEX           { nnethernetId }
+	::= {nnethernetTable 1}
+
+NnEthernetTableEntry ::= SEQUENCE {
+	nnethernetId				INTEGER,
+	nnethernetDescr				DisplayString,
+	nnethernetDhcpRelayServerAddr		IpAddress,
+	nnethernetDhcpRelayGatewayAddr		IpAddress,
+	nnethernetFailOverEnable		TruthValue,
+	nnethernetHoldDownTime			INTEGER,
+	nnethernetIcmpRedirectEnable		TruthValue,
+	nnethernetIcmpUnreachableEnable		TruthValue,
+	nnethernetIpAddr			IpAddress,
+	nnethernetSubnetMask			IpAddress,
+--	nnethernetIpFilterListName		DisplayString,
+--	nnethernetIpFilterPacketDirection	INTEGER,
+	nnethernetIpDirectedBroadcastEnable	TruthValue,
+	nnethernetIpMulticast			INTEGER,
+	nnethernetMtu				Integer32,
+	nnethernetSpeed				INTEGER,
+	nnethernetMode				INTEGER,
+	nnethernetShutdownEnable		TruthValue,
+	nnethernetVlanId			INTEGER,
+	nnethernetRowStatus 			RowStatus,
+	nnethernetDropPackets           Counter32
+	}
+
+
+-- trIfIndex           OBJECT-TYPE
+--         SYNTAX      InterfaceIndex
+--         MAX-ACCESS  read-only
+--         STATUS      current
+--         DESCRIPTION
+--                "A unique value, greater than zero, for each
+--                interface.  It is recommended that values are assigned
+--                contiguously starting from 1.  The value for each
+--                interface sub-layer must remain constant at least from
+--                one re-initialization of the entity's network
+--                management system to the next re-initialization."
+--         ::= { nnethernetTableEntry 1 }
+
+nnethernetId		OBJECT-TYPE
+       	SYNTAX      	INTEGER (1..2)
+	MAX-ACCESS      read-only
+        STATUS          deprecated
+        DESCRIPTION     "ethernetId is the identifier for the 
+			ethernet interfaces."
+	::= { nnethernetTableEntry 1 }
+
+nnethernetDescr		OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (1..25))
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "Brief description of the ethernet.The maximum
+                        length of this parameter is 25 characters."
+        ::= { nnethernetTableEntry 2 }
+
+nnethernetDhcpRelayServerAddr	OBJECT-TYPE
+	SYNTAX          IpAddress
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "The DHCP relay server Ipaddress."
+        ::= { nnethernetTableEntry 3 }
+
+nnethernetDhcpRelayGatewayAddr	OBJECT-TYPE
+        SYNTAX          IpAddress
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "The DHCP relay gateway address."
+        ::= { nnethernetTableEntry 4 }
+
+nnethernetFailOverEnable 	OBJECT-TYPE
+        SYNTAX          TruthValue
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "This object toggles the failover enable mode for 
+			a particular Ethernet interface. The default mode
+			is failover disabled. At present this is only 
+			applicable for data using source forwarding on an 
+			Ethernet interface. If failover is enabled on a 
+			particular Ethernet interface and the Ethernet 
+			interface link goes down, source forwarded traffic 
+			will switch over to the other Ethernet interface."
+	DEFVAL          { false }
+	::= { nnethernetTableEntry 5 }
+
+nnethernetHoldDownTime		OBJECT-TYPE
+        SYNTAX          INTEGER (3..900)
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION	"The time, in seconds, that an Ethernet interface 
+			should be in holdDown when it receives an up signal.
+			In other words, no source forwarding traffic should 
+			be sent on the Ethernet interface during the holdDown 
+			time period. The default is 3 seconds and the maximum 
+			is 900 seconds (15 minutes). This applies when failover 
+			is enabled on the interface and traffic has switched 
+			over to the other Ethernet interface ."
+	DEFVAL          { 3 }
+	::= { nnethernetTableEntry 6 }
+
+nnethernetIcmpRedirectEnable 	OBJECT-TYPE
+        SYNTAX          TruthValue
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "This object toggles the ICMP redirect mode for 
+			a particular Ethernet interface. The default mode
+                        is redirect disabled."
+	DEFVAL          { false }
+        ::= { nnethernetTableEntry 7 }
+
+nnethernetIcmpUnreachableEnable	OBJECT-TYPE
+        SYNTAX          TruthValue
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "This object toggles the ICMP unreachable mode
+			for a particular Ethernet interface. The default
+			mode is unreachable disabled."
+	DEFVAL          { false }
+        ::= { nnethernetTableEntry 8 }
+
+nnethernetIpAddr	OBJECT-TYPE
+        SYNTAX          IpAddress
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "The ethernet IP address. The parameters 
+			ethernetIpAddr
+			and ethernetSubnetMask have to be set together,giving
+			first IpAddress and then Subnetmask, in a same request.
+			Unless an IpAddress and a Subnet mask are not set the
+                        network activity for the specified ethernet interface 
+                        will not be up for service."
+        ::= { nnethernetTableEntry 9 }
+
+nnethernetSubnetMask	OBJECT-TYPE
+        SYNTAX          IpAddress
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "The ethernet subnet mask. The parameters 
+			ethernetIpAddr
+                        and ethernetSubnetMask have to be set together,giving
+                        first IpAddress and then Subnetmask, in a same request.
+			Unless an IpAddress and a Subnet mask are not set the
+                        network activity for the specified ethernet interface 
+                        will not be up for service."
+        ::= { nnethernetTableEntry 10 }
+
+-- nnethernetIpFilterListName	OBJECT-TYPE
+--      SYNTAX          DisplayString
+--  	MAX-ACCESS      read-only
+--      STATUS          current
+--      DESCRIPTION     "Name of the filter rule list name."
+--  	::= { nnethernetTableEntry 11 }
+
+-- nnethernetIpFilterPacketDirection	OBJECT-TYPE
+--      SYNTAX          INTEGER {
+--  				in(1),
+--  				out(2)
+--  						}
+--  	MAX-ACCESS      read-create
+--      STATUS          current
+--      DESCRIPTION     "Specifies whether the packets are inbound/outbound."
+--  	::= { nnethernetTableEntry 12 }
+
+nnethernetIpDirectedBroadcastEnable	OBJECT-TYPE
+        SYNTAX          TruthValue
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "This object toggles the IP directed braodcast mode
+			for a particular Ethernet interface. The default
+			mode is unreachable disabled."
+	DEFVAL          { false }
+        ::= { nnethernetTableEntry 11 }
+
+nnethernetIpMulticast	OBJECT-TYPE
+        SYNTAX          INTEGER {
+				pass(1),
+				block(2),
+				ospfrip2(3)
+				}
+	MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "Specifies the multicast type."
+	::= { nnethernetTableEntry 12 }
+
+nnethernetMtu		OBJECT-TYPE
+        SYNTAX          Integer32
+	MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "Specifies the message transfer size. It has a 
+			range of 64-4072. The default value is 1500."
+	DEFVAL          { 1500 }
+	::= { nnethernetTableEntry 13 }
+
+nnethernetSpeed		OBJECT-TYPE
+        SYNTAX          INTEGER {
+				speed-10MBPs(1),
+				speed-100MBPs(2),
+				speed-Auto(3)
+				}
+	MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "Specifies the ethernet speed. The values are 
+			10 or 100 or auto."
+	DEFVAL          { 3 }
+	::= { nnethernetTableEntry 14 }
+
+nnethernetMode		OBJECT-TYPE
+        SYNTAX          INTEGER {
+				half-duplex(1),
+				full-duplex(2)
+				}
+	  MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "Specifies the ethernet mode to be half-duplex
+			or full-duplex. The default value is half-duplex."
+	DEFVAL          { 1 }
+ 	::= { nnethernetTableEntry 15 }
+
+nnethernetShutdownEnable	OBJECT-TYPE
+         SYNTAX          TruthValue
+         MAX-ACCESS      read-create
+         STATUS          current
+         DESCRIPTION     "This object when enabled shuts down the particular
+ 			Ehternet interface. Default value is disabled. 
+			Both cannot be shutdown at same time. Either of the 
+			two Ethernet interfaces, with valid IpAddress, should 
+			be up and running for a network activity."
+ 	  DEFVAL          { false }
+ 	  ::= { nnethernetTableEntry 16 }
+
+nnethernetVlanId	OBJECT-TYPE
+        SYNTAX          INTEGER (1..4098)
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "Vlan Tagging enabled in VLAN forwarding mode 
+			for this Id."
+	::= { nnethernetTableEntry 17 }
+
+nnethernetRowStatus OBJECT-TYPE
+        SYNTAX          RowStatus
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "RowStatus is used to add/delete
+			a row in the table. Adding or deleting a row
+                    	corresponds to creating or deleting an ethernet
+                    	entry.  In order to add a row to the ethernet
+                    	table, a set should be done with the value 
+                    	4 (createAndGo) along with the value of 65535
+                    	as an index for both RowStatus and Ethernet Descr.
+
+                    	A request to create a row can be completed 
+                    	successfully if and only if a set on the 
+                    	ethernetRowStatus and the ethernetDescr come 
+                    	in the same request with first RowStatus and then
+                    	Ethernet Description. To delete a row this parameter
+                    	has to be set with the value 6(destroy)."
+        ::= { nnethernetTableEntry 18 }
+        
+	  nnethernetDropPackets OBJECT-TYPE
+              SYNTAX Counter32
+              MAX-ACCESS read-only
+              STATUS current
+              DESCRIPTION     "The total number of drop packet statistics for the LAN interface
+              when the box encounters packet drops like Tunnel encapsulation errors, VLAN packets 
+              dropped due to QoS (classification errors, queuing errors),VLAN packets dropped due to RED, 
+              Input/Output interface is down with respect to VLAN, VLAN errors such as unrecognized VLAN id, 
+              multiple dot1q encapsulations in the packet, system errors from the time box is up. 
+              This list is only a subset of  the numerous reasons for the packets to be dropped by
+              the agent per interface"
+        ::= { nnethernetTableEntry 19 }
+
+END

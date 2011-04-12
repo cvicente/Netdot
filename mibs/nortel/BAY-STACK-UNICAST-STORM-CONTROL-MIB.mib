@@ -1,0 +1,173 @@
+
+BAY-STACK-UNICAST-STORM-CONTROL-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    OBJECT-TYPE, MODULE-IDENTITY, NOTIFICATION-TYPE, Integer32, Unsigned32
+        FROM SNMPv2-SMI
+    TruthValue, TimeInterval
+        FROM SNMPv2-TC
+    InterfaceIndex, ifIndex
+        FROM IF-MIB
+    bayStackMibs
+        FROM SYNOPTICS-ROOT-MIB;
+
+bayStackUnicastStormControlMib MODULE-IDENTITY
+      LAST-UPDATED "200706070000Z"
+      ORGANIZATION "Nortel Ltd."
+      CONTACT-INFO "nortel.com"
+      DESCRIPTION
+              "This MIB module is used for ARP inspection configuration
+               settings in Nortel's software and products."
+
+      REVISION     "200706070000Z"  -- June 07, 2007
+      DESCRIPTION
+              "Ver 1:  Initial version."
+      ::= { bayStackMibs 22 }
+
+bsUnicastStormControlNotifications
+    OBJECT IDENTIFIER ::= { bayStackUnicastStormControlMib 0 }
+bsUnicastStormControlObjects
+    OBJECT IDENTIFIER ::= { bayStackUnicastStormControlMib 1 }
+
+--
+-- Scalar objects
+--
+
+bsUnicastStormControlScalars
+    OBJECT IDENTIFIER ::= { bsUnicastStormControlObjects 1 }
+
+bsUnicastStormControlEnabled OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "Indicates whether unicast storm control is enabled."
+    ::= { bsUnicastStormControlScalars 1 }
+
+bsUnicastStormControlLowWatermark OBJECT-TYPE
+    SYNTAX      Unsigned32 (10..100000000)
+    UNITS       "packets per second"
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "Low watermark for unicast storm control.  If the rate drops below
+         this value after having risen above the high watermark, a single
+         notification will be generated."
+    DEFVAL { 200 }
+    ::= { bsUnicastStormControlScalars 2 }
+
+bsUnicastStormControlHighWatermark OBJECT-TYPE
+    SYNTAX      Unsigned32 (10..100000000)
+    UNITS       "packets per second"
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "High watermark for unicast storm control.  If the rate rises above
+         this value, notifications will be generated at the rate give by the
+         bsUnicastStormControlTrapInterval object."
+    DEFVAL { 500 }
+    ::= { bsUnicastStormControlScalars 3 }
+
+bsUnicastStormControlPollInterval OBJECT-TYPE
+    SYNTAX      TimeInterval (500..30000)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The polling interval for checking the packet rate for unicast
+         storm control."
+    DEFVAL { 3000 }
+    ::= { bsUnicastStormControlScalars 4 }
+
+bsUnicastStormControlTrapInterval OBJECT-TYPE
+    SYNTAX      Integer32 (0..1000)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The rate for sending unicast storm control notifications."
+    DEFVAL { 5 }
+    ::= { bsUnicastStormControlScalars 5 }
+
+bsUnicastStormControlPollValue OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "The polled value when a notification is generated."
+    ::= { bsUnicastStormControlScalars 6 }
+
+--
+-- Interface table
+--
+
+bsUnicastStormControlIfTable   OBJECT-TYPE
+    SYNTAX SEQUENCE OF BsUnicastStormControlIfEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "This table is used to control unicast storm control settings
+         per-interface."
+    ::= { bsUnicastStormControlObjects 2 }
+
+bsUnicastStormControlIfEntry OBJECT-TYPE
+    SYNTAX       BsUnicastStormControlIfEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "An entry containing objects for controlling unicast storm control
+         settings for an interface."
+    INDEX { bsUnicastStormControlIfIndex }
+    ::= { bsUnicastStormControlIfTable 1 }
+
+BsUnicastStormControlIfEntry ::=
+    SEQUENCE {
+        bsUnicastStormControlIfIndex     InterfaceIndex,
+        bsUnicastStormControlIfEnabled   TruthValue
+    }
+
+bsUnicastStormControlIfIndex OBJECT-TYPE
+    SYNTAX      InterfaceIndex
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The ifIndex value of the interface."
+    ::= { bsUnicastStormControlIfEntry 1 }
+
+bsUnicastStormControlIfEnabled OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "Indicates whether unicast storm control is enabled for this interface."
+    ::= { bsUnicastStormControlIfEntry 2 }
+
+--
+-- Notifications
+--
+
+bsUnicastStormControlBelowLowWatermark NOTIFICATION-TYPE
+    OBJECTS {
+              ifIndex,
+              bsUnicastStormControlPollValue,
+              bsUnicastStormControlLowWatermark
+            }
+    STATUS current
+    DESCRIPTION
+        "This notification is generated when the unicast storm control packet
+         rate falls below the low watermark after having risen above the
+         high watermark.  It is generated only once when this occurs."
+    ::= { bsUnicastStormControlNotifications 1 }
+
+bsUnicastStormControlAboveHighWatermark NOTIFICATION-TYPE
+    OBJECTS {
+              ifIndex,
+              bsUnicastStormControlPollValue,
+              bsUnicastStormControlHighWatermark
+            }
+    STATUS current
+    DESCRIPTION
+        "This notification is generated periodically as long as the unicast
+         storm control packet rate remains above the high watermark."
+    ::= { bsUnicastStormControlNotifications 2 }
+
+END
+

@@ -1,0 +1,41 @@
+
+
+NT-ENTERPRISE-DATA-TASMAN-MGMT-CHASSIS-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+        MODULE-IDENTITY, OBJECT-TYPE         FROM SNMPv2-SMI
+        DisplayString                                       FROM SNMPv2-TC
+        ntEnterpriseDataTasmanMgmt               FROM NT-ENTERPRISE-DATA-MIB;
+
+nnchassisMib MODULE-IDENTITY 
+        LAST-UPDATED "9907010000Z"
+        ORGANIZATION "Nortel"
+        CONTACT-INFO
+		" "
+        DESCRIPTION
+                "Listing and brief description of product model numbers."
+        REVISION      "9907010000Z"
+        DESCRIPTION
+                "Initial version of this MIB module."
+        ::= { ntEnterpriseDataTasmanMgmt  2 }
+
+--
+-- chassisObjects group
+--
+
+
+nnchassisType OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (0..32)) 
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "The chassis type."
+        ::= { nnchassisMib 1 }
+
+nnchassisSerialNumber OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (0..30))
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "The serial number of the chassis."
+        ::= { nnchassisMib 2 }
+
+END

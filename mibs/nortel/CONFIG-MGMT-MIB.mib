@@ -1,0 +1,419 @@
+
+CONFIG-MGMT-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+        OBJECT-TYPE,IpAddress,TimeTicks,
+        MODULE-IDENTITY,Integer32,NOTIFICATION-TYPE
+                FROM SNMPv2-SMI
+        DisplayString,TEXTUAL-CONVENTION,TruthValue
+                FROM SNMPv2-TC
+ 	ntEnterpriseDataTasmanMgmt	
+	          FROM NT-ENTERPRISE-DATA-MIB
+	  NOTIFICATION-GROUP
+                FROM SNMPv2-CONF;
+
+nnconfigMgmtMib MODULE-IDENTITY 
+  	LAST-UPDATED	"0008160000Z"
+  	ORGANIZATION "Nortel Networks"
+	CONTACT-INFO
+      	" Nortel Networks
+      	8200 Dixie Road
+        	Brampton, Ontario L6T 5P6
+        	Canada        
+        	1-800-4Nortel 
+        	www.nortelnetworks.com "
+  	DESCRIPTION
+  		"Configuration management MIB.  
+  		This MIB represents a model of configuration data that
+  		exists in various locations:  
+  		current		In use by the running system.
+  		local			Saved locally in NVRAM or flash.
+  		remote		Saved to some server on the network.  
+  		The purpose of this MIB is to track changes and saves of the 
+  		current configuration."
+  	REVISION	"0008160000Z"
+  	DESCRIPTION
+  		"Initial version of this MIB module."
+               ::= { ntEnterpriseDataTasmanMgmt 4 }
+
+
+
+nncfgOperations		OBJECT IDENTIFIER ::= { nnconfigMgmtMib 1 }
+nncfgMgmtEvents		OBJECT IDENTIFIER ::= { nnconfigMgmtMib 2 }
+nncfgNotificationEnables	OBJECT IDENTIFIER ::= { nnconfigMgmtMib 3 }
+nncfgMgmtNotifications	OBJECT IDENTIFIER ::= { nnconfigMgmtMib 4 }
+nncfgMgmtTraps                OBJECT IDENTIFIER ::= { nncfgMgmtNotifications 0}
+--
+-- Configuration operation group. This group allows network management
+-- software to save the configuration and configure from the 
+-- network file.
+--
+
+
+nncfgNetOperTable  OBJECT-TYPE
+	SYNTAX	SEQUENCE OF NnCfgNetOperEntry
+	MAX-ACCESS	not-accessible
+	STATUS	current
+	DESCRIPTION  
+		"A table of configuration from network operation entries. 
+		Each entry represents a separate operation to configure the
+		system from a file located on a server on the network. The
+		management station should create an entry with a random number
+		as an index to perform the operation. The management station 
+		should then retrieve the entry with the same random number as 
+		an index and examine the value of the cfgNetOperStatus variable 
+		to get the status of the operation.
+		"
+	::= { nncfgOperations 1 }
+
+nncfgNetOperEntry  OBJECT-TYPE
+	SYNTAX	NnCfgNetOperEntry
+	MAX-ACCESS	not-accessible
+	STATUS	current
+	DESCRIPTION
+		"Entry to initiate an operation. Each entry consists  
+		of a command and required parameters. Once the operation
+		completes, the management station should retrieve the 
+		value of the status object and delete the entry from 
+		the table."
+
+	INDEX	{ nncfgNetOperRandomNumber }
+	::= { nncfgNetOperTable 1 }
+
+NnCfgNetOperEntry ::=
+	SEQUENCE {
+		nncfgNetOperRandomNumber	Integer32, 
+		nncfgNetOperCommand 	INTEGER,
+		nncfgNetOperAddress	IpAddress,
+		nncfgNetOperFileName	DisplayString,
+		nncfgNetOperStatus	INTEGER
+	}
+
+nncfgNetOperRandomNumber OBJECT-TYPE
+	SYNTAX  Integer32
+	MAX-ACCESS	not-accessible
+	STATUS	current
+	DESCRIPTION
+		"Object specifying a unique entry in the table.  
+		A management station wishing to initiate a 
+		configuration operation should use a pseudo-random
+		value for this object when creating a cfgNetOperEntry.
+		"
+	::=   { nncfgNetOperEntry 1 }
+
+nncfgNetOperCommand OBJECT-TYPE
+	SYNTAX	INTEGER
+		{
+		config(1),
+		save(2)
+		}
+	MAX-ACCESS	read-write
+	STATUS	current
+	DESCRIPTION
+		"The commands to be executed configure from the network 
+		or save the configuration to the network.
+
+		Command		Remarks.
+		config		Configure from network.
+		save		      Save configuration to network.
+		"
+	::= { nncfgNetOperEntry 2 }
+
+nncfgNetOperAddress OBJECT-TYPE
+	SYNTAX     IpAddress
+	MAX-ACCESS 	   read-write
+	STATUS     current
+	DESCRIPTION
+		"The Internet address of the server."
+	::= { nncfgNetOperEntry 3 }
+
+	
+nncfgNetOperFileName OBJECT-TYPE
+	SYNTAX	DisplayString (SIZE (1..64))
+	MAX-ACCESS	read-write
+	STATUS	current
+	DESCRIPTION
+		"The destination or source file name on the network server.
+		"
+	::= { nncfgNetOperEntry 4 }
+
+nncfgNetOperStatus OBJECT-TYPE
+	SYNTAX	INTEGER
+		{  
+		idle(0),
+		inProgress(1),
+		operationSuccess (2),
+		networkError (3),
+		fileAccessError (4),
+		serverAccessError (5),
+		fileOpenError (6),
+		notEnoughMemory (7),
+		unknownFailure(8)
+		}
+	MAX-ACCESS	read-only
+	STATUS	current
+	DESCRIPTION
+		"Represents the status of the operation. If the operation 
+		 has not started or an operation is not being performed, 
+		 then the value of this object would be idle(0)."
+                
+	::= { nncfgNetOperEntry 5 }
+
+--
+-- Textual Convention to define the enumeration
+--
+CfgMedium ::= TEXTUAL-CONVENTION 
+  	STATUS     current
+  	DESCRIPTION
+  		"The source or destination of a configuration change,
+  		save, or copy.
+  
+  		commandSource	The source of the command.
+  		current		Live operational data from RAM.
+  		flash			Local flash.
+  		network		Network host.
+  		"
+       SYNTAX INTEGER 
+               { 
+                commandSource(1), 
+		current(2), 
+		flash(3),
+		erase-flash(4),
+		network(5) 
+               }
+
+--
+-- Configuration event history group. This group allows network 
+-- management software to monitor configuration changes and saves.
+-- All the objects in this group are saved to flash when the 
+-- operation "save to flash" is executed.
+--
+nncfgCurrentLastChanged OBJECT-TYPE
+	SYNTAX     TimeTicks
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The last time the current configuration was changed."
+	::= { nncfgMgmtEvents 1 }
+
+nncfgCurrentLastSaved OBJECT-TYPE
+	SYNTAX     TimeTicks
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The last time the current configuration was saved."
+	::= { nncfgMgmtEvents 2 }
+
+nncfgMaxEvents OBJECT-TYPE
+	SYNTAX     INTEGER (0..20)
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The maximum number of entries that can be held in the
+		cfgEventTable. The system stores the 20 most recent 
+		history events in a circular style. These events are 
+		also saved to flash. Up to the last 10 entries can 
+		be saved if space is available in flash."
+	::= { nncfgMgmtEvents 3 }
+
+nncfgEventTable OBJECT-TYPE
+	SYNTAX     SEQUENCE OF NnCfgEventEntry
+	MAX-ACCESS not-accessible
+	STATUS     current
+	DESCRIPTION
+		"A table of configuration history events."
+	::= { nncfgMgmtEvents 4 }
+
+nncfgEventEntry OBJECT-TYPE
+	SYNTAX     NnCfgEventEntry
+	MAX-ACCESS not-accessible
+	STATUS     current
+	DESCRIPTION
+		"Entry holding information about a configuration event."
+	INDEX	{ nncfgEventIndex }
+	::= { nncfgEventTable 1 }
+
+NnCfgEventEntry ::=
+    SEQUENCE {
+	nncfgEventIndex
+		INTEGER,
+	nncfgEventTime
+		TimeTicks,
+	nncfgEventConfigProtocol
+       	INTEGER,
+	nncfgEventConfigSrc
+       	CfgMedium,
+	nncfgEventConfigDst
+       	CfgMedium,
+	nncfgEventLoginType
+		INTEGER,
+	nncfgEventTerminalUser
+		DisplayString,
+	nncfgEventConfigSrcAddress
+		IpAddress,
+	nncfgEventFileName
+		DisplayString
+    }
+
+nncfgEventIndex OBJECT-TYPE
+	SYNTAX     INTEGER (0..19)
+	MAX-ACCESS not-accessible
+	STATUS     current
+	DESCRIPTION
+		"Index in the history event table."
+	::= { nncfgEventEntry 1 }
+
+nncfgEventTime OBJECT-TYPE
+	SYNTAX     TimeTicks
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The time when the configuration occurred."
+	::= { nncfgEventEntry 2 }
+
+nncfgEventConfigProtocol OBJECT-TYPE
+       	SYNTAX  INTEGER { commandLine(1), snmp(2), http(3) }
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The source of the command that resulted in the event."
+	::= { nncfgEventEntry 3 }
+
+nncfgEventConfigSrc OBJECT-TYPE
+       	SYNTAX  CfgMedium
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The configuration data source for the event."
+	::= { nncfgEventEntry 4 }
+
+nncfgEventConfigDst OBJECT-TYPE
+       	SYNTAX  CfgMedium
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The configuration data destination for the event."
+	::= { nncfgEventEntry 5 }
+
+nncfgEventLoginType OBJECT-TYPE
+	SYNTAX	INTEGER {
+		unknown(1),
+		console(2),
+		telnet(3),
+		rlogin(4),
+		dial(5),
+		other(6)
+		}						
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"Configuration via telnet or rlogin, etc.
+		"
+	::= { nncfgEventEntry 6 }
+
+nncfgEventTerminalUser OBJECT-TYPE
+	SYNTAX     DisplayString (SIZE (0..15))
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"This object represents the logged in user name 
+		if configuration is via the CLI. It represents 
+		the community name if configuration is via SNMP. 
+		Otherwise, the object string length is zero if not 
+		available or not applicable."
+	::= { nncfgEventEntry 7 }
+
+nncfgEventConfigSrcAddress OBJECT-TYPE
+	SYNTAX     IpAddress
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"The Internet address of the connected system.
+		The value is 0.0.0.0 if not available or not applicable."
+	::= { nncfgEventEntry 8 }
+
+
+nncfgEventFileName OBJECT-TYPE
+	SYNTAX     DisplayString (SIZE (0..64))
+	MAX-ACCESS read-only
+	STATUS     current
+	DESCRIPTION
+		"If the system is set for configuration via a network, 
+		then this object represents the file name on some 
+		server."
+	::= { nncfgEventEntry 9 }
+
+
+--
+-- cfgNotificationEnables group
+--
+nncfgEnableChangeNotification OBJECT-TYPE
+        SYNTAX 	    TruthValue
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION
+               "Indicates whether the system produces the 
+		cfgChangeNotification. The default is yes.
+		"
+        DEFVAL { true }
+        ::= { nncfgNotificationEnables 1 }
+
+nncfgEnableSaveNotification OBJECT-TYPE
+        SYNTAX 	    TruthValue
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION
+               "Indicates whether the system produces the 
+		cfgSaveNotification. The default is yes.
+		"
+        DEFVAL { true }
+        ::= { nncfgNotificationEnables 2 }
+
+--
+-- Configuration event notification group, This group allows 
+-- the agent to send either traps or info request PDU to
+-- the network management software for notification of the 
+-- configuration change or save event.
+--
+nncfgEventChangeNotification NOTIFICATION-TYPE
+	--ENTERPRISE cfgMgmtNotifications
+	OBJECTS { nncfgEventConfigProtocol, 
+		 nncfgEventConfigSrc,
+		 nncfgEventConfigDst }
+		 STATUS current
+       	DESCRIPTION
+		"Send the configuration change event via either trap or
+		info request PDU"
+		--#TYPE "Configuration Change Event"
+		--#SUMMARY "Configuration Change Event. Command source: %s Config source: %s Config destination: %s"
+		--#ARGUMENTS {0,1,2}
+		--#SEVERITY NORMAL
+		::= {nncfgMgmtTraps 1}
+
+nncfgEventSaveNotification NOTIFICATION-TYPE
+	--ENTERPRISE cfgMgmtNotifications
+	OBJECTS {nncfgEventConfigProtocol, 
+		 nncfgEventConfigSrc,
+		 nncfgEventConfigDst }
+		 STATUS current
+       	DESCRIPTION
+		"Send the configuration save event via either trap or
+		info request PDU"
+        --#TYPE "Configuration Save Event"
+        --#SUMMARY "Configuration Save Event. Command source: %s Config source: %s Config destination: %s"
+        --#ARGUMENTS {0,1,2}
+        --#SEVERITY NORMAL
+
+	::={nncfgMgmtTraps 2}
+nnconfigMgmtNotificationGroup NOTIFICATION-GROUP
+NOTIFICATIONS
+{
+nncfgEventChangeNotification,
+nncfgEventSaveNotification
+
+}
+STATUS current
+DESCRIPTION "ConfigMgmt Notifications "
+::={ nnconfigMgmtMib 5}
+
+END

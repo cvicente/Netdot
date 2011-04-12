@@ -2,9 +2,9 @@
 -- CISCO-CCM-MIB.my: Cisco Unified Communications Manager
 -- (formerly Cisco CallManager) MIB file.
 --   
--- November 1999, Ashok Ranganath
+-- July 2010, Jayaprakash Balakrishnan
 --   
--- Copyright (c) 1999-2008 by Cisco Systems, Inc.
+-- Copyright (c) 1999-2010 by Cisco Systems Inc.
 -- All rights reserved.
 -- *****************************************************************
 
@@ -41,7 +41,7 @@ IMPORTS
 
 
 ciscoCcmMIB MODULE-IDENTITY
-    LAST-UPDATED    "200802120000Z"
+    LAST-UPDATED    "201007070000Z"
     ORGANIZATION    "Cisco Systems, Inc."
     CONTACT-INFO
             "Cisco Systems
@@ -70,7 +70,135 @@ ciscoCcmMIB MODULE-IDENTITY
         SCCP: Skinny Client Control Protocol
         SIP: Session Initiation Protocol
         TLS: Transport Layer Security
-        MGCP: Media Gateway Control Protocol"
+        MGCP: Media Gateway Control Protocol
+        EM: Extension Mobility
+        EMCC: Extension Mobility Cross Cluster"
+    REVISION        "201007070000Z"
+    DESCRIPTION
+        "(1)Updated the following TEXTUAL-CONVENTIONs:
+        CcmDevUnregCauseCode,
+        CcmDevRegFailCauseCode;
+        (2)Replaced the previous references of CISCO CCM MIB to
+        CISCO-CCM-MIB
+        (3)Replaced previous references of CCM to CUCM"
+    REVISION        "200912030000Z"
+    DESCRIPTION
+        "(1)Added following TEXTUAL-CONVENTIONs:
+        CcmDevRegFailCauseCode,
+        CcmDevUnregCauseCode.
+        These objects replaced the CcmDevFailCauseCode;
+        (2)Added following objects in ccmPhoneTable:
+        ccmPhoneUnregReason,
+        ccmPhoneRegFailReason.
+        These objects replaced the ccmPhoneStatusReason;
+        (3)Added following object in ccmPhoneFailedTable:
+        ccmPhoneFailedRegFailReason.
+        This object replaced the ccmPhoneFailCauseCode; 
+        (4)Added following objects in ccmPhoneStatusUpdateTable:
+        ccmPhoneStatusUnregReason,
+        ccmPhoneStatusRegFailReason.
+        These objects replaced the ccmPhoneStatusUpdateReason;
+        (5)Added following object in ccmGatewayTable:
+        ccmGatewayUnregReason,
+        ccmGatewayRegFailReason.
+        These objects replaced the ccmGatewayStatusReason;
+        (6)Added following objects in ccmMediaDeviceTable:
+        ccmMediaDeviceUnregReason,
+        ccmMediaDeviceRegFailReason.
+        These objects replaced the ccmMediaDeviceStatusReason;
+        (7)Added following objects in ccmCTIDeviceTable:
+        ccmCTIDeviceUnregReason,
+        ccmCTIDeviceRegFailReason.
+        These objects replaced the ccmCTIDeviceStatusReason;
+        (8)Added following objects in ccmH323DeviceTable:
+        ccmH323DevUnregReason,
+        ccmH323DevRegFailReason.
+        These objects replaced the ccmH323DevStatusReason;
+        (9)Added following objects in ccmVoiceMailDeviceTable:
+        ccmVMailDevUnregReason,
+        ccmVMailDevRegFailReason.
+        These objects replaced the ccmVMailDevStatusReason;
+        (10)Added following objects in ccmNotificationsInfo:
+        ccmGatewayRegFailCauseCode.
+        This object replaced the ccmGatewayFailCauseCode;
+        (11)Added following NOTIFICATION-TYPE:
+        ccmGatewayFailedReason.
+        This notification replaced the ccmGatewayFailed;
+        (12)Added following OBJECT_GROUPS:
+        ccmPhoneInfoGroupRev6,
+        ccmNotificationsInfoGroupRev5,
+        ccmGatewayInfoGroupRev4,
+        ccmMediaDeviceInfoGroupRev4,
+        ccmCTIDeviceInfoGroupRev4,
+        ccmH323DeviceInfoGroupRev3,
+        ccmVoiceMailDeviceInfoGroupRev2,
+        ccmNotificationsGroupRev3.
+        These groups replaced the following groups respectively:
+        ccmPhoneInfoGroupRev5,
+        ccmNotificationsInfoGroupRev4,
+        ccmGatewayInfoGroupRev3,
+        ccmMediaDeviceInfoGroupRev3,
+        ccmCTIDeviceInfoGroupRev3,
+        ccmH323DeviceInfoGroupRev2,
+        ccmVoiceMailDeviceInfoGroupRev1,
+        ccmNotificationsGroupRev2;
+        (13)Added following MODULE-COMPLIANCE:
+        ciscoCcmMIBComplianceRev7.
+        This compliance replaced the ciscoCcmMIBComplianceRev6;
+        (14)Deprecated following TEXTUAL-CONVENTION:
+        CcmDevFailCauseCode;
+        (15)Deprecated following object in ccmPhoneTable:
+        ccmPhoneStatusReason;
+        (16)Deprecated following object in ccmPhoneFailedTable:
+        ccmPhoneFailCauseCode;
+        (17)Deprecated following object in ccmPhoneStatusUpdateTable:
+        ccmPhoneStatusUpdateReason;
+        (18)Deprecated following object in ccmGatewayTable:
+        ccmGatewayStatusReason;
+        (19)Deprecated following object in ccmMediaDeviceTable:
+        ccmMediaDeviceStatusReason;
+        (20)Deprecated following object in ccmCTIDeviceTable:
+        ccmCTIDeviceStatusReason;
+        (21)Deprecated following object in ccmH323DeviceTable:
+        ccmH323DevStatusReason;
+        (22)Deprecated following object in ccmVoiceMailDeviceTable:
+        ccmVMailDevStatusReason;
+        (23)Deprecated following object in ccmNotificationsInfo:
+        ccmGatewayFailCauseCode;
+        (24)Deprecated following NOTIFICATION-TYPE:
+        ccmGatewayFailed;
+        (25)Deprecated following OBJECT_GROUPS:
+        ccmPhoneInfoGroupRev5,
+        ccmGatewayInfoGroupRev3,
+        ccmMediaDeviceInfoGroupRev3,
+        ccmCTIDeviceInfoGroupRev3,
+        ccmH323DeviceInfoGroupRev2,
+        ccmVoiceMailDeviceInfoGroupRev1,
+        ccmNotificationsGroupRev2,
+        ccmNotificationsInfoGroupRev4;
+        (26)Obsoleted following OBJECT_GROUPS:
+        ccmInfoGroupRev3,
+        ccmH323DeviceInfoGroupRev1;
+        (27)Deprecated following MODULE-COMPLIANCE:
+        ciscoCcmMIBComplianceRev6;"
+    REVISION        "200808210000Z"
+    DESCRIPTION
+        "(1)Added following objects in ccmCTIDeviceTable:
+        ccmCTIDeviceInetAddressIPv4,
+        ccmCTIDeviceInetAddressIPv6.
+        These objects replaced the ccmCTIDeviceInetAddressType and
+        ccmCTIDeviceInetAddress;
+        (2)Deprecated following objects in ccmCTIDeviceTable:
+        ccmCTIDeviceInetAddressType,
+        ccmCTIDeviceInetAddress;
+        (3)Added following OBJECT-GROUP
+        ccmCTIDeviceInfoGroupRev3. This group replaced
+        the ccmCTIDeviceInfoGroupRev2;
+        (4)Deprecated following OBJECT-GROUP
+        ccmCTIDeviceInfoGroupRev2;
+        (5)Added ciscoCcmMIBComplianceRev6 MODULE-COMPLIANCE. 
+        This compliance replaced the ciscoCcmMIBComplianceRev5;
+        (6)Deprecated ciscoCcmMIBComplianceRev5 MODULE-COMPLIANCE;"
     REVISION        "200802120000Z"
     DESCRIPTION
         "(1)Added following objects in ccmTable:
@@ -90,7 +218,7 @@ ciscoCcmMIB MODULE-IDENTITY
         (4)Added following objects in ccmSIPDeviceTable:
         ccmSIPDevInetAddressIPv4,
         ccmSIPDevInetAddressIPv6;
-        (5 Added following objects in ccmMediaDeviceTable:
+        (5)Added following objects in ccmMediaDeviceTable:
         ccmMediaDeviceInetAddressIPv4,
         ccmMediaDeviceInetAddressIPv6;
         (6)Deprecated following objects in ccmPhoneTable:
@@ -325,7 +453,7 @@ CcmIndexOrZero ::= TEXTUAL-CONVENTION
     DESCRIPTION
         "This textual convention is an extension of the
         CcmIndex convention. The latter defines a greater
-        than zero to identify an entry of the CCM MIB table
+        than zero to identify an entry of the CUCM MIB table
         in the managed system. This extension permits the
         additional value of zero. The value zero is object-
         specific and must be defined as part of the description
@@ -333,16 +461,16 @@ CcmIndexOrZero ::= TEXTUAL-CONVENTION
     SYNTAX          Unsigned32 (0..4294967295)
 
 CcmDevFailCauseCode ::= TEXTUAL-CONVENTION
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "This syntax is used as means of identifying the reasons
         for a device communication error.
           noError:                      No Error
           unknown:                      Unknown error cause
           noEntryInDatabase:            Device not configured properly
-                                        in the CCM database
+                                        in the CUCM database
           databaseConfigurationError:   Device configuration error in
-                                        the CCM database
+                                        the CUCM database
           deviceNameUnresolveable:      The CallManager is unable to
                                         resolve the device name to an
                                         IP Address internally
@@ -396,6 +524,390 @@ CcmDevFailCauseCode ::= TEXTUAL-CONVENTION
                         invalidTLSCipher(12),
                         directoryNumberMismatch(13),
                         malformedRegisterMsg(14)
+                    }
+
+-- Enum values are decided to be compatible with the legacy Enum values
+-- for this TC.
+
+CcmDevRegFailCauseCode ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION
+        "This syntax is used as means of identifying the reasons
+        for a device registration failure. The scope of this 
+        enumeration can expand to comply with RFC 2578.
+          noError:                      No Error
+          unknown:                      Unknown error cause
+          noEntryInDatabase:            Device not configured properly
+                                        in the CUCM database
+          databaseConfigurationError:   Device configuration error in
+                                        the CUCM database
+          deviceNameUnresolveable:      The CallManager is unable to
+                                        resolve the device name to an
+                                        IP Address internally
+          maxDevRegExceeded:            Maximum number of device
+                                        registrations have been reached
+          connectivityError:            CallManager is unable to
+                                        establish communication with
+                                        the device during registration
+          initializationError:          Indicates an error occurred 
+                                        when the CallManager tries to
+                                        initialize the device
+          deviceInitiatedReset:         Indicates that the error was 
+                                        due to device initiated reset
+          callManagerReset:             Indicates that the error was 
+                                        due to call manager reset.
+          authenticationError:          Indicates mismatch between 
+                                        configured authentication mode 
+                                        and the authentication mode 
+                                        that the device is using to 
+                                        connect to the CallManager.
+          invalidX509NameInCertificate: Indicates mismatch between the 
+                                        peer X.509 certificate subject 
+                                        name and what is configured for 
+                                        the device.  
+          invalidTLSCipher:             Indicates Cipher mismatch 
+                                        during TLS handshake process.
+          directoryNumberMismatch:      Indicates mismatch between the 
+                                        directory number that the SIP 
+                                        device is trying to register 
+                                        with and the directory number 
+                                        configured in the CallManager 
+                                        for the SIP device.
+          malformedRegisterMsg:         Indicates that SIP device 
+                                        attempted to register with 
+                                        CallManager, but the REGISTER 
+                                        message contained formatting 
+                                        errors.
+          protocolMismatch:             The protocol of the device 
+                                        (SIP or SCCP) does not match 
+                                        the configured protocol 
+                                        in CUCM.
+          deviceNotActive:              The device has not been 
+                                        activated.
+          authenticatedDeviceAlreadyExists: 
+                                        A device with the same name is 
+                                        already registered with CUCM.
+          obsoleteProtocolVersion:      The SCCP device registered with
+                                        an obsolete protocol version.
+          databaseTimeout:              CUCM requested device 
+                                        configuration data from 
+                                        the database but did not 
+                                        receive a response within
+                                        10 minutes.
+          registrationSequenceError:    A device requested
+                                        configuration information 
+                                        from the CUCM at an unexpected
+                                        time.  The CUCM had not yet 
+                                        obtained the requested 
+                                        information. The device will 
+                                        automatically attempt to 
+                                        register again. If this alarm 
+                                        occurs again, manually reset
+                                        the device. If this alarm 
+                                        continues to occur after 
+                                        the manual reset, there may 
+                                        be an internal firmware error.
+                                        This is applicable for SCCP 
+                                        protocol only.
+          invalidCapabilities:          The CUCM detected an 
+                                        error in the media capabilities 
+                                        reported in the 
+                                        StationCapabilitiesRes
+                                        message by the device during 
+                                        registration. The device will 
+                                        automatically attempt to 
+                                        register again. If this alarm 
+                                        occurs again, manually reset 
+                                        the device. If this alarm
+                                        continues to occur after the 
+                                        manual reset, there may be a 
+                                        protocol error. This is 
+                                        applicable for SCCP 
+                                        protocol only.
+          capabilityResponseTimeout:    The CUCM timed out 
+                                        while waiting for the device 
+                                        to respond to a request to 
+                                        report its media capabilities. 
+                                        Possible causes include device
+                                        power outage, network power 
+                                        outage, network configuration
+                                        error, network delay, packet
+                                        drops, and packet corruption. 
+                                        It is also possible to get this
+                                        error if the CUCM node is 
+                                        experiencing high CPU usage.
+                                        Verify that the device is
+                                        powered up and operating. 
+                                        Verify that network
+                                        connectivity exists between
+                                        the device and CUCM, and verify 
+                                        that the CPU utilization is in 
+                                        the safe range. This is 
+                                        applicable for SCCP
+                                        protocol only.
+          securityMismatch:             The CUCM detected a mismatch in  
+                                        the security settings of the  
+                                        device and/or the CUCM. 
+                                        The mismatches that can
+                                        be detected are:
+                                        1) The device established a 
+                                           secure connection, yet 
+                                           reported that it does
+                                           not have the ability to do
+                                           authenticated signaling.  
+                                        2) The device did not 
+                                           establish a secure
+                                           connection, but the
+                                           security mode configured for
+                                           the device indicates that it
+                                           should have done so.
+                                        3) The device established a 
+                                           secure connection, but the 
+                                           security mode configured for
+                                           the device indicates that it
+                                           should not have done so
+          autoRegisterDBError:          Auto-registration of a device 
+                                        failed for one of the
+                                        following reasons:  
+                                        1)Auto-registration is not 
+                                          allowed for the device type.  
+                                        2)An error occurred while 
+                                          adding the auto-registering 
+                                          device to the database
+                                          (stored procedure).
+          dbAccessError:                Device registration failed 
+                                        because of an error that 
+                                        occurred while building
+                                        the station registration 
+                                        profile. This usually
+                                        indicates a synchronization 
+                                        problem with the database. 
+          autoRegisterDBConfigTimeout:  The CUCM timed out
+                                        during auto-registration of a 
+                                        device. The registration 
+                                        profile of the device did not
+                                        get inserted into the database
+                                        in time. The device will 
+                                        automatically attempt to 
+                                        register again. This is
+                                        applicable for SCCP protocol
+                                        only.
+          deviceTypeMismatch:           The device type reported by the
+                                        device does not match the device
+                                        type configured on the CUCM
+          addressingModeMismatch:       The CUCM detected
+                                        an error related to the 
+                                        addressing mode configured for
+                                        the device.  One of the 
+                                        following errors were detected:  
+                                        1)The device is configured to
+                                          use only IPv4 addressing, but
+                                          did not specify an IPv4 
+                                          address.  
+                                        2)The device is configured to
+                                          use only IPv6 addressing, but
+                                          did not specify an IPv6 
+                                          address.
+                                        This is applicable for SCCP 
+                                        protocol only."
+    SYNTAX          INTEGER  {
+                        noError(0),
+                        unknown(1),
+                        noEntryInDatabase(2),
+                        databaseConfigurationError(3),
+                        deviceNameUnresolveable(4),
+                        maxDevRegExceeded(5),
+                        connectivityError(6),
+                        initializationError(7),
+                        deviceInitiatedReset(8),
+                        callManagerReset(9),
+                        authenticationError(10),
+                        invalidX509NameInCertificate(11),
+                        invalidTLSCipher(12),
+                        directoryNumberMismatch(13),
+                        malformedRegisterMsg(14),
+                        protocolMismatch(15),
+                        deviceNotActive(16),
+                        authenticatedDeviceAlreadyExists(17),
+                        obsoleteProtocolVersion(18),
+                        databaseTimeout(23),
+                        registrationSequenceError(25),
+                        invalidCapabilities(26),
+                        capabilityResponseTimeout(27),
+                        securityMismatch(28),
+                        autoRegisterDBError(29),
+                        dbAccessError(30),
+                        autoRegisterDBConfigTimeout(31),
+                        deviceTypeMismatch(32),
+                        addressingModeMismatch(33)
+                    }
+
+-- The Enum value was decided to be compatible with the legacy Enums.
+
+CcmDevUnregCauseCode ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION
+        "This syntax is used as means of identifying the reasons
+        for a device getting unregistered. The scope of this 
+        enumeration can expand to comply with RFC 2578.
+          noError:                      No Error
+          unknown:                      Unknown error cause
+          noEntryInDatabase:            Device not configured properly
+                                        in the CUCM database
+          databaseConfigurationError:   Device configuration error in
+                                        the CUCM database
+          deviceNameUnresolveable:      The CallManager is unable to
+                                        resolve the device name to an
+                                        IP Address internally
+          maxDevRegExceeded:             Maximum number of device
+                                        registrations have been reached
+          connectivityError:            CallManager is unable to
+                                        establish communication with
+                                        the device during registration
+          initializationError:          Indicates an error occurred 
+                                        when the CallManager tries to
+                                        initialize the device
+          deviceInitiatedReset:         Indicates that the error was 
+                                        due to device initiated reset
+          callManagerReset:             Indicates that the error was 
+                                        due to call manager reset.
+          deviceUnregistered:           DeviceUnregistered.           
+          malformedRegisterMsg:         Indicates that SIP device 
+                                        attempted to register with 
+                                        CallManager, but the REGISTER 
+                                        message contained formatting 
+                                        errors.
+          sccpDeviceThrottling:         The indicated SCCP device 
+                                        exceeded the maximum number of
+                                        events allowed per-SCCP device.
+          keepAliveTimeout:             A KeepAlive message was not 
+                                        received. Possible causes 
+                                        include device power outage, 
+                                        network power outage, network 
+                                        configuration error, network 
+                                        delay,packet drops, packet 
+                                        corruption and CUCM node 
+                                        experiencing high CPU usage.
+          configurationMismatch:        The configuration on the SIP 
+                                        device does not match the 
+                                        configuration in CUCM.
+          callManagerRestart:           A device restart was initiated
+                                        from CUCM Administration, either
+                                        due to an explicit command from
+                                        an administrator or due to a 
+                                        configuration change such as 
+                                        adding, deleting or changing a
+                                        directory number associated 
+                                        with the device.
+          duplicateRegistration:        CUCM detected that the device
+                                        attempted to register to two 
+                                        nodes at the same time. CUCM 
+                                        initiated a restart to the 
+                                        phone to force it to re-home to a single 
+                                        node.
+          callManagerApplyConfig:       CUCM configuration is changed.
+          deviceNoResponse:             Device is not responding  
+                                        Service Control Notify from
+                                        CUCM.
+          emLoginLogout:                The device has been unregistered
+                                        due to an Extension Mobility
+                                        login or logout.
+          emccLoginLogout:              The device has been unregistered
+                                        due to an Extension Mobility
+                                        Cross Cluster login or logout.
+          powerSavePlus:                The device powered off as a 
+                                        result of the Power Save Plus 
+                                        feature that is enabled for this
+                                        device.  When the device powers
+                                        off, it remains unregistered 
+                                        from CUCM until the 
+                                        Phone On Time defined in the 
+                                        Product Specific Configuration
+                                        for this device.
+          callManagerForcedRestart:     The device did not
+                                        respond to an Apply Config 
+                                        request and as a result,
+                                        CUCM had sent a restart request
+                                        to the device.
+                                        The device may be offline due 
+                                        to a power outage or network
+                                        problem. Confirm that 
+                                        the device is powered-up and 
+                                        that network connectivity exists
+                                        between the device and 
+                                        CUCM. This is applicable for SIP
+                                        protocol only.
+          sourceIPAddrChanged:          The device has been 
+                                        unregistered because the IP 
+                                        address in the Contact header
+                                        of the REGISTER message has 
+                                        changed. The device will be 
+                                        automatically re-registered.
+                                        No action is necessary. This is
+                                        applicable for SIP protocol 
+                                        only.
+          sourcePortChanged:            The device has been
+                                        unregistered because the port 
+                                        number in the Contact header
+                                        of the REGISTER message has 
+                                        changed. The device will be 
+                                        automatically re-registered.
+                                        No action is necessary. This is
+                                        applicable for SIP protocol 
+                                        only.
+         registrationSequenceError:     A device requested
+                                        configuration information from 
+                                        the CUCM at an unexpected time.  
+                                        The CUCM no longer had the
+                                        requested information in memory.
+         invalidCapabilities:           The CUCM detected 
+                                        an error in the updated media 
+                                        capabilities reported by the 
+                                        device.  The device reported the
+                                        capabilities in one of the
+                                        StationUpdateCapabilities 
+                                        message variants. This is 
+                                        applicable for SCCP protocol 
+                                        only.
+         fallbackInitiated              The device has initiated a 
+                                        fallback and will automatically
+                                        re-register to a 
+                                        higher-priority CUCM. 
+                                        No action is necessary.
+         deviceSwitch                   A second instance of an endpoint
+                                        with the same device name has 
+                                        registered and assumed control.
+                                        No action is necessary."
+    SYNTAX          INTEGER  {
+                        noError(0),
+                        unknown(1),
+                        noEntryInDatabase(2),
+                        databaseConfigurationError(3),
+                        deviceNameUnresolveable(4),
+                        maxDevRegExceeded(5),
+                        connectivityError(6),
+                        initializationError(7),
+                        deviceInitiatedReset(8),
+                        callManagerReset(9),
+                        deviceUnregistered(10),
+                        malformedRegisterMsg(11),
+                        sccpDeviceThrottling(12),
+                        keepAliveTimeout(13),
+                        configurationMismatch(14),
+                        callManagerRestart(15),
+                        duplicateRegistration(16),
+                        callManagerApplyConfig(17),
+                        deviceNoResponse(18),
+                        emLoginLogout(19),
+                        emccLoginLogout(20),
+                        energywisePowerSavePlus(21),
+                        callManagerForcedRestart(22),
+                        sourceIPAddrChanged(23),
+                        sourcePortChanged(24),
+                        registrationSequenceError(25),
+                        invalidCapabilities(26),
+                        fallbackInitiated(28),
+                        deviceSwitch(29)
                     }
 
 CcmDeviceStatus ::= TEXTUAL-CONVENTION
@@ -688,7 +1200,7 @@ ccmGroupEntry OBJECT-TYPE
         CallManager Group. New entries to the CallManager Group table 
         in the database are created when the User inserts a new 
         CallManager Group via the CallManager Web Admin pages. 
-        This entry is subsequently picked up by the CCM SNMP Agent."
+        This entry is subsequently picked up by the CUCM SNMP Agent."
     INDEX           { ccmGroupIndex } 
     ::= { ccmGroupTable 1 }
 
@@ -703,7 +1215,7 @@ ccmGroupIndex OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "An arbitrary integer, selected by the local CCM
+        "An arbitrary integer, selected by the local CUCM
         which uniquely identifies a CallManager Group." 
     ::= { ccmGroupEntry 1 }
 
@@ -731,9 +1243,9 @@ ccmTable OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "The table containing information of all the CallManagers in a
-        call manager cluster that the local call manager knows about.
-        When the local call manager is down, this table will be empty."
+        "The table containing information of all the CUCMs in a
+        CUCM cluster that the local CUCM knows about. When the local 
+        CUCM is restarted, this table will be refreshed."
     ::= { ccmGeneralInfo 2 }
 
 ccmEntry OBJECT-TYPE
@@ -764,7 +1276,7 @@ ccmIndex OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "An arbitrary integer, selected by the local CCM,
+        "An arbitrary integer, selected by the local CUCM,
         which uniquely identifies a CallManager in a call manager
         cluster." 
     ::= { ccmEntry 1 }
@@ -804,7 +1316,7 @@ ccmStatus OBJECT-TYPE
     DESCRIPTION
         "The current status of the CallManager. A CallManager
         is up if the SNMP Agent received a system up event
-        from the local CCM 
+        from the local CUCM 
             unknown:    Current status of the CallManager is
                         Unknown
             up:         CallManager is running & is able to
@@ -935,7 +1447,7 @@ ccmRegionIndex OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "An arbitrary integer, selected by the local CCM,
+        "An arbitrary integer, selected by the local CUCM,
         which uniquely identifies a Region Name in the table." 
     ::= { ccmRegionEntry 1 }
 
@@ -1056,7 +1568,7 @@ ccmTimeZoneIndex OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "An arbitrary integer, selected by the local CCM,
+        "An arbitrary integer, selected by the local CUCM,
         which uniquely identifies a Time Zone group entry
         in the table." 
     ::= { ccmTimeZoneEntry 1 }
@@ -1133,7 +1645,7 @@ ccmDevicePoolIndex OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "An arbitrary integer, selected by the local CCM,
+        "An arbitrary integer, selected by the local CUCM,
         which uniquely identifies a Device Pool entry in the
         table. Each entry contains Region, Date/Time Group
         and CallManager Group criteria that will be common
@@ -1220,7 +1732,7 @@ ccmProductTypeIndex OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "An arbitrary integer, selected by the local CCM,
+        "An arbitrary integer, selected by the local CUCM,
         which uniquely identifies an entry in the 
         ccmProductTypeTable." 
     ::= { ccmProductTypeEntry 1 }
@@ -1230,7 +1742,7 @@ ccmProductType OBJECT-TYPE
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
-        "The type of the product as defined in the CCM
+        "The type of the product as defined in the CUCM
         database." 
     ::= { ccmProductTypeEntry 2 }
 
@@ -1239,7 +1751,7 @@ ccmProductName OBJECT-TYPE
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
-        "The name of the product as defined in the CCM
+        "The name of the product as defined in the CUCM
         database." 
     ::= { ccmProductTypeEntry 3 }
 
@@ -1281,8 +1793,9 @@ ccmPhoneTable OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "The table containing the list of all IP Phone devices
-        which have tried to register with the local call manager 
-        at least once."
+        which have tried to register with the local CUCM at least
+        once. When the local CUCM is restarted, this table will be 
+        refreshed."
     ::= { ccmPhoneInfo 1 }
 
 ccmPhoneEntry OBJECT-TYPE
@@ -1320,7 +1833,9 @@ CcmPhoneEntry ::= SEQUENCE {
         ccmPhoneInetAddressIPv6    InetAddressIPv6,
         ccmPhoneIPv4Attribute      INTEGER,
         ccmPhoneIPv6Attribute      INTEGER,
-        ccmPhoneActiveLoadID       SnmpAdminString
+        ccmPhoneActiveLoadID       SnmpAdminString,
+        ccmPhoneUnregReason        CcmDevUnregCauseCode,
+        ccmPhoneRegFailReason      CcmDevRegFailCauseCode
 }
 
 ccmPhoneIndex OBJECT-TYPE
@@ -1328,7 +1843,7 @@ ccmPhoneIndex OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "An arbitrary integer, selected by the local CCM,
+        "An arbitrary integer, selected by the local CUCM,
         which uniquely identifies a Phone within the CallManager." 
     ::= { ccmPhoneEntry 1 }
 
@@ -1414,7 +1929,7 @@ ccmPhoneStatus OBJECT-TYPE
     DESCRIPTION
         "The status of the phone. The status of the Phone changes
         from Unknown to registered when it registers itself with
-        the local CCM." 
+        the local CUCM." 
     ::= { ccmPhoneEntry 7 }
 
 ccmPhoneTimeLastRegistered OBJECT-TYPE
@@ -1460,7 +1975,7 @@ ccmPhoneTimeLastError OBJECT-TYPE
     DESCRIPTION
         "The amount of time elapsed since the last phone error
         occurred. The reference point for this time is the time
-        the last error occurred, as reported by the local CCM." 
+        the last error occurred, as reported by the local CUCM." 
     ::= { ccmPhoneEntry 12 }
 
 ccmPhoneDevicePoolIndex OBJECT-TYPE
@@ -1496,7 +2011,7 @@ ccmPhoneInetAddress OBJECT-TYPE
 ccmPhoneStatusReason OBJECT-TYPE
     SYNTAX          CcmDevFailCauseCode
     MAX-ACCESS      read-only
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The reason code associated with the phone status change." 
     ::= { ccmPhoneEntry 16 }
@@ -1615,6 +2130,22 @@ ccmPhoneActiveLoadID OBJECT-TYPE
         load ID and ccmPhoneActiveLoadID has the actual load ID that is
         running on the phone." 
     ::= { ccmPhoneEntry 25 }
+
+ccmPhoneUnregReason OBJECT-TYPE
+    SYNTAX          CcmDevUnregCauseCode
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The reason code associated with unregistered phone." 
+    ::= { ccmPhoneEntry 26 }
+
+ccmPhoneRegFailReason OBJECT-TYPE
+    SYNTAX          CcmDevRegFailCauseCode
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The reason code associated with registration failed phone." 
+    ::= { ccmPhoneEntry 27 }
  
 
 -- THE PHONE EXTENSION TABLE
@@ -1654,7 +2185,7 @@ ccmPhoneExtensionIndex OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          obsolete
     DESCRIPTION
-        "An arbitrary integer, selected by the local CCM,
+        "An arbitrary integer, selected by the local CUCM,
         which uniquely identifies a Phone Extension within the
         CallManager." 
     ::= { ccmPhoneExtensionEntry 1 }
@@ -1722,7 +2253,7 @@ ccmPhoneFailedEntry OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "An entry (conceptual row) in the PhoneFailed Table,
-        one for each phone failure in the CCM."
+        one for each phone failure in the CUCM."
     INDEX           { ccmPhoneFailedIndex } 
     ::= { ccmPhoneFailedTable 1 }
 
@@ -1737,7 +2268,8 @@ CcmPhoneFailedEntry ::= SEQUENCE {
         ccmPhoneFailedInetAddressIPv4 InetAddressIPv4,
         ccmPhoneFailedInetAddressIPv6 InetAddressIPv6,
         ccmPhoneFailedIPv4Attribute   INTEGER,
-        ccmPhoneFailedIPv6Attribute   INTEGER
+        ccmPhoneFailedIPv6Attribute   INTEGER,
+        ccmPhoneFailedRegFailReason   CcmDevRegFailCauseCode
 }
 
 ccmPhoneFailedIndex OBJECT-TYPE
@@ -1745,7 +2277,7 @@ ccmPhoneFailedIndex OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "An arbitrary integer, selected by the local CCM,
+        "An arbitrary integer, selected by the local CUCM,
         which is incremented with each new entry in the
         ccmPhoneFailedTable. This integer value will wrap
         if needed." 
@@ -1796,7 +2328,7 @@ ccmPhoneFailedInetAddress OBJECT-TYPE
 ccmPhoneFailCauseCode OBJECT-TYPE
     SYNTAX          CcmDevFailCauseCode
     MAX-ACCESS      read-only
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "States the reason for the phone device communication error." 
     ::= { ccmPhoneFailedEntry 6 }
@@ -1872,6 +2404,14 @@ ccmPhoneFailedIPv6Attribute OBJECT-TYPE
         adminAndControl(3): ccmPhoneFailedInetAddressIPv6 is used 
             for controlling as well as administrative purpose." 
     ::= { ccmPhoneFailedEntry 11 }
+
+ccmPhoneFailedRegFailReason OBJECT-TYPE
+    SYNTAX          CcmDevRegFailCauseCode
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The reason code associated with registration failed phone." 
+    ::= { ccmPhoneFailedEntry 12 }
  
 
 -- THE PHONE STATUS UPDATE TABLE
@@ -1897,16 +2437,18 @@ ccmPhoneStatusUpdateEntry OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "An entry (conceptual row) in the PhoneStatusUpdate Table,
-        one for each phone status update in the CCM."
+        one for each phone status update in the CUCM."
     INDEX           { ccmPhoneStatusUpdateIndex } 
     ::= { ccmPhoneStatusUpdateTable 1 }
 
 CcmPhoneStatusUpdateEntry ::= SEQUENCE {
-        ccmPhoneStatusUpdateIndex  CcmIndex,
-        ccmPhoneStatusPhoneIndex   CcmIndexOrZero,
-        ccmPhoneStatusUpdateTime   DateAndTime,
-        ccmPhoneStatusUpdateType   INTEGER,
-        ccmPhoneStatusUpdateReason CcmDevFailCauseCode
+        ccmPhoneStatusUpdateIndex   CcmIndex,
+        ccmPhoneStatusPhoneIndex    CcmIndexOrZero,
+        ccmPhoneStatusUpdateTime    DateAndTime,
+        ccmPhoneStatusUpdateType    INTEGER,
+        ccmPhoneStatusUpdateReason  CcmDevFailCauseCode,
+        ccmPhoneStatusUnregReason   CcmDevUnregCauseCode,
+        ccmPhoneStatusRegFailReason CcmDevRegFailCauseCode
 }
 
 ccmPhoneStatusUpdateIndex OBJECT-TYPE
@@ -1914,7 +2456,7 @@ ccmPhoneStatusUpdateIndex OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "An arbitrary integer, selected by the local CCM,
+        "An arbitrary integer, selected by the local CUCM,
         which is incremented with each new entry in the
         ccmPhoneStatusUpdateTable. This integer value will
         wrap if needed." 
@@ -1961,10 +2503,26 @@ ccmPhoneStatusUpdateType OBJECT-TYPE
 ccmPhoneStatusUpdateReason OBJECT-TYPE
     SYNTAX          CcmDevFailCauseCode
     MAX-ACCESS      read-only
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The reason code associated with the phone status change." 
     ::= { ccmPhoneStatusUpdateEntry 5 }
+
+ccmPhoneStatusUnregReason OBJECT-TYPE
+    SYNTAX          CcmDevUnregCauseCode
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The reason code associated with unregistered phone." 
+    ::= { ccmPhoneStatusUpdateEntry 6 }
+
+ccmPhoneStatusRegFailReason OBJECT-TYPE
+    SYNTAX          CcmDevRegFailCauseCode
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The reason code associated with registration failed phone." 
+    ::= { ccmPhoneStatusUpdateEntry 7 }
  
 
 -- THE ENHANCED PHONE EXTENSION TABLE
@@ -2010,7 +2568,7 @@ ccmPhoneExtnIndex OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "An arbitrary integer, selected by the local CCM,
+        "An arbitrary integer, selected by the local CUCM,
         which uniquely identifies a Phone Extension within the
         CallManager." 
     ::= { ccmPhoneExtnEntry 1 }
@@ -2067,8 +2625,9 @@ ccmGatewayTable OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "The table containing the list of all gateway devices
-        which have tried to register with the local call manager
-        at least once."
+        which have tried to register with the local CUCM
+        at least once. When the local CUCM is restarted, this 
+        table will be refreshed."
     ::= { ccmGatewayInfo 1 }
 
 ccmGatewayEntry OBJECT-TYPE
@@ -2077,7 +2636,7 @@ ccmGatewayEntry OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "An entry (conceptual row) in the gateway Table, one
-        for each gateway device in the CCM."
+        for each gateway device in the CUCM."
     INDEX           { ccmGatewayIndex } 
     ::= { ccmGatewayTable 1 }
 
@@ -2096,7 +2655,9 @@ CcmGatewayEntry ::= SEQUENCE {
         ccmGatewayTimeLastRegistered DateAndTime,
         ccmGatewayDChannelStatus     INTEGER,
         ccmGatewayDChannelNumber     Integer32,
-        ccmGatewayProductTypeIndex   CcmIndexOrZero
+        ccmGatewayProductTypeIndex   CcmIndexOrZero,
+        ccmGatewayUnregReason        CcmDevUnregCauseCode,
+        ccmGatewayRegFailReason      CcmDevRegFailCauseCode
 }
 
 ccmGatewayIndex OBJECT-TYPE
@@ -2104,7 +2665,7 @@ ccmGatewayIndex OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "An arbitrary integer, selected by the local CCM,
+        "An arbitrary integer, selected by the local CUCM,
         which uniquely identifies a Gateway within the scope of
         the local call manager." 
     ::= { ccmGatewayEntry 1 }
@@ -2247,7 +2808,7 @@ ccmGatewayStatus OBJECT-TYPE
     DESCRIPTION
         "The status of the gateway. The Gateway status changes from
         Unknown to Registered when the Gateway registers itself with
-        the local CCM." 
+        the local CUCM." 
     ::= { ccmGatewayEntry 5 }
 
 ccmGatewayDevicePoolIndex OBJECT-TYPE
@@ -2293,7 +2854,7 @@ ccmGatewayProductId OBJECT-TYPE
 ccmGatewayStatusReason OBJECT-TYPE
     SYNTAX          CcmDevFailCauseCode
     MAX-ACCESS      read-only
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The reason code associated with the gateway status change." 
     ::= { ccmGatewayEntry 10 }
@@ -2352,6 +2913,22 @@ ccmGatewayProductTypeIndex OBJECT-TYPE
         of 0 indicates that the index to the ccmProductTypeTable
         is Unknown." 
     ::= { ccmGatewayEntry 15 }
+
+ccmGatewayUnregReason OBJECT-TYPE
+    SYNTAX          CcmDevUnregCauseCode
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The reason code associated with unregistered gateway." 
+    ::= { ccmGatewayEntry 16 }
+
+ccmGatewayRegFailReason OBJECT-TYPE
+    SYNTAX          CcmDevRegFailCauseCode
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The reason code associated with registration failed gateway." 
+    ::= { ccmGatewayEntry 17 }
  
 
 -- THE GATEWAY TRUNK TABLE
@@ -2362,7 +2939,8 @@ ccmGatewayTrunkTable OBJECT-TYPE
     STATUS          obsolete
     DESCRIPTION
         "The table containing the list of all gateway trunks
-        in a CCN system."
+        in a CCN system. When the local CUCM is restarted, this 
+        table will be refreshed."
     ::= { ccmGatewayTrunkInfo 1 }
 
 ccmGatewayTrunkEntry OBJECT-TYPE
@@ -2388,7 +2966,7 @@ ccmGatewayTrunkIndex OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          obsolete
     DESCRIPTION
-        "An arbitrary integer, selected by the local CCM,
+        "An arbitrary integer, selected by the local CUCM,
         which uniquely identifies a Gateway trunk within the
         scope of a CallManager." 
     ::= { ccmGatewayTrunkEntry 1 }
@@ -2459,7 +3037,7 @@ ccmGatewayTrunkStatus OBJECT-TYPE
     STATUS          obsolete
     DESCRIPTION
         "The state of the trunk. The Trunk status changes from
-        Unknown to Up when it registers itself with the local CCM.
+        Unknown to Up when it registers itself with the local CUCM.
             unknown:  Unknown state of Trunk
             up:       Up and running, and is Idle with no calls
             busy:     The trunk is in a Busy state
@@ -2827,7 +3405,8 @@ ccmMediaDeviceTable OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "The table containing a list of all Media Devices which have
-        tried to register with the local call manager at least once."
+        tried to register with the local CUCM at least once. 
+        When the local CUCM is restarted, this table will be refreshed."
     ::= { ccmMediaDeviceInfo 1 }
 
 ccmMediaDeviceEntry OBJECT-TYPE
@@ -2855,7 +3434,9 @@ CcmMediaDeviceEntry ::= SEQUENCE {
         ccmMediaDeviceTimeLastRegistered DateAndTime,
         ccmMediaDeviceProductTypeIndex   CcmIndexOrZero,
         ccmMediaDeviceInetAddressIPv4    InetAddressIPv4,
-        ccmMediaDeviceInetAddressIPv6    InetAddressIPv6
+        ccmMediaDeviceInetAddressIPv6    InetAddressIPv6,
+        ccmMediaDeviceUnregReason        CcmDevUnregCauseCode,
+        ccmMediaDeviceRegFailReason      CcmDevRegFailCauseCode
 }
 
 ccmMediaDeviceIndex OBJECT-TYPE
@@ -2863,7 +3444,7 @@ ccmMediaDeviceIndex OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "An arbitrary integer, selected by the local CCM,
+        "An arbitrary integer, selected by the local CUCM,
         which identifies a Media Device entry in the table." 
     ::= { ccmMediaDeviceEntry 1 }
 
@@ -2932,7 +3513,7 @@ ccmMediaDeviceDescription OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "A description of the Media Device. This description
-        is given when the device is configured in the CCM." 
+        is given when the device is configured in the CUCM." 
     ::= { ccmMediaDeviceEntry 4 }
 
 ccmMediaDeviceStatus OBJECT-TYPE
@@ -2942,7 +3523,7 @@ ccmMediaDeviceStatus OBJECT-TYPE
     DESCRIPTION
         "The status of the Media Device. The status changes
         from unknown to registered when it registers itself with
-        the local CCM." 
+        the local CUCM." 
     ::= { ccmMediaDeviceEntry 5 }
 
 ccmMediaDeviceDevicePoolIndex OBJECT-TYPE
@@ -2980,7 +3561,7 @@ ccmMediaDeviceInetAddress OBJECT-TYPE
 ccmMediaDeviceStatusReason OBJECT-TYPE
     SYNTAX          CcmDevFailCauseCode
     MAX-ACCESS      read-only
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The reason code associated with the media device status
         change." 
@@ -3033,6 +3614,23 @@ ccmMediaDeviceInetAddressIPv6 OBJECT-TYPE
         the Media Device. This object contains value zero if IPV6 
         address is not available." 
     ::= { ccmMediaDeviceEntry 14 }
+
+ccmMediaDeviceUnregReason OBJECT-TYPE
+    SYNTAX          CcmDevUnregCauseCode
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The reason code associated with unregistered Media Device." 
+    ::= { ccmMediaDeviceEntry 15 }
+
+ccmMediaDeviceRegFailReason OBJECT-TYPE
+    SYNTAX          CcmDevRegFailCauseCode
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The reason code associated with registration failed
+        Media Device." 
+    ::= { ccmMediaDeviceEntry 16 }
  
 
 -- THE GATEKEEPER TABLE
@@ -3043,8 +3641,9 @@ ccmGatekeeperTable OBJECT-TYPE
     STATUS          obsolete
     DESCRIPTION
         "The table containing a list of all Gatekeepers
-        to which the local CallManager has tried to register
-        at least once."
+        to which the local CUCM has tried to register
+        at least once. When the local CUCM is restarted, this 
+        table will be refreshed."
     ::= { ccmGatekeeperInfo 1 }
 
 ccmGatekeeperEntry OBJECT-TYPE
@@ -3074,7 +3673,7 @@ ccmGatekeeperIndex OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          obsolete
     DESCRIPTION
-        "An arbitrary integer, selected by the local CCM,
+        "An arbitrary integer, selected by the local CUCM,
         which identifies a Gatekeeper entry in the table." 
     ::= { ccmGatekeeperEntry 1 }
 
@@ -3111,7 +3710,7 @@ ccmGatekeeperDescription OBJECT-TYPE
     STATUS          obsolete
     DESCRIPTION
         "A description of the Gatekeeper. This description
-        is given when the Gatekeeper is configured in the CCM." 
+        is given when the Gatekeeper is configured in the CUCM." 
     ::= { ccmGatekeeperEntry 4 }
 
 ccmGatekeeperStatus OBJECT-TYPE
@@ -3180,7 +3779,8 @@ ccmCTIDeviceTable OBJECT-TYPE
     DESCRIPTION
         "The table containing a list of all CTI (Computer
         Telephony Integration) Devices which have tried to register
-        with the local call manager at least once."
+        with the local CUCM at least once. When the local CUCM is  
+        restarted, this table will be refreshed."
     ::= { ccmCTIDeviceInfo 1 }
 
 ccmCTIDeviceEntry OBJECT-TYPE
@@ -3207,7 +3807,11 @@ CcmCTIDeviceEntry ::= SEQUENCE {
         ccmCTIDeviceStatusReason       CcmDevFailCauseCode,
         ccmCTIDeviceTimeLastStatusUpdt DateAndTime,
         ccmCTIDeviceTimeLastRegistered DateAndTime,
-        ccmCTIDeviceProductTypeIndex   CcmIndexOrZero
+        ccmCTIDeviceProductTypeIndex   CcmIndexOrZero,
+        ccmCTIDeviceInetAddressIPv4    InetAddressIPv4,
+        ccmCTIDeviceInetAddressIPv6    InetAddressIPv6,
+        ccmCTIDeviceUnregReason        CcmDevUnregCauseCode,
+        ccmCTIDeviceRegFailReason      CcmDevRegFailCauseCode
 }
 
 ccmCTIDeviceIndex OBJECT-TYPE
@@ -3215,7 +3819,7 @@ ccmCTIDeviceIndex OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "An arbitrary integer, selected by the local CCM,
+        "An arbitrary integer, selected by the local CUCM,
         which identifies a CTI Device entry in the table." 
     ::= { ccmCTIDeviceEntry 1 }
 
@@ -3251,7 +3855,7 @@ ccmCTIDeviceDescription OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "A description of the CTI Device. This description is
-        given when the CTI Device is configured in the CCM." 
+        given when the CTI Device is configured in the CUCM." 
     ::= { ccmCTIDeviceEntry 4 }
 
 ccmCTIDeviceStatus OBJECT-TYPE
@@ -3261,7 +3865,7 @@ ccmCTIDeviceStatus OBJECT-TYPE
     DESCRIPTION
         "The status of the CTI Device. The CTI Device status changes
         from unknown to registered when it registers itself with
-        the local CCM." 
+        the local CUCM." 
     ::= { ccmCTIDeviceEntry 5 }
 
 ccmCTIDevicePoolIndex OBJECT-TYPE
@@ -3278,7 +3882,7 @@ ccmCTIDevicePoolIndex OBJECT-TYPE
 ccmCTIDeviceInetAddressType OBJECT-TYPE
     SYNTAX          InetAddressType
     MAX-ACCESS      read-only
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "This object identifies the IP address type of the
         CTIDevice. The value of this object is 'unknown(0)' 
@@ -3288,7 +3892,7 @@ ccmCTIDeviceInetAddressType OBJECT-TYPE
 ccmCTIDeviceInetAddress OBJECT-TYPE
     SYNTAX          InetAddress
     MAX-ACCESS      read-only
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "This object identifies IP Address of the host where
         this CTI Device is running. If the IP address is 
@@ -3309,7 +3913,7 @@ ccmCTIDeviceAppInfo OBJECT-TYPE
 ccmCTIDeviceStatusReason OBJECT-TYPE
     SYNTAX          CcmDevFailCauseCode
     MAX-ACCESS      read-only
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The reason code associated with the CTI Device status
         change." 
@@ -3342,6 +3946,43 @@ ccmCTIDeviceProductTypeIndex OBJECT-TYPE
         of 0 indicates that the index to the ccmProductTypeTable
         is Unknown." 
     ::= { ccmCTIDeviceEntry 13 }
+
+ccmCTIDeviceInetAddressIPv4 OBJECT-TYPE
+    SYNTAX          InetAddressIPv4
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object identifies IPv4 Address of the host where
+        this CTI Device is running. If the IPv4 address is 
+        not available then this object contains an empty string." 
+    ::= { ccmCTIDeviceEntry 14 }
+
+ccmCTIDeviceInetAddressIPv6 OBJECT-TYPE
+    SYNTAX          InetAddressIPv6
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object identifies IPv6 Address of the host where
+        this CTI Device is running. If the IPv6 address is 
+        not available then this object contains an empty string." 
+    ::= { ccmCTIDeviceEntry 15 }
+
+ccmCTIDeviceUnregReason OBJECT-TYPE
+    SYNTAX          CcmDevUnregCauseCode
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The reason code associated with unregistered CTI Device." 
+    ::= { ccmCTIDeviceEntry 16 }
+
+ccmCTIDeviceRegFailReason OBJECT-TYPE
+    SYNTAX          CcmDevRegFailCauseCode
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The reason code associated with registration failed
+        CTI Device." 
+    ::= { ccmCTIDeviceEntry 17 }
  
 
 -- THE CTI DEVICE DIRECTORY NUMBER TABLE
@@ -3395,7 +4036,7 @@ ccmCTIDeviceDirNum OBJECT-TYPE
 
 
 -- THE ALARM CONFIGURATION INFO
--- MIB Objects used for CCM Alarm configuration
+-- MIB Objects used for CUCM Alarm configuration
 --   
 
 -- CALL MANAGER ALARM ENABLE
@@ -3407,7 +4048,7 @@ ccmCallManagerAlarmEnable OBJECT-TYPE
     DESCRIPTION
         "Allows the generation of Alarms in response to
         CallManager general failures.
-            true(1):   Enabling this object will allow the CCM
+            true(1):   Enabling this object will allow the CUCM
                        agent to generate the following alarms -
                        ccmCallManagerFailure,
                        ccmMediaResourceListExhausted, 
@@ -3416,7 +4057,7 @@ ccmCallManagerAlarmEnable OBJECT-TYPE
                        default value.
             false(2):  Disabling this object will stop the 
                        generation of the following alarms
-                       by the CCM agent -
+                       by the CUCM agent -
                        ccmCallManagerFailure
                        ccmMediaResourceListExhausted,
                        ccmRouteListExhausted and
@@ -3427,7 +4068,7 @@ ccmCallManagerAlarmEnable OBJECT-TYPE
 -- PHONE FAILED CONFIG OBJECTS
 
 ccmPhoneFailedAlarmInterval OBJECT-TYPE
-    SYNTAX          Integer32 (0 ..0 |  30..3600)
+    SYNTAX          Integer32 (0 | 30..3600)
     UNITS           "seconds"
     MAX-ACCESS      read-write
     STATUS          current
@@ -3459,7 +4100,7 @@ ccmPhoneFailedStorePeriod OBJECT-TYPE
 -- PHONE STATUS UPDATE CONFIG OBJECTS
 
 ccmPhoneStatusUpdateAlarmInterv OBJECT-TYPE
-    SYNTAX          Integer32 (0 ..0 |  30..3600)
+    SYNTAX          Integer32 (0 | 30..3600)
     UNITS           "seconds"
     MAX-ACCESS      read-write
     STATUS          current
@@ -3498,15 +4139,15 @@ ccmGatewayAlarmEnable OBJECT-TYPE
     DESCRIPTION
         "Allows the generation of Alarms in response to Gateway
         general failures that the CallManager is aware of.
-            true(1):   Enabling this object will allow the CCM
+            true(1):   Enabling this object will allow the CUCM
                        agent to generate the following alarms -
-                       ccmGatewayFailed and
+                       ccmGatewayFailedReason and
                        ccmGatewayLayer2Change notifications.
                        This is the default value.
             false(2):  Disabling this object will stop the
                        generation of the following alarms
-                       by the CCM agent -
-                       ccmGatewayFailed and
+                       by the CUCM agent -
+                       ccmGatewayFailedReason and
                        ccmGatewayLayer2Change."
     DEFVAL          { true } 
     ::= { ccmAlarmConfigInfo 6 }
@@ -3520,7 +4161,7 @@ ccmMaliciousCallAlarmEnable OBJECT-TYPE
     DESCRIPTION
         "Allows the generation of alarms for malicious calls
         that the local call manager is aware of.
-           true(1):   Enabling this object will allow the CCM
+           true(1):   Enabling this object will allow the CUCM
                       agent to generate the ccmMaliciousCall
                       alarm. This is the default value.
            false(2):  Disabling this object will stop the
@@ -3530,7 +4171,7 @@ ccmMaliciousCallAlarmEnable OBJECT-TYPE
     ::= { ccmAlarmConfigInfo 7 }
 
 -- THE NOTIFICATION RELATED INFO
--- MIB Objects used by CCM Notifications/Alarms
+-- MIB Objects used by CUCM Notifications/Alarms
 
 ccmAlarmSeverity OBJECT-TYPE
     SYNTAX          INTEGER  {
@@ -3623,7 +4264,7 @@ ccmPhoneUpdates OBJECT-TYPE
 ccmGatewayFailCauseCode OBJECT-TYPE
     SYNTAX          CcmDevFailCauseCode
     MAX-ACCESS      accessible-for-notify
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "States the reason for a gateway device communication error." 
     ::= { ccmNotificationsInfo 5 }
@@ -3846,6 +4487,14 @@ ccmTLSConnectionFailReasonCode OBJECT-TYPE
     DESCRIPTION
         "The reason for connection failure." 
     ::= { ccmNotificationsInfo 27 }
+
+ccmGatewayRegFailCauseCode OBJECT-TYPE
+    SYNTAX          CcmDevRegFailCauseCode
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION
+        "States the reason for a gateway device registration failure." 
+    ::= { ccmNotificationsInfo 28 }
 -- THE H323 Device TABLE
 
 ccmH323DeviceTable OBJECT-TYPE
@@ -3854,8 +4503,9 @@ ccmH323DeviceTable OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "The table containing a list of all H323 devices
-        in the call manager cluster which the local 
-        call manager is aware of."
+        in the CUCM cluster which the local CUCM is aware of.
+        When the local CUCM is restarted, this table will be
+        refreshed."
     ::= { ccmH323DeviceInfo 1 }
 
 ccmH323DeviceEntry OBJECT-TYPE
@@ -3899,7 +4549,9 @@ CcmH323DeviceEntry ::= SEQUENCE {
         ccmH323DevRmtCM2InetAddress     InetAddress,
         ccmH323DevRmtCM3InetAddressType InetAddressType,
         ccmH323DevRmtCM3InetAddress     InetAddress,
-        ccmH323DevProductTypeIndex      CcmIndexOrZero
+        ccmH323DevProductTypeIndex      CcmIndexOrZero,
+        ccmH323DevUnregReason           CcmDevUnregCauseCode,
+        ccmH323DevRegFailReason         CcmDevRegFailCauseCode
 }
 
 ccmH323DevIndex OBJECT-TYPE
@@ -3907,7 +4559,7 @@ ccmH323DevIndex OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "An arbitrary integer, selected by the local CCM,
+        "An arbitrary integer, selected by the local CUCM,
         which identifies a H323 Device entry in the table." 
     ::= { ccmH323DeviceEntry 1 }
 
@@ -3935,7 +4587,7 @@ ccmH323DevDescription OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "A description of the H323 device. This description
-        is given when the H323 device is configured in the CCM." 
+        is given when the H323 device is configured in the CUCM." 
     ::= { ccmH323DeviceEntry 4 }
 
 ccmH323DevInetAddressType OBJECT-TYPE
@@ -4155,7 +4807,7 @@ ccmH323DevStatus OBJECT-TYPE
 ccmH323DevStatusReason OBJECT-TYPE
     SYNTAX          CcmDevFailCauseCode
     MAX-ACCESS      read-only
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The reason code associated with ccmH233DevStatus change.
         This is applicable only for H323 devices with gatekeepers 
@@ -4261,6 +4913,26 @@ ccmH323DevProductTypeIndex OBJECT-TYPE
         of 0 indicates that the index to the ccmProductTypeTable
         is Unknown." 
     ::= { ccmH323DeviceEntry 31 }
+
+ccmH323DevUnregReason OBJECT-TYPE
+    SYNTAX          CcmDevUnregCauseCode
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The reason code associated with unregistered H323 Device.
+        This is applicable only for H323 devices with gatekeepers 
+        configured." 
+    ::= { ccmH323DeviceEntry 32 }
+
+ccmH323DevRegFailReason OBJECT-TYPE
+    SYNTAX          CcmDevRegFailCauseCode
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The reason code associated with registration failed H323
+        Device. This is applicable only for H323 devices with 
+        gatekeepers configured." 
+    ::= { ccmH323DeviceEntry 33 }
  
 
 -- THE VOICE MAIL DEVICE TABLE
@@ -4271,8 +4943,8 @@ ccmVoiceMailDeviceTable OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "The table containing a list of all voice messaging devices
-        which have tried to register with the local call manager 
-        at least once."
+        which have tried to register with the local CUCM at least once.  
+        When the local CUCM is restarted, this table will be refreshed."
     ::= { ccmVoiceMailDeviceInfo 1 }
 
 ccmVoiceMailDeviceEntry OBJECT-TYPE
@@ -4297,7 +4969,9 @@ CcmVoiceMailDeviceEntry ::= SEQUENCE {
         ccmVMailDevStatusReason       CcmDevFailCauseCode,
         ccmVMailDevTimeLastStatusUpdt DateAndTime,
         ccmVMailDevTimeLastRegistered DateAndTime,
-        ccmVMailDevProductTypeIndex   CcmIndexOrZero
+        ccmVMailDevProductTypeIndex   CcmIndexOrZero,
+        ccmVMailDevUnregReason        CcmDevUnregCauseCode,
+        ccmVMailDevRegFailReason      CcmDevRegFailCauseCode
 }
 
 ccmVMailDevIndex OBJECT-TYPE
@@ -4305,7 +4979,7 @@ ccmVMailDevIndex OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "An arbitrary integer, selected by the local CCM,
+        "An arbitrary integer, selected by the local CUCM,
         which identifies a voice messaging device entry in the table." 
     ::= { ccmVoiceMailDeviceEntry 1 }
 
@@ -4334,7 +5008,7 @@ ccmVMailDevDescription OBJECT-TYPE
     DESCRIPTION
         "The description of the Voice Messaging Device. This
         description is given when the Voice Messaging Device 
-        is configured in the CCM." 
+        is configured in the CUCM." 
     ::= { ccmVoiceMailDeviceEntry 4 }
 
 ccmVMailDevStatus OBJECT-TYPE
@@ -4344,7 +5018,7 @@ ccmVMailDevStatus OBJECT-TYPE
     DESCRIPTION
         "The status of the Voice Messaging Device. The Voice Messaging
         Device status changes from unknown to registered when it 
-        registers itself with the local CCM." 
+        registers itself with the local CUCM." 
     ::= { ccmVoiceMailDeviceEntry 5 }
 
 ccmVMailDevInetAddressType OBJECT-TYPE
@@ -4372,7 +5046,7 @@ ccmVMailDevInetAddress OBJECT-TYPE
 ccmVMailDevStatusReason OBJECT-TYPE
     SYNTAX          CcmDevFailCauseCode
     MAX-ACCESS      read-only
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The reason code associated with the Voice Messaging Device
         status change." 
@@ -4405,6 +5079,24 @@ ccmVMailDevProductTypeIndex OBJECT-TYPE
         of 0 indicates that the index to the ccmProductTypeTable
         is Unknown." 
     ::= { ccmVoiceMailDeviceEntry 11 }
+
+ccmVMailDevUnregReason OBJECT-TYPE
+    SYNTAX          CcmDevUnregCauseCode
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The reason code associated with unregistered Voice Messaging
+        Device." 
+    ::= { ccmVoiceMailDeviceEntry 12 }
+
+ccmVMailDevRegFailReason OBJECT-TYPE
+    SYNTAX          CcmDevRegFailCauseCode
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The reason code associated with registration failed Voice
+        Messaging Device." 
+    ::= { ccmVoiceMailDeviceEntry 13 }
  
 
 -- THE VOICE MAIL DIRECTORY NUMBER TABLE
@@ -4469,12 +5161,12 @@ ccmQualityReportAlarmEnable OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "Allows the generation of the quality report alarm.
-        true(1):   Enabling this object will allow the CCM
+        true(1):   Enabling this object will allow the CUCM
                    agent to generate the ccmQualityReport
                    alarm. This is the default value.
         false(2):  Disabling this object will stop the 
                    generation of the ccmQualityReport
-                   alarm by the CCM agent."
+                   alarm by the CUCM agent."
     DEFVAL          { true } 
     ::= { ccmQualityReportAlarmConfigInfo 1 }
 -- THE SIP Device TABLE
@@ -4484,9 +5176,10 @@ ccmSIPDeviceTable OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "The table containing a list of all SIP trunk
-        in the call manager cluster which the local 
-        call manager is aware of."
+        "The table containing a list of all SIP trunk in the CUCM
+        cluster which the local CUCM is aware of. When the local
+        CUCM is restarted, this table will be refreshed. If the local 
+        CUCM is down, then this table will be empty."
     ::= { ccmSIPDeviceInfo 1 }
 
 ccmSIPDeviceEntry OBJECT-TYPE
@@ -4520,7 +5213,7 @@ ccmSIPDevIndex OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "An arbitrary integer, selected by the local CCM,
+        "An arbitrary integer, selected by the local CUCM,
         which identifies a SIP Trunk Device entry in the table." 
     ::= { ccmSIPDeviceEntry 1 }
 
@@ -4551,7 +5244,7 @@ ccmSIPDevDescription OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "A description of the SIP Trunk device. This description
-        is given when the SIP Trunk device is configured in the CCM." 
+        is given when the SIP Trunk device is configured in the CUCM." 
     ::= { ccmSIPDeviceEntry 4 }
 
 ccmSIPDevInetAddressType OBJECT-TYPE
@@ -4682,7 +5375,7 @@ ccmGatewayFailed NOTIFICATION-TYPE
                         ccmGatewayInetAddress,
                         ccmGatewayFailCauseCode
                     }
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "This Notification indicates that at least one gateway has
         attempted to register or communicate with the CallManager
@@ -4774,6 +5467,21 @@ ccmTLSConnectionFailure NOTIFICATION-TYPE
         "This Notification is sent when CallManager fails to
         open TLS connection for the indicated device."
    ::= { ccmMIBNotifications 10 }
+
+ccmGatewayFailedReason NOTIFICATION-TYPE
+    OBJECTS         {
+                        ccmAlarmSeverity,
+                        ccmGatewayName,
+                        ccmGatewayInetAddressType,
+                        ccmGatewayInetAddress,
+                        ccmGatewayRegFailCauseCode
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This Notification indicates that at least one gateway has
+        attempted to register or communicate with the CallManager
+        and failed."
+   ::= { ccmMIBNotifications 11 }
 -- MIB Conformance Statements
 
 ciscoCcmMIBConformance  OBJECT IDENTIFIER
@@ -4792,7 +5500,7 @@ ciscoCcmMIBCompliance MODULE-COMPLIANCE
     STATUS          obsolete
     DESCRIPTION
         "The compliance statement for entities which implement
-        the CISCO CCM MIB."
+        the CISCO-CCM-MIB."
     MODULE          -- this module
     MANDATORY-GROUPS {
                         ccmInfoGroup,
@@ -4805,7 +5513,7 @@ ciscoCcmMIBComplianceRev1 MODULE-COMPLIANCE
     STATUS          obsolete
     DESCRIPTION
         "The compliance statement for entities which implement
-        the CISCO CCM MIB."
+        the CISCO-CCM-MIB."
     MODULE          -- this module
     MANDATORY-GROUPS {
                         ccmInfoGroupRev1,
@@ -4823,7 +5531,7 @@ ciscoCcmMIBComplianceRev2 MODULE-COMPLIANCE
     STATUS          obsolete
     DESCRIPTION
         "The compliance statement for entities which implement
-        the CISCO CCM MIB."
+        the CISCO-CCM-MIB."
     MODULE          -- this module
     MANDATORY-GROUPS {
                         ccmInfoGroupRev2,
@@ -4842,7 +5550,7 @@ ciscoCcmMIBComplianceRev3 MODULE-COMPLIANCE
     STATUS          obsolete
     DESCRIPTION
         "The compliance statement for entities which implement
-        the CISCO CCM MIB."
+        the CISCO-CCM-MIB."
     MODULE          -- this module
     MANDATORY-GROUPS {
                         ccmInfoGroupRev3,
@@ -4859,10 +5567,10 @@ ciscoCcmMIBComplianceRev3 MODULE-COMPLIANCE
     ::= { ciscoCcmMIBCompliances 4 }
 
 ciscoCcmMIBComplianceRev4 MODULE-COMPLIANCE
-    STATUS          deprecated
+    STATUS          obsolete
     DESCRIPTION
         "The compliance statement for entities which implement
-        the CISCO CCM MIB."
+        the CISCO-CCM-MIB."
     MODULE          -- this module
     MANDATORY-GROUPS {
                         ccmInfoGroupRev3,
@@ -4879,10 +5587,10 @@ ciscoCcmMIBComplianceRev4 MODULE-COMPLIANCE
     ::= { ciscoCcmMIBCompliances 5 }
 
 ciscoCcmMIBComplianceRev5 MODULE-COMPLIANCE
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The compliance statement for entities which implement
-        the CISCO CUCM MIB."
+        the CISCO-CCM-MIB."
     MODULE          -- this module
     MANDATORY-GROUPS {
                         ccmInfoGroupRev4,
@@ -4897,6 +5605,46 @@ ciscoCcmMIBComplianceRev5 MODULE-COMPLIANCE
                         ccmSIPDeviceInfoGroupRev2
                     }
     ::= { ciscoCcmMIBCompliances 6 }
+
+ciscoCcmMIBComplianceRev6 MODULE-COMPLIANCE
+    STATUS          deprecated
+    DESCRIPTION
+        "The compliance statement for entities which implement
+        the CISCO CUCM MIB."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        ccmInfoGroupRev4,
+                        ccmPhoneInfoGroupRev5,
+                        ccmGatewayInfoGroupRev3,
+                        ccmMediaDeviceInfoGroupRev3,
+                        ccmCTIDeviceInfoGroupRev3,
+                        ccmNotificationsInfoGroupRev4,
+                        ccmNotificationsGroupRev2,
+                        ccmH323DeviceInfoGroupRev2,
+                        ccmVoiceMailDeviceInfoGroupRev1,
+                        ccmSIPDeviceInfoGroupRev2
+                    }
+    ::= { ciscoCcmMIBCompliances 7 }
+
+ciscoCcmMIBComplianceRev7 MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for entities which implement
+        the CISCO-CCM-MIB."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        ccmInfoGroupRev4,
+                        ccmPhoneInfoGroupRev6,
+                        ccmGatewayInfoGroupRev4,
+                        ccmMediaDeviceInfoGroupRev4,
+                        ccmCTIDeviceInfoGroupRev4,
+                        ccmNotificationsInfoGroupRev5,
+                        ccmNotificationsGroupRev3,
+                        ccmH323DeviceInfoGroupRev3,
+                        ccmVoiceMailDeviceInfoGroupRev2,
+                        ccmSIPDeviceInfoGroupRev2
+                    }
+    ::= { ciscoCcmMIBCompliances 8 }
 
 -- Units of Conformance
 
@@ -5137,7 +5885,7 @@ ccmNotificationsInfoGroup OBJECT-GROUP
     STATUS          obsolete
     DESCRIPTION
         "A collection of objects which provide info about
-        all the Notifications generated by the CISCO CCM Agent."
+        all the Notifications generated by the CUCM Agent."
     ::= { ciscoCcmMIBGroups 10 }
 
 ccmNotificationsGroup NOTIFICATION-GROUP
@@ -5153,7 +5901,7 @@ ccmNotificationsGroup NOTIFICATION-GROUP
     STATUS          obsolete
     DESCRIPTION
         "A collection of notifications that are generated by
-        the CISCO CCM Agent."
+        the CUCM Agent."
     ::= { ciscoCcmMIBGroups 11 }
 
 ccmInfoGroupRev2 OBJECT-GROUP
@@ -5393,7 +6141,7 @@ ccmNotificationsInfoGroupRev1 OBJECT-GROUP
     STATUS          obsolete
     DESCRIPTION
         "A collection of objects which provide info about
-        all the Notifications generated by the CISCO CCM Agent."
+        all the Notifications generated by the CUCM Agent."
     ::= { ciscoCcmMIBGroups 19 }
 
 ccmInfoGroupRev3 OBJECT-GROUP
@@ -5424,7 +6172,7 @@ ccmInfoGroupRev3 OBJECT-GROUP
                         ccmSystemVersion,
                         ccmInstallationId
                     }
-    STATUS          deprecated
+    STATUS          obsolete
     DESCRIPTION
         "A collection of objects which provide info about
         all CallManagers and its related information within
@@ -5481,7 +6229,7 @@ ccmNotificationsInfoGroupRev2 OBJECT-GROUP
     STATUS          obsolete
     DESCRIPTION
         "A collection of objects which provide info about
-        all the Notifications generated by the CISCO CCM Agent."
+        all the Notifications generated by the CUCM Agent."
     ::= { ciscoCcmMIBGroups 21 }
 
 ccmNotificationsGroupRev1 NOTIFICATION-GROUP
@@ -5499,7 +6247,7 @@ ccmNotificationsGroupRev1 NOTIFICATION-GROUP
     STATUS          obsolete
     DESCRIPTION
         "A collection of notifications that are generated by
-        the CISCO CCM Agent."
+        the CUCM Agent."
     ::= { ciscoCcmMIBGroups 22 }
 
 ccmSIPDeviceInfoGroup OBJECT-GROUP
@@ -5568,7 +6316,7 @@ ccmGatewayInfoGroupRev3 OBJECT-GROUP
                         ccmRejectedGateways,
                         ccmGatewayTableStateId
                     }
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "A collection of objects which provide info about
         all Gateways within the scope of the local CallManager.
@@ -5617,7 +6365,7 @@ ccmCTIDeviceInfoGroupRev2 OBJECT-GROUP
                         ccmCTIDeviceTableStateId,
                         ccmCTIDeviceDirNumTableStateId
                     }
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "A collection of objects which provide info about
         all CTI Devices within the scope of the local CallManager.
@@ -5657,7 +6405,7 @@ ccmH323DeviceInfoGroupRev1 OBJECT-GROUP
                         ccmH323DevRmtCM3InetAddress,
                         ccmH323DevProductTypeIndex
                     }
-    STATUS          deprecated
+    STATUS          obsolete
     DESCRIPTION
         "A collection of objects which provide info about
         all H323 devices within the scope of the local CallManager.
@@ -5680,7 +6428,7 @@ ccmVoiceMailDeviceInfoGroupRev1 OBJECT-GROUP
                         ccmUnregisteredVoiceMailDevices,
                         ccmRejectedVoiceMailDevices
                     }
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "A collection of objects which provide info about
         all Voice Messaging Devices within the scope of the local 
@@ -5796,7 +6544,7 @@ ccmNotificationsInfoGroupRev3 OBJECT-GROUP
     STATUS          deprecated
     DESCRIPTION
         "A collection of objects which provide info about
-        all the Notifications generated by the CISCO CCM Agent."
+        all the Notifications generated by the CUCM Agent."
     ::= { ciscoCcmMIBGroups 32 }
 
 ccmNotificationsGroupRev2 NOTIFICATION-GROUP
@@ -5812,10 +6560,10 @@ ccmNotificationsGroupRev2 NOTIFICATION-GROUP
                         ccmQualityReport,
                         ccmTLSConnectionFailure
                     }
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "A collection of notifications that are generated by
-        the CISCO CCM Agent."
+        the CUCM Agent."
     ::= { ciscoCcmMIBGroups 33 }
 
 ccmInfoGroupRev4 OBJECT-GROUP
@@ -5889,7 +6637,7 @@ ccmPhoneInfoGroupRev5 OBJECT-GROUP
                         ccmPhoneIPv6Attribute,
                         ccmPhoneActiveLoadID
                     }
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "A collection of objects which provide info about
         all phones within the scope of the local Cisco Unified 
@@ -5913,7 +6661,7 @@ ccmMediaDeviceInfoGroupRev3 OBJECT-GROUP
                         ccmMediaDeviceInetAddressIPv4,
                         ccmMediaDeviceInetAddressIPv6
                     }
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "A collection of objects which provide info about all
         Media Devices within the scope of the local Cisco Unified 
@@ -5993,7 +6741,7 @@ ccmNotificationsInfoGroupRev4 OBJECT-GROUP
                         ccmPhoneFailedIPv4Attribute,
                         ccmPhoneFailedIPv6Attribute
                     }
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "A collection of objects which provide info about
         all the Notifications generated by the CISCO CUCM Agent."
@@ -6032,12 +6780,303 @@ ccmH323DeviceInfoGroupRev2 OBJECT-GROUP
                         ccmH323DevProductTypeIndex,
                         ccmH323TableEntries
                     }
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "A collection of objects which provide info about
         all H323 devices within the scope of the local Cisco Unified 
         Communications Manager. It comprises of the H323Device table."
     ::= { ciscoCcmMIBGroups 39 }
+
+ccmCTIDeviceInfoGroupRev3 OBJECT-GROUP
+    OBJECTS         {
+                        ccmCTIDeviceName,
+                        ccmCTIDeviceDescription,
+                        ccmCTIDeviceStatus,
+                        ccmCTIDevicePoolIndex,
+                        ccmCTIDeviceStatusReason,
+                        ccmCTIDeviceTimeLastStatusUpdt,
+                        ccmCTIDeviceTimeLastRegistered,
+                        ccmCTIDeviceProductTypeIndex,
+                        ccmCTIDeviceDirNum,
+                        ccmRegisteredCTIDevices,
+                        ccmUnregisteredCTIDevices,
+                        ccmRejectedCTIDevices,
+                        ccmCTIDeviceTableStateId,
+                        ccmCTIDeviceDirNumTableStateId,
+                        ccmCTIDeviceInetAddressIPv4,
+                        ccmCTIDeviceInetAddressIPv6
+                    }
+    STATUS          deprecated
+    DESCRIPTION
+        "A collection of objects which provide info about
+        all CTI Devices within the scope of the local CUCM.
+        It comprises of the ccmCTIDevice and
+        ccmCTIDeviceDirNum tables."
+    ::= { ciscoCcmMIBGroups 40 }
+
+ccmPhoneInfoGroupRev6 OBJECT-GROUP
+    OBJECTS         {
+                        ccmPhonePhysicalAddress,
+                        ccmPhoneDescription,
+                        ccmPhoneUserName,
+                        ccmPhoneStatus,
+                        ccmPhoneTimeLastRegistered,
+                        ccmPhoneE911Location,
+                        ccmPhoneLoadID,
+                        ccmPhoneDevicePoolIndex,
+                        ccmPhoneTimeLastStatusUpdt,
+                        ccmPhoneProductTypeIndex,
+                        ccmPhoneProtocol,
+                        ccmPhoneName,
+                        ccmPhoneExtn,
+                        ccmPhoneExtnMultiLines,
+                        ccmPhoneExtnInetAddressType,
+                        ccmPhoneExtnInetAddress,
+                        ccmPhoneExtnStatus,
+                        ccmRegisteredPhones,
+                        ccmUnregisteredPhones,
+                        ccmRejectedPhones,
+                        ccmPartiallyRegisteredPhones,
+                        ccmPhoneTableStateId,
+                        ccmPhoneExtensionTableStateId,
+                        ccmPhoneInetAddressIPv4,
+                        ccmPhoneInetAddressIPv6,
+                        ccmPhoneIPv4Attribute,
+                        ccmPhoneIPv6Attribute,
+                        ccmPhoneActiveLoadID,
+                        ccmPhoneUnregReason,
+                        ccmPhoneRegFailReason
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects which provide info about
+        all phones within the scope of the local Cisco Unified 
+        Communications Manager. It comprises of the Phone and Phone 
+        Extension tables."
+    ::= { ciscoCcmMIBGroups 41 }
+
+ccmNotificationsInfoGroupRev5 OBJECT-GROUP
+    OBJECTS         {
+                        ccmAlarmSeverity,
+                        ccmCallManagerAlarmEnable,
+                        ccmFailCauseCode,
+                        ccmPhoneFailures,
+                        ccmPhoneFailedTime,
+                        ccmPhoneFailedMacAddress,
+                        ccmPhoneFailedAlarmInterval,
+                        ccmPhoneFailedStorePeriod,
+                        ccmPhFailedTblLastAddedIndex,
+                        ccmPhoneUpdates,
+                        ccmPhoneStatusPhoneIndex,
+                        ccmPhoneStatusUpdateTime,
+                        ccmPhoneStatusUpdateType,
+                        ccmPhoneStatusUpdateAlarmInterv,
+                        ccmPhoneStatusUpdateStorePeriod,
+                        ccmPhoneStatusUpdateTableStateId,
+                        ccmPhStatUpdtTblLastAddedIndex,
+                        ccmGatewayAlarmEnable,
+                        ccmMediaResourceType,
+                        ccmMediaResourceListName,
+                        ccmRouteListName,
+                        ccmGatewayPhysIfIndex,
+                        ccmGatewayPhysIfL2Status,
+                        ccmMaliciousCallAlarmEnable,
+                        ccmMaliCallCalledPartyName,
+                        ccmMaliCallCalledPartyNumber,
+                        ccmMaliCallCalledDeviceName,
+                        ccmMaliCallCallingPartyName,
+                        ccmMaliCallCallingPartyNumber,
+                        ccmMaliCallCallingDeviceName,
+                        ccmMaliCallTime,
+                        ccmQualityReportAlarmEnable,
+                        ccmQualityRprtSourceDevName,
+                        ccmQualityRprtClusterId,
+                        ccmQualityRprtCategory,
+                        ccmQualityRprtReasonCode,
+                        ccmQualityRprtTime,
+                        ccmTLSDevName,
+                        ccmTLSDevInetAddressType,
+                        ccmTLSDevInetAddress,
+                        ccmTLSConnFailTime,
+                        ccmTLSConnectionFailReasonCode,
+                        ccmPhoneFailedInetAddressIPv4,
+                        ccmPhoneFailedInetAddressIPv6,
+                        ccmPhoneFailedIPv4Attribute,
+                        ccmPhoneFailedIPv6Attribute,
+                        ccmPhoneFailedRegFailReason,
+                        ccmPhoneStatusUnregReason,
+                        ccmPhoneStatusRegFailReason,
+                        ccmGatewayRegFailCauseCode
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects which provide info about
+        all the Notifications generated by the CISCO CUCM Agent."
+    ::= { ciscoCcmMIBGroups 42 }
+
+ccmGatewayInfoGroupRev4 OBJECT-GROUP
+    OBJECTS         {
+                        ccmGatewayName,
+                        ccmGatewayDescription,
+                        ccmGatewayStatus,
+                        ccmGatewayDevicePoolIndex,
+                        ccmGatewayInetAddressType,
+                        ccmGatewayInetAddress,
+                        ccmGatewayTimeLastStatusUpdt,
+                        ccmGatewayTimeLastRegistered,
+                        ccmGatewayDChannelStatus,
+                        ccmGatewayDChannelNumber,
+                        ccmGatewayProductTypeIndex,
+                        ccmRegisteredGateways,
+                        ccmUnregisteredGateways,
+                        ccmRejectedGateways,
+                        ccmGatewayTableStateId,
+                        ccmGatewayUnregReason,
+                        ccmGatewayRegFailReason
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects which provide info about
+        all Gateways within the scope of the local CallManager.
+        It comprises of the Gateway table."
+    ::= { ciscoCcmMIBGroups 43 }
+
+ccmMediaDeviceInfoGroupRev4 OBJECT-GROUP
+    OBJECTS         {
+                        ccmMediaDeviceName,
+                        ccmMediaDeviceDescription,
+                        ccmMediaDeviceStatus,
+                        ccmMediaDeviceDevicePoolIndex,
+                        ccmMediaDeviceTimeLastStatusUpdt,
+                        ccmMediaDeviceTimeLastRegistered,
+                        ccmMediaDeviceProductTypeIndex,
+                        ccmRegisteredMediaDevices,
+                        ccmUnregisteredMediaDevices,
+                        ccmRejectedMediaDevices,
+                        ccmMediaDeviceInetAddressIPv4,
+                        ccmMediaDeviceInetAddressIPv6,
+                        ccmMediaDeviceUnregReason,
+                        ccmMediaDeviceRegFailReason
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects which provide info about all
+        Media Devices within the scope of the local Cisco Unified 
+        Communications Manager. It comprises of the MediaDevice table."
+    ::= { ciscoCcmMIBGroups 44 }
+
+ccmCTIDeviceInfoGroupRev4 OBJECT-GROUP
+    OBJECTS         {
+                        ccmCTIDeviceName,
+                        ccmCTIDeviceDescription,
+                        ccmCTIDeviceStatus,
+                        ccmCTIDevicePoolIndex,
+                        ccmCTIDeviceTimeLastStatusUpdt,
+                        ccmCTIDeviceTimeLastRegistered,
+                        ccmCTIDeviceProductTypeIndex,
+                        ccmCTIDeviceDirNum,
+                        ccmRegisteredCTIDevices,
+                        ccmUnregisteredCTIDevices,
+                        ccmRejectedCTIDevices,
+                        ccmCTIDeviceTableStateId,
+                        ccmCTIDeviceDirNumTableStateId,
+                        ccmCTIDeviceInetAddressIPv4,
+                        ccmCTIDeviceInetAddressIPv6,
+                        ccmCTIDeviceUnregReason,
+                        ccmCTIDeviceRegFailReason
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects which provide info about
+        all CTI Devices within the scope of the local CUCM.
+        It comprises of the ccmCTIDevice and
+        ccmCTIDeviceDirNum tables."
+    ::= { ciscoCcmMIBGroups 45 }
+
+ccmH323DeviceInfoGroupRev3 OBJECT-GROUP
+    OBJECTS         {
+                        ccmH323DevName,
+                        ccmH323DevDescription,
+                        ccmH323DevInetAddressType,
+                        ccmH323DevInetAddress,
+                        ccmH323DevCnfgGKInetAddressType,
+                        ccmH323DevCnfgGKInetAddress,
+                        ccmH323DevAltGK1InetAddressType,
+                        ccmH323DevAltGK1InetAddress,
+                        ccmH323DevAltGK2InetAddressType,
+                        ccmH323DevAltGK2InetAddress,
+                        ccmH323DevAltGK3InetAddressType,
+                        ccmH323DevAltGK3InetAddress,
+                        ccmH323DevAltGK4InetAddressType,
+                        ccmH323DevAltGK4InetAddress,
+                        ccmH323DevAltGK5InetAddressType,
+                        ccmH323DevAltGK5InetAddress,
+                        ccmH323DevActGKInetAddressType,
+                        ccmH323DevActGKInetAddress,
+                        ccmH323DevStatus,
+                        ccmH323DevTimeLastStatusUpdt,
+                        ccmH323DevTimeLastRegistered,
+                        ccmH323DevRmtCM1InetAddressType,
+                        ccmH323DevRmtCM1InetAddress,
+                        ccmH323DevRmtCM2InetAddressType,
+                        ccmH323DevRmtCM2InetAddress,
+                        ccmH323DevRmtCM3InetAddressType,
+                        ccmH323DevRmtCM3InetAddress,
+                        ccmH323DevProductTypeIndex,
+                        ccmH323TableEntries,
+                        ccmH323DevUnregReason,
+                        ccmH323DevRegFailReason
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects which provide info about
+        all H323 devices within the scope of the local Cisco Unified 
+        Communications Manager. It comprises of the H323Device table."
+    ::= { ciscoCcmMIBGroups 46 }
+
+ccmVoiceMailDeviceInfoGroupRev2 OBJECT-GROUP
+    OBJECTS         {
+                        ccmVMailDevName,
+                        ccmVMailDevDescription,
+                        ccmVMailDevStatus,
+                        ccmVMailDevInetAddressType,
+                        ccmVMailDevInetAddress,
+                        ccmVMailDevTimeLastStatusUpdt,
+                        ccmVMailDevTimeLastRegistered,
+                        ccmVMailDevProductTypeIndex,
+                        ccmVMailDevDirNum,
+                        ccmRegisteredVoiceMailDevices,
+                        ccmUnregisteredVoiceMailDevices,
+                        ccmRejectedVoiceMailDevices,
+                        ccmVMailDevUnregReason,
+                        ccmVMailDevRegFailReason
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects which provide info about
+        all Voice Messaging Devices within the scope of the local 
+        CallManager. It comprises of the ccmVoiceMailDevice and
+        ccmVoiceMailDirNum tables."
+    ::= { ciscoCcmMIBGroups 47 }
+
+ccmNotificationsGroupRev3 NOTIFICATION-GROUP
+   NOTIFICATIONS    {
+                        ccmCallManagerFailed,
+                        ccmPhoneFailed,
+                        ccmPhoneStatusUpdate,
+                        ccmGatewayFailedReason,
+                        ccmMediaResourceListExhausted,
+                        ccmRouteListExhausted,
+                        ccmGatewayLayer2Change,
+                        ccmMaliciousCall,
+                        ccmQualityReport,
+                        ccmTLSConnectionFailure
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of notifications that are generated by
+        the CUCM Agent."
+    ::= { ciscoCcmMIBGroups 48 }
 
 END
 

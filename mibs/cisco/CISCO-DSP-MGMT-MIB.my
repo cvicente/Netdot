@@ -3,7 +3,7 @@
 --   
 -- July 1997  Hongchi Shih
 --   
--- Copyright (c) 1997-2000, 2003-2007 by cisco Systems, Inc.
+-- Copyright (c) 1997-2009 by cisco Systems, Inc.
 -- All rights reserved.
 -- *********************************************************************
 
@@ -18,23 +18,24 @@ IMPORTS
     Integer32,
     Unsigned32
         FROM SNMPv2-SMI
-    TimeStamp,
-    TruthValue,
-    DisplayString
-        FROM SNMPv2-TC
-    entPhysicalIndex,
-    entPhysicalName
-        FROM ENTITY-MIB
     MODULE-COMPLIANCE,
     OBJECT-GROUP,
     NOTIFICATION-GROUP
         FROM SNMPv2-CONF
+    TimeStamp,
+    TruthValue,
+    DisplayString,
+    RowStatus
+        FROM SNMPv2-TC
+    entPhysicalIndex,
+    entPhysicalName
+        FROM ENTITY-MIB
     ciscoMgmt
         FROM CISCO-SMI;
 
 
 ciscoDspMgmtMIB MODULE-IDENTITY
-    LAST-UPDATED    "200709030005Z"
+    LAST-UPDATED    "200904090000Z"
     ORGANIZATION    "Cisco Systems, Inc."
     CONTACT-INFO
             "Cisco Systems
@@ -57,7 +58,44 @@ ciscoDspMgmtMIB MODULE-IDENTITY
         DTMF - Dual Tone Multi-Frequency.
                DTMF uses two frequencies, the high frequency
                omponent and the low frequency component,
-               to generate digit signals."
+               to generate digit signals.
+        DSPFarm - DSPFarm ia a logical name given to a functionality
+               which groups the DSP resources to provide certain
+               service like transcoding and conferencing using DSP.
+        DSPFarm profile - A DSPFarm profile logically groups the DSP
+               to perform service like transcoding and conferencing.
+               It is uniquely identified by a profile number.
+        MTP  - Media Termination Point. RTP packet received by
+               MTP in the incoming call leg will be regenerated
+               and send out through the outgoing call leg.
+        transcode - Translating codec. transcoder is used to do
+               codec translation. If incoming call leg negotiates
+               codec-A and outgoing call leg negotiates codec-B
+               then transcoder will convert received RTP packet
+               from codec-A to codec-B or codec-B to codec-A.
+        MTP hardware session - Media termination functionality 
+               with using DSP.
+        MTP software session - Media termination functionality
+               without using DSP.
+        RTP  - Real-time Transport protocol."
+    REVISION        "200904090000Z"
+    DESCRIPTION
+        "1. Added the following new OBJECT IDENTIFIERs:
+        cdspDspfarmObjects, 
+        cdspDspfarmUtilObjects.
+        2. Added the following objects to cdspDspfarmObjects: 
+        cdspGlobMaxConfTranscodeSess,
+        cdspGlobMaxAvailTranscodeSess.
+        3. Added cdspTranscodeProfileTable.
+        4. Added cdspMtpProfileTable.
+        5. Added the following objects to cdspDspfarmUtilObjects:
+        cdspTotAvailTranscodeSess,
+        cdspTotUnusedTranscodeSess,
+        cdspTotAvailMtpSess,
+        cdspTotUnusedMtpSess.
+        6. Added OBJECT-GROUP cdspDspfarmInfoGroup. 
+        7. Deprecated MODULE-COMPLIANCE cdspMgmtComplianceRev9.
+        8. Added MODULE-COMPLIANCE cdspMgmtComplianceRev10."
     REVISION        "200709030005Z"
     DESCRIPTION
         "Added cdspUtilTable to have MIB support for utilised and free
@@ -172,6 +210,12 @@ cdspVoiceObjects  OBJECT IDENTIFIER
 cdspUtilObjects  OBJECT IDENTIFIER
     ::= { cdspMgmtObjects 5 }
 
+cdspDspfarmObjects  OBJECT IDENTIFIER
+    ::= { cdspMgmtObjects 6 }
+
+cdspDspfarmUtilObjects  OBJECT IDENTIFIER
+    ::= { cdspMgmtObjects 7 }
+
 -- Digital Signal Processing Group
 --   
 -- This group contains the DSP related variables
@@ -204,7 +248,7 @@ cdspCardStatusEntry OBJECT-TYPE
 
 CdspCardStatusEntry ::= SEQUENCE {
         cdspCardIndex                  Integer32,
-        cdspCardState                  INTEGER ,
+        cdspCardState                  INTEGER,
         cdspCardResourceUtilization    Unsigned32,
         cdspCardLastHiWaterUtilization Unsigned32,
         cdspCardLastResetTime          TimeStamp,
@@ -215,7 +259,7 @@ CdspCardStatusEntry ::= SEQUENCE {
         cdspCongestedDsp               Gauge32,
         cdspNormalDsp                  Gauge32,
         cdspNx64Dsp                    Unsigned32,
-        cdspCodecTemplateSupported     INTEGER 
+        cdspCodecTemplateSupported     INTEGER
 }
 
 cdspCardIndex OBJECT-TYPE
@@ -257,7 +301,7 @@ cdspCardState OBJECT-TYPE
     ::= { cdspCardStatusEntry 2 }
 
 cdspCardResourceUtilization OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..100 )
+    SYNTAX          Unsigned32 (0..100)
     UNITS           "percent"
     MAX-ACCESS      read-only
     STATUS          current
@@ -270,7 +314,7 @@ cdspCardResourceUtilization OBJECT-TYPE
     ::= { cdspCardStatusEntry 3 }
 
 cdspCardLastHiWaterUtilization OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..100 )
+    SYNTAX          Unsigned32 (0..100)
     UNITS           "percent"
     MAX-ACCESS      read-only
     STATUS          current
@@ -303,7 +347,7 @@ cdspCardMaxChanPerDSP OBJECT-TYPE
     ::= { cdspCardStatusEntry 6 }
 
 cdspTotalDsp OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..2048 )
+    SYNTAX          Unsigned32 (1..2048)
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
@@ -311,7 +355,7 @@ cdspTotalDsp OBJECT-TYPE
     ::= { cdspCardStatusEntry 7 }
 
 cdspFailedDsp OBJECT-TYPE
-    SYNTAX          Gauge32 (0..2048 )
+    SYNTAX          Gauge32 (0..2048)
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
@@ -320,7 +364,7 @@ cdspFailedDsp OBJECT-TYPE
     ::= { cdspCardStatusEntry 8 }
 
 cdspDspSwitchOverThreshold OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..2048 )
+    SYNTAX          Unsigned32 (1..2048)
     MAX-ACCESS      read-write
     STATUS          current
     DESCRIPTION
@@ -332,7 +376,7 @@ cdspDspSwitchOverThreshold OBJECT-TYPE
     ::= { cdspCardStatusEntry 9 }
 
 cdspCongestedDsp OBJECT-TYPE
-    SYNTAX          Gauge32 (0..2048 )
+    SYNTAX          Gauge32 (0..2048)
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
@@ -341,7 +385,7 @@ cdspCongestedDsp OBJECT-TYPE
     ::= { cdspCardStatusEntry 10 }
 
 cdspNormalDsp OBJECT-TYPE
-    SYNTAX          Gauge32 (0..2048 )
+    SYNTAX          Gauge32 (0..2048)
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
@@ -350,7 +394,7 @@ cdspNormalDsp OBJECT-TYPE
     ::= { cdspCardStatusEntry 11 }
 
 cdspNx64Dsp OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..2048 )
+    SYNTAX          Unsigned32 (0..2048)
     MAX-ACCESS      read-write
     STATUS          current
     DESCRIPTION
@@ -427,9 +471,9 @@ cdspStatusEntry OBJECT-TYPE
     ::= { cdspStatusTable 1 }
 
 CdspStatusEntry ::= SEQUENCE {
-        cdspOperState               INTEGER ,
+        cdspOperState               INTEGER,
         cdspAlarms                  Counter32,
-        cdspLastAlarmCause          INTEGER ,
+        cdspLastAlarmCause          INTEGER,
         cdspLastAlarmCauseText      DisplayString,
         cdspLastAlarmTime           TimeStamp,
         cdspTotalChannels           Unsigned32,
@@ -575,7 +619,7 @@ cdspNumCongestionOccurrence OBJECT-TYPE
     ::= { cdspStatusEntry 10 }
 
 cdspDspNum OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..252 )
+    SYNTAX          Unsigned32 (1..252)
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
@@ -687,23 +731,23 @@ cdspVoiceParamEntry OBJECT-TYPE
     ::= { cdspVoiceParamTable 1 }
 
 CdspVoiceParamEntry ::= SEQUENCE {
-        cdspRtpSidPayloadType     INTEGER ,
+        cdspRtpSidPayloadType     INTEGER,
         cdspRtcpControl           TruthValue,
         cdspRtcpTransInterval     Unsigned32,
         cdspRtcpRecvMultiplier    Unsigned32,
         cdspVadAdaptive           TruthValue,
         cdspDtmfPowerLevel        Integer32,
         cdspDtmfPowerTwist        Integer32,
-        cdspRtcpTimerControl      INTEGER ,
-        cdspVqmControl            INTEGER ,
+        cdspRtcpTimerControl      INTEGER,
+        cdspVqmControl            INTEGER,
         cdspRtcpXrControl         TruthValue,
         cdspRtcpXrTransMultiplier Unsigned32,
         cdspRtcpXrGminDefault     Unsigned32,
         cdspRtcpXrExtRfactor      Unsigned32,
-        cdspPktLossConcealment    INTEGER ,
+        cdspPktLossConcealment    INTEGER,
         cdspVqmThreshSES          Unsigned32,
         cdspTransparentIpIp       TruthValue,
-        cdspVoiceModeIpIp         INTEGER 
+        cdspVoiceModeIpIp         INTEGER
 }
 
 cdspRtpSidPayloadType OBJECT-TYPE
@@ -718,8 +762,7 @@ cdspRtpSidPayloadType OBJECT-TYPE
         type of the SID (Silence Insertion Descriptor) packet 
         that is sent to the remote endpoint at the onset 
         of silence suppression."
-    REFERENCE
-        "Section 5.1 of RFC2833"
+    REFERENCE       "Section 5.1 of RFC2833"
     DEFVAL          { decimal } 
     ::= { cdspVoiceParamEntry 1 }
 
@@ -734,13 +777,12 @@ cdspRtcpControl OBJECT-TYPE
         reception of RTCP packets are enabled; otherwise, 
         transmission of RTCP packets is disabled while any 
         received RTCP packets are ignored."
-    REFERENCE
-        "Appendix A.7 of RFC1889"
+    REFERENCE       "Appendix A.7 of RFC1889"
     DEFVAL          { true } 
     ::= { cdspVoiceParamEntry 2 }
 
 cdspRtcpTransInterval OBJECT-TYPE
-    SYNTAX          Unsigned32 (5000..65535 )
+    SYNTAX          Unsigned32 (5000..65535)
     UNITS           "milliseconds"
     MAX-ACCESS      read-write
     STATUS          current
@@ -763,13 +805,12 @@ cdspRtcpTransInterval OBJECT-TYPE
 
         This object is applicable only if 'cdspRtcpControl' is
         set to 'true'."
-    REFERENCE
-        "Appendix A.7 of RFC1889"
+    REFERENCE       "Appendix A.7 of RFC1889"
     DEFVAL          { 5000 } 
     ::= { cdspVoiceParamEntry 3 }
 
 cdspRtcpRecvMultiplier OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..60 )
+    SYNTAX          Unsigned32 (1..60)
     MAX-ACCESS      read-write
     STATUS          current
     DESCRIPTION
@@ -816,7 +857,7 @@ cdspVadAdaptive OBJECT-TYPE
     ::= { cdspVoiceParamEntry 5 }
 
 cdspDtmfPowerLevel OBJECT-TYPE
-    SYNTAX          Integer32 (-250..30 )
+    SYNTAX          Integer32 (-250..30)
     UNITS           "0.1 dBm"
     MAX-ACCESS      read-write
     STATUS          current
@@ -833,7 +874,7 @@ cdspDtmfPowerLevel OBJECT-TYPE
     ::= { cdspVoiceParamEntry 6 }
 
 cdspDtmfPowerTwist OBJECT-TYPE
-    SYNTAX          Integer32 (-100..100 )
+    SYNTAX          Integer32 (-100..100)
     UNITS           "0.1 dB"
     MAX-ACCESS      read-write
     STATUS          current
@@ -956,7 +997,7 @@ cdspRtcpXrControl OBJECT-TYPE
     ::= { cdspVoiceParamEntry 10 }
 
 cdspRtcpXrTransMultiplier OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..5 )
+    SYNTAX          Unsigned32 (1..5)
     MAX-ACCESS      read-write
     STATUS          current
     DESCRIPTION
@@ -980,7 +1021,7 @@ cdspRtcpXrTransMultiplier OBJECT-TYPE
     ::= { cdspVoiceParamEntry 11 }
 
 cdspRtcpXrGminDefault OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..255 )
+    SYNTAX          Unsigned32 (1..255)
     MAX-ACCESS      read-write
     STATUS          current
     DESCRIPTION
@@ -994,7 +1035,7 @@ cdspRtcpXrGminDefault OBJECT-TYPE
     ::= { cdspVoiceParamEntry 12 }
 
 cdspRtcpXrExtRfactor OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..65535 )
+    SYNTAX          Unsigned32 (0..65535)
     MAX-ACCESS      read-write
     STATUS          current
     DESCRIPTION
@@ -1027,7 +1068,7 @@ cdspPktLossConcealment OBJECT-TYPE
     ::= { cdspVoiceParamEntry 14 }
 
 cdspVqmThreshSES OBJECT-TYPE
-    SYNTAX          Unsigned32 (10..1000 )
+    SYNTAX          Unsigned32 (10..1000)
     UNITS           "milliseconds"
     MAX-ACCESS      read-write
     STATUS          current
@@ -1130,7 +1171,7 @@ CdspUtilEntry ::= SEQUENCE {
 }
 
 cdspCodecPoolIndex OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..64 )
+    SYNTAX          Unsigned32 (1..64)
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
@@ -1186,6 +1227,245 @@ cdspCurrentAvlbCap OBJECT-TYPE
 
 
 -- End of DSP Codec Capacity Table
+--   
+
+-- DSPFarm Objects
+--   
+-- Global transcode sessions
+
+cdspGlobMaxConfTranscodeSess OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..4294967295)
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the maximum transcode sessions
+        configured globally for the voice gateway." 
+    ::= { cdspDspfarmObjects 1 }
+
+cdspGlobMaxAvailTranscodeSess OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..4294967295)
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the total number of available sessions
+        from the maximum transcode sessions configured globally for
+        the voice gateway." 
+    ::= { cdspDspfarmObjects 2 }
+-- transcode Profile
+
+cdspTranscodeProfileTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CdspTranscodeProfileEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table contains information about each transcode
+        DSPFarm profile. It gives the maximum number of transcode
+        sessions configured and the number of available
+        sessions per profile."
+    ::= { cdspDspfarmObjects 3 }
+
+cdspTranscodeProfileEntry OBJECT-TYPE
+    SYNTAX          CdspTranscodeProfileEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "An entry in cdspTranscodeProfileTable indicates the transcode
+        DSPFarm profile maximum configured sessions and available
+        sessions. Each DSPFarm transcode profile configured in the 
+        voice gateway forms a new entry to this table. The entry is
+        deleted when the transcode DSPFarm profile is deleted.
+
+        A new entry to this table can be created and an existing
+        entry can be deleted using object cdspTranscodeProfileRowStatus
+        indexed with a profile number."
+    INDEX           { cdspTranscodeProfileId } 
+    ::= { cdspTranscodeProfileTable 1 }
+
+CdspTranscodeProfileEntry ::= SEQUENCE {
+        cdspTranscodeProfileId           Unsigned32,
+        cdspTranscodeProfileMaxConfSess  Unsigned32,
+        cdspTranscodeProfileMaxAvailSess Unsigned32,
+        cdspTranscodeProfileRowStatus    RowStatus
+}
+
+cdspTranscodeProfileId OBJECT-TYPE
+    SYNTAX          Unsigned32 (1..4294967295)
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the profile number
+        of the DSPFarm transcode profile." 
+    ::= { cdspTranscodeProfileEntry 1 }
+
+cdspTranscodeProfileMaxConfSess OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..4294967295)
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the maximum transcode sessions
+        configured on the DSPFarm transcode profile for the
+        voice gateway." 
+    ::= { cdspTranscodeProfileEntry 2 }
+
+cdspTranscodeProfileMaxAvailSess OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..4294967295)
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the total number of available
+        transcode sessions per transcode profile from the 
+        configured maximum transcode sessions per transcode 
+        profile for the voice gateway." 
+    ::= { cdspTranscodeProfileEntry 3 }
+
+cdspTranscodeProfileRowStatus OBJECT-TYPE
+    SYNTAX          RowStatus
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object is used to create a new entry or delete
+        an existing entry in cdspTranscodeProfileTable.
+
+        The storage type for all the entries created would 
+        be volatile. To retain the configured entries. One must
+        write the configuration to memory in the voice gateway." 
+    ::= { cdspTranscodeProfileEntry 4 }
+ 
+
+-- MTP Profile
+
+cdspMtpProfileTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CdspMtpProfileEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table contains information about each MTP
+        DSPFarm profile. It gives the maximum number of MTP
+        sessions configured and the number of available
+        sessions per profile."
+    ::= { cdspDspfarmObjects 4 }
+
+cdspMtpProfileEntry OBJECT-TYPE
+    SYNTAX          CdspMtpProfileEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "An entry in cdspMtpProfileTable indicates the MTP
+        DSPFarm profile maximum configured sessions and available
+        sessions. Each DSPFarm MTP profile configured in the 
+        voice gateway forms a new entry to this table. The entry is
+        deleted when the MTP DSPFarm profile is deleted. 
+
+        A new entry to this table can be created and an existing
+        entry can be deleted using object cdspMtpProfileRowStatus
+        indexed with a profile number."
+    INDEX           { cdspMtpProfileId } 
+    ::= { cdspMtpProfileTable 1 }
+
+CdspMtpProfileEntry ::= SEQUENCE {
+        cdspMtpProfileId               Unsigned32,
+        cdspMtpProfileMaxConfSoftSess  Unsigned32,
+        cdspMtpProfileMaxConfHardSess  Unsigned32,
+        cdspMtpProfileMaxAvailHardSess Unsigned32,
+        cdspMtpProfileRowStatus        RowStatus
+}
+
+cdspMtpProfileId OBJECT-TYPE
+    SYNTAX          Unsigned32 (1..4294967295)
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the profile number
+        of the DSPFarm MTP profile." 
+    ::= { cdspMtpProfileEntry 1 }
+
+cdspMtpProfileMaxConfSoftSess OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..4294967295)
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the maximum MTP software
+        sessions configured per DSPFarm MTP profile for the 
+        voice gateway." 
+    ::= { cdspMtpProfileEntry 2 }
+
+cdspMtpProfileMaxConfHardSess OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..4294967295)
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the maximum MTP hardware
+        sessions configured per DSPFarm MTP profile for the
+        voice gateway." 
+    ::= { cdspMtpProfileEntry 3 }
+
+cdspMtpProfileMaxAvailHardSess OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..4294967295)
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the total number of available
+        MTP sessions per MTP profile from the configured
+        maximum MTP sessions per MTP profile for the voice
+        gateway." 
+    ::= { cdspMtpProfileEntry 4 }
+
+cdspMtpProfileRowStatus OBJECT-TYPE
+    SYNTAX          RowStatus
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object is used to create a new entry or delete
+        an existing entry in cdspMtpProfileTable.
+
+        The storage type for all the entries created would 
+        be volatile. To retain the configured entries. One must
+        write the configuration to memory in the voice gateway." 
+    ::= { cdspMtpProfileEntry 5 }
+ 
+
+
+-- DSPFarm Utilization objects
+
+cdspTotAvailTranscodeSess OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..4294967295)
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the total number of transcode
+        sessions available for the voice gateway. The value
+        is equal to summation of all the values returned by
+        transcode profile object cdspTranscodeProfileMaxAvailSess." 
+    ::= { cdspDspfarmUtilObjects 1 }
+
+cdspTotUnusedTranscodeSess OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..4294967295)
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the total number of unused
+        transcode sessions." 
+    ::= { cdspDspfarmUtilObjects 2 }
+
+cdspTotAvailMtpSess OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..4294967295)
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the total number of MTP sessions
+        available for the voice gateway. The value is equal to
+        summation of all the values returned by MTP profile
+        object cdspMtpProfileMaxAvailHardSess." 
+    ::= { cdspDspfarmUtilObjects 3 }
+
+cdspTotUnusedMtpSess OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..4294967295)
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the total number of unused MTP
+        sessions." 
+    ::= { cdspDspfarmUtilObjects 4 }
 
 cdspMIBEnableCardStatusNotification OBJECT-TYPE
     SYNTAX          TruthValue
@@ -1530,7 +1810,7 @@ cdspMgmtComplianceRev8 MODULE-COMPLIANCE
     ::= { cdspMgmtCompliances 9 }
 
 cdspMgmtComplianceRev9 MODULE-COMPLIANCE
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The compliance statement for systems that contain a
         Cisco DSP card and its associated DSPs."
@@ -1575,6 +1855,58 @@ cdspMgmtComplianceRev9 MODULE-COMPLIANCE
         "This group is optional and it provides
         DSP codec capacity related parameters."
     ::= { cdspMgmtCompliances 10 }
+
+cdspMgmtComplianceRev10 MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for systems that contain a
+        Cisco DSP card and its associated DSPs."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        cdspMgmtGeneralInfoGroupRev1,
+                        cdspMgmtNotificationsGroupRev1
+                    }
+
+    GROUP           cdspMgmtExtGeneralInfoGroupRev1
+    DESCRIPTION
+        "This group is optional and it provides additional
+        general DSP information."
+
+    GROUP           cdspChannelGroup
+    DESCRIPTION
+        "This group is mandatory only if the DSP software offers
+        multiple channels per DSP."
+
+    GROUP           cdspChannelExtGroup
+    DESCRIPTION
+        "This group is optional and it provides additional
+        DSP related information."
+
+    GROUP           cdspVQMGroup
+    DESCRIPTION
+        "This group is mandatory only if
+        VQM (Voice Quality Monitor) is supported."
+
+    GROUP           cdspVoiceInfoGroupRev2
+    DESCRIPTION
+        "This group is optional and it is for voice applications
+        only."
+
+    GROUP           cdspTransCodingGroup1
+    DESCRIPTION
+        "This group is optional and it provides
+        DSP transcoding related parameters."
+
+    GROUP           cdspUtilInfoGroup
+    DESCRIPTION
+        "This group is optional and it provides
+        DSP codec capacity related parameters."
+
+    GROUP           cdspDspfarmInfoGroup
+    DESCRIPTION
+        "This group is optional and it provides
+        DSPFarm session related parameters."
+    ::= { cdspMgmtCompliances 11 }
 
 -- units of conformance
 
@@ -1792,7 +2124,27 @@ cdspUtilInfoGroup OBJECT-GROUP
         codec capacity usage ."
     ::= { cdspMgmtGroups 15 }
 
+cdspDspfarmInfoGroup OBJECT-GROUP
+    OBJECTS         {
+                        cdspGlobMaxConfTranscodeSess,
+                        cdspGlobMaxAvailTranscodeSess,
+                        cdspTranscodeProfileRowStatus,
+                        cdspTranscodeProfileMaxConfSess,
+                        cdspTranscodeProfileMaxAvailSess,
+                        cdspMtpProfileRowStatus,
+                        cdspMtpProfileMaxConfSoftSess,
+                        cdspMtpProfileMaxConfHardSess,
+                        cdspMtpProfileMaxAvailHardSess,
+                        cdspTotAvailTranscodeSess,
+                        cdspTotUnusedTranscodeSess,
+                        cdspTotAvailMtpSess,
+                        cdspTotUnusedMtpSess
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects providing DSPFarm
+        session configuration, availability and 
+        utilization."
+    ::= { cdspMgmtGroups 16 }
+
 END
-
-
-
