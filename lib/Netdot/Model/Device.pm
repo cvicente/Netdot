@@ -2461,16 +2461,15 @@ sub info_update {
 	    my $version = $argv{snmp_version} || $self->snmp_version 
 		|| $self->config->get('DEFAULT_SNMPVERSION');
 	    
-	    my $communities = $argv{communities} || [$self->community] || $self->config->get('DEFAULT_SNMPCOMMUNITIES');
 	    my $timeout     = $argv{timeout}     || $self->config->get('DEFAULT_SNMPTIMEOUT');
 	    my $retries     = $argv{retries}     || $self->config->get('DEFAULT_SNMPRETRIES');
-	    my $sec_name    = $argv{sec_name}    || $self->snmp_securityname;
-	    my $sec_level   = $argv{sec_level}   || $self->snmp_securitylevel;
-	    my $auth_proto  = $argv{auth_proto}  || $self->snmp_authprotocol;
-	    my $auth_pass   = $argv{auth_pass}   || $self->snmp_authkey;
-	    my $priv_proto  = $argv{priv_proto}  || $self->snmp_privprotocol;
-	    my $priv_pass   = $argv{priv_pass}   || $self->snmp_privkey;
-
+	    my $communities = $argv{communities} || [$self->community]        || $self->config->get('DEFAULT_SNMPCOMMUNITIES');
+	    my $sec_name    = $argv{sec_name}    || $self->snmp_securityname  || $self->config->get('DEFAULT_SNMP_SECNAME');
+	    my $sec_level   = $argv{sec_level}   || $self->snmp_securitylevel || $self->config->get('DEFAULT_SNMP_SECLEVEL');
+	    my $auth_proto  = $argv{auth_proto}  || $self->snmp_authprotocol  || $self->config->get('DEFAULT_SNMP_AUTHPROTO');
+	    my $auth_pass   = $argv{auth_pass}   || $self->snmp_authkey       || $self->config->get('DEFAULT_SNMP_AUTHPASS');
+	    my $priv_proto  = $argv{priv_proto}  || $self->snmp_privprotocol  || $self->config->get('DEFAULT_SNMP_PRIVPROTO');
+	    my $priv_pass   = $argv{priv_pass}   || $self->snmp_privkey       || $self->config->get('DEFAULT_SNMP_PRIVPASS');
 	    $info = $class->_exec_timeout($host, 
 					  sub{ return $self->get_snmp_info(communities => $communities, 
 									   version     => $version,

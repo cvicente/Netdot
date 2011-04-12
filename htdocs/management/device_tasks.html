@@ -185,37 +185,51 @@ my $manager = $ui->get_permission_manager($r);
 %               }
                 <p>
                 <label for="sec_name">Sec Name:</label>
-                <input type="text" name="sec_name" class="txt">
+                <input type="text" name="sec_name" class="txt" value="<% $ui->config->get('DEFAULT_SNMP_SECNAME') %>">
                 </p>
                 <p>
                 <label for="sec_level">Sec Level:</label>
                 <select name="sec_level">
-		    <option value="noAuthNoPriv">noAuthNoPriv</option>
-		    <option value="authNoPriv">authNoPriv</option>
-		    <option value="authPriv">authPriv</option>
+%               foreach my $seclevel ( qw(noAuthNoPriv authNoPriv authPriv) ){
+%		    if ( $ui->config->get('DEFAULT_SNMP_SECLEVEL') eq $seclevel ){
+		        <option value="<% $seclevel %>" selected="selected"><% $seclevel %></option>
+%		    }else{
+		        <option value="<% $seclevel %>"><% $seclevel %></option>
+%		    }
+%		}
 		</select>
                 </p>
                 <p>
                 <label for="auth_proto">Auth Proto:</label>
                 <select name="auth_proto">
-		    <option value="MD5">MD5</option>
-		    <option value="SHA">SHA</option>
+%               foreach my $proto ( qw(MD5 SHA) ){
+%		    if ( $ui->config->get('DEFAULT_SNMP_AUTHPROTO') eq $proto ){
+		        <option value="<% $proto %>" selected="selected"><% $proto %></option>
+%		    }else{
+		        <option value="<% $proto %>"><% $proto %></option>
+%		    }
+%		}
 		</select>
                 </p>
                 <p>
                 <label for="auth_pass">Auth Pass:</label>
-                <input type="password" name="auth_pass" class="txt">
+                <input type="password" name="auth_pass" class="txt" value="<% $ui->config->get('DEFAULT_SNMP_AUTHPASS') %>">
                 </p>
                 <p>
                 <label for="">Priv Proto:</label>
                 <select name="priv_proto">
-		    <option value="DES">DES</option>
-		    <option value="AES">AES</option>
+%               foreach my $proto ( qw(DES AES) ){
+%		    if ( $ui->config->get('DEFAULT_SNMP_PRIVPROTO') eq $proto ){
+		        <option value="<% $proto %>" selected="selected"><% $proto %></option>
+%		    }else{
+		        <option value="<% $proto %>"><% $proto %></option>
+%		    }
+%		}
 		</select>
                 </p>
                 <p>
                 <label for="priv_pass">Priv Pass:</label>
-                <input type="password" name="priv_pass" class="txt">
+                <input type="password" name="priv_pass" class="txt" value="<% $ui->config->get('DEFAULT_SNMP_PRIVPASS') %>">
                 </p>
                 <p>
                 </div>
