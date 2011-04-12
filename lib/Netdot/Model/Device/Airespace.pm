@@ -393,8 +393,11 @@ sub _get_ap_info {
     # Assign the IP and Netmask to the BVI1 interface
     if ( my $ip = $hashes->{'airespace_ap_ip'}->{$idx}  ){
 	$info->{interface}{$bviidx}{ips}{$ip}{address} = $ip;
+	$info->{interface}{$bviidx}{ips}{$ip}{version} = 4;
 	if ( my $mask = $hashes->{'bsnAPNetmask'}->{$idx}  ){
-	    $info->{interface}{$bviidx}{ips}{$ip}{mask} = $mask;
+	    my ($subnet, $len) = Ipblock->get_subnet_addr(address => $ip, 
+							  prefix  => $mask );
+	    $info->{interface}{$iid}{ips}{$ip}{subnet} = "$subnet/$len";
 	}
 	$info->{main_ip} = $ip;
     }
