@@ -1,5 +1,3 @@
-INSERT INTO schemainfo (version) VALUES('1.0');
-
 INSERT INTO circuittype (name) VALUES ('DS3');
 INSERT INTO circuittype (name) VALUES ('xDSL');
 INSERT INTO circuittype (name) VALUES ('Ethernet');
@@ -99,9 +97,9 @@ INSERT INTO producttype (name) VALUES ('Wireless Bridge');
 INSERT INTO producttype (name) VALUES ('Wireless Controller');
 INSERT INTO producttype (name) VALUES ('Unknown');
 
-INSERT INTO product (name,type,manufacturer,sysobjectid) VALUES ('Generic Net-SNMP Agent', 7, 19, '1.3.6.1.4.1.8072.3.2.10');
-INSERT INTO product (name,type,manufacturer,sysobjectid) VALUES ('Windows Server', 7, 7, '1.3.6.1.4.1.311.1.1.3.1.3');
-INSERT INTO product (name,type,manufacturer) VALUES ('Unknown', 11, 1);
+INSERT INTO product (name,type,manufacturer,sysobjectid,mfg_number) VALUES ('Generic Net-SNMP Agent', 7, 19, '1.3.6.1.4.1.8072.3.2.10', 2);
+INSERT INTO product (name,type,manufacturer,sysobjectid,mfg_number) VALUES ('Windows Server', 7, 7, '1.3.6.1.4.1.311.1.1.3.1.3', 2);
+INSERT INTO product (name,type,manufacturer,mfg_number) VALUES ('Unknown', 11, 1, 1);
 
 INSERT INTO service (name) VALUES ('DHCPD');
 INSERT INTO service (name) VALUES ('DNS');
@@ -249,18 +247,18 @@ INSERT INTO dhcpattrname (name, code, format) VALUES ('option subnet-selection',
 INSERT INTO dhcpattrname (name, code, format) VALUES ('option nwip.nsq-broadcast', '5', 'boolean' );
 INSERT INTO dhcpattrname (name, code, format) VALUES ('option nwip.preferred-dss', '6', 'array of ip-address' );
 INSERT INTO dhcpattrname (name, code, format) VALUES ('option nwip.nearest-nwip-server', '7', 'array of ip-address' );
-INSERT INTO dhcpattrname (name, code, format) VALUES ('option nwip.autoretries', '', 'unsigned integer 8' );
-INSERT INTO dhcpattrname (name, code, format) VALUES ('option nwip.autoretry-secs', '', 'unsigned integer 8' );
-INSERT INTO dhcpattrname (name, code, format) VALUES ('option nwip.nwip-1-1', '', 'boolean' );
-INSERT INTO dhcpattrname (name, code, format) VALUES ('option nwip.primary-dss', '', 'ip-address' );
-INSERT INTO dhcpattrname (name, code, format) VALUES ('option fqdn.no-client-update', '', 'boolean' );
-INSERT INTO dhcpattrname (name, code, format) VALUES ('option fqdn.server-update', '', 'boolean' );
-INSERT INTO dhcpattrname (name, code, format) VALUES ('option fqdn.encoded', '', 'boolean' );
-INSERT INTO dhcpattrname (name, code, format) VALUES ('option fqdn.rcode1', '', 'unsigned integer 8' );
-INSERT INTO dhcpattrname (name, code, format) VALUES ('option fqdn.rcode2', '', 'unsigned integer 8' );
-INSERT INTO dhcpattrname (name, code, format) VALUES ('option fqdn.hostname', '', 'text' );
-INSERT INTO dhcpattrname (name, code, format) VALUES ('option fqdn.domainname', '', 'text' );
-INSERT INTO dhcpattrname (name, code, format) VALUES ('option fqdn.fqdn', '', 'text' );
+INSERT INTO dhcpattrname (name, format) VALUES ('option nwip.autoretries', 'unsigned integer 8' );
+INSERT INTO dhcpattrname (name, format) VALUES ('option nwip.autoretry-secs', 'unsigned integer 8' );
+INSERT INTO dhcpattrname (name, format) VALUES ('option nwip.nwip-1-1', 'boolean' );
+INSERT INTO dhcpattrname (name, format) VALUES ('option nwip.primary-dss', 'ip-address' );
+INSERT INTO dhcpattrname (name, format) VALUES ('option fqdn.no-client-update',  'boolean' );
+INSERT INTO dhcpattrname (name, format) VALUES ('option fqdn.server-update',  'boolean' );
+INSERT INTO dhcpattrname (name, format) VALUES ('option fqdn.encoded',  'boolean' );
+INSERT INTO dhcpattrname (name, format) VALUES ('option fqdn.rcode1',  'unsigned integer 8' );
+INSERT INTO dhcpattrname (name, format) VALUES ('option fqdn.rcode2',  'unsigned integer 8' );
+INSERT INTO dhcpattrname (name, format) VALUES ('option fqdn.hostname', 'text' );
+INSERT INTO dhcpattrname (name, format) VALUES ('option fqdn.domainname', 'text' );
+INSERT INTO dhcpattrname (name, format) VALUES ('option fqdn.fqdn', 'text' );
 INSERT INTO dhcpattrname (name, code, format) VALUES ('option agent.circuit-id', '1', 'string' );
 INSERT INTO dhcpattrname (name, code, format) VALUES ('option agent.remote-id', '2', 'string' );
 
@@ -268,9 +266,9 @@ INSERT INTO usertype (name, info) VALUES ('Admin', 'An Admin user has full acces
 INSERT INTO usertype (name, info) VALUES ('Operator', 'Operators have the same view as Admins, but have read-only access');
 INSERT INTO usertype (name, info) VALUES ('User', 'Regular users have a restricted view of objects in Netdot, and can only read and/or write objects depending on the permissions assigned to them.');
 
-INSERT INTO person (lastname, username, user_type, password) VALUES ('Admin', 'admin', '1', 'jGl25bVBBBW96Qi9Te4V37Fnqchz/Eu4qB9vKrRIqRg');
-INSERT INTO person (lastname, username, user_type, password) VALUES ('Operator', 'operator', '2', 'BuVbYzSB97sHKVfqvPEQyXLoZpHDz+2r4IgCS//kLyM');
-INSERT INTO person (lastname, username, user_type, password) VALUES ('Guest', 'guest', '3', 'hJg8YPfarcHLhphiH4AsDZ+aPDwpXIEHSPsEgRXBhuw');
+INSERT INTO person (lastname, firstname, username, user_type, password) VALUES ('Admin', 'Admin', 'admin', '1', 'jGl25bVBBBW96Qi9Te4V37Fnqchz/Eu4qB9vKrRIqRg');
+INSERT INTO person (lastname, firstname, username, user_type, password) VALUES ('Operator', 'Operator', 'operator', '2', 'BuVbYzSB97sHKVfqvPEQyXLoZpHDz+2r4IgCS//kLyM');
+INSERT INTO person (lastname, firstname, username, user_type, password) VALUES ('Guest', 'Guest', 'guest', '3', 'hJg8YPfarcHLhphiH4AsDZ+aPDwpXIEHSPsEgRXBhuw');
 
 INSERT INTO ipblock (address, prefix, version, status, owner, used_by, description) VALUES ('3232235520', '16', '4', '1', '1', '1', 'RFC-1918');
 INSERT INTO ipblock (address, prefix, version, status, owner, used_by, description) VALUES ('2886729728', '12', '4', '1', '1', '1', 'RFC-1918');
@@ -278,7 +276,7 @@ INSERT INTO ipblock (address, prefix, version, status, owner, used_by, descripti
 INSERT INTO ipblock (address, prefix, version, status, owner, used_by, description) VALUES ('42540766411282592856903984951653826560', '32', '6', '1', '1', '1', 'RFC-3849');
 
 
-INSERT INTO zone (name, active, default_ttl, info, minimum, mname, refresh, retry, rname, serial) VALUES ('defaultdomain', '0', '86400', 'Default Zone', '86400', 'localhost.defaultdomain', '7200', '900', 'hostmaster.defaultdomain', '0');
-INSERT INTO rr (name, active, zone) VALUES ('@', '0', '1');
+INSERT INTO zone (name, active, default_ttl, info, minimum, mname, refresh, retry, rname, serial, expire, export_file) VALUES ('defaultdomain', '0', '86400', 'Default Zone', '86400', 'localhost.defaultdomain', '7200', '900', 'hostmaster.defaultdomain', '0', 1577858400, '/tmp/zone_export.txt');
+INSERT INTO rr (name, active, zone, auto_update) VALUES ('@', '0', '1', true);
 INSERT INTO rrns (rr, nsdname, ttl) VALUES ('1', 'ns1.defaultdomain', '86400');
 INSERT INTO rrns (rr, nsdname, ttl) VALUES ('1', 'ns2.defaultdomain', '86400');
