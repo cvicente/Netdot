@@ -1,0 +1,65 @@
+HP-ICF-DOS-FILTER-MIB DEFINITIONS ::= BEGIN
+
+    IMPORTS
+        OBJECT-TYPE, MODULE-IDENTITY
+            FROM SNMPv2-SMI
+        OBJECT-GROUP, MODULE-COMPLIANCE
+            FROM SNMPv2-CONF
+        hpSwitch
+            FROM HP-ICF-OID;
+
+    hpicfDosFilterMib MODULE-IDENTITY
+        LAST-UPDATED "200904031000Z" -- April 03, 2009
+        ORGANIZATION "Hewlett-Packard Company,
+                      Procurve Networking Business"
+        CONTACT-INFO "Hewlett Packard Company
+                      8000 Foothills Blvd.
+                      Roseville, CA 95747"
+        DESCRIPTION  "This MIB describes objects for management of
+                      Denial of Service (DoS) attack packet filtering."
+        REVISION     "200904031000Z" -- April 03, 2009
+        DESCRIPTION  "Initial version"
+        ::= { hpSwitch 60 }
+
+    hpicfDosFilterObjects OBJECT IDENTIFIER ::= { hpicfDosFilterMib 1 }
+
+    hpicfDosFilterConfig OBJECT-TYPE
+        SYNTAX      INTEGER {
+                        enabled (1),
+                        disabled(2)
+                    }
+        MAX-ACCESS  read-write
+        STATUS      current
+        DESCRIPTION "This object enables Denial of Service (DoS) packet
+                     filtering.  When enabled, the device will automatically
+                     discard packets that match certain DoS attack profiles."
+        DEFVAL      { disabled }
+        ::= { hpicfDosFilterObjects 1 }
+
+    --
+    -- Conformance Section
+    --
+
+    hpicfDosFilterConformance OBJECT IDENTIFIER ::= { hpicfDosFilterMib 2 }
+
+    hpicfDosFilterCompliances OBJECT IDENTIFIER ::= { hpicfDosFilterConformance 1 }
+    hpicfDosFilterGroups      OBJECT IDENTIFIER ::= { hpicfDosFilterConformance 2 }
+
+    hpicfDosFilterCompliance MODULE-COMPLIANCE
+        STATUS      current
+        DESCRIPTION "Describes the requirements for conformance to the DosFilter MIB."
+        MODULE  -- this module
+            GROUP  hpicfDosFilterGroup
+            DESCRIPTION "The hpicfDosFilterGroup is mandatory for devices that
+                         implement the DoS packet filtering feature."
+        ::= { hpicfDosFilterCompliances 1 }
+
+    hpicfDosFilterGroup  OBJECT-GROUP
+        OBJECTS {
+            hpicfDosFilterConfig
+        }
+        STATUS  current
+        DESCRIPTION "DosFilter objects."
+        ::= { hpicfDosFilterGroups 1 }
+
+END

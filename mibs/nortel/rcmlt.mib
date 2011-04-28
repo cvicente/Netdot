@@ -2,8 +2,8 @@
 RC-MLT-MIB DEFINITIONS ::= BEGIN
 
 IMPORTS
-    MODULE-IDENTITY, OBJECT-TYPE, Integer32, Gauge32, Counter32, Counter64, IpAddress,
-    TimeTicks
+    MODULE-IDENTITY, OBJECT-TYPE, Integer32, Gauge32, Counter32, Counter64,
+    IpAddress, TimeTicks
         FROM SNMPv2-SMI
     DisplayString, TruthValue, RowStatus, MacAddress
         FROM SNMPv2-TC
@@ -15,7 +15,7 @@ IMPORTS
 
 
 rcMltMib MODULE-IDENTITY
-       LAST-UPDATED     "200512060000Z"
+       LAST-UPDATED     "200912160000Z"
        ORGANIZATION     "Bay Networks, Rapid-City Group"
        CONTACT-INFO     "Yu-Ten Lee
                          Postal:        Nortel Networks
@@ -27,6 +27,35 @@ rcMltMib MODULE-IDENTITY
                          E-mail:        ylee@nortelnetworks.com"
 
        DESCRIPTION      "Enterprise MIB for the Accelar product family."
+
+       REVISION "200912160000Z" -- 16 December 2009
+       DESCRIPTION "Version 19: Added rcMltDisablePortsOnShutdown."
+
+       REVISION "200911160000Z" -- 16 November 2009
+       DESCRIPTION "Version 18: Added rcStatSmltLacpInfoRxMsgCnt,
+                                      rcStatSmltLacpInfoTxMsgCnt."
+
+       REVISION "200903200000Z" -- 20 March 2009
+       DESCRIPTION "Version 17: Added rcMltMtu, rcMltInterfaceType, 
+                                rcMltConfiguredMembers, rcMltMtuAdminState."
+
+       REVISION "200712200000Z" -- 20 December 2007
+       DESCRIPTION "Version 16:  Added rcMltAggMinLink,
+                                 rcMltNotificationObjects, rcMltAggTrapEvent"
+
+       REVISION "200704160000Z" -- 16 April 2007
+       DESCRIPTION "Version 15:  Added rcMltEgressCosProfileName,
+                                 rcMltEgressPolicerAdminState,
+                                 rcMltAggrEgressBandwidth,
+                                 rcMltAggrIngressBandwidth,
+		                 rcMltAggrMacAlloc
+                                 Modified rcMltLoadDistributionOption and
+                                           rcMltUniAggrMacIdx"
+
+       REVISION "200607050000Z" -- 05 July 2006
+       DESCRIPTION "Version 14:  Added rcMltLoadDistributionOption, rcMltUniAggrMacIdx,
+ 				 rcMltUniAggrMacAddress and rcMltQinqEtherType to rcMltTable.
+				 Added rcMltBvidPortTable"
 
        REVISION "200512060000Z" -- 06 Dec 2005
        DESCRIPTION "Version 13:  Changed range of rcMltSmltId to 0..256."
@@ -81,7 +110,7 @@ rcStatMltIfExtnEntry OBJECT-TYPE
         ::= { rcStatMltIfExtnTable 1 }
  
 RcStatMltIfExtnEntry ::= SEQUENCE {
-                rcStatMltIfExtnMltId                  INTEGER,
+                rcStatMltIfExtnMltId                  Integer32,
                 rcStatMltIfExtnIfInMulticastPkts      Counter32,
                 rcStatMltIfExtnIfInBroadcastPkts      Counter32,
                 rcStatMltIfExtnIfOutMulticastPkts     Counter32,
@@ -97,7 +126,7 @@ RcStatMltIfExtnEntry ::= SEQUENCE {
         }
  
 rcStatMltIfExtnMltId OBJECT-TYPE
-        SYNTAX        INTEGER (1..32)
+        SYNTAX        Integer32 (1..32)
         MAX-ACCESS    read-only
         STATUS        current
         DESCRIPTION   "Mlt Id"
@@ -231,7 +260,7 @@ rcStatMltEtherEntry OBJECT-TYPE
         ::= { rcStatMltEtherTable 1 }
  
 RcStatMltEtherEntry ::= SEQUENCE {
-                rcStatMltEtherMltId              INTEGER,
+                rcStatMltEtherMltId              Integer32,
                 rcStatMltEtherAlignmentErrors    Counter32,
                 rcStatMltEtherFCSErrors          Counter32,
                 rcStatMltEtherSingleCollFrames   Counter32,
@@ -247,7 +276,7 @@ RcStatMltEtherEntry ::= SEQUENCE {
         }
  
 rcStatMltEtherMltId OBJECT-TYPE
-        SYNTAX        INTEGER (1..32)
+        SYNTAX        Integer32 (1..32)
         MAX-ACCESS    read-only
         STATUS        current
         DESCRIPTION   "A value that uniquely identifies the Multi-Link 
@@ -442,7 +471,7 @@ rcStatMltIpEntry OBJECT-TYPE
         ::= { rcStatMltIpTable 1 }
 
 RcStatMltIpEntry ::= SEQUENCE {
-                rcStatMltIpMltId            INTEGER,
+                rcStatMltIpMltId            Integer32,
                 rcStatMltIpInReceives       Counter32,
                 rcStatMltIpInHdrErrors      Counter32,
                 rcStatMltIpInAddrErrors     Counter32,
@@ -463,7 +492,7 @@ RcStatMltIpEntry ::= SEQUENCE {
         }
 
 rcStatMltIpMltId OBJECT-TYPE
-        SYNTAX        INTEGER (1..8)
+        SYNTAX        Integer32 (1..8)
         MAX-ACCESS    read-only
         STATUS        deprecated
         DESCRIPTION   "Mlt Id"
@@ -789,7 +818,7 @@ rcStatMltIfUtilEntry OBJECT-TYPE
          ::= { rcStatMltIfUtilTable 1 }
  
 RcStatMltIfUtilEntry ::= SEQUENCE {
-         rcStatMltIfUtilMltId           INTEGER,
+         rcStatMltIfUtilMltId           Integer32,
          rcStatMltIfUtilIfHCInOctets    Counter64,
          rcStatMltIfUtilIfHCInUtil      Gauge32,
          rcStatMltIfUtilIfHCOutOctets   Counter64,
@@ -797,7 +826,7 @@ RcStatMltIfUtilEntry ::= SEQUENCE {
          }
  
 rcStatMltIfUtilMltId OBJECT-TYPE
-         SYNTAX        INTEGER (1..32)
+         SYNTAX        Integer32 (1..32)
          MAX-ACCESS    not-accessible
          STATUS        current
          DESCRIPTION   "To assign an Id within the range specified to the  
@@ -842,6 +871,24 @@ rcStatMltIfUtilIfHCOutUtil OBJECT-TYPE
 
 
 
+
+
+rcStatSmltLacpInfoRxMsgCnt OBJECT-TYPE
+        SYNTAX        Counter32
+        MAX-ACCESS    read-only
+        STATUS        current
+        DESCRIPTION   "LACP info msgs received."
+        ::= { rcStatMlt 31 } 
+
+rcStatSmltLacpInfoTxMsgCnt OBJECT-TYPE
+        SYNTAX        Counter32
+        MAX-ACCESS    read-only
+        STATUS        current
+        DESCRIPTION   "LACP info msgs transmitted."
+        ::= { rcStatMlt 32 } 
+
+
+
 -- Multi-Link Trunking Table
 
 rcMltNumMlts OBJECT-TYPE
@@ -883,11 +930,19 @@ rcMltIstPeerIp OBJECT-TYPE
         ::= { rcMlt 5 }
 
 rcMltIstVlanId OBJECT-TYPE
-        SYNTAX      	INTEGER (1..4095)
+        SYNTAX      	Integer32 (1..4095)
         MAX-ACCESS    read-write
         STATUS        current
         DESCRIPTION   "IST mlt Vlan Id."
         ::= { rcMlt 6 }
+
+rcMltDisablePortsOnShutdown OBJECT-TYPE
+        SYNTAX        TruthValue
+        MAX-ACCESS    read-write
+        STATUS        current
+        DESCRIPTION   "When true(1), the port members of an MLT will be
+                       automatically shutdown when the MLT becomes disabled."
+        ::= { rcMlt 7 }
 
 
 rcMltTable OBJECT-TYPE
@@ -908,7 +963,7 @@ rcMltEntry OBJECT-TYPE
         ::= { rcMltTable 1 }
 
 RcMltEntry ::= SEQUENCE {
-                rcMltId	                    INTEGER,
+                rcMltId	                    Integer32,
                 rcMltName                   DisplayString,
                 rcMltPortMembers            PortSet,
 		rcMltPortType               INTEGER,	
@@ -920,7 +975,7 @@ RcMltEntry ::= SEQUENCE {
 		rcMltDistributionAlgorithm  INTEGER,
 		rcMltIfIndex		    InterfaceIndexOrZero,
 		rcMltMltType   		    INTEGER,
-		rcMltSmltId		    INTEGER,
+		rcMltSmltId		    Integer32,
 		rcMltRunningType            INTEGER,
 		rcMltSvlanPortType          INTEGER,
 		rcMltMulticastDistribution  EnableValue,
@@ -931,11 +986,25 @@ RcMltEntry ::= SEQUENCE {
                 rcMltDesignatedPort         InterfaceIndex,
                 rcMltAggOperState           EnableValue,
                 rcMltAggTimeOfLastOperChange TimeTicks,
-                rcMltVplsMgmtVlan           EnableValue
+                rcMltVplsMgmtVlan           EnableValue,
+		rcMltLoadDistributionOption INTEGER,
+		rcMltUniAggrMacIdx	    Integer32,
+		rcMltUniAggrMacAddress	    MacAddress,
+		rcMltQinqEtherType	    Integer32,
+                rcMltEgressCosProfileName   DisplayString,
+                rcMltEgressPolicerAdminState  EnableValue,
+                rcMltAggrEgressBandwidth    EnableValue,
+                rcMltAggrIngressBandwidth   EnableValue,
+		rcMltAggrMacAlloc 	    EnableValue,
+                rcMltAggMinLink             Integer32,
+                rcMltMtu                    Integer32,
+                rcMltInterfaceType          INTEGER,
+                rcMltConfiguredMembers      PortSet,
+                rcMltMtuAdminState          EnableValue
         }
 
 rcMltId OBJECT-TYPE
-        SYNTAX        	INTEGER (1..256)
+        SYNTAX        	Integer32 (1..256)
         MAX-ACCESS        	read-only
         STATUS        	current
         DESCRIPTION   	"A value that uniquely identifies the Multi-Link 
@@ -1041,7 +1110,7 @@ rcMltMltType OBJECT-TYPE
         ::= { rcMltEntry 12 }
 
 rcMltSmltId OBJECT-TYPE
-        SYNTAX        INTEGER (0..256)
+        SYNTAX        Integer32 (0..256)
         MAX-ACCESS    read-create
         STATUS        current
         DESCRIPTION   "Split MLT id."
@@ -1146,6 +1215,136 @@ rcMltVplsMgmtVlan      OBJECT-TYPE
         DEFVAL          { disable }
         ::= { rcMltEntry 24 }
 
+rcMltLoadDistributionOption OBJECT-TYPE
+        SYNTAX        INTEGER {
+                           bmac(1),
+                           cmac(2),
+                           bvid(3),
+                           isid(4)
+                      }
+        MAX-ACCESS    read-create
+        STATUS        current
+        DESCRIPTION   "Used to specify the Load Balancing option for MLT in UNI"
+        DEFVAL  { bmac }
+        ::= { rcMltEntry 25 }
+
+rcMltUniAggrMacIdx  OBJECT-TYPE
+        SYNTAX	    Integer32 (0..448)
+        MAX-ACCESS  read-create
+        STATUS	    current
+        DESCRIPTION "Used to specify the index of the mac address pool reserved for MLT uni"
+        DEFVAL  { 0 }
+        ::= { rcMltEntry 26 }
+
+rcMltUniAggrMacAddress	OBJECT-TYPE
+        SYNTAX		MacAddress
+        MAX-ACCESS	read-only
+        STATUS		current
+        DESCRIPTION	"Used to display the mac address reserved for this MLT"
+        ::= { rcMltEntry 27 }
+
+rcMltQinqEtherType  OBJECT-TYPE
+        SYNTAX        Integer32 (1..'FFFF'h) 
+        MAX-ACCESS    read-create
+        STATUS        current
+        DESCRIPTION   "The qinq ether type value. It should be displayed 
+		       and input as Hex value. It would only be used when 
+		       MLT is associated with QnQ service UNI. Otherwise, 
+		       it would be ignored"
+        DEFVAL        { '8020'h }
+        ::= { rcMltEntry 28 }
+rcMltEgressCosProfileName   OBJECT-TYPE
+        SYNTAX          DisplayString(SIZE (1..20))
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Mlt Egress COS Profile Name, which is defined by
+                        rcCosProfileTable"
+        DEFVAL          { "DEFAULT_PORT_PROFILE"  }
+        ::= { rcMltEntry 29 }
+
+rcMltEgressPolicerAdminState        OBJECT-TYPE
+        SYNTAX          EnableValue
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Enable/disable Mlt Egress Policer"
+        DEFVAL          { disable }
+        ::= { rcMltEntry 30 }
+
+rcMltAggrEgressBandwidth        OBJECT-TYPE
+        SYNTAX          EnableValue
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION    "Aggregated Egress Bandwidth Policer is used."
+        DEFVAL        { enable }
+        ::= { rcMltEntry 31 }
+
+rcMltAggrIngressBandwidth        OBJECT-TYPE
+        SYNTAX          EnableValue
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION    "Aggregated Ingress Bandwidth Policer is used."
+        DEFVAL        { enable }
+        ::= { rcMltEntry 32 }
+
+rcMltAggrMacAlloc   OBJECT-TYPE
+	SYNTAX          EnableValue
+	MAX-ACCESS      read-write
+	STATUS          current
+	DESCRIPTION     "Aggregated Mac Allocation is used"
+	DEFVAL        { disable }
+        ::= { rcMltEntry 33 }
+
+rcMltAggMinLink OBJECT-TYPE
+        SYNTAX        Integer32 (1..8)
+        MAX-ACCESS    read-create
+        STATUS        current
+        DESCRIPTION   "If number of active links goes below configured
+                       minimum-link number, the entire LAG is declared
+                       down."
+        ::= { rcMltEntry 34 }
+
+rcMltMtu   OBJECT-TYPE
+        SYNTAX          Integer32 (1518..9600)
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "MTU for ports in Mlt"
+        DEFVAL        { 1518 }
+        ::= { rcMltEntry 35 }
+
+rcMltInterfaceType   OBJECT-TYPE
+        SYNTAX INTEGER {
+                        normal(1),
+                        silent(2),
+                        uni(3)
+                        }
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "This value indicates whether ports in the mlt are of type
+                        <normal/silent/uni>. A port can be included in any EVPN
+                        service only if this attribute is set to uni. If the port
+                        is not part of any VLAN the interface-type is set to silent.
+                        Before adding a port to a VLAN the interface type should
+                        be changed to normal."
+        DEFVAL          { silent }
+        ::= { rcMltEntry 36 }
+
+rcMltConfiguredMembers OBJECT-TYPE
+        SYNTAX          PortSet
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "The set of ports that are configured members of this MLT.
+                         Toronto release allows us to add a port to a LACP enabled
+                         MLT. These port get added as ConfiguredMembers"
+        ::= { rcMltEntry 37 }
+
+rcMltMtuAdminState   OBJECT-TYPE
+        SYNTAX          EnableValue
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION     "Set Mlt MTU enable or disable"
+        DEFVAL        { disable }
+        ::= { rcMltEntry 38 }
+
 rcMltMcastDistribution OBJECT IDENTIFIER       ::= { rcMlt 11 }
 
 rcMltMcastDistributionEnable OBJECT-TYPE
@@ -1208,7 +1407,7 @@ rcSltPortEntry OBJECT-TYPE
 
 RcSltPortEntry ::= SEQUENCE {
         rcSltPortIfIndex               InterfaceIndex,
-        rcSltPortSmltId                INTEGER,
+        rcSltPortSmltId                Integer32,
         rcSltPortOperType              INTEGER,
         rcSltPortRowStatus             RowStatus
         }
@@ -1221,8 +1420,8 @@ rcSltPortIfIndex OBJECT-TYPE
         ::= { rcSltPortEntry 1 }
 
 rcSltPortSmltId OBJECT-TYPE
-        SYNTAX          INTEGER (1..512)
-        MAX-ACCESS      read-write
+        SYNTAX          Integer32 (1..512)
+        MAX-ACCESS      read-create
         STATUS          current
         DESCRIPTION     "A uniquely identifies the Single-Link
                         Trunk associated with this entry."
@@ -1241,7 +1440,7 @@ rcSltPortOperType OBJECT-TYPE
 
 rcSltPortRowStatus OBJECT-TYPE
         SYNTAX          RowStatus
-        MAX-ACCESS      read-write
+        MAX-ACCESS      read-create
         STATUS          current
         DESCRIPTION     "Used to create/delete entries of the Table."
         ::= { rcSltPortEntry 4 }
@@ -1312,6 +1511,83 @@ rcMltVlacpDualHomingEnable OBJECT-TYPE
          DEFVAL        { false }
          ::= { rcMltVlacpEntry 5 }
 
+-- rcMltBvidPortTable related information starts here
+
+rcMltBvidPortTable OBJECT-TYPE
+        SYNTAX        SEQUENCE OF RcMltBvidPortEntry
+        MAX-ACCESS    not-accessible
+        STATUS        current
+        DESCRIPTION   "Table contains Bridge Vlan configured information for 
+		       Primary and Secondary ports for MLT-UNI"
+        ::= { rcMlt 14 }
+
+rcMltBvidPortEntry OBJECT-TYPE
+        SYNTAX        RcMltBvidPortEntry
+        MAX-ACCESS    not-accessible
+        STATUS        current
+        DESCRIPTION   "Entry with Info about VLAN with its Primary and secondary ports for MLT-UNI"
+        INDEX { rcMltBvidMltId, rcMltBvidVlanId}
+        ::= { rcMltBvidPortTable 1 }
+
+RcMltBvidPortEntry ::= SEQUENCE {
+        rcMltBvidMltId   Integer32,
+        rcMltBvidVlanId Integer32,
+        rcMltBvidPrimaryPort InterfaceIndex,
+        rcMltBvidSecondaryPort InterfaceIndex,
+        rcMltBvidRowStatus  RowStatus
+        }
+
+rcMltBvidMltId OBJECT-TYPE
+        SYNTAX        Integer32 (1..256)
+        MAX-ACCESS    not-accessible
+        STATUS        current
+        DESCRIPTION   "VLAN ID of the Port List"
+        ::= { rcMltBvidPortEntry 1 }
+
+rcMltBvidVlanId OBJECT-TYPE
+        SYNTAX        Integer32 (1..4096)
+        MAX-ACCESS    not-accessible
+        STATUS        current
+        DESCRIPTION   "VLAN ID of the Port List"
+        ::= { rcMltBvidPortEntry 2 }
+
+rcMltBvidPrimaryPort OBJECT-TYPE
+        SYNTAX        InterfaceIndex
+        MAX-ACCESS    read-create
+        STATUS        current
+        DESCRIPTION   "Primary port of the MLT for the VLAN when load distribution option is b-vid"
+        ::= { rcMltBvidPortEntry 3 }
+
+rcMltBvidSecondaryPort OBJECT-TYPE
+        SYNTAX        InterfaceIndex
+        MAX-ACCESS    read-create
+        STATUS        current
+        DESCRIPTION   "Secondary port of the MLT for the VLAN when load distribution option is b-vid "
+        ::= { rcMltBvidPortEntry 4 }
+
+rcMltBvidRowStatus OBJECT-TYPE
+        SYNTAX        RowStatus
+        MAX-ACCESS    read-create
+        STATUS        current
+        DESCRIPTION   "Used to Add/delete entries in the table"
+        ::= { rcMltBvidPortEntry 5 }
+
+-- rcMltBvidPortTable related information ends here
+
+rcMltNotificationObjects OBJECT IDENTIFIER ::= { rcMlt 15 }
+
+rcMltAggTrapEvent OBJECT-TYPE
+        SYNTAX        INTEGER {
+                                     localdown(1),
+                                     remotedown(2),
+                                     up(3)
+                                }
+        MAX-ACCESS    accessible-for-notify
+        STATUS        current
+        DESCRIPTION   "Three trap events type: local down(1),
+                       remote down(2), up(3)."
+        ::= { rcMltNotificationObjects 1 }
+
 -- Link Flap Detect Group
 
 rcLinkFlapDetectAutoPortDownEnable OBJECT-TYPE
@@ -1334,7 +1610,7 @@ rcLinkFlapDetectSendTrap OBJECT-TYPE
         ::= { rcLinkFlapDetect 2 }
 
 rcLinkFlapDetectFrequency OBJECT-TYPE
-        SYNTAX        	INTEGER (1..9999)
+        SYNTAX        	Integer32 (1..9999)
         MAX-ACCESS      	read-write
         STATUS        	current
         DESCRIPTION   	"Used to configure the number of times the port
@@ -1342,7 +1618,7 @@ rcLinkFlapDetectFrequency OBJECT-TYPE
         ::= { rcLinkFlapDetect 3 }
 
 rcLinkFlapDetectInterval OBJECT-TYPE
-        SYNTAX        	INTEGER (2..600)
+        SYNTAX        	Integer32 (2..600)
         MAX-ACCESS     	read-write
         STATUS        	current
         DESCRIPTION   	"Used to configure the interval (in minutes)."

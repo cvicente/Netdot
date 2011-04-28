@@ -20,7 +20,7 @@ IMPORTS
     ;
 
 hpicfUsrProfileMIB MODULE-IDENTITY
-    LAST-UPDATED "200704170230Z"  -- April 16, 2007
+    LAST-UPDATED "200803171539Z"  -- March 17, 2008
     ORGANIZATION "Hewlett Packard Company,
                   ProCurve Networking Business"
     CONTACT-INFO "Hewlett Packard Company,
@@ -32,6 +32,15 @@ hpicfUsrProfileMIB MODULE-IDENTITY
     --
     -- Revision History
     --
+    REVISION "200803171539Z" -- March 17, 2008
+    DESCRIPTION
+             "Version 1.6
+              Created hpicfUsrProfileConfigNasRulesIpv6 to enable
+              or disable IPv6 ACEs.  When enabled, destinations of
+              'any' will be treated as both IPv4 and IPv6.  When
+              disabled all destinations will be treated as IPv4
+              only."
+
     REVISION "200707162110Z"   -- July 16, 2007
     DESCRIPTION
              "Version 1.5
@@ -170,7 +179,9 @@ HpicfUsrProfileConfigFilterListEntry ::= SEQUENCE {
         hpicfUsrProfileFilterListIndex
             Integer32,
         hpicfUsrProfileConfigFilterListRowStatus
-            RowStatus
+            RowStatus,
+        hpicfUsrProfileConfigNasRulesIpv6
+            INTEGER
 }
 
 hpicfUsrProfileFilterListIndex OBJECT-TYPE
@@ -199,6 +210,20 @@ hpicfUsrProfileConfigFilterListRowStatus OBJECT-TYPE
                  list index must have an active  
                  hpicfUsrProfileConfigFilterRuleRowStatus."
     ::= { hpicfUsrProfileConfigFilterListEntry 2 }
+
+hpicfUsrProfileConfigNasRulesIpv6 OBJECT-TYPE
+    SYNTAX      INTEGER {
+                   enabled(1),
+                   disabled(2)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION "Setting this attribute to enabled(1) enables the usage
+                 of IPv6 destinations in ACEs.  When set to disabled(2)
+                 any implicit IP destinations will be translated as
+                 IPv4 only."
+    DEFVAL      { disabled }
+    ::= { hpicfUsrProfileConfigFilterListEntry  3 }
 
 hpicfUsrProfileConfigFilterRuleTable OBJECT-TYPE
     SYNTAX      SEQUENCE OF HpicfUsrProfileConfigFilterRuleEntry
@@ -333,7 +358,7 @@ HpicfUsrProfileConfigEntry ::=
         hpicfUsrProfileConfigFilterListEnable
             TruthValue,
         hpicfUsrProfileConfigEntryRowStatus
-            TruthValue
+            RowStatus
     }    
 
 hpicfUsrProfileConfigIndex OBJECT-TYPE
@@ -564,7 +589,7 @@ hpicfUsrProfileConfigBindEntry OBJECT-TYPE
                   hpicfUsrProfileUserMacAddr }
 ::= { hpicfUsrProfileConfigBindTable 1 }
 
-HpicfUsrProfileConfigBindEntry::=
+HpicfUsrProfileConfigBindEntry ::=
     SEQUENCE {
         hpicfUsrProfileUserPortNumber
             InterfaceIndex,
@@ -835,7 +860,7 @@ HpicfUsrProfileStatsEntry ::=
         hpicfUsrProfileStatsFilterListIndex
             Integer32,
         hpicfUsrProfileStatsAccessMode
-            Integer32
+            INTEGER
     }
 
 hpicfUsrProfileStatsPvid OBJECT-TYPE
@@ -1000,9 +1025,7 @@ hpicfUsrProfileCapabilityGroup OBJECT-GROUP
 
 hpicfUsrProfileConfigGroup OBJECT-GROUP
     OBJECTS {
-        hpicfUsrProfileFilterListIndex,
         hpicfUsrProfileConfigFilterListRowStatus,
-        hpicfUsrProfileFilterRuleListIndex,
         hpicfUsrProfileFilterRuleIndex,
         hpicfUsrProfileConfigFilterRule,
         hpicfUsrProfileConfigFilterRuleRowStatus,
@@ -1026,7 +1049,8 @@ hpicfUsrProfileConfigGroup OBJECT-GROUP
         hpicfUsrProfileConfigEntryRowStatus,
         hpicfUsrProfileConfigConflictResolveQoS,
         hpicfUsrProfileConfigConflictResolveMaxIngressBandwidth,
-        hpicfUsrProfileConfigConflictResolveMaxEgressBandwidth                        
+        hpicfUsrProfileConfigConflictResolveMaxEgressBandwidth,
+        hpicfUsrProfileConfigNasRulesIpv6
     }
     STATUS      current
     DESCRIPTION "A collection of objects providing configuration

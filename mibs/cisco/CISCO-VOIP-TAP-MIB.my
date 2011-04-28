@@ -1,0 +1,283 @@
+-- *****************************************************************
+-- CISCO-VOIP-TAP-MIB.my: Cisco intercept extension MIB for VoIP
+--
+--	October 2009, Sunil Jain
+--	Copyright (c) 2009 by cisco Systems, Inc.
+--	All rights reserved.
+--
+-- *****************************************************************
+--
+
+CISCO-VOIP-TAP-MIB DEFINITIONS ::= BEGIN
+IMPORTS
+      Integer32,
+      MODULE-IDENTITY,
+      OBJECT-TYPE
+      FROM SNMPv2-SMI
+      MODULE-COMPLIANCE,
+      OBJECT-GROUP
+      FROM SNMPv2-CONF
+      RowStatus,
+      TEXTUAL-CONVENTION
+      FROM SNMPv2-TC
+      cTap2MediationContentId,
+      cTap2StreamIndex
+      FROM CISCO-TAP2-MIB
+      ciscoMgmt
+      FROM CISCO-SMI;
+
+ciscoVoIpTapMIB MODULE-IDENTITY
+      LAST-UPDATED  "200910010000Z"
+      ORGANIZATION  "Cisco Systems, Inc."
+      CONTACT-INFO
+              "      Cisco Systems
+                     Customer Service
+
+                     Postal:170 W. Tasman Drive
+                     San Jose, CA  95134
+                     USA
+
+                     Tel:+1 800 553-NETS
+                     E-mail:cs-li@cisco.com"
+      DESCRIPTION
+        "This module manages Cisco's intercept feature for Voice
+         over IP (VoIP). This MIB is used along with CISCO-TAP2-MIB 
+         to intercept VoIP Control and Data traffic."
+      REVISION        "200910010000Z"
+      DESCRIPTION
+        "Initial version of this MIB module."
+     ::= { ciscoMgmt 716 }
+
+ciscoVoIpTapMIBNotifs       OBJECT IDENTIFIER ::= { ciscoVoIpTapMIB 0 }
+ciscoVoIpTapMIBObjects      OBJECT IDENTIFIER ::= { ciscoVoIpTapMIB 1 }
+ciscoVoIpTapMIBConform      OBJECT IDENTIFIER ::= { ciscoVoIpTapMIB 2 }
+
+cvoiptapStreamEncodePacket OBJECT IDENTIFIER ::= 
+                                           { ciscoVoIpTapMIBObjects 1 }
+
+-- ********************************************************************
+-- *                                                                  *
+-- * Textual Conventions                                              *
+-- *                                                                  *
+-- ********************************************************************
+CvoipWarrantId ::= TEXTUAL-CONVENTION
+        STATUS          current
+        DESCRIPTION
+                "The warrant identifier used by the Mediation Device."
+        SYNTAX OCTET STRING ( SIZE ( 0..30 ) )
+
+CvoipSubscriberId ::= TEXTUAL-CONVENTION
+        STATUS          current
+        DESCRIPTION
+              "The subscriber identifier for identifying the endpoint."
+        SYNTAX OCTET STRING ( SIZE ( 0..256 ) )
+
+--
+--The filter specifics for intercepting VoIP Signaling and Data traffic
+-- 
+
+cvoiptapStreamCapabilities  OBJECT-TYPE
+     SYNTAX     BITS {
+           tapEnable(0),
+           usernameOrNumber(1),
+           uri(2)
+       }
+     MAX-ACCESS read-only
+     STATUS     current
+     DESCRIPTION
+       "This object identifies what types of intercept streams can be
+        configured on this type of device. This may be dependent on
+        hardware capabilities, software capabilities. The following
+        fields may be supported:
+             tapEnable:   set if table entries with
+                          cTap2StreamInterceptEnable set to 'false'
+                          are used to pre-screen packets for intercept
+                          otherwise these entries are ignored.
+             usernameOrNumber: SNMP ifIndex value may be used to 
+                          select interception of calls to or from 
+                          a user or phone number may be used to 
+                          select traffic to be intercepted.
+             uri:         Session Initiation Protocol (SIP) Uniform 
+                          Resource Identifier (URI) may be used to 
+                          select traffic to be intercepted."
+     ::= { cvoiptapStreamEncodePacket 1 }
+
+--
+--The 'list' for intercepting voice signaling and/or data traffic.
+--
+
+
+cvoiptapStreamTable OBJECT-TYPE
+     SYNTAX       SEQUENCE OF CvoiptapStreamEntry
+     MAX-ACCESS   not-accessible
+     STATUS       current
+     DESCRIPTION
+        "The Intercept Stream VoIP Table lists the streams to be 
+         intercepted. To create a VoIP intercept, an entry 
+         cvoiptapStreamEntry is created which contains the 
+         filter details. An entry cTap2StreamEntry of CISCO-TAP2-MIB 
+         is created, which is the common stream information for all 
+         kinds of intercepts and type of the specific stream is set 
+         to IP in this entry. The same data stream may be required by 
+         multiple taps, and one might assume that often the 
+         intercepted stream is a small subset of the traffic that 
+         could be intercepted.  This essentially provides options 
+         for call selection. For example, if all traffic to or from 
+         a given user is to be intercepted, one would configure an 
+         entry which lists the user with approprite tap type. The 
+         first index indicates which Mediation Device the intercepted 
+         traffic will be diverted to. The second index permits 
+         multiple classifiers to be used together, such as having an 
+         IP address as source or destination. The value of the second 
+         index is that of the stream's counter entry in the 
+         cTap2StreamTable. Entries are added to this table via 
+         citapStreamStatus in accordance with the RowStatus 
+         convention."
+     ::= { cvoiptapStreamEncodePacket 2 }
+
+cvoiptapStreamEntry OBJECT-TYPE
+     SYNTAX     CvoiptapStreamEntry
+     MAX-ACCESS not-accessible
+     STATUS     current
+     DESCRIPTION
+         "A stream entry indicates a single data stream to be
+          intercepted to a Mediation Device. Many selected data
+          streams may go to the same application interface, and many
+          application interfaces are supported."
+     INDEX      { cTap2MediationContentId, cTap2StreamIndex }
+     ::= { cvoiptapStreamTable 1 }
+
+CvoiptapStreamEntry::= SEQUENCE {
+        cvoiptapStreamId                 CvoipWarrantId,
+        cvoiptapStreamType               INTEGER,
+        cvoiptapStreamMatch              CvoipSubscriberId,
+        cvoiptapStreamMatchType          INTEGER,
+        cvoiptapStreamCCMediationDevice  Integer32,
+        cvoiptapStreamRowStatus          RowStatus
+}
+
+
+cvoiptapStreamId OBJECT-TYPE
+     SYNTAX     CvoipWarrantId
+     MAX-ACCESS read-create
+     STATUS     current
+     DESCRIPTION
+         "This object uniquely identifies this warrant. 
+          It has to be unique among all the rows."
+     ::= { cvoiptapStreamEntry 1 }
+
+cvoiptapStreamType OBJECT-TYPE
+     SYNTAX     INTEGER { pen(1), 
+                          trace(2), 
+                          penAndTrace(3), 
+                          intercept(4) 
+                        }
+     MAX-ACCESS read-create
+     STATUS     current
+     DESCRIPTION
+        "pen :         Pen Register - provides trace of all outgoing 
+                       calls.  Only Call Data is sent.
+         trace :       Trace - provides trace of all incoming calls.  
+                       Only Call Data is sent.
+         penAndTrace : Provides trace of both incoming and outgoing 
+                       calls.  Only Call Data is sent.
+         intercept :   Provides both Call Data and Call Content to 
+                       Commission on Accreditation for Law 
+                       Enforcement Agencies (CALEA). Intercept 
+                       is applicable to both originating and 
+                       terminating calls."
+     DEFVAL     { intercept }
+     ::= { cvoiptapStreamEntry 2 }
+
+
+cvoiptapStreamMatch OBJECT-TYPE
+     SYNTAX     CvoipSubscriberId
+     MAX-ACCESS read-create
+     STATUS     current
+     DESCRIPTION
+     "This field describes the candidate which needs to be tapped."
+     ::= { cvoiptapStreamEntry 3 }
+
+
+cvoiptapStreamMatchType OBJECT-TYPE
+     SYNTAX     INTEGER { usernameOrNumber(1), uri(2) }
+     MAX-ACCESS read-create
+     STATUS     current
+     DESCRIPTION
+         "This field specifies the type of information in 
+          cvoiptapStreamMatch. A subscriber or intercept candidate can
+          be defined either as username, phone number or Session 
+          Initiation Protocol (SIP) Uniform Resource Identifier (URI). 
+          'username' is defined as per RFC-3261. Same value is being 
+          used for either username or phone number."
+     DEFVAL { usernameOrNumber } 
+     ::= { cvoiptapStreamEntry 4 }
+
+cvoiptapStreamCCMediationDevice OBJECT-TYPE
+     SYNTAX     Integer32
+     MAX-ACCESS read-create
+     STATUS     current
+     DESCRIPTION
+         "This object points to a row in Mediation Table which contains
+          the IP address and port number for sending the Call Content 
+          intercept information."
+     ::= { cvoiptapStreamEntry 5 }
+
+cvoiptapStreamRowStatus OBJECT-TYPE
+     SYNTAX     RowStatus
+     MAX-ACCESS read-create
+     STATUS     current
+     DESCRIPTION
+         "The status of this conceptual row. This object manages
+          creation, modification, and deletion of rows in this table.
+          When any rows must be changed, cvoiptapStreamRowStatus must 
+          be first set to 'notInService'. Row will be created when
+          the service provider has to provision a tap for a VoIP 
+          endpoint. Row will be deleted when the warrant has expired.
+          Row will be changed when the warrant type has been changed.
+          cTap2StreamTable defined in CISCO-TAP2-MIB goes in 
+          conjunction with this row, using the same index."
+     ::= { cvoiptapStreamEntry 6 }
+
+--	conformance information
+
+
+ciscoVoIpTapMIBCompliances OBJECT IDENTIFIER ::= 
+                                           { ciscoVoIpTapMIBConform 1 }
+ciscoVoIpTapMIBGroups      OBJECT IDENTIFIER ::= 
+                                           { ciscoVoIpTapMIBConform 2 }
+
+--	compliance statement
+
+
+ciscoVoIpTapMIBCompliance MODULE-COMPLIANCE
+     STATUS  current
+     DESCRIPTION
+        "The compliance statement for entities which implement the 
+         Cisco Intercept MIB for VoIP."
+     MODULE        -- this module
+     MANDATORY-GROUPS {
+          ciscoVoIpTapStreamGroup
+     }
+     ::= {ciscoVoIpTapMIBCompliances 1 }
+
+--	units of conformance
+
+ciscoVoIpTapStreamGroup OBJECT-GROUP
+     OBJECTS {
+          cvoiptapStreamCapabilities,
+          cvoiptapStreamId,
+          cvoiptapStreamType,
+          cvoiptapStreamMatch,
+          cvoiptapStreamMatchType,
+          cvoiptapStreamCCMediationDevice,
+          cvoiptapStreamRowStatus
+     }
+     STATUS     current
+     DESCRIPTION
+        "These objects are necessary for a description of VoIP 
+         Signaling and Data packets to select for interception."
+     ::= { ciscoVoIpTapMIBGroups 1 }
+END
+
+

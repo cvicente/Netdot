@@ -2,9 +2,9 @@
 BAY-STACK-RADIUS-MIB DEFINITIONS ::= BEGIN
 
 IMPORTS
-    OBJECT-TYPE, MODULE-IDENTITY, Integer32
+    OBJECT-TYPE, MODULE-IDENTITY, Integer32, Unsigned32
         FROM SNMPv2-SMI
-    RowStatus
+    RowStatus, TruthValue
         FROM SNMPv2-TC
     InetAddressType, InetAddress, InetPortNumber
         FROM INET-ADDRESS-MIB
@@ -12,12 +12,48 @@ IMPORTS
         FROM SYNOPTICS-ROOT-MIB;
 
 bayStackRadiusMib MODULE-IDENTITY
-      LAST-UPDATED "200704030000Z"
+      LAST-UPDATED "201002100000Z"
       ORGANIZATION "Nortel Ltd."
       CONTACT-INFO "nortel.com"
       DESCRIPTION
               "This MIB module is used for RADIUS configuration
                settings in Nortel's software and products."
+
+      REVISION     "201002100000Z"  -- Feb 10, 2010
+      DESCRIPTION
+              "Ver 9:  Added bsRadiusReachability."
+
+      REVISION     "200910130000Z"  -- Oct 13, 2009
+      DESCRIPTION
+              "Ver 8:  Added bsRadiusDynAuthReplayProtection."
+
+      REVISION     "200905280000Z"  -- May 28, 2009
+      DESCRIPTION
+              "Ver 7:  Added bsRadiusAccountingInterimUpdatesIntervalSource."
+
+      REVISION     "200904160000Z"  -- April 16, 2009
+      DESCRIPTION
+              "Ver 6:  Added bsRadiusDynAuthClientReplayProtection
+                       Added bsRadiusAccountingInterimUpdates and
+                             bsRadiusAccountingInterimUpdatesInterval."
+
+      REVISION     "200903300000Z"  -- March 30, 2009
+      DESCRIPTION
+              "Ver 5:  Added bsRadiusAccountingEnabled,
+                             bsRadiusPasswordFallbackEnabled,
+                             bsRadiusAccountingPort"
+
+      REVISION     "200810300000Z"  -- October 30, 2008
+      DESCRIPTION
+              "Ver 4:  Added bsRadiusUseMgmtIp."
+
+      REVISION     "200805290000Z"  -- May 29, 2008
+      DESCRIPTION
+              "Ver 3:  Changes based on RFC 5176."
+
+      REVISION     "200803250000Z"  -- March 25, 2008
+      DESCRIPTION
+              "Ver 2:  Added support for RADIUS requests servers."
 
       REVISION     "200704030000Z"  -- April 3, 2007
       DESCRIPTION
@@ -28,7 +64,105 @@ bsRadiusNotifications OBJECT IDENTIFIER ::= { bayStackRadiusMib 0 }
 bsRadiusObjects       OBJECT IDENTIFIER ::= { bayStackRadiusMib 1 }
 
 --
--- configuration table
+-- RADIUS scalar objects
+--
+
+bsRadiusScalars       OBJECT IDENTIFIER ::= { bsRadiusObjects 1 }
+
+bsRadiusUseMgmtIp OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object controls whether RADIUS uses the system's management
+        IP address as the source address for RADIUS requests."
+    DEFVAL      { true }
+    ::= { bsRadiusScalars 1 }
+
+bsRadiusAccountingEnabled OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object controls whether RADIUS accounting is enabled."
+    DEFVAL      { false }
+    ::= { bsRadiusScalars 2 }
+
+bsRadiusPasswordFallbackEnabled OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object controls whether RADIUS password fallback is enabled."
+    DEFVAL      { false }
+    ::= { bsRadiusScalars 3 }
+
+bsRadiusAccountingPort OBJECT-TYPE
+    SYNTAX      InetPortNumber
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object controls the port used for RADIUS accounting."
+    DEFVAL      { 1813 }
+    ::= { bsRadiusScalars 4 }
+
+bsRadiusAccountingInterimUpdates OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object controls whether RADIUS interim updates are enabled
+        or disabled."
+    DEFVAL      { false }
+    ::= { bsRadiusScalars 5 }
+
+bsRadiusAccountingInterimUpdatesInterval OBJECT-TYPE
+    SYNTAX      Unsigned32 (0 | 60..3600)
+    UNITS       "seconds"
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object controls the interval for RADIUS interim updates."
+    DEFVAL      { 60 }
+    ::= { bsRadiusScalars 6 }
+
+bsRadiusAccountingInterimUpdatesIntervalSource OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    configuredValue(1),
+                    radiusServer(2)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object controls the source for the interval value for RADIUS
+        interim updates.  If the value is configuredValue(1), then the value
+        of bsRadiusAccountingInterimUpdatesInterval is used.  If the value is
+        radiusServer(2), then a value obtained from the RADIUS server is used."
+    DEFVAL      { configuredValue }
+    ::= { bsRadiusScalars 7 }
+
+bsRadiusDynAuthReplayProtection OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "Globally enable or disable RADIUS replay protection."
+    ::= { bsRadiusScalars 8 }
+
+bsRadiusReachability OBJECT-TYPE
+    SYNTAX       INTEGER {
+                     useRadius(1),
+                     useIcmp(2)
+                 }
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "Select the method used to test RADIUS server reachablity."
+    DEFVAL { useIcmp }
+    ::= { bsRadiusScalars 9 }
+
+--
+-- RADIUS server configuration table
 --
 
 bsRadiusServerTable   OBJECT-TYPE
@@ -139,6 +273,132 @@ bsRadiusServerRowStatus OBJECT-TYPE
     DESCRIPTION
         "Controls row creation/deletion in this table."
     ::= { bsRadiusServerEntry 8 }
+
+--
+-- RADIUS Dynamic Authorization Clients configuration table
+--
+
+bsRadiusDynAuthClientTable   OBJECT-TYPE
+    SYNTAX SEQUENCE OF BsRadiusDynAuthClientEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "This table is used to configure RADIUS Dynamic Authorization
+        Clients. RADIUS Dynamic Authorization Clients are entities
+        which can send Disconnect and Change Of Authorization
+        requests to a RADIUS Dynamic Authorization Server."
+    ::= { bsRadiusObjects 3 }
+
+bsRadiusDynAuthClientEntry OBJECT-TYPE
+    SYNTAX       BsRadiusDynAuthClientEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "An entry containing objects defining RADIUS Dynamic Authorization 
+        Clients which can connect to this RADIUS Dynamic Authorization
+        Server."
+    INDEX { bsRadiusDynAuthClientAddressType,
+            bsRadiusDynAuthClientAddress }
+    ::= { bsRadiusDynAuthClientTable 1 }
+
+BsRadiusDynAuthClientEntry ::=
+    SEQUENCE {
+        bsRadiusDynAuthClientAddressType                InetAddressType,
+        bsRadiusDynAuthClientAddress                    InetAddress,
+        bsRadiusDynAuthClientUdpPort                    InetPortNumber,
+        bsRadiusDynAuthClientSecret                     OCTET STRING,
+        bsRadiusDynAuthClientEnabled                    TruthValue,
+        bsRadiusDynAuthClientProcessDisconnectRequests  TruthValue,
+        bsRadiusDynAuthClientProcessCoARequests         TruthValue,
+        bsRadiusDynAuthClientRowStatus                  RowStatus,
+        bsRadiusDynAuthClientReplayProtection           TruthValue
+    }
+
+bsRadiusDynAuthClientAddressType OBJECT-TYPE
+    SYNTAX       InetAddressType
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "The type of address contained in the corresponding instance
+        of bsRadiusDynAuthClientAddress."
+    ::= { bsRadiusDynAuthClientEntry 1 }
+
+bsRadiusDynAuthClientAddress OBJECT-TYPE
+    SYNTAX       InetAddress
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION
+        "The internet address of a RADIUS Dynamic Authorization 
+        Client configured in this entry."
+    ::= { bsRadiusDynAuthClientEntry 2 }
+
+bsRadiusDynAuthClientUdpPort OBJECT-TYPE
+    SYNTAX       InetPortNumber
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "The UDP port number the server/NAS listens on for requests from the
+        RADIUS Dynamic Authorization Client configured in this entry."
+    DEFVAL { 3799 }
+    ::= { bsRadiusDynAuthClientEntry 3 }
+
+bsRadiusDynAuthClientSecret OBJECT-TYPE
+    SYNTAX       OCTET STRING (SIZE(0..16))
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "The secret shared between RADIUS Dynamic Authorization 
+        Client and Server. Note that when this object is retrieved, its
+        value will always by a zero-length octet string."
+    DEFVAL { ''H }
+    ::= { bsRadiusDynAuthClientEntry 4 }
+
+bsRadiusDynAuthClientEnabled OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "Enable or disable packet receive from this RADIUS Dynamic
+         Authorization Client. The NAS will not listen for requests
+         from the client unless this object is true(1)."
+    DEFVAL { false }
+    ::= { bsRadiusDynAuthClientEntry 5 }
+
+bsRadiusDynAuthClientProcessDisconnectRequests OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "Enable or disable processing of Disconnect requests
+         from the RADIUS Dynamic Authorization Client."
+    DEFVAL { false }
+    ::= { bsRadiusDynAuthClientEntry 6 }
+
+bsRadiusDynAuthClientProcessCoARequests OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "Enable or disable processing or Change-Of-Authorization
+         requests from the RADIUS Dynamic Authorization Client."
+    DEFVAL { false }
+    ::= { bsRadiusDynAuthClientEntry 7 }
+
+bsRadiusDynAuthClientRowStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "Controls row creation/deletion in this table."
+    ::= { bsRadiusDynAuthClientEntry 8 }
+
+bsRadiusDynAuthClientReplayProtection OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "Enable or disable RADIUS replay protection."
+    ::= { bsRadiusDynAuthClientEntry 9 }
 
 END
 

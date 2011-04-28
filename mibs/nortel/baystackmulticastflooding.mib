@@ -6,11 +6,15 @@ IMPORTS
         FROM SNMPv2-SMI
     TruthValue, MacAddress, RowStatus
         FROM SNMPv2-TC
+    InetAddressType, InetAddress
+        FROM INET-ADDRESS-MIB
+    VlanId
+        FROM Q-BRIDGE-MIB
     bayStackMibs
         FROM SYNOPTICS-ROOT-MIB;
 
 bayStackMulticastFloodingMib MODULE-IDENTITY
-    LAST-UPDATED    "200608070000Z"
+    LAST-UPDATED    "200906250000Z"
     ORGANIZATION    "Nortel Networks"
     CONTACT-INFO    "Nortel Networks"
     DESCRIPTION
@@ -28,11 +32,20 @@ bayStackMulticastFloodingMib MODULE-IDENTITY
          no warranty, either express or implied, as to the use,
          operation, condition, or performance of the Specification."
 
+    REVISION "200906250000Z" -- 25 June 2009
+    DESCRIPTION "v5:  Added per-vlan support."
+
+    REVISION "200806250000Z" -- 25 June 2008
+    DESCRIPTION "v4:  Added IMPLIED to index of bsmfAllowedInetAddressTable."
+
+    REVISION "200806190000Z" -- 19 June 2008
+    DESCRIPTION "v3:  Added support for multicast IP addresses."
+
     REVISION "200608070000Z" -- 07 August 2006
-    DESCRIPTION "v002:  Cleaned up some descriptions."
+    DESCRIPTION "v2:  Cleaned up some descriptions."
 
     REVISION "200405190000Z" -- 19 May 2004
-    DESCRIPTION "v001:  Initial version."
+    DESCRIPTION "v1:  Initial version."
 
     ::= { bayStackMibs 6 }
 
@@ -53,9 +66,9 @@ bsmfMulticastFloodingEnabled OBJECT-TYPE
         bsmfAllowedAddressTable are flooded to all ports."
     ::= { bsmfObjects 1 }
 
---
--- Multicast Flooding Allowed Address Configuration Table
---
+-- =========================================================================
+-- Multicast Flooding Allowed MAC Address Configuration Table
+-- =========================================================================
 
 bsmfAllowedAddressTable OBJECT-TYPE
     SYNTAX SEQUENCE OF BsmfAllowedAddressEntry
@@ -96,6 +109,233 @@ bsmfAllowedAddressRowStatus OBJECT-TYPE
     DESCRIPTION
         "This object controls creation and deletion of rows in the table."
     ::= { bsmfAllowedAddressEntry 2 }
+
+-- =========================================================================
+-- Multicast Flooding Allowed IP Address Configuration Table
+-- =========================================================================
+
+bsmfAllowedInetAddressTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF BsmfAllowedInetAddressEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "This table is used to specify particular multicast IP addresses
+         that are allowed to be flooded to all ports."
+    ::= { bayStackMulticastFloodingMib 3 }
+
+bsmfAllowedInetAddressEntry OBJECT-TYPE
+    SYNTAX BsmfAllowedInetAddressEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "An entry in the bsmfAllowedInetAddressTable."
+    INDEX { bsmfAllowedInetAddressType, IMPLIED bsmfAllowedInetAddress }
+    ::= { bsmfAllowedInetAddressTable 1 }
+
+BsmfAllowedInetAddressEntry ::=
+    SEQUENCE {
+        bsmfAllowedInetAddressType      InetAddressType,
+        bsmfAllowedInetAddress          InetAddress,
+        bsmfAllowedInetAddressRowStatus RowStatus
+    }
+
+bsmfAllowedInetAddressType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The type of address contained in the corresponding instance of
+        bsmfAllowedInetAddress.  Currently, only values of ipv4(1) and
+        ipv6(2) are allowed."
+    ::= { bsmfAllowedInetAddressEntry 1 }
+
+bsmfAllowedInetAddress OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE(4|16))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A multicast IP address that is allowed to flood all ports.
+        Unicast and broadcast addresses are not allowed."
+    ::= { bsmfAllowedInetAddressEntry 2 }
+
+bsmfAllowedInetAddressRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object controls creation and deletion of rows in the table."
+    ::= { bsmfAllowedInetAddressEntry 3 }
+
+-- =========================================================================
+-- VLAN Multicast Flooding Configuration Table
+-- =========================================================================
+
+bsmfVlanTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF BsmfVlanEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "This table is used to control per-VLAN whether multicast flooding
+         is enabled."
+    ::= { bayStackMulticastFloodingMib 4 }
+
+bsmfVlanEntry OBJECT-TYPE
+    SYNTAX BsmfVlanEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "An entry in the bsmfVlanTable."
+    INDEX { bsmfVlanId }
+    ::= { bsmfVlanTable 1 }
+
+BsmfVlanEntry ::=
+    SEQUENCE {
+        bsmfVlanId                       VlanId,
+        bsmfVlanMulticastFloodingEnabled TruthValue
+    }
+
+bsmfVlanId OBJECT-TYPE
+    SYNTAX      VlanId
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "An existing VLAN."
+    ::= { bsmfVlanEntry 1 }
+
+bsmfVlanMulticastFloodingEnabled OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object indicates whether filtering of multicast MAC addresses to
+        be flooded is enabled on a per-vlan basis.  If the value of this object
+        is false(2), then multicast packets are always flooded to all ports
+        of a vlan.  Otherwise, if the value is true(1), multicast packets that
+        do not match an address in the bsmfVlanAllowedAddressTable are flooded
+        only to IGMP multicast router ports, and multicast packets that do
+        match an address in the bsmfAllowedAddressTable are flooded to all
+        ports."
+    ::= { bsmfVlanEntry 2 }
+
+-- =========================================================================
+-- VLAN Multicast Flooding Allowed MAC Address Configuration Table
+-- =========================================================================
+
+bsmfVlanAllowedAddressTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF BsmfVlanAllowedAddressEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "This table is used to specify particular multicast MAC addresses
+         that are allowed to be flooded to all ports on a per-vlan basis."
+    ::= { bayStackMulticastFloodingMib 5 }
+
+bsmfVlanAllowedAddressEntry OBJECT-TYPE
+    SYNTAX BsmfVlanAllowedAddressEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "An entry in the bsmfVlanAllowedAddressTable."
+    INDEX { bsmfVlanAllowedAddressVlanId, bsmfVlanAllowedAddressMacAddr }
+    ::= { bsmfVlanAllowedAddressTable 1 }
+
+BsmfVlanAllowedAddressEntry ::=
+    SEQUENCE {
+        bsmfVlanAllowedAddressVlanId    VlanId,
+        bsmfVlanAllowedAddressMacAddr   MacAddress,
+        bsmfVlanAllowedAddressRowStatus RowStatus
+    }
+
+bsmfVlanAllowedAddressVlanId OBJECT-TYPE
+    SYNTAX      VlanId
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "An existing VLAN ID."
+    ::= { bsmfVlanAllowedAddressEntry 1 }
+
+bsmfVlanAllowedAddressMacAddr OBJECT-TYPE
+    SYNTAX      MacAddress
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A MAC address that is allowed to flood all ports."
+    ::= { bsmfVlanAllowedAddressEntry 2 }
+
+bsmfVlanAllowedAddressRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object controls creation and deletion of rows in the table."
+    ::= { bsmfVlanAllowedAddressEntry 3 }
+
+-- =========================================================================
+-- VLAN Multicast Flooding Allowed IP Address Configuration Table
+-- =========================================================================
+
+bsmfVlanAllowedInetAddressTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF BsmfVlanAllowedInetAddressEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "This table is used to specify particular multicast IP addresses
+         that are allowed to be flooded to all ports on a per-vlan basis."
+    ::= { bayStackMulticastFloodingMib 6 }
+
+bsmfVlanAllowedInetAddressEntry OBJECT-TYPE
+    SYNTAX BsmfVlanAllowedInetAddressEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "An entry in the bsmfVlanAllowedInetAddressTable."
+    INDEX { bsmfVlanAllowedInetAddressVlanId,
+            bsmfVlanAllowedInetAddressType,
+            IMPLIED bsmfVlanAllowedInetAddress }
+    ::= { bsmfVlanAllowedInetAddressTable 1 }
+
+BsmfVlanAllowedInetAddressEntry ::=
+    SEQUENCE {
+        bsmfVlanAllowedInetAddressVlanId    VlanId,
+        bsmfVlanAllowedInetAddressType      InetAddressType,
+        bsmfVlanAllowedInetAddress          InetAddress,
+        bsmfVlanAllowedInetAddressRowStatus RowStatus
+    }
+
+bsmfVlanAllowedInetAddressVlanId OBJECT-TYPE
+    SYNTAX      VlanId
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "An existing VLAN ID."
+    ::= { bsmfVlanAllowedInetAddressEntry 1 }
+
+bsmfVlanAllowedInetAddressType OBJECT-TYPE
+    SYNTAX      InetAddressType
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The type of address contained in the corresponding instance of
+        bsmfVlanAllowedInetAddress.  Currently, only values of ipv4(1) and
+        ipv6(2) are allowed."
+    ::= { bsmfVlanAllowedInetAddressEntry 2 }
+
+bsmfVlanAllowedInetAddress OBJECT-TYPE
+    SYNTAX      InetAddress (SIZE(4|16))
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A multicast IP address that is allowed to flood all ports.
+        Unicast and broadcast addresses are not allowed."
+    ::= { bsmfVlanAllowedInetAddressEntry 3 }
+
+bsmfVlanAllowedInetAddressRowStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "This object controls creation and deletion of rows in the table."
+    ::= { bsmfVlanAllowedInetAddressEntry 4 }
 
 END
 

@@ -6,7 +6,7 @@
 -- November 2002, Patrick Gili
 -- October  2005, Jayakumar Kadirvelu
 --   
--- Copyright (c) 2002-2008 by Cisco Systems Inc.
+-- Copyright (c) 2002-2009 by Cisco Systems Inc.
 -- All rights reserved.
 -- ****************************************************************
 
@@ -52,7 +52,7 @@ IMPORTS
 
 
 ciscoEntityDiagMIB MODULE-IDENTITY
-    LAST-UPDATED    "200803120000Z"
+    LAST-UPDATED    "200906300000Z"
     ORGANIZATION    "Cisco Systems, Inc."
     CONTACT-INFO
             "Cisco Systems
@@ -128,6 +128,10 @@ ciscoEntityDiagMIB MODULE-IDENTITY
         Diagnostic Job - Consists of a diagnostic suite 
         (i.e., a collection of tests) to be executed by a physical
         entity."
+    REVISION        "200906300000Z"
+    DESCRIPTION
+        "Added ceDiagTestPerfLastTestMethodGroup.
+        Updated Description of ceDiagTestPerfLastErrorID object."
     REVISION        "200803120000Z"
     DESCRIPTION
         "Added ceDiagNotifControlGroup, ceDiagNotifErrorMsgGroup
@@ -946,7 +950,8 @@ CeDiagTestPerfEntry ::= SEQUENCE {
         ceDiagTestPeffLastFail         DateAndTime,
         ceDiagTestPerfTotalRuns        Counter32,
         ceDiagTestPerfTotalFails       Counter32,
-        ceDiagTestPerfConsecutiveFails Gauge32
+        ceDiagTestPerfConsecutiveFails Gauge32,
+        ceDiagTestPerfLastTestMethod   CeDiagDiagnosticMethod
 }
 
 ceDiagTestPerfLastResult OBJECT-TYPE
@@ -978,18 +983,9 @@ ceDiagTestPerfLastErrorID OBJECT-TYPE
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
-        "If the corresponding physical entity has not executed this
-        test since the last restart, then the value of this object will
-        be '0'.
-
-        If the value of ceDiagTestPerfLastResult is 'fail', then this
-        object specifies the error associated with the failure.
-
-        This object will be have the value of '0' under the following
-        circumstances:
-
-        1)  the value of ceDiagTestPerfLastResult is 'pass' or
-            'unknown'." 
+        "This object indicates the last error code of this test.
+        Details of the non-zero error code can be found in the
+        corresponding entry in ceDiagErrorInfoTable." 
     ::= { ceDiagTestPerfEntry 2 }
 
 ceDiagTestPerfLastRun OBJECT-TYPE
@@ -1066,6 +1062,16 @@ ceDiagTestPerfConsecutiveFails OBJECT-TYPE
         failed.  The value of this object will be reset to '0' when the
         physical entity executes the test and it succeeds." 
     ::= { ceDiagTestPerfEntry 9 }
+
+ceDiagTestPerfLastTestMethod OBJECT-TYPE
+    SYNTAX          CeDiagDiagnosticMethod
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the testing method used for the
+        last time this test was executed by the corresponding 
+        physical entity." 
+    ::= { ceDiagTestPerfEntry 10 }
  
 
 
@@ -1569,6 +1575,61 @@ ciscoEntityDiagMIBComplianceRev1 MODULE-COMPLIANCE
     ::= { ciscoEntityDiagMIBCompliances 1 }
 
 ciscoEntityDiagMIBComplianceRev2 MODULE-COMPLIANCE
+    STATUS          deprecated
+    DESCRIPTION
+        "The compliance statement for SNMP entities that implement the
+        CISCO-ENTITY-DIAG-MIB.  Implementation of this MIB module is
+        strongly recommended for any platform implementing the
+        online diagnostic feature.
+
+        This statement is deprecated and superceded by 
+        ciscoEntityDiagMIBComplianceRev3."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        ceDiagDescrGroup,
+                        ceDiagGlobalConfigGroup,
+                        ceDiagEntityGroup,
+                        ceDiagOnDemandGroup,
+                        ceDiagScheduledGroup,
+                        ceDiagTestPerfGroup,
+                        ceDiagEventGroup
+                    }
+
+    GROUP           ceDiagEntityImageGroup
+    DESCRIPTION
+        "The objects defined by this group only need to be
+        implemented if the physical entities in the system
+        are capable of running their own diagnostic image."
+
+    GROUP           ceDiagHealthMonitorGroup
+    DESCRIPTION
+        "The objects defined by this group only need to be
+        implemented if the online diagnostic feature
+        supports a health monitor."
+
+    GROUP           ceDiagScheduledJobSuiteGroup
+    DESCRIPTION
+        "The objects defined by this group only need to be
+        implemented if the online diagnostic feature
+        supports scheduled job test suites."
+
+    GROUP           ceDiagNotifControlGroup
+    DESCRIPTION
+        "This group is mandatory for devices which can provide
+        online diagnostic notifications."
+
+    GROUP           ceDiagNotifErrorMsgGroup
+    DESCRIPTION
+        "This group is mandatory for devices which can provide
+        online diagnostic notifications."
+
+    GROUP           ceDiagNotificationGroup
+    DESCRIPTION
+        "This group is mandatory for devices which can provide
+        online diagnostic notifications."
+    ::= { ciscoEntityDiagMIBCompliances 2 }
+
+ciscoEntityDiagMIBComplianceRev3 MODULE-COMPLIANCE
     STATUS          current
     DESCRIPTION
         "The compliance statement for SNMP entities that implement the
@@ -1618,7 +1679,12 @@ ciscoEntityDiagMIBComplianceRev2 MODULE-COMPLIANCE
     DESCRIPTION
         "This group is mandatory for devices which can provide
         online diagnostic notifications."
-    ::= { ciscoEntityDiagMIBCompliances 2 }
+
+    GROUP           ceDiagTestPerfLastTestMethodGroup
+    DESCRIPTION
+        "This group is mandatory for devices which can provide
+        the last testing method for a diagnostic test."
+    ::= { ciscoEntityDiagMIBCompliances 3 }
 
 -- Units of Conformance
 
@@ -1797,4 +1863,15 @@ ceDiagNotificationGroup NOTIFICATION-GROUP
         monitoring, and scheduled job within online diagnostics."
     ::= { ciscoEntityDiagMIBGroups 13 }
 
+ceDiagTestPerfLastTestMethodGroup OBJECT-GROUP
+    OBJECTS         { ceDiagTestPerfLastTestMethod }
+    STATUS          current
+    DESCRIPTION
+        "A collection of managed objects that describe the last testing method
+        for a diagnostic test."
+    ::= { ciscoEntityDiagMIBGroups 14 }
+
 END
+
+
+

@@ -1356,7 +1356,7 @@ sub discover {
 		      snmp_version  => $info->{snmp_version},
 		      );
 
-	if ( $devtmp{snmp_version} == 3 ){
+	if ( defined $devtmp{snmp_version} && $devtmp{snmp_version} == 3 ){
 	    my %arg2field = (sec_name   => 'snmp_securityname',
 			     sec_level  => 'snmp_securitylevel',
 			     auth_proto => 'snmp_authprotocol',
@@ -2461,16 +2461,15 @@ sub info_update {
 	    my $version = $argv{snmp_version} || $self->snmp_version 
 		|| $self->config->get('DEFAULT_SNMPVERSION');
 	    
-	    my $communities = $argv{communities} || [$self->community] || $self->config->get('DEFAULT_SNMPCOMMUNITIES');
 	    my $timeout     = $argv{timeout}     || $self->config->get('DEFAULT_SNMPTIMEOUT');
 	    my $retries     = $argv{retries}     || $self->config->get('DEFAULT_SNMPRETRIES');
-	    my $sec_name    = $argv{sec_name}    || $self->snmp_securityname;
-	    my $sec_level   = $argv{sec_level}   || $self->snmp_securitylevel;
-	    my $auth_proto  = $argv{auth_proto}  || $self->snmp_authprotocol;
-	    my $auth_pass   = $argv{auth_pass}   || $self->snmp_authkey;
-	    my $priv_proto  = $argv{priv_proto}  || $self->snmp_privprotocol;
-	    my $priv_pass   = $argv{priv_pass}   || $self->snmp_privkey;
-
+	    my $communities = $argv{communities} || [$self->community]        || $self->config->get('DEFAULT_SNMPCOMMUNITIES');
+	    my $sec_name    = $argv{sec_name}    || $self->snmp_securityname  || $self->config->get('DEFAULT_SNMP_SECNAME');
+	    my $sec_level   = $argv{sec_level}   || $self->snmp_securitylevel || $self->config->get('DEFAULT_SNMP_SECLEVEL');
+	    my $auth_proto  = $argv{auth_proto}  || $self->snmp_authprotocol  || $self->config->get('DEFAULT_SNMP_AUTHPROTO');
+	    my $auth_pass   = $argv{auth_pass}   || $self->snmp_authkey       || $self->config->get('DEFAULT_SNMP_AUTHPASS');
+	    my $priv_proto  = $argv{priv_proto}  || $self->snmp_privprotocol  || $self->config->get('DEFAULT_SNMP_PRIVPROTO');
+	    my $priv_pass   = $argv{priv_pass}   || $self->snmp_privkey       || $self->config->get('DEFAULT_SNMP_PRIVPASS');
 	    $info = $class->_exec_timeout($host, 
 					  sub{ return $self->get_snmp_info(communities => $communities, 
 									   version     => $version,
@@ -2527,9 +2526,13 @@ sub info_update {
     $devtmp{product} = $self->_assign_product($info);
     
     ##############################################################
-    # Serial Number
-    if ( my $sn = $info->{serial_number} ){
-	$devtmp{asset_id} = Asset->find_or_create({serial_number=>$sn, product_id=>$devtmp{product}});
+    # Asset
+    my $sn   = $info->{serial_number};
+    my $prod = $devtmp{product};
+    if ( $sn && $prod){
+	$devtmp{asset_id} = Asset->find_or_create({serial_number=>$sn, product_id=>$prod});
+    }elsif ( $sn ){
+	$devtmp{asset_id} = Asset->find_or_create({serial_number=>$sn});	
     }else{
     	$logger->debug(sub{"$host did not return serial number" });
     }
@@ -3919,10 +3922,12 @@ sub snmp_update_parallel {
     }
     
     my %uargs;
-    foreach my $field ( qw(version timeout retries add_subnets subs_inherit 
-                           bgp_peers pretend do_info do_fwt do_arp) ){
+    foreach my $field ( qw(version timeout retries sec_name sec_level auth_proto auth_pass 
+                           priv_proto priv_pass add_subnets subs_inherit bgp_peers pretend 
+                           do_info do_fwt do_arp) ){
 	$uargs{$field} = $argv{$field} if defined ($argv{$field});
     }
+
     $uargs{no_update_tree} = 1;
     $uargs{timestamp}      = $class->timestamp;
     my %do_devs;

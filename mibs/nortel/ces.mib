@@ -1,0 +1,154 @@
+
+        CONTIVITY-INFO-V1-MIB DEFINITIONS ::= BEGIN
+                
+        IMPORTS
+                OBJECT-TYPE							FROM RFC-1212
+				DisplayString						FROM RFC1213-MIB
+				IpAddress  							FROM RFC1155-SMI
+				MODULE-IDENTITY				 		FROM SNMPv2-SMI
+-- SNMPv2-SMI(RFC2578 or STD58)
+				contivity							FROM NEWOAK-MIB;
+
+-- The following MODULE-IDENTITY definition can be commented out if the MIB parser
+-- you are using has trouble parsing it. If you do comment it out, then uncomment 
+-- the following object identifier defintion.
+--    snmpAgentInfo-ces OBJECT IDENTIFIER ::= {contivity 15}
+--
+		snmpAgentInfo-ces  MODULE-IDENTITY
+			LAST-UPDATED "0604062230Z"  -- April 06, 2006 6:30pm EST
+			ORGANIZATION "Nortel"
+			CONTACT-INFO
+				   "support@nortel.com
+            Postal: Nortel
+                    600 Technology Park Drive
+                    Billerica, MA 01821
+            Tel:    +1 978 670 8888
+            E-Mail: support@nortel.com"
+
+			DESCRIPTION
+				"on the VPN Router."
+			REVISION     "0008072230Z"   -- Aug 07, 2000 6:30pm EST
+			DESCRIPTION
+               "Added snmpAgentInfo-Utilities-RevDate-ces,
+                snmpAgentInfo-Utilities-Rev-ces,
+                snmpAgentInfo-Utilities-ServerRev-ces
+			    "
+			::= { contivity 15 }
+
+-- SNMP Agent related info
+
+    snmpAgentInfo-Utilities-ces OBJECT IDENTIFIER
+        ::= {snmpAgentInfo-ces 1}
+
+
+    snmpAgentInfo-Utilities-Ping-ces OBJECT IDENTIFIER
+        ::= {snmpAgentInfo-Utilities-ces 1}
+
+	snmpAgentInfo-Utilities-RevDate-ces OBJECT-TYPE
+		SYNTAX     DisplayString
+		ACCESS     read-only
+		STATUS     mandatory
+		DESCRIPTION
+				"This value should match the LAST-UPDATED value in the MIB."
+       ::= { snmpAgentInfo-Utilities-Ping-ces 1 }
+
+	snmpAgentInfo-Utilities-Rev-ces OBJECT-TYPE
+		SYNTAX     INTEGER
+		ACCESS     read-only
+		STATUS     mandatory
+		DESCRIPTION
+				"This is an integer that is increment for each change in 
+				the implementation of the MIB since the LAST-UPDATED date/time."
+       ::= { snmpAgentInfo-Utilities-Ping-ces 2 }
+
+	snmpAgentInfo-Utilities-ServerRev-ces OBJECT-TYPE
+		SYNTAX     DisplayString
+		ACCESS     read-only
+		STATUS     mandatory
+		DESCRIPTION
+				"This is the major and minor version numbers for the server image
+				it is compatible with."
+       ::= { snmpAgentInfo-Utilities-Ping-ces 3 }
+
+	pingAddress-ces OBJECT-TYPE
+		SYNTAX     IpAddress
+		ACCESS     not-accessible	
+		STATUS     mandatory
+		DESCRIPTION
+				""
+       ::= { snmpAgentInfo-Utilities-Ping-ces 4 }
+
+	pingRepetitions-ces OBJECT-TYPE
+		SYNTAX     INTEGER (1..2147483647 )
+		ACCESS	   not-accessible
+		STATUS     mandatory
+		DESCRIPTION
+				""
+       ::= { snmpAgentInfo-Utilities-Ping-ces 5 }
+
+	pingPacketSize-ces OBJECT-TYPE
+		SYNTAX     INTEGER (64..4076 )
+		ACCESS	   not-accessible
+		STATUS     mandatory
+		DESCRIPTION
+				""
+       ::= { snmpAgentInfo-Utilities-Ping-ces 6}
+
+	pingSrcAddress-ces OBJECT-TYPE
+		SYNTAX     IpAddress
+		ACCESS     not-accessible	
+		STATUS     mandatory
+		DESCRIPTION
+				""
+       ::= { snmpAgentInfo-Utilities-Ping-ces 7 }
+
+   pingTable-ces OBJECT-TYPE
+       SYNTAX      SEQUENCE OF PingEntry-ces
+       ACCESS      not-accessible
+       STATUS      mandatory
+       DESCRIPTION
+               ""
+       ::= { snmpAgentInfo-Utilities-Ping-ces 8}
+
+   pingEntry-ces OBJECT-TYPE
+       SYNTAX      PingEntry-ces
+       ACCESS      not-accessible
+       STATUS      mandatory
+       DESCRIPTION
+               ""
+       INDEX   { pingAddress-ces, pingRepetitions-ces, pingPacketSize-ces, pingSrcAddress-ces }
+
+       ::= { pingTable-ces 1 }
+
+   PingEntry-ces ::=
+       SEQUENCE {
+           pingAverageTime-ces             INTEGER,
+		   pingPercentLoss-ces             INTEGER
+       }
+
+
+   pingAverageTime-ces OBJECT-TYPE
+       SYNTAX      INTEGER
+       ACCESS	   read-only
+       STATUS      mandatory
+       DESCRIPTION
+               "Possible Values:
+			   -1 indicates that the address could not be pinged.
+			   -2 indicates that the instance specified did not conform to valid IP address.
+			   A value other than -1 is the average of pings. If the value is 0, then 
+			   the average ping time is less than 16ms"
+       ::= { pingEntry-ces 1 }
+
+   pingPercentLoss-ces OBJECT-TYPE
+       SYNTAX      INTEGER
+       ACCESS	   read-only
+       STATUS      mandatory
+       DESCRIPTION
+               "Possible Values:
+			   -1 indicates that the address could not be pinged.
+			   -2 indicates that the instance specified did not conform to valid IP address.
+			   A value other than -1 is the percentage of pings loss"
+       ::= { pingEntry-ces 2 }
+
+	END
+	

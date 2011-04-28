@@ -23,7 +23,7 @@ IMPORTS
 -- ********************************************************************
 
 ciscoLwappDot11ClientCCXTextualConventions MODULE-IDENTITY
-    LAST-UPDATED    "200703220000Z"
+    LAST-UPDATED    "200702220000Z"
     ORGANIZATION    "Cisco Systems Inc."
     CONTACT-INFO
             "Cisco Systems,
@@ -100,9 +100,6 @@ ciscoLwappDot11ClientCCXTextualConventions MODULE-IDENTITY
 
         [3] Cisco Compatible Extensions for WLAN Devices
         Version 5.0.11"
-    REVISION        "200703220000Z"
-    DESCRIPTION
-        "Added 2 more radio types to CiscoLwappDot11ClientRadioType."
     REVISION        "200702220000Z"
     DESCRIPTION
         "Reverted some of the enum names to be in line with the CCXV5
@@ -388,13 +385,7 @@ CiscoLwappDot11ClientRadioType ::= TEXTUAL-CONVENTION
             highRateDsss - this is high rate direct sequence spread 
             spectrum based radio
 
-            erp - this indicates effective radiated power based radio
-
-            draft11n2point4Ghz - this indicates a 2.4 Ghz band radio
-            as defined in draft 802.11n
-
-            draft11n5Ghz - this indicates a 5 Ghz band radio
-            as defined in draft 802.11n"
+            erp - this indicates effective radiated power based radio"
     SYNTAX          INTEGER  {
                         unused(0),
                         fhss(1),
@@ -429,6 +420,28 @@ CiscoLwappDot11ClientDataRates ::= TEXTUAL-CONVENTION
                         mhz48(10),
                         mhz54(11)
                     }
+
+CLDot11ClientDiagAssocReason ::= TEXTUAL-CONVENTION
+    STATUS	   current
+    DESCRIPTION
+	"This field indicates the reason for which the client
+	has to be associated to a diagnostic WLAN."
+    SYNTAX         INTEGER {
+			reconnect(0),		   
+			unreliableLink(1),
+			dot11AuthFail(2),
+			dot11AssocFail(3),
+			rsnaFail(4),
+			dhcpFail(5),
+			dnsFail(6),
+			ipConnectivityFail(7),
+			dot1xAuthFail(8),
+			commonEapNegotiationFail(9),
+			userInitiatedReasonUnknown(10),
+			executingTest(11),
+			reserved(12)
+		   }
+
 
 END
 

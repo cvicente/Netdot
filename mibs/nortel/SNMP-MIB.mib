@@ -1,0 +1,155 @@
+
+SNMP-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+        OBJECT-TYPE,IpAddress,Integer32,
+        MODULE-IDENTITY
+                	FROM SNMPv2-SMI
+        DisplayString
+                	FROM SNMPv2-TC
+	ntEnterpriseDataTasmanMgmt
+	    	      FROM NT-ENTERPRISE-DATA-MIB;
+
+nnsnmpMib MODULE-IDENTITY
+  	LAST-UPDATED "9904230000Z"
+  	ORGANIZATION "Nortel Networks"
+	CONTACT-INFO
+        	" Nortel Networks
+        	8200 Dixie Road
+        	Brampton, Ontario L6T 5P6
+        	Canada        
+        	1-800-4Nortel 
+        	www.nortelnetworks.com "
+  	DESCRIPTION
+  		"SNMP Management group MIBs"
+  	REVISION  "9904230000Z"
+  	DESCRIPTION
+  		"Initial version of this MIB module."
+         ::= { ntEnterpriseDataTasmanMgmt 5}
+
+
+nnsnmpObjects 		OBJECT IDENTIFIER ::= { nnsnmpMib 1 }
+
+--
+-- snmpObjects group
+--
+nnsnmpAgentType OBJECT-TYPE
+        SYNTAX  INTEGER {
+            other(1),    -- none of the following
+            snmpV1(2),   -- Simple Network Management Protocol
+            snmpV2V1(3), -- Bi-lingual SNMP, Ver 2 and 1
+            snmpV2cV1(4) -- Bi-lingual SNMP, V2c and V1
+        }
+        MAX-ACCESS    read-only
+        STATUS        current
+        DESCRIPTION   " Type of SNMP agent running on this entity. "
+        ::= { nnsnmpObjects 1 }
+
+nnsnmpRmonSupported OBJECT-TYPE
+        SYNTAX        INTEGER 	{
+			supported(1),
+			not-supported(2)
+	              }
+        MAX-ACCESS    read-only
+        STATUS        current
+        DESCRIPTION   "	Indicates whether the SNMP agent supports the
+			RMON MIB."
+        ::= { nnsnmpObjects 2 }
+
+nnsnmpSourceAddress OBJECT-TYPE
+        SYNTAX        	IpAddress
+        MAX-ACCESS    	read-write
+        STATUS        	current
+        DESCRIPTION   	"Source IP address to be used on SNMP TRAPS
+			sent by the agent.Default is ethernet 0 's
+			IP address.Use 0.0.0.0 to unconfigure."
+        DEFVAL          { 0 }  
+        ::= { nnsnmpObjects 3 }
+
+--
+-- The snmpTrapRcvrTable contains all the information needed about 
+-- which network management stations the agent wants to send the
+-- trap. Using the table, a new network management station can be 
+-- added or deleted.
+--
+nnsnmpTrapRcvrTable OBJECT-TYPE
+        SYNTAX        	SEQUENCE OF NnSnmpTrapRcvrEntry
+        MAX-ACCESS    	not-accessible
+        STATUS        	current
+        DESCRIPTION   	" The trap receiver table lists the addresses
+	  	          of the network management stations that
+			  should receive trap messages from the agent.
+			  This list is used by the agent to send the
+			  traps. The snmpTrapRcvrEntryStatus parameter 
+			  is used to add or delete an entry from
+			  the table. Only the entries with valid
+			  snmpTrapEntryStatus are used. A maximum of
+			  10 entries can exist in this table at any
+  			  point in time. A new entry can be created 
+			  only if the values for all the columnar 
+			  objects in the table are sent in the same 
+			  SNMP SET request."
+        ::= { nnsnmpObjects 4 }
+
+nnsnmpTrapRcvrEntry OBJECT-TYPE
+        SYNTAX        	NnSnmpTrapRcvrEntry
+        MAX-ACCESS    	not-accessible
+        STATUS        	current
+        DESCRIPTION   	" A SNMP trap-receive table entry contains the
+			  information of the network management
+			  station to where the trap can be sent by the
+			  agent. "
+        INDEX         	{ nnsnmpTrapRcvrIndex }
+        ::= { nnsnmpTrapRcvrTable 1 }
+
+NnSnmpTrapRcvrEntry ::=
+        SEQUENCE {
+                nnsnmpTrapRcvrIndex       Integer32,
+		    nnsnmpTrapRcvrEntryStatus	INTEGER,
+                nnsnmpTrapRcvrAddress	IpAddress,
+                nnsnmpTrapRcvrCommunity	DisplayString
+        }
+nnsnmpTrapRcvrIndex      OBJECT-TYPE
+        SYNTAX          Integer32
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     " Index into the table for display"
+        ::= { nnsnmpTrapRcvrEntry 1 }
+
+nnsnmpTrapRcvrEntryStatus OBJECT-TYPE
+        SYNTAX  	INTEGER {
+                	    valid(1),
+                	    invalid(2)
+        		}
+	MAX-ACCESS	read-write
+	STATUS		current
+	DESCRIPTION 	" The status of the SNMP trap-receive table
+	                  entry. By default, the value is set to valid
+			  when a new entry is created. When a network
+			  management station is deleted from the table
+			  the value of the parameter is set to
+			  invalid. "
+        DEFVAL          { valid }
+	  ::= { nnsnmpTrapRcvrEntry 2 }
+
+nnsnmpTrapRcvrAddress OBJECT-TYPE
+        SYNTAX        	IpAddress
+        MAX-ACCESS    	read-write
+        STATUS        	current
+        DESCRIPTION   	"IP address of the network management station
+			 which can receive the trap from the agent. It
+			 is unique for every entry and used as the
+			 index for the SNMP trap-receive table. "
+        ::= { nnsnmpTrapRcvrEntry 3 }
+
+nnsnmpTrapRcvrCommunity OBJECT-TYPE
+        SYNTAX        	DisplayString (SIZE (1..64))
+        MAX-ACCESS    	read-write
+        STATUS        	current
+        DESCRIPTION   	" Community string associated with the network
+	  		  management station receiving the trap
+                          messages. The community string is used in
+			  the trap messages. "
+        ::= { nnsnmpTrapRcvrEntry 4 }
+
+END

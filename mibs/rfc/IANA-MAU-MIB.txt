@@ -8,7 +8,7 @@ IANA-MAU-MIB DEFINITIONS ::= BEGIN
        ;
 
      ianaMauMIB MODULE-IDENTITY
-       LAST-UPDATED "200704210000Z"  -- April 21, 2007
+       LAST-UPDATED "201002230000Z"  -- February 23, 2010
        ORGANIZATION "IANA"
        CONTACT-INFO "        Internet Assigned Numbers Authority
 
@@ -57,6 +57,10 @@ IANA-MAU-MIB DEFINITIONS ::= BEGIN
          RFC 4836; for full legal notices see the RFC itself.
          Supplementary information may be available at:
          http://www.ietf.org/copyrights/ianamib.html"
+
+       REVISION     "201002230000Z"  -- February 23, 2010
+       DESCRIPTION  "Added assignments that will be included in 
+                     Clause 14 of IEEE P802.3.1."
 
        REVISION     "200704210000Z"  -- April 21, 2007
        DESCRIPTION  "Initial version of this MIB as published in
@@ -141,7 +145,23 @@ IANA-MAU-MIB DEFINITIONS ::= BEGIN
               b1000BasePX10D(50), -- 1000BASE-PX10D
               b1000BasePX10U(51), -- 1000BASE-PX10U
               b1000BasePX20D(52), -- 1000BASE-PX20D
-              b1000BasePX20U(53)  -- 1000BASE-PX20U
+              b1000BasePX20U(53), -- 1000BASE-PX20U
+              b10GbaseT(54),      -- 10GBASE-T
+              b10GbaseLRM(55),    -- 10GBASE-LRM
+              b1000baseKX(56),    -- 1000BASE-KX
+              b10GbaseKX4(57),    -- 10GBASE-KX4
+              b10GbaseKR(58),     -- 10GBASE-KR
+              b10G1GbasePRXD1(59),-- 10/1GBASE-PRX-D1
+              b10G1GbasePRXD2(60),-- 10/1GBASE-PRX-D2
+              b10G1GbasePRXD3(61),-- 10/1GBASE-PRX-D3
+              b10G1GbasePRXU1(62),-- 10/1GBASE-PRX-U1
+              b10G1GbasePRXU2(63),-- 10/1GBASE-PRX-U2
+              b10G1GbasePRXU3(64),-- 10/1GBASE-PRX-U3
+              b10GbasePRD1(65),   -- 10GBASE-PR-D1
+              b10GbasePRD2(66),   -- 10GBASE-PR-D2
+              b10GbasePRD3(67),   -- 10GBASE-PR-D3
+              b10GbasePRU1(68),   -- 10GBASE-PR-U1
+              b10GbasePRU3(69)    -- 10GBASE-PR-U3
          }
 
      IANAifMauMediaAvailable ::= TEXTUAL-CONVENTION
@@ -358,7 +378,11 @@ IANA-MAU-MIB DEFINITIONS ::= BEGIN
               b1000baseXFD(13),   -- 1000BASE-X, -LX, -SX, -CX full
                                   --     duplex mode
               b1000baseT(14),     -- 1000BASE-T half duplex mode
-              b1000baseTFD(15)    -- 1000BASE-T full duplex mode
+              b1000baseTFD(15),   -- 1000BASE-T full duplex mode
+              b10GbaseT(16),      -- 10GBASE-T
+              b1000baseKX(17),    -- 1000BASE-KX
+              b10GbaseKX4(18),    -- 10GBASE-KX4
+              b10GbaseKR(19)      -- 10GBASE-KR
          }
 
      IANAifJackType ::= TEXTUAL-CONVENTION
@@ -760,5 +784,112 @@ IANA-MAU-MIB DEFINITIONS ::= BEGIN
        DESCRIPTION "One single-mode fiber EPON ONU, 20km"
        REFERENCE   "[IEEE802.3], Section 60"
        ::= { dot3MauType 53 }
+
+     dot3MauType10GbaseT OBJECT-IDENTITY
+       STATUS      current
+       DESCRIPTION "Four-pair Category 6A or better, full duplex mode only"
+       REFERENCE   "IEEE Std 802.3, Clause 55"
+       ::= { dot3MauType 54 }
+
+     dot3MauType10GbaseLRM OBJECT-IDENTITY
+       STATUS      current
+       DESCRIPTION "R multimode fiber over 1310 nm optics"
+       REFERENCE   "IEEE Std 802.3, Clause 68"
+       ::= { dot3MauType 55 }
+
+     dot3MauType1000baseKX OBJECT-IDENTITY
+       STATUS      current
+       DESCRIPTION "X backplane, full duplex mode only"
+       REFERENCE   "IEEE Std 802.3, Clause 70"
+       ::= { dot3MauType 56 }
+
+     dot3MauType10GbaseKX4 OBJECT-IDENTITY
+       STATUS      current
+       DESCRIPTION "4 lane X backplane, full duplex mode only"
+       REFERENCE   "IEEE Std 802.3, Clause 71"
+       ::= { dot3MauType 57 }
+
+     dot3MauType10GbaseKR OBJECT-IDENTITY
+       STATUS      current
+       DESCRIPTION "R backplane, full duplex mode only"
+       REFERENCE   "IEEE Std 802.3, Clause 72"
+       ::= { dot3MauType 58 }
+
+     dot3MauType10G1GbasePRXD1 OBJECT-IDENTITY
+       STATUS      current
+       DESCRIPTION "One single-mode fiber asymmetric-rate EPON OLT, supporting low
+                    power budget (PRX10)"
+       REFERENCE   "IEEE Std 802.3, Clause 75"
+       ::= { dot3MauType 59 }
+
+     dot3MauType10G1GbasePRXD2 OBJECT-IDENTITY
+       STATUS      current
+       DESCRIPTION "One single-mode fiber asymmetric-rate EPON OLT, supporting
+                   medium power budget (PRX20)"
+       REFERENCE   "IEEE Std 802.3, Clause 75"
+       ::= { dot3MauType 60 }
+
+     dot3MauType10G1GbasePRXD3 OBJECT-IDENTITY
+       STATUS      current
+       DESCRIPTION "One single-mode fiber asymmetric-rate EPON OLT, supporting high
+                   power budget (PRX30)"
+       REFERENCE   "IEEE Std 802.3, Clause 75"
+       ::= { dot3MauType 61 }
+
+     dot3MauType10G1GbasePRXU1 OBJECT-IDENTITY
+       STATUS      current
+       DESCRIPTION "One single-mode fiber asymmetric-rate EPON ONU, supporting low
+                   power budget (PRX10)"
+       REFERENCE   "IEEE Std 802.3, Clause 75"
+       ::= { dot3MauType 62 }
+
+     dot3MauType10G1GbasePRXU2 OBJECT-IDENTITY
+       STATUS      current
+       DESCRIPTION "One single-mode fiber asymmetric-rate EPON ONU, supporting
+                   medium power budget (PRX20)"
+       REFERENCE   "IEEE Std 802.3, Clause 75"
+       ::= { dot3MauType 63 }
+
+     dot3MauType10G1GbasePRXU3 OBJECT-IDENTITY
+       STATUS      current
+       DESCRIPTION "One single-mode fiber asymmetric-rate EPON ONU, supporting high
+                   power budget (PRX30)"
+       REFERENCE   "IEEE Std 802.3, Clause 75"
+       ::= { dot3MauType 64 }
+
+     dot3MauType10GbasePRD1 OBJECT-IDENTITY
+       STATUS      current
+       DESCRIPTION "One single-mode fiber symmetric-rate EPON OLT, supporting low
+                   power budget (PR10)"
+       REFERENCE   "IEEE Std 802.3, Clause 75"
+       ::= { dot3MauType 65 }
+
+     dot3MauType10GbasePRD2 OBJECT-IDENTITY
+       STATUS      current
+       DESCRIPTION "One single-mode fiber symmetric-rate EPON OLT, supporting
+                   medium power budget (PR20)"
+       REFERENCE   "IEEE Std 802.3, Clause 75"
+       ::= { dot3MauType 66 }
+
+     dot3MauType10GbasePRD3 OBJECT-IDENTITY
+       STATUS      current
+       DESCRIPTION "One single-mode fiber symmetric-rate EPON OLT, supporting high
+                   power budget (PR30)"
+       REFERENCE   "IEEE Std 802.3, Clause 75"
+       ::= { dot3MauType 67 }
+
+     dot3MauType10GbasePRU1 OBJECT-IDENTITY
+       STATUS      current
+       DESCRIPTION "One single-mode fiber symmetric-rate EPON ONU, supporting
+                   low and medium power budget (PR10 and PR20)"
+       REFERENCE   "IEEE Std 802.3, Clause 75"
+       ::= { dot3MauType 68 }
+
+     dot3MauType10GbasePRU3 OBJECT-IDENTITY
+       STATUS      current
+       DESCRIPTION "One single-mode fiber symmetric-rate EPON ONU, supporting high
+                   power budget (PR30)"
+       REFERENCE   "IEEE Std 802.3, Clause 75"
+       ::= { dot3MauType 69 }
 
 END

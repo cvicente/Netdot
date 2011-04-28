@@ -4,7 +4,7 @@
 -- June 2001, Liwei Wang 
 -- June 2002, Prasanna Parthasarathy 
 --
--- Copyright (c) 2001, 2002 by cisco Systems, Inc.
+-- Copyright (c) 2001-2002, 2005-2006 by cisco Systems, Inc.
 -- All rights reserved.
 -- *****************************************************************
 
@@ -25,7 +25,7 @@ IMPORTS
         FROM SNMPv2-CONF;
 
 ciscoPrivateVlanMIB MODULE-IDENTITY
-    LAST-UPDATED "200207240000Z"
+    LAST-UPDATED "200509080000Z"
     ORGANIZATION "Cisco Systems, Inc."
     CONTACT-INFO
             "Cisco Systems
@@ -41,6 +41,11 @@ ciscoPrivateVlanMIB MODULE-IDENTITY
     DESCRIPTION
              "The MIB module to support Private VLAN feature on
              Cisco's switching devices."
+    REVISION "200509080000Z"
+    DESCRIPTION
+             "Added support for Private VLAN Promiscuous Trunk Ports. 
+             by adding a new mode type"
+
     REVISION "200207240000Z"
     DESCRIPTION
              "Added support for Private VLAN Trunk Ports. Added the
@@ -247,7 +252,7 @@ CpvlanVlanEditEntry ::= SEQUENCE {
 
 cpvlanVlanEditPrivateVlanType OBJECT-TYPE
     SYNTAX     PrivateVlanType 
-    MAX-ACCESS read-create
+    MAX-ACCESS read-write
     STATUS     current
     DESCRIPTION
             "The VLAN type as defined for Private VLAN feature.
@@ -259,7 +264,7 @@ cpvlanVlanEditPrivateVlanType OBJECT-TYPE
 
 cpvlanVlanEditAssocPrimaryVlan OBJECT-TYPE
     SYNTAX     VlanIndexOrZero 
-    MAX-ACCESS read-create
+    MAX-ACCESS read-write
     STATUS     current
     DESCRIPTION
             "The VLAN ID of the associated primary VLAN used for 
@@ -587,7 +592,8 @@ cpvlanPortMode OBJECT-TYPE
                        nonPrivateVlan(1), 
                        host(2),
                        promiscuous(3),
-                       trunk(4)
+                       secondaryTrunk(4),
+                       promiscuousTrunk(5)
                }        
     MAX-ACCESS read-write
     STATUS     current
@@ -604,8 +610,13 @@ cpvlanPortMode OBJECT-TYPE
             promiscuous(3) -- this port is configured to be
                               a Private-VLAN promiscuous port.
 
-            trunk(4) -- this port is configured to be a
-                        Private-VLAN trunk port."
+            secondaryTrunk(4) -- this port is configured to be a
+                        Private-VLAN isolated trunk port or community 
+                        trunk port.
+
+            promiscuousTrunk(5) -- this port is configured to be a
+                        Private-VLAN promiscuous trunk port."
+
     DEFVAL     { nonPrivateVlan }
     ::= { cpvlanPortModeEntry 1 }
 

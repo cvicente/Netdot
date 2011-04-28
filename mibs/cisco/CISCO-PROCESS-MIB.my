@@ -3,7 +3,7 @@
 --   
 -- August 1998, Ramanathan R. Kavasseri
 --   
--- Copyright (c) 1998, 2001, 2003, 2006-2008 by cisco Systems Inc.
+-- Copyright (c) 1998, 2001, 2003, 2006-2010 by cisco Systems Inc.
 -- All rights reserved.
 -- *****************************************************************
 --   
@@ -17,7 +17,8 @@ IMPORTS
     Counter32,
     Gauge32,
     Unsigned32,
-    NOTIFICATION-TYPE
+    NOTIFICATION-TYPE,
+    Counter64
         FROM SNMPv2-SMI
     MODULE-COMPLIANCE,
     OBJECT-GROUP,
@@ -27,18 +28,22 @@ IMPORTS
     DisplayString,
     RowStatus,
     TruthValue,
-    RowPointer
+    RowPointer,
+    TEXTUAL-CONVENTION
         FROM SNMPv2-TC
     SnmpAdminString
         FROM SNMP-FRAMEWORK-MIB
-    EntPhysicalIndexOrZero
+    CounterBasedGauge64
+        FROM HCNUM-TC
+    EntPhysicalIndexOrZero,
+    Unsigned64
         FROM CISCO-TC
     ciscoMgmt
         FROM CISCO-SMI;
 
 
 ciscoProcessMIB MODULE-IDENTITY
-    LAST-UPDATED    "200703230000Z"
+    LAST-UPDATED    "201005060000Z"
     ORGANIZATION    "Cisco Systems, Inc."
     CONTACT-INFO
             "Cisco Systems
@@ -61,6 +66,60 @@ ciscoProcessMIB MODULE-IDENTITY
         Thread is a sequence of instructions to be executed
         within a program. Thread which adhere to POSIX standard
         is referred as a POSIX thread."
+    REVISION        "201005060000Z"
+    DESCRIPTION
+        "Added the following new objects to the cpmCPUTotalTable.
+        cpmCPUMemoryCommitted, cpmCPUMemoryCommittedOvrFlow and
+        cpmCPUMemoryHCCommitted.
+
+        Added new compliance group cpmCPUTotalMemoryCommitGroup which
+        includes Committed memory objects.
+
+        Added new compliance cProcessMIBComplianceRev5 which 
+        deprecates cProcessMIBComplianceRev4."
+    REVISION        "200910120000Z"
+    DESCRIPTION
+        "Added TEXTUAL-CONVENTION called CPULoadAverage.
+        Added the following new objects to cpmCPUTotalTable.
+        cpmCPULoadAvg1min, cpmCPULoadAvg5min, cpmCPULoadAvg15min.
+
+        Added new compliance group cpmCPULoadAvgGroup which includes
+        load average objects.
+
+        Added new compliance cProcessMIBComplianceRev4 which 
+        deprecates cProcessMIBComplianceRev3."
+    REVISION        "200901230000Z"
+    DESCRIPTION
+        "Added the following new objects to cpmCPUTotalTable.
+        cpmCPUMemoryUsedOvrflw, cpmCPUMemoryHCUsed,
+        cpmCPUMemoryFreeOvrflw, cpmCPUMemoryHCFree,
+        cpmCPUMemoryKernelReservedOvrflw, cpmCPUMemoryHCKernelReserved,
+        cpmCPUMemoryLowestOvrflw, cpmCPUMemoryHCLowest
+
+        Added the following new objects to cpmProcessExtRevTable.
+        cpmProcExtMemAllocatedRevOvrflw, cpmProcExtHCMemAllocatedRev,
+        cpmProcExtMemFreedRevOvrflw, cpmProcExtHCMemFreedRev,
+        cpmProcessTextSegmentSizeOvrflw, cpmProcessHCTextSegmentSize,
+        cpmProcessDataSegmentSizeOvrflw, cpmProcessHCDataSegmentSize,
+        cpmProcessStackSizeOvrflw, cpmProcessHCStackSize,
+        cpmProcessDynamicMemorySizeOvrflw, cpmProcessHCDynamicMemorySize
+
+        Added the following new objects to cpmThreadTable.
+        cpmThreadStackSizeOvrflw, cpmThreadHCStackSize
+
+        Added the following new objects to cpmVirtualProcessTable.
+        cpmVirtualProcessMemAllocatedOvrflw,
+        cpmVirtualProcessHCMemAllocated,
+        cpmVirtualProcessMemFreedOvrflw, cpmVirtualProcessHCMemFreed
+
+        Added following new compliance groups.
+        cpmCPUTotalOverflowGroup, cpmCPUTotalOverflowGroup,
+        cpmProcessExtRevOverflowGroup, cpmProcessExtRevHCGroup,
+        cpmThreadOverflowGroup, cpmThreadHCGroup,
+        cpmVirtualProcessOverflowGroup, cpmVirtualProcessHCGroup
+
+        Added new compliance cProcessMIBComplianceRev3 which deprecates
+        cProcessMIBComplianceRev2."
     REVISION        "200703230000Z"
     DESCRIPTION
         "Added new objects to support POSIX compliant OS. Added
@@ -94,6 +153,21 @@ ciscoProcessMIB MODULE-IDENTITY
     ::= { ciscoMgmt 109 }
 
 
+
+CPULoadAverage ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT    "d"
+    STATUS          current
+    DESCRIPTION
+        "The average number of processes in the queue waiting for CPU
+        time over the last N minutes, where the N is defined by the 
+        object using this TC. This is similar to UNIX/Linux system load
+        average. The calculation may vary by different OS kernels, so
+        refer  to  the specific system document of your interest.
+        The object value, which uses this TC, reflects the average
+        number of runnable processes with units of hundredths of
+        processes, i.e. a value of 183 indicates the average number of
+        runnable processes over the N minutes is 1.83."
+    SYNTAX          Unsigned32
 -- This MIB displays memory and CPU utilization on cisco devices. CPU
 -- utilization will give a general idea of how busy the processor is.
 -- The numbers are a ratio of the current idle time over the longest
@@ -140,21 +214,35 @@ cpmCPUTotalEntry OBJECT-TYPE
     ::= { cpmCPUTotalTable 1 }
 
 CpmCPUTotalEntry ::= SEQUENCE {
-        cpmCPUTotalIndex                Unsigned32,
-        cpmCPUTotalPhysicalIndex        EntPhysicalIndexOrZero,
-        cpmCPUTotal5sec                 Gauge32,
-        cpmCPUTotal1min                 Gauge32,
-        cpmCPUTotal5min                 Gauge32,
-        cpmCPUTotal5secRev              Gauge32,
-        cpmCPUTotal1minRev              Gauge32,
-        cpmCPUTotal5minRev              Gauge32,
-        cpmCPUMonInterval               Unsigned32,
-        cpmCPUTotalMonIntervalValue     Gauge32,
-        cpmCPUInterruptMonIntervalValue Gauge32,
-        cpmCPUMemoryUsed                Gauge32,
-        cpmCPUMemoryFree                Gauge32,
-        cpmCPUMemoryKernelReserved      Gauge32,
-        cpmCPUMemoryLowest              Gauge32
+        cpmCPUTotalIndex                 Unsigned32,
+        cpmCPUTotalPhysicalIndex         EntPhysicalIndexOrZero,
+        cpmCPUTotal5sec                  Gauge32,
+        cpmCPUTotal1min                  Gauge32,
+        cpmCPUTotal5min                  Gauge32,
+        cpmCPUTotal5secRev               Gauge32,
+        cpmCPUTotal1minRev               Gauge32,
+        cpmCPUTotal5minRev               Gauge32,
+        cpmCPUMonInterval                Unsigned32,
+        cpmCPUTotalMonIntervalValue      Gauge32,
+        cpmCPUInterruptMonIntervalValue  Gauge32,
+        cpmCPUMemoryUsed                 Gauge32,
+        cpmCPUMemoryFree                 Gauge32,
+        cpmCPUMemoryKernelReserved       Gauge32,
+        cpmCPUMemoryLowest               Gauge32,
+        cpmCPUMemoryUsedOvrflw           Gauge32,
+        cpmCPUMemoryHCUsed               CounterBasedGauge64,
+        cpmCPUMemoryFreeOvrflw           Gauge32,
+        cpmCPUMemoryHCFree               Counter64,
+        cpmCPUMemoryKernelReservedOvrflw Gauge32,
+        cpmCPUMemoryHCKernelReserved     CounterBasedGauge64,
+        cpmCPUMemoryLowestOvrflw         Gauge32,
+        cpmCPUMemoryHCLowest             CounterBasedGauge64,
+        cpmCPULoadAvg1min                CPULoadAverage,
+        cpmCPULoadAvg5min                CPULoadAverage,
+        cpmCPULoadAvg15min               CPULoadAverage,
+        cpmCPUMemoryCommitted            Gauge32,
+        cpmCPUMemoryCommittedOvrflw      Gauge32,
+        cpmCPUMemoryHCCommitted          CounterBasedGauge64
 }
 
 cpmCPUTotalIndex OBJECT-TYPE
@@ -326,6 +414,154 @@ cpmCPUMemoryLowest OBJECT-TYPE
         "The lowest free memory that has been recorded since
         device has booted." 
     ::= { cpmCPUTotalEntry 15 }
+
+cpmCPUMemoryUsedOvrflw OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "kilo-bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents the upper 32-bit of cpmCPUMemoryUsed.
+        This object needs to be supported only when the value of
+        cpmCPUMemoryUsed exceeds 32-bit, otherwise this object value
+        would be set to 0." 
+    ::= { cpmCPUTotalEntry 16 }
+
+cpmCPUMemoryHCUsed OBJECT-TYPE
+    SYNTAX          CounterBasedGauge64
+    UNITS           "kilo-bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The overall CPU wide system memory which is currently under
+        use. This object is a 64-bit version of cpmCPUMemoryUsed." 
+    ::= { cpmCPUTotalEntry 17 }
+
+cpmCPUMemoryFreeOvrflw OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "kilo-bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents the upper 32-bit of cpmCPUMemoryFree.
+        This object needs to be supported only when the value of
+        cpmCPUMemoryFree exceeds 32-bit, otherwise this object value
+        would be set to 0." 
+    ::= { cpmCPUTotalEntry 18 }
+
+cpmCPUMemoryHCFree OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "kilo-bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The overall CPU wide system memory which is currently free.
+        This object is a 64-bit version of cpmCPUMemoryFree." 
+    ::= { cpmCPUTotalEntry 19 }
+
+cpmCPUMemoryKernelReservedOvrflw OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "kilo-bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents the upper 32-bit of
+        cpmCPUMemoryKernelReserved. This object needs 
+        to be supported only when the value of 
+        cpmCPUMemoryKernelReserved exceeds 32-bit, otherwise
+        this object value would be set to 0." 
+    ::= { cpmCPUTotalEntry 20 }
+
+cpmCPUMemoryHCKernelReserved OBJECT-TYPE
+    SYNTAX          CounterBasedGauge64
+    UNITS           "kilo-bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The overall CPU wide system memory which is reserved
+        for kernel usage. This object is a 64-bit version of
+        cpmCPUMemoryKernelReserved." 
+    ::= { cpmCPUTotalEntry 21 }
+
+cpmCPUMemoryLowestOvrflw OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "kilo-bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents the upper 32-bit of cpmCPUMemoryLowest.
+        This object needs to be supported only when the value of
+        cpmCPUMemoryLowest exceeds 32-bit, otherwise this object value
+        would be set to 0." 
+    ::= { cpmCPUTotalEntry 22 }
+
+cpmCPUMemoryHCLowest OBJECT-TYPE
+    SYNTAX          CounterBasedGauge64
+    UNITS           "kilo-bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The lowest free memory that has been recorded since device has
+        booted. This object is a 64-bit version of cpmCPUMemoryLowest." 
+    ::= { cpmCPUTotalEntry 23 }
+
+cpmCPULoadAvg1min OBJECT-TYPE
+    SYNTAX          CPULoadAverage
+    UNITS           "hundredths of processes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The overall CPU load Average in the last 1 minute period" 
+    ::= { cpmCPUTotalEntry 24 }
+
+cpmCPULoadAvg5min OBJECT-TYPE
+    SYNTAX          CPULoadAverage
+    UNITS           "hundredths of processes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The overall CPU load Average in the last 5 minutes period" 
+    ::= { cpmCPUTotalEntry 25 }
+
+cpmCPULoadAvg15min OBJECT-TYPE
+    SYNTAX          CPULoadAverage
+    UNITS           "hundredths of processes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The overall CPU load Average in the last 15 minutes period" 
+    ::= { cpmCPUTotalEntry 26 }
+
+cpmCPUMemoryCommitted OBJECT-TYPE
+    SYNTAX          Gauge32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The overall CPU wide system memory which is currently
+        Committed." 
+    ::= { cpmCPUTotalEntry 27 }
+
+cpmCPUMemoryCommittedOvrflw OBJECT-TYPE
+    SYNTAX          Gauge32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents the upper 32-bit of
+        cpmCPUMemoryCommitted.
+        This object needs to be supported only when the value of
+        cpmCPUMemoryCommitted exceeds 32-bit, otherwise this object
+        value would be set to 0." 
+    ::= { cpmCPUTotalEntry 28 }
+
+cpmCPUMemoryHCCommitted OBJECT-TYPE
+    SYNTAX          CounterBasedGauge64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The overall CPU wide system memory which is currently
+        committed. This object is a 64-bit version of
+        cpmCPUMemoryCommitted" 
+    ::= { cpmCPUTotalEntry 29 }
  
 
 -- Cisco Processes Common Table
@@ -440,7 +676,6 @@ cpmProcessExtEntry OBJECT-TYPE
         a particular process. This object is deprecated by
         cpmProcessExtRevEntry."
     AUGMENTS           { cpmProcessEntry  } 
- 
     ::= { cpmProcessExtTable 1 }
 
 CpmProcessExtEntry ::= SEQUENCE {
@@ -589,24 +824,36 @@ cpmProcessExtRevEntry OBJECT-TYPE
     ::= { cpmProcessExtRevTable 1 }
 
 CpmProcessExtRevEntry ::= SEQUENCE {
-        cpmProcExtMemAllocatedRev       Gauge32,
-        cpmProcExtMemFreedRev           Gauge32,
-        cpmProcExtInvokedRev            Counter32,
-        cpmProcExtRuntimeRev            Counter32,
-        cpmProcExtUtil5SecRev           Gauge32,
-        cpmProcExtUtil1MinRev           Gauge32,
-        cpmProcExtUtil5MinRev           Gauge32,
-        cpmProcExtPriorityRev           INTEGER,
-        cpmProcessType                  INTEGER,
-        cpmProcessRespawn               TruthValue,
-        cpmProcessRespawnCount          Counter32,
-        cpmProcessRespawnAfterLastPatch Counter32,
-        cpmProcessMemoryCore            INTEGER,
-        cpmProcessLastRestartUser       SnmpAdminString,
-        cpmProcessTextSegmentSize       Unsigned32,
-        cpmProcessDataSegmentSize       Gauge32,
-        cpmProcessStackSize             Gauge32,
-        cpmProcessDynamicMemorySize     Gauge32
+        cpmProcExtMemAllocatedRev         Gauge32,
+        cpmProcExtMemFreedRev             Gauge32,
+        cpmProcExtInvokedRev              Counter32,
+        cpmProcExtRuntimeRev              Counter32,
+        cpmProcExtUtil5SecRev             Gauge32,
+        cpmProcExtUtil1MinRev             Gauge32,
+        cpmProcExtUtil5MinRev             Gauge32,
+        cpmProcExtPriorityRev             INTEGER,
+        cpmProcessType                    INTEGER,
+        cpmProcessRespawn                 TruthValue,
+        cpmProcessRespawnCount            Counter32,
+        cpmProcessRespawnAfterLastPatch   Counter32,
+        cpmProcessMemoryCore              INTEGER,
+        cpmProcessLastRestartUser         SnmpAdminString,
+        cpmProcessTextSegmentSize         Unsigned32,
+        cpmProcessDataSegmentSize         Gauge32,
+        cpmProcessStackSize               Gauge32,
+        cpmProcessDynamicMemorySize       Gauge32,
+        cpmProcExtMemAllocatedRevOvrflw   Gauge32,
+        cpmProcExtHCMemAllocatedRev       CounterBasedGauge64,
+        cpmProcExtMemFreedRevOvrflw       Gauge32,
+        cpmProcExtHCMemFreedRev           CounterBasedGauge64,
+        cpmProcessTextSegmentSizeOvrflw   Unsigned32,
+        cpmProcessHCTextSegmentSize       Unsigned64,
+        cpmProcessDataSegmentSizeOvrflw   Gauge32,
+        cpmProcessHCDataSegmentSize       CounterBasedGauge64,
+        cpmProcessStackSizeOvrflw         Gauge32,
+        cpmProcessHCStackSize             CounterBasedGauge64,
+        cpmProcessDynamicMemorySizeOvrflw Gauge32,
+        cpmProcessHCDynamicMemorySize     CounterBasedGauge64
 }
 
 cpmProcExtMemAllocatedRev OBJECT-TYPE
@@ -832,6 +1079,149 @@ cpmProcessDynamicMemorySize OBJECT-TYPE
         "This indicates the amount of dynamic memory being used
         by the process." 
     ::= { cpmProcessExtRevEntry 18 }
+
+cpmProcExtMemAllocatedRevOvrflw OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents the upper 32-bit of
+        cpmProcExtMemAllocatedRev. This object needs
+        to be supported only when the value of 
+        cpmProcExtMemAllocatedRev exceeds 32-bit, 
+        otherwise this object value would be set to 0." 
+    ::= { cpmProcessExtRevEntry 19 }
+
+cpmProcExtHCMemAllocatedRev OBJECT-TYPE
+    SYNTAX          CounterBasedGauge64
+    UNITS           "bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The sum of all the dynamically allocated memory that this
+        process has received from the system. This includes memory
+        that may have been returned. This object is a 64-bit version
+        of cpmProcExtMemAllocatedRev." 
+    ::= { cpmProcessExtRevEntry 20 }
+
+cpmProcExtMemFreedRevOvrflw OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents the upper 32-bit of
+        cpmProcExtMemFreedRev. This object needs to 
+        be supported only when the value of
+        cpmProcExtMemFreedRev exceeds 32-bit,otherwise
+        this object value would be set to 0." 
+    ::= { cpmProcessExtRevEntry 21 }
+
+cpmProcExtHCMemFreedRev OBJECT-TYPE
+    SYNTAX          CounterBasedGauge64
+    UNITS           "bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The sum of all memory that this process has returned to the
+        system. This object is a 64-bit version of
+        cpmProcExtMemFreedRev." 
+    ::= { cpmProcessExtRevEntry 22 }
+
+cpmProcessTextSegmentSizeOvrflw OBJECT-TYPE
+    SYNTAX          Unsigned32
+    UNITS           "kilo-bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents the upper 32-bit of
+        cpmProcessTextSegmentSize. This object needs
+        to be supported only when the value of 
+        cpmProcessTextSegmentSize exceeds 32-bit, 
+        otherwise this object value would be set to 0." 
+    ::= { cpmProcessExtRevEntry 23 }
+
+cpmProcessHCTextSegmentSize OBJECT-TYPE
+    SYNTAX          Unsigned64
+    UNITS           "kilo-bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This indicates the text memory of a process and all
+        its shared objects. This object is a 64-bit version
+        of cpmProcessTextSegmentSize." 
+    ::= { cpmProcessExtRevEntry 24 }
+
+cpmProcessDataSegmentSizeOvrflw OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "kilo-bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents the upper 32-bit of
+        cpmProcessDataSegmentSize. This object needs
+        to be supported only when the value of 
+        cpmProcessDataSegmentSize exceeds 32-bit, 
+        otherwise this object value would be set to 0." 
+    ::= { cpmProcessExtRevEntry 25 }
+
+cpmProcessHCDataSegmentSize OBJECT-TYPE
+    SYNTAX          CounterBasedGauge64
+    UNITS           "kilo-bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This indicates the data segment of a process and
+        all its shared objects.. This object is a 64-bit
+        version of cpmProcessDataSegmentSize." 
+    ::= { cpmProcessExtRevEntry 26 }
+
+cpmProcessStackSizeOvrflw OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "kilo-bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents the upper 32-bit of cpmProcessStackSize.
+        This object needs to be supported only when the value of
+        cpmProcessStackSize exceeds 32-bit, otherwise this object value
+        would be set to 0." 
+    ::= { cpmProcessExtRevEntry 27 }
+
+cpmProcessHCStackSize OBJECT-TYPE
+    SYNTAX          CounterBasedGauge64
+    UNITS           "kilo-bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This indicates the amount of stack memory used by the process.
+        This object is a 64-bit version of cpmProcessStackSize." 
+    ::= { cpmProcessExtRevEntry 28 }
+
+cpmProcessDynamicMemorySizeOvrflw OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "kilo-bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents the upper 32-bit of
+        cpmProcessDynamicMemorySize. This object needs
+        to be supported only when the value of 
+        cpmProcessDynamicMemorySize exceeds 32-bit, 
+        otherwise this object value would be set to 0." 
+    ::= { cpmProcessExtRevEntry 29 }
+
+cpmProcessHCDynamicMemorySize OBJECT-TYPE
+    SYNTAX          CounterBasedGauge64
+    UNITS           "kilo-bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This indicates the amount of dynamic memory being used
+        by the process. This object is a 64-bit version of
+        cpmProcessDynamicMemorySize." 
+    ::= { cpmProcessExtRevEntry 30 }
  
 
 -- Threshold Table allows the CPU threshold configurations.
@@ -1097,7 +1487,9 @@ CpmThreadEntry ::= SEQUENCE {
         cpmThreadState           INTEGER,
         cpmThreadBlockingProcess RowPointer,
         cpmThreadCpuUtilization  Gauge32,
-        cpmThreadStackSize       Gauge32
+        cpmThreadStackSize       Gauge32,
+        cpmThreadStackSizeOvrflw Gauge32,
+        cpmThreadHCStackSize     CounterBasedGauge64
 }
 
 cpmThreadID OBJECT-TYPE
@@ -1218,6 +1610,29 @@ cpmThreadStackSize OBJECT-TYPE
         "This object indicates the stack size allocated to
         the thread in context." 
     ::= { cpmThreadEntry 7 }
+
+cpmThreadStackSizeOvrflw OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents the upper 32-bit of cpmThreadStackSize.
+        This object needs to be supported only when the value of
+        cpmThreadStackSize exceeds 32-bit, otherwise this object value
+        would be set to 0." 
+    ::= { cpmThreadEntry 8 }
+
+cpmThreadHCStackSize OBJECT-TYPE
+    SYNTAX          CounterBasedGauge64
+    UNITS           "bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the stack size allocated to the
+        thread in context. This object is a 64-bit version of
+        cpmThreadStackSize." 
+    ::= { cpmThreadEntry 9 }
  
 
 
@@ -1245,15 +1660,19 @@ cpmVirtualProcessEntry OBJECT-TYPE
     ::= { cpmVirtualProcessTable 1 }
 
 CpmVirtualProcessEntry ::= SEQUENCE {
-        cpmVirtualProcessID           Unsigned32,
-        cpmVirtualProcessName         SnmpAdminString,
-        cpmVirtualProcessUtil5Sec     Gauge32,
-        cpmVirtualProcessUtil1Min     Gauge32,
-        cpmVirtualProcessUtil5Min     Gauge32,
-        cpmVirtualProcessMemAllocated Gauge32,
-        cpmVirtualProcessMemFreed     Gauge32,
-        cpmVirtualProcessInvokeCount  Counter32,
-        cpmVirtualProcessRuntime      Counter32
+        cpmVirtualProcessID                 Unsigned32,
+        cpmVirtualProcessName               SnmpAdminString,
+        cpmVirtualProcessUtil5Sec           Gauge32,
+        cpmVirtualProcessUtil1Min           Gauge32,
+        cpmVirtualProcessUtil5Min           Gauge32,
+        cpmVirtualProcessMemAllocated       Gauge32,
+        cpmVirtualProcessMemFreed           Gauge32,
+        cpmVirtualProcessInvokeCount        Counter32,
+        cpmVirtualProcessRuntime            Counter32,
+        cpmVirtualProcessMemAllocatedOvrflw Gauge32,
+        cpmVirtualProcessHCMemAllocated     CounterBasedGauge64,
+        cpmVirtualProcessMemFreedOvrflw     Gauge32,
+        cpmVirtualProcessHCMemFreed         CounterBasedGauge64
 }
 
 cpmVirtualProcessID OBJECT-TYPE
@@ -1348,6 +1767,55 @@ cpmVirtualProcessRuntime OBJECT-TYPE
         "The amount of CPU time a virtual process has used in
         microseconds." 
     ::= { cpmVirtualProcessEntry 9 }
+
+cpmVirtualProcessMemAllocatedOvrflw OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents the upper 32-bit of
+        cpmVirtualProcessMemAllocated. This object 
+        needs to be supported only when the value of
+        cpmVirtualProcessMemAllocated exceeds 32-bit,
+        otherwise this object value would be set to 0." 
+    ::= { cpmVirtualProcessEntry 10 }
+
+cpmVirtualProcessHCMemAllocated OBJECT-TYPE
+    SYNTAX          CounterBasedGauge64
+    UNITS           "bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the memory allocated by the
+        virtual process inside the address space of a process
+        running on Native OS. This object is a 64-bit version
+        of cpmVirtualProcessMemAllocated." 
+    ::= { cpmVirtualProcessEntry 11 }
+
+cpmVirtualProcessMemFreedOvrflw OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object represents the upper 32-bit of
+        cpmVirtualProcessMemFreed. This object needs
+        to be supported only when the value of 
+        cpmVirtualProcessMemFreed exceeds 32-bit, 
+        otherwise this object value would be set to 0." 
+    ::= { cpmVirtualProcessEntry 12 }
+
+cpmVirtualProcessHCMemFreed OBJECT-TYPE
+    SYNTAX          CounterBasedGauge64
+    UNITS           "bytes"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the memory freed by the virtual process
+        inside the address space of a process running on Native OS.This
+        object is a 64-bit version of cpmVirtualProcessMemAllocated." 
+    ::= { cpmVirtualProcessEntry 13 }
  
 
 -- History table contains the statistics for the processes
@@ -1563,7 +2031,7 @@ cProcessMIBComplianceRev1 MODULE-COMPLIANCE
     ::= { cpmCompliances 3 }
 
 cProcessMIBComplianceRev2 MODULE-COMPLIANCE
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The compliance statement for entities which implement
         the Cisco Process MIB. This compliance module
@@ -1626,6 +2094,329 @@ cProcessMIBComplianceRev2 MODULE-COMPLIANCE
         Operating System of the managed system supports
         Posix standard kernel."
     ::= { cpmCompliances 4 }
+
+cProcessMIBComplianceRev3 MODULE-COMPLIANCE
+    STATUS          deprecated
+    DESCRIPTION
+        "The compliance statement for entities which implement
+        the Cisco Process MIB. This compliance module
+        deprecates cProcessMIBComplianceRev2."
+    MODULE          -- this module
+    MANDATORY-GROUPS { cpmCPUTotalGroupRev1 }
+
+    GROUP           cpmCPUHistoryGroup
+    DESCRIPTION
+        "The cpmCPUHistoryGroup is optional and gives
+        the information about process CPU utilization history."
+
+    GROUP           cpmCPUThresholdNotificationGroup
+    DESCRIPTION
+        "The cpmCPUThresholdNotificationGroup is optional and
+        these traps indicates that configured threshold 
+        is reached."
+
+    GROUP           cpmProcessExtGroupRev
+    DESCRIPTION
+        "The cpmProcessExtGroupRev is optional and gives
+        detailed process monitoring information."
+
+    GROUP           cpmCPUThresholdGroup
+    DESCRIPTION
+        "The cpmCPUThresholdGroup is optional and provides
+        information on configuring threshold values."
+
+    GROUP           cpmProcessGroupRev
+    DESCRIPTION
+        "The cpmProcessGroupRev is optional and provides common
+        process monitoring information."
+
+    GROUP           cpmCPUPosixMemoryGroup
+    DESCRIPTION
+        "The cpmCPUPosixMemoryGroup gives information about
+        CPU wide system memory of POSIX OS.
+        cpmCPUPosixMemoryGroup is mandatory if the Operating
+        System of the managed system supports Posix standard
+        kernel."
+
+    GROUP           cpmPosixProcessGroup
+    DESCRIPTION
+        "The cpmPosixProcessGroup gives information about
+        POSIX process. cpmPosixProcessGroup is mandatory if
+        the Operating System of the managed system
+        supports Posix standard kernel."
+
+    GROUP           cpmThreadGroup
+    DESCRIPTION
+        "The cpmThreadGroup gives information about POSIX
+        threads. cpmThreadGroup is mandatory if the Operating
+        System of the managed system supports Posix standard
+        kernel."
+
+    GROUP           cpmVirtualProcessGroup
+    DESCRIPTION
+        "The cpmVirtualProcessGroup gives information about
+        virtual process. cpmVirtualProcessGroup is mandatory
+        Operating System of the managed system supports
+        Posix standard kernel."
+
+    GROUP           cpmCPUTotalOverflowGroup
+    DESCRIPTION
+        "This group is an optional group for the devices which
+        run on 32-bit operating system."
+
+    GROUP           cpmCPUTotalHCGroup
+    DESCRIPTION
+        "This group is an optional group for the devices which
+        run on 32-bit operating system."
+
+    GROUP           cpmProcessExtRevOverflowGroup
+    DESCRIPTION
+        "This group is an optional group for the devices which
+        run on 32-bit operating system."
+
+    GROUP           cpmProcessExtRevHCGroup
+    DESCRIPTION
+        "This group is an optional group for the devices which
+        run on 32-bit operating system."
+
+    GROUP           cpmThreadOverflowGroup
+    DESCRIPTION
+        "This group is an optional group for the devices which
+        run on 32-bit operating system."
+
+    GROUP           cpmThreadHCGroup
+    DESCRIPTION
+        "This group is an optional group for the devices which
+        run on 32-bit operating system."
+
+    GROUP           cpmVirtualProcessOverflowGroup
+    DESCRIPTION
+        "This group is an optional group for the devices which
+        run on 32-bit operating system."
+
+    GROUP           cpmVirtualProcessHCGroup
+    DESCRIPTION
+        "This group is an optional group for the devices which
+        run on 32-bit operating system."
+    ::= { cpmCompliances 5 }
+
+cProcessMIBComplianceRev4 MODULE-COMPLIANCE
+    STATUS          deprecated
+    DESCRIPTION
+        "The compliance statement for entities which implement
+        the Cisco Process MIB. This compliance module
+        deprecates cProcessMIBComplianceRev3."
+    MODULE          -- this module
+    MANDATORY-GROUPS { cpmCPUTotalGroupRev1 }
+
+    GROUP           cpmCPUHistoryGroup
+    DESCRIPTION
+        "The cpmCPUHistoryGroup is optional and gives the information
+        about process CPU utilization history."
+
+    GROUP           cpmCPUThresholdNotificationGroup
+    DESCRIPTION
+        "The cpmCPUThresholdNotificationGroup is optional and these traps
+        indicates that configured threshold is reached."
+
+    GROUP           cpmProcessExtGroupRev
+    DESCRIPTION
+        "The cpmProcessExtGroupRev is optional and gives detailed process
+        monitoring information."
+
+    GROUP           cpmCPUThresholdGroup
+    DESCRIPTION
+        "The cpmCPUThresholdGroup is optional and provides information on
+        configuring threshold values."
+
+    GROUP           cpmProcessGroupRev
+    DESCRIPTION
+        "The cpmProcessGroupRev is optional and provides common process
+        monitoring information."
+
+    GROUP           cpmCPUPosixMemoryGroup
+    DESCRIPTION
+        "The cpmCPUPosixMemoryGroup gives information about CPU wide
+        system memory of POSIX OS.
+        cpmCPUPosixMemoryGroup is mandatory if the Operating System of
+        the managed system supports Posix standard kernel."
+
+    GROUP           cpmPosixProcessGroup
+    DESCRIPTION
+        "The cpmPosixProcessGroup gives information about POSIX process.
+        cpmPosixProcessGroup is mandatory if the Operating System of the
+        managed system supports Posix standard kernel."
+
+    GROUP           cpmThreadGroup
+    DESCRIPTION
+        "The cpmThreadGroup gives information about POSIX threads.
+        cpmThreadGroup is mandatory if the Operating System of the
+        managed system supports Posix standard kernel."
+
+    GROUP           cpmVirtualProcessGroup
+    DESCRIPTION
+        "The cpmVirtualProcessGroup gives information about virtual
+        process.cpmVirtualProcessGroup is mandatory Operating System of
+        the managed system supports Posix standard kernel."
+
+    GROUP           cpmCPUTotalOverflowGroup
+    DESCRIPTION
+        "This group is an optional group for the devices which run on
+        32-bit operating system"
+
+    GROUP           cpmCPUTotalHCGroup
+    DESCRIPTION
+        "This group is an optional group for the devices which run on
+        32-bit operating system"
+
+    GROUP           cpmProcessExtRevOverflowGroup
+    DESCRIPTION
+        "This group is an optional group for the devices which run on
+        32-bit operating system"
+
+    GROUP           cpmProcessExtRevHCGroup
+    DESCRIPTION
+        "This group is an optional group for the devices which run on
+        32-bit operating system"
+
+    GROUP           cpmThreadOverflowGroup
+    DESCRIPTION
+        "This group is an optional group for the devices which run on
+        32-bit operating system"
+
+    GROUP           cpmThreadHCGroup
+    DESCRIPTION
+        "This group is an optional group for the devices which run on
+        32-bit operating system"
+
+    GROUP           cpmVirtualProcessOverflowGroup
+    DESCRIPTION
+        "This group is an optional group for the devices which run on
+        32-bit operating system"
+
+    GROUP           cpmVirtualProcessHCGroup
+    DESCRIPTION
+        "This group is an optional group for the devices which run on
+        32-bit operating system"
+
+    GROUP           cpmCPULoadAvgGroup
+    DESCRIPTION
+        "The cpmCPULoadAvgGroup is optional and provides CPU load
+        average information.This Group is valid only for the device
+        which supports it."
+    ::= { cpmCompliances 6 }
+
+cProcessMIBComplianceRev5 MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for entities which implement
+        the Cisco Process MIB. This compliance module
+        deprecates cProcessMIBComplianceRev4"
+    MODULE          -- this module
+    MANDATORY-GROUPS { cpmCPUTotalGroupRev1 }
+
+    GROUP           cpmCPUHistoryGroup
+    DESCRIPTION
+        "The cpmCPUHistoryGroup is optional and gives the information    
+        about process CPU utilization history."
+
+    GROUP           cpmCPUThresholdNotificationGroup
+    DESCRIPTION
+        "The cpmCPUThresholdNotificationGroup is optional and these
+        traps indicates that configured threshold is reached."
+
+    GROUP           cpmProcessExtGroupRev
+    DESCRIPTION
+        "The cpmProcessExtGroupRev is optional and gives detailed process
+        monitoring information."
+
+    GROUP           cpmCPUThresholdGroup
+    DESCRIPTION
+        "The cpmCPUThresholdGroup is optional and provides information
+        on configuring threshold values."
+
+    GROUP           cpmProcessGroupRev
+    DESCRIPTION
+        "The cpmProcessGroupRev is optional and provides common process
+        monitoring information."
+
+    GROUP           cpmCPUPosixMemoryGroup
+    DESCRIPTION
+        "The cpmCPUPosixMemoryGroup gives information about CPU wide
+        system memory of POSIX OS.
+        cpmCPUPosixMemoryGroup is mandatory if the Operating System of
+        the managed system supports Posix standard kernel."
+
+    GROUP           cpmPosixProcessGroup
+    DESCRIPTION
+        "The cpmPosixProcessGroup gives information about POSIX process. 
+        cpmPosixProcessGroup is mandatory if the Operating System
+        of the managed system supports Posix standard kernel."
+
+    GROUP           cpmThreadGroup
+    DESCRIPTION
+        "The cpmThreadGroup gives information about POSIX threads.
+        cpmThreadGroup is mandatory if the Operating System of the
+        managed system supports Posix standard kernel."
+
+    GROUP           cpmVirtualProcessGroup
+    DESCRIPTION
+        "The cpmVirtualProcessGroup gives information about virtual
+        process.cpmVirtualProcessGroup is mandatory Operating System of 
+        the managed system supports Posix standard kernel."
+
+    GROUP           cpmCPUTotalOverflowGroup
+    DESCRIPTION
+        "This group is an optional group for the devices which run on
+        32-bit operating system."
+
+    GROUP           cpmCPUTotalHCGroup
+    DESCRIPTION
+        "This group is an optional group for the devices which run on
+        32-bit operating system"
+
+    GROUP           cpmProcessExtRevOverflowGroup
+    DESCRIPTION
+        "This group is an optional group for the devices which run on
+        32-bit operating system"
+
+    GROUP           cpmProcessExtRevHCGroup
+    DESCRIPTION
+        "This group is an optional group for the devices which run on
+        32-bit operating system"
+
+    GROUP           cpmThreadOverflowGroup
+    DESCRIPTION
+        "This group is an optional group for the devices which run on    
+        32-bit operating system"
+
+    GROUP           cpmThreadHCGroup
+    DESCRIPTION
+        "This group is an optional group for the devices which run on    
+        32-bit operating system"
+
+    GROUP           cpmVirtualProcessOverflowGroup
+    DESCRIPTION
+        "This group is an optional group for the devices which run on    
+        32-bit operating system."
+
+    GROUP           cpmVirtualProcessHCGroup
+    DESCRIPTION
+        "This group is an optional group for the devices which run on    
+        32-bit operating system"
+
+    GROUP           cpmCPULoadAvgGroup
+    DESCRIPTION
+        "The cpmCPULoadAvgGroup is optional and provides CPU load
+        average information.This Group is valid only for the device
+        which supports it"
+
+    GROUP           cpmCPUTotalMemoryCommitGroup
+    DESCRIPTION
+        "The cpmCPUTotalMemoryCommitGroup is optional and provides system
+        Committed memory information.This Group is valid only for the
+        device which supports it."
+    ::= { cpmCompliances 7 }
 
 -- units of conformance
 
@@ -1863,7 +2654,138 @@ cpmVirtualProcessGroup OBJECT-GROUP
         information on devices that can run virtual machines."
     ::= { cpmGroups 14 }
 
+cpmCPUTotalOverflowGroup OBJECT-GROUP
+    OBJECTS         {
+                        cpmCPUMemoryUsedOvrflw,
+                        cpmCPUMemoryFreeOvrflw,
+                        cpmCPUMemoryKernelReservedOvrflw,
+                        cpmCPUMemoryLowestOvrflw
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of Overflow (Ovrflw) objects providing CPU load
+        monitoring information."
+    ::= { cpmGroups 15 }
+
+cpmCPUTotalHCGroup OBJECT-GROUP
+    OBJECTS         {
+                        cpmCPUMemoryHCUsed,
+                        cpmCPUMemoryHCFree,
+                        cpmCPUMemoryHCKernelReserved,
+                        cpmCPUMemoryHCLowest
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of High Capacity (HC) objects providing CPU
+        load monitoring information."
+    ::= { cpmGroups 16 }
+
+cpmProcessExtRevOverflowGroup OBJECT-GROUP
+    OBJECTS         {
+                        cpmProcExtMemAllocatedRevOvrflw,
+                        cpmProcExtMemFreedRevOvrflw,
+                        cpmProcessTextSegmentSizeOvrflw,
+                        cpmProcessDataSegmentSizeOvrflw,
+                        cpmProcessStackSizeOvrflw,
+                        cpmProcessDynamicMemorySizeOvrflw
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of Overflow objects providing additional
+        and more detailed process monitoring information."
+    ::= { cpmGroups 17 }
+
+cpmProcessExtRevHCGroup OBJECT-GROUP
+    OBJECTS         {
+                        cpmProcExtHCMemAllocatedRev,
+                        cpmProcExtHCMemFreedRev,
+                        cpmProcessHCTextSegmentSize,
+                        cpmProcessHCDataSegmentSize,
+                        cpmProcessHCStackSize,
+                        cpmProcessHCDynamicMemorySize
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of High Capacity objects providing
+        additional and more detailed process monitoring 
+        information."
+    ::= { cpmGroups 18 }
+
+cpmThreadOverflowGroup OBJECT-GROUP
+    OBJECTS         { cpmThreadStackSizeOvrflw }
+    STATUS          current
+    DESCRIPTION
+        "A collection of Overflow objects providing thread
+        information on devices running POSIX compliant OS."
+    ::= { cpmGroups 19 }
+
+cpmThreadHCGroup OBJECT-GROUP
+    OBJECTS         { cpmThreadHCStackSize }
+    STATUS          current
+    DESCRIPTION
+        "A collection of High Capacity objects providing thread
+        information on devices running POSIX compliant OS."
+    ::= { cpmGroups 20 }
+
+cpmVirtualProcessOverflowGroup OBJECT-GROUP
+    OBJECTS         {
+                        cpmVirtualProcessMemAllocatedOvrflw,
+                        cpmVirtualProcessMemFreedOvrflw
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of Overflow objects providing virtual process
+        information on devices that can run virtual machines."
+    ::= { cpmGroups 21 }
+
+cpmVirtualProcessHCGroup OBJECT-GROUP
+    OBJECTS         {
+                        cpmVirtualProcessHCMemAllocated,
+                        cpmVirtualProcessHCMemFreed
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of High Capacity objects providing virtual process
+        information on devices that can run virtual machines."
+    ::= { cpmGroups 22 }
+
+cpmCPULoadAvgGroup OBJECT-GROUP
+    OBJECTS         {
+                        cpmCPULoadAvg1min,
+                        cpmCPULoadAvg5min,
+                        cpmCPULoadAvg15min
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects providing CPU load average
+        information"
+    ::= { cpmGroups 23 }
+
+cpmCPUTotalMemoryCommitGroup OBJECT-GROUP
+    OBJECTS         {
+                        cpmCPUMemoryCommitted,
+                        cpmCPUMemoryCommittedOvrflw,
+                        cpmCPUMemoryHCCommitted
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects providing CPU system Committed memory
+        information."
+    ::= { cpmGroups 24 }
+
 END
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

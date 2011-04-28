@@ -1,0 +1,197 @@
+-- *****************************************************************
+-- CISCO-ETHERLIKE-EXT-MIB.my : Cisco extensions to EtherLike-MIB
+--   
+-- January 2008, Guichuan Tang
+--   
+-- Copyright (c) 2008 by Cisco Systems, Inc.
+-- All rights reserved.
+--   
+-- *****************************************************************
+
+CISCO-ETHERLIKE-EXT-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY,
+    OBJECT-TYPE
+        FROM SNMPv2-SMI
+    MODULE-COMPLIANCE,
+    OBJECT-GROUP
+        FROM SNMPv2-CONF
+    dot3StatsIndex
+        FROM EtherLike-MIB
+    ciscoMgmt
+        FROM CISCO-SMI;
+
+
+ciscoEtherExtMIB MODULE-IDENTITY
+    LAST-UPDATED    "200810150000Z"
+    ORGANIZATION    "Cisco Systems, Inc."
+    CONTACT-INFO
+            "Cisco Systems
+            Customer Service
+
+            Postal: 170 W Tasman Drive
+            San Jose, CA 95134
+            USA
+
+            Tel: +1 800 553-NETS
+
+            E-mail: cs-lan-switch-snmp@cisco.com"
+    DESCRIPTION
+        "The MIB module to describe generic objects for
+        ethernet-like network interfaces. 
+
+        This MIB provides ethernet-like network interfaces 
+        information that are either excluded by EtherLike-MIB 
+        or specific to Cisco products."
+    REVISION        "200810150000Z"
+    DESCRIPTION
+        "Updated ceeDot3PauseExtAdminMode DESCRIPTION with 
+        correct dot3PauseOperMode values."
+    REVISION        "200801090000Z"
+    DESCRIPTION
+        "Initial version of this MIB module."
+    ::= { ciscoMgmt 645 }
+
+
+ciscoEtherExtMIBNotifs  OBJECT IDENTIFIER
+    ::= { ciscoEtherExtMIB 0 }
+
+ciscoEtherExtMIBObjects  OBJECT IDENTIFIER
+    ::= { ciscoEtherExtMIB 1 }
+
+ciscoEtherExtMIBConform  OBJECT IDENTIFIER
+    ::= { ciscoEtherExtMIB 2 }
+
+ceeDot3PauseExt  OBJECT IDENTIFIER
+    ::= { ciscoEtherExtMIBObjects 1 }
+
+-- The ceeDot3PauseExt group
+
+ceeDot3PauseExtTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CeeDot3PauseExtEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "A list of additional descriptive and status
+        information about the MAC Control PAUSE 
+        function on the ethernet-like interfaces 
+        attached to a particular system, in extension to
+        dot3PauseTable in EtherLike-MIB. There will be 
+        one row in this table for each ethernet-like 
+        interface in the system which supports the MAC 
+        Control PAUSE function."
+    ::= { ceeDot3PauseExt 1 }
+
+ceeDot3PauseExtEntry OBJECT-TYPE
+    SYNTAX          CeeDot3PauseExtEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "An entry in the table, containing additional
+        information about the MAC Control PAUSE function 
+        on a single ethernet-like interface, in extension 
+        to dot3PauseEntry in Etherlike-MIB."
+    INDEX           { dot3StatsIndex } 
+    ::= { ceeDot3PauseExtTable 1 }
+
+CeeDot3PauseExtEntry ::= SEQUENCE {
+        ceeDot3PauseExtAdminMode BITS,
+        ceeDot3PauseExtOperMode  BITS
+}
+
+ceeDot3PauseExtAdminMode OBJECT-TYPE
+    SYNTAX          BITS {
+                        txDesired(0),
+                        rxDesired(1)
+                    }
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "Indicates preference to send or process pause
+        frames on this interface.
+        txDesired(0)  -  indicates preference to send pause 
+                         frames, but autonegotiates flow 
+                         control. This bit can only be 
+                         turned on when the corresponding 
+                         instance of dot3PauseAdminMode 
+                         has the value of 'enabledXmit' or 
+                         'enabledXmitAndRcv'.
+        rxDesired(1)  -  indicates preference to process 
+                         pause frames, but autonegotiates 
+                         flow control. This bit can only be 
+                         turned on when the corresponding 
+                         instance of dot3PauseAdminMode 
+                         has the value of 'enabledRcv' or 
+                         'enabledXmitAndRcv'." 
+    ::= { ceeDot3PauseExtEntry 1 }
+
+ceeDot3PauseExtOperMode OBJECT-TYPE
+    SYNTAX          BITS {
+                        txDisagree(0),
+                        rxDisagree(1),
+                        txDesired(2),
+                        rxDesired(3)
+                    }
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "Provides additional information about the flow
+        control operational status on this interface.
+        txDisagree(0) - the transmit pause function on 
+                        this interface is disabled due to 
+                        disagreement from the far end on 
+                        negotiation.
+        rxDisagree(1) - the receive pause function on  
+                        this interface is disabled due to 
+                        disagreement from the far end on 
+                        negotiation.
+        txDesired(2)  - the transmit pause function on 
+                        this interface is desired.
+        rxDesired(3)  - the receive pause function on  
+                        this interface is desired." 
+    ::= { ceeDot3PauseExtEntry 2 }
+ 
+
+-- Conformance information
+
+ceeEtherExtMIBCompliances  OBJECT IDENTIFIER
+    ::= { ciscoEtherExtMIBConform 1 }
+
+ceeEtherExtMIBGroups  OBJECT IDENTIFIER
+    ::= { ciscoEtherExtMIBConform 2 }
+
+
+-- Compliance statements
+
+ceeEtherExtMIBCompliance MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for CISCO-ETHERLIKE-EXT-MIB."
+    MODULE          -- this module
+    GROUP           ciscoEtherExtPauseGroup
+    DESCRIPTION
+        "This group is mandatory for devices that support
+        the additional MAC Control PAUSE mode for  
+        ethernet-like interfaces."
+    ::= { ceeEtherExtMIBCompliances 1 }
+
+-- Units of Conformance
+
+ciscoEtherExtPauseGroup OBJECT-GROUP
+    OBJECTS         {
+                        ceeDot3PauseExtAdminMode,
+                        ceeDot3PauseExtOperMode
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects providing the additional information
+        for the control of the MAC Control PAUSE function on 
+        ethernet-like network interfaces."
+    ::= { ceeEtherExtMIBGroups 1 }
+
+END
+
+
+
+

@@ -4,7 +4,7 @@
 --   
 -- July 2006, Sunil Gudurvalmiki
 --   
--- Copyright (c) 2006-2007 by Cisco Systems Inc.
+-- Copyright (c) 2006, 2008-2009 by Cisco Systems Inc.
 -- All rights reserved.
 --   
 -- ********************************************************************
@@ -24,7 +24,8 @@ IMPORTS
     TEXTUAL-CONVENTION,
     TruthValue,
     RowStatus,
-    StorageType
+    StorageType,
+    DateAndTime
         FROM SNMPv2-TC
     SnmpAdminString
         FROM SNMP-FRAMEWORK-MIB
@@ -39,7 +40,7 @@ IMPORTS
 
 
 ciscoLicenseMgmtMIB MODULE-IDENTITY
-    LAST-UPDATED    "200610030000Z"
+    LAST-UPDATED    "200811210000Z"
     ORGANIZATION    "Cisco Systems Inc."
     CONTACT-INFO
             "Cisco Systems
@@ -291,6 +292,31 @@ ciscoLicenseMgmtMIB MODULE-IDENTITY
         entPhysicalIndex imported from ENTITY-MIB is used to
         identify the device uniquely. It is specified as the index
         or one of the index for tables in this MIB as needed."
+    REVISION        "200811210000Z"
+    DESCRIPTION
+        "This version of the MIB adds support for subscription
+        licensing. Subscription licenses provide software
+        enforcement for a licensed feature for a fixed calendar
+        period. The revisions are:
+        o Updated clmgmtLicenseType object to support the following three
+          new types of licenses:
+                paidSubscription
+                evaluationSubscription
+                extensionSubscription 
+        o Added following objects to clmgmtLicenseInfoTable
+                clmgmtLicenseStartDate
+                clmgmtLicenseEndDate
+        o Added following objects to clmgmtLicensableFeatureTable
+                clmgmtFeatureStartDate
+                clmgmtFeatureEndDate
+        o Added the following notifications
+                clmgmtLicenseSubscriptionExpiryWarning
+                clmgmtLicenseSubscriptionExtExpiryWarning
+                clmgmtLicenseSubscriptionExpired
+        o Added the following conformance groups
+                clmgmtLicenseSubscriptionGroup
+                clmgmtLicenseSubscriptionUsageNotifGroup
+        The new module compliance is ciscoLicenseMgmtComplianceRev1."
     REVISION        "200610030000Z"
     DESCRIPTION
         "Initial version of this MIB module."
@@ -327,7 +353,7 @@ ClmgmtLicenseIndex ::= TEXTUAL-CONVENTION
         The value for each license must remain constant
         at least from one re-initialization of the entity's
         network management system to the next re-initialization"
-    SYNTAX          Unsigned32 (1..4294967295 )
+    SYNTAX          Unsigned32 (1..4294967295)
 
 ClmgmtLicenseIndexOrZero ::= TEXTUAL-CONVENTION
     STATUS          current
@@ -488,7 +514,7 @@ ClmgmtLicenseActionFailCause ::= TEXTUAL-CONVENTION
                     }
 
 clmgmtNextFreeLicenseActionIndex OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..4294967295 )
+    SYNTAX          Unsigned32 (1..4294967295)
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
@@ -699,7 +725,7 @@ ClmgmtLicenseActionEntry ::= SEQUENCE {
         clmgmtLicenseRehostTicketFile       SnmpAdminString,
         clmgmtLicenseBackupFile             SnmpAdminString,
         clmgmtLicenseStopOnFailure          TruthValue,
-        clmgmtLicenseAction                 INTEGER ,
+        clmgmtLicenseAction                 INTEGER,
         clmgmtLicenseActionState            ClmgmtLicenseActionState,
         clmgmtLicenseJobQPosition           Unsigned32,
         clmgmtLicenseActionFailCause        ClmgmtLicenseActionFailCause,
@@ -710,7 +736,7 @@ ClmgmtLicenseActionEntry ::= SEQUENCE {
 }
 
 clmgmtLicenseActionIndex OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..4294967295 )
+    SYNTAX          Unsigned32 (1..4294967295)
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
@@ -1099,7 +1125,7 @@ ClmgmtLicenseActionResultEntry ::= SEQUENCE {
 }
 
 clmgmtLicenseNumber OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..4294967295 )
+    SYNTAX          Unsigned32 (1..4294967295)
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
@@ -1163,7 +1189,7 @@ ClmgmtLicenseStoreInfoEntry ::= SEQUENCE {
 }
 
 clmgmtLicenseStoreIndex OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..4294967295 )
+    SYNTAX          Unsigned32 (1..4294967295)
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
@@ -1237,7 +1263,7 @@ ClmgmtLicenseDeviceInfoEntry ::= SEQUENCE {
 }
 
 clmgmtDefaultLicenseStore OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..4294967295 )
+    SYNTAX          Unsigned32 (1..4294967295)
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
@@ -1285,7 +1311,7 @@ ClmgmtLicenseInfoEntry ::= SEQUENCE {
         clmgmtLicenseIndex                   ClmgmtLicenseIndex,
         clmgmtLicenseFeatureName             SnmpAdminString,
         clmgmtLicenseFeatureVersion          SnmpAdminString,
-        clmgmtLicenseType                    INTEGER ,
+        clmgmtLicenseType                    INTEGER,
         clmgmtLicenseCounted                 TruthValue,
         clmgmtLicenseValidityPeriod          Unsigned32,
         clmgmtLicenseValidityPeriodRemaining Unsigned32,
@@ -1294,11 +1320,13 @@ ClmgmtLicenseInfoEntry ::= SEQUENCE {
         clmgmtLicenseUsageCountRemaining     Unsigned32,
         clmgmtLicenseEULAStatus              TruthValue,
         clmgmtLicenseComments                SnmpAdminString,
-        clmgmtLicenseStatus                  INTEGER 
+        clmgmtLicenseStatus                  INTEGER,
+        clmgmtLicenseStartDate               DateAndTime,
+        clmgmtLicenseEndDate                 DateAndTime
 }
 
 clmgmtLicenseStoreUsed OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..4294967295 )
+    SYNTAX          Unsigned32 (1..4294967295)
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
@@ -1343,18 +1371,44 @@ clmgmtLicenseType OBJECT-TYPE
                         demo(1),
                         extension(2),
                         gracePeriod(3),
-                        permanent(4)
+                        permanent(4),
+                        paidSubscription(5),
+                        evaluationSubscription(6),
+                        extensionSubscription(7)
                     }
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
-        "This object identifies type of license.
+        "This object identifies type of license. Licenses may have
+        validity period defined in terms of time duration that the
+        license is valid for or it may be defined in terms of actual
+        calendar dates. Subscription licenses are licenses that have
+        validity period defined in terms of calendar dates.
 
-        demo(1)        - demo(evaluation license) license.
-        extension(2)   - Extension(expiring) license.
-        gracePeriod(3) - Grace period license.
-        permanent(4)   - permanent license, the license has no
-                         expiry date." 
+        demo(1)               - demo(evaluation license) license.
+        extension(2)          - Extension(expiring) license.
+        gracePeriod(3)        - Grace period license.
+        permanent(4)          - permanent license, the license has no
+                                expiry date.
+        paidSubscription(5)   - Paid subscription licenses are the
+        licenses
+                                which are purchased by customers. These
+                                licenses have a start date  and end date
+                                associated with them.
+        evaluationSubscription(6)-Evaluation subscription licenses are
+                                  the trial licenses. These licenses
+                                  are node locked and it can be obtained
+                                  only once for an UDI. They are valid
+                                  based on calendar days. These licenses
+                                  have a start date and an end date
+                                  associated with them and are issued
+                                  once per UDI.
+        extensionSubscription(7)- Extension subscription licenses are
+                                  similar to evaluation subscription
+                                  licenses but these licenses are issued
+                                  based on customer request. There are
+                                  no restrictions on the number of
+                                  licenses available for a UDI." 
     ::= { clmgmtLicenseInfoEntry 5 }
 
 clmgmtLicenseCounted OBJECT-TYPE
@@ -1480,6 +1534,33 @@ clmgmtLicenseStatus OBJECT-TYPE
                                 limit, no new entities are allowed
                                 to use this license." 
     ::= { clmgmtLicenseInfoEntry 14 }
+
+clmgmtLicenseStartDate OBJECT-TYPE
+    SYNTAX          DateAndTime
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the start date for a subscription
+        license. It is optional for subscription linceses to have a
+        start date associated with them, they may only have an end
+        date associated with them. This object may be applicable only
+        when clmgmtLicenseType is paidSubscription(5),
+        evaluationSubscription(6) or extensionSubscription (7).      
+        The object will contain an octet string of length 0 when it is
+        not applicable." 
+    ::= { clmgmtLicenseInfoEntry 15 }
+
+clmgmtLicenseEndDate OBJECT-TYPE
+    SYNTAX          DateAndTime
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the end date for a subscription license.
+        This object is applicable only when clmgmtLicenseType is
+        paidSubscription(5), evaluationSubscription(6) or
+        extensionSubscription (7). The object will contain an octet
+        string of length 0 when it is not applicable." 
+    ::= { clmgmtLicenseInfoEntry 16 }
  
 
 -- Licensable features information table.
@@ -1517,11 +1598,13 @@ ClmgmtLicensableFeatureEntry ::= SEQUENCE {
         clmgmtFeatureName                    SnmpAdminString,
         clmgmtFeatureVersion                 SnmpAdminString,
         clmgmtFeatureValidityPeriodRemaining Unsigned32,
-        clmgmtFeatureWhatIsCounted           SnmpAdminString
+        clmgmtFeatureWhatIsCounted           SnmpAdminString,
+        clmgmtFeatureStartDate               DateAndTime,
+        clmgmtFeatureEndDate                 DateAndTime
 }
 
 clmgmtFeatureIndex OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..4294967295 )
+    SYNTAX          Unsigned32 (1..4294967295)
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
@@ -1578,6 +1661,34 @@ clmgmtFeatureWhatIsCounted OBJECT-TYPE
         features that use counting licenses. For other features,
         this object will return empty string." 
     ::= { clmgmtLicensableFeatureEntry 5 }
+
+clmgmtFeatureStartDate OBJECT-TYPE
+    SYNTAX          DateAndTime
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the license start date of the feature.
+        This object is applicable if at least one of the licenses used
+        for this feature has a valid start date. The start date will
+        be the earliest of the valid start dates of all the licenses
+        used for this feature. If none of the licenses used for this
+        feature have a valid start date then this object will contain an
+        octet string of length 0." 
+    ::= { clmgmtLicensableFeatureEntry 6 }
+
+clmgmtFeatureEndDate OBJECT-TYPE
+    SYNTAX          DateAndTime
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the license end date of the feature.
+        This object is applicable if at least one of the licenses used
+        for this feature has a valid end date. The end date will
+        be the latest of the valid end dates of all the licenses
+        used for this feature. If none of the licenses used for this
+        feature have a valid end date then this object will contain an
+        octet string of length 0." 
+    ::= { clmgmtLicensableFeatureEntry 7 }
  
 
 
@@ -1676,15 +1787,15 @@ ClmgmtDevCredExportActionEntry ::= SEQUENCE {
         clmgmtDevCredServerUsername    SnmpAdminString,
         clmgmtDevCredServerPassword    SnmpAdminString,
         clmgmtDevCredExportFile        SnmpAdminString,
-        clmgmtDevCredCommand           INTEGER ,
+        clmgmtDevCredCommand           INTEGER,
         clmgmtDevCredCommandState      ClmgmtLicenseActionState,
-        clmgmtDevCredCommandFailCause  INTEGER ,
+        clmgmtDevCredCommandFailCause  INTEGER,
         clmgmtDevCredStorageType       StorageType,
         clmgmtDevCredRowStatus         RowStatus
 }
 
 clmgmtDevCredExportActionIndex OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..4294967295 )
+    SYNTAX          Unsigned32 (1..4294967295)
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
@@ -1897,7 +2008,15 @@ clmgmtLicenseUsageNotifEnable OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "This object indicates whether the device should generate
-        notifications related to usage of licenses."
+        the notifications related to usage of licenses. This object
+        enables/disables sending following notifications:
+            clmgmtLicenseExpired 
+            clmgmtLicenseExpiryWarning
+            clmgmtLicenseUsageCountExceeded
+            clmgmtLicenseUsageCountAboutToExceed
+            clmgmtLicenseSubscriptionExpiryWarning
+            clmgmtLicenseSubscriptionExtExpiryWarning
+            clmgmtLicenseSubscriptionExpired"
     DEFVAL          { true } 
     ::= { clmgmtLicenseNotifObjects 1 }
 
@@ -1907,7 +2026,12 @@ clmgmtLicenseDeploymentNotifEnable OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "This object indicates whether the device should generate
-        notifications related to license deployment."
+        notifications related to license deployment. This object
+        enables/disables sending following notifications:
+            clmgmtLicenseInstalled
+            clmgmtLicenseCleared
+            clmgmtLicenseRevoked
+            clmgmtLicenseEULAAccepted"
     DEFVAL          { true } 
     ::= { clmgmtLicenseNotifObjects 2 }
 
@@ -1918,7 +2042,9 @@ clmgmtLicenseErrorNotifEnable OBJECT-TYPE
     DESCRIPTION
         "This object indicates whether the device should generate
         notifications related to error conditions in enforcing
-        licensing."
+        licensing. This object enables/disables sending following
+        notifications:
+            clmgmtLicenseNotEnforced"
     DEFVAL          { true } 
     ::= { clmgmtLicenseNotifObjects 3 }
 
@@ -2051,6 +2177,49 @@ clmgmtLicenseNotEnforced NOTIFICATION-TYPE
         license installed for this feature and it needs to
         be done as soon as possible."
    ::= { ciscoLicenseMgmtMIBNotifs 9 }
+
+clmgmtLicenseSubscriptionExpiryWarning NOTIFICATION-TYPE
+    OBJECTS         {
+                        clmgmtFeatureName,
+                        clmgmtFeatureVersion,
+                        clmgmtFeatureEndDate
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This notification is sent when a subscription license of a
+        feature is about to expire. This notification will be sent as
+        per the following schedule:
+        Once a week for the last eight weeks
+        Once a day for the last week
+        Once a hour for the last day"
+   ::= { ciscoLicenseMgmtMIBNotifs 10 }
+
+clmgmtLicenseSubscriptionExtExpiryWarning NOTIFICATION-TYPE
+    OBJECTS         {
+                        clmgmtFeatureName,
+                        clmgmtFeatureVersion,
+                        clmgmtFeatureEndDate
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This notification is sent when the subscription license end
+        date of a feature is reached but extension period is left. This
+        notification will be sent once a day after the license end date
+        is reached."
+   ::= { ciscoLicenseMgmtMIBNotifs 11 }
+
+clmgmtLicenseSubscriptionExpired NOTIFICATION-TYPE
+    OBJECTS         {
+                        clmgmtFeatureName,
+                        clmgmtFeatureVersion,
+                        clmgmtFeatureEndDate
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This notification will be sent after a subscription license
+        of a feature completely expires. It will be sent once a day
+        after the license has completely expired"
+   ::= { ciscoLicenseMgmtMIBNotifs 12 }
 -- Conformance
 
 ciscoLicenseMgmtCompliances  OBJECT IDENTIFIER
@@ -2061,7 +2230,7 @@ ciscoLicenseMgmtGroups  OBJECT IDENTIFIER
 
 
 ciscoLicenseMgmtCompliance MODULE-COMPLIANCE
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "Compliance statement for Cisco license mgmt MIB."
     MODULE          -- this module
@@ -2082,6 +2251,39 @@ ciscoLicenseMgmtCompliance MODULE-COMPLIANCE
         "This group is mandatory for all devices where
         multiple license stores are supported."
     ::= { ciscoLicenseMgmtCompliances 1 }
+
+ciscoLicenseMgmtComplianceRev1 MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "Compliance statement for Cisco license mgmt MIB."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        clmgmtLicenseDeploymentGroup,
+                        clmgmtLicenseDeviceInformationGroup,
+                        clmgmtLicenseInformationGroup,
+                        clmgmtLicensableFeatureInformationGroup,
+                        clmgmtLicenseDevCredGroup,
+                        clmgmtLicenseNotificationEnableGroup,
+                        clmgmtLicenseUsageNotifGroup,
+                        clmgmtLicenseDeploymentNotifGroup,
+                        clmgmtLicenseErrorNotifGroup
+                    }
+
+    GROUP           clmgmtLicenseStoreInformationGroup
+    DESCRIPTION
+        "This group is mandatory for all devices where
+        multiple license stores are supported."
+
+    GROUP           clmgmtLicenseSubscriptionGroup
+    DESCRIPTION
+        "This object group is mandatory for all devices that
+        support subscription licensing."
+
+    GROUP           clmgmtLicenseSubscriptionUsageNotifGroup
+    DESCRIPTION
+        "This notification group is mandatory for all devices that
+        support subscription licensing."
+    ::= { ciscoLicenseMgmtCompliances 2 }
 
 -- Units of Conformance
 
@@ -2238,5 +2440,29 @@ clmgmtLicenseErrorNotifGroup NOTIFICATION-GROUP
         "A collection of notifications related to license errors."
     ::= { ciscoLicenseMgmtGroups 10 }
 
-END
+clmgmtLicenseSubscriptionGroup OBJECT-GROUP
+    OBJECTS         {
+                        clmgmtLicenseStartDate,
+                        clmgmtLicenseEndDate,
+                        clmgmtFeatureStartDate,
+                        clmgmtFeatureEndDate
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects that provide information specific to
+        subscription licenses."
+    ::= { ciscoLicenseMgmtGroups 11 }
 
+clmgmtLicenseSubscriptionUsageNotifGroup NOTIFICATION-GROUP
+   NOTIFICATIONS    {
+                        clmgmtLicenseSubscriptionExpiryWarning,
+                        clmgmtLicenseSubscriptionExtExpiryWarning,
+                        clmgmtLicenseSubscriptionExpired
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of notifications related to usage of subscription
+        licenses."
+    ::= { ciscoLicenseMgmtGroups 12 }
+
+END

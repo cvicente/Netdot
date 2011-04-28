@@ -8,19 +8,21 @@ IMPORTS
         FROM SNMPv2-TC
     InterfaceIndex
         FROM IF-MIB
+    VlanId, VlanIdOrNone, VlanIdOrAny
+        FROM Q-BRIDGE-MIB
     bayStackMibs
         FROM SYNOPTICS-ROOT-MIB
     SnmpAdminString
         FROM SNMP-FRAMEWORK-MIB;
 
 bayStackEapExtMib MODULE-IDENTITY
-    LAST-UPDATED    "200611010000Z"
+    LAST-UPDATED    "201001250000Z"
     ORGANIZATION    "Nortel Networks"
     CONTACT-INFO    "Nortel Networks"
     DESCRIPTION
         "BayStack EAPOL Extension MIB
 
-         Copyright 2003-2004 Nortel Networks, Inc.
+         Copyright 2003-2008 Nortel Networks, Inc.
          All rights reserved.
          This Bay Networks SNMP Management Information Base Specification
          (Specification) embodies Bay Networks' confidential and
@@ -31,6 +33,36 @@ bayStackEapExtMib MODULE-IDENTITY
          This Specification is supplied 'AS IS,' and Bay Networks makes
          no warranty, either express or implied, as to the use,
          operation, condition, or performance of the Specification."
+
+    REVISION "201001250000Z" -- 25 January 2010
+    DESCRIPTION "v018:  Added bseeMultiHostStatusVid,
+                              bseeMultiHostStatusPri,
+                              bseeMultiHostNonEapStatusVid,
+                              bseeMultiHostNonEapStatusPri."
+
+    REVISION "201001110000Z" -- 11 January 2010
+    DESCRIPTION "v017:  Added bseeMultiHostMultiVlan."
+
+    REVISION "200811110000Z" -- 11 November 2008
+    DESCRIPTION "v016:  Added support for fail-open and voip vlan."
+
+    REVISION "200807030000Z" -- 03 July 2008
+    DESCRIPTION "v015:  Added support for using most recent RADIUS-assigned
+                        vlan."
+
+    REVISION "200806300000Z" -- 30 June 2008
+    DESCRIPTION "v014:  Added support for EAPOL supplicants."
+
+    REVISION "200804140000Z" -- 14 Apr 2008
+    DESCRIPTION "v013:  Added bseeMultiHostEapProtocolEnabled  and
+                              bseePortConfigEapProtocolEnabled."
+
+    REVISION "200803280000Z" -- 28 Mar 2008
+    DESCRIPTION "v012:  Added bseePortConfigProcessRadiusRequestsServerPackets"
+
+    REVISION "200711090000Z" -- 09 Nov 2007
+    DESCRIPTION "v011:  Added bseeMultiHostAllowNonEapRadiusAssignedVlan and
+                        bseePortConfigMultiHostAllowNonEapRadiusAssignedVlan."
 
     REVISION "200611010000Z" -- 01 Nov 2006
     DESCRIPTION "v010  Added support for various additional EAP features:
@@ -79,10 +111,18 @@ bayStackEapExtMib MODULE-IDENTITY
 
     ::= { bayStackMibs 3 }
 
-bseeObjects OBJECT IDENTIFIER ::= { bayStackEapExtMib 1 }
+-- ===========================================================================
+-- MIB Groups
+-- ===========================================================================
+
 bseeNotifications OBJECT IDENTIFIER ::= { bayStackEapExtMib 2 }
 bseeNotifications0 OBJECT IDENTIFIER ::= { bseeNotifications 0 }
 
+-- ===========================================================================
+-- bseeObjects (global settings)
+-- ===========================================================================
+
+bseeObjects OBJECT IDENTIFIER ::= { bayStackEapExtMib 1 }
 
 bseeUserBasedPoliciesEnabled OBJECT-TYPE
     SYNTAX      TruthValue
@@ -94,7 +134,7 @@ bseeUserBasedPoliciesEnabled OBJECT-TYPE
     ::= { bseeObjects 1 }
 
 bseeGuestVlanId OBJECT-TYPE
-    SYNTAX      Integer32 (1..4094)
+    SYNTAX      VlanId
     MAX-ACCESS  read-write
     STATUS      current
     DESCRIPTION
@@ -107,7 +147,7 @@ bseeGuestVlanId OBJECT-TYPE
     ::= { bseeObjects 2 }
 
 bseeRemediationVlanId OBJECT-TYPE
-    SYNTAX      Integer32 (1..4094)
+    SYNTAX      VlanId
     MAX-ACCESS  read-write
     STATUS      current
     DESCRIPTION
@@ -309,9 +349,63 @@ bseeMultiHostEapRadiusTimeoutMode OBJECT-TYPE
     DEFVAL      { fail }
     ::= { bseeObjects 18 }
 
---
+bseeMultiHostAllowNonEapRadiusAssignedVlan OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object indicates whether to allow the use of RADIUS-assigned
+         VLANs in multihost-eap mode for non-EAP clients."
+    DEFVAL      { false }
+    ::= { bseeObjects 19 }
+
+bseeMultiHostEapProtocolEnabled OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object controls whether processing of EAP protocol packets
+         is enabled."
+    DEFVAL      { true }
+    ::= { bseeObjects 20 }
+
+bseeMultiHostUseMostRecentRadiusAssignedVlan OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "Controls whether to use most recent RADIUS-assigned VLAN."
+    DEFVAL      { false }
+    ::= { bseeObjects 21 }
+
+bseeMultiHostFailOpenVlanId OBJECT-TYPE
+    SYNTAX      VlanId
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object specifies the ID of the global fail-over Vlan."
+    ::= { bseeObjects 22 }
+
+bseeMultiHostFailOpenVlanEnabled OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object specifies whether to use the fail-over Vlan."
+    ::= { bseeObjects 23 }
+
+bseeMultiHostMultiVlan OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object specifies whether to use the multi-VLAN functionality
+        with MHMA mode."
+    ::= { bseeObjects 24 }
+
+-- ===========================================================================
 -- EAP Multi-Host Configuration Table
---
+-- ===========================================================================
 
 bseePortConfigTable OBJECT-TYPE
     SYNTAX SEQUENCE OF BseePortConfigEntry
@@ -334,19 +428,23 @@ bseePortConfigEntry OBJECT-TYPE
 BseePortConfigEntry ::=
     SEQUENCE {
         bseePortConfigPortNumber InterfaceIndex,
-        bseePortConfigGuestVlanId                       Integer32,
-        bseePortConfigMultiHostEnabled                  TruthValue,
-        bseePortConfigMultiHostEapMaxNumMacs            Integer32,
-        bseePortConfigMultiHostAllowNonEapClient        TruthValue,
-        bseePortConfigMultiHostNonEapMacSource          INTEGER,
-        bseePortConfigMultiHostNonEapMaxNumMacs         Integer32,
-        bseePortConfigGuestVlanEnabled                  TruthValue,
-        bseePortConfigMultiHostRadiusAuthNonEapClient   TruthValue,
-        bseePortConfigMultiHostSingleAuthEnabled        TruthValue,
-        bseePortConfigMultiHostAllowNonEapPhones        TruthValue,
-        bseePortConfigMultiHostAllowRadiusAssignedVlan  TruthValue,
-        bseePortConfigMultiHostEapPacketMode            INTEGER,
-        bseePortConfigMultiHostEapRadiusTimeoutMode     INTEGER
+        bseePortConfigGuestVlanId                               VlanIdOrNone,
+        bseePortConfigMultiHostEnabled                          TruthValue,
+        bseePortConfigMultiHostEapMaxNumMacs                    Integer32,
+        bseePortConfigMultiHostAllowNonEapClient                TruthValue,
+        bseePortConfigMultiHostNonEapMacSource                  INTEGER,
+        bseePortConfigMultiHostNonEapMaxNumMacs                 Integer32,
+        bseePortConfigGuestVlanEnabled                          TruthValue,
+        bseePortConfigMultiHostRadiusAuthNonEapClient           TruthValue,
+        bseePortConfigMultiHostSingleAuthEnabled                TruthValue,
+        bseePortConfigMultiHostAllowNonEapPhones                TruthValue,
+        bseePortConfigMultiHostAllowRadiusAssignedVlan          TruthValue,
+        bseePortConfigMultiHostEapPacketMode                    INTEGER,
+        bseePortConfigMultiHostEapRadiusTimeoutMode             INTEGER,
+        bseePortConfigMultiHostAllowNonEapRadiusAssignedVlan    TruthValue,
+        bseePortConfigProcessRadiusRequestsServerPackets        TruthValue,
+        bseePortConfigEapProtocolEnabled                        TruthValue,
+        bseePortConfigMultiHostUseMostRecentRadiusAssignedVlan  TruthValue
     }
 
 bseePortConfigPortNumber OBJECT-TYPE
@@ -358,7 +456,7 @@ bseePortConfigPortNumber OBJECT-TYPE
     ::= { bseePortConfigEntry 1 }
 
 bseePortConfigGuestVlanId OBJECT-TYPE
-    SYNTAX      Integer32 (0..4094)
+    SYNTAX      VlanIdOrNone
     MAX-ACCESS  read-write
     STATUS      current
     DESCRIPTION
@@ -507,9 +605,48 @@ bseePortConfigMultiHostEapRadiusTimeoutMode OBJECT-TYPE
     DEFVAL      { fail }
     ::= { bseePortConfigEntry 14 }
 
---
+bseePortConfigMultiHostAllowNonEapRadiusAssignedVlan OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object indicates whether to allow the use of RADIUS-assigned
+         VLANs in multihost-eap mode for non-EAP clients."
+    DEFVAL      { false }
+    ::= { bseePortConfigEntry 15 }
+
+bseePortConfigProcessRadiusRequestsServerPackets OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object indicates whether to process any RADIUS requests-server
+         packets that are received on this port."
+    DEFVAL      { false }
+    ::= { bseePortConfigEntry 16 }
+
+bseePortConfigEapProtocolEnabled OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object controls whether EAP protocol packets are processed
+         on this port."
+    DEFVAL      { true }
+    ::= { bseePortConfigEntry 17 }
+
+bseePortConfigMultiHostUseMostRecentRadiusAssignedVlan OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "Controls whether to use most recent RADIUS-assigned VLAN."
+    DEFVAL      { false }
+    ::= { bseePortConfigEntry 18 }
+
+-- ===========================================================================
 -- EAP Multi-Host Status Table
---
+-- ===========================================================================
 
 bseeMultiHostStatusTable OBJECT-TYPE
     SYNTAX SEQUENCE OF BseeMultiHostStatusEntry
@@ -535,7 +672,9 @@ BseeMultiHostStatusEntry ::=
         bseeMultiHostStatusClientMACAddr MacAddress,
         bseeMultiHostStatusPaeState INTEGER,
         bseeMultiHostStatusBackendAuthState INTEGER,
-        bseeMultiHostStatusReauthenticate INTEGER
+        bseeMultiHostStatusReauthenticate INTEGER,
+        bseeMultiHostStatusVid VlanIdOrAny,
+        bseeMultiHostStatusPri Integer32
     }
 
 bseeMultiHostStatusPortNumber OBJECT-TYPE
@@ -601,10 +740,29 @@ bseeMultiHostStatusReauthenticate OBJECT-TYPE
          always other(1)."
     ::= { bseeMultiHostStatusEntry 5 }
 
+bseeMultiHostStatusVid OBJECT-TYPE
+    SYNTAX      VlanIdOrAny
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The Vlan ID associated with this client for MultiVlan capabilities.
+         If MultiVlan is not enabled for this client, the value of this object
+         will be 4095."
+    ::= { bseeMultiHostStatusEntry 6 }
 
---
+bseeMultiHostStatusPri OBJECT-TYPE
+    SYNTAX      Integer32 (0..8)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The Vlan priority value associated with this client for MultiVlan
+         capabilities.  If MultiVlan is not enabled for this client, the
+         value of this object will be 8."
+    ::= { bseeMultiHostStatusEntry 7 }
+
+-- ===========================================================================
 -- EAP Multi-Host Session Statistics Table
---
+-- ===========================================================================
 
 bseeMultiHostSessionStatsTable OBJECT-TYPE
     SYNTAX SEQUENCE OF BseeMultiHostSessionStatsEntry
@@ -715,9 +873,9 @@ bseeMultiHostSessionUserName OBJECT-TYPE
     ::= { bseeMultiHostSessionStatsEntry 7 }
 
 
---
+-- ===========================================================================
 -- EAP Multi-Host Allowed Non-EAP MAC Address Table
---
+-- ===========================================================================
 
 bseeMultiHostNonEapMacTable OBJECT-TYPE
     SYNTAX SEQUENCE OF BseeMultiHostNonEapMacEntry
@@ -771,9 +929,9 @@ bseeMultiHostNonEapMacRowStatus OBJECT-TYPE
     ::= { bseeMultiHostNonEapMacEntry 3 }
 
 
---
+-- ===========================================================================
 -- EAP Multi-Host Non-EAP Status Table
---
+-- ===========================================================================
 
 bseeMultiHostNonEapStatusTable OBJECT-TYPE
     SYNTAX SEQUENCE OF BseeMultiHostNonEapStatusEntry
@@ -799,7 +957,9 @@ BseeMultiHostNonEapStatusEntry ::=
         bseeMultiHostNonEapStatusPortNumber InterfaceIndex,
         bseeMultiHostNonEapStatusClientMACAddr MacAddress,
         bseeMultiHostNonEapStatusState INTEGER,
-        bseeMultiHostNonEapStatusReauthenticate INTEGER
+        bseeMultiHostNonEapStatusReauthenticate INTEGER,
+        bseeMultiHostNonEapStatusVid VlanIdOrAny,
+        bseeMultiHostNonEapStatusPri Integer32
     }
 
 bseeMultiHostNonEapStatusPortNumber OBJECT-TYPE
@@ -864,5 +1024,168 @@ bseeMultiHostNonEapStatusReauthenticate OBJECT-TYPE
          to be reauthenticated.  When retrieved, the value of this object is
          always other(1)."
     ::= { bseeMultiHostNonEapStatusEntry 4 }
+
+bseeMultiHostNonEapStatusVid OBJECT-TYPE
+    SYNTAX      VlanIdOrAny
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The Vlan ID associated with this client for MultiVlan capabilities.
+         If MultiVlan is not enabled for this client, the value of this object
+         will be 4095."
+    ::= { bseeMultiHostNonEapStatusEntry 5 }
+
+bseeMultiHostNonEapStatusPri OBJECT-TYPE
+    SYNTAX      Integer32 (0..8)
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The Vlan priority value associated with this client for MultiVlan
+         capabilities.  If MultiVlan is not enabled for this client, the
+         value of this object will be 8."
+    ::= { bseeMultiHostNonEapStatusEntry 6 }
+
+-- ===========================================================================
+-- bseeSupplicantObjects
+-- ===========================================================================
+
+bseeSupplicantObjects OBJECT IDENTIFIER ::= { bayStackEapExtMib 8 }
+
+bseeSupplicantEnabled OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "Indicates whether supplicant functionality is enabled or disabled.
+        A value of true(1) means enabled."
+        ::= { bseeSupplicantObjects 1 }
+
+-- ===========================================================================
+-- bseeSupplicantUserTable
+-- ===========================================================================
+
+bseeSupplicantUserTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF BseeSupplicantUserEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A table that contains the user name and password for the
+        Supplicant PAE associated with each port.
+        An entry appears in this table for each port that may
+        authenticate itself when challenged by a remote system."
+    REFERENCE
+        "9.5.1"
+    ::= { bayStackEapExtMib 9 }
+
+bseeSupplicantUserEntry OBJECT-TYPE
+    SYNTAX      BseeSupplicantUserEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The configuration information for a Supplicant PAE."
+    INDEX { bseeSupplicantPortNumber }
+    ::= { bseeSupplicantUserTable 1 }
+
+BseeSupplicantUserEntry ::=
+    SEQUENCE {
+        bseeSupplicantPortNumber    InterfaceIndex,
+        bseeSupplicantUserName      SnmpAdminString,
+        bseeSupplicantPassword      SnmpAdminString,
+        bseeSupplicantUserState     INTEGER
+    }
+bseeSupplicantPortNumber OBJECT-TYPE
+    SYNTAX      InterfaceIndex
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A unique value for each interface.  Its value
+            ranges between 1 and the value of ifNumber.  The
+            value for each interface must remain constant at
+            least from one re-initialization of the entity's
+            network management system to the next re-
+            initialization."
+    ::= { bseeSupplicantUserEntry 1 }
+
+bseeSupplicantUserName OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE (0..15))
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The user name currently in use by the Supplicant
+        PAE state machine."
+    ::= { bseeSupplicantUserEntry 2 }
+    
+bseeSupplicantPassword OBJECT-TYPE
+    SYNTAX      SnmpAdminString (SIZE (0..15))
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The password currently in use by the Supplicant
+        PAE state machine."
+    ::= { bseeSupplicantUserEntry 3 }
+
+bseeSupplicantUserState OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    inactive(1),
+                    active(2),
+                    logoff(3)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "Input the user state to logoff."
+    ::= { bseeSupplicantUserEntry 4 }
+
+-- ===========================================================================
+-- bseeMultiHostVoipVlanTable
+-- ===========================================================================
+
+bseeMultiHostVoipVlanTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF BseeMultiHostVoipVlanEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "A table that contains EAP VoIP Vlan settings."
+    ::= { bayStackEapExtMib 10 }
+
+bseeMultiHostVoipVlanEntry OBJECT-TYPE
+    SYNTAX      BseeMultiHostVoipVlanEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The configuration information for an EAP VoIP Vlan."
+    INDEX { bseeMultiHostVoipVlanIndex }
+    ::= { bseeMultiHostVoipVlanTable 1 }
+
+BseeMultiHostVoipVlanEntry ::=
+    SEQUENCE {
+        bseeMultiHostVoipVlanIndex   Integer32,
+        bseeMultiHostVoipVlanId      VlanId,
+        bseeMultiHostVoipVlanEnabled TruthValue
+    }
+
+bseeMultiHostVoipVlanIndex OBJECT-TYPE
+    SYNTAX      Integer32(1..5)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A unique identifier for each entry."
+    ::= { bseeMultiHostVoipVlanEntry 1 }
+
+bseeMultiHostVoipVlanId OBJECT-TYPE
+    SYNTAX      VlanId
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object specifies the Vlan ID of the VoIP Vlan."
+    ::= { bseeMultiHostVoipVlanEntry 2 }
+
+bseeMultiHostVoipVlanEnabled OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object specifies whether to use this VoIP Vlan."
+    ::= { bseeMultiHostVoipVlanEntry 3 }
 
 END

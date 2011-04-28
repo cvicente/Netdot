@@ -2,17 +2,19 @@
 S5-ETH-MULTISEG-TOPOLOGY-MIB DEFINITIONS ::= BEGIN
 
 IMPORTS
-        MODULE-IDENTITY, OBJECT-TYPE, IpAddress, TimeTicks
+        MODULE-IDENTITY, OBJECT-TYPE, IpAddress, TimeTicks, Integer32
             FROM SNMPv2-SMI
-	SnpxChassisType, SnpxBackplaneType
+      MacAddress
+            FROM SNMPv2-TC
+	InterfaceIndex
+            FROM IF-MIB
+        SnpxChassisType, SnpxBackplaneType
 		FROM SYNOPTICS-ROOT-MIB
 	s5EnMsTop
-		FROM S5-ROOT-MIB
-	MacAddress
-		FROM SNMPv2-TC;
+		FROM S5-ROOT-MIB;
 
 s5EthMultisegTopologyMib MODULE-IDENTITY
-       LAST-UPDATED    "200407200000Z"
+       LAST-UPDATED    "200908180000Z"
        ORGANIZATION    "Nortel Networks"
        CONTACT-INFO    "Nortel Networks"
        DESCRIPTION
@@ -30,6 +32,16 @@ s5EthMultisegTopologyMib MODULE-IDENTITY
             no warranty, either express or implied, as to the use,
             operation, condition, or performance of the Specification."
 
+       REVISION "200908180000Z" -- 18 August 2009
+       DESCRIPTION "Version 109:  added s5EnMsTopPortTable"
+
+       REVISION "200609130000Z" -- 13 Sept 2006
+       DESCRIPTION "Version 108:  Import MacAddress from SNMPv2-TC, Integer32 from
+                                  SNMPv2-SMI"
+
+       REVISION "200609120000Z" -- 12 Sept 2006
+       DESCRIPTION "Version 107:  Import MacAddress from SNMPv2-SMI"
+
        REVISION "200407200000Z" -- 20 July 2004
        DESCRIPTION "Version 106:  Conversion to SMIv2"
 
@@ -44,6 +56,8 @@ s5EnMsTopNmm		OBJECT IDENTIFIER ::= { s5EnMsTop 2 }
 s5EnMsTopBdg		OBJECT IDENTIFIER ::= { s5EnMsTop 3 }
 
 s5EnMsTopSrcMac		OBJECT IDENTIFIER ::= { s5EnMsTop 4 }
+
+s5EnMsTopPort		OBJECT IDENTIFIER ::= { s5EnMsTop 5 }
 
 -- SECTION 2: MIB Objects
 
@@ -709,5 +723,60 @@ s5EnMsTopSrcMacAddrLstChg OBJECT-TYPE
 		If no changes have been done since cold/warm start
 		of the agent, then the value is zero."
 	::= { s5EnMsTopSrcMac 2 }
+
+s5EnMsTopPortTable OBJECT-TYPE
+	SYNTAX	SEQUENCE OF S5EnMsTopPortEntry
+	MAX-ACCESS	not-accessible
+	STATUS	current
+	DESCRIPTION
+		"A table of topology statuses for each port on the
+		unit. This provides a way to make different topology 
+		settings for each port, instead of having global 
+		topology settings for the entire unit"
+	::= { s5EnMsTopPort 1 }
+
+s5EnMsTopPortEntry OBJECT-TYPE
+	SYNTAX	S5EnMsTopPortEntry
+	MAX-ACCESS	not-accessible
+	STATUS	current
+	DESCRIPTION
+		"an entry in the s5EnMsTopPortTable table. There is
+		one such entry for every port "
+	INDEX	{ s5EnMsTopPortIfIndex }
+	::= { s5EnMsTopPortTable 1 }
+
+S5EnMsTopPortEntry ::= SEQUENCE {
+	s5EnMsTopPortIfIndex  InterfaceIndex,
+	s5EnMsTopPortState    INTEGER
+	}
+
+s5EnMsTopPortIfIndex OBJECT-TYPE
+        SYNTAX        InterfaceIndex
+        MAX-ACCESS    not-accessible
+        STATUS        current
+        DESCRIPTION     "Indicates port on which to configure topology."
+        ::= { s5EnMsTopPortEntry 1 }
+
+s5EnMsTopPortState OBJECT-TYPE
+	SYNTAX	INTEGER {
+		  topActive(1),
+		  topPassthru(2)
+		}
+	MAX-ACCESS	read-write
+	STATUS	current
+	DESCRIPTION
+		"Indicates if the agent is participating in
+		multi-segment topology on this port. The values are:
+		  topActive(1)....topology mode is active
+		  topPassthru(2)...topology mode is passive (transparent)
+		When the value is topActive, the agent sends out 
+		topology packets and also interprets any topology
+		packets received and updates the topology table
+		accordingly.
+		When the value is topPassthru(2) the unit does not
+		generate and send out topology packets and forwards
+		whatever topology packets it receives."
+	DEFVAL	{ topActive }
+	::= { s5EnMsTopPortEntry 2 }
 
 END

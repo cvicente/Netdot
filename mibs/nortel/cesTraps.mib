@@ -1,0 +1,2511 @@
+--
+-- Each Trap contains the Trap OID as well as the following OIDs:
+--      SeverityLevel
+--      (ActualTrapDetails)
+--      System Name
+--      System Date
+--      System Time
+--      System Uptime
+--
+--
+-- (Actual Trap Details) is a string that is comprised of three sections
+-- separated by colons.
+-- Severity : Name of task to which the trap relates : Status message
+-- Severity section will be one of these possibilities: Disabled, Warning, Alert
+----------------------------------
+--
+-- For HP Openview; the user can use $1 $2 $3 $4 $5 $6  or
+--                  Severity: $1 Trap $2 System $3 $4 $5 Uptime $6
+--                                      as a default format string in the trap.conf file,
+--                  otherwise, too much information will be displayed.
+--                                      $1 Severity Level
+--                                      $2 Actual Trap Details
+--                                      $3 System Name
+--                                      $4 System Date
+--                                      $5 System Time
+--                                      $6 System Uptime
+--
+
+        CONTIVITY-TRAPS-V1-MIB DEFINITIONS ::= BEGIN
+                
+        IMPORTS
+                DisplayString,
+                                sysName,
+                                sysObjectID,
+                                ifIndex,
+                                ifAdminStatus,
+                                ifOperStatus,
+                                ifType,
+                                ifDescr,
+                                snmp
+                                                                                                        FROM RFC1213-MIB
+                OBJECT-TYPE                                                     FROM RFC-1212
+                TRAP-TYPE                                                       FROM RFC-1215
+                                IpAddress                                                       FROM RFC1155-SMI
+                                MODULE-IDENTITY                                         FROM SNMPv2-SMI
+-- SNMPv2-SMI(RFC2578 or STD58)
+                                contivity                                                       FROM NEWOAK-MIB;
+
+-- The following MODULE-IDENTITY definition can be commented out if the MIB parser
+-- you are using has trouble parsing it. The object id defined, "contivityTrapV1", 
+-- is not used in the mib. It is here only for documentation purposes.
+                contivityTrapsV1  MODULE-IDENTITY
+                        LAST-UPDATED "0604062300Z"   -- April 6, 2006 7:00pm EST
+                        ORGANIZATION "Nortel"
+                        CONTACT-INFO
+                                   "support@nortel.com
+            Postal: Nortel
+                    600 Technology Park Drive
+                    Billerica, MA 01821
+            Tel:    +1 978 670 8888
+            E-Mail: support@nortel.com"
+
+                        DESCRIPTION
+                                "This MIB defines the traps, and bind objects used in the traps,
+                                 that are sent by the VPN Router."
+                        REVISION     "0005122000Z"   -- May 12, 2000 4:00pm EST
+                        DESCRIPTION
+               "Add ifIndex, ifDescr, ifType to the following traps:
+                                lanCardStatusTrap, t1WANStatusTrap, t3WANStatusTrap
+                                Add ifReasonForStatus-ces, ifPhysLocation-ces, 
+                                ifPhysRelPos-ces, ifIpAddr-ces, ifTunnelName-ces,
+                                ifTunnelRemoteIpAddr-ces to Link Up and Link Down traps.
+                           ."
+                        REVISION     "0006281800Z"   -- Jul 28, 2000 2:00pm EST
+                        DESCRIPTION
+               "Added Possible Values: clauses to most of the traps.
+                            Change ifTunnelName-ces to ifName-ces.
+                                Using ifName-ces instead of ifXName so that this mib will compile
+                                with only V1 mibs.
+                            "
+                        REVISION     "0006282100Z"   -- Jul 28, 2000 5:00pm EST
+                        DESCRIPTION
+               "Added Possible Values: to all but:
+                            load balancing, firewall, failed login attempt, security intrusion
+                            "
+                        REVISION     "0008101500Z"   -- Aug 10, 2000 11:00am EST
+                        DESCRIPTION
+               "Added Possible Values: to:
+                            load balancing, firewall, failed login attempt, security intrusion
+                            "
+                        REVISION     "0006182200Z"   -- Jul 18, 2000 6:00pm EST
+                        DESCRIPTION
+               "Add firewallPolicyType-ces,
+                                firewallRuleType-ces, firewallRuleIntfName-ces,
+                          firewallRuleNumber-ces, firewallSrcAddr-ces, firewallSrcPort-ces,
+                                firewallDestAddr-ces, firewallDestPort-ces, firewallProtocolID-ces,
+                                firewallRuleAction-ces, firewallIpHdr-ces, firewallUdpTcpHdr-ces,
+                                firewallRuleTriggeredTrap. Change ifTunnelName-ces to ifName-ces.
+                                Using ifName-ces instead of ifXName so that this mib will compile
+                                with only V1 mibs.
+                            "
+                        REVISION     "0102272300Z"   -- Feb 27, 2001 7:00pm EST
+                        DESCRIPTION
+               "Changed severityLevel to reflect the actual health of the object the
+                           trap is describing.
+                            "
+                        REVISION     "0103262300Z"   -- Mar 26, 2001 7:00pm EST
+                        DESCRIPTION
+               "Changed softwareCESTrapInfo to serviceCESTrapInfo.
+                            "
+                        REVISION     "0105102300Z"   -- May 10, 2001 7:00pm EST
+                        DESCRIPTION
+               "Added licensingStatus trap.
+                            "
+                        ::= { contivity 0 }
+
+--  This MIB module uses the extended OBJECT-TYPE macro as
+--  defined in [9], and the TRAP-TYPE macro as defined in [10].
+
+-- Textual Conventions
+--  PortLocation-ces defines the physical location of the port in relation to the
+--  CES chassis as a whole.
+        PortLocation-ces ::= INTEGER {
+                                         motherBoardOrSlot0(1),
+                                         slot1(2),
+                                         slot2(3),
+                                         slot3(4),
+                                         slot4(5),
+                                         slot5(6)
+                                         }
+--  IfReasonForStatus-ces provides detailed information as to why the CES has issued
+--  this trap. Ex. For a branch office connection that has timed out, the timed-out 
+--  value would be applicable. Also for a branch office, if the remote end of the
+--  tunnel stopped responding, then no-response would be applicable.
+--  For physical interfaces, ip-addr-chg informs that the IP address assigned to the
+--  port has changed. This TC is used for the Link Up and Link Down traps.
+        IfReasonForStatus-ces ::= INTEGER {
+                                         unknown(1),
+                                         idle-time-out(2),
+                                         ip-addr-chg(3),
+                                         no-response(4),
+                                         user-interaction(5),
+                                         time-limit(6),
+                                         testing(7),
+                                         test-complete-success(8),
+                                         test-complete-failure(9),
+                                         link-down(10),
+                                         link-up(11)
+                                         }
+
+--  FirewallPolicyType-ces 
+        FirewallPolicyType-ces ::= INTEGER {
+                                          firewall(1),
+                                          nat(2)
+                                         }
+
+--  FirewallRuleType-ces specifies whether it was a source or destination
+--      that trigger the rule.
+        FirewallRuleType-ces ::= INTEGER {
+                                          over-ride(1),
+                                          sourceInterface(2),
+                                          destinationInterface(3),
+                                          default(4)
+                                         }
+
+--      FirewallRuleAction-ces specifies what is to be done with the packet.
+        FirewallRuleAction-ces ::= INTEGER {
+                                          unknown(1),
+                                          allow(2),
+                                                reject(3),
+                                          drop(4)
+                                           }
+--
+-- The following are passed with every trap.
+--
+
+    severityLevel OBJECT-TYPE
+            SYNTAX INTEGER
+        {
+                alert(1),
+                warning(2),
+                disabled(3),
+                healthy(4),
+                unknown(5)
+
+                  
+                 
+                  
+                  
+--        fatal(1),
+--        major(2),
+--        minor(3),
+--        informational(4),
+--        insignificant(5),
+--        reversal(6)
+        }
+            ACCESS read-only
+            STATUS mandatory
+            DESCRIPTION "Severity of specific trap."
+            ::= {contivity 7}
+
+      systemName OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "System Name."
+          ::= {contivity 8}
+
+      systemDate OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "System Date."
+          ::= {contivity 9}
+
+      systemTime OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "System Time."
+          ::= {contivity 10}
+
+      systemUpTime OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "System Up Time."
+          ::= {contivity 11}
+
+-- Groups
+
+-- Hardware related Traps
+
+      hardwareCESTrapInfo OBJECT IDENTIFIER
+          ::= {contivity 1}
+
+      -- Trap #1001 ---------------------------------
+      hardDisk1Status OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Hard Disk Number 1 Status.
+                  Possible Values:
+                  Warning: Hard Disk 1 : Device /ide1/ not available
+                  Warning: Hard Disk 1 : Utilization exceeds 75%% on /ide1/ 
+                  Alert: Hard Disk 1 : Utilization exceeds 87.5%% on /ide1/
+                  "
+          ::= {hardwareCESTrapInfo 1}
+
+        hardDisk1StatusTrap TRAP-TYPE
+        ENTERPRISE hardwareCESTrapInfo
+        VARIABLES {
+                severityLevel,hardDisk1Status, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Hard Disk Number 1 Status"
+         ::= 1001
+
+      -- Trap #1002 ---------------------------------
+      hardDisk0Status OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Hard Disk Number 0 Status.
+                  Possible Values:
+                  Warning: Hard Disk 0 : Device /ide0/ not available
+                  Warning: Hard Disk 0 : Utilization exceeds 75%% on /ide0/ 
+                  Alert: Hard Disk 0 : Utilization exceeds 87.5%% on /ide0/
+                  "
+          ::= {hardwareCESTrapInfo 2}
+      
+        hardDisk0StatusTrap TRAP-TYPE
+        ENTERPRISE hardwareCESTrapInfo
+        VARIABLES {
+                severityLevel,hardDisk0Status, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Hard Disk Number 0 Status"
+         ::= 1002
+
+      -- Trap #1003 ---------------------------------
+      memoryUsage OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Memory Usage Status.
+                  Possible Values:
+                  Warning: Memory Usage : Utilization exceeds 75%
+                  Alert: Memory Usage : Utilization exceeds 87.5%
+                  "
+          ::= {hardwareCESTrapInfo 3}
+ 
+        memoryUsageTrap TRAP-TYPE
+        ENTERPRISE hardwareCESTrapInfo
+        VARIABLES {
+                severityLevel,memoryUsage, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Memory Usage Status"
+         ::= 1003
+
+      -- Trap #1004 ---------------------------------
+      lanCardStatus OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of any LAN cards on the system.
+    Possible Values:
+        Please note that X corresponds to the Xth slot in the system.
+        Please note that Y corresponds to the relative position of the port
+                on the card in the Xth slot in the system.
+
+        Warning: LAN on Slot X Interface Y: Device feiX has no IP address;
+        Warning: LAN on Slot X Interface Y: Device feiX disabled;
+        Alert: LAN on Slot X Interface Y: Device feiX down;
+                Alert: LAN on Slot X Interface Y: Device feiX Invalid Device X
+    
+        The Alert status above indicates that the interface has no
+        link when it should.  Possible causes are improper connection
+        speeds and duplex, improper cabling or a configuration issue."
+          ::= {hardwareCESTrapInfo 4}
+
+
+        lanCardStatusTrap TRAP-TYPE
+        ENTERPRISE hardwareCESTrapInfo
+        VARIABLES {
+                         severityLevel,
+                         lanCardStatus, 
+                         systemName,
+                         systemDate, 
+                         systemTime, 
+                         systemUpTime,
+                         ifIndex,                               -- ifIndex of the interface.
+                         ifDescr,                               -- ifDescr of the interface.
+                         ifType                                 -- ifType, this provides descrimination of interfaces that are tunnels.
+         }
+         DESCRIPTION "Status of any LAN cards on the system"
+         ::= 1004
+
+
+      -- Trap #1005 ---------------------------------
+      cpuTwoStatus OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of second CPU.
+                  Possible Values:
+                Alert: CPU 2: Program load failed;
+                Alert: CPU 2: Bootup did not complete;
+                Alert: CPU 2: Communication lost;
+                Alert: CPU 2: Failed. Reason unknown;
+
+                Each of these indicates that the application CPU is
+                not functioning correctly.  The system will continue to
+                function without the application processor.  This can only
+                be sent from a system with multiple CPUs.  See the Admin
+                Guide for a list of systems that contain multiple CPUs.
+                The CES will emit an audible alarm and the networking
+                performance will be degraded.  A Nortel support
+                representative should be contacted if rese                ing the CES
+                does not correct the problem.
+
+                The effect is the same in each case.  The system will be
+                running with only one CPU."
+          ::= {hardwareCESTrapInfo 5}
+
+        cpuTwoStatusTrap TRAP-TYPE
+        ENTERPRISE hardwareCESTrapInfo
+        VARIABLES {
+                severityLevel,cpuTwoStatus, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of second CPU.
+                 "
+         ::= 1005
+
+      -- Trap #1006 ---------------------------------
+      fanOneStatus OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of the first CPU fan.
+                  Possible Values:
+        Alert: CPU One Fan: Fan not functioning;
+
+        This indicates that the fan on the primary processor is
+        running either below the specified speed or not running
+        at all.  If a fan is not working correctly, it must be
+        fixed as soon as possible or damage may result.
+
+        This is a high priority event which can prove catastrophic
+        to the processor as well as the system.  This trap can only
+        be sent by systems which contain an actual fan on the
+        primary CPU."
+          ::= {hardwareCESTrapInfo 6}
+
+        fanOneStatusTrap TRAP-TYPE
+        ENTERPRISE hardwareCESTrapInfo
+        VARIABLES {
+                severityLevel,fanOneStatus, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of the first CPU fan"
+         ::= 1006
+
+      -- Trap #1007 ---------------------------------
+      fanTwoStatus OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of the second CPU fan
+                  Possible Values:
+        Alert: CPU Two Fan: Fan not functioning;
+
+        This indicates that the fan on the auxiliary processor is
+        running either below the specified speed or not running
+        at all.  If a fan is not working correctly, it must be
+        fixed as soon as possible or damage may result.
+
+        This is a high priority event which can prove catastrophic
+        to the processor as well as the system.  This trap can only
+        be sent by systems which contain an actual fan on the
+        auxiliary CPU."
+          ::= {hardwareCESTrapInfo 7}
+
+        fanTwoStatusTrap TRAP-TYPE
+        ENTERPRISE hardwareCESTrapInfo
+        VARIABLES {             
+                severityLevel,fanTwoStatus, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of the second CPU fan"
+         ::= 1007
+
+      -- Trap #1008 ---------------------------------
+      chassisFanStatus OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of the chassis fan.
+    Possible Values:
+        Alert: Chassis Fan: Fan not functioning;
+        Alert: Chassis Fan 2: Fan not functioning;
+
+        This indicates that one of the chassis fans is running
+        either below the specified range of speed or not running
+        at all.  If a fan is not working correctly, it must be
+        fixed as soon as possible or damage may result.
+
+        If either of the fans are not working properly, the box
+        must be looked at by a service technician as soon as
+        possible.  Not doing so will result in overheating of
+        the system, improper system operation, and possible
+        component failure."
+          ::= {hardwareCESTrapInfo 8}
+
+        chassisFanStatusTrap TRAP-TYPE
+        ENTERPRISE hardwareCESTrapInfo
+        VARIABLES {
+                severityLevel,chassisFanStatus, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of the chassis fan."
+         ::= 1008
+
+
+      -- Trap #1009 ---------------------------------
+      fiveVoltsPositive OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of +5 Volt power.
+    Possible Values:
+        Alert: Voltage 5 V Plus: Voltage out of range;
+
+        The supplied voltage to the system is not within the
+        the specified range for that particular voltage.
+        Certain platforms do not supply or monitor some of
+        these voltages.  See the Health Check section of the
+        Admin Guide for a description of which platforms monitor
+        which voltages.
+
+        This is a major problem and the box should be looked
+        at by a qualified Nortel representative as
+        soon as possible.  Correct operation of the system
+        is not guaranteed while in this state.  Certain platforms
+        do not supply or monitor some of these voltages.
+        See the Health Check section of the Admin Guide for a
+        description of which platforms monitor which voltages."
+          ::= {hardwareCESTrapInfo 9}
+
+        fiveVoltsPosStatusTrap TRAP-TYPE
+        ENTERPRISE hardwareCESTrapInfo
+        VARIABLES {
+                severityLevel,fiveVoltsPositive, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of the +5 Volt power"
+         ::= 1009
+
+      -- Trap #10010 ---------------------------------
+      fiveVoltsMinus OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of -5 Volt power.
+    Possible Values:
+        Alert: Voltage 5 V Minus: Voltage out of range;
+
+        The supplied voltage to the system is not within the
+        the specified range for that particular voltage.
+        Certain platforms do not supply or monitor some of
+        these voltages.  See the Health Check section of the
+        Admin Guide for a description of which platforms monitor
+        which voltages.
+
+        This is a major problem and the box should be looked
+        at by a qualified Nortel representative as
+        soon as possible.  Correct operation of the system
+        is not guaranteed while in this state.  Certain platforms
+        do not supply or monitor some of these voltages.
+        See the Health Check section of the Admin Guide for a
+        description of which platforms monitor which voltages."
+          ::= {hardwareCESTrapInfo 10}
+
+        fiveVoltsMinusTrap TRAP-TYPE
+        ENTERPRISE hardwareCESTrapInfo
+        VARIABLES {
+                severityLevel,fiveVoltsMinus, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of -5 Volt power"
+         ::= 10010
+
+      -- Trap #10011 ---------------------------------
+      threeVoltsPositive OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of +3 Volt power.
+    Possible Values:
+        Alert: Voltage 3.3 V Plus: Voltage out of range;
+
+        The supplied voltage to the system is not within the
+        the specified range for that particular voltage.
+        Certain platforms do not supply or monitor some of
+        these voltages.  See the Health Check section of the
+        Admin Guide for a description of which platforms monitor
+        which voltages.
+
+        This is a major problem and the box should be looked
+        at by a qualified Nortel representative as
+        soon as possible.  Correct operation of the system
+        is not guaranteed while in this state.  Certain platforms
+        do not supply or monitor some of these voltages.
+        See the Health Check section of the Admin Guide for a
+        description of which platforms monitor which voltages."
+          ::= {hardwareCESTrapInfo 11}
+
+        threeVoltsPositiveTrap TRAP-TYPE
+        ENTERPRISE hardwareCESTrapInfo
+        VARIABLES {
+                severityLevel,threeVoltsPositive, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of +3 Volt power"
+         ::= 10011
+
+      -- Trap #10012 ---------------------------------
+      twoDotFiveVA OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of 2.5VA power.
+    Possible Values:
+        Alert: Voltage 2.5 VA: Voltage out of range;
+
+        This is the voltage supplied to the primary processor.
+        The supplied voltage to the system is not within the
+        the specified range for that particular voltage.
+        Certain platforms do not supply or monitor some of
+        these voltages.  See the Health Check section of the
+        Admin Guide for a description of which platforms monitor
+        which voltages.
+
+        This is a major problem and the box should be looked
+        at by a qualified Nortel representative as
+        soon as possible.  Correct operation of the system
+        is not guaranteed while in this state.  Certain platforms
+        do not supply or monitor some of these voltages.
+        See the Health Check section of the Admin Guide for a
+        description of which platforms monitor which voltages."
+          ::= {hardwareCESTrapInfo 12}
+
+        twoDotFiveVATrap TRAP-TYPE
+        ENTERPRISE hardwareCESTrapInfo
+        VARIABLES {
+                severityLevel,twoDotFiveVA, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of 2.5VA power"
+         ::= 10012
+
+      -- Trap #10013 ---------------------------------
+      twoDotFiveVB OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of 2.5VB power.
+    Possible Values:
+        Alert: Voltage 2.5 VB: Voltage out of range;
+
+        This is the voltage supplied to the seconary processor.
+        The supplied voltage to the system is not within the
+        the specified range for that particular voltage.
+        Certain platforms do not supply or monitor some of
+        these voltages.  See the Health Check section of the
+        Admin Guide for a description of which platforms monitor
+        which voltages.
+
+        This is a major problem and the box should be looked
+        at by a qualified Nortel representative as
+        soon as possible.  Correct operation of the system
+        is not guaranteed while in this state.  Certain platforms
+        do not supply or monitor some of these voltages.
+        See the Health Check section of the Admin Guide for a
+        description of which platforms monitor which voltages."
+          ::= {hardwareCESTrapInfo 13}
+
+        twoDotFiveVBTrap TRAP-TYPE
+        ENTERPRISE hardwareCESTrapInfo
+        VARIABLES {
+                severityLevel,twoDotFiveVB, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of 2.5VB power"
+         ::= 10013
+
+      -- Trap #10014 ---------------------------------
+      twelveVoltsPositive OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of +12 Volt power.
+    Possible Values:
+        Alert: Voltage 12 V Plus: Voltage out of range;
+
+        The supplied voltage to the system is not within the
+        the specified range for that particular voltage.
+        Certain platforms do not supply or monitor some of
+        these voltages.  See the Health Check section of the
+        Admin Guide for a description of which platforms monitor
+        which voltages.
+
+        This is a major problem and the box should be looked
+        at by a qualified Nortel representative as
+        soon as possible.  Correct operation of the system
+        is not guaranteed while in this state.  Certain platforms
+        do not supply or monitor some of these voltages.
+        See the Health Check section of the Admin Guide for a
+        description of which platforms monitor which voltages."
+          ::= {hardwareCESTrapInfo 14}
+
+        twelveVoltsPositveTrap TRAP-TYPE
+        ENTERPRISE hardwareCESTrapInfo
+        VARIABLES {
+                severityLevel,twelveVoltsPositive, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of +12 Volt power"
+         ::= 10014
+
+      -- Trap #10015 ---------------------------------
+      twelveVoltsMinus OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of -12 Volt power.
+    Possible Values:
+        Alert: Voltage 12 V Minus: Voltage out of range;
+
+        The supplied voltage to the system is not within the
+        the specified range for that particular voltage.
+        Certain platforms do not supply or monitor some of
+        these voltages.  See the Health Check section of the
+        Admin Guide for a description of which platforms monitor
+        which voltages.
+
+        This is a major problem and the box should be looked
+        at by a qualified Nortel representative as
+        soon as possible.  Correct operation of the system
+        is not guaranteed while in this state.  Certain platforms
+        do not supply or monitor some of these voltages.
+        See the Health Check section of the Admin Guide for a
+        description of which platforms monitor which voltages."
+          ::= {hardwareCESTrapInfo 15}
+
+        twelveVoltsMinsTrap TRAP-TYPE
+        ENTERPRISE hardwareCESTrapInfo
+        VARIABLES {
+                severityLevel,twelveVoltsMinus, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of -12 Volt power"
+         ::= 10015
+
+      -- Trap #10016 ---------------------------------
+      normalTemperature OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of normal temperature reading.
+    Possible Values:
+        Alert: Normal Temperature: Normal temperature out of range;
+
+        This indicates that the box is running above its rated
+        normal operating temperature.  This may be the result of
+        an improperly working fan or a high ambient temperature.
+
+        The box is not guaranteed to run properly while running
+        above the normal operating temperature range.  Performance
+        will be degraded.  Not taking action to correct this
+        situation can result in component failure.  Do not rely
+        on waiting for the criticalTemperatureTrap as that is
+        only supported by certain platforms."
+          ::= {hardwareCESTrapInfo 16}
+
+        normalTemperatureTrap TRAP-TYPE
+        ENTERPRISE hardwareCESTrapInfo
+        VARIABLES {
+                severityLevel,normalTemperature, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of the normal temperature reading"
+         ::= 10016
+
+      -- Trap #10017 ---------------------------------
+      criticalTemperature OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of critical temperature reading.
+    Possible Values:
+        Alert: Critical Temperature: Critial temperature out of range;
+
+        This indicates that the box is running at a critically high
+        temperature above the normal operating range.  This is only
+        supported on certain platforms.  See the Admin Guide for a
+        list of platforms which support this.
+
+        The box must be shut down immediately.  Component failure
+        may already have occurred.  If the reason for such a high
+        operating temperature cannot be determined, contact a
+        qualified Nortel representative."
+          ::= {hardwareCESTrapInfo 17}
+
+        criticalTemperatureTrap TRAP-TYPE
+        ENTERPRISE hardwareCESTrapInfo
+        VARIABLES {
+                severityLevel,criticalTemperature, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of the critical temperature reading"
+         ::= 10017
+
+      -- Trap #10018 ---------------------------------
+      chassisIntrusion OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "The chassis intrusion sensor indicates that the unit has been opened.
+
+    Possible Values:
+        Alert: Intrusion: Box has been opened;
+
+        The cover to the CES has been opened or is in the
+        process of being opened.  This indicates a possible
+        physical security intrusion.
+
+        The system will continue to operate while the box
+        is opened.  Check to insure that no unauthorized
+        persons have opened the unit."
+          ::= {hardwareCESTrapInfo 18}
+
+        chassisIntrusionTrap TRAP-TYPE
+        ENTERPRISE hardwareCESTrapInfo
+        VARIABLES {
+                severityLevel,chassisIntrusion, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "The chassis intrusion sensor indicates that the unit has been physically opened"
+         ::= 10018
+
+      -- Trap #10019 ---------------------------------
+      dualPowerSupply OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of the redundant power supplies.
+    Possible Values:
+        Alert: Dual Power Supply: Redundant supply faulted
+
+        This indicates that, on systems with redundant power
+        supplies, one of the power supplies is not working.
+
+        This trap can only be sent from systems which have
+        redundant power supplies.  The system will continue
+        to run with only one power supply working.  A new
+        power supply must be obtained via an authorized
+        Nortel representative as quickly as possible.
+        This will help reduce the risk window of system failure
+        in the event that the working power supply ceases to
+        function."
+          ::= {hardwareCESTrapInfo 19}
+
+        dualPowerSupplyTrap TRAP-TYPE
+        ENTERPRISE hardwareCESTrapInfo
+        VARIABLES {
+                severityLevel,dualPowerSupply, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of the redundant power supplies"
+         ::= 10019
+
+      -- Trap #10020 ---------------------------------
+      t1WANStatus OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of T1 WAN card(s).
+                        Possible Values:
+                          For Wanic support:
+                                Alert: Invalid Device X
+                                Warning: Device WanicX disabled
+                                Alert: Device WanicX down
+                                Warning: Device WanicX not initialized
+                                Warning: Device WanicX PPP negotiating
+                                Alert: Device WanicX PPP down
+                                Alert: Device WanicX FR no support
+                                Alert: Device WanicX Unknown DL
+                          For T1:
+                                Alert: Invalid Device X
+                                Warning: Device LMCDTEX disabled
+                                Alert: Device LMCDTEX down
+                                Warning: Device LMCDTEX not initialized
+                          For CSU/DSU:
+                                Alert: Invalid Device X
+                                Warning: Device LMCCDX disabled
+                                Alert: Device LMCCDX down
+                                Warning: Device LMCCDX not initialized"
+
+          ::= {hardwareCESTrapInfo 20}
+
+        t1WANStatusTrap TRAP-TYPE
+        ENTERPRISE hardwareCESTrapInfo
+        VARIABLES {             
+                         severityLevel,
+                         t1WANStatus, 
+                         systemName,
+                         systemDate, 
+                         systemTime, 
+                         systemUpTime,
+                         ifIndex,                               -- ifIndex of the interface.
+                         ifDescr,                               -- ifDescr of the interface.
+                         ifType                                 -- ifType, this provides descrimination of interfaces that are tunnels.
+         }
+          DESCRIPTION "Status of T1 WAN card(s).
+                        Possible Values:
+                          For Wanic support:
+                                Alert: Invalid Device X
+                                Warning: Device WanicX disabled
+                                Alert: Device WanicX down
+                                Warning: Device WanicX not initialized
+                                Warning: Device WanicX PPP negotiating
+                                Alert: Device WanicX PPP down
+                                Alert: Device WanicX FR no support
+                                Alert: Device WanicX Unknown DL
+                          For T1:
+                                Alert: Invalid Device X
+                                Warning: Device LMCDTEX disabled
+                                Alert: Device LMCDTEX down
+                                Warning: Device LMCDTEX not initialized
+                          For CSU/DSU:
+                                Alert: Invalid Device X
+                                Warning: Device LMCCDX disabled
+                                Alert: Device LMCCDX down
+                                Warning: Device LMCCDX not initialized"
+         ::= 10020
+
+      -- Trap #10021 ---------------------------------
+      t3WANStatus OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+         DESCRIPTION "Status of T3 WAN card
+                     Possible Values:
+                     Alert: Invalid Index X
+                     Warning: Device HSSIX disabled
+                     Alert: Device HSSIX down
+                     Warning: Device HSSIX not initialized
+                     Alert: Device HSSIX PPP down
+                     Warning: Device HSSIX PP initializing"
+          ::= {hardwareCESTrapInfo 21}
+
+        t3WANStatusTrap TRAP-TYPE
+        ENTERPRISE hardwareCESTrapInfo
+        VARIABLES {             
+                         severityLevel,
+                         t3WANStatus, 
+                         systemName,
+                         systemDate, 
+                         systemTime, 
+                         systemUpTime,
+                         ifIndex,                               -- ifIndex of the interface.
+                         ifDescr,                               -- ifDescr of the interface.
+                         ifType                                 -- ifType, this provides descrimination of interfaces that are tunnels.
+         }
+         DESCRIPTION "Status of T3 WAN card
+                     Possible Values:
+                     Alert: Invalid Index X
+                     Warning: Device HSSIX disabled
+                     Alert: Device HSSIX down
+                     Warning: Device HSSIX not initialized
+                     Alert: Device HSSIX PPP down
+                     Warning: Device HSSIX PP initializing"
+
+         ::= 10021
+
+      -- Trap #10022 ---------------------------------
+      hwAccelStatus OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of hardware accelerator card."
+          ::= {hardwareCESTrapInfo 22}
+
+        hwAccelTrap TRAP-TYPE
+        ENTERPRISE hardwareCESTrapInfo
+        VARIABLES {             
+                severityLevel,hwAccelStatus, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of hardware accelerator card.
+                     Possible Values:
+                     Invalid hardware accelerator unit %d;
+                                         Unknown hardware accelerator unit %d;
+                                         Healthy: Bulk Accelerator in slot %d: Unit %d Status 1 - ATTACHED;
+                                         Warning: Bulk Accelerator in slot %d: Unit %d Status 2 - DISABLED;
+                                         Healthy: Bulk Accelerator in slot %d: Unit %d Status 3 - ACTIVE;
+                                         Warning: Bulk Accelerator in slot %d: Unit %d Status 4 - RECOVERING;
+                                         Warning: Bulk Accelerator in slot %d: Unit %d Status 5 - SHUTDOWN;
+                                         Alert: Bulk Accelerator in slot %d: Unit %d Status 6 - FAILED;
+                             "
+         ::= 10022
+      
+      -- Trap #10024 ---------------------------------
+      v90WANStatus OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+         DESCRIPTION "Status of V.90 Interface card
+                     Possible Values:
+                       Please note that X corresponds to the unit number of the card.
+                     Alert: V.90 Invalid index X
+                     Disabled: Device IntModem-X disabled
+                     Healthy: Device IntModem-X: PPP is UP.
+                     Alert: Device IntModem-X down
+                     Warning: Device IntModem-X not initialized
+                     Alert: Device IntModem-X: Call is UP. Internal Error. 
+                     Warning: Device IntModem-X is Down. Last dial-out attempt FAILED.
+                     Healthy: Device IntModem-X is Down (No Active calls)
+                     Warning: Device IntModem-X is in an UNKNOWN state"
+          ::= {hardwareCESTrapInfo 24}
+
+        v90WANStatusTrap TRAP-TYPE
+        ENTERPRISE hardwareCESTrapInfo
+        VARIABLES {             
+                         severityLevel,
+                         v90WANStatus, 
+                         systemName,
+                         systemDate, 
+                         systemTime, 
+                         systemUpTime
+         }
+         DESCRIPTION "Status of V.90 Interface card
+                     Possible Values:
+                       Please note that X corresponds to the unit number of the card.
+                     Alert: V.90 Invalid index X
+                     Disabled: Device IntModem-X disabled
+                     Healthy: Device IntModem-X: PPP is UP.
+                     Alert: Device IntModem-X down
+                     Warning: Device IntModem-X not initialized
+                     Alert: Device IntModem-X: Call is UP. Internal Error. 
+                     Warning: Device IntModem-X is Down. Last dial-out attempt FAILED.
+                     Healthy: Device IntModem-X is Down (No Active calls)
+                     Warning: Device IntModem-X is in an UNKNOWN state
+                     "
+         ::= 10024
+
+      -- Trap #10025 ---------------------------------
+      briWANStatus OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+         DESCRIPTION "Status of ISDN BRI Interface card
+                     Possible Values:
+                       Please note that X corresponds to the unit number of the card.
+                     Alert: BRI Invalid index X
+                     Alert: Device BRI-X not Responding. Needs Host Reboot.
+                     Disabled: Device BRI-X disabled
+                     Alert: Device BRI-X down
+                     Warning: Device BRI-X not initialized
+                     Healthy: Device BRI-X: PPP is UP.
+                     Alert: Device BRI-X: Call is UP. Internal Error.
+                     Warning: Device BRI-X is Down. Last dial-out attempt FAILED.
+                     Healthy: Device BRI-X is Down (No Active calls)
+                     Alert: Device BRI-X is in an UNKNOWN state"
+          ::= {hardwareCESTrapInfo 25}
+
+        briWANStatusTrap TRAP-TYPE
+        ENTERPRISE hardwareCESTrapInfo
+        VARIABLES {             
+                         severityLevel,
+                         briWANStatus, 
+                         systemName,
+                         systemDate, 
+                         systemTime, 
+                         systemUpTime
+         }
+         DESCRIPTION "Status of V.90 Interface card
+                     Possible Values:
+                       Please note that X corresponds to the unit number of the card.
+                     Alert: BRI Invalid index X
+                     Alert: Device BRI-X not Responding. Needs Host Reboot.
+                     Disabled: Device BRI-X disabled
+                     Alert: Device BRI-X down
+                     Warning: Device BRI-X not initialized
+                     Healthy: Device BRI-X: PPP is UP.
+                     Alert: Device BRI-X: Call is UP. Internal Error.
+                     Warning: Device BRI-X is Down. Last dial-out attempt FAILED.
+                     Healthy: Device BRI-X is Down (No Active calls)
+                     Alert: Device BRI-X is in an UNKNOWN state
+                     "
+         ::= 10025
+
+      -- Trap #10026 ---------------------------------
+      serUartStatus OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+         DESCRIPTION "Status of Serial (COM) port/interface
+                     Possible Values:
+                       Please note that X corresponds to the unit number of the serial interface
+                     Alert: COM port Invalid index X
+                     Healthy: Device COMX is set for Serial Menu.
+                     Disabled: Device COMX disabled
+                     Warning: Device COMX not initialized
+                     Healthy: Device COMX: PPP is UP.
+                     Alert: Device COMX: Call is UP. Internal Error.
+                     Warning: Device COMX is Down. Last dial-out attempt FAILED.
+                     Healthy: Device COMX is Down (No Active calls)
+                     Alert: Device COMX is in an UNKNOWN state"
+          ::= {hardwareCESTrapInfo 26}
+
+        serUartStatusTrap TRAP-TYPE
+        ENTERPRISE hardwareCESTrapInfo
+        VARIABLES {             
+                         severityLevel,
+                         serUartStatus, 
+                         systemName,
+                         systemDate, 
+                         systemTime, 
+                         systemUpTime
+         }
+         DESCRIPTION "Status of Serial (COM) port/interface
+                     Possible Values:
+                       Please note that X corresponds to the unit number of the serial interface
+                     Alert: COM port Invalid index X
+                     Healthy: Device COMX is set for Serial Menu.
+                     Disabled: Device COMX disabled
+                     Warning: Device COMX not initialized
+                     Healthy: Device COMX: PPP is UP.
+                     Alert: Device COMX: Call is UP. Internal Error.
+                     Warning: Device COMX is Down. Last dial-out attempt FAILED.
+                     Healthy: Device COMX is Down (No Active calls)
+                     Alert: Device COMX is in an UNKNOWN state
+                     "
+         ::= 10026
+
+      -- Trap #10027 ---------------------------------
+      adslWANStatus OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+         DESCRIPTION "Status of ADI ADSL card
+                     Possible Values:
+                       Please note that X corresponds to the unit number of the serial interface
+                     Alert: Invalid index X
+                     Alert: Device ADIADSLX off line
+                     Disabled: Device ADIADSLX disabled
+                     Alert: Device ADIADSLX down
+                     Warning: Device ADIADSLX not initialized
+                     Healthy: Device ADIADSLX up"
+          ::= {hardwareCESTrapInfo 27}
+
+        adslWANStatusTrap TRAP-TYPE
+        ENTERPRISE hardwareCESTrapInfo
+        VARIABLES {             
+                         severityLevel,
+                         adslWANStatus, 
+                         systemName,
+                         systemDate, 
+                         systemTime, 
+                         systemUpTime
+         }
+         DESCRIPTION "Status of ADI ADSL card
+                     Possible Values:
+                       Please note that X corresponds to the unit number of the serial interface
+                     Alert: Invalid index X
+                     Alert: Device ADIADSLX off line
+                     Disabled: Device ADIADSLX disabled
+                     Alert: Device ADIADSLX down
+                     Warning: Device ADIADSLX not initialized
+                     Healthy: Device ADIADSLX up
+                     "
+         ::= 10027
+
+-- Server related Traps
+
+      serverCESTrapInfo OBJECT IDENTIFIER
+          ::= {contivity 2}        
+    
+      -- Trap #3001 ---------------------------------
+      radiusAcctServer OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of External Radius Accounting Server.
+          Possible Values:
+                  Warning: RADIUS Accounting Server: Server not configured
+                  Alert: RADIUS Accounting Server: Error
+                  Alert: RADIUS Accounting Server: Not Configured
+                  "
+          ::= {serverCESTrapInfo 1}
+
+        radiusAcctServerTrap TRAP-TYPE
+        ENTERPRISE serverCESTrapInfo
+        VARIABLES {             
+                severityLevel,radiusAcctServer, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of External Radius Accounting Server"
+         ::= 3001
+
+      -- Trap #3002 ---------------------------------
+      backupServer OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of External Disk Backup Server.
+                  Possible Values:
+                  Warning: Auto Backup Servers: Server not configured.
+                  Warning: Auto Backup Servers: Can't backup to xxx yyy zzz
+                  Alert: Auto Backup Servers: Can't backup to xxx yyy zzz
+
+                  Can't backup to xxx yyy zzz is issued as an alert
+                  when none of the servers can be reached.
+                  "
+          ::= {serverCESTrapInfo 2}
+
+        backupServerTrap TRAP-TYPE
+        ENTERPRISE serverCESTrapInfo
+        VARIABLES {             
+                severityLevel,backupServer, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of External Disk Backup Server"
+         ::= 3002
+
+      -- Trap #3003 ---------------------------------
+      diskRedundency OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of Local Disk Redundency.
+                  Possible Values:
+                  Alert: Disk Redundancy: Not Configured
+                  Alert: Disk Redundancy: Error
+                  "
+          ::= {serverCESTrapInfo 3}
+
+        diskRedundencyTrap TRAP-TYPE
+        ENTERPRISE serverCESTrapInfo
+        VARIABLES {             
+                severityLevel,diskRedundency, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of Local Disk Redundency"
+         ::= 3003
+
+      -- Trap #3004 ---------------------------------
+      intLDAPServer OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of Internal LDAP Server.
+                  Possible Values:
+                  Warning : Internal LDAP Server : Restore in progress
+                  Alert : Internal LDAP Server : Server is down
+                  "
+          ::= {serverCESTrapInfo 4}
+
+        intLDAPServerTrap TRAP-TYPE
+        ENTERPRISE serverCESTrapInfo
+        VARIABLES {             
+                severityLevel,intLDAPServer, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of Internal LDAP Server"
+         ::= 3004
+
+      -- Trap #3005 ---------------------------------
+      loadBalancingServer OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of Load Balancing Server.
+                  Possible Values:
+                  Disabled: Load Balancing Service: Server not enabled;
+                  Warning: Load Balancing Service: Timed out waiting for response from server;
+                  "
+          ::= {serverCESTrapInfo 5}
+
+        loadBalancingServerTrap TRAP-TYPE
+        ENTERPRISE serverCESTrapInfo
+        VARIABLES {             
+                severityLevel,loadBalancingServer, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of Load Balancing Server"
+         ::= 3005
+
+      -- Trap #3006 ---------------------------------
+      dnsServer OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of DNS Server.
+                  Possible Values:
+                  Warning: DNS Servers : Error
+                  Warning: DNS Servers : Operational
+                  Alert: DNS Servers : Configured
+                  Alert: DNS Servers : Error
+
+                  The values have the following meaning:
+                  Warning: DNS Servers : Error  -- SysInitCls::InitComplete failed
+                  Warning: DNS Servers : Operational -- At least one of the servers is reachable
+                  Alert: DNS Servers : Configured -- All servers configured, but none are reachable.
+                  Alert: DNS Servers : Error -- 
+                  "
+          ::= {serverCESTrapInfo 6}
+
+        dnsServerTrap TRAP-TYPE
+        ENTERPRISE serverCESTrapInfo
+        VARIABLES {             
+                severityLevel,dnsServer, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of DNS Server"
+         ::= 3006
+
+      -- Trap #3007 ---------------------------------
+      snmpServer OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of SNMP Server.
+                  Possible Values:
+                  Warning: SNMP Servers : Error
+                  Warning: SNMP Servers : Can't reach xxx.xxx.xxx.xxx or yyy.yyy.yyy.yyy
+                  Alert: SNMP Servers : Error
+
+                  The values have the following meaning:
+                  Warning: SNMP Servers : Error  -- SysInitCls::InitComplete failed
+                  Alert: SNMP Servers : Error -- AT least one server configured, but none are reachable.
+                  "
+
+          ::= {serverCESTrapInfo 7}
+
+        snmpServerTrap TRAP-TYPE
+        ENTERPRISE serverCESTrapInfo
+        VARIABLES {             
+                severityLevel,snmpServer, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of SNMP Server"
+         ::= 3007
+
+      -- Trap #3008 ---------------------------------
+      ipAddressPool OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of the IP address pool.
+                  Possible Values:
+                  Warning: IP Address Pool : Reserved address count is low.
+                  Warning: IP Address Pool : DHCP server(s) unavailable
+                  Alert: IP Address Pool : Server is down
+                  Alert: IP Address Pool : Not Configured
+                  Alert: IP Address Pool : No IP address available.
+                  Alert: IP Address Pool : Reserved address count is low.
+                  Alert: IP Address Pool : Associated system task failed.
+                  Alert: IP Address Pool : Server not configured
+                  Alert: IP Address Pool : Error
+
+
+                  The values have the following meaning:
+                  Warning: IP Address Pool : Reserved address count is low. -- Haven't hit desired cache size yet.
+                  Alert: IP Address Pool : Server is down -- SysInitCls::InitComplete failed
+                  Alert: IP Address Pool : Not Configured -- Task failed sanity check.
+                  Alert: IP Address Pool : No IP address available. -- No addresses in BOUND state.
+                  Alert: IP Address Pool : Associated system task failed.
+                  Alert: IP Address Pool : Server not configured
+                  Alert: IP Address Pool : Error
+                  "
+          ::= {serverCESTrapInfo 8}
+
+        ipAddressPoolTrap TRAP-TYPE
+        ENTERPRISE serverCESTrapInfo
+        VARIABLES {             
+                severityLevel,ipAddressPool, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of the IP address pool"
+         ::= 3008
+
+      -- Trap #3009 ---------------------------------
+      extLDAPServer OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of External LDAP Server.
+                  Possible Values:
+                  Warning: External LDAP Servers : Server is down
+                  Alert: External LDAP Servers : Server is down
+
+                  The values have the following meaning:
+                  Warning: External LDAP Servers : Server is down -- One server is down
+                  Alert: External LDAP Servers : Server is down -- All servers are down
+                  "
+          ::= {serverCESTrapInfo 9}
+
+        extLDAPServerTrap TRAP-TYPE
+        ENTERPRISE serverCESTrapInfo
+        VARIABLES {             
+                severityLevel,extLDAPServer, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of External LDAP Server"
+         ::= 3009
+
+      -- Trap #30010 ---------------------------------
+      radiusAuthServer OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of Radius Authentication Server.
+                  Possible Values:
+                  Warning: RADIUS Authentication Servers : Error
+                  Alert: RADIUS Authentication Servers : Error
+
+                  The values have the following meaning:
+                  Warning: RADIUS Authentication Servers : Error -- At least one server is available
+                  Alert: RADIUS Authentication Servers : Error -- No servers are available
+                  "
+          ::= {serverCESTrapInfo 10}
+
+        radiusAuthServerTrap TRAP-TYPE
+        ENTERPRISE serverCESTrapInfo
+        VARIABLES {             
+                severityLevel,radiusAuthServer, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of Radius Authentication Server"
+         ::= 30010
+
+
+      -- Trap #30011 ---------------------------------
+      certificateServer OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of Certificates Validity.
+                  Possible Values:
+                  Alert: Certificates Validity: All certificates are going to expire/expired;
+                  Warning: Certificates Validity: One/more certificate is invalid;
+                  Disabled: Certificates Validity: No certificate defined;
+          "
+          ::= {serverCESTrapInfo 11}
+
+        certificateServerTrap TRAP-TYPE
+        ENTERPRISE serverCESTrapInfo
+        VARIABLES {             
+                severityLevel,certificateServer, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of Certificates Validity
+                             Possible Values:
+                                         Healthy: Certificates Validity: Operational;
+                                         Alert: Certificates Validity: All certificates are going to expire/expired;
+                                         Warning: Certificates Validity: One/more certificate is invalid;
+                                         Disabled: Certificates Validity: No certificate defined;
+                                         "
+         ::= 30011
+         
+      -- Trap #30012 ---------------------------------
+      extLDAPAuthServer OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of External LDAP Authentication Server.
+                  Possible Values:
+                  Warning: External LDAP Authentication Server: Server is down(indicates at least one server is not reachable and at least one server is reachable);
+                  Alert: External LDAP Authentication Server: Server is down(indicates all servers are not reachable);
+          "
+          ::= {serverCESTrapInfo 12}
+
+        extLDAPAuthServerTrap TRAP-TYPE
+        ENTERPRISE serverCESTrapInfo
+        VARIABLES {             
+                severityLevel,certificateServer, systemName,systemDate, systemTime, systemUpTime
+         }
+        DESCRIPTION "Status of External LDAP Authentication Server.
+                  Possible Values:
+                  Warning: External LDAP Authentication Server: Server is down(indicates at least one server is not reachable and at least one server is reachable);
+                  Alert: External LDAP Authentication Server: Server is down(indicates all servers are not reachable);
+          "
+          ::= 30012
+
+      -- Trap #30013 ---------------------------------
+      cmpServer OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of CMP Server.
+                  Possible Values:
+                  One/more Certificate Requests error: there is at least one request error;
+                  One/more Certificate Requests processing: there is at least one request in processing;
+                  No Certificate Requests submitted: there is no request sent;
+          "
+          ::= {serverCESTrapInfo 13}
+
+        cmpServerTrap TRAP-TYPE
+        ENTERPRISE serverCESTrapInfo
+        VARIABLES {             
+                severityLevel, cmpServer, systemName,systemDate, systemTime, systemUpTime
+         }
+        DESCRIPTION "Status of CMP Server.
+                  Possible Values:
+                  One/more Certificate Requests error: there is at least one request error;
+                  One/more Certificate Requests processing: there is at least one request in processing;
+                  No Certificate Requests submitted: there is no request sent;
+          "
+          ::= 30013
+
+      -- Trap #30014 ---------------------------------
+      dhcpServer OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of DHCP Server.
+                  Possible Values:
+                  Disabled: DHCP Server is Disabled
+                  Alert: DHCP Server is NOT configured
+                  Alert: DHCP Server is configured and operational, Using backup config
+                  Alert: No IP Address available for subnet
+                  Alert: DHCP Server is configured and server is DOWN
+                  Healthy: DHCP Server is Operational
+                  Warning: Subnet low on IP Addresses
+                  Warning: DHCP Server Initializing
+                  Warning: DHCP Server is Enabled, but status Unknown cannot be determined
+                  "
+          ::= {serverCESTrapInfo 14}
+
+        dhcpServerTrap TRAP-TYPE
+        ENTERPRISE serverCESTrapInfo
+        VARIABLES {             
+                severityLevel, dhcpServer, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of DHCP Server
+                  Possible Values:
+                  Disabled: DHCP Server is Disabled
+                  Alert: DHCP Server is NOT configured
+                  Alert: DHCP Server is configured and operational, Using backup config
+                  Alert: No IP Address available for subnet
+                  Alert: DHCP Server is configured and server is DOWN
+                  Healthy: DHCP Server is Operational
+                  Warning: Subnet low on IP Addresses
+                  Warning: DHCP Server Initializing
+                  Warning: DHCP Server is Enabled, but status Unknown cannot be determined
+                  "
+         ::= 30014
+	 
+        -- Trap #30015 ---------------------------------
+      sshServer OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION " Status of SSH Server.
+			Possible Values:
+			Disabled : -- SSH Server is Disabled
+			Healthy  : -- SSH Server is Operational
+			Warning  : -- SSH Server is Restarting
+			Warning  : -- SSH Server is Initializing
+			Warning  : -- SSH Server is Unknown
+			Alert    : -- SSH Server is Down
+          "
+          ::= {serverCESTrapInfo 15}
+          
+        sshServerTrap TRAP-TYPE
+        ENTERPRISE serverCESTrapInfo
+        VARIABLES {             
+                severityLevel, sshServer, systemName,systemDate, systemTime, systemUpTime
+         }
+        DESCRIPTION "Status of SSH Server.
+          "
+          ::= 30015
+	  
+          -- Trap #30016 ---------------------------------
+      ntpServer OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of NTP Server.
+		       Possible Values:
+		       Disabled   : -- NTP server is globally disabled.
+		       Healthy    : -- NTP server operational.
+		       Warning    : -- Frequency correction.
+		       Warning    : -- Frenquncy set.
+		       Warning    : -- Time set.
+                       Warning    : -- Spike detected.
+		       Warning    : -- Clock synchronized.
+		       Warning    : -- NTP initialized - not synchronized.
+		       Warning    : -- Clock never set.                  
+          "
+          ::= {serverCESTrapInfo 16}
+          
+        ntpServerTrap TRAP-TYPE
+        ENTERPRISE serverCESTrapInfo
+        VARIABLES {             
+                severityLevel, ntpServer, systemName,systemDate, systemTime, systemUpTime
+         }
+        DESCRIPTION "Status of NTP Server.
+                  
+          "
+          ::= 30016
+
+
+          -- Trap #30017 ---------------------------------
+      ospfServer OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of OSPF Server.
+		       Possible Values:
+		       Disabled   : -- OSPF is globally disabled
+		       Warning    : -- OSPF tunnel local addr A.B.C.D remote addr A.B.C.D is DOWN
+		       Warning    : -- OSPF interface A.B.C.D is DOWN
+		       Alert      : -- No connection to Routing Table Manager
+		       Alert      : -- No connection to Routing Policy Service
+		       Healthy    : -- Operational
+          "
+          ::= {serverCESTrapInfo 17}
+          
+        ospfServerTrap TRAP-TYPE
+        ENTERPRISE serverCESTrapInfo
+        VARIABLES {             
+                severityLevel, ospfServer, systemName,systemDate, systemTime, systemUpTime
+         }
+        DESCRIPTION "Status of OSPF Server.
+                  
+          "
+          ::= 30017
+
+
+          -- Trap #30018 ---------------------------------
+      clipServer OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of Circuitless  IP.
+                  Possible Values:
+                  Disabled : -- CLIP is Disabled
+                  Healthy  : -- CLIP is operational                  
+          "
+          ::= {serverCESTrapInfo 18}
+          
+        clipServerTrap TRAP-TYPE
+        ENTERPRISE serverCESTrapInfo
+        VARIABLES {             
+                severityLevel, clipServer, systemName,systemDate, systemTime, systemUpTime
+         }
+        DESCRIPTION "Status of Circuitless  IP.
+                  
+          "
+          ::= 30018
+
+
+
+          -- Trap #30019 ---------------------------------
+      dhcprelayServer OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of DHCP Relay Server.
+		       Possible Values:
+                       Alert   : -- DHCP Relay requires reboot to start
+                       Alert   : -- DHCP Relay task does not exist
+		       Alert   : -- DHCP Relay task is suspended
+		       Healthy : -- DHCP Relay is up
+          "
+          ::= {serverCESTrapInfo 19}
+          
+        dhcprelayServerTrap TRAP-TYPE
+        ENTERPRISE serverCESTrapInfo
+        VARIABLES {             
+                severityLevel, dhcprelayServer, systemName,systemDate, systemTime, systemUpTime
+         }
+        DESCRIPTION "Status of DHCP Relay Server.
+                  
+          "
+          ::= 30019
+
+
+          -- Trap #30020 ---------------------------------
+      gdsServer OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of Global Demand Services Services.
+		       Possible Values:
+                       Healthy   : -- Global Demand Services operational.
+		       Disabled  : -- Global Demand Services disabled.
+                  
+          "
+          ::= {serverCESTrapInfo 20}
+          
+        gdsServerTrap TRAP-TYPE
+        ENTERPRISE serverCESTrapInfo
+        VARIABLES {             
+                severityLevel, gdsServer, systemName,systemDate, systemTime, systemUpTime
+         }
+        DESCRIPTION "Status of Global Demand Services Services.                  
+          "
+          ::= 30020
+
+
+          -- Trap #30021 ---------------------------------
+      demandintfServer OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of Demand Interface.
+		       Possible Values:
+                       Healthy   : -- Demand Interface  Connected.
+                       Healthy   : -- Demand Interface  Connecting.
+                       Healthy   : -- Demand Interface  Activated.
+                       Healthy   : -- Demand Interface  Idle.
+		       Disabled  : -- Demand Interface  Disabled.
+                  
+          "
+          ::= {serverCESTrapInfo 21}
+          
+        demandintfServerTrap TRAP-TYPE
+        ENTERPRISE serverCESTrapInfo
+        VARIABLES {             
+                severityLevel, demandintfServer, systemName,systemDate, systemTime, systemUpTime
+         }
+        DESCRIPTION "Status of Demand Interface.
+                  
+          "
+          ::= 30021
+
+
+          -- Trap #30022 ---------------------------------
+      crlServer OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of CRL Server.
+		       Possible Values:
+                       Healthy   : -- All Certificates are Valid
+		       Alert     : -- One/more certificate is expired
+		       Warning   : -- One/more certificate is going to expire
+		       Warning   : -- Duplicate CA certs detected on the switch.
+		       Disabled  : -- No certificate defined
+                  
+          "
+          ::= {serverCESTrapInfo 22}
+          
+        crlServerTrap TRAP-TYPE
+        ENTERPRISE serverCESTrapInfo
+        VARIABLES {             
+                severityLevel, crlServer, systemName,systemDate, systemTime, systemUpTime
+         }
+        DESCRIPTION "Status of CRL Server.
+                  
+          "
+          ::= 30022
+
+
+          -- Trap #30023 ---------------------------------
+      ocspServer OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of OCSP Server.
+		       Possible Values:
+                       Disabled   : -- No OCSP server configured
+		       Alert      : -- All OCSP servers are down. Cert:%s
+		       Warning    : -- At least one server is down. Cert:%s
+		       Warning    : -- OCSP is enabled but not configured. Cert:%s
+		       Healthy    : -- All servers are up
+                  
+          "
+          ::= {serverCESTrapInfo 23}
+          
+        ocspServerTrap TRAP-TYPE
+        ENTERPRISE serverCESTrapInfo
+        VARIABLES {             
+                severityLevel, ocspServer, systemName,systemDate, systemTime, systemUpTime
+         }
+        DESCRIPTION "Status of OCSP Server.
+                  
+          "
+          ::= 30023
+
+-- Software related Traps
+
+      serviceCESTrapInfo OBJECT IDENTIFIER
+          ::= {contivity 3}
+
+      -- Trap #5001 ---------------------------------
+      netBuffers OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Network buffer usage.
+                  Possible Values:
+                  Warning: Buffer Usage : Utilization exceeds 75%
+                  Alert: Buffer Usage : Utilization exceeds 87.5%
+                  "
+          ::= {serviceCESTrapInfo 1}
+
+        netBuffersTrap TRAP-TYPE
+        ENTERPRISE serviceCESTrapInfo
+        VARIABLES {             
+                severityLevel,netBuffers, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Network buffer usage"
+         ::= 5001
+        
+      -- Trap #5002 ---------------------------------
+      fireWall OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of internal firewall.
+                  Possible Values:
+                  Disabled: Firewall: Firewall disabled;
+                  Disabled: Firewall: Firewall stopped;
+                  Warning: Firewall: Current Firewall is %s. Reboot is required to start %s;
+                  Warning: Firewall: Firewall state is not known!;
+                  Warning: Firewall: Daemon loading policy;
+                  Alert: Firewall: Firewall requires reboot to start;
+                  Alert: Firewall: Daemon task does not exist;
+                  Alert: Firewall: Daemon task is suspended;
+
+                  The values have the following meaning:
+                  -- The first two possible values are common to all firewalls.
+                  Disabled: Firewall: Firewall disabled;
+                  Warning: Firewall: Current Firewall is %s. Reboot is required to start %s;
+                  -- The firewall type (Contivity / CheckPoint) has been changed, but for it 
+                  -- to take effect, the VPN Router must be restarted.
+
+          -- Contivity Firewall specific values.
+                  Warning: Firewall: Firewall state is not known!; -- The Contivity firewall's
+                  -- state cannot be determined.
+
+                  -- CheckPoint Firewall specific values.
+                  Disabled: Firewall: Firewall stopped;
+                  Warning: Firewall: Daemon loading policy;
+                  Alert: Firewall: Firewall requires reboot to start;
+                  Alert: Firewall: Daemon task does not exist;
+                  Alert: Firewall: Daemon task is suspended;
+                  "
+          ::= {serviceCESTrapInfo 2}
+
+        fireWallTrap TRAP-TYPE
+        ENTERPRISE serviceCESTrapInfo
+        VARIABLES {             
+                severityLevel,fireWall, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of internal firewall"
+         ::= 5002
+        
+      -- Trap #5003 ---------------------------------
+      fipsStatus OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of FIPS.
+    Possible Values:
+        Warning: FIPS: Random generator test failed; 
+        Warning: FIPS: DESMAC check on executables Failed;
+        Warning: FIPS: DES KAT Test Failed; 
+        Warning: FIPS: SHA1 Self Test Failed; 
+        Alert: FIPS: status not known;"
+          ::= {serviceCESTrapInfo 3}
+
+        fipsStatusTrap TRAP-TYPE
+        ENTERPRISE serviceCESTrapInfo
+        VARIABLES {             
+                severityLevel,fipsStatus, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of FIPS"
+         ::= 5003
+        
+      -- Trap #5004 ---------------------------------
+      licensingStatus OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of temporary SW Licenses.
+    Possible Values:
+        Warning: Licensing: Temporary key will expire within 5 days; 
+        Alert: Licensing: Temporary key has expired;"
+          ::= {serviceCESTrapInfo 4}
+
+        licensingStatusTrap TRAP-TYPE
+        ENTERPRISE serviceCESTrapInfo
+        VARIABLES {             
+                severityLevel,licensingStatus, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status temporary SW Licenses"
+         ::= 5004
+
+       -- Trap #5005 ---------------------------------
+      natStatus OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Status of Network Address Translator.
+                  Possible Values:
+                  Disabled: NAT: NAT disabled;
+                  Warning: NAT: Reboot is required to start Interface NAT;
+                  Warning: NAT: NAT state is not known!;
+                  Alert: NAT: All Addresses in the Address Translation pool are used;
+                  Alert: NAT: LDAP policy parse failed - Using system default policy;
+                  The values have the following meaning:
+                  -- The first two possible values are common to all firewalls.
+                  Disabled: NAT: NAT disabled;  Existing NAT sessions are not deleted, but
+                  -- no new address bindings are created for Interface NAT.   Branch Office NAT
+		  -- is not affected.
+                  Warning: NAT: Reboot is required to start Interface NAT;
+                  -- To take effect, the VPN Router must be restarted.
+                  "
+          ::= {serviceCESTrapInfo 5}
+
+        natStatusTrap TRAP-TYPE
+        ENTERPRISE serviceCESTrapInfo
+        VARIABLES {             
+                severityLevel,natStatus, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Status of Network Address Translator"
+         ::= 5005
+        
+       -- Trap #5006 ---------------------------------
+       antiSpoofingStatus OBJECT-TYPE
+           SYNTAX DisplayString
+           ACCESS read-only
+           STATUS mandatory
+           DESCRIPTION "Status of Anti Spoofing Feature.
+                   Possible Values:
+                   Disabled: Anti-Spoofing is Disabled;
+                   Warning: Anti-Spoofing : Packets Dropped;
+                   Alert: Anti-Spoofing state not known!;
+                   The values have the following meaning:
+                   -- The first means the feature is disabled
+                   -- The second means packets were dropped due to a detected spoofed address
+                   -- The third should never happen, but means the status has been set to a bogus value.
+                   "
+           ::= {serviceCESTrapInfo 6}
+
+       antiSpoofingStatusTrap TRAP-TYPE
+       ENTERPRISE serviceCESTrapInfo
+       VARIABLES { 
+               severityLevel, antiSpoofingStatus, systemName,systemDate, systemTime, systemUpTime
+       }
+       DESCRIPTION "Status of Anti Spoofing Feature"
+       ::= 5006
+ 
+       -- Trap #5007 ---------------------------------
+       sslVpnStatus OBJECT-TYPE
+           SYNTAX DisplayString
+           ACCESS read-only
+           STATUS mandatory
+           DESCRIPTION "Status of SSL-VPN Accelerator.
+                   Possible Values:
+		   Disabled: Disabled		-- The unit is administrativley disabled.
+		   Disabled: HW not installed	-- There is no SSL-VPN Accelerator installed.
+		   Warning: Initialization in progress.   -- The unit is being Initialized.
+		   Warning: Configuration Errors - see eventlog for details.
+		   Healthy: Operational  	-- The unit is Operational.
+		   Alert: Unreachable: Error Comminicating with SSL-VPN
+                   "
+           ::= {serviceCESTrapInfo 7}
+
+       sslVpnStatusTrap TRAP-TYPE
+       ENTERPRISE serviceCESTrapInfo
+       VARIABLES { 
+               severityLevel, sslVpnStatus, systemName,systemDate, systemTime, systemUpTime
+       }
+       DESCRIPTION "Status of SSL-VPN Accelerator"
+       ::= 5007
+       
+
+ 
+       -- Trap #5008 ---------------------------------
+       usrIpAddrStatus OBJECT-TYPE
+           SYNTAX DisplayString
+           ACCESS read-only
+           STATUS mandatory
+           DESCRIPTION "Status of User Ip Address Pool server.
+		        Possible Values:
+		        Alert   : -- Server is down.
+			Alert   : -- Object not found.
+			Alert   : -- Server Not Configured.
+			Alert   : -- No IP address available.
+			Warning : -- Reserved address count is low.
+			Healthy : -- User Ip Address Pool operational.
+			Alert   : -- Associated system task failed.
+			Warning : -- No DHCP Pool selected for any group/subgroup.
+                        Warning : -- DHCP server(s) unavailable.
+			Healthy : -- Local pool: %s;
+			Healthy : -- DHCP pool: %s;
+			Healthy : -- All User IP Pools are under quota exhausted.
+			Alert   : -- At least one User IP Pool exceeds %d percent
+                   "
+           ::= {serviceCESTrapInfo 8}
+
+       usrIpAddrStatusTrap TRAP-TYPE
+       ENTERPRISE serviceCESTrapInfo
+       VARIABLES { 
+               severityLevel, usrIpAddrStatus, systemName,systemDate, systemTime, systemUpTime
+       }
+       DESCRIPTION "Status of User Ip Address Pool server"
+       ::= 5008
+
+ 
+       -- Trap #5009 ---------------------------------
+       vrrpStatus OBJECT-TYPE
+           SYNTAX DisplayString
+           ACCESS read-only
+           STATUS mandatory
+           DESCRIPTION "Status of VRRP Server.
+		       Possible Values:
+		       Disabled   : -- VRRP is globally disabled
+		       Alert      : -- Configuration errors -- see syslog for details
+		       Warning    : -- LDAP has changed -- see syslog for details
+		       Healthy    : -- VRRP is operational
+                   "
+           ::= {serviceCESTrapInfo 9}
+
+       vrrpStatusTrap TRAP-TYPE
+       ENTERPRISE serviceCESTrapInfo
+       VARIABLES { 
+               severityLevel, vrrpStatus, systemName,systemDate, systemTime, systemUpTime
+       }
+       DESCRIPTION "Status of VRRP Server"
+       ::= 5009
+
+ 
+       -- Trap #50010 ---------------------------------
+       mcastRelayStatus OBJECT-TYPE
+           SYNTAX DisplayString
+           ACCESS read-only
+           STATUS mandatory
+           DESCRIPTION "Status of Multicast Relay.
+		        Possible Values:
+		        Warning   : -- Multicast Relay Not Initialized
+			Disabled  : -- Multicast Relay is Globally Disabled
+			Alert     : -- RPS Reg Blocked
+			Healthy   : -- Multicast Relay is operational
+                   "
+           ::= {serviceCESTrapInfo 10}
+
+       mcastRelayStatusTrap TRAP-TYPE
+       ENTERPRISE serviceCESTrapInfo
+       VARIABLES { 
+               severityLevel, mcastRelayStatus, systemName,systemDate, systemTime, systemUpTime
+       }
+       DESCRIPTION "Status of Multicast Relay"
+       ::= 50010
+ 
+       -- Trap #50011 ---------------------------------
+       dlswStatus OBJECT-TYPE
+           SYNTAX DisplayString
+           ACCESS read-only
+           STATUS mandatory
+           DESCRIPTION "Status of DLSW Server.
+		        Possible Values:
+		        Healthy   : -- DLSw local peer enabled
+			Disabled  : -- DLSw local peer disabled
+			Disabled  : -- DLSw feature disabled
+			Disabled  : -- No DLSw local peer defined
+	   
+                   "
+           ::= {serviceCESTrapInfo 11}
+
+       dlswStatusTrap TRAP-TYPE
+       ENTERPRISE serviceCESTrapInfo
+       VARIABLES { 
+               severityLevel, dlswStatus, systemName,systemDate, systemTime, systemUpTime
+       }
+       DESCRIPTION "Status of DLSW Server"
+       ::= 50011
+ 
+       -- Trap #50012 ---------------------------------
+       ipsecFailoverStatus OBJECT-TYPE
+           SYNTAX DisplayString
+           ACCESS read-only
+           STATUS mandatory
+           DESCRIPTION "Status of IPsec Failover service.
+		        Possible Values:
+		        Disabled   : -- Failover service disabled
+		        Healthy    : -- Failover service operational
+			Alert      : -- Failover service not initialized
+                   "
+           ::= {serviceCESTrapInfo 12}
+
+       ipsecFailoverStatusTrap TRAP-TYPE
+       ENTERPRISE serviceCESTrapInfo
+       VARIABLES { 
+               severityLevel, ipsecFailoverStatus, systemName,systemDate, systemTime, systemUpTime
+       }
+       DESCRIPTION "Status of IPsec Failover service"
+       ::= 50012
+ 
+       -- Trap #50013 ---------------------------------
+       tunnelGuardStatus OBJECT-TYPE
+           SYNTAX DisplayString
+           ACCESS read-only
+           STATUS mandatory
+           DESCRIPTION "Status of TunnelGuard.
+		        Possible Values:
+		        Disabled   : -- Tunnelguard Disabled
+			Healthy    : -- Tunnelguard Operational
+			Alert      : -- Fatal error encountered during tunnelguard processing
+	                Warning    : -- Tunnelguard state unknown!
+                   "
+           ::= {serviceCESTrapInfo 13}
+
+       tunnelGuardStatusTrap TRAP-TYPE
+       ENTERPRISE serviceCESTrapInfo
+       VARIABLES { 
+               severityLevel, tunnelGuardStatus, systemName,systemDate, systemTime, systemUpTime
+       }
+       DESCRIPTION "Status of TunnelGuard"
+       ::= 50013
+ 
+       -- Trap #50014 ---------------------------------
+       ripStatus OBJECT-TYPE
+           SYNTAX DisplayString
+           ACCESS read-only
+           STATUS mandatory
+           DESCRIPTION "Status of RIP Server.
+			Possible Values:
+			Warning   : -- Rip Not Initalized
+			Disabled  : -- Rip is Globally Disabled
+			Alert     : -- RTM Open Blocked
+			Alert     : -- RPS Reg Blocked
+	                Healthy   : -- RIP is operational
+                   "
+           ::= {serviceCESTrapInfo 14}
+
+       ripStatusTrap TRAP-TYPE
+       ENTERPRISE serviceCESTrapInfo
+       VARIABLES { 
+               severityLevel, ripStatus, systemName,systemDate, systemTime, systemUpTime
+       }
+       DESCRIPTION "Status of RIP Server"
+       ::= 50014
+ 
+       -- Trap #50015 ---------------------------------
+       routePolicyStatus OBJECT-TYPE
+           SYNTAX DisplayString
+           ACCESS read-only
+           STATUS mandatory
+           DESCRIPTION "Status of Route Policy.
+		        Possible Values:
+			Disable : -- Routing Policy Server disabled.
+		        Alert   : -- Routing Policy Server requires reboot to start.
+			Alert   : -- Routing Policy Server task does not exist.
+			Alert   : -- Routing Policy Server task is suspended.
+			Healthy : -- Routing Policy Server is up.
+                   "
+           ::= {serviceCESTrapInfo 15}
+
+       routePolicyStatusTrap TRAP-TYPE
+       ENTERPRISE serviceCESTrapInfo
+       VARIABLES { 
+               severityLevel, routePolicyStatus, systemName,systemDate, systemTime, systemUpTime
+       }
+       DESCRIPTION "Status of Route Policy"
+       ::= 50015
+ 
+       -- Trap #50016 ---------------------------------
+       cRoutesMStatus OBJECT-TYPE
+           SYNTAX DisplayString
+           ACCESS read-only
+           STATUS mandatory
+           DESCRIPTION "Status of Client Routes Marshaler.
+			Possible Values:
+			Alert   : -- ClientRoutesMarshaler does not exist!!!
+			Warning : -- ClientRoutesMarshaler's task cannot be verified!
+			Disabled: -- ClientRoutesMarshaler is disabled.
+			Healthy : -- ClientRoutesMarshaler is UP.
+                   "
+           ::= {serviceCESTrapInfo 16}
+
+       cRoutesMStatusTrap TRAP-TYPE
+       ENTERPRISE serviceCESTrapInfo
+       VARIABLES { 
+               severityLevel, cRoutesMStatus, systemName,systemDate, systemTime, systemUpTime
+       }
+       DESCRIPTION "Status of Client Routes Marshaler"
+       ::= 50016
+ 
+       -- Trap #50017 ---------------------------------
+       igmpStatus OBJECT-TYPE
+           SYNTAX DisplayString
+           ACCESS read-only
+           STATUS mandatory
+           DESCRIPTION "Status of IGMP Server.
+			Possible Values:
+			Disabled   : -- IGMP is not initialized
+			Warning    : -- IGMP(CMS) is not initialized
+			Warning    : -- No Upstream interface is up
+			Alert      : -- No downstream interface is up
+			Healthy    : -- IGMP is operational
+                   "
+           ::= {serviceCESTrapInfo 17}
+
+       igmpStatusTrap TRAP-TYPE
+       ENTERPRISE serviceCESTrapInfo
+       VARIABLES { 
+               severityLevel, igmpStatus, systemName,systemDate, systemTime, systemUpTime
+       }
+       DESCRIPTION "Status of IGMP Server"
+       ::= 50017
+       
+
+-- Login related Traps
+
+      loginCESTrapInfo OBJECT IDENTIFIER
+          ::= {contivity 4}
+
+      -- Trap #101 ---------------------------------
+      failedLogin OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Failed Login Attempt.
+                  Possible Values:
+                  Failed Login Attempt: Username=IPSEC Encrypted: Date/Time=(xx) ;
+                  Failed Login Attempt: Username=(userid): Date/Time=(xx) ;
+                  Failed Login Attempt.  Invalid Account: Username=(userid): Date/Time=(xx) ;
+                  Failed Remote Network Login: Username=(userid): Date/Time=(xx) ;
+                  Failed Remote Application Login: Username=(userid): Date/Time=(xx) ;
+
+                  The values have the following meaning:
+                  --(userid) is a place holder for the actual userid of the person or branch office
+                  --trying to login.
+                  --(xx) is a place holder for the date and time string.
+                  "
+          ::= {loginCESTrapInfo 1}
+
+        failedLoginTrap TRAP-TYPE
+        ENTERPRISE loginCESTrapInfo
+        VARIABLES {             
+                severityLevel,failedLogin, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Failed Login Attempt"
+         ::= 101
+
+-- Intrusion related Traps
+
+      intrusionCESTrapInfo OBJECT IDENTIFIER
+          ::= {contivity 5}
+
+      -- Trap #201 ---------------------------------
+      securityIntrusion OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Security Intrusion.
+                  Possible Values:
+                  Intruder: : Source: %s, Destination: %s;
+                  "
+          ::= {intrusionCESTrapInfo 1}
+
+        securityIntrusionTrap TRAP-TYPE
+        ENTERPRISE intrusionCESTrapInfo
+        VARIABLES {             
+                severityLevel,securityIntrusion, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Security Intrusion"
+         ::= 201
+
+-- System related Traps
+
+    -- Trap #401 ---------------------------------
+    powerUpTrap OBJECT-TYPE
+              SYNTAX DisplayString
+          ACCESS  read-only
+          STATUS  deprecated
+          DESCRIPTION "Power Up.
+                  Possible Values:
+                  Cold Start
+                  "
+          ::= {contivity 6}
+
+        powerUpTrapEntry TRAP-TYPE
+        ENTERPRISE contivity
+        VARIABLES {             
+                severityLevel,powerUpTrap, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Power Up"
+         ::= 401
+
+    -- Trap #601 ---------------------------------
+    periodicHeartbeat OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Periodic Heartbeat.
+                  Possible Values:
+                  Has been executed n times
+                  "
+          ::= {contivity 12}
+
+        periodicHeartbeatTrap TRAP-TYPE
+        ENTERPRISE contivity
+        VARIABLES {             
+                severityLevel,periodicHeartbeat, systemName,systemDate, systemTime, systemUpTime
+         }
+         DESCRIPTION "Periodic Heartbeat"
+         ::= 601
+
+-- SNMP Agent related Traps
+
+    snmpAgentTrapInfo-ces OBJECT IDENTIFIER
+        ::= {contivity 14}
+
+-- coldStart ---------------------------------
+        coldStart TRAP-TYPE
+                ENTERPRISE  snmp
+--              VARIABLES {     }
+                DESCRIPTION
+                        "A coldStart trap signifies that the SNMPv2 entity, acting
+                        in an agent role, is reinitializing itself and that its
+                        configuration may have been altered."
+                ::= 0 
+
+    snmpAgentInterfaceInfo-ces OBJECT IDENTIFIER
+        ::= {snmpAgentTrapInfo-ces 2}
+
+                ifReasonForStatus-ces OBJECT-TYPE
+                        SYNTAX IfReasonForStatus-ces
+                        ACCESS  read-only
+                        STATUS  mandatory
+                        DESCRIPTION
+                                "The reason for the status change. These include:
+                                 unknown(1)                              -- the reason could not be determined.
+                                 timed-out(2)                    -- connection(tunnel) timed out.
+                                "
+                        ::= {snmpAgentInterfaceInfo-ces 1}
+
+                ifPhysLocation-ces OBJECT-TYPE
+                        SYNTAX PortLocation-ces
+                        ACCESS  read-only
+                        STATUS  mandatory
+                        DESCRIPTION
+                                "The physical location of the port. This has the values of
+                                motherBoardOrSlot0, slot1, slot2, slot3, slot4, slot5."
+                        ::= {snmpAgentInterfaceInfo-ces 2}
+
+                ifPhysRelPos-ces OBJECT-TYPE
+                        SYNTAX INTEGER
+                        ACCESS  read-only
+                        STATUS  mandatory
+                        DESCRIPTION "The relative position of the physical port at the
+                                                location defined by interfacePhysLocation."
+                        ::= {snmpAgentInterfaceInfo-ces 3}
+
+                ifIpAddr-ces OBJECT-TYPE
+                        SYNTAX  IpAddress
+                        ACCESS  read-only
+                        STATUS  mandatory
+                        DESCRIPTION "For physical ports this is the associated IP address.
+                                                For a tunnel connection it is the local IP address."
+                        ::= { snmpAgentInterfaceInfo-ces 4}
+
+                ifName-ces OBJECT-TYPE
+                        SYNTAX  DisplayString
+                        ACCESS  read-only
+                        STATUS  mandatory
+                        DESCRIPTION "The name of the interface, same as ifName."
+                        ::= {snmpAgentInterfaceInfo-ces 5}
+
+                ifTunnelRemoteIpAddr-ces OBJECT-TYPE
+                        SYNTAX  IpAddress
+                        ACCESS  read-only
+                        STATUS  mandatory
+                        DESCRIPTION "The remote IP address of a tunnel connection."
+                        ::= { snmpAgentInterfaceInfo-ces 6}
+
+-- linkDown ---------------------------------
+        linkDown TRAP-TYPE
+                ENTERPRISE  snmp
+                VARIABLES   { ifIndex, ifAdminStatus, ifOperStatus, ifDescr, ifType, 
+                                        ifReasonForStatus-ces, ifPhysLocation-ces, ifPhysRelPos-ces,
+                                        ifIpAddr-ces, ifName-ces, ifTunnelRemoteIpAddr-ces,
+                                        sysObjectID, sysName }
+                DESCRIPTION
+                        "A linkDown trap signifies that the sending
+                        protocol entity recognizes a failure in one of
+                        the communication links represented in the
+                        agent's configuration.
+                        Varbind list:
+                         ifIndex                                -- ifIndex of the interface.
+                         ifAdminStatus                  -- ifAdminStatus of the interface.
+                         ifOperStatus                   -- ifOperStatus of the interface.
+                         ifDescr                                -- ifDescr of the interface.
+                         ifType                                 -- ifType, this provides descrimination of interfaces that are tunnels.
+                         ifReasonForStatus-ces  -- reason for the change in status.
+                         ifPhysLocation-ces         -- this is the slot number.
+                         ifPhysRelPos-ces               -- the port number on the board defined in interfacePhysLocation.
+                         ifIpAddr-ces                   -- IP address assigned to the phys port or the local IP address of a tunnel.
+                         ifName-ces                             -- Name of the tunnel or physical interface.
+                         ifTunnelRemoteIpAddr-ces       -- for non-tunnel interfaces it is zero.
+                         sysObjectID                    -- sysObjectID of the unit.
+                         sysName                                -- sysName of the unit.
+                        "
+                ::= 2
+
+-- linkUp ---------------------------------
+        linkUp TRAP-TYPE
+                ENTERPRISE  snmp
+                VARIABLES   { ifIndex, ifAdminStatus, ifOperStatus, ifDescr, ifType, 
+                                        ifReasonForStatus-ces, ifPhysLocation-ces, ifPhysRelPos-ces, 
+                                        ifIpAddr-ces, ifName-ces, ifTunnelRemoteIpAddr-ces,
+                                        sysObjectID, sysName }
+                DESCRIPTION
+                        "A linkUp trap signifies that the sending
+                        protocol entity recognizes that one of the
+                        communication links represented in the agent's
+                        configuration has come up. 
+                        Varbind list:
+                         ifIndex                                -- ifIndex of the interface.
+                         ifAdminStatus                  -- ifAdminStatus of the interface.
+                         ifOperStatus                   -- ifOperStatus of the interface.
+                         ifDescr                                -- ifDescr of the interface.
+                         ifType                                 -- ifType, this provides descrimination of interfaces that are tunnels.
+                         ifReasonForStatus-ces  -- reason for the change in status
+                         ifPhysLocation-ces     -- this is the slot number.
+                         ifPhysRelPos-ces       -- the port number on the board defined in interfacePhysLocation.
+                         ifIpAddr-ces                   -- IP address assigned to the phys port or the local IP address of a tunnel.
+                         ifName-ces                             -- Name of the tunnel or physical interface.
+                         ifTunnelRemoteIpAddr-ces       -- for non-tunnel interfaces it is zero.
+                         sysObjectID                    -- sysObjectID of the unit.
+                         sysName                                -- sysName of the unit.
+                        "
+                ::= 3
+
+    snmpAgentAuthTrapInfo-ces OBJECT IDENTIFIER
+        ::= {snmpAgentTrapInfo-ces 1}
+
+      snmpAuthenOperation-ces OBJECT-TYPE
+          SYNTAX  INTEGER {
+                                getRequest(160), 
+                                getNextRequest(161), 
+                                setRequest(163),  
+                                getBulkRequest(165)
+                  }
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "SNMP operation attempted."
+          ::= {snmpAgentAuthTrapInfo-ces 1}
+
+      snmpAuthenIpAddress-ces OBJECT-TYPE
+          SYNTAX  IpAddress
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "IP address of host trying to access the CES."
+          ::= {snmpAgentAuthTrapInfo-ces 2}
+
+      snmpAuthenCommString-ces OBJECT-TYPE
+          SYNTAX  DisplayString
+          ACCESS  read-only
+          STATUS  mandatory
+          DESCRIPTION "Community string used to access the CES."
+          ::= {snmpAgentAuthTrapInfo-ces 3}
+
+        authenticationFailure TRAP-TYPE
+                ENTERPRISE snmp
+                VARIABLES {
+                        snmpAuthenOperation-ces,
+                        snmpAuthenIpAddress-ces,
+                        snmpAuthenCommString-ces,
+                        sysObjectID,
+                        sysName
+        }
+                DESCRIPTION 
+                        "An authenticationFailure trap signifies that the SNMPv2
+                        entity, acting in an agent role, has received a protocol
+                        message that is not properly authenticated. 
+                        The snmpEnableAuthenTraps object indicates
+                        whether this trap will be generated.
+
+                        snmpAuthenOperation-ces identifies the operation( ie. GetRequest, 
+                                GetNextRequest,... ) was being attempted.
+                        snmpAuthenIpAddress-ces identifies the source IP address of 
+                                the operation.
+                        snmpAuthenCommString-ces identifies the community string that
+                                was used in the operation."
+                ::= 5
+
+    snmpAgentFirewallInfo-ces OBJECT IDENTIFIER
+        ::= {snmpAgentTrapInfo-ces 3}
+
+                firewallPolicyType-ces OBJECT-TYPE
+                          SYNTAX  FirewallPolicyType-ces
+                          ACCESS  read-only
+                          STATUS  mandatory
+                          DESCRIPTION "Policy type."
+                          ::= {snmpAgentFirewallInfo-ces 1}
+
+                firewallRuleType-ces OBJECT-TYPE
+                          SYNTAX  FirewallRuleType-ces
+                          ACCESS  read-only
+                          STATUS  mandatory
+                          DESCRIPTION "Type of rule that triggered this event."
+                          ::= {snmpAgentFirewallInfo-ces 2}
+
+                firewallRuleNumber-ces OBJECT-TYPE
+                          SYNTAX  INTEGER
+                          ACCESS  read-only
+                          STATUS  mandatory
+                          DESCRIPTION "Number of the rule that triggered this event."
+                          ::= {snmpAgentFirewallInfo-ces 3}
+
+                firewallSrcAddr-ces OBJECT-TYPE
+                          SYNTAX  IpAddress
+                          ACCESS  read-only
+                          STATUS  mandatory
+                          DESCRIPTION "Source IP address of the packet."
+                          ::= {snmpAgentFirewallInfo-ces 6}
+
+                firewallSrcPort-ces OBJECT-TYPE
+                          SYNTAX  INTEGER
+                          ACCESS  read-only
+                          STATUS  mandatory
+                          DESCRIPTION "Source port address of the packet."
+                          ::= {snmpAgentFirewallInfo-ces 7}
+
+                firewallDestAddr-ces OBJECT-TYPE
+                          SYNTAX  IpAddress
+                          ACCESS  read-only
+                          STATUS  mandatory
+                          DESCRIPTION "Destination IP address of the packet."
+                          ::= {snmpAgentFirewallInfo-ces 8}
+
+                firewallDestPort-ces OBJECT-TYPE
+                          SYNTAX  INTEGER
+                          ACCESS  read-only
+                          STATUS  mandatory
+                          DESCRIPTION "Destination port of the packet."
+                          ::= {snmpAgentFirewallInfo-ces 9}
+
+                firewallProtocolID-ces OBJECT-TYPE
+                          SYNTAX  INTEGER
+                          ACCESS  read-only
+                          STATUS  mandatory
+                          DESCRIPTION "The value of the protocol field in the IP header."
+                          ::= {snmpAgentFirewallInfo-ces 10}
+
+                firewallRuleAction-ces OBJECT-TYPE
+                          SYNTAX  FirewallRuleAction-ces
+                          ACCESS  read-only
+                          STATUS  mandatory
+                          DESCRIPTION "Action defined for the triggered rule."
+                          ::= {snmpAgentFirewallInfo-ces 11}
+
+                firewallRuleTriggeredTrap TRAP-TYPE
+                        ENTERPRISE snmpAgentFirewallInfo-ces
+                        VARIABLES {
+                                firewallPolicyType-ces, -- Policy type.
+                                firewallRuleType-ces,   -- Type of rule that triggered this event.
+                                firewallRuleNumber-ces, -- Number of the rule that triggered this event.
+                                ifIndex,                                -- ifIndex is the index into the ifTable for port that received the packet.
+                                ifName-ces,                             -- The name of the interface, same as ifName.
+                                firewallSrcAddr-ces,    -- Source IP address of the packet.
+                                firewallSrcPort-ces,    -- Source port address of the packet.
+                                firewallDestAddr-ces,   -- Destination IP address of the packet.
+                                firewallDestPort-ces,   -- Destination port of the packet.
+                                firewallProtocolID-ces, -- The value of the protocol field in the IP header.
+                                firewallRuleAction-ces, -- Action defined for the triggered rule.
+                                sysObjectID,
+                                sysName
+                        }
+                        DESCRIPTION 
+                                "An event sent at the user's request to signal that a rule has
+                                been matched.
+
+                                firewallPolicyType-ces  -- Policy type.
+                                firewallRuleType-ces    -- Type of rule that triggered this event.
+                                firewallRuleNumber-ces  -- Number of the rule that triggered this event.
+                                ifIndex                                 -- ifIndex is the index into the ifTable for port that received the packet.
+                                ifName-ces                              -- The name of the interface, same as ifName.
+                                firewallSrcAddr-ces             -- Source IP address of the packet.
+                                firewallSrcPort-ces             -- Source port address of the packet.
+                                firewallDestAddr-ces    -- Destination IP address of the packet.
+                                firewallDestPort-ces    -- Destination port of the packet.
+                                firewallProtocolID-ces  -- The value of the protocol field in the IP header.
+                                firewallRuleAction-ces  -- Action defined for the triggered rule.
+                                "
+                        ::= 1
+
+        END

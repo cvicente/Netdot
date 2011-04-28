@@ -1,116 +1,114 @@
 -- *****************************************************************
--- CISCO-USER-CONNECTION-TAP-MIB.my:  Cisco intercept extension MIB 
---                                    for user connections
+-- CISCO-USER-CONNECTION-TAP-MIB.my:  Cisco intercept extension MIB
+-- for user connections
 -- November 2003,Srinivas Dhulipala
---
--- Copyright (c) 2003-2006 by Cisco Systems, Inc.
+--   
+-- Copyright (c) 2003-2005, 2007 by Cisco Systems Inc.
 -- All rights reserved.
---
--- *****************************************************************
---
+--   
+-- ****************************************************************
 
 CISCO-USER-CONNECTION-TAP-MIB DEFINITIONS ::= BEGIN
 
 IMPORTS
-        MODULE-IDENTITY,
-        OBJECT-TYPE,
-        Unsigned32
-                FROM SNMPv2-SMI
-        MODULE-COMPLIANCE,
-        OBJECT-GROUP
-                FROM SNMPv2-CONF
-        RowStatus
-                FROM SNMPv2-TC
-        cTap2MediationContentId, cTap2StreamIndex
-                FROM CISCO-TAP2-MIB
-        ciscoMgmt
-                FROM CISCO-SMI;
- 
+    MODULE-IDENTITY,
+    OBJECT-TYPE,
+    Unsigned32
+        FROM SNMPv2-SMI
+    MODULE-COMPLIANCE,
+    OBJECT-GROUP
+        FROM SNMPv2-CONF
+    RowStatus
+        FROM SNMPv2-TC
+    cTap2MediationContentId,
+    cTap2StreamIndex
+        FROM CISCO-TAP2-MIB
+    ciscoMgmt
+        FROM CISCO-SMI;
+
 
 ciscoUserConnectionTapMIB MODULE-IDENTITY
-      LAST-UPDATED  "200403110000Z"
-      ORGANIZATION  "Cisco Systems, Inc."
-      CONTACT-INFO
-              "      Cisco Systems
-                     Customer Service
+    LAST-UPDATED    "200708090000Z"
+    ORGANIZATION    "Cisco Systems, Inc."
+    CONTACT-INFO
+            "Cisco Systems
+            Customer Service
 
-              Postal:170 W. Tasman Drive
-                     San Jose, CA  95134
-                     USA
+            Postal:170 W. Tasman Drive
+            San Jose, CA  95134
+            USA
 
-                 Tel:+1 800 553-NETS
+            Tel:+1 800 553-NETS
 
-              E-mail:cs-li@cisco.com"
-      DESCRIPTION
-              "This module manages Cisco's intercept feature for 
-              user connections.
+            E-mail:cs-li@cisco.com"
+    DESCRIPTION
+        "This module manages Cisco's intercept feature for
+        user connections.
 
-              This MIB is used along with CISCO-TAP2-MIB to
-              intercept user traffic. CISCO-TAP2-MIB along with
-              specific filter MIBs like this MIB replace
-              CISCO-TAP-MIB.
+        This MIB is used along with CISCO-TAP2-MIB to
+        intercept user traffic. CISCO-TAP2-MIB along with
+        specific filter MIBs like this MIB replace
+        CISCO-TAP-MIB.
 
-              To create an user connection intercept, an entry 
-              cuctTapStreamEntry is created which contains the filter 
-              details. An entry cTap2StreamEntry of CISCO-TAP2-MIB 
-              is created, which is the common stream information 
-              for all kinds of intercepts and type of the specific
-              stream is set to userconnection in this entry."
+        To create an user connection intercept, an entry 
+        cuctTapStreamEntry is created which contains the filter 
+        details. An entry cTap2StreamEntry of CISCO-TAP2-MIB 
+        is created, which is the common stream information 
+        for all kinds of intercepts and type of the specific
+        stream is set to userconnection in this entry."
+    REVISION        "200708090000Z"
+    DESCRIPTION
+        "Correct the DESCRIPTION clause of cutcTapStreamTable."
+    REVISION        "200403110000Z"
+    DESCRIPTION
+        "Initial version of this MIB module."
+    ::= { ciscoMgmt 400 }
 
-      REVISION        "200403110000Z"
-      DESCRIPTION
-              "Initial version of this MIB module."
-      ::= { ciscoMgmt 400 }
+
+cUserConnectionTapMIBObjects  OBJECT IDENTIFIER
+    ::= { ciscoUserConnectionTapMIB 1 }
+
+cUserConnectionTapMIBConform  OBJECT IDENTIFIER
+    ::= { ciscoUserConnectionTapMIB 2 }
+
+cuctTapStreamEncodePacket  OBJECT IDENTIFIER
+    ::= { cUserConnectionTapMIBObjects 1 }
 
 
-cUserConnectionTapMIBObjects            OBJECT IDENTIFIER ::= 
-{ ciscoUserConnectionTapMIB 1 }
-cUserConnectionTapMIBConform            OBJECT IDENTIFIER ::= 
-{ ciscoUserConnectionTapMIB 2 }
-
-cuctTapStreamEncodePacket  OBJECT IDENTIFIER ::= 
-{ cUserConnectionTapMIBObjects 1 }
-
---
 -- The filter specifics for intercepting user connection traffic
--- 
 
-cuctTapStreamCapabilities  OBJECT-TYPE
-     SYNTAX     BITS {
-                         tapEnable(0),
-                         acctSessionId(1)
-                     }
-     MAX-ACCESS read-only
-     STATUS     current
-     DESCRIPTION
-         "This object displays the types of intercepts supported on
-         this device. This may be dependent on hardware capabilities
-         or software capabilities. The value of this object is non 
-         zero, if the device supports interception of user connection
-         traffic. A device may support both types of intercepts at
-         the same time.
-         The following fields may be supported:
-             acctSessonId: packets belonging to a user connection 
-                           identified by RADIUS attribute 
-                           account-session-ID may be intercepted.
-             tapEnable:    set if table entries with
-                           cTap2StreamInterceptEnable set to 'false'
-                           are used to pre-screen packets for intercept;
-                           otherwise these entries are ignored."
-     ::= { cuctTapStreamEncodePacket 1 }
-
---
--- The 'access list' for intercepting data belonging to a user 
+cuctTapStreamCapabilities OBJECT-TYPE
+    SYNTAX          BITS {
+                        tapEnable(0),
+                        acctSessionId(1)
+                    }
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object displays the types of intercepts supported on
+        this device. This may be dependent on hardware capabilities
+        or software capabilities. The value of this object is non 
+        zero, if the device supports interception of user connection
+        traffic. A device may support both types of intercepts at
+        the same time.
+        The following fields may be supported:
+            acctSessonId: packets belonging to a user connection 
+                          identified by RADIUS attribute 
+                          account-session-ID may be intercepted.
+            tapEnable:    set if table entries with
+                          cTap2StreamInterceptEnable set to 'false'
+                          are used to pre-screen packets for intercept;
+                          otherwise these entries are ignored." 
+    ::= { cuctTapStreamEncodePacket 1 }
+-- The 'access list' for intercepting data belonging to a user
 -- connection
---
-
 
 cuctTapStreamTable OBJECT-TYPE
-     SYNTAX       SEQUENCE OF CuctTapStreamEntry
-     MAX-ACCESS   not-accessible
-     STATUS       current
-     DESCRIPTION
-        "The Intercept Stream Connection Table lists the user 
+    SYNTAX          SEQUENCE OF CuctTapStreamEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The Intercept Stream Connection Table lists the user
         connections (sessions) to be intercepted.  The same data 
         stream may be required by multiple taps, and one might 
         assume that often the intercepted stream is a small 
@@ -125,11 +123,11 @@ cuctTapStreamTable OBJECT-TYPE
         successful authentication of the user, the user is 
         provided with the requested service and NAS creates an
         accounting record with RADIUS accounting server for 
-        the user. RADIUS accounting server assigns a unique 
-        account session id for the user session. The account
-        session ID may be used to intercept traffic belonging
-        to the user session.
-        
+        the user. The NAS assigns a unique account session id
+        for the user session in the accounting record created
+        with the RADIUS server. The account session ID may be
+        used to intercept traffic belonging to the user session.
+
 
         The value of first index is that of an entry in the
         cTap2MediationTable, which identifies the application
@@ -138,89 +136,88 @@ cuctTapStreamTable OBJECT-TYPE
         identify traffic to be intercepted. The value of the
         second index is that of the stream's counter entry 
         in the cTap2StreamTable."
-     ::= { cuctTapStreamEncodePacket 2 }
-
+    ::= { cuctTapStreamEncodePacket 2 }
 
 cuctTapStreamEntry OBJECT-TYPE
-     SYNTAX     CuctTapStreamEntry
-     MAX-ACCESS not-accessible
-     STATUS     current
-     DESCRIPTION
+    SYNTAX          CuctTapStreamEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
         "A stream entry indicates a single data stream to be
         intercepted to a Mediation Device. Many selected data
         streams may go to the same application interface, and 
         many application interfaces are supported."
-     INDEX { cTap2MediationContentId, cTap2StreamIndex }
-     ::= { cuctTapStreamTable 1 }
-
+    INDEX           {
+                        cTap2MediationContentId,
+                        cTap2StreamIndex
+                    } 
+    ::= { cuctTapStreamTable 1 }
 
 CuctTapStreamEntry ::= SEQUENCE {
-        cuctTapStreamAcctSessID         Unsigned32,
-        cuctTapStreamStatus             RowStatus
+        cuctTapStreamAcctSessID Unsigned32,
+        cuctTapStreamStatus     RowStatus
 }
 
-
 cuctTapStreamAcctSessID OBJECT-TYPE
-     SYNTAX     Unsigned32 (0..4294967295)
-     MAX-ACCESS read-create
-     STATUS     current
-     DESCRIPTION
+    SYNTAX          Unsigned32 (0..4294967295 )
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
         "This is the RADIUS attribute 44 acct-session-ID. It
         identifies a user connection.  It is used to specify
         a user connection to intercept."
-     REFERENCE  "RFC 2059, RFC 2865"
-     DEFVAL     { 0 }
-     ::= { cuctTapStreamEntry 1 }
-
+    REFERENCE       "RFC 2059, RFC 2865"
+    DEFVAL          { 0 } 
+    ::= { cuctTapStreamEntry 1 }
 
 cuctTapStreamStatus OBJECT-TYPE
-     SYNTAX     RowStatus
-     MAX-ACCESS read-create
-     STATUS     current
-     DESCRIPTION
+    SYNTAX          RowStatus
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
         "The status of this conceptual row. This object manages
         creation, modification, and deletion of rows in this
         table. When any rows must be changed, 
         cuctTapStreamStatus must be first set to 
-        'notInService'."
-     ::= { cuctTapStreamEntry 2 }
-
+        'notInService'." 
+    ::= { cuctTapStreamEntry 2 }
+ 
 
 -- conformance information
 
+cUserConnectionTapMIBCompliances  OBJECT IDENTIFIER
+    ::= { cUserConnectionTapMIBConform 1 }
 
-cUserConnectionTapMIBCompliances OBJECT IDENTIFIER ::= 
-{ cUserConnectionTapMIBConform 1 }
-cUserConnectionTapMIBGroups      OBJECT IDENTIFIER ::= 
-{ cUserConnectionTapMIBConform 2 }
+cUserConnectionTapMIBGroups  OBJECT IDENTIFIER
+    ::= { cUserConnectionTapMIBConform 2 }
 
 
 -- compliance statement
 
-
 cUserConnectionTapMIBCompliance MODULE-COMPLIANCE
-     STATUS  current
-     DESCRIPTION
-        "The compliance statement for entities which implement the 
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for entities which implement the
         Cisco Intercept MIB for user connections."
-     MODULE        -- this module
-        MANDATORY-GROUPS {
-                cuctTapStreamComplianceGroup
-        }
-     ::= { cUserConnectionTapMIBCompliances 1 }
+    MODULE          -- this module
+    MANDATORY-GROUPS { cuctTapStreamComplianceGroup }
+    ::= { cUserConnectionTapMIBCompliances 1 }
 
 -- units of conformance
 
 cuctTapStreamComplianceGroup OBJECT-GROUP
-     OBJECTS {
-        cuctTapStreamCapabilities,
-        cuctTapStreamAcctSessID,
-        cuctTapStreamStatus
-     }
-     STATUS     current
-     DESCRIPTION
-        "These objects are necessary for a description of user 
+    OBJECTS         {
+                        cuctTapStreamCapabilities,
+                        cuctTapStreamAcctSessID,
+                        cuctTapStreamStatus
+                    }
+    STATUS          current
+    DESCRIPTION
+        "These objects are necessary for a description of user
         traffic packets to select for interception."
-     ::= { cUserConnectionTapMIBGroups 1 }
+    ::= { cUserConnectionTapMIBGroups 1 }
 
 END
+
+
+

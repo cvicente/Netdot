@@ -3,7 +3,7 @@
 --
 -- January 1995, Jeffrey T. Johnson
 --
--- Copyright (c) 1995-2009 by cisco Systems, Inc.
+-- Copyright (c) 1995-2010 by cisco Systems, Inc.
 -- All rights reserved.
 -- 
 -- *****************************************************************
@@ -19,7 +19,7 @@ IMPORTS
 		FROM CISCO-SMI;
 
 ciscoProductsMIB MODULE-IDENTITY
-	LAST-UPDATED	"200505051930Z"
+	LAST-UPDATED	"201009030000Z"
 	ORGANIZATION	"Cisco Systems, Inc."
 	CONTACT-INFO
 		"       Cisco Systems
@@ -36,6 +36,9 @@ ciscoProductsMIB MODULE-IDENTITY
 		"This module defines the object identifiers that are
 		assigned to various hardware platforms, and hence are
 		returned as values for sysObjectID"
+        REVISION "201009030000Z"
+        DESCRIPTION
+		         "Added new product oids"
         REVISION "200505051930Z"
         DESCRIPTION
                  "Added following OIDs:
@@ -829,11 +832,22 @@ ciscoIPS4270Virtual	OBJECT IDENTIFIER ::= { ciscoProducts 831 } -- IPS 4270 Intr
 ciscoWSC6509ve		OBJECT IDENTIFIER ::= { ciscoProducts 832 } -- Catalyst 6500 enhanced 9-slot vertical chassis
 cisco5740		OBJECT IDENTIFIER ::= { ciscoProducts 833 } -- Integrated Encryption Router
 cisco861		OBJECT IDENTIFIER ::= { ciscoProducts 834 } -- c861 with 1 FE, 4 switch ports, 1 Console/Aux port, and an optional Wireless LAN
+cisco867		OBJECT IDENTIFIER ::= { ciscoProducts 836 } -- c867 with 1 ADSL2/2+ AnnexA,4 switch ports, 1 Console/Aux port, and an optional Wireless LAN
 cisco881		OBJECT IDENTIFIER ::= { ciscoProducts 837 } -- c881 with 1 FE, 4 switch ports, 1 USB 1.1 port, 1 Console/Aux port, and an optional Wireless LAN.
 cisco881G		OBJECT IDENTIFIER ::= { ciscoProducts 838 } -- c881G with 1 FE, 4 switch ports, 1 USB 2.0 port, 1 Console/Aux port, 1 3G PCMCIA slot, and an optional Wireless LAN
 ciscoIad881F		OBJECT IDENTIFIER ::= { ciscoProducts 839 } -- IAD881IF with 1 FE, 4 switch ports, 1 USB 1.1 port, 1 Console/Aux port, 4 FXS ports, and an optional Wireless LAN
 cisco881Srst		OBJECT IDENTIFIER ::= { ciscoProducts 840 } -- c881SRST with 1 FE, 4 switch ports, 1 USB 1.1 port, 1 Console/Aux port, 4 FXS ports, 1 PSTN FXO port, and an optional Wireless LAN
 ciscoIad881B		OBJECT IDENTIFIER ::= { ciscoProducts 841 } -- IAD881B with 1 FE, 4 switch ports, 1 USB 1.1 port, 1 Console/Aux port, 2 PBX BRI ports, and an optional Wireless LAN
+cisco886		OBJECT IDENTIFIER ::= { ciscoProducts 842 } -- c886 with 1 ADSL2/2+ AnnexB, 4 switch ports, 1 USB 1.1 port, 1 Console/Aux port, 1 ISDN, and an optional Wireless LAN
+cisco886G               OBJECT IDENTIFIER ::= { ciscoProducts 843 } -- c886G with 1 ADSL2/2+ AnnexB,4 switch ports, 1 USB 2.0 port, 1 Console/Aux port, 1 3G PCMCIA slot, and an optional Wireless LAN
+ciscoIad886F            OBJECT IDENTIFIER ::= { ciscoProducts 844 } -- IAD886F with 1 ADSL2/2+ AnnexB, 4 switch ports, 1 USB 1.1 port, 1 Console/Aux port, 1 ISDN, 4 FXS ports, and an optional Wireless LAN
+ciscoIad886B            OBJECT IDENTIFIER ::= { ciscoProducts 845 } -- IAD886B with 1 ADSL2/2+ AnnexB, 4 switch ports, 1 USB 1.1 port, 1 Console/Aux port, 1 ISDN, 2 PBX BRI ports, and an optional Wireless LAN
+cisco886Srst            OBJECT IDENTIFIER ::= { ciscoProducts 846 } -- c886SRST with 1 ADSL2/2+ Annex B, 4 switch ports, 1 USB 1.1 port, 1 Console/Aux port, 4 FXS ports, 1 PSTN BRI port, and an optional Wireless LAN
+cisco887                OBJECT IDENTIFIER ::= { ciscoProducts 847 } -- c887 with 1 ADSL2/2+ AnnexA, 4 switch ports, 1 USB 1.1 port, 1 Console/Aux port, 1 ISDN, and an optional Wireless LAN
+cisco887G               OBJECT IDENTIFIER ::= { ciscoProducts 848 } -- c887G with 1 ADSL2/2+ AnnexA,4 switch ports, 1 USB 2.0 port, 1 Console/Aux port, 1 3G PCMCIA slot, and an optional Wireless LAN
+ciscoIad887F            OBJECT IDENTIFIER ::= { ciscoProducts 849 } -- IAD887 with 1 ADSL2/2+ AnnexA, 4 switch ports, 1 USB 1.1 port, 1 Console/Aux port, 1 ISDN, 4 FXS ports, and an optional Wireless LAN
+ciscoIad887B            OBJECT IDENTIFIER ::= { ciscoProducts 850 } -- IAD887B with 1 ADSL2/2+ AnnexA, 4 switch ports, 1 USB 1.1 port, 1 Console/Aux port, 1 ISDN, 2 PBX BRI ports, and an optional Wireless LAN
+cisco887Srst            OBJECT IDENTIFIER ::= { ciscoProducts 851 } -- c887SRST with 1 ADSL2/2+ AnnexA, 4 switch ports, 1 USB 1.1 port, 1 Console/Aux port, 4 FXS ports, 1 PSTN BRI port, and an optional Wireless LAN
 cisco888		OBJECT IDENTIFIER ::= { ciscoProducts 852 } -- c888 with 1 G.SHDSL, 4 switch ports, 1 USB 1.1 port, 1 Console/Aux port, 1 ISDN, and an optional Wireless LAN.
 cisco888G               OBJECT IDENTIFIER ::= { ciscoProducts 853 } -- c888G with 1 G.SHDSL, 4 switch ports, 1 USB 2.0 port, 1 Console/Aux port, 1 3G PCMCIA slot, and an optional Wireless LAN
 ciscoIad888F		OBJECT IDENTIFIER ::= { ciscoProducts 854 } -- IAD888F with 1 G.SHDSL, 4 switch ports, 1 USB 1.1 port, 1 Console/Aux port, 1 ISDN, 4 FXS ports, and an optional Wireless LAN
@@ -969,6 +983,7 @@ catalyst29608TCS                OBJECT IDENTIFIER ::= { ciscoProducts 1006 } -- 
 ciscoMe3400eg2csA               OBJECT IDENTIFIER ::= { ciscoProducts 1007 } -- Metro Ethernet 3400E, 2 GE/SFP ports + 2 SFP ports fixed configuration Layer 2/3 Ethernet switch, AC power
 ciscoMe3400eg12csM              OBJECT IDENTIFIER ::= { ciscoProducts 1008 } -- Metro Ethernet 3400 , 12 GE/SFP ports + 4 SFP ports fixed configuration Layer 2/3 Ethernet switch, modular power
 ciscoMe3400e24tsM               OBJECT IDENTIFIER ::= { ciscoProducts 1009 } -- Metro Ethernet 3400E, 24 10/100 Fast Ethernet + 2 SFP ports fixed configuration Layer 2/3 Ethernet switch, modular power
+ciscoIPSSSC5Virtual             OBJECT IDENTIFIER ::= { ciscoProducts 1010 } -- Cisco Intrusion Prevention System Security Service Card SSC-5 Virtual Sensor
 ciscoSR520FE                    OBJECT IDENTIFIER ::= { ciscoProducts 1011 } -- SR520 with 1 10/100T ethernet WAN interface, 4-port 10/100 Base-T LAN Ethernet switch, hardware encryption and an optional Wireless LAN card
 ciscoSR520ADSL                  OBJECT IDENTIFIER ::= { ciscoProducts 1012 } -- SR520 with 1 ADSL over POTS WAN interface, 4-port 10/100 BASE-T LAN Ethernet switch, hardware encryption and an optional Wireless LAN card
 ciscoSR520ADSLi                 OBJECT IDENTIFIER ::= { ciscoProducts 1013 } -- SR520 with 1 ADSL over ISDN WAN interface, 4-port 10/100 Base-T LAN Ethernet switch, hardware encryption and an optional Wireless LAN card
@@ -977,6 +992,15 @@ catalyst356012PCS               OBJECT IDENTIFIER ::= { ciscoProducts 1015 } -- 
 catalyst296048PSTL              OBJECT IDENTIFIER ::= { ciscoProducts 1016 } -- Catalyst 2960 48 10/100 Power over Ethernet ports + 2 10/100/1000 Ethernet Ports + 2 SFP fixed configuration Layer 2 Ethernet switch
 ciscoASR9010                    OBJECT IDENTIFIER ::= { ciscoProducts 1017 } -- Cisco Aggregation Services Router (ASR) 9010 Chassis
 ciscoASR9006                    OBJECT IDENTIFIER ::= { ciscoProducts 1018 } -- Cisco Aggregation Services Router (ASR) 9006 Chassis
+catalyst3560v224tsD             OBJECT IDENTIFIER ::= { ciscoProducts 1019 } -- 24 10/100 ports + 2 Ethernet Gigabit SFP ports fixed configuration Layer 2/Layer 3 Ethernet Non-stackable switch, DC power
+catalyst3560v224ts              OBJECT IDENTIFIER ::= { ciscoProducts 1020 } -- 24 10/100 ports + 2 Ethernet Gigabit SFP ports fixed configuration Layer 2/Layer 3 Ethernet Non-stackable switch
+catalyst3560v224ps              OBJECT IDENTIFIER ::= { ciscoProducts 1021 } -- 24 10/100 ports + 2 Ethernet Gigabit SFP ports fixed configuration Layer 2/Layer 3 Ethernet Non-stackable PoE switch
+catalyst3750v224ts              OBJECT IDENTIFIER ::= { ciscoProducts 1022 } -- 24 10/100 ports + 2 Ethernet Gigabit SFP ports fixed configuration Layer 2/Layer 3 Ethernet Stackable switch
+catalyst3750v224ps              OBJECT IDENTIFIER ::= { ciscoProducts 1023 } -- 24 10/100 ports + 2 Ethernet Gigabit SFP ports fixed configuration Layer 2/Layer 3 Ethernet Stackable PoE switch
+catalyst3560v248ts              OBJECT IDENTIFIER ::= { ciscoProducts 1024 } -- 48 10/100 ports + 4 Ethernet Gigabit SFP ports fixed configuration Layer 2/Layer 3 Ethernet Non-stackable switch
+catalyst3560v248ps              OBJECT IDENTIFIER ::= { ciscoProducts 1025 } -- 48 10/100 ports + 4 Ethernet Gigabit SFP ports fixed configuration Layer 2/Layer 3 Ethernet Non-stackable PoE switch
+catalyst3750v248ts              OBJECT IDENTIFIER ::= { ciscoProducts 1026 } -- 48 10/100 ports + 4 Ethernet Gigabit SFP ports fixed configuration Layer 2/Layer 3 Ethernet Stackable switch
+catalyst3750v248ps              OBJECT IDENTIFIER ::= { ciscoProducts 1027 } -- 48 10/100 ports + 4 Ethernet Gigabit SFP ports fixed configuration Layer 2/Layer 3 Ethernet Stackable PoE switch
 ciscoHwicCableD2                OBJECT IDENTIFIER ::= { ciscoProducts 1028 } -- This HWIC supports DOCSIS 2.0 in modular Integrated Service Routers as well as IAD2430 series routers
 ciscoHwicCableEJ2               OBJECT IDENTIFIER ::= { ciscoProducts 1029 } -- This HWIC supports Euro-DOCSIS 2.0, and J-DOCSIS 2.0 in modular Integrated Service Routers as well as IAD2430 series routers 
 ciscoBr1430                     OBJECT IDENTIFIER ::= { ciscoProducts 1030 } -- Cisco 1400 series wireless LAN bridge 
@@ -985,7 +1009,27 @@ ciscoNamApp2204                 OBJECT IDENTIFIER ::= { ciscoProducts 1032 } -- 
 ciscoNamApp2220                 OBJECT IDENTIFIER ::= { ciscoProducts 1033 } -- Cisco NAM Appliance 2220
 ciscoAIRAP1141                  OBJECT IDENTIFIER ::= { ciscoProducts 1034 } -- Cisco Aironet 1140 series WLAN Access Point with one 10/100/1000TX port and single IEEE 802.11n radio port
 ciscoAIRAP1142                  OBJECT IDENTIFIER ::= { ciscoProducts 1035 } -- Cisco Aironet 1140 series WLAN Access Point with one 10/100/1000TX port and dual IEEE 802.11n radio ports
+ciscoASR14K4S                   OBJECT IDENTIFIER ::= { ciscoProducts 1036 } -- Cisco ASR14000 Series 4-Slot System
+ciscoASR14K8S                   OBJECT IDENTIFIER ::= { ciscoProducts 1037 } -- Cisco ASR14000 Series 8-Slot System
+ciscoIPSSSC5                    OBJECT IDENTIFIER ::= { ciscoProducts 1039 } -- Cisco Intrusion Prevention System Security Service Card SSC-5
 cisco887Vdsl2                   OBJECT IDENTIFIER ::= { ciscoProducts 1040 } -- c887Vdsl2 with 1 VDSL2 only over POTS, 4 switch ports, 1 USB 1.1 port, 1 Console/Aux port and 1 ISDN
+cisco3945                       OBJECT IDENTIFIER ::= { ciscoProducts 1041 } -- CISCO3945/K9 with SPE150(3 GE, 4  EHWIC, 4 DSP, 4 SM, 256MB CF, 1GB DRAM, IPB)
+cisco3925                       OBJECT IDENTIFIER ::= { ciscoProducts 1042 } -- CISCO3925/K9 with SPE100(3 GE,  4 EHWIC, 4 DSP, 2 SM, 256MB CF, 1GB DRAM, IPB)
+cisco2951                       OBJECT IDENTIFIER ::= { ciscoProducts 1043 } -- CISCO2951/K9 with 3 GE, 4 EHWIC, 3 DSP, 2 SM, 256 MB CF, 512 MB DRAM, IPB
+cisco2921                       OBJECT IDENTIFIER ::= { ciscoProducts 1044 } -- CISCO2921/K9 with 3 GE, 4 EHWIC, 3 DSP, 1 SM, 256 MB CF, 512 MB DRAM, IPB
+cisco2911                       OBJECT IDENTIFIER ::= { ciscoProducts 1045 } -- CISCO2911/K9 with 3 GE, 4 EHWIC, 2 DSP, 1 SM , 256 MB CF, 512 MB DRAM, IPB
+cisco2901                       OBJECT IDENTIFIER ::= { ciscoProducts 1046 } -- CISCO2901/K9 with 2 GE, 4 EHWIC, 2 DSP, 256 MB CF, 512 MBDRAM, IP BASE
+cisco1941                       OBJECT IDENTIFIER ::= { ciscoProducts 1047 } -- CISCO1941/K9  with 2 GE, 2 EHWIC, 256 MB CF, 256 MB DRAM, IP BASE
+ciscoSm2k15Es1GePoe             OBJECT IDENTIFIER ::= { ciscoProducts 1048 } -- EtherSwitch Service Module Layer2 + PoE + 15 10/100 + 1 10/100/1000
+ciscoSm3k15Es1GePoe             OBJECT IDENTIFIER ::= { ciscoProducts 1049 } -- EtherSwitch Service Module Layer3 + PoE + 15 10/100 + 1 10/100/1000
+ciscoSm3k16GePoe                OBJECT IDENTIFIER ::= { ciscoProducts 1050 } -- EtherSwitch Service Module Layer3 + PoE + 16 10/100/1000
+ciscoSm2k23Es1Ge                OBJECT IDENTIFIER ::= { ciscoProducts 1051 } -- EtherSwitch Service Module Layer2 + no PoE + 23 10/100 + 1 10/100/1000
+ciscoSm2k23Es1GePoe             OBJECT IDENTIFIER ::= { ciscoProducts 1052 } -- EtherSwitch Service Module Layer2 + PoE + 23 10/100 + 1 10/100/1000
+ciscoSm3k23Es1GePoe             OBJECT IDENTIFIER ::= { ciscoProducts 1053 } -- EtherSwitch Service Module Layer3 + PoE + 23 10/100 + 1 10/100/1000
+ciscoSm3k24GePoe                OBJECT IDENTIFIER ::= { ciscoProducts 1054 } -- EtherSwitch Service Module Layer3 + PoE + 24 10/100/1000
+ciscoSmXd2k48Es2SFP             OBJECT IDENTIFIER ::= { ciscoProducts 1055 } -- EtherSwitch Service Module Layer2 + no PoE + 48 10/100 + 2 SFP
+ciscoSmXd3k48Es2SFPPoe          OBJECT IDENTIFIER ::= { ciscoProducts 1056 } -- EtherSwitch Service Module Layer3 + PoE + 48 10/100 + 2 SFP
+ciscoSmXd3k48Ge2SFPPoe          OBJECT IDENTIFIER ::= { ciscoProducts 1057 } -- EtherSwitch Service ModuleLayer3 + PoE + 48 10/100/1000 + 2 SFP
 ciscoEsw52024pK9                OBJECT IDENTIFIER ::= { ciscoProducts 1058 } -- 24-port 10/100 Ethernet Switch with PoE
 ciscoEsw54024pK9                OBJECT IDENTIFIER ::= { ciscoProducts 1059 } -- 24-port 10/100/1000 Ethernet Switch with PoE
 ciscoEsw52048pK9                OBJECT IDENTIFIER ::= { ciscoProducts 1060 } -- 48-port 10/100 Ethernet Switch with PoE
@@ -995,12 +1039,34 @@ ciscoEsw52048K9                 OBJECT IDENTIFIER ::= { ciscoProducts 1063 } -- 
 ciscoEsw54048K9                 OBJECT IDENTIFIER ::= { ciscoProducts 1064 } -- 48-port 10/100/1000 Ethernet Switch
 cisco1861                       OBJECT IDENTIFIER ::= { ciscoProducts 1065 } -- Cisco C1861 Base System
 ciscoUC520                      OBJECT IDENTIFIER ::= { ciscoProducts 1066 } -- UC520 Base System
+cisco5500Wlc                    OBJECT IDENTIFIER ::= { ciscoProducts 1069 } -- Cisco 5500 series Wireless LAN Controller
+ciscoSR520T1                    OBJECT IDENTIFIER ::= { ciscoProducts 1070 } -- Security router with 2 FE and 1 T1 port. Supports voice and data
+ciscoPwrC3900Poe                OBJECT IDENTIFIER ::= { ciscoProducts 1071 } -- Cisco 3925/3945 AC Power Supply with Power Over Ethernet (PWR-3900-POE)
+ciscoPwrC3900AC                 OBJECT IDENTIFIER ::= { ciscoProducts 1072 } -- Cisco 3925/3945 AC Power Supply (PWR-3900-AC)
+ciscoPwrC2921C2951Poe           OBJECT IDENTIFIER ::= { ciscoProducts 1073 } -- Cisco 2921/2951 AC Power Supply with Power Over Ethernet (PWR-2921-51-POE)
+ciscoPwrC2921C2951AC            OBJECT IDENTIFIER ::= { ciscoProducts 1074 } -- Cisco 2921/2951 AC Power Supply (PWR-2921-51-AC)
+ciscoPwrC2911Poe                OBJECT IDENTIFIER ::= { ciscoProducts 1075 } -- Cisco 2911 AC Power Supply with Power Over Ethernet (PWR-2911-POE)
+ciscoPwrC2911AC                 OBJECT IDENTIFIER ::= { ciscoProducts 1076 } -- Cisco 2911 AC Power Supply (PWR-2911-AC)
+ciscoPwrC2901Poe                OBJECT IDENTIFIER ::= { ciscoProducts 1077 } -- Cisco 2901 AC Power Supply with Power Over Ethernet(PWR-2901-POE)
+ciscoPwrC1941C2901AC            OBJECT IDENTIFIER ::= { ciscoProducts 1078 } -- Cisco 2901 AC Power Supply (PWR-2901-AC)
+ciscoPwrC1941Poe                OBJECT IDENTIFIER ::= { ciscoProducts 1079 } -- Cisco 1941 AC Power Supply with Power Over Ethernet (PWR-1941-POE)
+ciscoPwrC3900DC                 OBJECT IDENTIFIER ::= { ciscoProducts 1080 } -- Cisco 3925/3945 DC Power Supply (PWR-3900-DC)
+ciscoPwrC2921C2951DC            OBJECT IDENTIFIER ::= { ciscoProducts 1081 } -- Cisco 2921/2951 DC Power Supply (PWR-2921-51-DC)
+ciscoPwrC2911DC                 OBJECT IDENTIFIER ::= { ciscoProducts 1082 } -- Cisco 2911 DC power Supply (PWR-2911-DC)
+ciscoRpsAdptrC2921C2951         OBJECT IDENTIFIER ::= { ciscoProducts 1083 } -- Cisco 2921/2951 RPS Adaptor for use with external rps(RPS-ADPTR-2921-51)
+ciscoRpsAdptrC2911              OBJECT IDENTIFIER ::= { ciscoProducts 1084 } -- Cisco 2911 RPS Adaptor for use with external rps (RPS-ADPTR-2911)
 ciscoCBS3140Stack               OBJECT IDENTIFIER ::= { ciscoProducts 1093 } -- A stack of any CBS3140 switch modules.
 ciscoCBS3150Stack               OBJECT IDENTIFIER ::= { ciscoProducts 1094 } -- A stack of any CBS3150 switch modules.
+cisco1941W                      OBJECT IDENTIFIER ::= { ciscoProducts 1095 } -- CISCO1941W-A/K9 with 802.11 a/b/g/ n  FCC compliant WLAN ISM
+cisco3845nv                     OBJECT IDENTIFIER ::= { ciscoProducts 1102 } -- Four Network Module Slots, Four WIC slots, Two Gigabit Ethernet ports 3800nv family router
+cisco3825nv                     OBJECT IDENTIFIER ::= { ciscoProducts 1103 } -- Two Network Module Slots, Four WIC slots, Two Gigabit Ethernet ports 3800nv family router
+catalystWSC235048TD             OBJECT IDENTIFIER ::= { ciscoProducts 1104 } -- Catalyst 2350 48 10/100/1000 ports + 2 TenGigabit Ethernet (X2) ports fixed configuration Layer 2 Ethernet Switch
+cisco887M                       OBJECT IDENTIFIER ::= { ciscoProducts 1105 } -- c887 with 1 ADSL2/2+ AnnexM,4 switch ports, 1 USB 1.1 port, 1 Console/Aux port, 1 ISDN, and an optional Wireless LAN
 ciscoCeVirtualBlade             OBJECT IDENTIFIER ::= { ciscoProducts 1112 } -- Cisco Content Engine
 ciscoCDScde420                  OBJECT IDENTIFIER ::= { ciscoProducts 1113 } -- Cisco Content Delivery System Model CDE-420
 ciscoCDScde220                  OBJECT IDENTIFIER ::= { ciscoProducts 1114 } -- Cisco Content Delivery System Model CDE-220
 ciscoCDScde110                  OBJECT IDENTIFIER ::= { ciscoProducts 1115 } -- Cisco Content Delivery System Model CDE-110
+ciscoASR1002F                   OBJECT IDENTIFIER ::= { ciscoProducts 1116 } -- Cisco Aggregation Services Router 1000 Series with 2RU Fixed Chassis
 ciscoSecureAccessControlSystem  OBJECT IDENTIFIER ::= { ciscoProducts 1117 } -- Cisco Secure Access Control System
 ciscoCDScde400                  OBJECT IDENTIFIER ::= { ciscoProducts 1126 } -- Cisco Content Delivery System Model CDE-400
 ciscoSps2004B                   OBJECT IDENTIFIER ::= { ciscoProducts 1130 } -- Metro Ethernet Switch with 1 1000Base-BX-U WAN port and 5 10/100/1000M LAN ports
@@ -1008,6 +1074,13 @@ ciscoSps204B                    OBJECT IDENTIFIER ::= { ciscoProducts 1131 } -- 
 ciscoAp541nAK9                  OBJECT IDENTIFIER ::= { ciscoProducts 1135 } -- 802.11a/b/g/n Wireless LAN Access Point for North America, FCC band plan
 ciscoAp541nEK9                  OBJECT IDENTIFIER ::= { ciscoProducts 1136 } -- 802.11a/b/g/n Wireless LAN Access Point for Europe, ETSI band plan
 ciscoAp541nNK9                  OBJECT IDENTIFIER ::= { ciscoProducts 1137 } -- 802.11a/b/g/n Wireless LAN Access Point for ANZ band plan
+cisco887GVdsl2                  OBJECT IDENTIFIER ::= { ciscoProducts 1138 } -- c887GVdsl2 with 1 VDSL2 only over POTS,4 switch ports, 1 USB 2.0 port, 1 Console/Aux port, 1 3G PCMCIA slot, and an optional Wireless LAN
+cisco887SrstVdsl2               OBJECT IDENTIFIER ::= { ciscoProducts 1139 } -- c887SRSTVdsl2 with 1 VDSL2 over POTS, 4 switch ports, 1 USB 1.1 port, 1 Console/Aux port, 4 FXS ports, 1 PSTN BRI port, and an optional Wireless LAN
+cisco3925SPE200                 OBJECT IDENTIFIER ::= { ciscoProducts 1144 } -- Cisco 3925 w/SPE200(4 GE, 3 EHWIC, 3 DSP,  2 SM)
+cisco3945SPE250                 OBJECT IDENTIFIER ::= { ciscoProducts 1145 } -- Cisco 3945 w/SPE250(4 GE, 3 EHWIC, 3 DSP, 4 SM)
+catalyst296024LCS               OBJECT IDENTIFIER ::= { ciscoProducts 1146 } -- Catalyst 2960 8 10/100 Power over Ethernet ports + 16 10/100 Ethernet ports + 2 dual purpose Gigabit Ethernet ports fixed configuration Layer 2 Ethernet switch
+catalyst296024PCS               OBJECT IDENTIFIER ::= { ciscoProducts 1147 } -- Catalyst 2960 24 10/100 Power over Ethernet ports + 2 dual purpose Gigabit Ethernet ports fixed configuration Layer 2 Ethernet switch
+catalyst296048PSTS              OBJECT IDENTIFIER ::= { ciscoProducts 1148 } -- Catalyst 2960 48 10/100 Power over Ethernet ports + 2 10/100/1000 Ethernet ports + 2 SFP fixed configuration Layer 2 Ethernet switch
 ciscoNMEAXP                     OBJECT IDENTIFIER ::= { ciscoProducts 1151 } -- Cisco Application Extension Platform Network Module Enhanced (NME-AXP)
 ciscoAIMAXP                     OBJECT IDENTIFIER ::= { ciscoProducts 1152 } -- Cisco Application Extension Platform advanced integration module (AIM-AXP)
 ciscoAIM2AXP                    OBJECT IDENTIFIER ::= { ciscoProducts 1153 } -- Cisco Application Extension Platform advanced integration module 2(AIM2-AXP)
@@ -1020,5 +1093,60 @@ ciscoSRP547                     OBJECT IDENTIFIER ::= { ciscoProducts 1159 } -- 
 ciscoVS510FXO                   OBJECT IDENTIFIER ::= { ciscoProducts 1160 } -- Call control solution for 4-24 phone
 ciscoNmWae900                   OBJECT IDENTIFIER ::= { ciscoProducts 1161 } -- Cisco Network Module Intergrated Service Engine 900
 ciscoNmWae700                   OBJECT IDENTIFIER ::= { ciscoProducts 1162 } -- Cisco Network Module Intergrated Service Engine 700
+ciscoCDScde205                  OBJECT IDENTIFIER ::= { ciscoProducts 1167 } -- Cisco Content Delivery System Model CDE-205
+ciscoPwr1941AC                  OBJECT IDENTIFIER ::= { ciscoProducts 1168 } -- C1941 AC Power Supply
+ciscoNamWaasVirtualBlade        OBJECT IDENTIFIER ::= { ciscoProducts 1169 } -- Cisco Network Analysis Module (NAM) Virtual Blade on WAAS appliance
+ciscoRaie1783Rms06t             OBJECT IDENTIFIER ::= { ciscoProducts 1170 } -- Cisco Rockwell brand Layer 3 Industrial Ethernet  Switch, 4 10/100 + 2 T/SFP
+ciscoRaie1783Rms10t             OBJECT IDENTIFIER ::= { ciscoProducts 1171 } -- Cisco Rockwell brand Industrial Ethernet Switch, 8 10/100 + 2 T/SFP
+cisco1941WEK9                   OBJECT IDENTIFIER ::= { ciscoProducts 1172 } -- CISCO1941W-E/K9 Router w/ 802.11 a/b/g/n ETSI Compliant WLAN ISM
+cisco1941WPK9                   OBJECT IDENTIFIER ::= { ciscoProducts 1173 } -- CISCO1941W-P/K9 Router w/ 802.11 a/b/g/n Japan Compliant WLAN ISM
+cisco1941WNK9                   OBJECT IDENTIFIER ::= { ciscoProducts 1174 } -- CISCO1941W-N/K9 Router w/ 802.11 a/b/g/n Aus, NZ Compliant WLAN ISM
+ciscoMXE5600                    OBJECT IDENTIFIER ::= { ciscoProducts 1175 } -- Cisco MXE 5600 platform, 1 Rack Unit (RU) application specific device with 8 slots
+ciscoEsw5408pK9                 OBJECT IDENTIFIER ::= { ciscoProducts 1176 } -- Cisco ESW 540 8-port 10/100/1000 PoE switch
+ciscoEsw5208pK9                 OBJECT IDENTIFIER ::= { ciscoProducts 1177 } -- Cisco ESW 520 8-port 10/100 PoW switch
+catalyst4948e10GE               OBJECT IDENTIFIER ::= { ciscoProducts 1178 } -- Catalyst 4000 series fixed configuration switch with 48 10/100/1000BaseT ports and four 10Gbps/1Gbps SFP+/SFP ports(WS-C4948E)
+cisco1921k9                     OBJECT IDENTIFIER ::= { ciscoProducts 1191 } --  CISCO1921/K9 with 2 GE, 2 EHWIC, 256 MB flash memory, 512 MB DRAM, IP BASE
+cisco1905k9                     OBJECT IDENTIFIER ::= { ciscoProducts 1192 } 
+ciscoPwrC1921C1905AC            OBJECT IDENTIFIER ::= { ciscoProducts 1193 } 
+cisco3925SPE250                 OBJECT IDENTIFIER ::= { ciscoProducts 1206 } 
+cisco3945SPE200                 OBJECT IDENTIFIER ::= { ciscoProducts 1207 } 
+cat29xxStack                    OBJECT IDENTIFIER ::= { ciscoProducts 1208 } 
+ciscoNmWae302                   OBJECT IDENTIFIER ::= { ciscoProducts 1209 } 
+ciscoNmWae502                   OBJECT IDENTIFIER ::= { ciscoProducts 1210 } 
+ciscoNmWae522                   OBJECT IDENTIFIER ::= { ciscoProducts 1211 } 
+ciscoWaeSmSre700K9              OBJECT IDENTIFIER ::= { ciscoProducts 1212 } 
+ciscoWaeSmSre900K9              OBJECT IDENTIFIER ::= { ciscoProducts 1213 } 
+ciscoVsaNam                     OBJECT IDENTIFIER ::= { ciscoProducts 1214 } -- Virtual Switch NAM for Nexus1010
+ciscoMwr2941DCA                 OBJECT IDENTIFIER ::= { ciscoProducts 1215 } -- The Mobile Wireless router MWR-2941-DC-A is a router targeted at application in a cell site Base Transciever Station (BTS) providing Radio Access Network (RAN) optimization
+cisco1941WCK9                   OBJECT IDENTIFIER ::= { ciscoProducts 1220 } -- CISCO1941W-C/K9 Router w/ 802.11 a/b/g/n China Compliant WLAN ISM
+ciscoCDScde2202s3               OBJECT IDENTIFIER ::= { ciscoProducts 1221 } -- Cisco Content Delivery System Model CDE-220-2S3
+ciscoACE30K9                    OBJECT IDENTIFIER ::= { ciscoProducts 1231 } -- Application Control Engine Module in Cat6500
+ciscoASA5585SspIps10            OBJECT IDENTIFIER ::= { ciscoProducts 1232 } -- Cisco Adaptive Security Appliance 5585-X IPS Security Services Processor-10
+ciscoASA5585SspIps20            OBJECT IDENTIFIER ::= { ciscoProducts 1233 } -- Cisco Adaptive Security Appliance 5585-X IPS Security Services Processor-20
+ciscoASA5585SspIps40            OBJECT IDENTIFIER ::= { ciscoProducts 1234 } -- Cisco Adaptive Security Appliance 5585-X IPS Security Services Processor-40
+ciscoASA5585SspIps60            OBJECT IDENTIFIER ::= { ciscoProducts 1235 } -- Cisco Adaptive Security Appliance 5585-X IPS Security Services Processor-60
+cisco1841CK9                    OBJECT IDENTIFIER ::= { ciscoProducts 1236 } -- Cisco 1841C/K9 data only router with 2 HWIC slots
+cisco2801CK9                    OBJECT IDENTIFIER ::= { ciscoProducts 1237 } -- Cisco 2801C/K9 router with 4 HWIC slots
+cisco2811CK9                    OBJECT IDENTIFIER ::= { ciscoProducts 1238 } -- Cisco 2811C/K9 router with one Network Module slot, four HWIC slots, two fast ethernet and integrated VPN
+cisco2821CK9                    OBJECT IDENTIFIER ::= { ciscoProducts 1239 } -- Cisco 2821C/K9 router with one Network Module slot, one EVM, four HWIC slots, two gigabit ethernet and intergrated VPN
+cisco3825CK9                    OBJECT IDENTIFIER ::= { ciscoProducts 1241 } -- Cisco 3825C/K9 router with Two Network Module Slots, Four WIC slots, Two Gigabit Ethernet ports
+cisco3845CK9                    OBJECT IDENTIFIER ::= { ciscoProducts 1242 } -- Cisco 3845C/K9 router with Four Network Module Slots, Four WIC slots, Two Gigabit Ethernet ports
+cisco1906CK9                    OBJECT IDENTIFIER ::= { ciscoProducts 1268 } -- Cisco 1906C/K9 router  with 2 GE, Serial 1T, 1 EHWIC, 256 MB flash memory, 512 MB DRAM
+ciscoAirCt2504K9                OBJECT IDENTIFIER ::= { ciscoProducts 1279 } -- Szabla: Cisco 2500 Series Wireless LAN Controller
+ciscoISMAXP                     OBJECT IDENTIFIER ::= { ciscoProducts 1280 } -- Cisco Application Extension Platform Internal Service Module (ISM) with Services Ready Engine (SRE) for ISR routers
+ciscoSMAXP                      OBJECT IDENTIFIER ::= { ciscoProducts 1281 } -- Cisco Application Extension Platform Service Module (SM) with Services Ready Engine (SRE) for ISR routers
+ciscoAxpSmSre900                OBJECT IDENTIFIER ::= { ciscoProducts 1282 } -- Cisco Application Extension Platform Service Module (SM) with Services Ready Engine (SM-SRE-900-K9) for ISR routers     
+ciscoAxpSmSre700                OBJECT IDENTIFIER ::= { ciscoProducts 1283 } -- Cisco Application Extension Platform Service Module (SM) with Services Ready Engine (SM-SRE-700-K9) for ISR routers
+ciscoAxpIsmSre300               OBJECT IDENTIFIER ::= { ciscoProducts 1284 } -- Cisco Application Extension Platform Internal Service Module (ISM) with Services Ready Engine (ISM-SRE-300-K9) for ISR routers
+ciscoCDSAVSM                    OBJECT IDENTIFIER ::= { ciscoProducts 1285 } -- Cisco Content Delivery System Model AVSM line card
+ciscoAxpNme302                  OBJECT IDENTIFIER ::= { ciscoProducts 1288 } -- Cisco Application Extension Platform Network Module Enhanced (NME-APPRE-302-K9) for ISR routers
+ciscoAxpNme502                  OBJECT IDENTIFIER ::= { ciscoProducts 1289 } -- Cisco Application Extension Platform Network Module Enhanced (NME-APPRE-502-K9) for ISR routers
+ciscoAxpNme522                  OBJECT IDENTIFIER ::= { ciscoProducts 1290 } -- Cisco Application Extension Platform Network Module Enhanced (NME-APPRE-522-K9) for ISR routers
+ciscoACE20K9                    OBJECT IDENTIFIER ::= { ciscoProducts 1291 } -- Application Control Engine Module in Cat6500
+ciscoCDScde250                  OBJECT IDENTIFIER ::= { ciscoProducts 1294 } -- Cisco Content Delivery System Model CDE-250
+ciscoAnmVirtualApp              OBJECT IDENTIFIER ::= { ciscoProducts 1296 } -- Cisco Application Networking Manager Virtual Appliance
+ciscoECDS3100                   OBJECT IDENTIFIER ::= { ciscoProducts 1297 } -- Cisco Enterprise Content Delivery System Model ECDS-3100
+ciscoECDS1100                   OBJECT IDENTIFIER ::= { ciscoProducts 1298 } -- Cisco Enterprise Content Delivery System Model ECDS-1100
+ciscoSreSmNam                   OBJECT IDENTIFIER ::= { ciscoProducts 1314 } -- Cisco Network Analysis Module (NAM) on SM-SRE
 
 END

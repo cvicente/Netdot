@@ -1,0 +1,1384 @@
+
+FR-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY,OBJECT-TYPE,
+    IpAddress,Integer32,Counter32    
+              FROM SNMPv2-SMI
+    TruthValue,RowStatus
+              FROM SNMPv2-TC
+    DisplayString
+              FROM RFC1213-MIB
+    nnbundleId             
+              FROM BUNDLE-MIB
+    ntEnterpriseDataTasmanMgmt  
+              FROM NT-ENTERPRISE-DATA-MIB;
+
+nnfrMib MODULE-IDENTITY
+    LAST-UPDATED    "9907010000Z" 
+    ORGANIZATION "Nortel Networks"
+    CONTACT-INFO
+        	" Nortel Networks
+        	8200 Dixie Road
+        	Brampton, Ontario L6T 5P6
+        	Canada        
+        	1-800-4Nortel 
+        	www.nortelnetworks.com "
+    DESCRIPTION
+            "This file contains MIB module for 
+		Frame Relay implementation."                   
+    REVISION     "9904230000Z"
+    DESCRIPTION
+            "Initial version of this MIB module."                      
+    ::= { ntEnterpriseDataTasmanMgmt 16 } 
+
+-- frTable definition.
+-- This table contains both the uni-link and multi-link frame-relay 
+-- configuration parameters. Multilink frame-relay parameters can be
+-- configured only after the bundle is configured with more than 1 t1
+-- links.
+-- A row in the table is implicitly created when a bundle is encapped 
+-- with frame-relay. The bundle Id of the frame-relay encapped bundle 
+-- is used to index into the frTable.
+
+nnfrTable         OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnFrTableEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+                "A list of a Frame Relay interface configuration parameters.
+                 The table contains parameters for both the uni and multi
+                 link frame-relay interface."
+    ::= {nnfrMib 1}
+
+
+nnfrTableEntry    OBJECT-TYPE
+    SYNTAX      NnFrTableEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+                "An entry in the frTable.
+                 The bundle Id forms the index into the table."
+    INDEX       { nnbundleId }
+    ::= {nnfrTable 1}
+
+
+NnFrTableEntry    ::=  SEQUENCE {
+    nnfrIfEnable         TruthValue,
+    nnfrEnablePvcAll     TruthValue,
+    nnfrFrameSize        Integer32 (56..4096),
+    nnfrIfType           INTEGER, 
+    nnfrLmiType          INTEGER,
+    nnfrLmiDceN392       Integer32 (1..10),
+    nnfrLmiDceN393       Integer32 (1..10),
+    nnfrLmiDteN392       Integer32 (1..10),
+    nnfrLmiDteN393       Integer32 (1..10),
+    nnfrLmiDteN391       Integer32 (1..255),
+    nnfrLmiKeepalive     Integer32 (5..255),
+    nnmfrAckMsgTimer     Integer32 (1..10),
+    nnmfrAckMsgMaxRetry  Integer32 (1..5),
+    nnmfrClass           INTEGER,
+    nnmfrClassThreshold  Integer32 (1..28),
+    nnmfrFrameSize       Integer32 (56..4096),
+    nnmfrHelloTimer      Integer32 (1..180),
+    nnmfrSegThreshold    Integer32 (56..4096),
+    nnmfrDiffDelay       Integer32 (10..128)
+}
+
+
+nnfrIfEnable       OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION 
+                 "Enables or disables the frame-relay interface. By 
+                  default frame- relay interface is enabled. Writing 
+                  zero (0) disables frame-relay interface."
+    DEFVAL       { true }
+    ::= { nnfrTableEntry 1 }
+
+
+nnfrEnablePvcAll  OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION 
+                "Enables all PVCs related to the interface. By default all 
+                 PVCs related to an interface are disabled. Writing One (1) 
+                 enables all PVCs at the same time for an interface indexed 
+                 by bundleId."
+    DEFVAL      { false }
+    ::= { nnfrTableEntry 2 }
+
+
+nnfrFrameSize     OBJECT-TYPE
+    SYNTAX      Integer32(56..4096)
+    UNITS       "bytes"
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION 
+                "Maximum Size of the frame that will be configured for 
+                 this Frame Relay interface. The value for frame size 
+                 ranges from 56 to 4096 bytes, with a default value of
+                 1600 bytes."
+    DEFVAL { 1600 }
+    ::= { nnfrTableEntry 3 }
+
+
+nnfrIfType          OBJECT-TYPE
+    SYNTAX        INTEGER {
+                    dce(1),
+                    dte(2),
+                    nni(3)
+                  }
+    MAX-ACCESS    read-write
+    STATUS        current
+    DESCRIPTION 
+                  "Indicates the interface type for the frame-relay 
+                   interface."
+    DEFVAL        { dte }
+    ::= { nnfrTableEntry 4 }
+
+
+nnfrLmiType        OBJECT-TYPE
+    SYNTAX       INTEGER {
+                   none(0),
+                   cisco(2),
+                   ansi(3),
+                   q933a(4)
+                 }
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION 
+                 "Local management Interface type for the frame-relay
+                  interface.
+                  It can take any of the following three values: 
+                  ansi  - ANSI T1.617 (Annex D), 
+                  cisco - Cisco LMI,
+                  q933a - ITU-T Q.933 (Annex A)
+                  To disable lmi operation, set the value to none(0)."
+    DEFVAL { ansi }
+    ::= { nnfrTableEntry 5 }
+
+
+nnfrLmiDceN392    OBJECT-TYPE
+    SYNTAX      Integer32(1..10)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+                "DCE/UNI error threshold value. Ranges from 1 to 10,
+                 with a default value of 9.  To configure the value
+                 of this variable, LMI type should be configured."
+    DEFVAL { 9 }
+    ::= { nnfrTableEntry 6 }
+
+
+nnfrLmiDceN393    OBJECT-TYPE
+    SYNTAX      Integer32(1..10)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION 
+                "DCE/UNI monitored events count. Ranges from 1 to 10,
+                 with a default value of 10.  To configure the value 
+                 of this variable, LMI type should be configured."
+    DEFVAL { 10 }
+    ::= { nnfrTableEntry 7 }
+
+
+nnfrLmiDteN392    OBJECT-TYPE
+    SYNTAX      Integer32(1..10)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION 
+                "DTE/UNI error threshold. Ranges from 1 to 10, with a 
+                 default value of 9.  To configure the value of this 
+                 variable, LMI type should be configured."
+    DEFVAL { 9 }
+    ::= { nnfrTableEntry 8}
+
+
+nnfrLmiDteN393    OBJECT-TYPE
+    SYNTAX      Integer32(1..10)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION 
+                "DTE/UNI monitored events count. Ranges from 1 to 10,
+                 with a default value of 10.  To configure the value
+                 of this variable, LMI type should be configured."
+    DEFVAL { 10 }
+    ::= { nnfrTableEntry 9 }
+
+
+nnfrLmiDteN391    OBJECT-TYPE
+    SYNTAX      Integer32(1..255)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION 
+                "DTE/UNI full status polling interval. Ranges from 1 
+                 to 255, with a default value of 6.  To configure the
+                 value of this variable, LMI type should be configured."
+    DEFVAL { 6 }
+    ::= { nnfrTableEntry 10 }
+
+
+nnfrLmiKeepalive    OBJECT-TYPE
+    SYNTAX        Integer32(5..255)
+    MAX-ACCESS    read-write
+    STATUS        current
+    DESCRIPTION 
+                  "Local management interface keepalive polling interval
+                   time in seconds. The value for this ranges from 5 
+                   seconds to 255 seconds with a default value of 10 
+                   seconds. To configure the value of this variable, 
+                   LMI type should be configured."
+    DEFVAL { 10 }
+    ::= { nnfrTableEntry 11}
+    
+
+nnmfrAckMsgTimer        OBJECT-TYPE
+        SYNTAX        Integer32 (1..10)
+        MAX-ACCESS    read-write
+        STATUS        current
+        DESCRIPTION
+                      "The time to wait for an ADD_LINK_ACK message 
+                       before timing out."
+        DEFVAL {4}
+        ::= { nnfrTableEntry 12}
+
+
+nnmfrAckMsgMaxRetry     OBJECT-TYPE
+        SYNTAX        Integer32 (1..5)
+        MAX-ACCESS    read-write
+        STATUS        current
+        DESCRIPTION 
+                      "Maximum number of Retries for the Ack Msg. This 
+                       variable can be set on a multilink bundle."
+        DEFVAL  { 2 }
+       ::= { nnfrTableEntry 13 }
+
+
+nnmfrClass         OBJECT-TYPE
+    SYNTAX       INTEGER {
+                   classA(1),
+                   classB(2),
+                   classC(3)
+                 }
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+                 "classA  -- bundle is UP when 1 link is UP
+                  classB  -- bundle is UP when all links are UP
+                  classC  -- bundle is UP when user-specific # of links 
+                             are UP. 
+                  In the case of classC, mfrClassThreshold should be 
+                  configured with mfrClass in an atomic set operation.
+                  This variable can be set on a multilink bundle but 
+                  not on a uni link bundle."
+    ::= { nnfrTableEntry 14 }
+
+
+nnmfrClassThreshold    OBJECT-TYPE
+    SYNTAX           Integer32 (1..28)
+    MAX-ACCESS       read-write
+    STATUS           current
+    DESCRIPTION
+                     "Threshold - minimum number of links required to
+                      activate bundle, for a mfrClass, classC. This 
+                      variable can be set on a multilink bundle but not 
+                      on a uni link bundle."
+        ::= { nnfrTableEntry 15 }
+
+
+nnmfrFrameSize         OBJECT-TYPE
+        SYNTAX       Integer32 (56..4096)
+        MAX-ACCESS   read-write
+        STATUS       current
+        DESCRIPTION 
+                     "The frame size for multi-link frame relay. This 
+                      variable can be set on a multilink bundle but not
+                      on a uni link bundle."
+        ::= { nnfrTableEntry 16 }
+
+
+nnmfrHelloTimer        OBJECT-TYPE
+        SYNTAX       Integer32 (1..180)
+        MAX-ACCESS   read-write
+        STATUS       current
+        DESCRIPTION 
+                     "Hello timer in seconds. This variable can be set
+                      on a multilink bundle but not on a uni link bundle."
+        ::= { nnfrTableEntry 17 }
+
+
+nnmfrSegThreshold      OBJECT-TYPE
+        SYNTAX       Integer32 (56..4096)
+        MAX-ACCESS   read-write
+        STATUS       current
+        DESCRIPTION 
+                     "Segment threshold packet size in bytes. This variable
+                      can be set on a multilink bundle but not on a uni link
+                      bundle."
+        ::= { nnfrTableEntry 18 }
+
+
+nnmfrDiffDelay         OBJECT-TYPE
+        SYNTAX       Integer32 (10..128)
+        MAX-ACCESS   read-write
+        STATUS       current
+        DESCRIPTION 
+                     "Differential delay in milli seconds. This variable 
+                      can be set on a multilink bundle but not on a uni 
+                      link bundle."
+        ::= { nnfrTableEntry 19 }
+
+
+-- frPvcTable definition
+-- To configure a PVC on a frame-relay encapped bundle, set rowstatus
+-- with a value CreateAndGo(4).
+-- The index to the table is the bundle Id and the desired pvc number.
+
+
+nnfrPvcTable      OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnFrPvcTableEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+                "A list of Frame Relay PVC parameters."
+    ::= { nnfrMib 2}
+
+
+nnfrPvcTableEntry     OBJECT-TYPE
+    SYNTAX          NnFrPvcTableEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+                    "An entry in the frPvcTable"
+    INDEX           { nnbundleId, nnfrPvcDlci }
+    ::= { nnfrPvcTable 1 }
+
+
+NnFrPvcTableEntry  ::= SEQUENCE {
+    nnfrPvcDlci                      Integer32(16..991),
+    nnfrPvcEnable                    TruthValue, 
+    nnfrPvcDescr                     DisplayString,
+    nnfrPvcIpAddr                    IpAddress,
+    nnfrPvcIpSubnetMask              IpAddress,
+    nnfrPvcRemoteIpAddr              IpAddress,
+    nnfrPvcPolicingEnable            INTEGER,
+    nnfrPvcPolicingDe                TruthValue, 
+    nnfrPvcPolicingCir               Integer32,
+    nnfrPvcPolicingBc                Integer32,
+    nnfrPvcPolicingBe                Integer32,
+    nnfrPvcShapingCir                Integer32,
+    nnfrPvcShapingBcMax              Integer32,
+    nnfrPvcShapingBcMin              Integer32,
+    nnfrPvcShapingBe                 Integer32,
+    nnfrPvcDlciForSwitching          Integer32,
+    nnfrPvcBundleNameForSwitching    DisplayString,
+    nnfrPvcRowStatus                 RowStatus
+  }
+
+
+nnfrPvcDlci           OBJECT-TYPE
+    SYNTAX          Integer32(16..991)
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+                    "Data Link Connection Identifier of the PVC. The value
+                     ranges from 16 to 991. The Dlci is unique for a bundle
+                     but Dlci numbers can be reused across bundles."
+    ::= { nnfrPvcTableEntry 1 }
+
+
+nnfrPvcEnable         OBJECT-TYPE
+    SYNTAX          TruthValue 
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+                    "Enables PVC for given interface name and DLCI number. By 
+                     default PVC is enabled. Writing one(1) on this enables
+                     PVC, zero (0) disables it."
+    DEFVAL          { true }
+    ::= { nnfrPvcTableEntry 2}
+
+
+nnfrPvcDescr       OBJECT-TYPE
+    SYNTAX       DisplayString
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+                 "Description for the configured PVC."
+    DEFVAL      { "" }
+    ::= { nnfrPvcTableEntry 3 }
+
+
+nnfrPvcIpAddr       OBJECT-TYPE
+    SYNTAX        IpAddress
+    MAX-ACCESS    read-create
+    STATUS        current
+    DESCRIPTION
+                  "IP address to be configured for the PVC. 
+                   PVC IP subnet Mask variable should also be configured 
+                   alongwith this variable. A set on this variable will be
+                   successful only if the subnetmask is also set in the 
+                   same request. To unconfigure the Ip address, a set is 
+                   issued with the value of the ip address as 0.0.0.0"
+    ::= { nnfrPvcTableEntry 4 }
+    
+
+nnfrPvcIpSubnetMask   OBJECT-TYPE
+    SYNTAX          IpAddress
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+                   "Subnet mask to be configured alongwith PVC IP address.
+                    This variable should be configured alongwith PVC IP 
+                    address."
+    ::= { nnfrPvcTableEntry 5 }
+
+nnfrPvcRemoteIpAddr    OBJECT-TYPE
+    SYNTAX           IpAddress
+    MAX-ACCESS       read-create
+    STATUS           current
+    DESCRIPTION
+                     "Remote IP address to be mapped for PVC"
+    ::= { nnfrPvcTableEntry 6 }
+
+
+nnfrPvcPolicingEnable    OBJECT-TYPE
+    SYNTAX             INTEGER {
+                         none(0),
+                         standard(2)
+                       }
+    MAX-ACCESS         read-create
+    STATUS             current
+    DESCRIPTION
+                       "This variable is to disable/enable policing for PVC.
+                        Writing zero (0) on this disables policing for the
+                        PVC. By default policing is enabled."
+    DEFVAL            { standard }
+    ::= { nnfrPvcTableEntry 7 }
+
+
+nnfrPvcPolicingDe     OBJECT-TYPE
+    SYNTAX          TruthValue 
+    MAX-ACCESS      read-create 
+    STATUS          current
+    DESCRIPTION
+                    "If enabled, received frames that exceed policing 
+                     threshold, will be tagged with DE bit. This variable
+                     can be configured only if policing is enabled."
+    DEFVAL { true }
+    ::= { nnfrPvcTableEntry 8 }
+
+
+nnfrPvcPolicingCir    OBJECT-TYPE
+    SYNTAX          Integer32 
+    UNITS           "bps"
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+                    "Committed Information Rate( bits per second ) 
+                     in receive direction for PVC. This variable can be
+                     configured only if policing is enabled."
+    ::= { nnfrPvcTableEntry 9 }
+
+
+nnfrPvcPolicingBc     OBJECT-TYPE
+    SYNTAX          Integer32 
+    UNITS           "bps"
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+                    "Committed Burst ( bits ) in receive direction for PVC.
+                     This variable can be configured only if policing is 
+                     enabled."
+    ::= { nnfrPvcTableEntry 10 }
+
+
+nnfrPvcPolicingBe     OBJECT-TYPE
+    SYNTAX          Integer32
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+                   "Excess burst ( bits ) in receive direction for PVC. This
+                   variable can be configured only if policing enabled."
+    DEFVAL         { 0 }
+    ::= { nnfrPvcTableEntry 11 }
+
+
+nnfrPvcShapingCir   OBJECT-TYPE
+    SYNTAX        Integer32
+    UNITS         "bps"
+    MAX-ACCESS    read-create
+    STATUS        current
+    DESCRIPTION
+                  "The committed information rate (in bits per second) to be 
+                   configured for the PVC."
+    ::= { nnfrPvcTableEntry 12 }
+
+
+nnfrPvcShapingBcMax    OBJECT-TYPE
+        SYNTAX       Integer32
+        UNITS        "bps"
+        MAX-ACCESS   read-create
+        STATUS       current
+        DESCRIPTION
+                     "The maximum committed burst (bits) to be configured
+                      for the PVC."
+        ::= { nnfrPvcTableEntry 13 }
+
+
+nnfrPvcShapingBcMin     OBJECT-TYPE
+    SYNTAX            Integer32
+    UNITS             "bps"
+    MAX-ACCESS        read-create
+    STATUS            current
+    DESCRIPTION
+                      "The minimum committed burst (bits) to be configured
+                       for the PVC."
+    ::= { nnfrPvcTableEntry 14}
+
+
+nnfrPvcShapingBe       OBJECT-TYPE
+    SYNTAX       Integer32
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+                 "The excess burst (bits) to be configured for the PVC."
+    DEFVAL       { 0 }
+    ::= { nnfrPvcTableEntry 15 }
+
+
+nnfrPvcDlciForSwitching     OBJECT-TYPE
+    SYNTAX                Integer32
+    MAX-ACCESS            read-create
+    STATUS                current
+    DESCRIPTION
+                          "Data Link Connection Identifier of the PVC. The 
+                           value for this variable ranges from 16 to 991.
+                           frPvcBundleNameForSwitching should be set with 
+                           frPvcDlciForSwitching as an atomic set."
+    ::= { nnfrPvcTableEntry 16 }
+
+
+nnfrPvcBundleNameForSwitching    OBJECT-TYPE
+    SYNTAX                     DisplayString
+    MAX-ACCESS                 read-create
+    STATUS                     current
+    DESCRIPTION
+                               "The name of the bundle configured for Switching."
+    ::= { nnfrPvcTableEntry 17 }
+
+
+nnfrPvcRowStatus     OBJECT-TYPE
+    SYNTAX         RowStatus
+    MAX-ACCESS     read-create
+    STATUS         current
+    DESCRIPTION
+                   "To create a row set row status to a value 
+                    CreateAndGo(4), indexed by bundle Id and the 
+                    desired dlci number."
+    ::= { nnfrPvcTableEntry 18 }
+
+
+-- nnfrStatsTable Definition
+-- This table lists the statistics objects for a frame relay interface.
+-- A row in the table is implicitly created when a bundle is encapped 
+-- with frame-relay. The bundle Id of the frame-relay encapped bundle 
+-- is used to index into the frTable
+
+nnfrStatsTable    OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnFrStatsTableEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+                "The statistics objects for a frame-relay interface."
+    ::= { nnfrMib 3 }
+
+
+nnfrStatsTableEntry   OBJECT-TYPE
+    SYNTAX          NnFrStatsTableEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+                    "An entry in the frStatsTable."
+    INDEX           { nnbundleId }
+    ::= {nnfrStatsTable 1 }
+
+
+NnFrStatsTableEntry  ::= SEQUENCE {
+    nnfrStatsFramesRx        Counter32,
+    nnfrStatsInvFramesRx     Counter32,
+    nnfrStatsFECNsRx         Counter32,
+    nnfrStatsBECNsRx         Counter32,
+    nnfrStatsShortFramesRx   Counter32,
+    nnfrStatsLongFramesRx    Counter32,
+    nnfrStatsInvDLCIsRx      Counter32,
+    nnfrStatsUnknownDLCIsRx  Counter32,
+    nnfrStatsFramesTx        Counter32 
+}
+
+
+nnfrStatsFramesRx    OBJECT-TYPE
+    SYNTAX         Counter32
+    MAX-ACCESS     read-only
+    STATUS         current
+    DESCRIPTION 
+                   "Numbers of frames received."
+    ::= { nnfrStatsTableEntry 1 }
+
+
+nnfrStatsInvFramesRx   OBJECT-TYPE
+    SYNTAX           Counter32
+    MAX-ACCESS       read-only
+    STATUS           current
+    DESCRIPTION 
+                     "Number of invalid frames received"
+    ::= { nnfrStatsTableEntry 2 }
+
+
+nnfrStatsFECNsRx    OBJECT-TYPE
+    SYNTAX        Counter32
+    MAX-ACCESS    read-only
+    STATUS        current
+    DESCRIPTION 
+                  "Number of frames received with FECN bit on"
+    ::= { nnfrStatsTableEntry 3 }
+
+
+nnfrStatsBECNsRx  OBJECT-TYPE
+    SYNTAX      Counter32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION 
+                "Number of frames received with BECN bit on."
+    ::= { nnfrStatsTableEntry 4 }
+
+
+nnfrStatsShortFramesRx    OBJECT-TYPE
+    SYNTAX              Counter32
+    MAX-ACCESS          read-only
+    STATUS              current
+    DESCRIPTION 
+                        "Number of short frames received."
+    ::= { nnfrStatsTableEntry 5 }
+
+
+nnfrStatsLongFramesRx    OBJECT-TYPE
+    SYNTAX             Counter32
+    MAX-ACCESS         read-only
+    STATUS             current
+    DESCRIPTION 
+                       "Number of long frames received."
+    ::= { nnfrStatsTableEntry 6 }
+
+
+nnfrStatsInvDLCIsRx    OBJECT-TYPE
+    SYNTAX           Counter32
+    MAX-ACCESS       read-only
+    STATUS           current
+    DESCRIPTION 
+                     "Number of frames with invalid dlci received"
+    ::= { nnfrStatsTableEntry 7 }
+
+
+nnfrStatsUnknownDLCIsRx    OBJECT-TYPE
+    SYNTAX               Counter32
+    MAX-ACCESS           read-only
+    STATUS               current
+    DESCRIPTION 
+                         "Number of frames with unknown dlci received"
+    ::= { nnfrStatsTableEntry 8 }
+
+
+nnfrStatsFramesTx     OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION 
+                    "Number of frames transmitted."
+    ::= { nnfrStatsTableEntry 9 }
+
+
+
+-- FrPvcStats Table Definition
+-- Statistics for a PVC
+-- A row in the table is implicitly created when a pvc is configured 
+-- on a bundle. The bundle Id and the dlci number are used as indices
+-- to the table.
+
+
+nnfrPvcStatsTable   OBJECT-TYPE
+    SYNTAX        SEQUENCE OF NnFrPvcStatsTableEntry
+    MAX-ACCESS    not-accessible
+    STATUS        current
+    DESCRIPTION
+                  "FR PVC Statistics Table"
+    ::= {nnfrMib 4}
+
+
+nnfrPvcStatsTableEntry    OBJECT-TYPE
+    SYNTAX              NnFrPvcStatsTableEntry
+    MAX-ACCESS          not-accessible
+    STATUS              current
+    DESCRIPTION
+                        "An entry in the FrPvcStats Table"
+    INDEX               { nnbundleId, nnfrPvcDlci }
+    ::= {nnfrPvcStatsTable 1 }
+
+
+NnFrPvcStatsTableEntry ::= SEQUENCE {
+    nnfrPvcStatsBytesRxLastBootOrClear       Counter32,
+    nnfrPvcStatsBytesTxLastBootOrClear       Counter32,
+    nnfrPvcStatsPktsRxLastBootOrClear        Counter32,
+    nnfrPvcStatsPktsTxLastBootOrClear        Counter32,
+    nnfrPvcStatsErrPktsRxLastBootOrClear     Counter32,
+    nnfrPvcStatsUpDownStatesLastBootOrClear  Counter32,
+    nnfrPvcStatsBytesRxLastFiveMins          Counter32,
+    nnfrPvcStatsBytesTxLastFiveMins          Counter32,
+    nnfrPvcStatsPktsRxLastFiveMins           Counter32,
+    nnfrPvcStatsPktsTxLastFiveMins           Counter32,
+    nnfrPvcStatsErrPktsRxLastFiveMins        Counter32,
+    nnfrPvcStatsUpDownStatesLastFiveMins     Counter32
+}
+
+
+nnfrPvcStatsBytesRxLastBootOrClear    OBJECT-TYPE
+    SYNTAX                          Counter32
+    MAX-ACCESS                      read-only
+    STATUS                          current
+    DESCRIPTION 
+                                    "Number of bytes received on a pvc since
+                                     boot or last statistics clear."
+    ::= { nnfrPvcStatsTableEntry 1 }
+
+
+nnfrPvcStatsBytesTxLastBootOrClear   OBJECT-TYPE
+    SYNTAX                         Counter32
+    MAX-ACCESS                     read-only
+    STATUS                         current
+    DESCRIPTION 
+                                   "Number of bytes transmitted on a pvc since 
+                                   boot or last statistics clear."
+    ::= { nnfrPvcStatsTableEntry 2 }
+
+
+nnfrPvcStatsPktsRxLastBootOrClear   OBJECT-TYPE
+    SYNTAX                        Counter32
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION 
+                                  "Number of packets received  since boot 
+                                   or last statistics clear."
+    ::= { nnfrPvcStatsTableEntry 3 }
+
+
+nnfrPvcStatsPktsTxLastBootOrClear   OBJECT-TYPE
+    SYNTAX                        Counter32
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION 
+                                  "Number of packets transmitted since boot 
+                                   or last statistics clear."
+    ::= { nnfrPvcStatsTableEntry 4 }
+
+
+nnfrPvcStatsErrPktsRxLastBootOrClear   OBJECT-TYPE
+    SYNTAX                           Counter32
+    MAX-ACCESS                       read-only
+    STATUS                           current
+    DESCRIPTION 
+                                     "Number of errored packets received since
+                                      boot or last statistics clear."
+   ::= { nnfrPvcStatsTableEntry 5 }
+
+
+nnfrPvcStatsUpDownStatesLastBootOrClear   OBJECT-TYPE
+   SYNTAX                               Counter32
+   MAX-ACCESS                           read-only
+   STATUS                               current
+   DESCRIPTION 
+                                        "Number of times state(up or down) of
+                                         the pvc changed in since boot or last
+                                         statistics clear."
+   ::= { nnfrPvcStatsTableEntry 6 }
+
+
+nnfrPvcStatsBytesRxLastFiveMins          OBJECT-TYPE
+    SYNTAX                             Counter32
+    MAX-ACCESS                         read-only
+    STATUS                             current
+    DESCRIPTION 
+                                       "Number of bytes received in the last 
+                                        five minutes."
+    ::= { nnfrPvcStatsTableEntry 7 }
+
+
+nnfrPvcStatsBytesTxLastFiveMins          OBJECT-TYPE
+    SYNTAX                             Counter32
+    MAX-ACCESS                         read-only
+    STATUS                             current
+    DESCRIPTION 
+                                       "Number of bytes transmitted in the last
+                                        five minutes."
+    ::= { nnfrPvcStatsTableEntry 8 }
+
+
+nnfrPvcStatsPktsRxLastFiveMins           OBJECT-TYPE
+    SYNTAX                             Counter32
+    MAX-ACCESS                         read-only
+    STATUS                             current
+    DESCRIPTION 
+                                       "Number of packets received in the last
+                                        five minutes."
+    ::= { nnfrPvcStatsTableEntry 9 }
+
+
+nnfrPvcStatsPktsTxLastFiveMins          OBJECT-TYPE
+    SYNTAX                            Counter32
+    MAX-ACCESS                        read-only
+    STATUS                            current
+    DESCRIPTION 
+                                      "Number of packets transmitted in the last
+                                       five minutes."
+    ::= { nnfrPvcStatsTableEntry 10 }
+
+
+nnfrPvcStatsErrPktsRxLastFiveMins       OBJECT-TYPE
+    SYNTAX                            Counter32
+    MAX-ACCESS                        read-only
+    STATUS                            current
+    DESCRIPTION 
+                                      "Number of errored packets received in the
+                                       last five minutes." 
+    ::= { nnfrPvcStatsTableEntry 11 }
+
+nnfrPvcStatsUpDownStatesLastFiveMins    OBJECT-TYPE
+    SYNTAX                            Counter32
+    MAX-ACCESS                        read-only
+    STATUS                            current
+    DESCRIPTION 
+                                      "Number of times state(up or down) of
+                                       the pvc changed in the last five
+                                       minutes."
+    ::= { nnfrPvcStatsTableEntry 12 }
+
+-- frAvcTable definition
+-- The following avc table lists all parameters associated with a 
+-- avc.  Items such as encapsulation, IP address, and subnet mask
+-- need to have proper values for the avc to function properly.
+-- Default values may not work.
+
+nnfrAvcTable         OBJECT-TYPE
+        SYNTAX          SEQUENCE OF NnFrAvcTableEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION 
+                        "End-to-End MFR avc parameters are defined
+                        in this table."
+        ::= {nnfrMib 5}
+
+nnfrAvcTableEntry    OBJECT-TYPE
+        SYNTAX          NnFrAvcTableEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION     "avc parameter entries are listed in this 
+                        table."
+        INDEX           { nnfrAvcId }
+        ::= {nnfrAvcTable 1}
+
+NnFrAvcTableEntry ::= SEQUENCE {
+        nnfrAvcId                         Integer32,
+        nnfrAvcDlci                       Integer32(16..991),
+        nnfrAvcName                       DisplayString,
+--        nnfrAvcDescr                      DisplayString, 09/16/01: Description not available in CLI
+        nnfrAvcIpAddr                     IpAddress,
+        nnfrAvcIpSubnetMask               IpAddress,
+        nnfrAvcRemoteIpAddr               IpAddress,
+        nnfrAvcClass                      INTEGER,
+        nnfrAvcClassThreshold             Integer32,
+        nnfrAvcFragmentSize               Integer32,
+        nnfrAvcSegThreshold               Integer32,
+        nnfrAvcSequence                   INTEGER,
+        nnfrAvcDiffDelay                  Integer32,
+        nnfrAvcEnhancedMode               INTEGER,
+        nnfrAvcNoOfCvcs                   Integer32,
+        nnfrAvcTotalBw                    Integer32,
+        nnfrAvcEnable                     TruthValue, 
+        nnfrAvcRowStatus                  RowStatus   
+        }
+
+nnfrAvcId            OBJECT-TYPE
+        SYNTAX          Integer32
+        MAX-ACCESS      not-accessible  
+        STATUS          current
+        DESCRIPTION     "frAvcId is the identifier of an avc. To 
+                        configure an avc, this parameter must be 
+                        used as the index. This is assigned internally 
+                        by the system. Whenever a row creation 
+                        needs to occur in the avcTable, the 
+                        frAvcId is entered as 65535."
+        ::= { nnfrAvcTableEntry 1}
+
+
+nnfrAvcDlci           OBJECT-TYPE
+    SYNTAX          Integer32(16..991)
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+                    "Data Link Connection Identifier of the avc. The value
+                     ranges from 16 to 1022. This number is unique across
+                     all the avcs created. Once set during creation,
+                     it can't be changed."
+        ::= { nnfrAvcTableEntry 2}
+
+nnfrAvcName          OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (1..8))
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "Name of the avc. To configure an avc, 
+                        this parameter must be set. That is, a 
+                        descriptive name should be given to an avc. 
+                        The maximum length of an avc name is 8 
+                        characters. This parameter is set once during 
+                        the creation of an avc. an avc can not be 
+                        renamed." 
+        ::= { nnfrAvcTableEntry 3}
+
+--frAvcDescr         OBJECT-TYPE
+--        SYNTAX          DisplayString (SIZE (1..25))
+--        MAX-ACCESS      read-create
+--        STATUS          current
+--        DESCRIPTION     "Brief description of the avc. The maximum 
+--                        length of this parameter is 25 characters."
+--        DEFVAL          { "" }
+--        ::= { nnfrAvcTableEntry 4 }
+
+nnfrAvcIpAddr        OBJECT-TYPE
+        SYNTAX          IpAddress
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "The avc's source IP address. This is one 
+                        of the parameters required to set up IP 
+                        multiplexing for an avc. Also the parameters
+                        avcIpAddr and avcSubnetMask have to be set 
+                        together during the same request. To unconfigure 
+                        the IP address, a set operation is performed with 
+                        the value 0.0.0.0" 
+        DEFVAL          { 0 }  
+        ::= { nnfrAvcTableEntry 4}
+
+nnfrAvcIpSubnetMask    OBJECT-TYPE
+        SYNTAX          IpAddress
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "This parameter represents the source subnet 
+                        mask address. This is one of the parameters 
+                        required to set up IP multiplexing for a 
+                        avc. This parameter is set along with the 
+                        avcIpAddr parameter during the same 
+                        request." 
+        DEFVAL          { 0 }  
+        ::= { nnfrAvcTableEntry 5}
+
+nnfrAvcRemoteIpAddr      OBJECT-TYPE
+    SYNTAX           IpAddress
+    MAX-ACCESS       read-create
+    STATUS           current
+    DESCRIPTION
+                     "Remote IP address to be mapped for the avc. If configured,
+                      the arp table is updated with this static entry and
+                      inverse arp request packets are no longer sent for this
+                      interface.To unconfigure this parameter, a set operation
+                      is performed with the value 0.0.0.0 ."
+        ::= { nnfrAvcTableEntry 6}
+
+
+nnfrAvcClass           OBJECT-TYPE
+    SYNTAX         INTEGER {
+                   classA(1),
+                   classB(2),
+                   classC(3),
+                   classD(4),
+                   classE(5)
+                 }
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+                 "classA  -- avc is UP when at least 1 cvc is UP
+                  classB  -- avc is UP when all cvcs are UP
+                  classC  -- avc is UP when user-specified # of cvcs are UP
+                  classD  -- avc is UP when user-specified min. CIR of each cvc is met
+                  classE  -- avc is UP when user-specified min. CIR of the avc is met
+                  In the case of classC/D/E, frAvcClassThreshold should be 
+                  configured along with avcClass in an atomic set operation."
+        ::= { nnfrAvcTableEntry 7 }
+
+nnfrAvcClassThreshold    OBJECT-TYPE
+    SYNTAX           Integer32
+    MAX-ACCESS       read-write
+    STATUS           current
+    DESCRIPTION
+                     "Threshold - minimum number of links required to
+                      activate bundle, for the avcClass 'classC'. For
+                      'classD' or 'classE', the value will be in bits per second.
+                      For 'classA' and 'classB', this value will hold no
+                      significance. "
+        ::= { nnfrAvcTableEntry 8}
+
+nnfrAvcFragmentSize      OBJECT-TYPE
+        SYNTAX       Integer32 (56..4096)
+        MAX-ACCESS   read-write
+        STATUS       current
+        DESCRIPTION 
+                     "The frame size for multi-link frame relay End-to-End avc in 
+                      bytes.  This value defines the maximum size of any fragment 
+                      that can be transmitted on any cvc. Frames larger than this
+                      size must be fragmented."
+        ::= { nnfrAvcTableEntry 9}
+
+nnfrAvcSegThreshold      OBJECT-TYPE
+        SYNTAX       Integer32 (56..4096)
+        MAX-ACCESS   read-write
+        STATUS       current
+        DESCRIPTION 
+                     "Segment threshold packet size in bytes. This value defines
+                      the minimum size of any fragment that can be transmitted on
+                      any cvc. Frames smaller than this size must not be fragmented."
+        ::= { nnfrAvcTableEntry 10}
+
+nnfrAvcSequence          OBJECT-TYPE
+	    SYNTAX       INTEGER {
+		             short(1),
+		             long(2)
+		           }
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+		"multilink frame relay sequence number length (short = 12 bits ; long = 
+		24 bits.24 bit sequence space increases MFR header by 2 more bytes, but
+        in those situations where the differential delay is high ( > 50 ms ),
+        larger sequence numbers help reduce packet drops that can happen when
+        short sequence numbers complete a cycle quickly."
+	DEFVAL { long }
+	::= { nnfrAvcTableEntry 11}
+
+nnfrAvcDiffDelay         OBJECT-TYPE
+        SYNTAX       Integer32
+        MAX-ACCESS   read-write
+        STATUS       current
+        DESCRIPTION 
+                     "Differential delay in milli seconds. This variable 
+                      can be set only when the AVC is in Enhanced FRF.15
+                      mode. This value indicates the maximum tolerable differential
+                      delay between any two CVCs. Any CVC whose diff. delay value
+                      exceeds this configured value will be brought down from active
+                      data transfer until it's diff. delay values recover.
+                      Possible Values: 0 and 10ms to 128ms.Setting the
+                      value of 0 will disable diff. delay related CVC bring down feature."
+	DEFVAL { 80 }
+	::= { nnfrAvcTableEntry 12}
+
+nnfrAvcEnhancedMode    OBJECT-TYPE
+	    SYNTAX       INTEGER {
+		             disable(0),
+		             enable(1)
+		           }
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+                    "Enhanced FRF.15 mode is a modification of the standard FRF.15 to
+                     improve the end to end CVC status integrity and to calculate and act on
+                     differential delay build up. By default, the AVC is created in Standard
+                     FRF.15 mode."
+	DEFVAL { disable }
+	::= { nnfrAvcTableEntry 13}
+
+nnfrAvcNoOfCvcs      OBJECT-TYPE
+        SYNTAX          Integer32
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Indicates the number of links configured in 
+                        the avc." 
+        ::= { nnfrAvcTableEntry 14}
+
+nnfrAvcTotalBw       OBJECT-TYPE
+        SYNTAX          Integer32
+        UNITS           "kbps"
+        MAX-ACCESS      read-only
+        STATUS          current
+        DESCRIPTION     "Indicates the total bandwidth for this avc.
+                        The avc bandwidth is the aggregated band-
+                        widths of all the links assigned to a 
+                        particular avc." 
+        ::= { nnfrAvcTableEntry 15}
+
+nnfrAvcEnable         OBJECT-TYPE
+    SYNTAX          TruthValue 
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+                    "Enables the AVC. By default AVC is enabled. 
+                    Writing one(1) on this enables AVC, zero(0)
+                    disables it."
+    DEFVAL          { true }
+    ::= { nnfrAvcTableEntry 16}
+
+nnfrAvcRowStatus OBJECT-TYPE
+        SYNTAX          RowStatus
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "frAvcRowStatus is used to add/delete a row 
+                        in the table. Adding or deleting a row 
+                        corresponds to creating an avc or deleting
+                        an avc.  In order to add a row to the avc 
+                        table, a set on this parameter should be done 
+                        with the value 4 (createAndGo) and 
+                        frAvcId index to be used is 65535. 
+                        A request to create a row can be 
+                        completed successfully only if a set on the 
+                        avcRowStatus(4), frAvcName and frAvcDlci
+                        come in the same request. To delete a row 
+                        this parameter has to be set with the value 6
+                        (destroy)." 
+        ::= { nnfrAvcTableEntry 17}
+
+-- frCvcTable definition
+-- The following avc table lists the two parameters associated with a 
+-- cvc. The dlci and the bundle , the cvc belongs to.
+
+nnfrCvcTable         OBJECT-TYPE
+        SYNTAX          SEQUENCE OF NnFrCvcTableEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION 
+                        "End-to-End MFR cvc parameters are defined
+                        in this table."
+        ::= {nnfrMib 6}
+
+nnfrCvcTableEntry    OBJECT-TYPE
+        SYNTAX          NnFrCvcTableEntry
+        MAX-ACCESS      not-accessible
+        STATUS          current
+        DESCRIPTION     "cvc parameter entries are listed in this 
+                        table."
+        INDEX           { nnfrAvcId,nnbundleId,nnfrPvcDlci }
+        ::= {nnfrCvcTable 1}
+
+NnFrCvcTableEntry ::= SEQUENCE {
+        nnfrCvcBundleName                 DisplayString,
+        nnfrCvcEnable                     TruthValue,
+        nnfrCvcRowStatus                  RowStatus
+        }
+
+--nnfrCvcDlci           OBJECT-TYPE
+--    SYNTAX          Integer32(16..991)
+--    MAX-ACCESS      read-create
+--    STATUS          current
+--    DESCRIPTION
+--                    "Data Link Connection Identifier of the cvc. For End-to-End 
+--                     MFR avc, to assign a Constituent Virtual Circuit for 
+--                     aggregation. This frCvcDlci is used in conjunction with
+--                     frAvcId and bundleId as indices to the row. Use appropriate
+--                     value as index and set RowStatus to CreateAndGo (4) to create
+--                     a new row.
+--                     "
+--        ::= { nnfrCvcTableEntry 1}
+
+nnfrCvcBundleName     OBJECT-TYPE
+    SYNTAX          DisplayString
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+                   "The name of the bundle of the CVC which needs to be added
+                    to the avc. This parameter is used for display only.
+                   "
+        ::= { nnfrCvcTableEntry 1}
+
+nnfrCvcEnable         OBJECT-TYPE
+    SYNTAX          TruthValue 
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+                    "Enables/disables the CVC. By default CVC is enabled. 
+                    Writing one(1) on this enables CVC, zero(0)
+                    disables it."
+    DEFVAL          { true }
+    ::= { nnfrCvcTableEntry 2}
+
+nnfrCvcRowStatus OBJECT-TYPE
+        SYNTAX          RowStatus
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION     "frCvcRowStatus is used to add/delete a row 
+                        in the table. Adding or deleting a row 
+                        corresponds to adding or removing a CVC from an AVC. 
+                        Adding a new row will require to index by the frAvcId,bundleId
+                        and frPvcDlci. Use proper index values and set RowStatus to
+                        CreateAndGo (4) to create a new row. To destroy, use value
+                        Destroy (6).
+                        "
+        ::= { nnfrCvcTableEntry 3}
+
+-- avcStatsTable Definition
+-- This table lists the statistics objects for a frame relay DTE-to-DTE
+-- AVC interface.
+-- A row in the table is implicitly created when an AVC is created. 
+-- The frAvcId of the frame-relay AVC is used to index into the table. 
+
+nnfrAvcStatsTable    OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnAvcStatsTableEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+                "The statistics objects for a frame-relay interface."
+    ::= { nnfrMib 7 }
+
+
+nnfrAvcStatsTableEntry   OBJECT-TYPE
+    SYNTAX          NnAvcStatsTableEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+                    "An entry in the frAvcStatsTable."
+    INDEX           { nnfrAvcId }
+    ::= {nnfrAvcStatsTable 1 }
+
+
+NnAvcStatsTableEntry  ::= SEQUENCE {
+    nnfrAvcStatsBytesRxLastBootOrClear       Counter32,
+    nnfrAvcStatsBytesTxLastBootOrClear       Counter32,
+    nnfrAvcStatsPktsRxLastBootOrClear        Counter32,
+    nnfrAvcStatsPktsTxLastBootOrClear        Counter32,
+    nnfrAvcStatsErrPktsRxLastBootOrClear     Counter32,
+    nnfrAvcStatsUpDownStatesLastBootOrClear  Counter32,
+    nnfrAvcStatsBytesRxLastFiveMins          Counter32,
+    nnfrAvcStatsBytesTxLastFiveMins          Counter32,
+    nnfrAvcStatsPktsRxLastFiveMins           Counter32,
+    nnfrAvcStatsPktsTxLastFiveMins           Counter32,
+    nnfrAvcStatsErrPktsRxLastFiveMins        Counter32,
+    nnfrAvcStatsUpDownStatesLastFiveMins     Counter32
+}
+
+nnfrAvcStatsBytesRxLastBootOrClear    OBJECT-TYPE
+    SYNTAX                          Counter32
+    MAX-ACCESS                      read-only
+    STATUS                          current
+    DESCRIPTION 
+                                    "Number of bytes received on an avc since
+                                     boot or last statistics clear."
+    ::= { nnfrAvcStatsTableEntry 1 }
+
+
+nnfrAvcStatsBytesTxLastBootOrClear   OBJECT-TYPE
+    SYNTAX                         Counter32
+    MAX-ACCESS                     read-only
+    STATUS                         current
+    DESCRIPTION 
+                                   "Number of bytes transmitted on an avc  since 
+                                   boot or last statistics clear."
+    ::= { nnfrAvcStatsTableEntry 2 }
+
+
+nnfrAvcStatsPktsRxLastBootOrClear   OBJECT-TYPE
+    SYNTAX                        Counter32
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION 
+                                  "Number of packets received  since boot 
+                                   or last statistics clear."
+    ::= { nnfrAvcStatsTableEntry 3 }
+
+
+nnfrAvcStatsPktsTxLastBootOrClear   OBJECT-TYPE
+    SYNTAX                        Counter32
+    MAX-ACCESS                    read-only
+    STATUS                        current
+    DESCRIPTION 
+                                  "Number of packets transmitted since boot 
+                                   or last statistics clear."
+    ::= { nnfrAvcStatsTableEntry 4 }
+
+
+nnfrAvcStatsErrPktsRxLastBootOrClear   OBJECT-TYPE
+    SYNTAX                           Counter32
+    MAX-ACCESS                       read-only
+    STATUS                           current
+    DESCRIPTION 
+                                     "Number of errored packets received since
+                                      boot or last statistics clear."
+   ::= { nnfrAvcStatsTableEntry 5 }
+
+
+nnfrAvcStatsUpDownStatesLastBootOrClear   OBJECT-TYPE
+   SYNTAX                               Counter32
+   MAX-ACCESS                           read-only
+   STATUS                               current
+   DESCRIPTION 
+                                        "Number of times state(up or down) of
+                                         the avc changed in since boot or last
+                                         statistics clear."
+   ::= { nnfrAvcStatsTableEntry 6 }
+
+
+nnfrAvcStatsBytesRxLastFiveMins          OBJECT-TYPE
+    SYNTAX                             Counter32
+    MAX-ACCESS                         read-only
+    STATUS                             current
+    DESCRIPTION 
+                                       "Number of bytes received in the last 
+                                        five minutes."
+    ::= { nnfrAvcStatsTableEntry 7 }
+
+
+nnfrAvcStatsBytesTxLastFiveMins          OBJECT-TYPE
+    SYNTAX                             Counter32
+    MAX-ACCESS                         read-only
+    STATUS                             current
+    DESCRIPTION 
+                                       "Number of bytes transmitted in the last
+                                        five minutes."
+    ::= { nnfrAvcStatsTableEntry 8 }
+
+
+nnfrAvcStatsPktsRxLastFiveMins           OBJECT-TYPE
+    SYNTAX                             Counter32
+    MAX-ACCESS                         read-only
+    STATUS                             current
+    DESCRIPTION 
+                                       "Number of packets received in the last
+                                        five minutes."
+    ::= { nnfrAvcStatsTableEntry 9 }
+
+
+nnfrAvcStatsPktsTxLastFiveMins          OBJECT-TYPE
+    SYNTAX                            Counter32
+    MAX-ACCESS                        read-only
+    STATUS                            current
+    DESCRIPTION 
+                                      "Number of packets transmitted in the last
+                                       five minutes."
+    ::= { nnfrAvcStatsTableEntry 10 }
+
+
+nnfrAvcStatsErrPktsRxLastFiveMins       OBJECT-TYPE
+    SYNTAX                            Counter32
+    MAX-ACCESS                        read-only
+    STATUS                            current
+    DESCRIPTION 
+                                      "Number of errored packets received in the
+                                       last five minutes." 
+    ::= { nnfrAvcStatsTableEntry 11 }
+
+nnfrAvcStatsUpDownStatesLastFiveMins    OBJECT-TYPE
+    SYNTAX                            Counter32
+    MAX-ACCESS                        read-only
+    STATUS                            current
+    DESCRIPTION 
+                                      "Number of times state(up or down) of
+                                       the avc changed in the last five
+                                       minutes."
+    ::= { nnfrAvcStatsTableEntry 12 }
+
+END

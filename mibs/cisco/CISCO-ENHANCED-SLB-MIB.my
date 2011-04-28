@@ -3,7 +3,7 @@
 --   
 -- February 2006, Subra Hegde
 --   
--- Copyright (c) 2006, 2008 by cisco Systems Inc.
+-- Copyright (c) 1999, 2002, 2004, 2006, 2007, 2009 by cisco Systems, Inc.
 -- All rights reserved.
 -- *****************************************************************
 
@@ -50,7 +50,7 @@ IMPORTS
 
 
 ciscoEnhancedSlbMIB MODULE-IDENTITY
-    LAST-UPDATED    "200805210000Z"
+    LAST-UPDATED    "200909190000Z"
     ORGANIZATION    "Cisco Systems, Inc."
     CONTACT-INFO
             "Cisco Systems
@@ -118,6 +118,34 @@ ciscoEnhancedSlbMIB MODULE-IDENTITY
                  In certain applications, the client returns 
                  the information to the server to maintain 
                  the state between the client and the server."
+    REVISION        "200909190000Z"
+    DESCRIPTION
+        "-Added cesServerFarmRserverDescr to cesServerFarmRserverTable.
+
+        -Deprecated cesRealServerStateUp NOTIFICATION-TYPE.
+
+        -Deprecated cesRealServerStateDown NOTIFICATION-TYPE.
+
+        -Deprecated cesRealServerStateChange NOTIFICATION-TYPE.
+
+        -Added cesRealServerStateUpRev1 NOTIFICATION-TYPE.
+
+        -Added cesRealServerStateDownRev1 NOTIFICATION-TYPE.
+
+        -Added cesRealServerStateChangeRev1 NOTIFICATION-TYPE.
+
+        -Deprecated cesRealServerFarmGroup OBJECT-GROUP.
+
+        -Deprecated cesRealServerNotifGroupRev1 NOTIFICATION-GROUP.
+
+        -Added cesRealServerFarmGroupRev1 OBJECT-GROUP.
+
+        -Added cesRealServerNotifGroupRev2 NOTIFICATION-GROUP
+
+        -Deprecated ciscoEnhancedSlbMIBComplianceRev3
+        MODULE-COMPLIANCE.
+
+        -Added ciscoEnhancedSlbMIBComplianceRev4 MODULE-COMPLIANCE."
     REVISION        "200805210000Z"
     DESCRIPTION
         "-Added the following objects to the cesRserverProbeTable
@@ -374,7 +402,7 @@ cesRserverMinConns OBJECT-TYPE
     ::= { cesRserverEntry 7 }
 
 cesRserverAdminWeight OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..65535 )
+    SYNTAX          Unsigned32 (0..65535)
     MAX-ACCESS      read-create
     STATUS          current
     DESCRIPTION
@@ -405,7 +433,7 @@ cesRserverRedirectRelocationStr OBJECT-TYPE
     ::= { cesRserverEntry 9 }
 
 cesRserverRedirectCode OBJECT-TYPE
-    SYNTAX          CiscoHTTPResponseStatusCode (300..399 )
+    SYNTAX          CiscoHTTPResponseStatusCode (300..399)
     MAX-ACCESS      read-create
     STATUS          current
     DESCRIPTION
@@ -722,7 +750,8 @@ CesServerFarmRserverEntry ::= SEQUENCE {
         cesServerFarmRserverDroppedConns Counter64,
         cesServerFarmRserverCurrentConns Counter64,
         cesServerFarmRserverStorageType  StorageType,
-        cesServerFarmRserverRowStatus    RowStatus
+        cesServerFarmRserverRowStatus    RowStatus,
+        cesServerFarmRserverDescr        SnmpAdminString
 }
 
 cesServerFarmRserverPort OBJECT-TYPE
@@ -737,7 +766,7 @@ cesServerFarmRserverPort OBJECT-TYPE
     ::= { cesServerFarmRserverEntry 1 }
 
 cesServerFarmRserverAdminWeight OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..65535 )
+    SYNTAX          Unsigned32 (0..65535)
     MAX-ACCESS      read-create
     STATUS          current
     DESCRIPTION
@@ -750,7 +779,7 @@ cesServerFarmRserverAdminWeight OBJECT-TYPE
     ::= { cesServerFarmRserverEntry 2 }
 
 cesServerFarmRserverOperWeight OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..65535 )
+    SYNTAX          Unsigned32 (0..65535)
     MAX-ACCESS      read-create
     STATUS          current
     DESCRIPTION
@@ -912,6 +941,15 @@ cesServerFarmRserverRowStatus OBJECT-TYPE
         "This object is used for adding/deleting
         entries in the table." 
     ::= { cesServerFarmRserverEntry 16 }
+
+cesServerFarmRserverDescr OBJECT-TYPE
+    SYNTAX          SnmpAdminString
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object contains the descriptive text
+        qualifying the real server." 
+    ::= { cesServerFarmRserverEntry 17 }
  
 
 -- Probes configured in Real Servers.
@@ -1038,7 +1076,7 @@ cesRealServerStateUp NOTIFICATION-TYPE
                         cesRserverIpAddressType,
                         cesRserverIpAddress
                     }
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "This notification is generated when a real server
         changes to 'inservice' state by the user intervention.
@@ -1063,7 +1101,7 @@ cesRealServerStateDown NOTIFICATION-TYPE
                         cesRserverIpAddressType,
                         cesRserverIpAddress
                     }
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "This notification is generated when a real server
         changes to 'outOfService' state by the user intervention.
@@ -1089,7 +1127,7 @@ cesRealServerStateChange NOTIFICATION-TYPE
                         cesRserverIpAddress,
                         cesProbeName
                     }
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "This notification generated when a real server
         changes to a new state other than that is initiated
@@ -1165,6 +1203,134 @@ cesRserverStateChange NOTIFICATION-TYPE
         octet string specifies that real server state
         change is not due to probe failure."
    ::= { ciscoEnhancedSlbMIBNotifs 6 }
+
+cesRealServerStateUpRev1 NOTIFICATION-TYPE
+    OBJECTS         {
+                        cesRealServerName,
+                        cesServerFarmRserverBackupPort,
+                        cesServerFarmName,
+                        cesServerFarmRserverAdminStatus,
+                        cesServerFarmRserverOperStatus,
+                        cesRserverIpAddressType,
+                        cesRserverIpAddress,
+                        cesServerFarmRserverDescr
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This notification is generated when a real server
+        changes to 'inservice' state by the user intervention.
+
+        The cesServerFarmName refers to the server farm
+        to which the real server identified by the 
+        cesRealServerName is associated.
+
+        The cesServerFarmRserverBackupPort refers to the
+        real server port. This object contains the value
+        of cesServerFarmRserverPort.
+
+        The cesServerFarmRserverAdminStatus refers to the
+        administrative state of the real server.
+
+        The cesServerFarmRserverOperStatus refers to the 
+        current state of the real server.
+
+        The cesRserverIpAddress refers to the internet
+        address of the real server.
+
+        The cesRserverIpAddressType refers to the type of
+        internet address in cesRserverIpAddress.
+
+        The cesServerFarmRserverDescr refers to the
+        description configured for the real server."
+   ::= { ciscoEnhancedSlbMIBNotifs 7 }
+
+cesRealServerStateDownRev1 NOTIFICATION-TYPE
+    OBJECTS         {
+                        cesRealServerName,
+                        cesServerFarmRserverBackupPort,
+                        cesServerFarmName,
+                        cesServerFarmRserverAdminStatus,
+                        cesServerFarmRserverOperStatus,
+                        cesServerFarmRserverStateDescr,
+                        cesRserverIpAddressType,
+                        cesRserverIpAddress,
+                        cesServerFarmRserverDescr
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This notification is generated when a real server
+        changes to 'outOfService' state by the user intervention.
+
+        The cesServerFarmName refers to the server farm
+        to which the real server identified by the 
+        cesRealServerName is associated.
+
+        The cesServerFarmRserverBackupPort refers to the
+        real server port. This object contains the value
+        of cesServerFarmRserverPort.
+
+        The cesServerFarmRserverAdminStatus refers to the
+        administrative state of the real server.
+
+        The cesServerFarmRserverOperStatus refers to the 
+        current state of the real server.
+
+        The cesRserverIpAddress refers to the internet
+        address of the real server.
+
+        The cesRserverIpAddressType refers to the type of
+        internet address in cesRserverIpAddress.
+
+        The cesServerFarmRserverDescr refers to the
+        description configured for the real server."
+   ::= { ciscoEnhancedSlbMIBNotifs 8 }
+
+cesRealServerStateChangeRev1 NOTIFICATION-TYPE
+    OBJECTS         {
+                        cesRealServerName,
+                        cesServerFarmRserverBackupPort,
+                        cesServerFarmName,
+                        cesServerFarmRserverAdminStatus,
+                        cesServerFarmRserverOperStatus,
+                        cesServerFarmRserverStateDescr,
+                        cesRserverIpAddressType,
+                        cesRserverIpAddress,
+                        cesProbeName,
+                        cesServerFarmRserverDescr
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This notification is generated when a real server
+        changes to a new state other than that is initiated
+        by the user.  This notification is sent for the 
+        reasons that are specified in objects:
+                   cesServerFarmRserverOperStatus 
+                   cesRserverStatechangeDescr.
+
+        The cesServerFarmName refers to the server farm
+        to which the real server identified by the 
+        cesRealServerName is associated.
+
+        The cesServerFarmRserverBackupPort refers to the
+        real server port. This object contains the value
+        of cesServerFarmRserverPort.
+
+        The cesServerFarmRserverAdminStatus refers to the
+        administrative state of the real server.
+
+        The cesRserverIpAddress refers to the internet
+        address of the real server.
+
+        The cesRserverIpAddressType refers to the type of
+        internet address in cesRserverIpAddress.
+
+        The cesProbeName object with zero length
+        octet string specifies that real server state
+        change is not due to probe failure.
+
+        The cesServerFarmRserverDescr refers to the
+        description configured for the real server."
+   ::= { ciscoEnhancedSlbMIBNotifs 9 }
 -- Conformance Information
 
 ciscoEnhancedSlbMIBCompliances  OBJECT IDENTIFIER
@@ -1245,7 +1411,7 @@ ciscoEnhancedSlbMIBComplianceRev2 MODULE-COMPLIANCE
     ::= { ciscoEnhancedSlbMIBCompliances 3 }
 
 ciscoEnhancedSlbMIBComplianceRev3 MODULE-COMPLIANCE
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The compliance statement for entities which implement
         the Cisco Enhanced SLB MIB."
@@ -1267,6 +1433,30 @@ ciscoEnhancedSlbMIBComplianceRev3 MODULE-COMPLIANCE
         "This group is mandatory for those systems
         which support real server notifications."
     ::= { ciscoEnhancedSlbMIBCompliances 4 }
+
+ciscoEnhancedSlbMIBComplianceRev4 MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for entities which implement the Cisco
+        Enhanced SLB MIB."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        cesRealServerFarmGroupRev1,
+                        cesRealServerGroupRev1,
+                        cesRserverProbeGroupRev1,
+                        cesRealserverProbeGroup
+                    }
+
+    GROUP           cesNotificationObjectGroup
+    DESCRIPTION
+        "This group is mandatory for those systems which support
+        enabling/disabling of notifications."
+
+    GROUP           cesRealServerNotifGroupRev2
+    DESCRIPTION
+        "This group is mandatory for those systems which supports
+        real server notifications."
+    ::= { ciscoEnhancedSlbMIBCompliances 5 }
 
 -- Units of Conformance
 
@@ -1315,7 +1505,7 @@ cesRealServerFarmGroup OBJECT-GROUP
                         cesServerFarmRserverStorageType,
                         cesServerFarmRserverRowStatus
                     }
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The group contains obbjects for
         real server configuration in a server farm."
@@ -1354,7 +1544,7 @@ cesRealServerNotifGroupRev1 NOTIFICATION-GROUP
                         cesRserverStateDown,
                         cesRserverStateChange
                     }
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "This group contains real server Notifications."
     ::= { ciscoEnhancedSlbMIBGroups 11 }
@@ -1429,4 +1619,46 @@ cesRserverProbeGroupRev1 OBJECT-GROUP
         Rserver probe configuration and Rserver probe statistics."
     ::= { ciscoEnhancedSlbMIBGroups 15 }
 
+cesRealServerFarmGroupRev1 OBJECT-GROUP
+    OBJECTS         {
+                        cesServerFarmRserverAdminWeight,
+                        cesServerFarmRserverOperWeight,
+                        cesServerFarmRserverMaxConns,
+                        cesServerFarmRserverMinConns,
+                        cesServerFarmRserverAdminStatus,
+                        cesServerFarmRserverOperStatus,
+                        cesServerFarmRserverStateDescr,
+                        cesServerFarmRserverBackupName,
+                        cesServerFarmRserverBackupPort,
+                        cesServerFarmRserverTotalConns,
+                        cesServerFarmRserverFailedConns,
+                        cesServerFarmRserverDroppedConns,
+                        cesServerFarmRserverCurrentConns,
+                        cesServerFarmRserverStorageType,
+                        cesServerFarmRserverRowStatus,
+                        cesServerFarmRserverDescr
+                    }
+    STATUS          current
+    DESCRIPTION
+        "The group contains objects for real server configuration in a
+        server farm."
+    ::= { ciscoEnhancedSlbMIBGroups 19 }
+
+cesRealServerNotifGroupRev2 NOTIFICATION-GROUP
+   NOTIFICATIONS    {
+                        cesRealServerStateUpRev1,
+                        cesRealServerStateDownRev1,
+                        cesRealServerStateChangeRev1,
+                        cesRserverStateUp,
+                        cesRserverStateDown,
+                        cesRserverStateChange
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This group contains real server Notifications."
+    ::= { ciscoEnhancedSlbMIBGroups 21 }
+
 END
+
+
+

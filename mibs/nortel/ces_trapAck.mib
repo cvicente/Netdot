@@ -1,0 +1,132 @@
+
+        CONTIVITY-TRAP-ACKNOWLEDGMENT-MIB DEFINITIONS ::= BEGIN
+                
+        IMPORTS
+                OBJECT-TYPE							FROM RFC-1212
+				DisplayString						FROM RFC1213-MIB
+				MODULE-IDENTITY				 		FROM SNMPv2-SMI
+-- SNMPv2-SMI(RFC2578 or STD58)
+				snmpAgentInfo-Utilities-ces 		FROM CONTIVITY-INFO-V1-MIB;
+
+-- The following MODULE-IDENTITY definition can be commented out if the MIB parser
+-- you are using has trouble parsing it. If you do comment it out, then uncomment 
+-- the following object identifier defintion.
+--   snmpAgentInfo-Utilities-TrapAck-ces OBJECT IDENTIFIER
+--        ::= {snmpAgentInfo-Utilities-ces 2}
+
+		snmpAgentInfo-Utilities-TrapAck-ces  MODULE-IDENTITY
+			LAST-UPDATED "0604062230Z"  -- April 06, 2006 6:30pm EST
+			ORGANIZATION "Nortel"
+			CONTACT-INFO
+				   "support@nortel.com
+            Postal: Nortel
+                    600 Technology Park Drive
+                    Billerica, MA 01821
+            Tel:    +1 978 670 8888
+            E-Mail: support@nortel.com"
+
+			DESCRIPTION
+               "Contivity Trap Acknowledgment MIB"
+			::= { snmpAgentInfo-Utilities-ces 2 }
+
+   trapAck-RevInfo-ces OBJECT IDENTIFIER
+        ::= {snmpAgentInfo-Utilities-TrapAck-ces 1}
+
+	trapAck-RevDate-ces OBJECT-TYPE
+		SYNTAX     DisplayString
+		ACCESS     read-only
+		STATUS     mandatory
+		DESCRIPTION
+				"This value should match the LAST-UPDATED value in the MIB
+				if this section of the mib was modified."
+       ::= { trapAck-RevInfo-ces 1 }
+
+	trapAck-Rev-ces OBJECT-TYPE
+		SYNTAX     INTEGER
+		ACCESS     read-only
+		STATUS     mandatory
+		DESCRIPTION
+				"This is an integer that is increment for each change in 
+				the implementation of the MIB since the LAST-UPDATED date/time."
+       ::= { trapAck-RevInfo-ces 2 }
+
+	trapAck-ServerRev-ces OBJECT-TYPE
+		SYNTAX     DisplayString
+		ACCESS     read-only
+		STATUS     mandatory
+		DESCRIPTION
+                "This is the lowest major and minor version numbers for the server image
+                that this mib implementation is compatible with.
+
+                Usage: if a	customer develops an application that utilizes this mib in
+                server version V4_00. By checking this value they can tell how far back
+                this implementation is available.
+				"
+       ::= { trapAck-RevInfo-ces 3 }
+
+   trapSeverity-ces OBJECT-TYPE
+		SYNTAX     INTEGER
+		ACCESS     not-accessible
+		STATUS     mandatory
+		DESCRIPTION
+				""
+       ::= { snmpAgentInfo-Utilities-TrapAck-ces 2 }
+
+   trapDescription-ces OBJECT-TYPE
+		SYNTAX     INTEGER
+		ACCESS     not-accessible
+		STATUS     mandatory
+		DESCRIPTION
+				""
+       ::= { snmpAgentInfo-Utilities-TrapAck-ces 3 }
+   
+   trapSysUpTime-ces OBJECT-TYPE
+		SYNTAX     INTEGER
+		ACCESS     not-accessible
+		STATUS     mandatory
+		DESCRIPTION
+				""
+       ::= { snmpAgentInfo-Utilities-TrapAck-ces 4 }
+
+   trapOID-ces OBJECT-TYPE
+		SYNTAX     OBJECT IDENTIFIER
+		ACCESS     not-accessible
+		STATUS     mandatory
+		DESCRIPTION
+				""
+       ::= { snmpAgentInfo-Utilities-TrapAck-ces 5 }
+
+   trapAckTable-ces OBJECT-TYPE
+       SYNTAX      SEQUENCE OF TrapAckEntry-ces
+       ACCESS      not-accessible
+       STATUS      mandatory
+       DESCRIPTION
+               ""
+       ::= { snmpAgentInfo-Utilities-TrapAck-ces 6}
+
+   trapAckEntry-ces OBJECT-TYPE
+       SYNTAX      TrapAckEntry-ces
+       ACCESS      not-accessible
+       STATUS      mandatory
+       DESCRIPTION
+               ""
+       INDEX   { trapSeverity-ces, trapDescription-ces, trapSysUpTime-ces, trapOID-ces }
+
+       ::= { trapAckTable-ces 1 }
+
+   TrapAckEntry-ces ::=
+       SEQUENCE {
+           trapAcknowledgement-ces             INTEGER
+       }
+
+   trapAcknowledgement-ces OBJECT-TYPE
+       SYNTAX      INTEGER
+       ACCESS	   read-only
+       STATUS      mandatory
+       DESCRIPTION
+               "Possible Values:
+			   -1 the trap could not be acknowledged.
+			   -2 the trap OID was not found.
+				1 the trap acknowledgement was successful."
+       ::= { trapAckEntry-ces 1 }
+   END

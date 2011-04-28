@@ -1,0 +1,761 @@
+
+NTN-QOS-POLICY-AUX-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+        MODULE-IDENTITY, OBJECT-TYPE, Integer32, Counter32,
+        Counter64
+                FROM SNMPv2-SMI
+        MODULE-COMPLIANCE, OBJECT-GROUP 
+                FROM SNMPv2-CONF
+        TruthValue, RowStatus, StorageType
+                FROM SNMPv2-TC
+        InterfaceIndex
+                FROM IF-MIB
+        RoleCombination, PolicyInstanceId
+                FROM POLICY-FRAMEWORK-PIB
+        qosTargetEntry
+                FROM QOS-POLICY-IP-PIB
+        ntnQosIfParametersExt
+                FROM NTN-QOS-POLICY-EXT-PIB
+        policy
+                FROM SYNOPTICS-ROOT-MIB;
+
+ntnQosPolicyAuxMib MODULE-IDENTITY
+        LAST-UPDATED    "200407200000Z" -- July 20, 2004
+        ORGANIZATION    "Nortel Networks, Inc."
+        CONTACT-INFO
+                                     
+               "Editor: John Seligson
+                        Nortel Networks, Inc.
+                Postal: 4401 Great America Parkway
+                        Santa Clara, CA USA 95054
+                   Tel: +1 408 495-2992
+                E-mail: jseligso@nortelnetworks.com"
+
+        DESCRIPTION
+            "This module defines an infrastructure used
+            for support of policy-based traffic processing 
+            in a network device."
+
+        REVISION "200407200000Z" -- 20 July 2004
+        DESCRIPTION "Version 3: Added version info"  
+
+        ::= { policy 5 }
+
+
+ntnQosPolicyAuxObjects     OBJECT IDENTIFIER ::= { ntnQosPolicyAuxMib 1 }
+ntnQosPolicyAuxConformance OBJECT IDENTIFIER ::= { ntnQosPolicyAuxMib 2 }
+
+ntnQosConfig         OBJECT IDENTIFIER ::= { ntnQosPolicyAuxObjects 1 }
+ntnQosStatistics     OBJECT IDENTIFIER ::= { ntnQosPolicyAuxObjects 2 }
+
+--
+-- Nortel QoS Policy Configuration Objects
+--
+-- The Nortel QoS Configuration objects support the 
+-- configuration of QoS Policy Agent characteristics.
+-- 
+
+ntnQosConfigDynamicMgmt OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    enabled(1),  -- COPS config enabled
+                    disabled(2)  -- COPS config disabled
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION 
+            "Specifies whether dynamic management (e.g., COPS-PR)
+            is currently enabled. Devices may limit support for
+            dynamic management by providing read-only access
+            to this object. If enabled, dynamic management always
+            takes precedence over static management such that
+            static management may only be used for monitoring of
+            objects that have a POLICY-ACCESS clause of 'install'
+            or 'install-notify' in the respective PIB module.
+
+            Disabling dynamic management causes Delete Request 
+            State (DRQ) and Client Close (CC) messages to be 
+            generated if a connection between the PEP and a PDP
+            is currently established. Installed policies are 
+            not automatically deleted. Enabling dynamic management
+            will initiate the COPS-PR connect sequence and,
+            potentailly, the loading of policy information." 
+
+    ::= { ntnQosConfig 1 }
+
+ntnQosConfigQpaState OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    running(1),
+                    initializing(2),
+                    resetToDefault(3)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION 
+            "The state of the QoS Policy Agent (QPA). A state of
+            'running(1)' indicates that the QPA is in a stable
+            state and can process messages. A state of
+            'initializing(2)' indicates that the agent is
+            currently unable to process messages. Either
+            'running(1)' or 'initializing(2)' will be returned
+            when querying this object. These values can not be
+            set.
+
+            All installed state can be deleted and reset to
+            the device's default state by setting the value 
+            of this object to 'resetToDefault(3)'. This is 
+            the only value that will be accepted when setting
+            this object. The 'resetToDefault(3)' value will
+            never be returned in response to a query." 
+
+    ::= { ntnQosConfig 2 }
+
+ntnQosConfigQpaRetryTimer OBJECT-TYPE
+    SYNTAX      Integer32 (-1 | 1..86400)
+    UNITS       "seconds" 
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION 
+            "The number of seconds between the receipt of a
+            connection termination/rejection indication and
+            the initiation of a new connection request. A
+            value of -1 indicates that a connection retry
+            should not be attempted after a failed attempt."
+
+    ::= { ntnQosConfig 3 }
+
+ntnQosConfigAllowPacketReordering OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION 
+            "Support for certain Per-Hop-Behaviors (PHBs) 
+            requires that packets within a flow not be 
+            reordered upon transmission. Packet reordering
+            may not be an issue for other PHBs. Setting
+            this object to 'true(1)' allows full flexibility
+            in terms of the egress queue to which a packet
+            is assigned. A value of 'false(2)' causes the
+            agent to verify that in-profile and out-of-profile
+            actions associated with a flow will not cause
+            packets from the same flow to be assigned to
+            different egress queues." 
+
+    DEFVAL { true }
+    ::= { ntnQosConfig 4 }
+
+ntnQosConfigMaintainPolicingStats OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION 
+            "Policing statistics, such as in-profile and
+            out-of-profile octets, are often an important
+            mechanism for evaluating the effectiveness of
+            installed policies. In order to track these
+            statistics, additional system resources are
+            consumed meaning that the amount of filters
+            available for classification purposes is
+            limited. Setting this object to 'true(1)'
+            causes statistics to be tracked by default 
+            for all metered policies defined after 
+            this attribute is set. A value of 'false(2)' 
+            means that new metered policies will not track
+            statistics.
+
+            Note that this attribute specifies the default
+            behavior. Statistics maintenance may be enabled
+            and disabled on a per policy basis via an 
+            attribute in the ntnQosTargetStatsTable. If
+            a value for that attribute is not provided, the
+            value of this object determines the behavior."
+
+    DEFVAL { true }
+    ::= { ntnQosConfig 5 }
+
+ntnQosConfigIfcClassRestrictions OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    unrestrictedOnly(1),
+                    unrestrictedAndTrusted(2),
+                    allowAllIfcClasses(3)
+                }
+
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+            "Specifies which interface class types can be
+            defined by the user. Default filters are installed
+            to support the different interface classes.
+            Limiting the classes that can be used reduces,
+            or eliminates entirely, the default filter
+            resources that must be consumed, making these
+            resources available for administrator use.
+
+            Modifications to this attribute require a system
+            initialization before they take effect."
+
+    DEFVAL { allowAllIfcClasses }
+    ::= { ntnQosConfig 6 }
+
+ntnQosConfigDefaultOutOfProfileAction OBJECT-TYPE
+    SYNTAX         PolicyInstanceId
+    MAX-ACCESS     read-write
+    STATUS         current
+    DESCRIPTION
+        "This attribute identifies the action that is to be
+        initiated for flows that are determined to be
+        out-of-profile and are being metered using the
+        'committedRestricted' type of meter.
+
+        Actions must be defined in the qosActionTable prior to
+        being referenced by this attribute. The value of this 
+        attribute may not be changed while meters of this type 
+        are currently associated with a policy."
+
+    ::= { ntnQosConfig 7 }
+
+ntnQosConfigPolicyCfgRestrictionMode OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    noPolicyRestrictions(1),
+                    l3PolicyRestrictions(2)
+                }
+
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+            "Specifies whether policies referencing IP filter
+            criteria can be defined by the user. The value of
+            this attribute determines if new IP filter-based
+            policies can be installed. If the value of this
+            attribute is 'noPolicyRestrictions(1)', both IP
+            and Layer 2-based policies can be installed. If
+            the value is 'l3PolicyRestrictions(2)', only
+            Layer 2-based policies can be installed. 
+            
+            This attribute is only consulted when traffic
+            separation mode is enabled.
+
+            Modification of this attribute may be restricted
+            based on the interface used (e.g., CLI) for the 
+            modification."
+
+    ::= { ntnQosConfig 8 }
+
+--
+-- Nortel QoS Policy Interface Identification Objects
+--
+-- The Nortel QoS Policy Interface Identification Table
+-- supports associating an interface with a specific role
+-- combination.
+-- 
+
+ntnQosInterfaceIdTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NtnQosInterfaceIdEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Contains interface index to interface role
+            combination associations."
+
+    ::= { ntnQosIfParametersExt 4 }
+
+ntnQosInterfaceIdEntry OBJECT-TYPE
+    SYNTAX      NtnQosInterfaceIdEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A conceptual row in the ntnQosInterfaceIdTable.
+
+            Each row identifies an interface value that
+            corresponds to an entry in the ifTable (MIB-II) 
+            and a role combination taglist with which the
+            interface is associated."
+
+    INDEX { ntnQosInterfaceIdIfIndex }
+    ::= { ntnQosInterfaceIdTable 1 }
+
+NtnQosInterfaceIdEntry ::= SEQUENCE {
+    ntnQosInterfaceIdIfIndex         InterfaceIndex,
+    ntnQosInterfaceIdRoleCombination RoleCombination,
+    ntnQosInterfaceIdStorageType     StorageType,
+    ntnQosInterfaceIdStatus          RowStatus,
+    ntnQosInterfaceIdQueueSet        PolicyInstanceId
+}
+
+ntnQosInterfaceIdIfIndex OBJECT-TYPE
+    SYNTAX      InterfaceIndex
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "The ifIndex value that is associated with this
+            instance of the ntnQosInterfaceIdEntry. The ifIndex
+            value of this attribute must correspond to the
+            ifTable entry with the same ifIndex value."
+
+    ::= { ntnQosInterfaceIdEntry 1 }
+
+ntnQosInterfaceIdRoleCombination OBJECT-TYPE
+    SYNTAX      RoleCombination
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+            "The role combination that is associated with the
+            interface with an ifIndex value that is equal to
+            ntnQosInterfaceIdIfIndex."
+
+    ::= { ntnQosInterfaceIdEntry 2 }
+
+ntnQosInterfaceIdStorageType OBJECT-TYPE
+    SYNTAX      StorageType
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION 
+            "The storage type for this conceptual row.
+
+            Conceptual rows having the value permanent(4) need not
+            allow write-access to any columnar objects in the row.
+
+            This object may not be modified if the associated
+            ntnQosInterfaceIdStatus object is equal to active(1)."
+
+    DEFVAL  { volatile }
+    ::= { ntnQosInterfaceIdEntry 3 }
+
+ntnQosInterfaceIdStatus OBJECT-TYPE
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+            "The status of this row.
+
+            An entry may not exist in the active state unless all
+            objects in the entry have an appropriate value. Row
+            creation using only default values is supported."
+
+    ::= { ntnQosInterfaceIdEntry 4 }
+
+ntnQosInterfaceIdQueueSet OBJECT-TYPE
+    SYNTAX      PolicyInstanceId
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+            "The queue set associated with this interface. A
+            queue set must be defined in the qosInterfaceQueueTable
+            prior to being referenced by this attribute."
+
+    ::= { ntnQosInterfaceIdEntry 5 }
+
+--
+-- Nortel Networks QoS Policy Statistics Auxiliary Objects
+--
+-- The Target Statistics Group objects supplement the data 
+-- maintained in the QOS-POLICY-IP-PIB qosTargetTable. The 
+-- statistics contained in this table are used for monitoring 
+-- purposes. Devices with limited resources may not support 
+-- this optional table.
+--
+
+ntnQosTargetStatsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NtnQosTargetStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Contains items that supplement the target group 
+            data that is specified in the qosTargetTable."
+
+    ::= { ntnQosStatistics 1 }
+
+ntnQosTargetStatsEntry OBJECT-TYPE
+    SYNTAX      NtnQosTargetStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A conceptual row in the ntnQosTargetStatsTable.
+
+            Each row contains statistics related to the 
+            associated qosTargetTable entry.
+
+            Entries will be automatically deleted from this 
+            table should the corresponding qosTargetTable 
+            entry be destroyed."
+
+    AUGMENTS { qosTargetEntry }
+    ::= { ntnQosTargetStatsTable 1 }
+
+NtnQosTargetStatsEntry ::= SEQUENCE {
+    ntnQosTargetStatsPktHits               Counter32,
+    ntnQosTargetStatsOverflowPktHits       Counter32,
+    ntnQosTargetStatsHCPktHits             Counter64,
+    ntnQosTargetStatsTotalOctets           Counter32,
+    ntnQosTargetStatsTotalOverflowOctets   Counter32,
+    ntnQosTargetStatsTotalHCOctets         Counter64,
+    ntnQosTargetStatsInProfOctets          Counter32,
+    ntnQosTargetStatsInProfOverflowOctets  Counter32,
+    ntnQosTargetStatsInProfHCOctets        Counter64,
+    ntnQosTargetStatsOutProfOctets         Counter32,
+    ntnQosTargetStatsOutProfOverflowOctets Counter32,
+    ntnQosTargetStatsOutProfHCOctets       Counter64,
+    ntnQosTargetStatsTrackStatistics       TruthValue,
+    ntnQosTargetStatsShapingQDrops         Counter32,
+    ntnQosTargetStatsOverflowShapingQDrops Counter32,
+    ntnQosTargetStatsHCShapingQDrops       Counter64
+}
+
+ntnQosTargetStatsPktHits OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "packets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "This object tracks the packet hits of this target
+            group specification. Packet hits are defined as 
+            packets that are selected for additional processing 
+            based on target data specified in the associated
+            qosTargetTable entry."
+
+    ::= { ntnQosTargetStatsEntry 1 }
+
+ntnQosTargetStatsOverflowPktHits OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "packets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of times the associated 
+            ntnQosTargetStatsPktHits counter 
+            has overflowed."
+
+    ::= { ntnQosTargetStatsEntry 2 }
+
+ntnQosTargetStatsHCPktHits OBJECT-TYPE
+    SYNTAX      Counter64
+    UNITS       "packets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "This object tracks the packet hits of this target
+            group specification. Packet hits are defined as 
+            packets that are selected for additional processing 
+            based on target data specified in the associated
+            qosTargetTable entry."
+
+    ::= { ntnQosTargetStatsEntry 3 }
+
+ntnQosTargetStatsTotalOctets OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "octets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "This object tracks the total number of octets 
+            associated with packet hits of this target group 
+            specification."
+
+    ::= { ntnQosTargetStatsEntry 4 }
+
+ntnQosTargetStatsTotalOverflowOctets OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "octets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of times the associated 
+            ntnQosTargetStatsTotalOctets counter 
+            has overflowed."
+
+    ::= { ntnQosTargetStatsEntry 5 }
+
+ntnQosTargetStatsTotalHCOctets OBJECT-TYPE
+    SYNTAX      Counter64
+    UNITS       "octets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "This object tracks the total number of octets 
+            associated with packet hits of this target group 
+            specification."
+
+    ::= { ntnQosTargetStatsEntry 6 }
+
+ntnQosTargetStatsInProfOctets OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "octets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "This object tracks the total number of octets 
+            associated with packets considered to be in-profile
+            based on the metering specification associated
+            with this target group entry."
+
+    ::= { ntnQosTargetStatsEntry 7 }
+
+ntnQosTargetStatsInProfOverflowOctets OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "octets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of times the associated 
+            ntnQosTargetStatsInProfOctets counter 
+            has overflowed."
+
+    ::= { ntnQosTargetStatsEntry 8 }
+
+ntnQosTargetStatsInProfHCOctets OBJECT-TYPE
+    SYNTAX      Counter64
+    UNITS       "octets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "This object tracks the total number of octets 
+            associated with packets considered to be in-profile
+            based on the metering specification associated
+            with this target group entry."
+
+    ::= { ntnQosTargetStatsEntry 9 }
+
+ntnQosTargetStatsOutProfOctets OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "octets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "This object tracks the total number of octets 
+            associated with packets considered to be out-of-
+            profile based on the metering specification 
+            associated with this target group entry."
+
+    ::= { ntnQosTargetStatsEntry 10 }
+
+ntnQosTargetStatsOutProfOverflowOctets OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "octets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of times the associated 
+            ntnQosTargetStatsOutProfOctets counter 
+            has overflowed."
+
+    ::= { ntnQosTargetStatsEntry 11 }
+
+ntnQosTargetStatsOutProfHCOctets OBJECT-TYPE
+    SYNTAX      Counter64
+    UNITS       "octets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "This object tracks the total number of octets 
+            associated with packets considered to be out-of-
+            profile based on the metering specification 
+            associated with this target group entry."
+
+    ::= { ntnQosTargetStatsEntry 12 }
+
+ntnQosTargetStatsTrackStatistics OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION 
+            "Policing statistics, such as in-profile and
+            out-of-profile octets, are often an important
+            mechanism for evaluating the effectiveness of
+            installed policies. In order to track these
+            statistics, additional system resources are
+            consumed meaning that the amount of filters
+            available for classification purposes is
+            limited. Setting this object to 'true(1)'
+            causes statistics to be tracked for the 
+            metered policy being defined. A value of 
+            'false(2)' means that the metered policy 
+            will not track statistics."
+
+    ::= { ntnQosTargetStatsEntry 13 }
+
+ntnQosTargetStatsShapingQDrops OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "packets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "This object counts the number of packets dropped due to
+            insufficient shaping resources. Traffic that is being 
+            shaped prior to transmission may need to be buffered
+            temporarily to ensure conformance to the associated shaping
+            specification. Shaping buffer resources are limited. If
+            shaping buffer resources are exhausted, traffic that is
+            to be shaped will be dropped, causing this counter to be 
+            incremented once per dropped packet, until resources
+            become available."   
+
+    ::= { ntnQosTargetStatsEntry 14 }
+
+ntnQosTargetStatsOverflowShapingQDrops OBJECT-TYPE
+    SYNTAX      Counter32
+    UNITS       "packets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of times the associated 
+            ntnQosTargetStatsShapingQDrops counter 
+            has overflowed."
+
+    ::= { ntnQosTargetStatsEntry 15 }
+
+ntnQosTargetStatsHCShapingQDrops OBJECT-TYPE
+    SYNTAX      Counter64
+    UNITS       "packets"
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "This object counts the number of packets dropped due to
+            insufficient shaping resources. Traffic that is being 
+            shaped prior to transmission may need to be buffered
+            temporarily to ensure conformance to the associated shaping
+            specification. Shaping buffer resources are limited. If
+            shaping buffer resources are exhausted, traffic that is
+            to be shaped will be dropped, causing this counter to be 
+            incremented once per dropped packet, until resources
+            become available."   
+
+    ::= { ntnQosTargetStatsEntry 16 }
+
+--
+-- Conformance Section
+--
+
+ntnQosCompliances 
+                OBJECT IDENTIFIER ::= { ntnQosPolicyAuxConformance 1 }
+ntnQosGroups      
+                OBJECT IDENTIFIER ::= { ntnQosPolicyAuxConformance 2 }
+
+ntnQosCompliance MODULE-COMPLIANCE
+    STATUS  current
+    DESCRIPTION
+            "Describes the requirements for conformance to the
+            Nortel Networks QoS Policy MIB."
+
+    MODULE  -- this module
+        MANDATORY-GROUPS { ntnQosConfigGroup,
+                           ntnQosInterfaceIdGroup }
+
+        OBJECT        ntnQosConfigDynamicMgmt
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        OBJECT        ntnQosConfigQpaState
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        OBJECT        ntnQosConfigQpaRetryTimer
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        OBJECT        ntnQosConfigAllowPacketReordering
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        OBJECT        ntnQosConfigMaintainPolicingStats
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        OBJECT        ntnQosConfigIfcClassRestrictions
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        OBJECT        ntnQosConfigDefaultOutOfProfileAction
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        OBJECT        ntnQosConfigPolicyCfgRestrictionMode
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        OBJECT        ntnQosInterfaceIdRoleCombination
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        OBJECT        ntnQosInterfaceIdStorageType
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required, nor is
+                     support for the nonVolatile(2) enumeration."
+
+        OBJECT        ntnQosInterfaceIdStatus
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        OBJECT        ntnQosInterfaceIdQueueSet
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+        GROUP   ntnQosTargetStatsGroup
+        DESCRIPTION
+            "The ntnQosTargetStatsGroup is optional."
+
+        OBJECT        ntnQosTargetStatsTrackStatistics
+        MIN-ACCESS    read-only
+        DESCRIPTION  "Write access is not required."
+
+    ::= { ntnQosCompliances 1 }
+
+ntnQosConfigGroup OBJECT-GROUP
+    OBJECTS {
+             ntnQosConfigDynamicMgmt,
+             ntnQosConfigQpaState,
+             ntnQosConfigQpaRetryTimer,
+             ntnQosConfigAllowPacketReordering,
+             ntnQosConfigMaintainPolicingStats,
+             ntnQosConfigIfcClassRestrictions,
+             ntnQosConfigDefaultOutOfProfileAction,
+             ntnQosConfigPolicyCfgRestrictionMode
+    }
+    STATUS  current
+    DESCRIPTION
+            "Objects used to configure QoS Policy Agent
+            operation."
+
+    ::= { ntnQosGroups 1 }
+
+ntnQosInterfaceIdGroup OBJECT-GROUP
+    OBJECTS {
+             ntnQosInterfaceIdRoleCombination,
+             ntnQosInterfaceIdStorageType,
+             ntnQosInterfaceIdStatus,
+             ntnQosInterfaceIdQueueSet
+    }
+    STATUS  current
+    DESCRIPTION
+            "Objects used to define interface (ifIndex)
+            to interface role combination mappings."                
+
+    ::= { ntnQosGroups 2 }
+
+ntnQosTargetStatsGroup OBJECT-GROUP
+    OBJECTS {
+             ntnQosTargetStatsPktHits,
+             ntnQosTargetStatsOverflowPktHits,
+             ntnQosTargetStatsHCPktHits,
+             ntnQosTargetStatsTotalOctets,
+             ntnQosTargetStatsTotalOverflowOctets,
+             ntnQosTargetStatsTotalHCOctets,
+             ntnQosTargetStatsInProfOctets,
+             ntnQosTargetStatsInProfOverflowOctets,
+             ntnQosTargetStatsInProfHCOctets,
+             ntnQosTargetStatsOutProfOctets,
+             ntnQosTargetStatsOutProfOverflowOctets,
+             ntnQosTargetStatsOutProfHCOctets,
+             ntnQosTargetStatsTrackStatistics,
+             ntnQosTargetStatsShapingQDrops,
+             ntnQosTargetStatsOverflowShapingQDrops,
+             ntnQosTargetStatsHCShapingQDrops
+    }
+    STATUS  current
+    DESCRIPTION
+            "Objects that supplement the qosTargetTable
+            providing per target statistics."                
+
+    ::= { ntnQosGroups 3 }
+
+END
+

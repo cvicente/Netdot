@@ -149,14 +149,6 @@ sub info_update {
     $dev{physaddr} = $self->_assign_base_mac($info);
 
     ##############################################################
-    # Serial Number
-    if ( my $sn = $info->{serial_number} ){
-	$dev{asset_id} = Asset->find_or_create({serial_number=>$sn, product_id=>$dev{product}});
-    }else{
-    	$logger->debug(sub{"$host did not return serial number" });
-    }
-    
-    ##############################################################
     # Fill in some basic device info
     foreach my $field ( qw( community snmp_version layers ipforwarding sysname 
                             sysdescription syslocation os collect_arp collect_fwt ) ){
@@ -170,6 +162,18 @@ sub info_update {
 
     ##############################################################
     $dev{product} = $self->_assign_product($info);
+    
+    ##############################################################
+    # Asset
+    my $sn   = $info->{serial_number};
+    my $prod = $dev{product};
+    if ( $sn && $prod ){
+	$dev{asset_id} = Asset->find_or_create({serial_number=>$sn, product_id=>$prod});
+    }elsif ( $sn ){
+	$dev{asset_id} = Asset->find_or_create({serial_number=>$sn});
+    }else{
+	$logger->debug(sub{"$host did not return serial number" });
+    }
     
     ##############################################################
     if ( $dev{product} && $argv{device_is_new} ){
@@ -393,8 +397,11 @@ sub _get_ap_info {
     # Assign the IP and Netmask to the BVI1 interface
     if ( my $ip = $hashes->{'airespace_ap_ip'}->{$idx}  ){
 	$info->{interface}{$bviidx}{ips}{$ip}{address} = $ip;
+	$info->{interface}{$bviidx}{ips}{$ip}{version} = 4;
 	if ( my $mask = $hashes->{'bsnAPNetmask'}->{$idx}  ){
-	    $info->{interface}{$bviidx}{ips}{$ip}{mask} = $mask;
+	    my ($subnet, $len) = Ipblock->get_subnet_addr(address => $ip, 
+							  prefix  => $mask );
+	    $info->{interface}{$iid}{ips}{$ip}{subnet} = "$subnet/$len";
 	}
 	$info->{main_ip} = $ip;
     }

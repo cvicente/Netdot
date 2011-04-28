@@ -4,7 +4,7 @@
 --
 -- May 1994, Jeffrey T. Johnson
 --
--- Copyright (c) 1994-2009 by cisco Systems, Inc.
+-- Copyright (c) 1994-2010 by cisco Systems, Inc.
 -- All rights reserved.
 --
 -- NOTE WELL
@@ -176,6 +176,7 @@
 			,c7140-dualmm3(146)		-- 7140 Series chassis with 2 10/100 FE interfaces, 2 OC3MM ATM interfaces
 			,ubr-7246-vxr(148)              -- Cisco 7246 Universal Broadband Router, VXR series
 			,c12016(150)			-- Cisco 12000 platform with 16 slots
+			,as5400(151)			-- Cisco AS5400
 			,c7140-octt1(152)		-- 7140 Series chassis with 8 integrated T1/E1 serial ports
 			,c7140-dualfe(153)		-- 7140 Series chassis with 2 integrated 10/100 FE interfaces
 			,cat3548xl(154)			-- Catalyst 3548XL switch (WS-C3548-XL)
@@ -562,13 +563,34 @@
                         ,cn7kc7018(700)                         -- Nexus7000 18 slot N7K chassis
                         ,cat3560-12pcs(702)                     -- Catalyst 3560 12 10/100 Power over Ethernet ports + 1 dual purpose Gigabit Ethernet port fixed  configuration Layer 2 Ethernet switch
                         ,cat2960-48pstl(703)                    -- Catalyst 2960 48 10/100 Power over Ethernet ports + 2 10/100/1000 Ethernet Ports + 2 SFP fixed configuration Layer 2 Ethernet switch
+                        ,cat3560v2-24ts-d(704)                  -- 24 10/100 ports + 2 Ethernet Gigabit SFP ports fixed configuration Layer 2/Layer 3 Ethernet Non-stackable switch, DC power
+                        ,cat3560v2-24ts(705)                    -- 24 10/100 ports + 2 Ethernet Gigabit SFP ports fixed configuration Layer 2/Layer 3 Ethernet Non-stackable switch
+                        ,cat3560v2-24ps(706)                    -- 24 10/100 ports + 2 Ethernet Gigabit SFP ports fixed configuration Layer 2/Layer 3 Ethernet Non-stackable PoE switch
+                        ,cat3750v2-24ts(707)                    -- 24 10/100 ports + 2 Ethernet Gigabit SFP ports fixed configuration Layer 2/Layer 3 Ethernet Stackable switch
+                        ,cat3750v2-24ps(708)                    -- 24 10/100 ports + 2 Ethernet Gigabit SFP ports fixed configuration Layer 2/Layer 3 Ethernet Stackable PoE switch
+                        ,cat3560v2-48ts(709)                    -- 48 10/100 ports + 4 Ethernet Gigabit SFP ports fixed configuration Layer 2/Layer 3 Ethernet Non-stackable switch
+                        ,cat3560v2-48ps(710)                    -- 48 10/100 ports + 4 Ethernet Gigabit SFP ports fixed configuration Layer 2/Layer 3 Ethernet Non-stackable PoE switch
+                        ,cat3750v2-48ts(711)                    -- 48 10/100 ports + 4 Ethernet Gigabit SFP ports fixed configuration Layer 2/Layer 3 Ethernet Stackable switch
+                        ,cat3750v2-48ps(712)                    -- 48 10/100 ports + 4 Ethernet Gigabit SFP ports fixed configuration Layer 2/Layer 3 Ethernet Stackable PoE switch
                         ,airbr-1430(713)                        -- Cisco 1400 series wireless LAN bridge with three Gigabit Ethernet ports and one 802.11A radio
                         ,namapp2204-rj45(714)                   -- Cisco NAM Appliance 2204 with RJ45 connector
                         ,namapp2220(715)                        -- Cisco NAM Appliance 2220
                         ,airap-1141(716)                        -- Cisco Aironet 1140 series WLAN Access Point with one 10/100/1000TX port and single IEEE 802.11n radio port
                         ,airap-1142(717)                        -- Cisco Aironet 1140 series WLAN Access Point with one 10/100/1000TX port and dual IEEE 802.11n radio ports
+                        ,c887-vdsl2(718)                        -- c887Vdsl2 with 1 VDSL2 only over POTS, 4 switch ports, 1 USB 1.1 port, 1 Console/Aux port and 1 ISDN
+                        ,c1941(719)                             -- Cisco 1941(2 GE, 2 EHWIC)
+                        ,c2901(720)                             -- Cisco 2901(2 GE, 4 EHWIC, 2 DSP)
+                        ,c2911(721)                             -- Cisco 2911(3 GE, 4 EHWIC, 1 SM, 2 DSP)
+                        ,c2921(722)                             -- Cisco 2921(3 GE, 4 EHWIC, 1 SM, 3 DSP)
+                        ,c2951(723)                             -- Cisco 2951(3 GE, 4 EHWIC, 2 SM, 3 DSP)
+                        ,c3925(724)                             -- Cisco 3925 w/ SPE100(3 GE, 4 EHWIC, 2 SM, 4 DSP)
+                        ,c3945(725)                             -- Cisco 3945 w/ SPE150(3 GE, 4 EHWIC, 4 SM, 4 DSP)
                         ,csr520-t1(726)                         -- This is a voice and data platform with 2 FE and 1 T1 port. This is done by Small Business Technology Group
                         ,nam-app2204-sfp(728)                   -- Cisco NAM Appliance 2204 with SFP connector
+                        ,c3845nv(741)                           -- Four Network Module Slots, Four WIC slots, Two Gigabit Ethernet ports 3800nv family router
+                        ,c3825nv(742)                           -- Two Network Module Slots, Four WIC slots, Two Gigabit Ethernet ports 3800nv family router
+                        ,ws-c2350-48td(743)                     -- Catalyst 2350 48 10/100/1000 ports + 2 TenGigabit Ethernet (X2) ports fixed configuration Layer 2 Ethernet Switch
+                        ,casr1002f(751)                          -- Cisco Aggregation Services Router 1000 Series, 2RU Fixed Chassis
                         ,cdscde200(760)                          -- Cisco Content Delivery System Model CDE-200
                         ,cdscde100(761)                          -- Cisco Content Delivery System Model CDE-100
                         ,cdscde300(762)                          -- Cisco Content Delivery System Model CDE-300
@@ -585,10 +607,31 @@
                         ,csrp546(779)                            -- Service Ready Platform router with ADSL2+ over ISDN WAN port as well as GE WAN port
                         ,csrp547(780)                            -- Service Ready Platform router with ADSL2+ over POTS WAN port as well as GE WAN port 
                         ,cvs510-fxo(781)                         -- Call control solution for 4-24 phone
+                        ,c887-gvdsl2(782)                        -- c887G with 1 VDSL2 only over POTS, 4 switch ports, 1 USB 2.0 port, 1 Console/Aux port, 1 3G PCMCIA slot, and an optional Wireless LAN
+                        ,c887-srstvdsl2(783)                     -- c887SRSTVdsl2 with 1 VDSL2 over POTS, 4 switch ports, 1 USB 1.1 port, 1 Console/Aux port, 4 FXS ports, 1 PSTN BRI port,and an optional Wireless LAN
                         ,c59xx(786)                              -- Chassis Type for 59xx embedded services family of routers
+                        ,cat2960-24-lcs(787)                     -- Catalyst 2960 8 10/100 Power over Ethernet ports + 16 10/100 Ethernet ports + 2 dual purpose Gigabit Ethernet ports fixed configuration Layer 2 Ethernet switch
+                        ,cat2960-24-pcs(788)                     -- Catalyst 2960 24 10/100 Power over Ethernet ports + 2 dual purpose Gigabit Ethernet ports fixed configuration Layer 2 Ethernet switch
+                        ,cat2960-48-psts(789)                    -- Catalyst 2960 48 10/100 Power over Ethernet ports + 2 10/100/1000 Ethernet ports + 2 SFP ports fixed configuration Layer 2 Ethernet switch
                         ,cnm-wae-900(790)                        -- Cisco Network Module Intergrated Service Engine 900
                         ,cnm-wae-700(791)                        -- Cisco Network Module Intergrated Service Engine 700
- 
+                        ,cn4kibmeth(793)                         -- Chassis of Cisco 10Gb Ethernet Switch Module for IBM BladeCenter
+                        ,craie1783-rms06t(796)                   -- Cisco Rockwell brand Layer 3 Industrial Ethernet Switch, 4 10/100 + 2 T/SFP
+                        ,craie1783-rms10t(797)                   -- Rockwell brand Industrial Ethernet Switch, 8 10/100 + 2 T/SFP
+                        ,cesw-540-8p-k9(798)                     -- Cisco ESW 540 8-port 10/100/1000 PoE switch
+                        ,cesw-520-8p-k9(799)                     -- Cisco ESW 520 8-port 10/100 PoE switch
+                        ,cn7kc7009(815)                          -- N7K-C7009 nexus-9-slot chassis
+                        ,cn4kibm-cisco-eth(816)                  -- Chassis of Cisco 10Gb Ethernet Switch Module for IBM BladeCenter Cisco sold version
+                        ,cmwr-2941-dca(817)                      -- Wireless Router (MWR-2941-DC) is an environmentally hardened router
+                        ,c1841ck9(832)                           -- Cisco 1841C/K9 data only router with 2 HWIC slots
+                        ,c2801ck9(833)                           -- Cisco 2801C/K9 voice enabled router with 4 HWIC slots
+                        ,c2811ck9(834)                           -- Cisco 2811C/K9 router with two integrated fast ethernets and integrated VPN
+                        ,c2821ck9(835)                           -- Cisco 2821C/K9 router with two integrated gigabit ethernets and integrated VPN
+                        ,c3825ck9(837)                           -- Cisco 3825C/K9 router with Two Network Module Slots, Four WIC slots, Two Gigabit Ethernet ports
+                        ,c3845ck9(838)                           -- Cisco 3845C/K9 router with Four Network Module Slots, Four WIC slots, Two Gigabit Ethernet ports
+                        ,c1906ck9(859)                             -- Cisco 1906c Router(2 GE, Serial 1T, 1 EHWIC)
+
+
                    }
                    ACCESS  read-only
                    STATUS  deprecated
@@ -907,6 +950,7 @@
 			,npm-4000-1hssi(218)
 			,npm-4000-2e-pci(219)
 			,npm-4000-4gb(220)			-- 4-Port Serial E1/G.703 
+                        ,ws-x4548-gb-rj45vplus(222)             -- Catalyst 4500 series 48-port 10/100/1000BaseT linecard with Power Over Ethernet, upto 30W inline power per port
 
 			,pa-1fe(230)
 			,pa-8e(231)
@@ -1348,6 +1392,8 @@
 			,ubr-mc16u-e(1041)	--  DOCSIS compliant intelligent coax cable line card with 1 downstream and 6  upstream ports for uBR7225VXR series cable routers
 			,ubr-mc28u-e(1042)	--  DOCSIS compliant intelligent coax cable line card with 2 downstream and 8  upstream ports for uBR7225VXR series cable routers
                         ,ubr-dtcc(1043)         --  DOCSIS Timing, Communication, and Control Plus Card for uBR10012
+                        ,ubr-mc88v(1045)        --  DOCSIS 3.0 compliant intelligent coax cable line card with 8 downstream and 8  upstream ports
+                        ,ubr-mc2020(1046)       --  DOCSIS compliant intelligent coax cable line card with 20 downstream and 20 upstream ports for uBR10000 series cable router
 
 			,gsr-8fe-tx(1050)		-- GSR 8 port Fast Ethernet card with Copper interface 
 			,gsr-8fe-fx(1051)		-- GSR 8 port Fast Ethernet card with Fiber interface 
@@ -1484,6 +1530,26 @@
 			,cpu-1861(1249)				-- Cpu card for the ISR flavour of freddo
 			,cpu-traffic(1250)			-- NME-APA SCE Entity Traffic Processor
                         ,cpu-2941(1251)                         -- CPU for MWR-2941-DC
+                        ,cpu-1941-2ge(1252)                     -- c1941 Motherboard, with 2 GE
+                        ,cpu-2901-2ge(1253)                     -- c2901 Motherboard, with 2 GE
+                        ,cpu-2911-3ge(1254)                     -- c2911 Motherboard, with 3 GE
+                        ,cpu-2951-3ge(1255)                     -- c2951 Motherboard, with 3 GE
+                        ,cpu-2921-3ge(1256)                     -- c2921 Motherboard, with 3 GE
+                        ,cpu-3925-3ge(1257)                     -- c3925 w/SPE100 Motherboard, with 3 GE
+                        ,cpu-3945-3ge(1258)                     -- c3945 w/SPE150 Motherboard, with 3 GE
+                        ,cpu-sr-520t1(1259)                     -- This is the security router with 1 port T1. Supports Voice and data
+                        ,cpu-1941w-2ge(1260)                    -- c1941 Motherboard, with 2 GE, 801.11n WLAN
+                        ,cpu-3825nv-2ge(1261)                   -- c3825nv Motherboard with Gigabit Ethernet
+                        ,cpu-3845nv-2ge(1262)                   -- c3845nv Motherboard with Gigabit Ethernet
+                        ,cpu-3900SPE200-4ge(1269)               -- cisco 3900 Services Performance Engine 200 (SPE200) with 4 GE, 3 EHWIC, 3 DSP
+                        ,cpu-3900spe250-4ge(1274)               -- cisco 3900 Services Performance Engine 250 (SPE250) with 4 GE, 3 EHWIC, 3 DSP
+                        ,cpu-c1841c-2fe-k9(1277)                -- 1841C/K9 Motherboard with two integrated fast ethernet
+                        ,cpu-c2801c-2fe-k9(1278)                -- 2801C/K9 Motherboard  with two integrated fast ethernets
+                        ,cpu-c2811c-2fe-k9(1279)                -- 2811C/K9 Motherboard with two integrated fast ethernets and integrated VPN
+                        ,cpu-c2821c-2ge-k9(1280)                -- 2821C/K9 Motherboard with two integrated gigabit ethernets and integrated VPN
+                        ,cpu-c3825c-2ge-k9(1282)                -- 3825C/K9 Motherboard with Gigabit Ethernet
+                        ,cpu-c3845c-2ge-k9(1283)                -- 3845C/K9 Motherboard with Gigabit Ethernet
+                        ,cpu-1906c-k9(1287)                     -- c1906C/K9 Motherboard with 2 GE, Serial 1T 
 
 
 			,pos-1oc12(1300)		-- 1 port OC12 Packet over Sonet card
@@ -1497,6 +1563,8 @@
 			,srp-oc48-sr(1310)		-- c10720 1 port OC-48c SRP SM short reach uplink card
 			,srp-oc48-ir(1311)		-- c10720 1 port OC-48c SRP SM intermediate reach uplink card
 			,atm-4oc3(1313)			-- 4 port OC3 ATM line card with single mode, intermediate reach optics for the C10000 platform
+			,srp-pos-1oc48-sm-sr(1315)	-- 1 Port OC48 SRP or POS SM short reach card
+			,srp-pos-1oc48-sm-lr(1316)	-- 1 Port OC48 SRP or POS SM long reach card
 			,flashcard-48mb(1317)		-- Cisco 10000 48 MB Flash Card
 			,flashcard-128mb(1318)		-- Cisco 10000 128 MB Flash Card
 			,p24-ct1e1(1319)		-- 24 Port Channelized E1/T1 card
@@ -2078,6 +2146,11 @@
 
                         ,nm-2838(4375)                          -- Integrated Service Engine daughter card used by Service Modules for 28xx and 38xx series platforms
                         ,pano-2838(4376)                        -- Video Service Engine daughter card used by Service Modules for 28xx and 38xx series platforms
+                        ,vwic3-mft4-t1e1(4379)                  -- VWIC3-4MFT-T1E1 (4 Port) RJ-48 Multi-Flex Trunk -T1/E1
+                        ,vwic3-mft1-t1e1(4380)                  -- VWIC3-1MFT-T1E1 (1 Port) RJ-48 Multi-Flex Trunk -T1/E1
+                        ,vwic3-mft1-g703(4381)                  -- VWIC3-1MFT-G703 (1 Port) RJ-48 Multi-Flex Trunk - G.703
+                        ,vwic3-mft2-t1e1(4382)                  -- VWIC3-2MFT-T1E1 (2 Port) RJ-48 Multi-Flex Trunk -T1/E1
+                        ,vwic3-mft2-g703(4383)                  -- VWIC3-2MFT-G703 (2 Port) RJ-48 Multi-Flex Trunk - G.703
 
 
 			,rsp720Base(4400)			-- C7600 Router Switch Processor Module 720 Base board
@@ -2120,6 +2193,9 @@
 			,hwic-adsl-pots-annexm(4482)		-- ADSL Annex M over POTS
 			,mds-ds-x9124-s2-k9(4484)		-- 24-port 1/2/4 Gig Supervisor Fabric Switch
 			,cvr-x2-sfp(4485)			-- 2-port SFP port module in X2 form factor
+			,spa-24p-ct1e1-cem-atm(4487)		-- 24-port Channelized T1/E1 ATM & Circuit Emulation Shared Port Adapter (SPA-24CHT1-CE-ATM)
+			,spa-2p-ct3e3-cem-atm(4488)		-- 2-port Channelized T3/E3 ATM & Circuit Emulation Shared Port Adapter (SPA-2CHT3-CE-ATM)
+			,spa-1p-choc3-cem-atm(4489)		-- 1-port Channelized OC3/STM-1 ATM & Circuit Emulation Shared Port Adapter (SPA-1CHOC3-CE-ATM)
 			,mds-ds-ibmfc(4490)			-- Cisco 4Gb Fibre Channel Switch Module for IBM BladeCenter
 			,mds-ds-hpfc(4493)			-- Fibre Channel Switch Module for HP BladeSystem
 			,mds-ds-x9222i-k9-sup(4494)		-- DS-X9222i-K9 coco supervisor
@@ -2136,11 +2212,12 @@
 			,cat6k-vs-f6k-pfc3c(4506)		-- Catalyst 6500 Policy Feature Card 3C
 			,cat6k-vs-f6k-pfc3cxl(4507)		-- Catalyst 6500 Policy Feature Card 3C XL
 			,cat6k-vs-f6k-msfc3(4508)		-- Supervisor Module 720 10G CPU board
-			,cat6k-ws-f6k-pisa(4509)			-- Catalyst 6500 Programmable IP Services Accelerator Internal Router Daughtercard
+			,cat6k-ws-f6k-pisa(4509)                -- Catalyst 6500 Programmable IP Services Accelerator Internal Router Daughtercard
+			,cat6k-wsx-6716-10ge(4513)              -- Catalyst 6500 16 port 10 GE
                         ,cat6k-ws-sup32p-ge(4516)               -- Catalyst 6500 Supervisor Module with PISA and 8 Gigabit Ethernet SFP uplink ports
                         ,cat6k-ws-sup32p-10ge(4517)             -- Catalyst 6500 Supervisor Module with PISA and 2 10-GE uplink ports
                         ,cat6k-ws-svc-wism(4525)                -- Wireless Service Module for the Catalyst 6500 and 7600
-
+                  
 			,hwic-4shdsl(4551)			-- HWIC G.SHDSL (4 port) with annex F&G and IMA.
 			,hwic-2shdsl(4552)			-- HWIC G.SHDSL (2 port) with annex F&G	
 			,nm-rvpn-sterra(4553)			-- Russia S-Terra VPN Module
@@ -2149,7 +2226,11 @@
 			,nm-intgrtd-srvc-eng2(4556)		-- Integrated Service Engine2 for ISR router
                         ,aim-ips-k9(4557)			-- Cisco Intrusion Proctection System AIM Adapter
                         ,hwic-1t1e1(4558)                       -- 1 port (2 channel) T1/E1 HWIC
+                        ,hwic-1ser(4559)                        -- High Speed Wan Interface Card with 1 serial ports(HWIC-1SER)
+                        ,hwic-2ser(4560)                        -- High Speed Wan Interface Card with 2 serial ports(HWIC-2SER)
                         ,internal-service-module-aim(4561)      -- Internal Service Module AIM for Integrated Services Routers
+                        ,sm-1nm(4563)                           --  Service Module to Network Module Adapter
+                        ,hwic-4ce1t1-pri(4576)                  -- 4 port T1/E1 channelized/PRI HWIC
 
 			,dwdm-3268-sfp(4600)			-- MOD,XCVR,2.5Gb/s,1532.68nm,SM,LR2,3.3V,0 to 70C,LC,SFP,DIGITAL DIAGS FIM32160/201W56
 			,dwdm-3425-sfp(4601)			-- MOD,XCVR,2.5Gb/s,1534.25nm,SM,LR2,3.3V,0 to 70C,LC,SFP,DIGITAL DIAGS FIM32160/201W54
@@ -2221,6 +2302,10 @@
                         ,aim-vpn-ssl-1(4722)                    -- AIM-VPN/SSL-1 card for Integrated Services Router
                         ,aim-vpn-ssl-2(4723)                    -- AIM-VPN/SSL-2 card for Integrated Services Router
                         ,aim-vpn-ssl-3(4724)                    -- AIM-VPN/SSL-3 card for Integrated Services Router
+                        ,ism-sre-300-k9(4726)                   --  Internal Service Module for Modular and Integrated Services Routers(ISM-SRE-300-K9)
+                        ,sm-sre-700-k9(4729)                    --  Service Module for Modular and Integrated Services Routers(SM-SRE-700-K9)
+                        ,sm-sre-900-k9(4731)                    --  Service Module for Modular and Integrated Services Routers(SM-SRE-900-K9)
+                        ,spa-wma-sw(4732)                       --  WebEx Node Shared Port Adaptor (SPA-WMA-K9)
                         ,aim-axp102(4735)                       --  AXP Advanced Interface Module with 300MHz and 256MB RAM
                         ,aim-2axp104(4736)                      --  AXP Advanced Interface Module 2 with 600MHz and 512MB RAM
                         ,nm-axp302(4737)                        --  AXP Service Engine Network Module with 1GHz and 512MB RAM
@@ -2232,14 +2317,49 @@
                         ,nme-vmss2-hp32(4744)                   --  Video Management and Storage System 32 streams 500GB HDD
                         ,nme-vmss-hp16(4745)                    --  Video Management and Storage System 16 streams 160GB HDD
                         ,nme-vmss-16(4746)                      --  Video Management and Storage System 16 streams 120GB HDD
-
+                        ,mds-ds-x9716-k9(4748)                  --  Midas  DS-X9716-K9 10-Gbps 16-Port ethernet-port FCoE Module
+                        ,mds-ds-x9248x256-k9(4749)              --  Zelda DS-X9248-256K9  48-Port 1/2/4/8/10Gbps FC Switching Module
+ 
                         ,pwr-n7k-ac-7500w-int(4751)             -- N7K-AC-7.5KW-INT AC powersupply for Nexus7000 N7K
                         ,pwr-n7k-ac-7500w-us(4752)              -- N7K-AC-7.5KW-US AC powersupply for Nexus7000 N7K
                         ,spa-1p-oc3-atm-v2(4753)                --  1-port OC3c SFP Optics ATM Shared Port Adapter (SPA-1XOC3-ATM-V2)
                         ,spa-3p-oc3-atm-v2(4754)                --  3-port OC3c SFP Optics ATM Shared Port Adapter (SPA-3XOC3-ATM-V2)
+                        ,pwr-c3900pwr-poe(4755)                 --  Cisco 3925/3945 PoE Power Supply
+                        ,pwr-c3900pwr-ac(4756)                  --  Cisco3925/3945 AC Power Supply
+                        ,pwr-c2921c2951pwr-poe(4757)            --  Cicco 2921/2951 PoE Power Supply
+                        ,pwr-c2921c2951pwr-ac(4758)             --  Cisco 2921/2951 AC Power Supply
+                        ,pwr-c2911pwr-poe(4759)                 --  Cisco 2911 PoE Power Supply
+                        ,pwr-c2911pwr-ac(4760)                  --  Cisco 2911 AC Power Supply
+                        ,pwr-c2901pwr-poe(4761)                 --  Cisco2901 PoE Power Supply
+                        ,pwr-c1941c2901pwr-ac(4762)             --  Cisco 2901 AC Power Supply
+                        ,pwr-c1941pwr-poe(4763)                 --  Cisco 1941 PoE Power Supply
+                        ,pwr-c3900pwr-dc(4764)                  --  Cisco 3925/3945 DC Power Supply
+                        ,pwr-c2921c2951pwr-dc(4765)             --  Cisco 2921/2951 DC Power Supply
+                        ,pwr-c2911pwr-dc(4766)                  --  Cisco 2911 DC power Supply
+                        ,pwr-c2921c2951rps-adptr(4767)          --  Cisco 2921/2951 RPS Adaptor
+                        ,pwr-c2911rps-adptr(4768)               --  Cisco 2911 RPS Adaptor
+                        ,pwr-c45-6000acv(4769)                  -- 6000W AC power supply for Catalyst 4500 switches
                         ,pwr-n7k-dc6000w(4770)                  -- N7K-DC-6.0KW,  DC 6000W powersupply for Nexus7000 N7K
                         ,pwr-cat-2960ac-235w-12v(4779) -- Cisco Catalyst 2960 AC power Supply 235 Watt, 12V DC
                         ,pwr-cat-2960ac-525w-12v(4780) -- Cisco Catalyst 2960 AC power Supply 525 Watt, 12V DC
+                        ,pwr-c1941pwr-ac(4781)         -- C1941 AC Power Supply
+                        ,pwr-c7225-ac(4787)                  -- 12V/ 540W output PSU, since the older Marin PSU only can provide 300W power(output), can<92>t support the uBR7225 system with 2 new Bajie boards
+
+                        ,mds-ds-x9232x256-k9(4800)         -- Link DS-X9232-256K9  32-Port 1/2/4/8/10Gbps FC Switching Module
+                        ,mds-ds13-slot-fabric-evia3(4801)  -- Evia3 DS-13SLT-FAB3  MDS9513 xbar 256Gbps Fabric Module3
+                        ,mds-ds-x9530-sf2a-k9(4819)          -- 2nd gen sup2a DS-X9530-SF2A-K9 for MDS
+                        ,hwic-2t-c(4826)                     -- High speed Wan Interface Card - Serial (2T)
+                        ,hwic-1t-c(4827)                     -- High speed Wan Interface Card - Serial (1T)
+                      ,hwic-9fes-c(4828)                   --  HWIC 9 Port Fast Ethernet Switch Cards
+                      ,hwic-4fes-c(4829)                   --  HWIC 4 Port Fast Ethernet Switch Cards
+                        ,vwic2-mft1-g703-c(4830)             -- VWIC2-1MFT-G703 (1 Port) RJ-48 Multi-Flex Trunk - G.703
+                        ,vwic2-mft2-g703-c(4831)             -- VWIC2-2MFT-G703 (2 Port)) RJ-48 Multi-Flex Trunk - G.703
+                        ,nm-16eswitch-c(4832)                -- 16 Ports 10BaseT/100BaseTX EtherSwitch Network module with optional GE and IP Phone Line Power
+                        ,harddisk-idc(4835)                  -- HDD IDC drive for ASR1001
+                        ,vmss-sm-sre700K9(4840)              -- Video Management and Storage System on SRE-SM-700
+                        ,vmss-sm-sre900K9(4841)              -- Video Management and Storage System on SRE-SM-900
+                        ,iss-sm-sre700K9(4842)               -- Integrated Storage System on SRE-SM-700
+                        ,iss-sm-sre900K9(4843)               -- Integrated Storage System on SRE-SM-900
 
                         }
                    ACCESS  read-only

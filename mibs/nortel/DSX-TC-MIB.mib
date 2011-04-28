@@ -1,0 +1,60 @@
+
+DSX-TC-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY,Integer32
+        FROM SNMPv2-SMI
+    TEXTUAL-CONVENTION
+        FROM SNMPv2-TC
+    ntEnterpriseDataTasmanMgmt, 
+    ntEnterpriseDataTasmanModules,
+    ntEnterpriseDataTasmanInterfaces
+        FROM NT-ENTERPRISE-DATA-MIB;
+    
+nndsxTC MODULE-IDENTITY
+    LAST-UPDATED "9904230000Z"
+    ORGANIZATION "Nortel Networks"
+    CONTACT-INFO
+       	" Nortel Networks
+        	8200 Dixie Road
+        	Brampton, Ontario L6T 5P6
+        	Canada        
+        	1-800-4Nortel 
+        	www.nortelnetworks.com "
+    DESCRIPTION
+            " Interface MIB definitions for T1/E1 interface modules."
+    REVISION "9904230000Z"
+    DESCRIPTION
+            "Initial revision."
+	::= { ntEnterpriseDataTasmanModules 2}
+
+
+AlarmStatus ::= TEXTUAL-CONVENTION
+    STATUS       current
+    DESCRIPTION
+               "This data type is used to represent the status of an alarm."
+    SYNTAX      INTEGER { off(0), on (1) }   
+
+
+LEDState ::= TEXTUAL-CONVENTION
+    STATUS       current
+    DESCRIPTION
+               "Different states LED can be in."
+    SYNTAX      INTEGER { 
+                    led-off                 (1) , 
+                    led-green               (2) , 
+                    led-red                 (3) , 
+                    led-yellow              (4) , 
+                    led-blinking-green      (5) , 
+                    led-blinking-red        (6) , 
+                    led-blinking-yellow     (7)
+                }   
+
+-- T1E1 registration objects for hierarchy
+
+nndsxMIB        OBJECT IDENTIFIER  ::= { ntEnterpriseDataTasmanInterfaces 1}
+
+nndsxT1E1IfGroup               OBJECT IDENTIFIER   ::= { nndsxMIB 2 }
+nndsxT3E3IfGroup                OBJECT IDENTIFIER   ::= { nndsxMIB 3 }
+
+END

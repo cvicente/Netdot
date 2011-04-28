@@ -1,0 +1,195 @@
+
+BAY-STACK-PORT-MIRRORING-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    OBJECT-TYPE, MODULE-IDENTITY, Integer32
+        FROM SNMPv2-SMI
+    MacAddress, RowStatus, TruthValue
+        FROM SNMPv2-TC
+    bayStackMibs
+        FROM SYNOPTICS-ROOT-MIB
+    InterfaceIndex
+        FROM IF-MIB
+    PortList
+        FROM Q-BRIDGE-MIB;
+
+bayStackPortMirroringMib MODULE-IDENTITY
+    LAST-UPDATED    "200905280000Z"
+    ORGANIZATION    "Nortel Networks"
+    CONTACT-INFO    "Nortel Networks"
+    DESCRIPTION
+        "Nortel Networks Port Mirroring MIB
+
+         Copyright 2008 Nortel Networks, Inc.
+         All rights reserved.
+         This Nortel Networks SNMP Management Information Base
+         Specification embodies Nortel Networks' confidential and
+         proprietary intellectual property. Nortel Networks retains
+         all title and ownership in the Specification, including any
+         revisions.
+
+         This Specification is supplied 'AS IS,' and Nortel Networks
+         makes no warranty, either express or implied, as to the use,
+         operation, condition, or performance of the Specification."
+
+    REVISION "200905280000Z" -- 28 May 2009
+    DESCRIPTION "v2:  Added support for 'allow-traffic'"
+
+    REVISION "200801180000Z" -- 18 January 2008
+    DESCRIPTION "v1:  Initial version."
+
+    ::= { bayStackMibs 28 }
+
+bsPortMirroringNotifications
+    OBJECT IDENTIFIER ::= { bayStackPortMirroringMib 0 }
+bsPortMirroringObjects
+    OBJECT IDENTIFIER ::= { bayStackPortMirroringMib 1 }
+
+-- -------------------------------------------------------------
+-- Textual Conventions
+-- -------------------------------------------------------------
+
+-- -------------------------------------------------------------
+-- Port Mirroring  Control Table
+-- -------------------------------------------------------------
+
+bsPortMirroringCtrlTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF BsPortMirroringCtrlEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "A table containing port mirroring control information about every
+        instance."
+    ::= { bsPortMirroringObjects 1 }
+
+bsPortMirroringCtrlEntry OBJECT-TYPE
+    SYNTAX BsPortMirroringCtrlEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "A list of port miroring control information for an instance."
+    INDEX { bsPortMirroringCtrlInstance }
+    ::= { bsPortMirroringCtrlTable 1 }
+
+BsPortMirroringCtrlEntry ::=
+    SEQUENCE {
+        bsPortMirroringCtrlInstance     Integer32,
+        bsPortMirroringCtrlPortMode     INTEGER,
+        bsPortMirroringCtrlMonitorPort  InterfaceIndex,
+        bsPortMirroringCtrlPortListX    PortList,
+        bsPortMirroringCtrlPortListY    PortList,
+        bsPortMirroringCtrlMacAddressA  MacAddress,
+        bsPortMirroringCtrlMacAddressB  MacAddress,
+        bsPortMirroringCtrlRowStatus    RowStatus,
+        bsPortMirroringCtrlAllowTraffic TruthValue
+    }
+
+bsPortMirroringCtrlInstance OBJECT-TYPE
+    SYNTAX      Integer32 (1..4)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION "The port mirroring instance number"
+    ::= { bsPortMirroringCtrlEntry 1 }
+
+bsPortMirroringCtrlPortMode OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    disable(1),
+                    adst(2),
+                    asrc(3),
+                    asrcBdst(4),
+                    asrcBdstOrBsrcAdst(5),
+                    asrcOrAdst(6),
+                    manytoOneRx(7),
+                    manytoOneRxTx(8),
+                    manytoOneTx(9),
+                    xrx(10),
+                    xrxOrXtx(11),
+                    xrxOrYtx(12),
+                    xrxYtx(13),
+                    xrxYtxOrYrxXtx(14),
+                    xtx(15)
+                }
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+        "These are the supported port mirroring modes:
+           disable(1)  - Disable port mirroring
+           Adst(2)     - Mirror packets with destination MAC address A
+           Asrc(3)     - Mirror packets with source MAC address A
+           AsrcBdst(4) - Mirror packets with source MAC address A and
+                         destination MAC address B
+           AsrcBdstOrBsrcAdst(5) - Mirror packets with source MAC address A
+                                   and destination MAC address B, or packets
+                                   with source MAC address B and destination
+                                   MAC address A
+           AsrcOrAdst(6)  - Mirror packets with source or destination MAC
+                            address A
+           ManytoOneRx(7)   - Many to one port mirroring ingress traffic
+           ManytoOneRxTx(8) - Many to one port mirroring ingress & egress
+                              traffic
+           ManytoOneTx(9)   - Many to one port mirroring egress traffic
+           Xrx(10)       - Mirror packets received on port X
+           XrxOrXtx(11) - Mirror packets received or transmitted on port X
+           XrxOrYtx(12) - Mirror packets received on port X or transmitted on
+                          port Y
+           XrxYtx(13)   - Mirror packets received on port X and transmitted on
+                          port Y
+           XrxYtxOrYrxXtx(14) - Mirror packets received on port X and
+                                transmitted on port Y, or packets received on
+                                port Y and transmitted on port X
+           Xtx(15)      - Mirror packets transmitted on port X"
+    ::= { bsPortMirroringCtrlEntry 2 }
+
+bsPortMirroringCtrlMonitorPort OBJECT-TYPE
+    SYNTAX      InterfaceIndex
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION "The monitor port"
+    ::= { bsPortMirroringCtrlEntry 3 }
+
+bsPortMirroringCtrlPortListX OBJECT-TYPE
+    SYNTAX      PortList (SIZE (0..255))
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION "The port list X"
+    ::= { bsPortMirroringCtrlEntry 4 }
+
+bsPortMirroringCtrlPortListY OBJECT-TYPE
+    SYNTAX      PortList (SIZE (0..255))
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION "The port list Y"
+    ::= { bsPortMirroringCtrlEntry 5 }
+
+bsPortMirroringCtrlMacAddressA OBJECT-TYPE
+    SYNTAX      MacAddress
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION "The MAC address A"
+    ::= { bsPortMirroringCtrlEntry 6 }
+
+bsPortMirroringCtrlMacAddressB OBJECT-TYPE
+    SYNTAX      MacAddress
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION "The MAC address B"
+    ::= { bsPortMirroringCtrlEntry 7 }
+
+bsPortMirroringCtrlRowStatus OBJECT-TYPE
+    SYNTAX       RowStatus
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "Used to create/delete entries in the bsPortMirroringCtrlTable."
+    ::= { bsPortMirroringCtrlEntry 8 }
+
+bsPortMirroringCtrlAllowTraffic OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-create
+    STATUS       current
+    DESCRIPTION
+        "Allow port to participate in normal frame switching."
+    ::= { bsPortMirroringCtrlEntry 9 }
+
+END
+
