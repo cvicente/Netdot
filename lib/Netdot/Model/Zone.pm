@@ -792,7 +792,7 @@ sub get_hosts {
     if ( $ipblock ){
 	$q .=  " AND subnet.id=$ipblock";
     }
-    $q .= ' GROUP BY rr.name';
+    $q .= ' ORDER BY rr.name';
 	
     my $dbh  = $self->db_Main;
     my $rows = $dbh->selectall_arrayref($q);
