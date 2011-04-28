@@ -196,7 +196,7 @@ BEGIN {
 	my $label = $self->get_label;
 	my %data = (tstamp      => $self->timestamp,
 		    record_type => $table,
-		    user        => $user,
+		    username    => $user,
 		    operation   => $args{operation},
 		    pending     => 1,
 		    );
