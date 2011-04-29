@@ -18,7 +18,6 @@ $SIG{ALRM} = sub{ die "timeout" };
 
 # Some regular expressions
 my $IPV4        = Netdot->get_ipv4_regex();
-my $IPV6        = Netdot->get_ipv6_regex();
 
 # Other fixed variables
 my $MAXPROCS    = Netdot->config->get('SNMP_MAX_PROCS');
@@ -80,7 +79,7 @@ sub search {
 	if ( ref($argv{name}) =~ /RR/ ){ 
 	    # We were passed a RR object.  
 	    # Proceed as regular search
-	}elsif ( $argv{name} =~ /^($IPV4)|($IPV6)$/ ){
+	}elsif ( Ipblock->matches_ip($argv{name}) ){
 	    # Looks like an IP address
 	    if ( my $ip = Ipblock->search(address=>$argv{name})->first ){
 		if ( $ip->interface && ($dev = $ip->interface->device) ){
@@ -370,7 +369,7 @@ sub assign_name {
     # An RR matching $host does not exist, or the name exists in 
     # multiple zones
     my @ips;
-    if ( $host =~ /^($IPV4)|($IPV6)$/ ){
+    if ( Ipblock->matches_ip($host) ){
 	# we were given an IP address
 	if ( my $ipb = Ipblock->search(address=>$host)->first ){
 	    if ( $ipb->interface && ( my $dev = $ipb->interface->device ) ){
@@ -414,7 +413,7 @@ sub assign_name {
     $fqdn = lc($fqdn);
 
     # Check if we have a matching domain
-    if ( $fqdn =~ /\./  && $fqdn !~ /^($IPV4)|($IPV6)$/ ){
+    if ( $fqdn =~ /\./  && !Ipblock->matches_ip($fqdn) ){
    	# Notice that we search the whole string.  That's because
 	# the hostname part might have dots.  The Zone search method
 	# will take care of that.
@@ -3710,7 +3709,7 @@ sub _get_main_ip {
 	}
 	
 	if ( defined $ip ){
-	    if ( $ip =~ /^($IPV4)$/ && Ipblock->validate($ip) ){
+	    if ( Ipblock->matches_v4($ip) && Ipblock->validate($ip) ){
 		$logger->debug(sub{"Device::_get_main_ip: Chose $ip using naming method: $method" });
 		return $ip ;
 	    }else{

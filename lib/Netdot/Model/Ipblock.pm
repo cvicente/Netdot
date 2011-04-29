@@ -153,7 +153,7 @@ sub search {
 	    $args{prefix}  = $prefix;
 	}else{
 	    # Ony convert to integer if address is human-readable
-	    if ( $args{address} =~ /^$IPV4$|^$IPV6$/ ){
+	    if ( $class->matches_ip($args{address}) ){
 		$args{address} = $class->ip2int($args{address});
 	    }
 	}
@@ -574,8 +574,8 @@ sub insert {
 
     unless ( $argv->{status} ){
 	if (defined $argv->{prefix} && 
-	    (($argv->{address} =~ $IPV4 && $argv->{prefix} eq '32') || 
-	     ($argv->{address} =~ $IPV6 && $argv->{prefix} eq '128'))) {
+	    ($class->matches_v4($argv->{address}) && $argv->{prefix} eq '32') || 
+	    ($class->matches_v6($argv->{address}) && $argv->{prefix} eq '128')) {
 	    $argv->{status} = "Static";
 	} else {
 	    $argv->{status} = "Container";
@@ -1218,6 +1218,89 @@ sub remove_range{
     }
     $logger->info("Ipblock::remove_range: done with $argv{start} - $argv{end}");
     
+}
+
+##################################################################
+=head2 matches_cidr - Does the given string match an IPv4 or IPv6 CIDR address
+
+ Arguments: 
+    string
+ Returns:   
+    Array containing address and prefix length, or 0 if no match
+ Examples:
+    Ipblock->matches_cidr('192.168.1.0/16');
+
+=cut
+sub matches_cidr {
+    my ($class, $string) = @_;
+
+    if ( $string =~ /^(.+)\/(\d+)$/ ){
+	my ($addr, $prefix) = ($1, $2);
+	if ( $class->matches_ip($addr) ){
+	    return ($addr, $prefix);
+	}
+    }
+    return 0;
+}
+
+##################################################################
+=head2 matches_ip - Does the given string match an IPv4 or IPv6 address
+
+ Arguments: 
+    string
+ Returns:   
+    1 or 0
+ Examples:
+    Ipblock->matches_ip('192.168.1.0');
+
+=cut
+sub matches_ip {
+    my ($class, $string) = @_;
+
+    if ( $class->matches_v4($string) || $class->matches_v6($string) ){
+	return 1;
+    }
+    return 0;
+}
+
+
+##################################################################
+=head2 matches_v4 - Does the given string match an IPv4 address
+
+ Arguments: 
+    string
+ Returns:   
+    1 or 0
+ Examples:
+    Ipblock->matches_v4('192.168.1.0');
+
+=cut
+sub matches_v4 {
+    my ($class, $string) = @_;
+
+    if ( $string =~ /^$IPV4$/ ) {
+	return 1;
+    }
+    return 0;
+}
+##################################################################
+=head2 matches_ip - Does the given string match an IPv6 address
+
+ Arguments: 
+    string
+ Returns:   
+    1 or 0
+ Examples:
+    Ipblock->matches_v6('192.168.1.0');
+
+=cut
+sub matches_v6 {
+    my ($class, $string) = @_;
+
+    if ( $string =~ /^$IPV6$/ ) {
+	return 1;
+    }
+    return 0;
 }
 
 =head1 INSTANCE METHODS
@@ -2606,7 +2689,7 @@ sub _prevalidate {
     $class->throw_fatal("Ipblock::_prevalidate: Missing required arguments: address")
 	unless $address;
 
-    unless ( $address =~ /^$IPV4$/ || $address =~ /^$IPV6$/ ) {
+    unless ( $class->matches_ip($address) ) {
 	$class->throw_user("IP: $address does not match valid patterns");
     }
 

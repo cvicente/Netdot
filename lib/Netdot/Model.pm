@@ -918,25 +918,35 @@ sub search_all_tables {
 	$table = $1;
 	$q     = $2;
     }
-    foreach my $tbl ( $self->meta->get_table_names() ) {
-	next if ( $table && $tbl !~ /^$table$/i );
-	$lctbl = lc($tbl);
-	my @cols;
-	foreach my $c ( $tbl->columns ){
-	    my $mcol = $tbl->meta_data->get_column($c);
-	    # Ignore foreign key fields
-	    next if ( $mcol->name eq 'id' );
-	    # Ignore foreign key fields
-	    next if ( $mcol->links_to() );
-	    # Only include these types
-	    push @cols, $c
-		if ( $mcol->sql_type =~ /^blob|varchar|integer$/ ); 
+    
+    if ( Ipblock->matches_ip($q) ){
+	# Convert IP addresses before searching
+	my @res = Ipblock->search(address=>Ipblock->ip2int($q));
+	map { $results{'Ipblock'}{$_->id} = $_ } @res;
+    }elsif ( my ($addr,$pref) = Ipblock->matches_cidr($q) ){
+	my @res = Ipblock->search(address=>$addr, prefix=>$pref);
+	map { $results{'Ipblock'}{$_->id} = $_ } @res;	
+    }else{
+	foreach my $tbl ( $self->meta->get_table_names() ) {
+	    next if ( $table && $tbl !~ /^$table$/i );
+	    $lctbl = lc($tbl);
+	    my @cols;
+	    foreach my $c ( $tbl->columns ){
+		my $mcol = $tbl->meta_data->get_column($c);
+		# Ignore id field
+		next if ( $mcol->name eq 'id' );
+		# Ignore foreign key fields
+		next if ( $mcol->links_to() );
+		# Only include these types
+		push @cols, $c
+		    if ( $mcol->sql_type =~ /^blob|text|varchar|integer$/ ); 
+	    }
+	    foreach my $col ( @cols ){
+		my @res = $tbl->search_like($col=>$q);
+		map { $results{$tbl}{$_->id} = $_ } @res;
+	    }
+	    last if $table;
 	}
-	foreach my $col ( @cols ){
-	    my @res = $tbl->search_like($col=>$q);
-	    map { $results{$tbl}{$_->id} = $_ } @res;
-	}
-	last if $table;
     }
     return \%results;
 }

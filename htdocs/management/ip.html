@@ -70,10 +70,6 @@ my $added_block = 0;
 my $covering_block;
 my $BLOCK_VIEW_MAX;
 
-# Some regular expressions
-my $IPV4 = Netdot->get_ipv4_regex();
-my $IPV6 = Netdot->get_ipv6_regex();
-
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
 my $manager = $ui->get_permission_manager($r);
@@ -308,8 +304,8 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 	    $m->comp('/generic/error.mhtml', error=> "$add_block_prefix not a valid CIDR string.");
 	}
 	my ($address, $prefix) = split /\//, $add_block_prefix;
-	if ( (($address =~ $IPV4 && $prefix ne '32') ||
-	      ($address =~ $IPV6 && $prefix ne '128')) &&
+	if ( ((Ipblock->matches_v4($address) && $prefix ne '32') ||
+	      (Ipblock->matches_v6($address) && $prefix ne '128')) &&
 	     ($block_status eq 'Dynamic' || $block_status eq 'Static') ){
 	    $m->comp('/generic/error.mhtml', error=>"IP block cannot be 'Dynamic' or 'Static'.  Specify IP Range instead.");
         }

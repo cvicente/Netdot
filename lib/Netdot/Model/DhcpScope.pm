@@ -303,8 +303,6 @@ sub import_hosts{
     my ($self, %argv) = @_;
     $self->isa_object_method('import_hosts');
 
-    my $IPV4 = Netdot->get_ipv4_regex();
-   
     $self->throw_fatal("Missing required argument: text")
 	unless $argv{text};
     
@@ -321,7 +319,7 @@ sub import_hosts{
 	    unless ( PhysAddr->validate($mac) );
 
 	$self->throw_user("Invalid IP: $ip")
-	    unless ( $ip =~ /$IPV4/ );
+	    unless ( Ipblock->matches_ip($ip) );
 
 	if ( $argv{overwrite} ){
 	    if ( my $phys = PhysAddr->search(address=>$mac)->first ){

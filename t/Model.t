@@ -46,6 +46,10 @@ is($obj->get_label, 'test2', 'get_label');
 my $res = Netdot::Model->search_all_tables('test2');
 ok(exists $res->{'Site'}->{$obj->id}, 'search_all_tables');
 
+my $bl = Ipblock->search(address=>'10.0.0.0')->first;
+$res = Netdot::Model->search_all_tables('10.0.0.0');
+ok(exists $res->{'Ipblock'}->{$bl->id}, 'search_all_tables_2');
+
 $obj->delete;
 isa_ok($obj, 'Class::DBI::Object::Has::Been::Deleted', 'delete');
 

@@ -50,8 +50,6 @@ if ( $show_tasks eq "" ) {
 *print_showtaskslink = $m->comp('SELF:.sub_print_showtaskslink'); 
 my $hideheader = 'style="display:none"' if ( !$showheader );
 
-my $IPV4 = Netdot->get_ipv4_regex();
-my $IPV6 = Netdot->get_ipv6_regex();
 my $MAC  = Netdot->get_mac_regex();
 my @list;
 
@@ -160,7 +158,7 @@ if ( $action eq "search" && $submit ){
 	$search = $ui->rem_lt_sp($search);
 	if ( $search =~ /$MAC/ ){
 	    @list = PhysAddr->search(address=>$search);
-	}elsif ( $search =~ /$IPV4|$IPV6/ ){
+	}elsif ( Ipblock->matches_ip($search) ){
 	    @list = Ipblock->search(address=>$search);
 	}else{
 	    my %args = (name=>$search);

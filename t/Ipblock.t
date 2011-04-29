@@ -171,6 +171,19 @@ my $v6container3 = Ipblock->insert({
 is($v6container3->parent, $v6container,  'v6 hierarchy');
 is($v6container2->parent, $v6container3, 'v6 hierarchy');
 
+is(Ipblock->matches_v4($address->address), 1, 'matches_v4_1');
+is(Ipblock->matches_v4($v6container2->address), 0, 'matches_v4_2');
+
+
+is(Ipblock->matches_v6($v6container2->address), 1, 'matches_v6_1');
+is(Ipblock->matches_v6($address->address), 0, 'matches_v6_2');
+
+is(Ipblock->matches_ip($v6container2->address), 1, 'matches_ip_1');
+is(Ipblock->matches_ip($address->address), 1, 'matches_ip_2');
+
+my $ar1 = Ipblock->matches_cidr($address->cidr);
+my $ar2 = ($address->address, $address->prefix);
+is_deeply(\$ar1, \$ar2, 'matches_cidr_1');
 
 # Delete all records
 $container->delete(recursive=>1);

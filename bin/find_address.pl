@@ -33,8 +33,6 @@ my $USAGE = <<EOF;
     
 EOF
     
-    my $IPV4 = Netdot->get_ipv4_regex();
-my $IPV6 = Netdot->get_ipv6_regex();
 my $MAC  = Netdot->get_mac_regex();
 
 # handle cmdline args
@@ -78,7 +76,7 @@ if ( $address =~ /$MAC/ ){
 	&show_mac($address, 1);
     }
 
-}elsif ( $address =~ /$IPV4|$IPV6/ ){
+}elsif ( Ipblock->matches_ip($address) ){
     
     if ( $self{FORCE_LIVE} ){
 	&search_live(ip=>$address, vlan=>$self{VLAN});

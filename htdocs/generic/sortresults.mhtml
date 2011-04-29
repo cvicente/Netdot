@@ -47,7 +47,6 @@ my $session;
 my $osession;
 my %objindex;
 my $numcols;
-my $IPV4 = Netdot->get_ipv4_regex();
 my $caller_path;
 my $user = $ui->get_current_user($r);
 
@@ -153,7 +152,7 @@ if ( defined($object) && scalar @$object ){
 	    }else{
 		$lbl = $obj->$sort_field;
 	    }
-	    if ( $lbl =~ /$IPV4/ ){
+	    if ( Ipblock->matches_v4($lbl) ){
 		$ipv4 = 1;
 	    }elsif  ( $lbl =~ /\D+/ ){
 		$alpha = 1;

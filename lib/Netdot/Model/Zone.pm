@@ -7,10 +7,6 @@ use Net::DNS::ZoneFile::Fast;
 
 my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
 
-# Some regular expressions
-my $IPV4 = Netdot->get_ipv4_regex();
-my $IPV6 = Netdot->get_ipv6_regex();
-
 =head1 NAME
 
 Netdot::Model::Zone - DNS Zone Class
@@ -66,7 +62,7 @@ sub search {
     }elsif ( defined $argv{name} ){
 	if ( my $alias = ZoneAlias->search(name=>$argv{name})->first ) {
 	    return $class->retrieve($alias->zone->id);
-	}elsif ( $argv{name} =~ /\./ && $argv{name} !~ /^($IPV4)$/ ){
+	}elsif ( $argv{name} =~ /\./ && !Ipblock->matches_v4($argv{name}) ){
 	    my @sections = split '\.', $argv{name};
 	    while ( @sections ){
 		$argv{name} = join '.', @sections;

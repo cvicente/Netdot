@@ -4,8 +4,6 @@ use base 'Netdot::Model';
 use warnings;
 use strict;
 
-my $IPV4 = Netdot->get_ipv4_regex();
-my $IPV6 = Netdot->get_ipv6_regex();
 my $MAC  = Netdot->get_mac_regex();
 my $logger = Netdot->log->get_logger('Netdot::Model::Device');
 
