@@ -112,7 +112,7 @@ foreach my $sn ( keys %assets ){
 "ALTER TABLE devicemodule DROP COLUMN maint_until;",
 "ALTER TABLE devicemodule ADD INDEX devicemodule2 (asset_id);",
 "ALTER TABLE product ADD COLUMN mfg_number varchar(255);",
-"ALTER TABLE datacache MODIFY COLUMN tstamp integer unsigned NOT NULL;",
+"ALTER TABLE datacache MODIFY COLUMN tstamp bigint NOT NULL;",
 "DELETE FROM datacache;",
 "ALTER TABLE device ADD COLUMN snmp_conn_attempts integer AFTER snmp_bulk;",
 "ALTER TABLE device ADD COLUMN snmp_down tinyint(1) NOT NULL AFTER snmp_conn_attempts;",
@@ -123,6 +123,11 @@ foreach my $sn ( keys %assets ){
 "ALTER TABLE rr ADD INDEX RR4 (`created`);",
 "ALTER TABLE rr ADD INDEX RR5 (`modified`);",
 "ALTER TABLE zone ADD COLUMN include blob AFTER id;",
+"ALTER TABLE rrloc MODIFY COLUMN latitude bigint NOT NULL;",
+"ALTER TABLE rrloc MODIFY COLUMN longitude bigint NOT NULL;",
+"ALTER TABLE rrloc MODIFY COLUMN altitude bigint NOT NULL;",
+"ALTER TABLE zone MODIFY COLUMN minimum bigint NOT NULL;",
+"ALTER TABLE zone MODIFY COLUMN serial bigint NOT NULL;",
 );
 
 
