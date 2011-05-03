@@ -64,6 +64,7 @@ my $title;
 my @list;
 my $edit_ip     = ( $edit && $edit eq "ipinfo"    ) ? 1 : 0;
 my $edit_block  = ( $edit && $edit eq "blockinfo" ) ? 1 : 0;
+my $edit_comments  = ( $edit && $edit eq "comments" ) ? 1 : 0;
 my $max_ips     = Netdot->config->get('SHOW_COUNT_THRESHOLD');
 my $added_ip    = 0;
 my $added_block = 0;
@@ -529,7 +530,7 @@ if ( $id && $view ){
 %   my $digest = $o->get_digest();
     <input type="hidden" name="state_digest" value="<% $digest %>">
 
-%      if ( $edit_ip || $edit_block ){
+%      if ( $edit_ip || $edit_block || $edit_comments ){
 	 <input type="hidden" name="_action" value="UPDATE">
 %      }
 
@@ -571,14 +572,14 @@ if ( my @parents = $o->get_ancestors ){
 
     <div class="containerheadright">
 %	 if ($edit eq "ipinfo"){	 
-%        if ($added_ip) {
-    	    <input type="submit" name="submit" value="cancel">
-%           my @parents = $o->get_ancestors;
-            <input type="hidden" name="parent" value="<% $parents[0] %>">
-%        } else {
-    	    <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
-%        }
-         <input type="submit" name="submit" value="save">
+%            if ($added_ip) {
+    	         <input type="submit" name="submit" value="cancel">
+%                my @parents = $o->get_ancestors;
+                 <input type="hidden" name="parent" value="<% $parents[0] %>">
+%            } else {
+    	         <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+%            }
+             <input type="submit" name="submit" value="save">
 %	 }else{
             <a href="ip.html?id=<% $id %>">[refresh]</a>
 %           if ( $manager && $manager->can($user, 'access_section', 'ip.html:edit_ipinfo') ){
@@ -625,7 +626,7 @@ if ( my @parents = $o->get_ancestors ){
 
        push( @cell_data, $status );
 
-       my @fields = ('description','info', 'first_seen','last_seen');
+       my @fields = ('description', 'first_seen', 'last_seen', 'owner', 'used_by');
        $ui->add_to_fields(o=>$o, edit=>$edit_ip, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
 
        push( @field_headers, "Interface:" );
@@ -651,9 +652,37 @@ if ( my @parents = $o->get_ancestors ){
 <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data,
                           width=>"2", headercolwidth=>"15%", datacolwidth=>"35%" &>
 
-
     </div>
 </div>
+
+%# Comments section
+<div class="container">
+    <div class="containerheadleft">
+        Comments
+    </div>
+    <div class="containerheadright">
+%	if ( $edit eq 'comments' ){
+            <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+            <input type="submit" name="submit" value="save">
+%	}else{
+%           if ( $manager && $manager->can($user, "edit", $o) ){
+                <a href="ip.html?id=<% $id %>&edit=comments">[edit]</a>
+%           }else{
+                &nbsp;
+%	    }
+%	}
+     </div>
+ <div class="containerbody">
+
+<%perl>
+my %tmp;
+%tmp = $ui->form_field(object=>$o, column=>"info", edit=>$edit);
+print $tmp{value};         
+</%perl>
+
+    </div>
+ </div>
+
 
 <%perl>
 
@@ -1017,6 +1046,10 @@ if ( my $sn = $o->status->name ){
 push( @cell_data, $status );
 
 ################
+# Description
+$ui->add_to_fields(o=>$o, edit=>$edit_block, fields=>['description'], field_headers=>\@field_headers, cell_data=>\@cell_data);
+
+################
 # Created, Modified
 push (@field_headers, "First Created", "Last Modified");
 my %createdtmp = $ui->form_field(object=>$o, column=>'first_seen', edit=>0);
@@ -1025,21 +1058,13 @@ push( @cell_data, $createdtmp{'value'}, $modtmp{'value'} );
 
 ################
 # Vlan
-
 if ( $o->status->name eq 'Subnet' ){
     my %tmp = $ui->form_field(object=>$o, column=>'vlan', edit=>$edit_block, linkPage=>'view.html');
     push( @field_headers, $tmp{'label'} );
     push( @cell_data, $tmp{'value'} );
-}else{
-    push( @field_headers, '&nbsp;');
-    push( @cell_data, '&nbsp;');
-}
-
-################
-# Description, Info (no link)
-{
-    my @fields = ('description','info');
-    $ui->add_to_fields(o=>$o, edit=>$edit_block, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
+# }else{
+#     push( @field_headers, '&nbsp;');
+#     push( @cell_data, '&nbsp;');
 }
 
 ################
@@ -1062,10 +1087,6 @@ push( @cell_data, $owner );
 my %usedby_tmp = $ui->form_field(object=>$o, column=>"used_by", edit=>$edit_block, linkPage=>"view.html");
 push( @field_headers, $usedby_tmp{'label'} );
 push( @cell_data, $usedby_tmp{'value'} );
-
-</%perl>
-
-<%perl>
 
 my $ip = new NetAddr::IP($o->address, $o->prefix);
 
@@ -1186,6 +1207,35 @@ if ($o->status->name eq "Subnet") {
 	                            width=>"2", headercolwidth=>"15%", datacolwidth=>"35%" &>
 
 % }
+
+    </div>
+</div>
+
+%#################
+%# Comments
+<div class="container">
+    <div class="containerheadleft">
+        Comments
+    </div>
+    <div class="containerheadright">
+%	if ( $edit eq 'comments' ){
+            <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+            <input type="submit" name="submit" value="save">
+%	}else{
+%           if ( $manager && $manager->can($user, "edit", $o) ){
+                <a href="ip.html?id=<% $id %>&edit=comments">[edit]</a>
+%           }else{
+                &nbsp;
+%	    }
+%	}
+     </div>
+ <div class="containerbody">
+
+<%perl>
+my %tmp;
+%tmp = $ui->form_field(object=>$o, column=>"info", edit=>$edit);
+print $tmp{value};         
+</%perl>
 
     </div>
 </div>
