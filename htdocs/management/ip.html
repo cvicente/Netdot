@@ -51,6 +51,8 @@ $state_digest      => undef
 @link_zones        => undef
 @new_rev_zones     => undef
 $template_zone_for_rev => undef
+$new_blocks_list   => undef
+$new_blocks_status => undef
 </%args>
 %
 %
@@ -355,6 +357,30 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 	$m->comp('/generic/error.mhtml', error=>"You need to specify IP/prefix");
     }
 
+#######################################################################################
+# Add multiple blocks (from partitions in container.mhtml)
+# 
+#######################################################################################
+}elsif( $_action eq "ADD_BLOCKS" ){
+
+    unless ( $new_blocks_list && $new_blocks_status ){
+	$m->comp('/generic/error.mhtml', error=>"Missing list of blocks or desired status");
+    }
+    my @new_blocks = split ',', $new_blocks_list;
+    eval {
+	Netdot::Model->do_transaction( sub{ 
+	    foreach my $b ( @new_blocks ){
+		my ($addr, $pref) = split '/', $b;
+		Ipblock->insert({address=>$addr, prefix=>$pref, status=>$new_blocks_status});
+	    }
+				       })
+    };
+    if ( my $e = $@ ){
+	$m->comp('/generic/error.mhtml', error=>"$e");	
+    }else{
+	$m->comp('.show_message', title=>"Action Message", msg=>"IP blocks created successfully");
+    }
+	    
 #######################################################################################
 # ENABLE DHCP
 #

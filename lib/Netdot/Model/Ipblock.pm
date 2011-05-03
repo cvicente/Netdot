@@ -1772,7 +1772,7 @@ sub address_usage {
 =head2 free_space - The free space in this ipblock
 
   Arguments:
-    None
+    Maximum block size to partition space into
   Returns:
     an array (possibly empty) of Netaddr::IP objects that fill in all the
     un-subnetted nooks and crannies of this IPblock
@@ -1809,7 +1809,9 @@ sub free_space {
         my $numbits = find_first_one($curr_addr);
 
         my $mask = $max_masklen - $numbits;
-        $mask = $divide if ( $divide && $divide =~ /\d+/ && $divide > $mask && ( ( $from->version == 4 && $divide <= 32 ) || ( $from->version == 6 && $divide <= 128 ) ) );
+        $mask = $divide if ( $divide && $divide =~ /\d+/ && $divide > $mask && 
+			     ( ( $from->version == 4 && $divide <= 32 ) 
+			       || ( $from->version == 6 && $divide <= 128 ) ) );
 
         my $subnet = NetAddr::IP->new($curr_addr, $mask);
         while ($subnet->contains($to)) {

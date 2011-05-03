@@ -43,6 +43,8 @@ if ( $network->version == 4 && $network->prefix < $BLOCK_MAX ){
 
     my @children = sort { $a->address_numeric <=> $b->address_numeric } $network->children;
     my @freespace = sort $network->free_space($dividefreespace);
+    my @new_blocks = map { $_->cidr } @freespace; # for later
+
 
     ######################################################################
     ## Now output the HTML
@@ -140,7 +142,25 @@ EOF
             print '</tr></table></td></tr>';
         }
     }
-
-    print "\n</tr></table></td></tr></table>";
-    
 </%perl>
+
+</tr></table></td></tr></table>
+
+% if ( $dividefreespace ne 'max' ){
+%     my $new_blocks_list = join ',', @new_blocks;
+<form name="new_blocks_form" action="ip.html" method="POST">
+    <input type="hidden" name="id" value="<% $network %>">
+    <input type="hidden" name="new_blocks_list" value="<% $new_blocks_list %>">
+    <input type="hidden" name="_action" value="ADD_BLOCKS">
+    <p>
+    <center>
+        Create new blocks from free partitions as  
+        <select name="new_blocks_status">
+           <option value="Select" selected>-- Select --</option>
+           <option value="Subnet">Subnet</option>
+           <option value="Container">Container</option>
+        </select>
+    <input type="submit" name="submit" value="Go">
+    </center>
+</form>
+% }
