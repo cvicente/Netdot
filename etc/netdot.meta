@@ -1852,6 +1852,14 @@ $meta = {
         tag => 'Down Until',
         type => 'date'
       },
+      extension => {
+        default => '',
+        description => 'IP phone extension',
+        length => '',
+        nullable => 1,
+        tag => 'Extension',
+        type => 'integer'
+      },
       id => {
         default => '',
         description => '',
@@ -2252,7 +2260,7 @@ $meta = {
     },
     description => 'A network device.  Particularly, Devices in Netdot are network infrastructure devices that network administrators care about for inventory, monitoring and management purposes.  Not to be confused with end nodes',
     has_history => 1,
-    index => [ ['physaddr'],  ['product'], ['used_by'], ['owner'], ['os'], ['sysname'], ['down_from'], ['down_until'], ['asset_id'] ],
+    index => [ ['physaddr'],  ['product'], ['used_by'], ['owner'], ['os'], ['sysname'], ['down_from'], ['down_until'], ['asset_id'], ['extension'] ],
     isjoin => '0',
     label => [
       'name'
@@ -2275,6 +2283,7 @@ $meta = {
         'ipforwarding',
         'layers',
         'os',
+        'extension',
         'physaddr',
         'bgplocalas',
 	'auto_dns',

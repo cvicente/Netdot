@@ -87,7 +87,9 @@ foreach my $sn ( keys %assets ){
 
 @statements = (
 "ALTER TABLE device ADD COLUMN asset_id bigint NOT NULL AFTER aliases;",
+"ALTER TABLE device ADD COLUMN extension integer NULL AFTER down_until;",
 "ALTER TABLE device_history ADD COLUMN asset_id bigint NOT NULL AFTER aliases;",
+"ALTER TABLE device_history ADD COLUMN extension integer NULL AFTER down_until;",
 "ALTER TABLE devicemodule ADD COLUMN asset_id bigint NOT NULL FIRST;",
 "UPDATE device,asset SET device.asset_id=asset.id WHERE asset.serial_number=device.serialnumber;",
 "UPDATE devicemodule,asset SET devicemodule.asset_id=asset.id WHERE asset.serial_number=devicemodule.serialnumber;",
@@ -99,6 +101,7 @@ foreach my $sn ( keys %assets ){
 "ALTER TABLE device DROP COLUMN maint_until;",
 "ALTER TABLE device DROP COLUMN custom_serial;",
 "ALTER TABLE device ADD INDEX Device13 (asset_id);",
+"ALTER TABLE device ADD INDEX Device14 (extension);",
 "ALTER TABLE device_history DROP COLUMN serialnumber;",
 "ALTER TABLE device_history DROP COLUMN inventorynumber;",
 "ALTER TABLE device_history DROP COLUMN maint_contract;",
