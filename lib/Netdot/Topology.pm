@@ -28,11 +28,12 @@ Netdot Device Topology Class
 =head2 discover - Discover Topology
 
   Arguments:
-    exclude_dp - optional, set to true to exclude DP
+    exclude_dp  - optional, set to true to exclude DP
     exclude_stp - optional, set to true to exclude STP
     exclude_fdb - optional, set to true to exclude FDB
     exclude_p2p - optional, set to true to exclude P2P
-    interfaces - optional, interfaces to preform topology update on
+    interfaces  - optional, interfaces to preform topology update on
+    recursive   - optional, recursively discover unknown neighbors
   Returns:
     True
   Examples:
@@ -44,7 +45,7 @@ sub discover {
     $class->isa_class_method('discover');
 
     my %SOURCES;
-    $SOURCES{DP}  = 1 if $class->config->get('TOPO_USE_DP') && (! $argv{'exclude_dp'});
+    $SOURCES{DP}  = 1 if $class->config->get('TOPO_USE_DP')  && (! $argv{'exclude_dp'});
     $SOURCES{STP} = 1 if $class->config->get('TOPO_USE_STP') && (! $argv{'exclude_stp'});
     $SOURCES{FDB} = 1 if $class->config->get('TOPO_USE_FDB') && (! $argv{'exclude_fdb'}); 
     $SOURCES{P2P} = 1 if $class->config->get('TOPO_USE_P2P') && (! $argv{'exclude_p2p'});
@@ -338,6 +339,7 @@ sub update_links {
 
   Arguments:  
     interfaces - Optional interfaces to get dp links from
+    recursive  - Recursively discover unknown neighbors
   Returns:    
     Hashref with link info
   Example:
@@ -542,6 +544,7 @@ sub get_dp_links {
     $logger->debug(sprintf("Topology::get_dp_links: %d Links determined in %s", 
 			   scalar keys %links, $class->sec2dhms(time - $start)));
     
+    my @new_devs;
     IPLOOP: foreach my $ip ( keys %ips2discover ){
 	foreach my $block ( keys %$excluded_blocks ){
 	    if ( $ip && $block && Ipblock->within($ip, $block) ){
@@ -552,8 +555,13 @@ sub get_dp_links {
 	}
 	$logger->info("Topology::get_dp_links: Discovering unknown neighbor: $ip");
 	eval {
-	    Device->discover(name=>$ip);
+	    push @new_devs, Device->discover(name=>$ip);
 	};
+    }
+    if ( @new_devs && $argv{recursive} ){
+	$logger->info("Netdot::Topology::get_dp_links: Recursively discovering unknown neighbors");
+	my $new_dp_links = $class->get_dp_links(%argv);
+	map { $links{$_} = $new_dp_links->{$_} } keys %$new_dp_links;
     }
     return \%links;
 }
