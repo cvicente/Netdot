@@ -711,7 +711,7 @@ sub _get_all_data {
              FROM            dhcpscopetype, dhcpscope
              LEFT OUTER JOIN physaddr ON dhcpscope.physaddr=physaddr.id
              LEFT OUTER JOIN ipblock  ON dhcpscope.ipblock=ipblock.id
-             LEFT OUTER JOIN (dhcpattr, dhcpattrname) ON 
+             LEFT OUTER JOIN (dhcpattr CROSS JOIN dhcpattrname) ON 
                              dhcpattr.scope=dhcpscope.id AND dhcpattr.name=dhcpattrname.id
              WHERE           dhcpscopetype.id=dhcpscope.type
        ";
