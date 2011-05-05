@@ -22,7 +22,7 @@ my $retries         = Netdot->config->get('DEFAULT_SNMPRETRIES');
 my $timeout         = Netdot->config->get('DEFAULT_SNMPTIMEOUT');
 
 # Flags
-my ($ATOMIC, $ADDSUBNETS, $SUBSINHERIT, $BGPPEERS, $INFO, $FWT, $TOPO, $ARP, $PRETEND, $HELP, $_DEBUG);
+my ($ATOMIC, $ADDSUBNETS, $SUBSINHERIT, $BGPPEERS, $RECURSIVE, $INFO, $FWT, $TOPO, $ARP, $PRETEND, $HELP, $_DEBUG);
 
 # This will be reflected in the history tables
 $ENV{REMOTE_USER}   = "netdot";
@@ -64,6 +64,7 @@ my $USAGE = <<EOF;
     --subs-inherit                       When adding subnets, have them inherit information from the Device
     --with-bgp-peers                     When discovering routers, maintain their BGP Peers
     --pretend                            Do not commit changes to the database
+    --recursive                          Recursively discover unknown neighbors (with -T)
     -h, --help                           Print help (this message)
     -d, --debug                          Set syslog level to LOG_DEBUG
 
@@ -95,6 +96,7 @@ my $result = GetOptions( "H|host=s"          => \$host,
 			 "subs-inherit"      => \$SUBSINHERIT,
 			 "with-bgp-peers"    => \$BGPPEERS,
 			 "pretend"           => \$PRETEND,
+			 "recursive"         => \$RECURSIVE,
 			 "h|help"            => \$HELP,
 			 "d|debug"           => \$_DEBUG,
 );
@@ -202,8 +204,10 @@ if ( $TOPO ){
     $logger = Netdot->log->get_logger('Netdot::Topology');
     $logger->level($DEBUG) if ( $_DEBUG ); # Notice that $DEBUG is imported from Log::Log4perl
     $logger->add_appender($logscr);
+    my %uargs;
+    $uargs{recursive} = 1 if $RECURSIVE;
     eval {
-	Netdot::Topology->discover;
+	Netdot::Topology->discover(%uargs);
     };
     die "ERROR: $@\n" if $@;
 }
