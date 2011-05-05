@@ -291,6 +291,9 @@ device3 community2
         <programlisting>#bin/updatedevices.pl -H &lt;switch&gt; -F -c &lt;community&gt;</programlisting>
         <para>Netdot can also try to discover the network topology.  For that, you need to run:</para>
         <programlisting>#bin/updatedevices.pl -T</programlisting>
+        <para>If the configuration option ADD_UNKNOWN_DP_DEVS is set to 1 (true), then Netdot will attempt to discover any devices seen (via CDP/LLDP) on existing device interfaces. With the previous command, Netdot will only try to discover directly connected devices. In order to attempt to discover all unknown neighbors, and the neighbors of those neighbors, use the following parameter:</para>
+        <programlisting>
+#bin/updatedevices.pl -T --recursive</programlisting>
         <para>Ideally, once you have discovered all your devices, you should combine all this functionality and have it run periodically (e.g. every hour) via CRON.   A sample crontab entry would be:</para>
         <programlisting>0 * * * * root /usr/local/netdot/bin/updatedevices.pl -DIFAT</programlisting>
         <para>You will find some examples of cron jobs in the file named <emphasis role="italic">netdot.cron</emphasis></para>
