@@ -271,7 +271,7 @@ password: &quot;admin&quot;</programlisting>
         <para>Se puede descubrir los dispositivos de toda una subred ejecutando:</para>
         <programlisting>bin/updatedevices.pl -B 192.168.1.0/24 -I -c &lt;comunidad&gt;</programlisting>
         <para>También se pueden descubrir dispositivos desde una lista en un fichero texto:</para>
-        <programlisting>bin/updatedevices.pl -F &lt;fichero-texto&gt; -I -c &lt;comunidad&gt;</programlisting>
+        <programlisting>bin/updatedevices.pl -E &lt;fichero-texto&gt; -I</programlisting>
         <para>El fichero debe contener una lista de dispositivos y sus comunidades SNMP respectivas, separados por espacio y un par dispositivo/comunidad por linea, por ejemplo:</para>
         <programlisting>dispositivo1 comunidad1
 dispositivo2 comunidad2
@@ -282,6 +282,9 @@ dispositivo3 comunidad3
         <programlisting>bin/updatedevices.pl -H &lt;switch&gt; -F -c &lt;community&gt;</programlisting>
         <para>Netdot puede descubrir la topología de la red, ejecutando:</para>
         <programlisting>bin/updatedevices.pl -T</programlisting>
+        <para>Si la opción de configuración ADD_UNKNOWN_DP_DEVS está activada, entonces Netdot intentará descubrir nuevos dispositivos adyacentes, si éstos fueren vistos (via CDP/LLDP) en las interfaces de los dispositivos existentes. Con el comando anterior, Netdot sólo intentará descubrir dispositivos directamente conectados. Si se desea que Netdot descubra los dispositivos adyacentes, y los adyacentes a éstos, entonces debe utilizar el siguiente parámetro:</para>
+        <programlisting>
+bin/updatedevices.pl -T --recursive</programlisting>
         <para>Generalmente, una vez que se han descubierto todos los dispositivos de la red, se pueden actualizar todas estas informaciones ejecutando una tarea programa de forma periódica (e.j. cada hora) utilizando CRON.   La línea para el cron sería la siguiente:</para>
         <programlisting>0 * * * * root /usr/local/netdot/bin/updatedevices.pl -I -A -F -T</programlisting>
         <para>Se pueden encontrar ejemplos de configuraciones para cron en <emphasis role="italic">etc/netdot.cron</emphasis></para>
