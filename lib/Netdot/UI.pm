@@ -344,11 +344,11 @@ sub form_field {
 	    $value = $self->date_field(object=>$o, table=>$table, column=>$column, edit=>$args{edit}, 
 				       default=>$args{default}, returnAsVar=>1, shortFieldName=>$args{shortFieldName} );
 	    
-	} elsif ( $type eq "blob" ) {
+	} elsif ( $type eq 'blob' || $type eq 'text' ) {
 	    $value = $self->text_area(object=>$o, table=>$table, column=>$column, edit=>$args{edit}, 
 				      returnAsVar=>1, htmlExtra=>$args{htmlExtra}, shortFieldName=>$args{shortFieldName});
 	    
-	} elsif ( $type eq "bool" ) {
+	} elsif ( $type eq 'bool' ) {
 	    if ( $args{adv_search} == 1 ) {
 		$value = $self->radio_group_boolean(object=>$o, table=>$table, column=>$column, edit=>$args{edit}, 
 						returnAsVar=>1, shortFieldName=>$args{shortFieldName}, adv_search=>1);
@@ -357,7 +357,7 @@ sub form_field {
 						returnAsVar=>1, shortFieldName=>$args{shortFieldName});
 	    }
 	    
-	} elsif ( $table =~ /Picture/ && $type eq "longblob" ) {
+	} elsif ( $table =~ /Picture/ && $type eq 'longblob' ) {
 	    if ( ! $args{edit} ){
 		my $alt = $o->filename;
 		$value = "<a href=\"display_bin.html?table=$table&id=$id\"><img width=\"150\" height=\"150\" alt=\"$alt\"src=\"display_bin.html?table=$table&id=$id\" ></a>";

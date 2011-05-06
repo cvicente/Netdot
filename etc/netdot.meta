@@ -437,6 +437,14 @@ $meta = {
   BGPPeering => {
     table_db_name => 'bgppeering',
     columns => {
+      authkey => {
+        default => '',
+        description => 'The authentication key for this BGP session',
+        length => '255',
+        nullable => 1,
+        tag => 'Auth key',
+        type => 'varchar'
+      },
       bgppeeraddr => {
         default => '',
         description => 'BGP Peer Address',
@@ -487,12 +495,36 @@ $meta = {
         tag => undef,
         type => 'bigint'
       },
+      info => {
+        default => '',
+        description => 'Comments',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'text'
+      },
+      max_v4_prefixes => {
+        default => '',
+        description => 'Maximum number of IPv4 prefixes we will permit from this peer',
+        length => '',
+        nullable => 0,
+        tag => 'Max IPv4 Prefixes',
+        type => 'integer'
+      },
+      max_v6_prefixes => {
+        default => '',
+        description => 'Maximum number of IPv6 prefixes we will permit from this peer',
+        length => '',
+        nullable => 0,
+        tag => 'Max IPv6 Prefixes',
+        type => 'integer'
+      },
       monitored => {
         default => '',
         description => 'Flag that specifies if this peering should be monitored',
         length => '',
         nullable => 0,
-        tag => undef,
+        tag => 'Monitored?',
         type => 'bool'
       },
       monitorstatus => {
@@ -507,7 +539,7 @@ $meta = {
         nullable => 1,
         tag => 'Monitored Status',
         type => 'bigint'
-      }
+      },
     },
     description => 'A BGP Peering',
     has_history => 0,
@@ -534,8 +566,12 @@ $meta = {
         'entity',
         'bgppeerid',
         'bgppeeraddr',
+	'max_v4_prefixes',
+	'max_v6_prefixes',
         'monitored',
-        'monitorstatus'
+        'monitorstatus',
+	'authkey',
+	'info',
       ],
       brief => [
         'device',
