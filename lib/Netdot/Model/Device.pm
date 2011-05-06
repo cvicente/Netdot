@@ -2552,10 +2552,6 @@ sub info_update {
     $self->_update_stp_info($info, \%devtmp);
     
     ##############################################################
-    # Update Device object
-    $self->update(\%devtmp);
-    
-    ##############################################################
     $self->_update_modules($info);
 
     ##############################################
@@ -2575,6 +2571,10 @@ sub info_update {
 	$self->_update_bgp_info($info, \%devtmp);
     }
 
+    ##############################################################
+    # Update Device object
+    $self->update(\%devtmp);
+    
     my $end = time;
     $logger->debug(sub{ sprintf("%s: SNMP update completed in %s", 
 				$host, $self->sec2dhms($end-$start))});
