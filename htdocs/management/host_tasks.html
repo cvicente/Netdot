@@ -26,6 +26,7 @@ $showheader     => 1
 $ipblock_id     => undef
 $ip             => undef
 $add_host_block => undef
+$add_host_zone  => undef
 $ethernet       => undef
 $zone_id        => undef
 </%args>
@@ -116,16 +117,23 @@ my $manager = $ui->get_permission_manager($r);
 
                 <p>
                 <label for="Subnet">Subnet:</label>
-                <select name="add_host_block">
+                <select name="add_host_block" id="add_host_block" onChange="jsrsSendquerySZ(add_host_zone, add_host_block.value);">
                 <option value="">- Select Block -</option>
-%           my @subnets = grep { $_->forward_zone } Ipblock->search(status=>"Subnet");
-%           foreach my $o ( sort { $a->address_numeric cmp $b->address_numeric } @subnets ){
-%               my $subnet_label = $o->get_label();
-%               if ( $o->description ){
-%                   $subnet_label .= " (".$o->description.")"; 
+%               my @subnets = grep { $_->forward_zone } Ipblock->search(status=>"Subnet");
+%               foreach my $o ( sort { $a->address_numeric cmp $b->address_numeric } @subnets ){
+%                   my $subnet_label = $o->get_label();
+%                   if ( $o->description ){
+%                       $subnet_label .= " (".$o->description.")"; 
+%                   }
+                    <option value="<% $o %>"><% $subnet_label %></option>
 %               }
-                <option value="<% $o %>"><% $subnet_label %></option>
-%           }
+                </select>
+                </p>
+
+                <p>
+                <label for="Zone">Zone:</label>
+                <select name="add_host_zone" id="add_host_zone">
+                <option value="">- Select Zone -</option>
                 </select>
                 </p>
 
@@ -211,6 +219,9 @@ if ( $action eq "search" && $submit ){
     if ( !defined $add_host_block || $add_host_block == 0 ) {
 	$m->comp('/generic/error.mhtml', error=>"You need to specify a subnet");
     }
+    if ( !defined $add_host_zone || $add_host_zone == 0 ) {
+	$m->comp('/generic/error.mhtml', error=>"You need to specify a zone");
+    }
     if ( !(defined $hostname) ) {
 	$m->comp('/generic/error.mhtml', error=>"You need to specify a hostname");
     }
@@ -218,20 +229,21 @@ if ( $action eq "search" && $submit ){
     unless ( $block ){
 	$m->comp('/generic/error.mhtml', error=>"Could not retrieve Ipblock: $add_host_block");
     }
-    
+
     my $ip_strategy = Netdot->config->get("IP_ALLOCATION_STRATEGY");
     my $address;
     unless ( $address = $block->get_next_free(strategy=>$ip_strategy) ){
 	$m->comp('/generic/error.mhtml', error=>"Could not get an available address from ".$block->get_label);
     }
 
+    my $zone = Zone->retrieve($add_host_zone);
+    unless ( $zone ){
+	$m->comp('/generic/error.mhtml', error=>"Could not retrieve Zone: $add_host_zone");
+    }
 
     my %args;
     $args{block}    = $block;
-    unless ( $args{zone} = $block->forward_zone() ){
-	$m->comp("/generic/error.mhtml", error=>"Subnet ".$block->get_label." is not associated with a zone.");
-    }
-    
+    $args{zone}     = $zone;
     $args{address}  = $address;
     $args{hostname} = $hostname;
     $args{ethernet} = $ethernet;

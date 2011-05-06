@@ -2405,13 +2405,15 @@ sub forward_zone {
     my ($self) = @_;
     $self->isa_object_method('forward_zone');
 
+    my @list;
     if ( my @zones = $self->dns_zones ){
 	foreach my $z ( @zones ){
 	    if ( $z->name !~ /\.arpa$|\.int$/ ){
-		return $z;
+		push @list, $z;
 	    }
 	}
     }
+    wantarray ? ( @list ) : $list[0];
 }
 
 ################################################################
