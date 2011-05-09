@@ -11,28 +11,54 @@ use Data::Dumper;
 
 my %CONFIG;
 $CONFIG{debug} = 1;
+$CONFIG{SCHEMA_FILE}  = "$CONFIG{CONFIG_DIR}/netdot.meta";
+$CONFIG{DEFAULT_DATA} = "$CONFIG{CONFIG_DIR}/default_data";
+
+my $netdot_config = Netdot::Config->new(config_dir => $CONFIG{CONFIG_DIR});
 
 my $dbh = &dbconnect();
 my @statements;
 
-@statements = (
-"CREATE TABLE `asset` (
-  `date_purchased` timestamp DEFAULT '1970-01-01 00:00:01',
-  `id` bigint NOT NULL auto_increment,
-  `info` blob,
-  `inventory_number` varchar(255),
-  `maint_contract` integer NOT NULL,
-  `maint_from` date,
-  `maint_until` date,
-  `product_id` integer NOT NULL,
-  `serial_number` varchar(255),
-  `custom_serial` varchar(255),
-  UNIQUE INDEX asset1 (`serial_number`, `product_id`),
-  INDEX Asset2 (`product_id`),
-  INDEX Asset3 (`inventory_number`),
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB;",
-    );
+if ($netdot_config->get('DB_TYPE') eq "mysql") {
+    @statements = (
+    "CREATE TABLE `asset` (
+      `date_purchased` timestamp DEFAULT '1970-01-01 00:00:01',
+      `id` bigint NOT NULL auto_increment,
+      `info` blob,
+      `inventory_number` varchar(255),
+      `maint_contract` integer NOT NULL,
+      `maint_from` date,
+      `maint_until` date,
+      `product_id` integer NOT NULL,
+      `serial_number` varchar(255),
+      `custom_serial` varchar(255),
+      UNIQUE INDEX Asset1 (`serial_number`, `product_id`),
+      INDEX Asset2 (`product_id`),
+      INDEX Asset3 (`inventory_number`),
+      PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB;",
+        );
+} elsif ($netdot_config->get('DB_TYPE') eq "Pg") {
+    my $u = $netdot_config->get('DB_NETDOT_USER');
+    @statements = (
+    "CREATE TABLE asset (
+      date_purchased timestamp DEFAULT '1970-01-01 00:00:01',
+      id serial PRIMARY KEY,
+      info text,
+      inventory_number varchar(255),
+      maint_contract integer NOT NULL,
+      maint_from date,
+      maint_until date,
+      product_id integer NOT NULL,
+      serial_number varchar(255),
+      custom_serial varchar(255),
+      CONSTRAINT Asset1 UNIQUE (serial_number, product_id)
+    );",
+    "CREATE INDEX Asset2 ON asset (product_id);",
+    "CREATE INDEX Asset3 ON asset (inventory_number);",
+    "GRANT ALL ON asset TO $u;"
+        );
+}
 
 &processdata(\@statements);
 
@@ -123,8 +149,8 @@ foreach my $sn ( keys %assets ){
 "ALTER TABLE device_history ADD COLUMN snmp_down tinyint(1) NOT NULL AFTER snmp_conn_attempts;",
 "ALTER TABLE rr ADD COLUMN created timestamp AFTER auto_update;",
 "ALTER TABLE rr ADD COLUMN modified timestamp AFTER info;",
-"ALTER TABLE rr ADD INDEX RR4 (`created`);",
-"ALTER TABLE rr ADD INDEX RR5 (`modified`);",
+"ALTER TABLE rr ADD INDEX RR4 (created);",
+"ALTER TABLE rr ADD INDEX RR5 (modified);",
 "ALTER TABLE zone ADD COLUMN include blob AFTER id;",
 "ALTER TABLE rrloc MODIFY COLUMN latitude bigint NOT NULL;",
 "ALTER TABLE rrloc MODIFY COLUMN longitude bigint NOT NULL;",
@@ -168,7 +194,7 @@ my @schema = &generate_schema_from_metadata();
 @statements = ('SET foreign_key_checks=0;');
 my $fk_table;
 foreach ( @schema ){
-    if ( /^CREATE TABLE `(\S+)`/ ){
+    if ( /^CREATE TABLE `?(\S+)`?/ ){
 	$fk_table = $1;
     }elsif ( /CONSTRAINT/ ){
 	$_ =~ s/^\s+//; # Remove leading spaces
