@@ -207,11 +207,11 @@ BEGIN {
 	    unless ( blessed($zone) ){
 		$zone = Zone->retrieve($zone);
 	    }
-	    $data{zone} = $zone;
 	    $name       = $zone->name;
+	    $data{zone} = $name;
 	}elsif ( $scope ){
-	    $data{scope} = $scope;
 	    $name        = $scope->name;
+	    $data{scope} = $name;
 	}else{
 	    $self->throw_fatal("Netdot::Model::_host_audit: Could not determine audit object for table: $table");
 	}

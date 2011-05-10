@@ -84,10 +84,10 @@ sub generate_configs {
     
     foreach my $zone ( @zones ){
 	Netdot::Model->do_transaction(sub{
-	    if ( HostAudit->search(zone=>$zone, pending=>1) || $argv{force} ){
+	    if ( HostAudit->search(zone=>$zone->name, pending=>1) || $argv{force} ){
 		if ( $zone->active ){
 		    my $path = $self->print_zone_to_file(zone=>$zone, nopriv=>$argv{nopriv});
-		    my @pending = HostAudit->search(zone=>$zone, pending=>1);
+		    my @pending = HostAudit->search(zone=>$zone->name, pending=>1);
 		    foreach my $record ( @pending ){
 			# Un-mark audit records as pending
 			$record->update({pending=>0});

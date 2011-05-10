@@ -85,6 +85,21 @@ foreach my $sn ( keys %assets ){
 }
 
 
+# Grab hostaudit data before conversion
+my %haudit;
+my $hq = $dbh->prepare('SELECT          ha.id,zone.name,dhcpscope.name  
+                       FROM            hostaudit ha 
+                       LEFT OUTER JOIN zone ON ha.zone=zone.id 
+                       LEFT OUTER JOIN dhcpscope ON ha.scope=dhcpscope.id');
+$hq->execute();
+my $haudits = $hq->fetchall_arrayref();
+
+foreach my $row ( @$haudits ){
+    my ($id, $zone, $scope) = @$row;
+    $haudit{$id}{zone}  = $zone;
+    $haudit{$id}{scope} = $scope;
+}
+
 @statements = (
 "ALTER TABLE device ADD COLUMN asset_id bigint NOT NULL AFTER aliases;",
 "ALTER TABLE device ADD COLUMN extension integer NULL AFTER down_until;",
@@ -135,6 +150,9 @@ foreach my $sn ( keys %assets ){
 "ALTER TABLE bgppeering ADD COLUMN info text;",
 "ALTER TABLE bgppeering ADD COLUMN max_v4_prefixes integer;",
 "ALTER TABLE bgppeering ADD COLUMN max_v6_prefixes integer;",
+"ALTER TABLE hostaudit MODIFY COLUMN zone varchar(255);",
+"ALTER TABLE hostaudit MODIFY COLUMN scope varchar(255);",
+"ALTER TABLE hostaudit CHANGE COLUMN user username varchar(255);",
 );
 
 
@@ -159,6 +177,19 @@ foreach my $mtable ( sort { $a->name cmp $b->name } @tables ){
 # Exceptions
 push @statements, "ALTER TABLE accessright MODIFY COLUMN object_id bigint NOT NULL;";
 
+
+# Update hostaudit with string data
+#
+foreach my $hid ( keys %haudit ){
+    my ($zone, $scope) = ($haudit{$hid}{zone}, $haudit{$hid}{scope});
+    next unless ($zone || $scope);
+    my $st = 'UPDATE hostaudit SET';
+    $st .= " zone='$zone'" if $zone;
+    $st .= "," if ($zone && $scope);
+    $st .= " scope='$scope'" if $scope;
+    $st .= " WHERE id=$hid;";
+    push @statements,  $st;
+}
 
 &processdata(\@statements);
 
