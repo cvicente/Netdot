@@ -122,6 +122,15 @@ sub print_zone_to_file {
     $self->throw_fatal("Missing required argument: zone")
 	unless $zone;
 
+    # Make sure that there are NS records
+    my $apex = RR->search(name=>'@', zone=>$zone)->first 
+    	|| $self->throw_user('Apex record (@) not defined');
+
+    my @ns_records = $apex->ns_records();
+    $self->throw_user('Zone has no NS records')
+	unless @ns_records;
+	
+    
     my $rec = $zone->get_all_records();
 
     my $dir = Netdot->config->get('BIND_EXPORT_DIR') 
