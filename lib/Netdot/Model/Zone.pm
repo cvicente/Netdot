@@ -770,7 +770,7 @@ sub get_hosts {
                               rrptr.ptrdname, zone.name, zone.id
               FROM            zone, rr
               LEFT OUTER JOIN (ipblock ip CROSS JOIN rrptr) ON (rr.id=rrptr.rr AND ip.id=rrptr.ipblock)
-              LEFT OUTER JOIN (ipblock CROSS JOIN subnet)    ON ip.parent=subnet.id
+              LEFT OUTER JOIN (ipblock subnet) ON ip.parent=subnet.id
               WHERE           rr.zone=zone.id AND zone.id=$id";
 
     }else{
@@ -779,7 +779,7 @@ sub get_hosts {
                               physaddr.id, physaddr.address, zone.name, zone.id
               FROM            zone, rr
               LEFT OUTER JOIN (ipblock ip CROSS JOIN rraddr)  ON (rr.id=rraddr.rr AND ip.id=rraddr.ipblock)
-              LEFT OUTER JOIN (ipblock CROSS JOIN subnet)      ON ip.parent=subnet.id
+              LEFT OUTER JOIN (ipblock subnet) ON ip.parent=subnet.id
               LEFT OUTER JOIN (physaddr CROSS JOIN dhcpscope) ON (dhcpscope.ipblock=ip.id AND dhcpscope.physaddr=physaddr.id)
               WHERE           rr.zone=zone.id AND zone.id=$id";
 

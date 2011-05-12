@@ -200,7 +200,7 @@ if ( $view eq 'records' || $edit eq 'records' ){
       <div class="containerbody">
 %     if ( $view eq 'pending_changes' ){
 %         my @pending_changes = HostAudit->search_where(
-%			{ zone     => $o, 
+%			{ zone     => $o->name, 
 %                         pending  => 1 },
 %                       { order_by => 'tstamp DESC' });
           <& /generic/sortresults.mhtml, object=>\@pending_changes, withedit=>0  &>
@@ -221,7 +221,7 @@ if ( $view eq 'records' || $edit eq 'records' ){
       <div class="containerbody">
 %     if ( $view eq 'recent_changes' ){
 %         my @audit_records = HostAudit->search_where(
-%	      { zone          => $o },
+%	      { zone          => $o->name },
 %	      { order_by      => 'tstamp DESC', 
 %	        limit_dialect => 'LimitXY',
 %	        limit         => '50' });

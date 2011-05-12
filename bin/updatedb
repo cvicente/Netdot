@@ -102,7 +102,7 @@ foreach my $row ( @$device_modules ){
 }
 
 my $ia = $dbh->prepare('INSERT INTO asset (serial_number,custom_serial,inventory_number,maint_contract,maint_from,maint_until,product_id)
-                        VALUES (?,?,?,?,?,?,?)');
+        VALUES (?,?,?,?,?,?,?)');
 
 foreach my $sn ( keys %assets ){
     my %vals = %{$assets{$sn}};
@@ -110,7 +110,24 @@ foreach my $sn ( keys %assets ){
     $mc ||= 0; $pr ||= 0;
     $ia->execute($sn,$cs,$in,$mc,$mf,$mu,$pr);
 }
+
+# Grab hostaudit data before conversion
+my %haudit;
+my $hq = $dbh->prepare('SELECT          ha.id,zone.name,dhcpscope.name  
+        FROM            hostaudit ha 
+        LEFT OUTER JOIN zone ON ha.zone=zone.id 
+        LEFT OUTER JOIN dhcpscope ON ha.scope=dhcpscope.id');
+$hq->execute();
+my $haudits = $hq->fetchall_arrayref();
+
+foreach my $row ( @$haudits ){
+    my ($id, $zone, $scope) = @$row;
+    $haudit{$id}{zone}  = $zone;
+    $haudit{$id}{scope} = $scope;
+}
+ 
 $statements = ();
+
 if ($netdot_config->get('DB_TYPE') eq "mysql") {
     @statements = (
             "ALTER TABLE device ADD COLUMN asset_id bigint NOT NULL AFTER aliases;",
@@ -166,7 +183,6 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
             "ALTER TABLE hostaudit MODIFY COLUMN scope varchar(255);",
             "ALTER TABLE hostaudit CHANGE COLUMN user username varchar(255);",
             );
-
 } elsif ($netdot_config->get('DB_TYPE') eq "Pg") {
     @statements = (
             "ALTER TABLE device ADD COLUMN asset_id bigint NOT NULL;",
@@ -217,9 +233,11 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
             "ALTER TABLE bgppeering ADD COLUMN info text;",
             "ALTER TABLE bgppeering ADD COLUMN max_v4_prefixes integer;",
             "ALTER TABLE bgppeering ADD COLUMN max_v6_prefixes integer;",
+            "ALTER TABLE hostaudit ALTER COLUMN zone TYPE varchar(255);",
+            "ALTER TABLE hostaudit ALTER COLUMN scope TYPE varchar(255);",
+            "ALTER TABLE hostaudit RENAME COLUMN user TO username;",
             );
 }
-
 
 # Change all table IDs and foreign keys to bigint (Ticket #737)
 # Also, set them to NULLable and replace 0s with NULL values
@@ -255,6 +273,19 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
     push @statements, "ALTER TABLE accessright ALTER COLUMN object_id TYPE bigint;"
 }
 
+
+# Update hostaudit with string data
+#
+foreach my $hid ( keys %haudit ){
+    my ($zone, $scope) = ($haudit{$hid}{zone}, $haudit{$hid}{scope});
+    next unless ($zone || $scope);
+    my $st = 'UPDATE hostaudit SET';
+    $st .= " zone='$zone'" if $zone;
+    $st .= "," if ($zone && $scope);
+    $st .= " scope='$scope'" if $scope;
+    $st .= " WHERE id=$hid;";
+    push @statements,  $st;
+}
 
 &processdata(\@statements);
 
