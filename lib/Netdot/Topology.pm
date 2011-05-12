@@ -468,7 +468,7 @@ sub get_dp_links {
 	    if ( $class->config->get('ADD_UNKNOWN_DP_DEVS') ){
 		if ( $r_ip ){
 		    foreach my $ip ( split ';', $r_ip ) {
-			if ( Ipblock->validate($ip) ){
+			if ( Ipblock->validate($ip) && !Ipblock->is_loopback($ip) ){
 			    $ips2discover{$ip} = '';
 			    $logger->debug("Topology::get_dp_links: Interface id $iid: ".
 					   "Adding remote device $ip to discover list");
@@ -478,7 +478,7 @@ sub get_dp_links {
 		    foreach my $rem_id ( split ';', $r_id ) {
 			if ( $rem_id =~ /($IP)/ ){
 			    my $ip = $1;
-			    if ( Ipblock->validate($ip) ){
+			    if ( Ipblock->validate($ip) && !Ipblock->is_loopback($ip) ){
 				$ips2discover{$ip} = '';
 				$logger->debug("Topology::get_dp_links: Interface id $iid: ".
 					       "Adding remote device $ip to discover list");
