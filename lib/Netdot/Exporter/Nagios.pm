@@ -82,7 +82,7 @@ sub generate_configs {
                   FROM      ipblockstatus, ipblock
                   LEFT JOIN entity ON (ipblock.used_by=entity.id)
                   WHERE     ipblock.status=ipblockstatus.id 
-                        AND ipblockstatus.name='Subnet'
+                        AND (ipblockstatus.name='Subnet' OR ipblockstatus.name='Container')
                  ");
     foreach my $row ( @$subnetq ){
 	my ($id, $descr, $entity) = @$row;
