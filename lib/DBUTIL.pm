@@ -199,10 +199,10 @@ sub create_db {
         $dbh->do("CREATE DATABASE $CONFIG{DB_DATABASE} CHARACTER SET = utf8;")
             or die $DBI::errstr;
     } elsif ($CONFIG{DB_TYPE} eq "Pg") {
-        my $dbh = DBI->connect("dbi:Pg:postgres;host=$CONFIG{DB_HOST};port=$CONFIG{DB_PORT}", 
+        my $dbh = DBI->connect("dbi:Pg:dbname=postgres;host=$CONFIG{DB_HOST};port=$CONFIG{DB_PORT}", 
             $CONFIG{DB_DBA}, $CONFIG{DB_DBA_PASSWORD})
                 or die $DBI::errstr;
-        $dbh->do("CREATE DATABASE $CONFIG{DB_DATABASE} WITH ENCODING = utf8;")
+        $dbh->do("CREATE DATABASE $CONFIG{DB_DATABASE} WITH ENCODING = 'UTF8';")
             or die $DBI::errstr;
     }
 }
