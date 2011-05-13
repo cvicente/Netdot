@@ -23,7 +23,7 @@ Netdot::Model::OUI - Organizational Unique Identifier (OUI) Class
   Returns:   
     Hash reference 
   Examples:
-    my $uois = OUI->retriev_all_hashref();
+    my $uois = OUI->retrieve_all_hashref();
 
 
 =cut
