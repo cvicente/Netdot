@@ -192,8 +192,19 @@ sub insert_schema {
 sub create_db {
     my $dsn = &build_dsn();
     print "\nCreating $CONFIG{DB_TYPE} database $CONFIG{DB_DATABASE}.\n";
-    create_database( $dsn, $CONFIG{DB_DBA}, $CONFIG{DB_DBA_PASSWORD} )
-	or die $DBIx::DataSource::errstr;
+    if ($CONFIG{DB_TYPE} eq "mysql") {
+        my $dbh = DBI->connect("dbi:mysql:mysql;host=$CONFIG{DB_HOST};port=$CONFIG{DB_PORT}", 
+            $CONFIG{DB_DBA}, $CONFIG{DB_DBA_PASSWORD})
+                or die $DBI::errstr;
+        $dbh->do("CREATE DATABASE $CONFIG{DB_DATABASE} CHARACTER SET = utf8;")
+            or die $DBI::errstr;
+    } elsif ($CONFIG{DB_TYPE} eq "Pg") {
+        my $dbh = DBI->connect("dbi:Pg:postgres;host=$CONFIG{DB_HOST};port=$CONFIG{DB_PORT}", 
+            $CONFIG{DB_DBA}, $CONFIG{DB_DBA_PASSWORD})
+                or die $DBI::errstr;
+        $dbh->do("CREATE DATABASE $CONFIG{DB_DATABASE} WITH ENCODING = utf8;")
+            or die $DBI::errstr;
+    }
 }
 
 

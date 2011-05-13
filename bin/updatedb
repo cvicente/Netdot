@@ -18,14 +18,14 @@ $CONFIG{DEFAULT_DATA} = "$CONFIG{CONFIG_DIR}/default_data";
 my $netdot_config = Netdot::Config->new(config_dir => $CONFIG{CONFIG_DIR});
 
 my $dbh = &dbconnect();
-my @statements;
+my @statements = ();
 
 if ($netdot_config->get('DB_TYPE') eq "mysql") {
     @statements = (
     "CREATE TABLE `asset` (
       `date_purchased` timestamp DEFAULT '1970-01-01 00:00:01',
       `id` bigint NOT NULL auto_increment,
-      `info` blob,
+      `info` text,
       `inventory_number` varchar(255),
       `maint_contract` integer NOT NULL,
       `maint_from` date,
@@ -126,7 +126,7 @@ foreach my $row ( @$haudits ){
     $haudit{$id}{scope} = $scope;
 }
  
-$statements = ();
+
 
 if ($netdot_config->get('DB_TYPE') eq "mysql") {
     @statements = (
@@ -182,6 +182,9 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
             "ALTER TABLE hostaudit MODIFY COLUMN zone varchar(255);",
             "ALTER TABLE hostaudit MODIFY COLUMN scope varchar(255);",
             "ALTER TABLE hostaudit CHANGE COLUMN user username varchar(255);",
+            "ALTER TABLE dhcscope MODIFY COLUMN text text;",
+            "ALTER TABLE zone MODIFY COLUMN include text;",
+            "ALTER TABLE savedqueries MODIFY COLUMN querytext text;",
             );
 } elsif ($netdot_config->get('DB_TYPE') eq "Pg") {
     @statements = (
@@ -235,7 +238,10 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
             "ALTER TABLE bgppeering ADD COLUMN max_v6_prefixes integer;",
             "ALTER TABLE hostaudit ALTER COLUMN zone TYPE varchar(255);",
             "ALTER TABLE hostaudit ALTER COLUMN scope TYPE varchar(255);",
-            "ALTER TABLE hostaudit RENAME COLUMN user TO username;",
+            "ALTER TABLE hostaudit RENAME COLUMN \"user\" TO username;",
+            "ALTER TABLE dhcscope ALTER COLUMN text TYPE text;",
+            "ALTER TABLE zone ALTER COLUMN include TYPE text;",
+            "ALTER TABLE savedqueries ALTER COLUMN querytext TYPE text;",
             );
 }
 
@@ -254,6 +260,12 @@ foreach my $mtable ( sort { $a->name cmp $b->name } @tables ){
             } elsif ($netdot_config->get('DB_TYPE') eq "Pg") {
                 push @statements, "ALTER TABLE $tname ALTER COLUMN $cname TYPE bigint;";
             }
+        } elsif ($cname eq 'info') {
+            if ($netdot_config->get('DB_TYPE') eq "mysql") {
+                push @statements, "ALTER TABLE $tname MODIFY COLUMN $cname text;"
+            } elsif ($netdot_config->get('DB_TYPE') eq "Pg") {
+                push @statements, "ALTER TABLE $tname ALTER COLUMN $cname TYPE text;";
+            }
         }
         if ( $mcol->links_to ){
             if ($netdot_config->get('DB_TYPE') eq "mysql") {
@@ -265,7 +277,12 @@ foreach my $mtable ( sort { $a->name cmp $b->name } @tables ){
             push @statements, "UPDATE $tname SET $cname=NULL WHERE $cname=0;";
         }
     }
+
+    if ($netdot_config->get('DB_TYPE') eq "mysql") {
+        push @statements, "ALTER TABLE $tname CONVERT TO CHARACTER SET utf8 COLLATE utf8_bin;";
+    } 
 }
+
 # Exceptions
 if ($netdot_config->get('DB_TYPE') eq "mysql") {
     push @statements, "ALTER TABLE accessright MODIFY COLUMN object_id bigint NOT NULL;"
@@ -296,7 +313,7 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
     @statements = ('SET foreign_key_checks=0;');
     my $fk_table;
     foreach ( @schema ){
-        if ( /^CREATE TABLE `?(\S+)`?/ ){
+        if ( /^CREATE TABLE `(\S+)`/ ){
             $fk_table = $1;
         }elsif ( /CONSTRAINT/ ){
             $_ =~ s/^\s+//; # Remove leading spaces

@@ -34,7 +34,13 @@ BEGIN {
     $defaults{user}        = __PACKAGE__->config->get('DB_NETDOT_USER');
     $defaults{password}    = __PACKAGE__->config->get('DB_NETDOT_PASS');
     $defaults{dbi_options} = { __PACKAGE__->_default_attributes };
-    $defaults{dbi_options}->{AutoCommit} = 1;
+    if ($db_type eq "mysql") {
+        $defaults{dbi_options}->{AutoCommit} = 1;
+        $defaults{dbi_options}->{mysql_enable_utf8} = 1;
+    } elsif($db_type eq "Pg") {
+        $defaults{dbi_options}->{AutoCommit} = 1;
+        $defaults{dbi_options}->{pg_enable_utf8} = 1;
+    }
 
     # Tell Class::DBI to connect to the DB
     __PACKAGE__->connection($defaults{dsn}, 
