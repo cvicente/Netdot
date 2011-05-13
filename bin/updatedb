@@ -129,7 +129,9 @@ foreach my $row ( @$haudits ){
 
 
 if ($netdot_config->get('DB_TYPE') eq "mysql") {
+    $dbname = $netdot_config->get('DB_DATABASE');
     @statements = (
+            "ALTER DATABASE $dbname CHARACTER SET utf8 COLLATE utf8_bin;",
             "ALTER TABLE device ADD COLUMN asset_id bigint NOT NULL AFTER aliases;",
             "ALTER TABLE device ADD COLUMN extension integer NULL AFTER down_until;",
             "ALTER TABLE device_history ADD COLUMN asset_id bigint NOT NULL AFTER aliases;",
