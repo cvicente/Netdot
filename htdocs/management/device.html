@@ -632,7 +632,7 @@ function showVlan(){
 	    if ( defined ($if->$field) ){
 		if ( ref($if->$field) ){
 		    # If field is foreign object, make sure it's not an empty reference
-		    $intinfo{$field}{$if->id} = $if->$field if int($if->$field);
+		    $intinfo{$field}{$if->id} = $if->$field if $if->$field;
 		}else{
 		    $intinfo{$field}{$if->id} = $if->$field;
 		}
@@ -663,7 +663,7 @@ function showVlan(){
     
     if ( exists $intinfo{jack} || $editints ){
       push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=jack">Jack(cable)</a>';
-      my @closets = $o->room->closets if ( int($o->room) != 0 );
+      my @closets = $o->room->closets if ( $o->room );
       foreach my $cl ( @closets ) {
 	  push @closet_jacks,  $cl->horizontalcables;
       }
@@ -993,7 +993,7 @@ if (scalar @$ips){
 	push( @row, 
 	      &{sub{
 		  my $a = "";
-		  if ( int($ip->parent) != 0  ){
+		  if ( $ip->parent ){
 		      if ($editips){  
 			  $a .=  $ip->parent->address . '/' . $ip->parent->prefix ;
 		      }else{
