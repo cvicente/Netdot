@@ -726,16 +726,14 @@ sub get_roots {
     $class->isa_class_method('get_roots');
 
     $version ||= 4;
-
-    my @ipb;
-    if ( $version =~ /^4|6$/ ){
-	@ipb = $class->search(version => $version, parent=>undef, {order_by => 'address'});
-    }elsif ( $version eq "all" ){
-	@ipb = $class->search(parent=>undef, {order_by => 'address'});
-    }else{
-	$class->throw_fatal("Unknown version: $version");
+    my $len = ($version == 4 )? 32 : 128;
+    my %where = (parent     => undef,
+		 prefix     => { '!=', $len });
+    my %opts = (order_by => 'address');
+    if ( $version == 4 || $version == 6 ){
+	$where{version} = $version;
     }
-    @ipb = grep { !$_->is_address } @ipb;
+    my @ipb = $class->search_where(\%where, \%opts);
     wantarray ? ( @ipb ) : $ipb[0]; 
 
 }
