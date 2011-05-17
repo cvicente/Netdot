@@ -726,16 +726,25 @@ sub get_roots {
     $class->isa_class_method('get_roots');
 
     $version ||= 4;
-    my $len = ($version == 4 )? 32 : 128;
-    my %where = (parent     => undef,
-		 prefix     => { '!=', $len });
-    my %opts = (order_by => 'address');
-    if ( $version == 4 || $version == 6 ){
-	$where{version} = $version;
+   
+    my %where = (parent => undef);
+    my %opts  = (order_by => 'address');
+    
+    my $len;
+    my @ipb;
+    if ( $version == 4 || $version eq 'all' ){
+	$len = 32;
+	$where{version} = 4;
+	$where{prefix} = { '!=', $len };
+	push @ipb, $class->search_where(\%where, \%opts);
     }
-    my @ipb = $class->search_where(\%where, \%opts);
+    if ( $version == 6 || $version eq 'all' ){
+	$len = 128;
+	$where{version} = 6;
+	$where{prefix} = { '!=', $len };
+	push @ipb, $class->search_where(\%where, \%opts);
+    }
     wantarray ? ( @ipb ) : $ipb[0]; 
-
 }
 
 ##################################################################
