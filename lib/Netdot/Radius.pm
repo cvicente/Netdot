@@ -8,7 +8,7 @@ use Netdot::AuthLocal;
 
 =head1 NAME
 
-Netdot::RADIUS - RADIUS module for Netdot
+Netdot::Radius - RADIUS module for Netdot
 
 =head1 SYNOPSIS
 
@@ -16,7 +16,7 @@ In Apache configuration:
     
 =over 4
 
-   PerlSetVar SiteControlMethod Netdot::RADIUS
+   PerlSetVar SiteControlMethod Netdot::Radius
 
    <Location /netdot/NetdotLogin>
        PerlSetVar NetdotRadiusHost "localhost"
@@ -32,7 +32,7 @@ In Apache configuration:
 =head1 DESCRIPTION
 
     Netdot::Radius uses Authen::Radius to issue authentication and authorization queries
-    for Netdot.  It supports failover by querying one Radius server first, then the second.
+    for Netdot.  It supports failover by querying one RADIUS server first, then the second.
     It also returns any available Netdot-specific attributes for a given user.
 
 =cut
@@ -82,7 +82,7 @@ sub check_credentials {
     if ( $radius->check_pwd($username, $password, $nas_ip_address) ) {
 	return 1;
     }else{
-	$r->log_error("Netdot::Radius::check_credentials: User $username failed Radius authentication: " 
+	$r->log_error("Netdot::Radius::check_credentials: User $username failed RADIUS authentication: " 
 		      . $radius->strerror);
 	if ( $fail_to_local ){
 	    $r->log_error("Netdot::Radius::check_credentials: Trying local auth");
@@ -93,7 +93,7 @@ sub check_credentials {
 }
 
 ############################################################################
-# _connect - Connect to an available Radius server
+# _connect - Connect to an available RADIUS server
 #
 #   Arguments:
 #     Apache Request Object
@@ -120,7 +120,7 @@ sub _connect {
     if ( !$radius ) {
 	$r->log_error("Could not contact radius server: $host.");
 	if ( $host2 ){
-	    # Try second Radius server
+	    # Try second RADIUS server
 	    $radius = new Authen::Radius(Host=>$host2, Secret => $secret2);
 	    if ( !$radius ) {
 		$r->log_error("Could not contact radius server: $host2");
