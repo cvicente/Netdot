@@ -3279,7 +3279,7 @@ sub set_interfaces_auto_dns {
 
     foreach my $int ( $self->interfaces ){
 	# Ony interfaces with IP addresses
-	next unless int($int->ips);
+	next unless $int->ips;
 	$int->update({auto_dns=>$value});
     }
     

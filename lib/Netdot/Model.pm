@@ -174,7 +174,7 @@ BEGIN {
 	    return if ( $args{fields} eq 'modified' );
 	    $zone = $self->zone;
 	}elsif ( $table =~ /^rr/ ){
-	    if ( defined $self->rr && int($self->rr) != 0 ){
+	    if ( defined $self->rr && $self->rr ){
 		if ( blessed($self->rr) ){
 		    $rr = $self->rr;
 		    $zone = $rr->zone;
@@ -251,7 +251,7 @@ BEGIN {
 	    $rr = $self;
 	    $rr->_attribute_set({modified=>$self->timestamp});
 	}elsif ( $table =~ /^rr/ ){
-	    if ( defined $self->rr && int($self->rr) != 0 ){
+	    if ( defined $self->rr && $self->rr ){
 		if ( blessed($self->rr) ){
 		    $rr = $self->rr;
 		}else{
@@ -860,7 +860,7 @@ sub get_label {
 		push @ret, $self->$c;
 	    }else{
 		# The field is a foreign key
-		if ( int($self->$c) && blessed($self->$c) ){
+		if ( $self->$c && blessed($self->$c) ){
 		    push @ret, $self->$c->get_label($delim);
 		}else{
 		    push @ret, $self->$c;

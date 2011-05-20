@@ -97,7 +97,7 @@ sub insert {
 	    $attributes->{'option domain-name'} = $zone->name;
 	}
     
-	if ( int($scope->container) && $scope->container->enable_failover ){
+	if ( $scope->container && $scope->container->enable_failover ){
 	    my $failover_peer = $scope->container->failover_peer || 'dhcp-peer';
 	    $scope->SUPER::update({enable_failover=>1, failover_peer=> $failover_peer});
 	}
