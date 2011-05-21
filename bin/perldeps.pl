@@ -39,7 +39,7 @@ my @DEPS = (
     {cpan=>'DBIx::DataSource', apt=> 'libdbix-datasource-perl', rpm=>''},
     {cpan=>'GraphViz 2.02', apt=> 'graphviz', rpm=>'graphviz graphviz-devel libpng-devel graphviz-gd perl-GraphViz'},
     {cpan=>'SQL::Translator 0.07', apt=>'libsql-translator-perl', rpm=>'perl-SQL-Translator'},
-    {cpan=>'SNMP::Info 2.01', apt=>'libsnmp-info-perl', rpm=>'perl-SNMP-Info'},
+    {cpan=>'SNMP::Info 2.04', apt=>'libsnmp-info-perl', rpm=>'perl-SNMP-Info'},
     {cpan=>'NetAddr::IP', apt=>'libnetaddr-ip-perl', rpm=>'perl-NetAddr-IP'},
     {cpan=>'Apache2::AuthCookie', apt=>'', rpm=>''},
     {cpan=>'Apache2::SiteControl 1.0', apt=>'', rpm=>''},
