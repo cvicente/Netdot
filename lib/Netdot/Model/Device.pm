@@ -341,11 +341,14 @@ sub search_like {
 =head2 assign_name - Determine and assign correct name to device
 
     This method will try to find or create an appropriate 
-    Resource Record for a Device, given a hostname or ip address.
+    Resource Record for a Device, given a hostname or ip address,
+    and optionally a sysname as a backup in case that name or IP do
+    not resolve.
 
   Arguments: 
     hash with following keys:
-        host - hostname or IP address (string)
+        host    - hostname or IP address (string)
+        sysname - System name value from SNMP
   Returns:    
     RR object if successful
   Examples:
@@ -354,8 +357,8 @@ sub search_like {
 sub assign_name {
     my ($class, %argv) = @_;
     $class->isa_class_method('assign_name');
-    my $host = $argv{host};
-
+    my $host    = $argv{host};
+    my $sysname = $argv{sysname};
     $class->throw_fatal("Model::Device::assign_name: Missing arguments: host")
 	unless $host;
 
@@ -409,6 +412,9 @@ sub assign_name {
 	    }
 	}
     }
+    # At this point, if we haven't got a fqdn, then use the sysname argument, and if not given,
+    # use the name or IP address passed as the host argument
+    $fqdn ||= $sysname;
     $fqdn ||= $host;
     $fqdn = lc($fqdn);
 
@@ -1345,7 +1351,7 @@ sub discover {
 	# Set some values in the new Device based on the SNMP info obtained
 	my $main_ip = $argv{main_ip} || $class->_get_main_ip($info);
 	my $host    = $main_ip || $name;
-	my $newname = $class->assign_name(host=>$host);
+	my $newname = $class->assign_name(host=>$host, sysname=>$info->{sysname});
 	my %devtmp = (snmp_managed  => 1,
 		      snmp_polling  => 1,
 		      canautoupdate => 1,
@@ -2552,10 +2558,6 @@ sub info_update {
     $self->_update_stp_info($info, \%devtmp);
     
     ##############################################################
-    # Update Device object
-    $self->update(\%devtmp);
-    
-    ##############################################################
     $self->_update_modules($info);
 
     ##############################################
@@ -2575,6 +2577,10 @@ sub info_update {
 	$self->_update_bgp_info($info, \%devtmp);
     }
 
+    ##############################################################
+    # Update Device object
+    $self->update(\%devtmp);
+    
     my $end = time;
     $logger->debug(sub{ sprintf("%s: SNMP update completed in %s", 
 				$host, $self->sec2dhms($end-$start))});
@@ -3273,7 +3279,7 @@ sub set_interfaces_auto_dns {
 
     foreach my $int ( $self->interfaces ){
 	# Ony interfaces with IP addresses
-	next unless int($int->ips);
+	next unless $int->ips;
 	$int->update({auto_dns=>$value});
     }
     

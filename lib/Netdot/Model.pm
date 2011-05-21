@@ -34,7 +34,13 @@ BEGIN {
     $defaults{user}        = __PACKAGE__->config->get('DB_NETDOT_USER');
     $defaults{password}    = __PACKAGE__->config->get('DB_NETDOT_PASS');
     $defaults{dbi_options} = { __PACKAGE__->_default_attributes };
-    $defaults{dbi_options}->{AutoCommit} = 1;
+    if ($db_type eq "mysql") {
+        $defaults{dbi_options}->{AutoCommit} = 1;
+        $defaults{dbi_options}->{mysql_enable_utf8} = 1;
+    } elsif($db_type eq "Pg") {
+        $defaults{dbi_options}->{AutoCommit} = 1;
+        $defaults{dbi_options}->{pg_enable_utf8} = 1;
+    }
 
     # Tell Class::DBI to connect to the DB
     __PACKAGE__->connection($defaults{dsn}, 
@@ -168,7 +174,7 @@ BEGIN {
 	    return if ( $args{fields} eq 'modified' );
 	    $zone = $self->zone;
 	}elsif ( $table =~ /^rr/ ){
-	    if ( defined $self->rr && int($self->rr) != 0 ){
+	    if ( defined $self->rr && $self->rr ){
 		if ( blessed($self->rr) ){
 		    $rr = $self->rr;
 		    $zone = $rr->zone;
@@ -207,11 +213,11 @@ BEGIN {
 	    unless ( blessed($zone) ){
 		$zone = Zone->retrieve($zone);
 	    }
-	    $data{zone} = $zone;
 	    $name       = $zone->name;
+	    $data{zone} = $name;
 	}elsif ( $scope ){
-	    $data{scope} = $scope;
 	    $name        = $scope->name;
+	    $data{scope} = $name;
 	}else{
 	    $self->throw_fatal("Netdot::Model::_host_audit: Could not determine audit object for table: $table");
 	}
@@ -245,7 +251,7 @@ BEGIN {
 	    $rr = $self;
 	    $rr->_attribute_set({modified=>$self->timestamp});
 	}elsif ( $table =~ /^rr/ ){
-	    if ( defined $self->rr && int($self->rr) != 0 ){
+	    if ( defined $self->rr && $self->rr ){
 		if ( blessed($self->rr) ){
 		    $rr = $self->rr;
 		}else{
@@ -854,7 +860,7 @@ sub get_label {
 		push @ret, $self->$c;
 	    }else{
 		# The field is a foreign key
-		if ( int($self->$c) && blessed($self->$c) ){
+		if ( $self->$c && blessed($self->$c) ){
 		    push @ret, $self->$c->get_label($delim);
 		}else{
 		    push @ret, $self->$c;

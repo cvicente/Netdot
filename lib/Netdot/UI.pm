@@ -344,11 +344,11 @@ sub form_field {
 	    $value = $self->date_field(object=>$o, table=>$table, column=>$column, edit=>$args{edit}, 
 				       default=>$args{default}, returnAsVar=>1, shortFieldName=>$args{shortFieldName} );
 	    
-	} elsif ( $type eq "blob" ) {
+	} elsif ( $type eq 'blob' || $type eq 'text' ) {
 	    $value = $self->text_area(object=>$o, table=>$table, column=>$column, edit=>$args{edit}, 
 				      returnAsVar=>1, htmlExtra=>$args{htmlExtra}, shortFieldName=>$args{shortFieldName});
 	    
-	} elsif ( $type eq "bool" ) {
+	} elsif ( $type eq 'bool' ) {
 	    if ( $args{adv_search} == 1 ) {
 		$value = $self->radio_group_boolean(object=>$o, table=>$table, column=>$column, edit=>$args{edit}, 
 						returnAsVar=>1, shortFieldName=>$args{shortFieldName}, adv_search=>1);
@@ -357,7 +357,7 @@ sub form_field {
 						returnAsVar=>1, shortFieldName=>$args{shortFieldName});
 	    }
 	    
-	} elsif ( $table =~ /Picture/ && $type eq "longblob" ) {
+	} elsif ( $table =~ /Picture/ && $type eq 'longblob' ) {
 	    if ( ! $args{edit} ){
 		my $alt = $o->filename;
 		$value = "<a href=\"display_bin.html?table=$table&id=$id\"><img width=\"150\" height=\"150\" alt=\"$alt\"src=\"display_bin.html?table=$table&id=$id\" ></a>";
@@ -552,7 +552,7 @@ sub select_lookup{
             if ( $o ){
                 $output .= sprintf("<select name=\"%s\" id=\"%s\" %s>\n", $name, $name, $args{htmlExtra});
 		$output .= sprintf("<option value=\"\" selected>-- Select --</option>\n");
-                if ( int($o->$column) ){
+                if ( $o->$column ){
                     $output .= sprintf("<option value=\"%s\" selected>%s</option>\n", 
 				       $o->$column->id, $o->$column->get_label);
                 }
@@ -570,7 +570,7 @@ sub select_lookup{
             }
 
             foreach my $fo ( @fo ){
-		next unless ( ref($fo) && int($fo) != 0 );
+		next unless ( ref($fo) && $fo );
                 next if ( $o && $o->$column && ($fo->id == $o->$column->id) );
 		my $selected = ($fo->id == $args{default} ? "selected" : "");
                 $output .= sprintf("<option value=\"%s\" %s>%s</option>\n", $fo->id, $selected, $fo->get_label);
@@ -1725,7 +1725,7 @@ sub build_device_topology_graph {
         
         foreach my $iface ( sort { int($a) cmp int($b) }  @ifaces) {
             my $neighbor = $iface->neighbor;
-            next unless int($neighbor);  # If there's no neighbor, skip ahead
+            next unless $neighbor;  # If there's no neighbor, skip ahead
 
 	    my $name          = ($shownames ? $iface->name :    $iface->number)    || $iface->number;
 	    my $neighbor_name = ($shownames ? $neighbor->name : $neighbor->number) || $neighbor->number;
@@ -1745,7 +1745,7 @@ sub build_device_topology_graph {
 
             my $color = 'black';
 	    my $cont = 0;
-            if ($showvlans && int($iface->vlans)) {
+            if ($showvlans && $iface->vlans) {
                 foreach my $vlan ($iface->vlans) {
 		    if ( !defined($specific_vlan) || (defined($specific_vlan) && $specific_vlan == $vlan->vlan->vid) ) {
 			my $neighbor_vlan = InterfaceVlan->search(interface=>$neighbor->id, vlan=>$vlan->vlan->id)->first;

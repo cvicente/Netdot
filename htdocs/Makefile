@@ -9,6 +9,7 @@ FILES := `find . -name "*" | egrep ".*(host|handler|\.?html|\.css|\.png|\.gif|\.
 
 all: wipedir dir
 	$(substitute)
+	ln -s $(PREFIX)/doc/manual/netdot-manual.htm  $(PREFIX)/$(DIR)/help/manual.html
 
 # Wipe out dir before installing
 wipedir:

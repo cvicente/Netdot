@@ -1,0 +1,55 @@
+<%doc>
+###############################################################################
+# A customized version of the generic dynamic_list_query.html
+###############################################################################
+
+</%doc>
+
+<%args>
+$field => $ARGS{field};
+$val => $ARGS{val};
+</%args>
+
+<%shared>
+my $DEBUG = 0;
+</%shared>
+
+<%perl>
+
+if ( $DEBUG ){
+    use Data::Dumper;
+    print "<pre> ", Dumper(%ARGS), "</pre><br>";
+} else {
+    do "jsrsServer.pm";
+    jsrsDispatch("subnet_zone_search");
+}
+
+sub subnet_zone_search {
+    # Arguments:
+    # - field:  Form element to add the results into
+    # - val:   Criteria.  The ID of the floor to query for closets
+
+    my $field   = shift;
+    my $val     = shift;
+    my @results = ();
+    
+    if ( my $subnet = Ipblock->retrieve($val) ){
+	@results = $subnet->forward_zone();
+    }
+    
+    my $response = $field."&";
+    
+    @results = sort { $a->name cmp $b->name } @results;
+    
+    $response .= "0=".$ui->url_encode("No matches") unless (scalar(@results));
+    
+    if (scalar(@results)) {
+	$response .= "0=-- Select --&";
+	foreach my $zone (@results) {
+	    $response .= $zone->id."=".$ui->url_encode($zone->name)."&";
+	}
+    }
+    return $response;
+}
+
+</%perl>

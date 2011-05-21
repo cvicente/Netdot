@@ -273,14 +273,14 @@ sub get{
     foreach my $col ( keys(%order) ){
 	if ( grep {$_ eq $col} keys(%linksto) ){
 	    # this piece of data is a foreign key
-	    if ( my $fid = int($obj->$col) ){
+	    if ( my $fid = $obj->$col ){
 		my $fclass = $linksto{$col};
 		if ( $argv{depth} ){
 		    $ret{$col} = $self->get(table=>$fclass, id=>$fid, depth=>$argv{depth}-1);
 		}else{
 		    my $fobj = $obj->$col;
 		    $ret{$col} = $fobj->get_label;
-		    my $xlink = $fclass."/".int($obj->$col);
+		    my $xlink = $fclass."/".$obj->$col;
 		    $ret{$col.'_xlink'} = $xlink;
 		}
 	    }else{
@@ -442,7 +442,7 @@ sub print_formatted {
 		);
 	}
 	my $xml = $self->{xs}->XMLout($data);
-	$self->{request}->content_type('text/xml');
+	$self->{request}->content_type(q{text/xml; charset=utf-8});
 	print $xml;
     }
 }

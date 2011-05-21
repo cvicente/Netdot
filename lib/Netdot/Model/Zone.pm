@@ -370,8 +370,8 @@ sub get_all_records {
                       rrsrv.id, rrnaptr.id, rrds.algorithm, rrds.key_tag, rrds.digest_type, rrds.digest, rr.active,
                       rraddr.ttl, rrtxt.ttl, rrhinfo.ttl, rrns.ttl, rrds.ttl, rrmx.ttl, rrcname.ttl, rrptr.ttl
              FROM     zone, rr
-                      LEFT OUTER JOIN (ipblock aip, rraddr) ON (rr.id=rraddr.rr AND aip.id=rraddr.ipblock)
-                      LEFT OUTER JOIN (ipblock pip, rrptr)  ON (rr.id=rrptr.rr  AND pip.id=rrptr.ipblock)
+                      LEFT OUTER JOIN (ipblock aip CROSS JOIN rraddr) ON (rr.id=rraddr.rr AND aip.id=rraddr.ipblock)
+                      LEFT OUTER JOIN (ipblock pip CROSS JOIN rrptr)  ON (rr.id=rrptr.rr  AND pip.id=rrptr.ipblock)
                       LEFT OUTER JOIN rrtxt   ON rr.id=rrtxt.rr
                       LEFT OUTER JOIN rrhinfo ON rr.id=rrhinfo.rr
                       LEFT OUTER JOIN rrns    ON rr.id=rrns.rr
@@ -463,13 +463,13 @@ sub get_record_count {
 
     my $q2 = "SELECT COUNT(DISTINCT ipv4.id)
              FROM     zone z, rr rr
-                      LEFT OUTER JOIN (ipblock ipv4, rraddr) 
+                      LEFT OUTER JOIN (ipblock ipv4 CROSS JOIN rraddr) 
                       ON (rr.id=rraddr.rr AND ipv4.id=rraddr.ipblock AND ipv4.version=4)
              WHERE    rr.zone=z.id AND z.id=$id";
     
     my $q3 = "SELECT COUNT(DISTINCT ipv6.id)
              FROM     zone z, rr rr
-                      LEFT OUTER JOIN (ipblock ipv6, rraddr) 
+                      LEFT OUTER JOIN (ipblock ipv6 CROSS JOIN rraddr) 
                       ON (rr.id=rraddr.rr AND ipv6.id=rraddr.ipblock AND ipv6.version=6)
              WHERE    rr.zone=z.id AND z.id=$id";
 
@@ -574,7 +574,7 @@ sub import_records {
 	    my $ipb;
 	    if ( $ipb = Ipblock->search(address=>$address)->first ){
 		$ipb->update({status=>'Static'}) 
-		    if ( !int($ipb->status) || $ipb->status->name eq 'Discovered') ;
+		    if ( !$ipb->status || $ipb->status->name eq 'Discovered') ;
 	    }else{
 		$logger->debug("$domain: Inserting Ipblock $address");
 		$ipb = Ipblock->insert({ address        => $address,
@@ -672,7 +672,7 @@ sub import_records {
 	    my $ipb;
 	    if ( $ipb = Ipblock->search(address=>$ipaddr)->first ){
 		$ipb->update({status=>'Static'})
-		    if ( !int($ipb->status) || $ipb->status->name eq 'Discovered') ;
+		    if ( !$ipb->status || $ipb->status->name eq 'Discovered') ;
 	    }else{
 		$ipb = Ipblock->insert({ address        => $ipaddr,
 					 status         => 'Static',
@@ -769,8 +769,8 @@ sub get_hosts {
                               ip.id, ip.address, ip.version, 
                               rrptr.ptrdname, zone.name, zone.id
               FROM            zone, rr
-              LEFT OUTER JOIN (ipblock ip, rrptr) ON (rr.id=rrptr.rr AND ip.id=rrptr.ipblock)
-              LEFT OUTER JOIN (ipblock subnet)    ON ip.parent=subnet.id
+              LEFT OUTER JOIN (ipblock ip CROSS JOIN rrptr) ON (rr.id=rrptr.rr AND ip.id=rrptr.ipblock)
+              LEFT OUTER JOIN (ipblock subnet) ON ip.parent=subnet.id
               WHERE           rr.zone=zone.id AND zone.id=$id";
 
     }else{
@@ -778,9 +778,9 @@ sub get_hosts {
                               ip.id, ip.address, ip.version, 
                               physaddr.id, physaddr.address, zone.name, zone.id
               FROM            zone, rr
-              LEFT OUTER JOIN (ipblock ip, rraddr)  ON (rr.id=rraddr.rr AND ip.id=rraddr.ipblock)
-              LEFT OUTER JOIN (ipblock subnet)      ON ip.parent=subnet.id
-              LEFT OUTER JOIN (physaddr, dhcpscope) ON (dhcpscope.ipblock=ip.id AND dhcpscope.physaddr=physaddr.id)
+              LEFT OUTER JOIN (ipblock ip CROSS JOIN rraddr)  ON (rr.id=rraddr.rr AND ip.id=rraddr.ipblock)
+              LEFT OUTER JOIN (ipblock subnet) ON ip.parent=subnet.id
+              LEFT OUTER JOIN (physaddr CROSS JOIN dhcpscope) ON (dhcpscope.ipblock=ip.id AND dhcpscope.physaddr=physaddr.id)
               WHERE           rr.zone=zone.id AND zone.id=$id";
 
     }

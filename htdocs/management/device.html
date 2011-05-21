@@ -629,13 +629,8 @@ function showVlan(){
     my %intinfo;
     foreach my $if ( @$ifs ){ 
 	foreach my $field ( qw/jack room_char jack_char description neighbor/ ){
-	    if ( defined ($if->$field) ){
-		if ( ref($if->$field) ){
-		    # If field is foreign object, make sure it's not an empty reference
-		    $intinfo{$field}{$if->id} = $if->$field if int($if->$field);
-		}else{
-		    $intinfo{$field}{$if->id} = $if->$field;
-		}
+	    if ( defined($if->$field) ){
+		$intinfo{$field}{$if->id} = $if->$field;
 	    }
 	}
     }
@@ -663,7 +658,7 @@ function showVlan(){
     
     if ( exists $intinfo{jack} || $editints ){
       push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=jack">Jack(cable)</a>';
-      my @closets = $o->room->closets if ( int($o->room) != 0 );
+      my @closets = $o->room->closets if ( $o->room );
       foreach my $cl ( @closets ) {
 	  push @closet_jacks,  $cl->horizontalcables;
       }
@@ -678,90 +673,89 @@ function showVlan(){
     if ( exists $intinfo{description} || $editints ){
       push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=descr">Descr.</a>';
     }
-    unless ( !exists $intinfo{neighbor} && $editints ){
+    if ( exists $intinfo{neighbor} || $editints ){
 	push @headers, 'Neighbor';
     }
 
 
     ### Actual data
     foreach my $if ( @$ifs ){
-      next if ( !exists $ifvlans{$if}{$showvlan} && $showvlan ne "all" );
+        next if ( !exists $ifvlans{$if}{$showvlan} && $showvlan ne "all" );
+	my (@row) = ();	
       
-      my (@row) = ();	
-      
-      if ( $editints ){	 
+	if ( $editints ){	 
 	    push @row, '<input type="checkbox" name="' . "Interface__" . $if->id . "__delete" . '" >';
-      }
+	}
       
-      push @row, $ui->form_field(object=>$if, column=>"number", edit=>$editints, htmlExtra=>"style=\"width: 5em;\"", 
-				  linkPage=>"interface.html", returnValOnly=>1);
-      push @row, $ui->form_field(object=>$if, column=>"name", edit=>$editints, htmlExtra=>"style=\"width: 10em;\"", 
-				  linkPage=>"interface.html", returnValOnly=>1);
+	push @row, $ui->form_field(object=>$if, column=>"number", edit=>$editints, htmlExtra=>"style=\"width: 5em;\"", 
+				   linkPage=>"interface.html", returnValOnly=>1);
+	push @row, $ui->form_field(object=>$if, column=>"name", edit=>$editints, htmlExtra=>"style=\"width: 10em;\"", 
+				   linkPage=>"interface.html", returnValOnly=>1);
       
-      if ( !$editints ){
-        push @row, $if->speed_pretty;
-        push @row, 
-  	       &{sub{
-		  my $ac = "";
-		  if ( exists $ifvlans{$if} ){
+	if ( !$editints ){
+	    push @row, $if->speed_pretty;
+	    push @row, 
+	    &{sub{
+		my $ac = "";
+		if ( exists $ifvlans{$if} ){
 		    my @links;
 		    foreach my $v ( keys %{$ifvlans{$if}} ){
-		      push @links, sprintf("<a href=\"view.html?table=Vlan&id=%s\">%s</a>", $vlans{$v}, $v );
+			push @links, sprintf("<a href=\"view.html?table=Vlan&id=%s\">%s</a>", $vlans{$v}, $v );
 		    }
 		    if ( scalar(@links) <= 3 ){
 			$ac .= join ', ', @links;
 		    }else{
 			$ac .= '>3';
 		    }
-		  }
-		  $ac;
-		}};
-	push @row, $ui->form_field(object=>$if, column=>"oper_status", edit=>$editints, returnValOnly=>1);
-      }
-      
-      push @row, $ui->form_field(object=>$if, column=>"monitored", edit=>$editints, returnValOnly=>1);
-      push @row, $ui->form_field(object=>$if, column=>"snmp_managed", edit=>$editints, returnValOnly=>1);
-      
-      if ( exists $intinfo{jack} || $editints ){
-	  my %args = (object=>$if, column=>"jack", linkPage=>"view.html", edit=>$editints, returnValOnly=>1);
-	  if ( @closet_jacks && (scalar(@closet_jacks) <= $ui->config->get('DEFAULT_SELECTMAX')) ){
-	      $args{defaults} = \@closet_jacks;
-	  }
-	  push @row, $ui->form_field(%args);      
-      }
-      if ( exists $intinfo{room_char} || $editints ){
-          push @row, $ui->form_field(object=>$if, column=>"room_char", edit=>$editints, htmlExtra =>"style=\"width: 4em;\"", 
-				      returnValOnly=>1);
-      }
-      if ( exists $intinfo{jack_char} || $editints ){
-          push @row, $ui->form_field(object=>$if, column=>"jack_char", edit=>$editints, htmlExtra =>"style=\"width: 7em;\"", 
-				      returnValOnly=>1);
-      }
-      if ( exists $intinfo{description} || $editints ){
-          push @row, $ui->form_field(object=>$if, column=>"description", edit=>$editints, returnValOnly=>1);
-      }
-      
-      my $ac = "";
-      if ( exists $intinfo{neighbor}{$if->id} ){
-	  $ac = $ui->form_field(object=>$if, column=>"neighbor", edit=>$editints, linkPage=>1, returnValOnly=>1);
-	  $ac .= "<br>";
-      }
-      if ( !$editints && $can_edit ){
-	  #  Do not allow user to add neighbors on virtual interfaces
-	  if ( $if->type ne "53" && $if->type ne "propVirtual" ){
-	      $ac .= "<a class=\"hand\" onClick=\"window.open('addneighbor.html?int_id=$if&url=$refresh_url', 'Add Neighbor', 'width=600,height=200')\">[add]</a>";
-	  }
-      }
-      push @row, $ac;
-      
-      push @rows, \@row;
-      my $doc_status = $if->doc_status;
-      if (  exists $ifacecolors{$doc_status} ){
-	  push @rowstyles, "background-color: #$ifacecolors{$doc_status};"; 
-      }else{
-	  push @rowstyles, "";
-      } 
-      
+		}
+		$ac;
+	      }};
+	    push @row, $ui->form_field(object=>$if, column=>"oper_status", edit=>$editints, returnValOnly=>1);
+	}
+	
+	push @row, $ui->form_field(object=>$if, column=>"monitored", edit=>$editints, returnValOnly=>1);
+	push @row, $ui->form_field(object=>$if, column=>"snmp_managed", edit=>$editints, returnValOnly=>1);
+	
+	if ( exists $intinfo{jack} || $editints ){
+	    my %args = (object=>$if, column=>"jack", linkPage=>"view.html", edit=>$editints, returnValOnly=>1);
+	    if ( @closet_jacks && (scalar(@closet_jacks) <= $ui->config->get('DEFAULT_SELECTMAX')) ){
+		$args{defaults} = \@closet_jacks;
+	    }
+	    push @row, $ui->form_field(%args);      
+	}
+	if ( exists $intinfo{room_char} || $editints ){
+	    push @row, $ui->form_field(object=>$if, column=>"room_char", edit=>$editints, htmlExtra =>"style=\"width: 4em;\"", 
+				       returnValOnly=>1);
+	}
+	if ( exists $intinfo{jack_char} || $editints ){
+	    push @row, $ui->form_field(object=>$if, column=>"jack_char", edit=>$editints, htmlExtra =>"style=\"width: 7em;\"", 
+				       returnValOnly=>1);
+	}
+	if ( exists $intinfo{description} || $editints ){
+	    push @row, $ui->form_field(object=>$if, column=>"description", edit=>$editints, returnValOnly=>1);
+	}
+	
+	my $ac = "";
+	if ( exists $intinfo{neighbor}{$if->id} ){
+	    $ac = $ui->form_field(object=>$if, column=>"neighbor", edit=>$editints, linkPage=>1, returnValOnly=>1);
+	    $ac .= "<br>";
+	}
+	if ( !$editints && $can_edit ){
+	    #  Do not allow user to add neighbors on virtual interfaces
+	    if ( $if->type ne "53" && $if->type ne "propVirtual" ){
+		$ac .= "<a class=\"hand\" onClick=\"window.open('addneighbor.html?int_id=$if&url=$refresh_url', 'Add Neighbor', 'width=600,height=200')\">[add]</a>";
+	    }
+	}
+	push @row, $ac;
+	
+	push @rows, \@row;
+	my $doc_status = $if->doc_status;
+	if (  exists $ifacecolors{$doc_status} ){
+	    push @rowstyles, "background-color: #$ifacecolors{$doc_status};"; 
+	}else{
+	    push @rowstyles, "";
+	} 
+	
     } #foreach
     
 </%perl>
@@ -993,7 +987,7 @@ if (scalar @$ips){
 	push( @row, 
 	      &{sub{
 		  my $a = "";
-		  if ( int($ip->parent) != 0  ){
+		  if ( $ip->parent ){
 		      if ($editips){  
 			  $a .=  $ip->parent->address . '/' . $ip->parent->prefix ;
 		      }else{

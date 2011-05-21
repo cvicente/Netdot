@@ -67,7 +67,7 @@ sub generate_configs {
     }
     foreach my $s ( @gscopes ){
 	Netdot::Model->do_transaction(sub{
-	    if ( (my @pending = HostAudit->search(scope=>$s, pending=>1)) || $argv{force} ){
+	    if ( (my @pending = HostAudit->search(scope=>$s->name, pending=>1)) || $argv{force} ){
 		# Either there are pending changes or we were told to force
 		foreach my $record ( @pending ){
 		    # Un-mark audit records as pending

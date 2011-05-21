@@ -50,15 +50,15 @@ sub insert {
 	$class->throw_user($rr->name.": Cannot add any other record to an alias");
     }
     if ( $rr->ptr_records ){
-	$class->throw_user($rr->name.": Cannot add DS records when PTR records exist");
+	$class->throw_user($rr->name.": Cannot add NS records when PTR records exist");
     }
 
     if ( $rr->naptr_records ){
-	$class->throw_user($rr->name.": Cannot add DS records when NAPTR records exist");
+	$class->throw_user($rr->name.": Cannot add NS records when NAPTR records exist");
     }
 
     if ( $rr->srv_records ){
-	$class->throw_user($rr->name.": Cannot add DS records when SRV records exist");
+	$class->throw_user($rr->name.": Cannot add NS records when SRV records exist");
     }
 
     return $class->SUPER::insert($argv);

@@ -168,7 +168,7 @@ sub add_neighbor{
     my $neighbor = Interface->retrieve($nid) 
 	|| $self->throw_fatal("Model::Interface::add_neighbor: Cannot retrieve Interface id $nid");
     
-    if ( int($self->neighbor) && int($neighbor->neighbor) 
+    if ( $self->neighbor && $neighbor->neighbor 
 	 && $self->neighbor->id == $neighbor->id 
 	 && $neighbor->neighbor->id == $self->id ){
 	

@@ -5,7 +5,6 @@ package DBUTIL;
 #
 use strict;
 use DBI;
-use DBIx::DataSource qw( create_database drop_database );
 use Netdot::Meta::SQLT;
 use Data::Dumper;
 use Netdot::Config;
@@ -127,9 +126,17 @@ END
         exit unless _yesno();
     }
     
+    my $dbh = "";
+
     print "\nDropping $CONFIG{DB_TYPE} database $CONFIG{DB_DATABASE}.\n";
-    drop_database( $dsn, $CONFIG{DB_DBA}, $CONFIG{DB_DBA_PASSWORD} )
-	or warn $DBIx::DataSource::errstr;
+    if ($CONFIG{DB_TYPE} eq "mysql") {
+        my $dbh = DBI->connect("dbi:mysql:mysql;host=$CONFIG{DB_HOST};port=$CONFIG{DB_PORT}", 
+            $CONFIG{DB_DBA}, $CONFIG{DB_DBA_PASSWORD}) or die $DBI::errstr;
+    } elsif ($CONFIG{DB_TYPE} eq "Pg") {
+        my $dbh = DBI->connect("dbi:Pg:dbname=postgres;host=$CONFIG{DB_HOST};port=$CONFIG{DB_PORT}", 
+            $CONFIG{DB_DBA}, $CONFIG{DB_DBA_PASSWORD}) or die $DBI::errstr;
+    }
+    $dbh->do("DROP DATABASE $CONFIG{DB_DATABASE};") or die $DBI::errstr;
 }
 
 
@@ -192,8 +199,19 @@ sub insert_schema {
 sub create_db {
     my $dsn = &build_dsn();
     print "\nCreating $CONFIG{DB_TYPE} database $CONFIG{DB_DATABASE}.\n";
-    create_database( $dsn, $CONFIG{DB_DBA}, $CONFIG{DB_DBA_PASSWORD} )
-	or die $DBIx::DataSource::errstr;
+    if ($CONFIG{DB_TYPE} eq "mysql") {
+        my $dbh = DBI->connect("dbi:mysql:mysql;host=$CONFIG{DB_HOST};port=$CONFIG{DB_PORT}", 
+            $CONFIG{DB_DBA}, $CONFIG{DB_DBA_PASSWORD})
+                or die $DBI::errstr;
+        $dbh->do("CREATE DATABASE $CONFIG{DB_DATABASE} CHARACTER SET = utf8;")
+            or die $DBI::errstr;
+    } elsif ($CONFIG{DB_TYPE} eq "Pg") {
+        my $dbh = DBI->connect("dbi:Pg:dbname=postgres;host=$CONFIG{DB_HOST};port=$CONFIG{DB_PORT}", 
+            $CONFIG{DB_DBA}, $CONFIG{DB_DBA_PASSWORD})
+                or die $DBI::errstr;
+        $dbh->do("CREATE DATABASE $CONFIG{DB_DATABASE} WITH ENCODING = 'UTF8';")
+            or die $DBI::errstr;
+    }
 }
 
 

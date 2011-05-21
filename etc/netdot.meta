@@ -287,7 +287,7 @@ $meta = {
          length => '',
          nullable => 1,
          tag => 'Comments',
-         type => 'blob'
+         type => 'text'
        },
        inventory_number => {
          default => '',
@@ -400,7 +400,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       name => {
         default => '',
@@ -437,6 +437,14 @@ $meta = {
   BGPPeering => {
     table_db_name => 'bgppeering',
     columns => {
+      authkey => {
+        default => '',
+        description => 'The authentication key for this BGP session',
+        length => '255',
+        nullable => 1,
+        tag => 'Auth key',
+        type => 'varchar'
+      },
       bgppeeraddr => {
         default => '',
         description => 'BGP Peer Address',
@@ -487,12 +495,36 @@ $meta = {
         tag => undef,
         type => 'bigint'
       },
+      info => {
+        default => '',
+        description => 'Comments',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'text'
+      },
+      max_v4_prefixes => {
+        default => '',
+        description => 'Maximum number of IPv4 prefixes we will permit from this peer',
+        length => '',
+        nullable => 0,
+        tag => 'Max IPv4 Prefixes',
+        type => 'integer'
+      },
+      max_v6_prefixes => {
+        default => '',
+        description => 'Maximum number of IPv6 prefixes we will permit from this peer',
+        length => '',
+        nullable => 0,
+        tag => 'Max IPv6 Prefixes',
+        type => 'integer'
+      },
       monitored => {
         default => '',
         description => 'Flag that specifies if this peering should be monitored',
         length => '',
         nullable => 0,
-        tag => undef,
+        tag => 'Monitored?',
         type => 'bool'
       },
       monitorstatus => {
@@ -507,7 +539,7 @@ $meta = {
         nullable => 1,
         tag => 'Monitored Status',
         type => 'bigint'
-      }
+      },
     },
     description => 'A BGP Peering',
     has_history => 0,
@@ -534,8 +566,12 @@ $meta = {
         'entity',
         'bgppeerid',
         'bgppeeraddr',
+	'max_v4_prefixes',
+	'max_v6_prefixes',
         'monitored',
-        'monitorstatus'
+        'monitorstatus',
+	'authkey',
+	'info',
       ],
       brief => [
         'device',
@@ -574,7 +610,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       installdate => {
         default => '',
@@ -745,7 +781,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       name => {
         default => '',
@@ -839,7 +875,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       name => {
         default => '',
@@ -919,7 +955,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       installdate => {
         default => '',
@@ -1042,7 +1078,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       name => {
         default => '',
@@ -1093,7 +1129,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       name => {
         default => '',
@@ -1216,7 +1252,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       name => {
         default => '',
@@ -1383,7 +1419,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       name => {
         default => '',
@@ -1487,7 +1523,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       notify_email => {
         default => '',
@@ -1594,7 +1630,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       name => {
         default => '',
@@ -1646,7 +1682,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       name => {
         default => '',
@@ -1874,7 +1910,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       ipforwarding => {
         default => '',
@@ -2426,7 +2462,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       name => {
         default => '',
@@ -2823,7 +2859,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       name => {
         default => '',
@@ -2900,7 +2936,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Include Text',
-        type => 'blob'
+        type => 'text'
       },
       ipblock => {
         default => '',
@@ -3109,7 +3145,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       name => {
         default => '',
@@ -3218,7 +3254,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       maint_contract => {
         default => '',
@@ -3470,7 +3506,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       name => {
         default => '',
@@ -3649,7 +3685,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       name => {
         default => '',
@@ -3704,7 +3740,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       level => {
         default => '',
@@ -3886,7 +3922,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       installdate => {
         default => '',
@@ -4165,7 +4201,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       jack => {
         default => '',
@@ -4656,7 +4692,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       interface => {
         default => '',
@@ -4917,7 +4953,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       name => {
         default => '',
@@ -5023,7 +5059,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       number => {
         default => '',
@@ -5063,7 +5099,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       name => {
         default => '',
@@ -5242,7 +5278,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       lastname => {
         default => '',
@@ -5539,7 +5575,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       name => {
         default => '',
@@ -5606,7 +5642,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       latest_os => {
         default => '',
@@ -5717,7 +5753,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       name => {
         default => '',
@@ -5800,7 +5836,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       modified => {
         default => '1970-01-02 00:00:01',
@@ -6856,7 +6892,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       name => {
         default => '',
@@ -6907,7 +6943,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       version => {
         default => '',
@@ -7008,7 +7044,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       name => {
         default => '',
@@ -7334,7 +7370,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
     },
     description => 'A Closet Picture.  Pictures are stored in the database in binary format.',
@@ -7428,7 +7464,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
     },
     description => 'A Floor Picture.  Pictures are stored in the database in binary format.',
@@ -7522,7 +7558,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
     },
     description => 'A Site Picture.  Pictures are stored in the database in binary format.',
@@ -7571,7 +7607,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => undef,
-        type => 'blob'
+        type => 'text'
       },
       strand1 => {
         default => '',
@@ -7645,7 +7681,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => undef,
-        type => 'blob'
+        type => 'text'
       },
       name => {
         default => '',
@@ -7759,7 +7795,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       name => {
         default => '',
@@ -7895,7 +7931,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       name => {
         default => '',
@@ -7977,7 +8013,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       name => {
         default => '',
@@ -8042,7 +8078,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       name => {
         default => '',
@@ -8153,7 +8189,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Include',
-        type => 'blob'
+        type => 'text'
       },
       info => {
         default => '',
@@ -8161,7 +8197,7 @@ $meta = {
         length => '',
         nullable => 1,
         tag => 'Comments',
-        type => 'blob'
+        type => 'text'
       },
       minimum => {
         default => '',
@@ -8276,29 +8312,19 @@ $meta = {
       },
       scope => {
         default => '',
-        description => 'DHCP scope where change happened',
-        length => '',
-        linksto => {
-          cascade => 'Delete',
-          method => 'audit_records',
-          table => 'DhcpScope'
-        },
+        description => 'Name of DHCP scope where change happened',
+        length => '255',
         nullable => 1,
         tag => 'DHCP Scope',
-        type => 'bigint'
+        type => 'varchar'
       },
       zone => {
         default => '',
-        description => '',
-        length => '',
-        linksto => {
-          cascade => 'Delete',
-          method => 'audit_records',
-          table => 'Zone'
-        },
+        description => 'Name of zone where change happened',
+        length => '255',
         nullable => 1,
         tag => 'Zone',
-        type => 'bigint'
+        type => 'varchar'
       },
       tstamp => {
         default => '1970-01-02 00:00:01',
@@ -8406,7 +8432,7 @@ $meta = {
         length => '',
         nullable => 0,
         tag => 'Saved SQL',
-        type => 'blob'
+        type => 'text'
       }        
     },
     description => 'Saved SQL queries',

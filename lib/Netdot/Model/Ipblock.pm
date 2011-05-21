@@ -726,18 +726,25 @@ sub get_roots {
     $class->isa_class_method('get_roots');
 
     $version ||= 4;
-
+   
+    my %where = (parent => undef);
+    my %opts  = (order_by => 'address');
+    
+    my $len;
     my @ipb;
-    if ( $version =~ /^4|6$/ ){
-	@ipb = $class->search(version => $version, parent=>undef, {order_by => 'address'});
-    }elsif ( $version eq "all" ){
-	@ipb = $class->search(parent=>undef, {order_by => 'address'});
-    }else{
-	$class->throw_fatal("Unknown version: $version");
+    if ( $version == 4 || $version eq 'all' ){
+	$len = 32;
+	$where{version} = 4;
+	$where{prefix} = { '!=', $len };
+	push @ipb, $class->search_where(\%where, \%opts);
     }
-    @ipb = grep { !$_->is_address } @ipb;
+    if ( $version == 6 || $version eq 'all' ){
+	$len = 128;
+	$where{version} = 6;
+	$where{prefix} = { '!=', $len };
+	push @ipb, $class->search_where(\%where, \%opts);
+    }
     wantarray ? ( @ipb ) : $ipb[0]; 
-
 }
 
 ##################################################################
@@ -2405,13 +2412,15 @@ sub forward_zone {
     my ($self) = @_;
     $self->isa_object_method('forward_zone');
 
+    my @list;
     if ( my @zones = $self->dns_zones ){
 	foreach my $z ( @zones ){
 	    if ( $z->name !~ /\.arpa$|\.int$/ ){
-		return $z;
+		push @list, $z;
 	    }
 	}
     }
+    wantarray ? ( @list ) : $list[0];
 }
 
 ################################################################

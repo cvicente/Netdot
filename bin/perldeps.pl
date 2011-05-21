@@ -36,7 +36,6 @@ my @DEPS = (
     {cpan=>'HTML::Mason 1.31',apt=>'libhtml-mason-perl',rpm=>'perl-HTML-Mason'},
     {cpan=>'Apache::Session 1.6', apt=>'libapache-session-perl', rpm=>'perl-Apache-Session'},
     {cpan=>'URI::Escape', apt=>'liburi-perl', rpm=>'perl-URI'},
-    {cpan=>'DBIx::DataSource', apt=> 'libdbix-datasource-perl', rpm=>''},
     {cpan=>'GraphViz 2.02', apt=> 'graphviz', rpm=>'graphviz graphviz-devel libpng-devel graphviz-gd perl-GraphViz'},
     {cpan=>'SQL::Translator 0.07', apt=>'libsql-translator-perl', rpm=>'perl-SQL-Translator'},
     {cpan=>'SNMP::Info 2.04', apt=>'libsnmp-info-perl', rpm=>'perl-SNMP-Info'},

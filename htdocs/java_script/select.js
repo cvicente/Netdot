@@ -35,6 +35,11 @@
         jsrsExecute( "../generic/jsrs_retrieve_all_bykw.html", jsrsParseresults, "retrieve_all_bykw", Array(tablename, form_field, val));
     }
     
+    function jsrsSendquerySZ(form_field, val) {
+        // Subnet-Zone relationship
+        // alert( "Form field: "+form_field.name+"; val:"+val );
+        jsrsExecute( "../generic/subnet_zone_query.html", jsrsParseresults, "subnet_zone_search", Array(form_field.name, val) );
+    }
 
     function jsrsResetSelection(elementID) {
         document.getElementById(elementID).options.length = 0;
