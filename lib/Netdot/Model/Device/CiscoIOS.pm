@@ -392,12 +392,10 @@ sub _get_credentials {
     unless ( @$cli_cred_conf ){
 	$self->throw_user("Device::CiscoIOS::_get_credentials: config $config_item is empty");
     }
-
-    my $match = 0;
+    
     foreach my $cred ( @$cli_cred_conf ){
 	my $pattern = $cred->{pattern};
 	if ( $host =~ /$pattern/ ){
-	    $match = 1;
 	    my %args;
 	    $args{login}      = $cred->{login};
 	    $args{password}   = $cred->{password};
@@ -407,9 +405,7 @@ sub _get_credentials {
 	    return \%args;
 	}
     }   
-    if ( !$match ){
-	$logger->warn("Device::CiscoIOS::_get_credentials: $host did not match any patterns in configured credentials.");
-    }
+    $logger->warn("Device::CiscoIOS::_get_credentials: $host did not match any patterns in configured credentials.");
     return;
 }
 
@@ -445,7 +441,6 @@ sub _cli_cmd {
 		    Opts      => [
 			'-o', "ConnectTimeout $timeout",
 			'-o', 'CheckHostIP no',
-			'-o', 'StrictHostKeyChecking no',
 		    ],
 	    );
 	
