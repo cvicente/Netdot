@@ -588,6 +588,19 @@ sub _validate_args {
 	unless ( length($name) >= 1 && length($name) < 64 ){
 	    $self->throw_user("Invalid name: $name. Length must be between 1 and 63 characters");
 	}
+
+	# Valid characters
+	if ( $name =~ /[^A-Za-z0-9\.\-_]/ ){
+	    $self->throw_user("Invalid name: $name. Contains invalid characters");
+	}
+	# Check that underscore only appear at beginning
+	if ( $name =~ /.+_/ ){
+	    $self->throw_user("Invalid name: $name. One underscore only allowed at beginning of string");
+	}
+	# Name must not start or end with a dash
+	if ( $name =~ /^\-/ || $name =~ /\-$/ ){
+	    $self->throw_user("Invalid name: $name. Name must not start or end with a dash");
+	}
 	if ( $zone ){
 	    my $fqdn = $name.".".$zone->name;
 	    if ( length($fqdn) > 255 ){
