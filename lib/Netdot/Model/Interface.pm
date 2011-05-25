@@ -251,7 +251,7 @@ sub update {
     my $class = ref($self);
     
     if ( exists $argv->{neighbor} ){
-	if ( int($argv->{neighbor}) == 0 ){
+	if ( !$argv->{neighbor} ){
 	    $self->remove_neighbor();
 	}else{
 	    $self->add_neighbor(id    => $argv->{neighbor},
