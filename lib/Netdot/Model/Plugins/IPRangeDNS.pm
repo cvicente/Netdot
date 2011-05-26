@@ -27,9 +27,9 @@ sub new{
 ############################################################################
 =head2 generate_records - Generates A/AAAA & PTR records
 
-    It figures out the host octets and adds the given prefix and suffix strings
+    Generates label based on IP address and adds the given prefix and suffix strings
     For example, given the IP: 192.168.10.20
-    it will create A && PTR records like "<prefix>10-20<suffix>.my-given-domain"
+    it will create A/AAAA && PTR records like "<prefix>192-168-10-20<suffix>.my-given-domain"
 
   Arguments:
     prefix  -  String to prepend to host part of IP address
@@ -38,7 +38,7 @@ sub new{
     ipend   -  Last IP in range (NetAddr::IP object)
     fzone   -  Forward zone (for A records)
   Returns:
-    Array of RRPTR and RRADDR objects
+    Array of RRADDR objects
   Examples:
 
     From Ipblock class:
@@ -64,7 +64,6 @@ sub generate_records {
     my $version = $ipstart->version;
    
     for ( my $i=Math::BigInt->new($ipstart->numeric); $i<=$ipend->numeric; $i++ ){
-
 	if ( $version == 4 ){
 	    my $ip = NetAddr::IP->new($i) || $self->throw_fatal("Cannot create v4 NetAddr obj from $i");
 
@@ -89,29 +88,21 @@ sub generate_records {
 	$name .= $suffix if ( defined $suffix );
 	$ptrdname = "$name.".$fzone->name;
 	
-	# We'll wipe out whatever records were there
-	# We do it after we add the names to avoid the IPs
-	# being set as availble
-	my @to_delete;
-	foreach my $r ( $ipb->ptr_records ){
-	    push @to_delete, $r;
-	}
 	foreach my $r ( $ipb->arecords ){
-	    push @to_delete, $r;
+	    $r->delete({no_change_status=>1});
 	}
-	
-	my $ptr = Netdot::Model::RRPTR->insert({ptrdname => $ptrdname, 
-						ipblock  => $ipb, 
-						zone     => $ipb->reverse_zone});
-	push @rrs, $ptr;
+
+	# my $ptr = Netdot::Model::RRPTR->insert({ptrdname => $ptrdname, 
+	# 					ipblock  => $ipb, 
+	# 					zone     => $ipb->reverse_zone});
+	# push @rrs, $ptr;
 	
 	my $rraddr = Netdot::Model::RR->insert({type    => 'A',
 						name    => $name, 
 						ipblock => $ipb, 
 						zone    => $fzone});
-	push @rrs, $rraddr;
 	
-	map { $_->delete } @to_delete;
+	push @rrs, $rraddr;
     }
     return \@rrs;
 }

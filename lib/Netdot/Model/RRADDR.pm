@@ -139,7 +139,7 @@ sub update {
     - Remove any DHCP host scopes related to the IP if needed
 
   Arguments:
-    None
+    no_change_status - Do not change IP status to available
   Returns:
     True if successful. 
   Example:
@@ -148,7 +148,7 @@ sub update {
 =cut
 
 sub delete {
-    my $self = shift;
+    my ($self, $argv) = @_;
     $self->isa_object_method('delete');
 
     my $ipblock = $self->ipblock;
@@ -166,8 +166,9 @@ sub delete {
 	foreach my $host ( $ipblock->dhcp_scopes ){
 	    $host->delete();
 	}
-	if (int($ipblock->interface) == 0 ){
+	if ( !$ipblock->interface && !$argv->{no_change_status} ){
 	    # Not an interface IP, so it should be available
+	    # unless we're told not to touch it
 	    $ipblock->update({status=>"Available"});
 	}
     }
