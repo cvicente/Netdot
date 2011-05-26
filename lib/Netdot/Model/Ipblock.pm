@@ -2961,9 +2961,10 @@ sub _update_tree{
 		);
 	    $sth1->execute($parent_id, $self->id);
 	    while ( my ($id,$address,$prefix,$par) = $sth1->fetchrow_array ){
-		my $node = $class->_tree_find(address  => $address,
-					      prefix   => $prefix,
-					      tree     => $tree,
+		my $node = $class->_tree_insert(address  => $address,
+						prefix   => $prefix,
+						data     => $id,
+						tree     => $tree,
 		    );
 		if ( defined $node && $node->parent 
 		     && $node->parent->data != $par ){
