@@ -2215,6 +2215,7 @@ sub shared_network_subnets{
     my $query = 'SELECT  other.id 
                  FROM    ipblock me, ipblock other, ipblock myaddr, ipblock otheraddr 
                  WHERE   me.id=? AND myaddr.parent=? AND otheraddr.parent=other.id 
+                     AND me.version = other.version
                      AND myaddr.interface=otheraddr.interface 
                      AND myaddr.interface IS NOT NULL AND other.id!=me.id';
 
