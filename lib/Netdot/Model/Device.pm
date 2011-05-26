@@ -5169,9 +5169,13 @@ sub _update_interfaces {
 	$argv{subs_inherit} : $subs_inherit_default;
     
     # Get old IPs (if any)
-    my %oldips;
+    my %old_ips;
     if ( my $devips = $self->get_ips ){
-	map { $oldips{$_->address} = $_ } @{ $devips };
+	foreach ( @$devips ){
+	    # Use decimal address in the index to avoid ambiguities with notation
+	    my $numip = $_->address_numeric;
+	    $old_ips{$numip} = $_;
+	}
     }
         
     ##############################################
@@ -5210,7 +5214,8 @@ sub _update_interfaces {
 
 	# Remove the new interface's ip addresses from list to delete
 	foreach my $newaddr ( keys %{$info->{interface}->{$newif}->{ips}} ){
-	    delete $oldips{$newaddr} if exists $oldips{$newaddr};
+	    my $numip = Ipblock->ip2int($newaddr);
+	    delete $old_ips{$numip} if exists $old_ips{$numip};
 	}
 
 	my $newname   = $info->{interface}->{$newif}->{name};
@@ -5324,7 +5329,7 @@ sub _update_interfaces {
     
     ##############################################
     # remove ip addresses that no longer exist
-    while ( my ($address, $obj) = each %oldips ){
+    while ( my ($address, $obj) = each %old_ips ){
 	# Check that it still exists 
 	# (could have been deleted if its interface was deleted)
 	next unless ( defined $obj );
