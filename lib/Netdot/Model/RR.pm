@@ -590,7 +590,7 @@ sub _validate_args {
 	}
 
 	# Valid characters
-	if ( $name =~ /[^A-Za-z0-9\.\-_]/ ){
+	if ( $name =~ /[^A-Za-z0-9\.\-_@]/ ){
 	    $self->throw_user("Invalid name: $name. Contains invalid characters");
 	}
 	# Check that underscore only appear at beginning
