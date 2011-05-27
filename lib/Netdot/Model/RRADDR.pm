@@ -72,9 +72,10 @@ sub insert {
     
     my $rraddr = $class->SUPER::insert($argv);
 
-    # Make sure that the IP is not left as "Available"
+    # Make sure that the IP is not left as "Available" or "Discovered" 
+    my $current_status = $rraddr->ipblock->status->name;
     $rraddr->ipblock->update({status=>'Static'}) 
-	if $rraddr->ipblock->status->name eq 'Available';
+	if ( $current_status eq 'Available' || $current_status eq 'Discovered' );
     
     # Create/update PTR record for this IP
     $rraddr->_update_rrptr() if $update_ptr;
