@@ -1607,7 +1607,7 @@ sub delete {
     }
 
     # Generate hostaudit entry if needed
-    if ( $self->parent && $self->parent->dhcp_scopes ){
+    if ( blessed($self->parent) && $self->parent->dhcp_scopes ){
 	my $dyn_id = IpblockStatus->search(name=>'Dynamic')->first->id;
 	if ( $dyn_id == $bak{status}->id ){
 	    my %args;
@@ -2906,7 +2906,7 @@ sub _update_tree{
     my ($self) = @_;
     $self->isa_object_method('_update_tree');
     my $class = ref($self);
-    
+    my $version = $self->version;
     my $tree = $self->_tree_get();
     
     $logger->debug('Ipblock::_update_tree: Updating tree for '. $self->get_label);
@@ -2969,15 +2969,29 @@ sub _update_tree{
 		);
 	    $sth1->execute($parent_id, $self->id);
 	    while ( my ($id,$address,$prefix,$par) = $sth1->fetchrow_array ){
-		my $node = $class->_tree_insert(address  => $address,
-						prefix   => $prefix,
-						data     => $id,
-						tree     => $tree,
+		my $node;
+		# We do not insert end nodes in the tree for speed
+		# See _build_tree_mem
+		if ( ($version == 4 && $prefix == 32) || ($version == 6 && $prefix == 128) ){
+		    $node = $class->_tree_find(address  => $address,
+					       prefix   => $prefix,
+					       tree     => $tree,
 		    );
-		if ( defined $node && $node->parent 
-		     && $node->parent->data != $par ){
-		    $logger->debug("Ipblock::_update_tree: node $id has new parent");
-		    $parents{$id} = $node->parent->data;
+		    if ( defined $node && $node->data != $par ){
+			$logger->debug("Ipblock::_update_tree: node $id has new parent");
+			$parents{$id} = $node->data;
+		    }
+		}else{
+		    $node = $class->_tree_insert(address  => $address,
+						 prefix   => $prefix,
+						 data     => $id,
+						 tree     => $tree,
+			);
+		    if ( defined $node && $node->parent 
+			 && $node->parent->data != $par ){
+			$logger->debug("Ipblock::_update_tree: node $id has new parent");
+			$parents{$id} = $node->parent->data;
+		    }
 		}
 	    }
 	    # Now update the DB
