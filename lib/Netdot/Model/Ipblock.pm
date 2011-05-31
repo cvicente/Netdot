@@ -610,7 +610,14 @@ sub insert {
     # Update tree unless we're told not to do so for speed reasons
     # (usually because it will be rebuilt at the end of a device update)
     unless ( $no_update_tree ){
-	$newblock->_update_tree();
+	eval {
+            $newblock->_update_tree();
+        };
+	if ( my $e = $@ ){
+            # assume any errors from _update_tree are caused by $newblock
+	    $newblock->delete();
+	    $e->rethrow() if ref($e);
+	}
     }
     
     #####################################################################
