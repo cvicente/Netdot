@@ -81,7 +81,8 @@ sub _get_arp_from_cli {
     my %int_names;
     my %devsubnets;
     foreach my $int ( $self->interfaces ){
-	$int_names{$int->name} = $int->id;
+	my $name = $self->_reduce_iname($int->name);
+	$int_names{$name} = $int->id;
 	foreach my $ip ( $int->ips ){
 	    push @{$devsubnets{$int->id}}, $ip->parent->_netaddr 
 		if $ip->parent;
@@ -101,7 +102,7 @@ sub _get_arp_from_cli {
 	    $logger->debug(sub{"Device::CiscoIOS::_get_arp_from_cli: line did not match criteria: $line" });
 	    next;
 	}
-
+	$iname = $self->_reduce_iname($iname);
 	my $intid = $int_names{$iname};
 
 	unless ( $intid ) {
@@ -171,13 +172,9 @@ sub _get_fwt_from_cli {
     # MAP interface names to IDs
     my %int_names;
     foreach my $int ( $self->interfaces ){
-	my $name = $int->name;
-	# Shorten names to match output
-	# i.e GigabitEthernet1/2 -> Gi1/2
-	$name =~ s/^([a-z]{2}).+?([\d\/]+)$/$1$2/i;
+	my $name = $self->_reduce_iname($int->name);
 	$int_names{$name} = $int->id;
     }
-    
 
     my ($iname, $mac, $intid);
     my %fwt;
@@ -196,7 +193,7 @@ sub _get_fwt_from_cli {
 	    $logger->debug(sub{"Device::CiscoIOS::_get_fwt_from_cli: line did not match criteria: $line" });
 	    next;
 	}
-
+	$iname = $self->_reduce_iname($iname);
 	my $intid = $int_names{$iname};
 
 	unless ( $intid ) {
@@ -313,4 +310,20 @@ sub _cli_cmd {
 	$self->throw_user("Device::CiscoIOS::_get_arp_from_cli: $host: $e");
     }
     return @output;
+}
+
+############################################################################
+# _reduce_iname
+#  Convert "GigabitEthernet0/3 into "Gi0/3" to match the different formats
+#
+# Arguments: 
+#   string
+# Returns:
+#   string
+#
+sub _reduce_iname{
+    my ($self, $name) = @_;
+    return unless $name;
+    $name =~ s/^(\w{2})\S*?([\d\/]+).*/$1$2/;
+    return $name;
 }
