@@ -53,6 +53,7 @@ $state_digest      => undef
 $template_zone_for_rev => undef
 $new_blocks_list   => undef
 $new_blocks_status => undef
+$tree_version      => undef
 </%args>
 %
 %
@@ -155,7 +156,6 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
     }
 
     @list = Ipblock->get_roots($rootversion);
-
 </%perl>
        <div class="container">
           <div class="containerheadleft">Root Blocks: (<% scalar(@list) %>)</div>
@@ -181,7 +181,6 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 %             }
           </div>
        </div>
-
 <%perl>
 #######################################################################################
 # Update
@@ -539,8 +538,20 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
     }else{
 	$m->comp('/generic/error.mhtml', error=>"Please provide a name for at least one reverse zone");
     }
-}
 
+#######################################################################################
+# REBUILD_TREE
+#
+#######################################################################################
+}elsif ( $_action eq 'REBUILD_TREE' ){
+
+    if ( $tree_version eq '4' || $tree_version eq 'all' ){
+	Ipblock->build_tree(4);
+    }elsif ( $tree_version eq '6' || $tree_version eq 'all' ){
+	Ipblock->build_tree(6);
+    }
+    $m->comp('.show_message', title=>"Action Message", msg=>"IP Tree Rebuilt Successfully");
+}
 #######################################################################################
 # View
 #
@@ -1558,10 +1569,10 @@ $msg   => undef
 
 <div class="container">
     <div class="containerhead">
-       <strong><% $title %></strong>   
+       <strong><% $title %></strong>
     </div>
     <div class="containerbody">
-       <% $msg %><br>
+       <p><% $msg %></p>
     </div>
 </div>
 
