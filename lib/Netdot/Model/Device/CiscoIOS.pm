@@ -263,7 +263,8 @@ sub _validate_arp {
 	    next;
 	}
 	foreach my $ip ( keys %{$cache->{$key}} ){
-	    if ( $version == 6 && Ipblock->is_link_local($ip) ){
+	    if ( $version == 6 && Ipblock->is_link_local($ip) &&
+		 Netdot->config->get('IGNORE_IPV6_LINK_LOCAL') ){
 		next;
 	    }
 	    my $mac = $cache->{$key}->{$ip};
@@ -274,6 +275,15 @@ sub _validate_arp {
 	    }
 	    $mac = $validmac;
 	    if ( Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET') ){
+		if ( !Netdot->config->get('IGNORE_IPV6_LINK_LOCAL') ){
+		    # This check does not work with link-local, so if user wants those
+		    # just validate them
+		    if ( Ipblock->is_link_local($ip) ){
+			$valid{$intid}{$ip} = $mac;
+			$logger->debug(sub{"Device::CiscoIOS::_validate_arp: $host: valid: $iname -> $ip -> $mac" });
+			next;
+		    }
+		}
 		foreach my $nsub ( @{$devsubnets{$intid}} ){
 		    my $nip = NetAddr::IP->new($ip) or
 			$self->throw_fatal(sprintf("Device::CiscoIOS::_validate_arp: Cannot create NetAddr::IP ".
