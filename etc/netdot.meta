@@ -2907,6 +2907,14 @@ $meta = {
         nullable => 0,
         tag => undef,
         type => 'bigint'
+      }, 
+      duid => {
+        default => '',
+        description => 'DHCP Unique Identifier. Only applies to host scopes. See RFC 3315',
+        length => '255',
+        nullable => 1,
+        tag => 'DUID',
+        type => 'varchar'
       },
       enable_failover => {
         default => '',
@@ -2999,7 +3007,15 @@ $meta = {
         nullable => 1,
         tag => 'Type',
         type => 'bigint'
-      }
+      },
+      version => {
+        default => '',
+        description => 'IP version (4 or 6). Only applies to global scopes',
+        length => '',
+        nullable => 1,
+        tag => 'Version(4|6)',
+        type => 'integer'
+      },
     },
     description => 'A DHCP Scope',
     has_history => 0,
@@ -3015,9 +3031,11 @@ $meta = {
       all => [
         'name',
         'type',
+        'version',
         'container',
         'ipblock',
         'physaddr',
+        'duid',
         'text',
         'enable_failover',
         'failover_peer',
@@ -3046,6 +3064,7 @@ $meta = {
         'type',
         'container',
         'ipblock',
+        'duid',
         'physaddr',
         'text'
       ],

@@ -56,7 +56,7 @@ sub search {
       - Inherit failover properties from global scope if inserting subnet scope
       - Insert given attributes
       - Convert ethernet string into object
-
+      - Assign default version on global scopes
  Argsuments: 
     Hashref with following keys:
       name
@@ -89,17 +89,19 @@ sub insert {
     }
 
     if ( $scope->type->name eq 'subnet' ){
-	# Add standard attributes
-	$attributes->{'option broadcast-address'} = $argv->{ipblock}->_netaddr->broadcast->addr();
-	$attributes->{'option subnet-mask'}       = $argv->{ipblock}->_netaddr->mask;
+	if ( $scope->version == 4 ){ 
+	    # Add standard attributes
+	    $attributes->{'option broadcast-address'} = $argv->{ipblock}->_netaddr->broadcast->addr();
+	    $attributes->{'option subnet-mask'}       = $argv->{ipblock}->_netaddr->mask;
+
+	    if ( $scope->container && $scope->container->enable_failover ){
+		my $failover_peer = $scope->container->failover_peer || 'dhcp-peer';
+		$scope->SUPER::update({enable_failover=>1, failover_peer=> $failover_peer});
+	    }
+	}
 	if ( my $zone = $argv->{ipblock}->forward_zone ){
 	    # Add the domain-name attribute
 	    $attributes->{'option domain-name'} = $zone->name;
-	}
-    
-	if ( $scope->container && $scope->container->enable_failover ){
-	    my $failover_peer = $scope->container->failover_peer || 'dhcp-peer';
-	    $scope->SUPER::update({enable_failover=>1, failover_peer=> $failover_peer});
 	}
     }
     
@@ -476,7 +478,7 @@ sub _validate_args {
     my ($self, $argv) = @_;
     
     my %fields;
-    foreach my $field ( qw(name type physaddr ipblock container) ){
+    foreach my $field ( qw(name type version physaddr duid ipblock container) ){
 	if ( ref($self) ){
 	    $fields{$field} = $self->$field;
 	}
@@ -484,70 +486,102 @@ sub _validate_args {
 	$fields{$field} = $argv->{$field} if exists $argv->{$field};
     }
 
-    $self->throw_user("A scope name is required")
-	unless ( defined $fields{name} && $fields{name} ne "" );
+    my $name = $fields{name} || $self->throw_user("A scope name is required");
 
-    $self->throw_user("$fields{name}: A scope type is required")
-	unless $fields{type};
+    $self->throw_user("$name: A scope type is required") unless $fields{type};
+    my $type = $fields{type}->name;
 
-    if ( defined $fields{physaddr} && int($fields{physaddr}) != 0 && $fields{type}->name ne 'host' ){
-	$self->throw_user("$fields{name}: Cannot assign physical address ($fields{physaddr}) to a non-host scope");
+    $self->throw_user("$name: Version field only applies to global scopes") 
+	if ( $fields{version} && $type ne 'global' );
+
+    if ( defined $fields{container} ){
+	my $ctype = $fields{container}->type->name;
+	$self->throw_user("$name: container scope type not defined")
+	    unless defined $ctype;
+
+	if ( $type eq 'global' ){
+	    $self->throw_user("$name: a global scope cannot exist within another scope");
+	}
+	if ( $type eq 'host' && !($ctype eq 'global' || $ctype eq 'group') ){
+	    $self->throw_user("$name: a host scope can only exist within a global or group scope");
+	}
+	if ( $type eq 'group' && $ctype ne 'global' ){
+	    $self->throw_user("$name: a group scope can only exist within a global scope");
+	}
+	if ( $type eq 'subnet' && !($ctype eq 'global' || $ctype eq 'shared-network') ){
+	    $self->throw_user("$name: a subnet scope can only exist within a global or shared-network scope");
+	}
+	if ( $type eq 'shared-network' && $ctype ne 'global' ){
+	    $self->throw_user("$name: a shared-network scope can only exist within a global scope");
+	}
+	if ( $type eq 'pool' && !($ctype eq 'subnet' || $ctype eq 'shared-network') ){
+	    $self->throw_user("$name: a pool scope can only exist within a subnet or shared-network scope");
+	}
+	if ( ($type eq 'class' || $type eq 'subclass') && $ctype ne 'global' ){
+	    $self->throw_user("$name: a class or subclass scope can only exist within a global scope");
+	}
+    }elsif ( $type ne 'global' && $type ne 'template' ){
+	$self->throw_user("$name: A container scope is required except for global and template scopes");
     }
-    if ( defined $fields{ipblock} && int($fields{ipblock}) != 0 ){
-	if ( ($fields{ipblock}->status->name eq 'Subnet') && $fields{type}->name ne 'subnet' ){
-	    $self->throw_user("$fields{name}: Cannot assign a subnet to a non-subnet scope");
-	}elsif ( ($fields{ipblock}->status->name eq 'Static') && $fields{type}->name ne 'host'  ){
-	    $self->throw_user("$fields{name}: Cannot assign an IP address to a non-host scope");
+
+    if ( $fields{physaddr} && $type ne 'host' ){
+	$self->throw_user("$name: Cannot assign physical address ($fields{physaddr}) to a non-host scope");
+    }
+    if ( my $duid = $fields{duid} ){
+	if ( $type ne 'host' ){
+	    $self->throw_user("$name: Cannot assign DUID ($fields{duid}) to a non-host scope");
+	}
+	if ( $duid =~ /[^A-Fa-f0-9:]/ ){
+	    $self->throw_user("$name: DUID contains invalid characters: $duid");
 	}
     }
-    if ( $fields{type}->name eq 'host'){
-	if ( !$fields{physaddr} || !$fields{ipblock} ){
-	    $self->throw_user("$fields{name}: a host scope requires IP and Ethernet");
+    if ( defined $fields{ipblock} ){
+	my $ip_status = $fields{ipblock}->status->name;
+	if ( ($ip_status eq 'Subnet') && $type ne 'subnet' ){
+	    $self->throw_user("$name: Cannot assign a subnet to a non-subnet scope");
+	}elsif ( ($ip_status eq 'Static') && $type ne 'host'  ){
+	    $self->throw_user("$name: Cannot assign an IP address to a non-host scope");
 	}
-	if ( my @scopes = DhcpScope->search(physaddr=>$fields{physaddr}) ){
-	    if ( my $subnet = $fields{ipblock}->parent ){
-		foreach my $s ( @scopes ){
-		    next if ( ref($self) && $s->id == $self->id );
-		    if ( $s->ipblock && (my $osubnet = $s->ipblock->parent) ){
-			if ( $osubnet->id == $subnet->id ){
-			    $self->throw_user("$fields{name}: Duplicate MAC address in this subnet: ".$fields{physaddr}->address);
+	if ( $type eq 'host' && $ip_status ne 'Static' ){
+	    $self->throw_user("$name: IP in host declaration can only be Static");
+	}
+    }
+    if ( $type eq 'host' ){
+	if ( !$fields{ipblock} ){
+	    $self->throw_user("$name: a host scope requires an IP address");
+	}
+	if ( $fields{ipblock}->version == 4 && !$fields{physaddr} ){
+	    $self->throw_user("$name: an IPv4 host scope requires an ethernet addres");
+	}
+	if ( $fields{ipblock}->version == 6 && !$fields{duid} && !$fields{physaddr} ){
+	    $self->throw_user("$name: an IPv6 host scope requires a DUID or ethernet address");
+	}
+	if ( $fields{ipblock}->version != $fields{container}->version ){
+	    $self->throw_user("$name: IP version in host scope does not match IP version in container");
+	}
+	if ( $fields{physaddr} ){
+	    if ( my @scopes = DhcpScope->search(physaddr=>$fields{physaddr}) ){
+		if ( my $subnet = $fields{ipblock}->parent ){
+		    foreach my $s ( @scopes ){
+			next if ( ref($self) && $s->id == $self->id );
+			if ( $s->ipblock && (my $osubnet = $s->ipblock->parent) ){
+			    if ( $osubnet->id == $subnet->id ){
+				$self->throw_user("$name: Duplicate MAC address in this subnet: ".$fields{physaddr}->address);
+			    }
 			}
 		    }
 		}
 	    }
 	}
-    }
-
-    my $type = $fields{type}->name;
-
-    if ( exists $fields{container} && int($fields{container}) != 0 ){
-	my $ctype = $fields{container}->type->name;
-	$self->throw_user("$fields{name}: container scope type not defined")
-	    unless defined $ctype;
-
-	if ( $type eq 'global' ){
-	    $self->throw_user("$fields{name}: a global scope cannot exist within another scope");
+    }elsif ( $type eq 'subnet' ){
+	if ( $fields{ipblock}->version != $fields{container}->version ){
+	    $self->throw_user("$name: IP version in subnet scope does not match IP version in container");
+	}	
+    }elsif ( $type eq 'global' ){
+	$fields{version} ||= 4;
+	if ( $fields{version} != 4 && $fields{version} != 6 ){
+	    $self->throw_user("$name: Invalid IP version: $fields{version}");
 	}
-	if ( $type eq 'host' && !($ctype eq 'global' || $ctype eq 'group') ){
-	    $self->throw_user("$fields{name}: a host scope can only exist within a global or group scope");
-	}
-	if ( $type eq 'group' && $ctype ne 'global' ){
-	    $self->throw_user("$fields{name}: a group scope can only exist within a global scope");
-	}
-	if ( $type eq 'subnet' && !($ctype eq 'global' || $ctype eq 'shared-network') ){
-	    $self->throw_user("$fields{name}: a subnet scope can only exist within a global or shared-network scope");
-	}
-	if ( $type eq 'shared-network' && $ctype ne 'global' ){
-	    $self->throw_user("$fields{name}: a shared-network scope can only exist within a global scope");
-	}
-	if ( $type eq 'pool' && !($ctype eq 'subnet' || $ctype eq 'shared-network') ){
-	    $self->throw_user("$fields{name}: a pool scope can only exist within a subnet or shared-network scope");
-	}
-	if ( ($type eq 'class' || $type eq 'subclass') && $ctype ne 'global' ){
-	    $self->throw_user("$fields{name}: a class or subclass scope can only exist within a global scope");
-	}
-    }elsif ( $type ne 'global' && $type ne 'template' ){
-	$self->throw_user("$fields{name}: A container scope is required except for global and template scopes");
     }
 
     1;
