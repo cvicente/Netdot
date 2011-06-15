@@ -1059,7 +1059,7 @@ sub _adjust_vals{
     my %meta_columns;
     map { $meta_columns{$_->name} = $_ } $class->meta_data->get_columns;
     foreach my $field ( keys %$args ){
-	my $mcol = $meta_columns{$field};
+	my $mcol = $meta_columns{$field} || $class->throw_fatal("Cannot find $field in metadata");
 	if ( !blessed($args->{$field}) && 
 	     (!defined($args->{$field}) || $args->{$field} eq '' || 
 	      $args->{$field} eq 'null' || $args->{$field} eq 'NULL' ) ){

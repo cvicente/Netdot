@@ -1017,7 +1017,7 @@ if ( $edit ){
 	my $x;
 	$x .= '<select name="dhcp_global_scope" id="dhcp_global_scope">';
 	$x .= '<option value="">-- Select --</option>';
-	foreach my $ent ( DhcpScope->search(type=>'global') ){
+	foreach my $ent ( DhcpScope->search(type=>'global', version=>$o->version) ){
 	    $x .= '<option value="'. $ent->id .'">'. $ent->name .'</option>';
 	}
 	$x .= '</select>';
@@ -1036,8 +1036,10 @@ if ( $edit ){
 	push @data,   "&nbsp;";
 	push @fields, "Subnet:";
 	push @data,   $s->get_label();
-	push @fields, 'Option routers:';
-	push @data,   '<input type="text" name="dhcp_option_routers_'.$s->id.'" class="txt" value="'.$s->_netaddr->first->addr.'">';
+	unless ( $o->version == 6 ){
+	    push @fields, 'Option routers:';
+	    push @data,   '<input type="text" name="dhcp_option_routers_'.$s->id.'" class="txt" value="'.$s->_netaddr->first->addr.'">';
+	}
     }
 
 </%perl>	

@@ -41,6 +41,7 @@ $select_id   => undef
 $selected    => undef
 $dowindow    => undef
 $state_digest => undef
+$view         => 'all'
 </%args>
 
 <%init>
@@ -148,7 +149,7 @@ if ( $table ){
 	    $m->comp($page, table=>$table, id=>$id, dowindow=>$dowindow );
         
         }else{
-            $m->comp('.show_form', table=>$table, id=>$id, 
+            $m->comp('.show_form', table=>$table, id=>$id, view=>$view,
                  showheader=>$showheader, select_id=>$select_id, selected=>$selected, dowindow=>$dowindow );
         }
     }
@@ -223,6 +224,7 @@ $selected   => undef
 $showheader => undef
 $dowindow   => undef
 %args       => undef
+$view       => 'all'
 </%args>
 
 <%init>
@@ -259,23 +261,19 @@ my $title = "$table " . $ui->table_descr_link($table, "[?]");
       <input type="hidden" name="selected" value="<% $selected %>">
       <input type="hidden" name="dowindow" value="<% $dowindow %>">
 %     if( $id ) {
-%         $m->comp('form.mhtml', table=>$table, id=>$id, dowindow=>$dowindow);
-      <br>
-      <input name="submit" type="submit" value="Update">
-%     }
-%
-%
-%     else{
-%
+%         $m->comp('form.mhtml', table=>$table, id=>$id, view=>$view, dowindow=>$dowindow);
+          <br>
+          <input name="submit" type="submit" value="Update">
+%     }else{
 %       $m->comp('form.mhtml', table=>$table, session=>\%args, dowindow=>$dowindow);
-      <br>
-      <input name="submit" type="submit" value="Insert">
+        <br>
+        <input name="submit" type="submit" value="Insert">
 %     }
-%    if ( $dowindow ){
+%     if ( $dowindow ){
 	<input name="cancel" value="Cancel" onClick="window.close()" type="button">
-%    }else{
+%     }else{
     	<input name="cancel" value="Cancel" onClick="history.go(-1)" type="button">
-%    }
+%     }
       </form>
     </div>
 </div>
