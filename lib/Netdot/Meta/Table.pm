@@ -497,7 +497,7 @@ sub _get_columns_hash{
 		      tag         => '',
 		      type        => 'bigint'};
 	
-	$ret{modified} = {default     => '',
+	$ret{modified} = {default     => '1970-01-02 00:00:01',
 			  description => 'Time this record was last modified',
 			  length      => '',
 			  nullable    => 0,
