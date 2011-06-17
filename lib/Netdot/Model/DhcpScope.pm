@@ -537,7 +537,7 @@ sub _validate_args {
 	    $self->throw_user("$name: DUID contains invalid characters: $duid");
 	}
     }
-    if ( defined $fields{ipblock} ){
+    if ( $fields{ipblock} ){
 	my $ip_status = $fields{ipblock}->status->name;
 	if ( ($ip_status eq 'Subnet') && $type ne 'subnet' ){
 	    $self->throw_user("$name: Cannot assign a subnet to a non-subnet scope");
