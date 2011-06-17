@@ -71,6 +71,7 @@ sub generate_records {
 		|| $self->throw_fatal("Cannot find Ipblock: ".$ip->addr);
 
 	    $name = $ip->addr;
+	    $name =~ s/\./-/g;
 
 	}elsif ( $version == 6 ){
 	    my $ip = NetAddr::IP->new6($i) || $self->throw_fatal("Cannot create v6 NetAddr obj from $i");
@@ -79,11 +80,10 @@ sub generate_records {
 		|| $self->throw_fatal("Cannot find Ipblock: ".$ip->addr);
 
 	    $name = $ipb->full_address;
-	    $name =~ s/://g;
-	    $name = join('.', split(//, $name));
+	    $name =~ s/:/-/g;
+	    $name =~ s/0{4}/0/g;
 	}
 	
-	$name =~ s/\./-/g;
 	$name = $prefix.$name if ( defined $prefix );
 	$name .= $suffix if ( defined $suffix );
 	$ptrdname = "$name.".$fzone->name;
@@ -92,16 +92,10 @@ sub generate_records {
 	    $r->delete({no_change_status=>1});
 	}
 
-	# my $ptr = Netdot::Model::RRPTR->insert({ptrdname => $ptrdname, 
-	# 					ipblock  => $ipb, 
-	# 					zone     => $ipb->reverse_zone});
-	# push @rrs, $ptr;
-	
 	my $rraddr = Netdot::Model::RR->insert({type    => 'A',
 						name    => $name, 
 						ipblock => $ipb, 
 						zone    => $fzone});
-	
 	push @rrs, $rraddr;
     }
     return \@rrs;
