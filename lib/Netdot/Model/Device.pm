@@ -5397,8 +5397,10 @@ sub _update_interfaces {
 	
 	my @my_ips;
 	foreach my $ip ( @{ $self->get_ips() } ){
-	    if ( $ip->version == 6 && !$ip->is_link_local ){
+	    if ( $ip->version == 6 && $ip->is_link_local ){
 		# Do not create AAAA records for link-local addresses
+		next;
+	    }else{
 		push @my_ips, $ip;
 	    }
 	}
