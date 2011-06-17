@@ -65,10 +65,9 @@ sub insert {
     $argv->{ipblock} = $class->_convert_ipblock($argv->{ipblock});
     
     my $update_ptr = 1; # On by default
-    if ( defined $argv->{update_ptr} && $argv->{update_ptr} == 0 ){
-	$update_ptr = 0;
+    if ( defined $argv->{update_ptr} ){
+	$update_ptr = delete $argv->{update_ptr};
     }
-    delete $argv->{update_ptr};
     
     my $rraddr = $class->SUPER::insert($argv);
 
