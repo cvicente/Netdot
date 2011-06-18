@@ -436,31 +436,29 @@ sub _cli_cmd {
     eval {
 	$logger->debug(sub{"$host: issuing CLI command: '$cmd' over $transport"});
 	my $s = Net::Appliance::Session->new(
-	    Host      => $host,
-	    Transport => $transport,
-	    );
-	
-	$s->do_paging(0);
-	
-	$s->connect(Name      => $login, 
-		    Password  => $password,
-		    SHKC      => 0,
-		    Opts      => [
-			'-o', "ConnectTimeout $timeout",
-			'-o', 'CheckHostIP no',
-		    ],
-	    );
-	
-	if ( $privileged ){
-	    $s->begin_privileged($privileged);
-	}
-	$s->cmd('terminal length 0');
-	@output = $s->cmd(string=>$cmd, timeout=>$timeout);
-	$s->cmd('terminal length 36');
+	    {
+		host            => $host,
+		transport       => $transport,
+		personality     => 'ios',
+		connect_options => {
+		    shkc => 0,
+		    opts => [
+			'-o', "ConnectTimeout=$timeout",
+			'-o', 'CheckHostIP=no',
+			],
+		},
+	    });
 
-	if ( $privileged ){
-	    $s->end_privileged;
-	}
+#       Uncomment this to debug session exchanges	
+#	$s->set_global_log_at('debug');
+	
+	$s->connect({username  => $login, 
+		     password  => $password,
+		    });
+	
+	$s->begin_privileged({password=>$privileged}) if ( $privileged );
+	@output = $s->cmd($cmd, {timeout=>$timeout});
+	$s->end_privileged if ( $privileged );
 	$s->close;
     };
     if ( my $e = $@ ){
