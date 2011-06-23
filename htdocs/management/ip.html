@@ -729,7 +729,11 @@ if (!$edit){
     print '<div class="container">';
     print '<div class="containerheadleft">DNS A Records</div>';
     print '<div class="containerheadright">';
-    print "<a href=\"host.html?ipblock=$o&action=new\">[add]</a>";
+    if ( $manager && $manager->can($user, 'edit', $o) ){
+	print "<a href=\"host.html?ipblock=$o&action=new\">[add]</a>";
+    }else{
+	print '&nbsp;';
+    }
     print '</div>';
     print '<div class="containerbody">';
     $m->comp('/generic/sortresults.mhtml', object=>\@rrs);
@@ -741,7 +745,11 @@ if (!$edit){
     print '<div class="container">';
     print '<div class="containerheadleft">DNS PTR Records</div>';
     print '<div class="containerheadright">';
-    print "<a href=\"edit.html?table=RRPTR&ipblock=$o\">[add]</a>";
+    if ( $manager && $manager->can($user, 'edit', $o) ){
+	print "<a href=\"edit.html?table=RRPTR&ipblock=$o\">[add]</a>";
+    }else{
+	print '&nbsp;';
+    }    
     print '</div>';
     print '<div class="containerbody">';
     $m->comp('/generic/sortresults.mhtml', object=>\@prrs);
@@ -774,6 +782,8 @@ if ( $edit ){
     <div class="containerheadright">
 %   if ( $manager && $manager->can($user, 'edit', $o) ){
 	<a href="edit.html?table=IpService&ip=<% $o %>">[add]</a>
+%   }else{
+        &nbsp;
 %   }
     </div>
 <%perl>
@@ -814,7 +824,11 @@ if ( $edit ){
 %     if ( @attributes ) {
         <a href="ip.html?id=<% $o %>&editattr=1">[edit]</a>
 %     }
+%   if ( $manager && $manager->can($user, 'edit', $o) ){
         <a href="edit.html?table=IpblockAttr&ipblock=<% $o %>">[add]</a>
+%   }else{
+        &nbsp;
+%   }
     </div>
     <div class="containerbody">
         <& /generic/sortresults.mhtml, object=>\@attributes, withedit=>$editattr, return_args=>"?id=$id" &>
@@ -1295,7 +1309,13 @@ print $tmp{value};
          <& /generic/sortresults.mhtml, object=>\@scopes &>
       </div>
 %   }else{
-      <div class="containerheadright"><a href="ip.html?id=<% $id %>&edit=enable_dhcp">[enable]</a></div>
+        <div class="containerheadright">
+%       if ( $manager && $manager->can($user, 'edit', $o) ){
+            <a href="ip.html?id=<% $id %>&edit=enable_dhcp">[enable]</a>
+%       }else{
+            &nbsp;
+%       }
+        </div>
 %   }
 % }
     </div>
