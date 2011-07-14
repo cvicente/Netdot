@@ -656,7 +656,7 @@ sub update {
 	# Class::DBI shows a full stack trace
 	# Try to make it less frightening for the user
 	if ( $e =~ /Duplicate/i ){
-	    $msg .= "Some values are duplicated";
+	    $msg .= "Some values are duplicated. Full error: $e";
 	}elsif ( $e =~ /invalid input syntax/i ){
 	    $msg .= "Some fields have invalid input syntax";
 	}elsif ( $e =~ /out of range/i ){
