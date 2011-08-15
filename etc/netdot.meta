@@ -275,6 +275,14 @@ $meta = {
          tag => 'Date Purchased',
          type => 'date'
        },
+       description => {
+         default => '',
+         description => 'A short description for this Asset',
+         length => '255',
+         nullable => 1,
+         tag => 'Description',
+         type => 'varchar'
+       },
        id => {
          default => '',
          description => '',
@@ -341,6 +349,19 @@ $meta = {
 	 tag => 'Product',
          type => 'bigint'
        },
+       physaddr => {
+         default => '',
+         description => 'The base MAC address of this Asset.',
+         length => '',
+         linksto => {
+           cascade => 'Delete',
+           method => 'assets',
+           table => 'PhysAddr'
+         },
+         nullable => 1,
+         tag => 'Base MAC',
+         type => 'bigint'
+       },
        serial_number => {
          default => '',
          description => 'Asset serial number',
@@ -363,27 +384,24 @@ $meta = {
          'serial_number',
 	 'custom_serial',
          'inventory_number',
+	 'physaddr',
 	 'product_id',
+	 'description',
          'date_purchased',
          'maint_contract',
          'maint_from',
          'maint_until',
 	 'info',
       ],
-      brief => ['serial_number', 'product_id', 'inventory_number', 'maint_from', 'maint_until' ],
+      brief => ['serial_number', 'physaddr', 'product_id', 'inventory_number', 'maint_from', 'maint_until' ],
     },
-    description => 'Assets',
+    description => 'Assets represent network hardware (devices or modules). If an asset is installed, it will be associated with a device or devicemodule object.',
     has_history => 0,
-    index => [ ['product_id'], ['inventory_number'] ],
+    index => [ ['product_id'], ['physaddr'], ['inventory_number'] ],
     isjoin => '0',
     primary_key => 'id',
-    label => ['serial_number'],
-    unique => [
-      [
-        'serial_number',
-        'product_id',
-      ]
-    ]
+    label => ['serial_number', 'physaddr', 'product_id'],
+    unique => [ ['physaddr'], ['serial_number','product_id'] ]
   },
   Availability => {
     table_db_name => 'availability',
@@ -2049,32 +2067,6 @@ $meta = {
         tag => 'OS',
         type => 'varchar'
       },
-      physaddr => {
-        default => '',
-        description => 'The base MAC address of this Device.',
-        length => '',
-        linksto => {
-          cascade => 'Delete',
-          method => 'devices',
-          table => 'PhysAddr'
-        },
-        nullable => 1,
-        tag => 'Base MAC',
-        type => 'bigint'
-      },
-      product => {
-        default => '',
-        description => 'Reference to a Product record.  Products are usually determined via SNMP',
-        length => '',
-        linksto => {
-          cascade => 'Delete',
-          method => 'devices',
-          table => 'Product'
-        },
-        nullable => 1,
-        tag => 'Product Name',
-        type => 'bigint'
-      },
       rack => {
         default => '',
         description => 'Rack ID where this Device is physically installed',
@@ -2298,7 +2290,7 @@ $meta = {
     },
     description => 'A network device.  Particularly, Devices in Netdot are network infrastructure devices that network administrators care about for inventory, monitoring and management purposes.  Not to be confused with end nodes',
     has_history => 1,
-    index => [ ['physaddr'],  ['product'], ['used_by'], ['owner'], ['os'], ['sysname'], ['down_from'], ['down_until'], ['asset_id'], ['extension'] ],
+    index => [ ['used_by'], ['owner'], ['os'], ['sysname'], ['down_from'], ['down_until'], ['asset_id'], ['extension'] ],
     isjoin => '0',
     label => [
       'name'
@@ -2322,7 +2314,6 @@ $meta = {
         'layers',
         'os',
         'extension',
-        'physaddr',
         'bgplocalas',
 	'auto_dns',
         'bgpid',
@@ -2335,7 +2326,6 @@ $meta = {
         'monitorstatus',
         'customer_managed',
         'community',
-        'product',
         'canautoupdate',
         'site',
         'monitor_config',
@@ -2370,7 +2360,7 @@ $meta = {
         'down_until',
         'info'
       ],
-      brief => ['name', 'product', 'site', 'snmp_target' ]
+      brief => ['name', 'asset', 'site', 'snmp_target' ]
     }
   },
   DeviceAttr => {
