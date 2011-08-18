@@ -100,10 +100,12 @@ sub generate_records {
 	    push @to_delete, $r;
 	}
 	
-	my $ptr = Netdot::Model::RRPTR->insert({ptrdname => $ptrdname, 
-						ipblock  => $ipb, 
-						zone     => $ipb->reverse_zone});
-	push @rrs, $ptr;
+	if ( my $arpa_zone = $ipb->reverse_zone() ){
+	    my $ptr = Netdot::Model::RRPTR->insert({ptrdname => $ptrdname, 
+						    ipblock  => $ipb, 
+						    zone     => $arpa_zone});
+	    push @rrs, $ptr;
+	}
 	
 	my $rraddr = Netdot::Model::RR->insert({type    => 'A',
 						name    => $name, 

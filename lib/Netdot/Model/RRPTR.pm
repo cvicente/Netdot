@@ -44,18 +44,21 @@ sub insert {
     my $rr;
     if ( !defined $argv->{rr} ){
 	$class->throw_fatal("Figuring out the rr field requires passing zone")
-	    unless ( defined $argv->{zone} );
+	    unless ( $argv->{zone} );
 
 	$logger->debug("Netdot::Model::RRPTR: Figuring out owner for ".$ipb->get_label);
 
-	my $zone = ref($argv->{zone}) ? $argv->{zone} : Zone->retrieve($argv->{zone});
+	my $zone = blessed($argv->{zone}) ? $argv->{zone} : Zone->retrieve($argv->{zone});
+	unless ( $zone->name =~ /(\.in-addr\.arpa)|(\.ip6)$/ ){
+	    $class->throw_user(sprintf("Zone %s is not a reverse zone", $zone->name));
+	}
 	my $name = $class->get_name(ipblock=>$ipb);
 	$rr = RR->find_or_create({zone=>$zone, name=>$name});
 	$logger->debug("Netdot::Model::RRPTR: Created owner RR for IP: ".
 		       $ipb->get_label." as: ".$rr->get_label);
 	$argv->{rr} = $rr;
     }else{
-	$rr = (ref $argv->{rr})? $argv->{rr} : RR->retrieve($argv->{rr});
+	$rr = blessed($argv->{rr})? $argv->{rr} : RR->retrieve($argv->{rr});
 	$class->throw_fatal("Invalid rr argument") unless $rr;
     }
     
@@ -210,7 +213,7 @@ sub _sanitize_ptrdname {
 sub _convert_ipblock {
     my ($self, $ip) = @_;
 
-    if ( ref($ip) ){
+    if ( blessed($ip) ){
 	return $ip;
     }elsif ( $ip =~ /\D/ ){
 	# value has non-digits
