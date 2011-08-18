@@ -42,6 +42,7 @@ sub insert {
     $argv->{ipblock} = $class->_convert_ipblock($argv->{ipblock});
     my $ipb = $argv->{ipblock};
 
+    my $rr;
     if ( !defined $argv->{rr} ){
 	$class->throw_fatal("Figuring out the rr field requires passing zone")
 	    unless ( $argv->{zone} );
@@ -53,7 +54,7 @@ sub insert {
 	    $class->throw_user(sprintf("Zone %s is not a reverse zone", $zone->name));
 	}
 	my $name = $class->get_name(ipblock=>$ipb);
-	my $rr = RR->find_or_create({zone=>$zone, name=>$name});
+	$rr = RR->find_or_create({zone=>$zone, name=>$name});
 	$logger->debug("Netdot::Model::RRPTR: Created owner RR for IP: ".
 		       $ipb->get_label." as: ".$rr->get_label);
 	$argv->{rr} = $rr;
