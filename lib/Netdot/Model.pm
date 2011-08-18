@@ -1045,6 +1045,7 @@ sub time2sqldate {
 #    - Make sure to set integer and bool fields to 0 instead of the empty string.
 #    - Make sure non-nullable fields are inserted as 0 if not passed
 #    - Ignore the empty string when inserting/updating date fields.
+#    - Check the length of the varchar fields.
 #
 # Arguments:
 #   hash with following keys:
@@ -1062,6 +1063,11 @@ sub _adjust_vals{
     map { $meta_columns{$_->name} = $_ } $class->meta_data->get_columns;
     foreach my $field ( keys %$args ){
 	my $mcol = $meta_columns{$field} || $class->throw_fatal("Cannot find $field in metadata");
+	if ( !blessed($args->{$field}) && $mcol->sql_type eq 'varchar' && defined($mcol->length) && $mcol->length =~ /^\d+$/ ) {
+            if (length($args->{$field}) > $mcol->length) {
+                $class->throw_user("Value for field '$field' (max " . $mcol->length . ") is too long: '$args->{$field}'");
+            }
+        }
 	if ( !blessed($args->{$field}) && 
 	     (!defined($args->{$field}) || $args->{$field} eq '' || 
 	      $args->{$field} eq 'null' || $args->{$field} eq 'NULL' ) ){
