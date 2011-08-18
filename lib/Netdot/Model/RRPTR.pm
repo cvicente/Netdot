@@ -3,6 +3,7 @@ package Netdot::Model::RRPTR;
 use base 'Netdot::Model';
 use warnings;
 use strict;
+use Scalar::Util qw(blessed);
 
 my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
 
