@@ -81,6 +81,8 @@ sub find_duplex_mismatches {
                                                  AND   r.oper_status='up'
                                                  AND   i.oper_duplex!=''
                                                  AND   r.oper_duplex!=''
+                                                 AND   i.oper_duplex!='unknown'
+                                                 AND   r.oper_duplex!='unknown'
                                                  AND   i.oper_duplex!=r.oper_duplex");
 
     if ( $mismatches ){
