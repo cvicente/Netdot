@@ -957,7 +957,6 @@ sub get_snmp_info {
     while ( my($key,$val) = each %{$hashes{'ipv6_addr_prefix'}} ){
 	my ($iid, $addr, $pfx, $len);
 	if ( $key =~ /^\d+\.\d+\.([\d\.]+)$/ ) {
-	    # type, size, address
 	    $addr = $self->_octet_string_to_v6($1);
 	}
 	if ( $val =~ /^(\d+)\.\d+\.\d+\.([\d\.]+)\.(\d+)$/ ) {
@@ -972,10 +971,30 @@ sub get_snmp_info {
 	    $dev{interface}{$iid}{ips}{$addr}{subnet}  = "$pfx/$len";
 	}else{
 	    # What happened?
-	    $logger->debug("$args{host}: Unrecognized ipv6_addr_prefix entry: $key => $val")
+	    $logger->warn("$args{host}: Unrecognized ipv6_addr_prefix entry: $key => $val")
 	}
     }
 
+
+    ################################################################
+    # IPv6 link-local addresses
+    unless ( $self->config->get('IGNORE_IPV6_LINK_LOCAL') ){
+	my $ipv6_index = $sinfo->ipv6_index();
+	my ($iid, $addr);
+	while ( my($key,$val) = each %$ipv6_index ){
+	    if ( $key =~ /^\d+\.\d+\.([\d\.]+)$/ ) {
+		$addr = $self->_octet_string_to_v6($1);
+		next unless Ipblock->is_link_local($addr);
+		$iid = $val;
+		$dev{interface}{$iid}{ips}{$addr}{address} = $addr;
+		$dev{interface}{$iid}{ips}{$addr}{version} = 6;
+	    }else{
+		# What happened?
+		$logger->warn("$args{host}: Unrecognized ipv6_index entry: $key => $val")
+	    }
+	}
+    }
+    
     # Netdot Interface field name to SNMP::Info method conversion table
     my %IFFIELDS = ( type                => 'i_type',
 		     description         => 'i_alias',		     speed               => 'i_speed',
@@ -3279,7 +3298,7 @@ sub set_interfaces_auto_dns {
 
     foreach my $int ( $self->interfaces ){
 	# Ony interfaces with IP addresses
-	next unless int($int->ips);
+	next unless $int->ips;
 	$int->update({auto_dns=>$value});
     }
     
@@ -4307,6 +4326,7 @@ sub _validate_arp {
 	    }
 	}
     }
+
     my %valid;
     foreach my $idx ( keys %$cache ){
 	my $intid = $devints{$idx} if exists $devints{$idx};
@@ -4315,7 +4335,8 @@ sub _validate_arp {
 	    next;
 	}
 	foreach my $ip ( keys %{$cache->{$idx}} ){
-	    if ( $version == 6 && Ipblock->is_link_local($ip) ){
+	    if ( $version == 6 && Ipblock->is_link_local($ip) &&
+		 Netdot->config->get('IGNORE_IPV6_LINK_LOCAL') ){
 		next;
 	    }
 	    my $mac = $cache->{$idx}->{$ip};
@@ -4326,6 +4347,15 @@ sub _validate_arp {
 	    }
 	    $mac = $validmac;
 	    if ( Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET') ){
+		if ( !Netdot->config->get('IGNORE_IPV6_LINK_LOCAL') ){
+		    # This check does not work with link-local, so if user wants those
+		    # just validate them
+		    if ( Ipblock->is_link_local($ip) ){
+			$valid{$intid}{$ip} = $mac;
+			$logger->debug(sub{"Device::_validate_arp: $host: valid: $idx -> $ip -> $mac" });
+			next;
+		    }
+		}
 		foreach my $nsub ( @{$devsubnets{$intid}} ){
 		    my $nip = NetAddr::IP->new($ip) or
 			$self->throw_fatal(sprintf("Device::_validate_arp: Cannot create NetAddr::IP ".
@@ -5169,9 +5199,13 @@ sub _update_interfaces {
 	$argv{subs_inherit} : $subs_inherit_default;
     
     # Get old IPs (if any)
-    my %oldips;
+    my %old_ips;
     if ( my $devips = $self->get_ips ){
-	map { $oldips{$_->address} = $_ } @{ $devips };
+	foreach ( @$devips ){
+	    # Use decimal address in the index to avoid ambiguities with notation
+	    my $numip = $_->address_numeric;
+	    $old_ips{$numip} = $_;
+	}
     }
         
     ##############################################
@@ -5210,7 +5244,8 @@ sub _update_interfaces {
 
 	# Remove the new interface's ip addresses from list to delete
 	foreach my $newaddr ( keys %{$info->{interface}->{$newif}->{ips}} ){
-	    delete $oldips{$newaddr} if exists $oldips{$newaddr};
+	    my $numip = Ipblock->ip2int($newaddr);
+	    delete $old_ips{$numip} if exists $old_ips{$numip};
 	}
 
 	my $newname   = $info->{interface}->{$newif}->{name};
@@ -5324,7 +5359,7 @@ sub _update_interfaces {
     
     ##############################################
     # remove ip addresses that no longer exist
-    while ( my ($address, $obj) = each %oldips ){
+    while ( my ($address, $obj) = each %old_ips ){
 	# Check that it still exists 
 	# (could have been deleted if its interface was deleted)
 	next unless ( defined $obj );
@@ -5360,9 +5395,17 @@ sub _update_interfaces {
 					$host, (join ", ", @hostnameips))});
 	}
 	
-	my $my_ips = $self->get_ips();
-	my $num_ips = scalar(@$my_ips);
-	foreach my $ip ( @$my_ips ){
+	my @my_ips;
+	foreach my $ip ( @{ $self->get_ips() } ){
+	    if ( $ip->version == 6 && $ip->is_link_local ){
+		# Do not create AAAA records for link-local addresses
+		next;
+	    }else{
+		push @my_ips, $ip;
+	    }
+	}
+	my $num_ips = scalar(@my_ips);
+	foreach my $ip ( @my_ips ){
 	    # We do not want to stop the process if a name update fails
 	    eval {
 		$ip->update_a_records(hostname_ips=>\@hostnameips, num_ips=>$num_ips);

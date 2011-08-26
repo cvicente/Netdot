@@ -56,7 +56,7 @@ sub search {
       - Inherit failover properties from global scope if inserting subnet scope
       - Insert given attributes
       - Convert ethernet string into object
-
+      - Assign default version on global scopes
  Argsuments: 
     Hashref with following keys:
       name
@@ -78,7 +78,7 @@ sub insert {
     $class->_assign_name($argv) unless $argv->{name};
     $class->_validate_args($argv);
 
-    my $attributes = delete $argv->{attributes} if defined $argv->{attributes};
+    my $attributes = delete $argv->{attributes} if exists $argv->{attributes};
 
     my $scope;
     if ( $scope = $class->search(name=>$argv->{name})->first ){
@@ -89,17 +89,19 @@ sub insert {
     }
 
     if ( $scope->type->name eq 'subnet' ){
-	# Add standard attributes
-	$attributes->{'option broadcast-address'} = $argv->{ipblock}->_netaddr->broadcast->addr();
-	$attributes->{'option subnet-mask'}       = $argv->{ipblock}->_netaddr->mask;
+	if ( $scope->version == 4 ){ 
+	    # Add standard attributes
+	    $attributes->{'option broadcast-address'} = $argv->{ipblock}->_netaddr->broadcast->addr();
+	    $attributes->{'option subnet-mask'}       = $argv->{ipblock}->_netaddr->mask;
+
+	    if ( $scope->container && $scope->container->enable_failover ){
+		my $failover_peer = $scope->container->failover_peer || 'dhcp-peer';
+		$scope->SUPER::update({enable_failover=>1, failover_peer=> $failover_peer});
+	    }
+	}
 	if ( my $zone = $argv->{ipblock}->forward_zone ){
 	    # Add the domain-name attribute
 	    $attributes->{'option domain-name'} = $zone->name;
-	}
-    
-	if ( int($scope->container) && $scope->container->enable_failover ){
-	    my $failover_peer = $scope->container->failover_peer || 'dhcp-peer';
-	    $scope->SUPER::update({enable_failover=>1, failover_peer=> $failover_peer});
 	}
     }
     
@@ -182,12 +184,14 @@ sub update{
     my $attributes = delete $argv->{attributes} if defined $argv->{attributes};
 
     if ( $self->type->name eq 'subnet' ){
-	# Add standard attributes
-	$attributes->{'option broadcast-address'} = $argv->{ipblock}->_netaddr->broadcast->addr();
-	$attributes->{'option subnet-mask'}       = $argv->{ipblock}->_netaddr->mask;	
-	if ( my $zone = $argv->{ipblock}->forward_zone ){
-	    # Add the domain-name attribute
-	    $attributes->{'option domain-name'} = $zone->name;
+	if ( $self->version == 4 ){ 
+	    # Add standard attributes
+	    $attributes->{'option broadcast-address'} = $argv->{ipblock}->_netaddr->broadcast->addr();
+	    $attributes->{'option subnet-mask'}       = $argv->{ipblock}->_netaddr->mask;	
+	    if ( my $zone = $argv->{ipblock}->forward_zone ){
+		# Add the domain-name attribute
+		$attributes->{'option domain-name'} = $zone->name;
+	    }
 	}
     }
 
@@ -476,78 +480,110 @@ sub _validate_args {
     my ($self, $argv) = @_;
     
     my %fields;
-    foreach my $field ( qw(name type physaddr ipblock container) ){
+    foreach my $field ( qw(name type version physaddr duid ipblock container) ){
 	if ( ref($self) ){
-	    $fields{$field} = $self->$field;
+	    $fields{$field} = $self->$field if $self->$field;
 	}
 	# Overrides current value with given argument
 	$fields{$field} = $argv->{$field} if exists $argv->{$field};
     }
 
-    $self->throw_user("A scope name is required")
-	unless ( defined $fields{name} && $fields{name} ne "" );
+    my $name = $fields{name} || $self->throw_user("A scope name is required");
 
-    $self->throw_user("$fields{name}: A scope type is required")
-	unless $fields{type};
+    $self->throw_user("$name: A scope type is required") unless $fields{type};
+    my $type = $fields{type}->name;
 
-    if ( defined $fields{physaddr} && int($fields{physaddr}) != 0 && $fields{type}->name ne 'host' ){
-	$self->throw_user("$fields{name}: Cannot assign physical address ($fields{physaddr}) to a non-host scope");
+    $self->throw_user("$name: Version field only applies to global scopes") 
+	if ( $fields{version} && $type ne 'global' );
+
+    if ( $fields{container} ){
+	my $ctype = $fields{container}->type->name;
+	$self->throw_user("$name: container scope type not defined")
+	    unless defined $ctype;
+
+	if ( $type eq 'global' ){
+	    $self->throw_user("$name: a global scope cannot exist within another scope");
+	}
+	if ( $type eq 'host' && !($ctype eq 'global' || $ctype eq 'group') ){
+	    $self->throw_user("$name: a host scope can only exist within a global or group scope");
+	}
+	if ( $type eq 'group' && $ctype ne 'global' ){
+	    $self->throw_user("$name: a group scope can only exist within a global scope");
+	}
+	if ( $type eq 'subnet' && !($ctype eq 'global' || $ctype eq 'shared-network') ){
+	    $self->throw_user("$name: a subnet scope can only exist within a global or shared-network scope");
+	}
+	if ( $type eq 'shared-network' && $ctype ne 'global' ){
+	    $self->throw_user("$name: a shared-network scope can only exist within a global scope");
+	}
+	if ( $type eq 'pool' && !($ctype eq 'subnet' || $ctype eq 'shared-network') ){
+	    $self->throw_user("$name: a pool scope can only exist within a subnet or shared-network scope");
+	}
+	if ( ($type eq 'class' || $type eq 'subclass') && $ctype ne 'global' ){
+	    $self->throw_user("$name: a class or subclass scope can only exist within a global scope");
+	}
+    }elsif ( $type ne 'global' && $type ne 'template' ){
+	$self->throw_user("$name: A container scope is required except for global and template scopes");
     }
-    if ( defined $fields{ipblock} && int($fields{ipblock}) != 0 ){
-	if ( ($fields{ipblock}->status->name eq 'Subnet') && $fields{type}->name ne 'subnet' ){
-	    $self->throw_user("$fields{name}: Cannot assign a subnet to a non-subnet scope");
-	}elsif ( ($fields{ipblock}->status->name eq 'Static') && $fields{type}->name ne 'host'  ){
-	    $self->throw_user("$fields{name}: Cannot assign an IP address to a non-host scope");
+
+    if ( $fields{physaddr} && $type ne 'host' ){
+	$self->throw_user("$name: Cannot assign physical address ($fields{physaddr}) to a non-host scope");
+    }
+    if ( my $duid = $fields{duid} ){
+	if ( $type ne 'host' ){
+	    $self->throw_user("$name: Cannot assign DUID ($fields{duid}) to a non-host scope");
+	}
+	if ( $duid =~ /[^A-Fa-f0-9:]/ ){
+	    $self->throw_user("$name: DUID contains invalid characters: $duid");
 	}
     }
-    if ( $fields{type}->name eq 'host'){
-	if ( !$fields{physaddr} || !$fields{ipblock} ){
-	    $self->throw_user("$fields{name}: a host scope requires IP and Ethernet");
+    if ( $fields{ipblock} ){
+	my $ip_status = $fields{ipblock}->status->name;
+	if ( ($ip_status eq 'Subnet') && $type ne 'subnet' ){
+	    $self->throw_user("$name: Cannot assign a subnet to a non-subnet scope");
+	}elsif ( ($ip_status eq 'Static') && $type ne 'host'  ){
+	    $self->throw_user("$name: Cannot assign an IP address to a non-host scope");
 	}
-	if ( my @scopes = DhcpScope->search(physaddr=>$fields{physaddr}) ){
-	    if ( my $subnet = $fields{ipblock}->parent ){
-		foreach my $s ( @scopes ){
-		    next if ( ref($self) && $s->id == $self->id );
-		    if ( $s->ipblock && (my $osubnet = $s->ipblock->parent) ){
-			if ( $osubnet->id == $subnet->id ){
-			    $self->throw_user("$fields{name}: Duplicate MAC address in this subnet: ".$fields{physaddr}->address);
+	if ( $type eq 'host' && $ip_status ne 'Static' ){
+	    $self->throw_user("$name: IP in host declaration can only be Static");
+	}
+    }
+    if ( $type eq 'host' ){
+	if ( !$fields{ipblock} ){
+	    $self->throw_user("$name: a host scope requires an IP address");
+	}
+	if ( $fields{ipblock}->version == 4 && !$fields{physaddr} ){
+	    $self->throw_user("$name: an IPv4 host scope requires an ethernet addres");
+	}
+	if ( $fields{ipblock}->version == 6 && !$fields{duid} && !$fields{physaddr} ){
+	    $self->throw_user("$name: an IPv6 host scope requires a DUID or ethernet address");
+	}
+	if ( $fields{ipblock}->version != $fields{container}->version ){
+	    $self->throw_user("$name: IP version in host scope does not match IP version in container");
+	}
+	if ( $fields{physaddr} ){
+	    if ( my @scopes = DhcpScope->search(physaddr=>$fields{physaddr}) ){
+		if ( my $subnet = $fields{ipblock}->parent ){
+		    foreach my $s ( @scopes ){
+			next if ( ref($self) && $s->id == $self->id );
+			if ( $s->ipblock && (my $osubnet = $s->ipblock->parent) ){
+			    if ( $osubnet->id == $subnet->id ){
+				$self->throw_user("$name: Duplicate MAC address in this subnet: ".$fields{physaddr}->address);
+			    }
 			}
 		    }
 		}
 	    }
 	}
-    }
-
-    my $type = $fields{type}->name;
-
-    if ( exists $fields{container} && int($fields{container}) != 0 ){
-	my $ctype = $fields{container}->type->name;
-	$self->throw_user("$fields{name}: container scope type not defined")
-	    unless defined $ctype;
-
-	if ( $type eq 'global' ){
-	    $self->throw_user("$fields{name}: a global scope cannot exist within another scope");
+    }elsif ( $type eq 'subnet' ){
+	if ( $fields{ipblock}->version != $fields{container}->version ){
+	    $self->throw_user("$name: IP version in subnet scope does not match IP version in container");
+	}	
+    }elsif ( $type eq 'global' ){
+	$argv->{version} = $fields{version} || 4;
+	if ( $argv->{version} != 4 && $argv->{version} != 6 ){
+	    $self->throw_user("$name: Invalid IP version: $fields{version}");
 	}
-	if ( $type eq 'host' && !($ctype eq 'global' || $ctype eq 'group') ){
-	    $self->throw_user("$fields{name}: a host scope can only exist within a global or group scope");
-	}
-	if ( $type eq 'group' && $ctype ne 'global' ){
-	    $self->throw_user("$fields{name}: a group scope can only exist within a global scope");
-	}
-	if ( $type eq 'subnet' && !($ctype eq 'global' || $ctype eq 'shared-network') ){
-	    $self->throw_user("$fields{name}: a subnet scope can only exist within a global or shared-network scope");
-	}
-	if ( $type eq 'shared-network' && $ctype ne 'global' ){
-	    $self->throw_user("$fields{name}: a shared-network scope can only exist within a global scope");
-	}
-	if ( $type eq 'pool' && !($ctype eq 'subnet' || $ctype eq 'shared-network') ){
-	    $self->throw_user("$fields{name}: a pool scope can only exist within a subnet or shared-network scope");
-	}
-	if ( ($type eq 'class' || $type eq 'subclass') && $ctype ne 'global' ){
-	    $self->throw_user("$fields{name}: a class or subclass scope can only exist within a global scope");
-	}
-    }elsif ( $type ne 'global' && $type ne 'template' ){
-	$self->throw_user("$fields{name}: A container scope is required except for global and template scopes");
     }
 
     1;
@@ -580,12 +616,15 @@ sub _print {
 	$class->throw_fatal("Data missing or invalid");
     }
 
-    if ( !defined $data->{$id}->{type} ){
+    my $type;
+    unless ( $type = $data->{$id}->{type} ){
 	$class->throw_fatal("Scope id $id missing type");
     }
 
-    if ( $data->{$id}->{type} ne 'global' && $data->{$id}->{type} ne 'template' ){
-	print $fh $indent.$data->{$id}->{type}." ".$data->{$id}->{name}." {\n";
+    if ( $type ne 'global' && $type ne 'template' ){
+	my $st   = $data->{$id}->{statement};
+	my $name = $data->{$id}->{name};
+	print $fh $indent."$st $name {\n";
 	$indent .= " " x 4;
     }
     
@@ -599,37 +638,27 @@ sub _print {
     foreach my $attr_id ( sort { $data->{$id}->{attrs}->{$a}->{name} cmp 
 				     $data->{$id}->{attrs}->{$b}->{name} }
 			  keys %{$data->{$id}->{attrs}} ){
-	if ( $attr_id eq 'hardware ethernet' ){
-	    if ( my $addr = $data->{$id}->{attrs}->{$attr_id}->{value} ){
-		print $fh $indent."$attr_id ".PhysAddr->colon_address($addr).";\n";
-	    }
-	}elsif ( $attr_id eq 'fixed-address' ){
-	    if ( my $addr = $data->{$id}->{attrs}->{$attr_id}->{value} ){
-		print $fh $indent."$attr_id $addr;\n";
-	    }
-	}else{
-	    my $name   = $data->{$id}->{attrs}->{$attr_id}->{name};
-	    my $code   = $data->{$id}->{attrs}->{$attr_id}->{code};
-	    my $format = $data->{$id}->{attrs}->{$attr_id}->{format};
-	    my $value  = $data->{$id}->{attrs}->{$attr_id}->{value};
-	    print $fh $indent.$name;
-	    if ( defined $value ) {
-		if ( defined $format && ($format eq 'text' || $format eq 'string') ){
-		    # DHCPD requires double quotes
-		    if ( $value !~ /^"(.*)"$/ ){
-			$value = "\"$value\"";
-		    }
+
+	my $name   = $data->{$id}->{attrs}->{$attr_id}->{name};
+	my $code   = $data->{$id}->{attrs}->{$attr_id}->{code};
+	my $format = $data->{$id}->{attrs}->{$attr_id}->{format};
+	my $value  = $data->{$id}->{attrs}->{$attr_id}->{value};
+	print $fh $indent.$name;
+	if ( defined $value ) {
+	    if ( defined $format && ($format eq 'text' || $format eq 'string') ){
+		# DHCPD requires double quotes
+		if ( $value !~ /^"(.*)"$/ ){
+		    $value = "\"$value\"";
 		}
-		print $fh " $value";
 	    }
-	    elsif ( $data->{$id}->{type} eq 'global' && 
-		    defined $code && defined $format ){
-		# Assume that user is trying to define a new option
-		print $fh " $code = $format";
-	    }
-	    print $fh ";\n";
-	    
+	    print $fh " $value";
 	}
+	elsif ( $type eq 'global' && 
+		defined $code && defined $format ){
+	    # Assume that user is trying to define a new option
+	    print $fh " $code = $format";
+	}
+	print $fh ";\n";
     }
     # Print "inherited" attributes from used templates
     if ( defined $data->{$id}->{templates} ){
@@ -639,7 +668,7 @@ sub _print {
     }
 
     # Create pools for subnets with dynamic addresses
-    if ( $data->{$id}->{type} eq 'subnet' ){
+    if ( $type eq 'subnet' ){
 	my $s   = DhcpScope->retrieve($id);
 
 	my $failover_enabled = ($s->enable_failover && 
@@ -663,7 +692,8 @@ sub _print {
 		print $fh $indent."}\n";
 	    }else{
 		foreach my $range ( @ranges ){
-		    print $fh $indent."range $range;\n";
+		    my $st = ( $ipb->version == 6 )? 'range6' : 'range';
+		    print $fh $indent."$st $range;\n";
 		}
 	    }
 	}
@@ -681,7 +711,7 @@ sub _print {
     }
     
     # Close scope definition
-    if ( $data->{$id}->{type} ne 'global' && $data->{$id}->{type} ne 'template' ){
+    if ( $type ne 'global' && $type ne 'template' ){
 	$indent = $pindent;
 	print $fh $indent."}\n";
     }
@@ -707,7 +737,7 @@ sub _get_all_data {
 
     my $q = "SELECT          dhcpscope.id, dhcpscope.name, dhcpscope.text, dhcpscopetype.name, dhcpscope.container,
                              dhcpattr.id, dhcpattrname.name, dhcpattr.value, dhcpattrname.code, dhcpattrname.format,
-                             physaddr.address, ipblock.address, ipblock.version
+                             physaddr.address, ipblock.address, ipblock.version, dhcpscope.duid, dhcpscope.version
              FROM            dhcpscopetype, dhcpscope
              LEFT OUTER JOIN physaddr ON dhcpscope.physaddr=physaddr.id
              LEFT OUTER JOIN ipblock  ON dhcpscope.ipblock=ipblock.id
@@ -724,22 +754,48 @@ sub _get_all_data {
     foreach my $r ( @$rows ){
 	my ($scope_id, $scope_name, $scope_text, $scope_type, $scope_container, 
 	    $attr_id, $attr_name, $attr_value, $attr_code, $attr_format,
-	    $mac, $ip, $ipversion) = @$r;
+	    $mac, $ip, $ipversion, $scope_duid, $scope_version) = @$r;
 	$data{$scope_id}{name}      = $scope_name;
 	$data{$scope_id}{type}      = $scope_type;
 	$data{$scope_id}{container} = $scope_container;
 	$data{$scope_id}{text}      = $scope_text;
+	$data{$scope_id}{duid}      = $scope_duid;
+	$data{$scope_id}{version}   = $scope_version;
+	if ( $scope_type eq 'subnet' && $ipversion == 6 ){
+	    $data{$scope_id}{statement} = 'subnet6';
+	}else{
+	    $data{$scope_id}{statement} = $scope_type;
+	}
 	if ( $attr_id ){
-	    $data{$scope_id}{attrs}{$attr_id}{name}      = $attr_name;
-	    $data{$scope_id}{attrs}{$attr_id}{code}      = $attr_code   if $attr_code;
-	    $data{$scope_id}{attrs}{$attr_id}{format}    = $attr_format if $attr_format;
-	    $data{$scope_id}{attrs}{$attr_id}{value}     = $attr_value  if $attr_value;
+	    $data{$scope_id}{attrs}{$attr_id}{name}   = $attr_name;
+	    $data{$scope_id}{attrs}{$attr_id}{code}   = $attr_code   if $attr_code;
+	    $data{$scope_id}{attrs}{$attr_id}{format} = $attr_format if $attr_format;
+	    $data{$scope_id}{attrs}{$attr_id}{value}  = $attr_value  if $attr_value;
 	}
 	if ( $scope_type eq 'host' ){
-	    $data{$scope_id}{attrs}{'hardware ethernet'}{name}  = 'hardware ethernet';
-	    $data{$scope_id}{attrs}{'hardware ethernet'}{value} = $mac if $mac;
-	    $data{$scope_id}{attrs}{'fixed-address'}{name}      = 'fixed-address';
-	    $data{$scope_id}{attrs}{'fixed-address'}{value}     = Ipblock->int2ip($ip, $ipversion) if $ip;
+	    if ( $scope_duid ){
+		$data{$scope_id}{attrs}{'client-id'}{name}  = 'host-identifier option dhcp6.client-id';
+		$data{$scope_id}{attrs}{'client-id'}{value} = $scope_duid;
+	    }elsif ( $mac ){
+		$data{$scope_id}{attrs}{'hardware ethernet'}{name}  = 'hardware ethernet';
+		$data{$scope_id}{attrs}{'hardware ethernet'}{value} = PhysAddr->colon_address($mac);
+	    }else{
+		# Without DUID or MAC, this would be invalid
+		next;
+	    }
+	    if ( $ip ){
+		if ( $ipversion == 6 ){
+		    my $addr = Ipblock->int2ip($ip, $ipversion);
+		    $data{$scope_id}{attrs}{'fixed-address6'}{name}  = 'fixed-address6';
+		    $data{$scope_id}{attrs}{'fixed-address6'}{value} = $addr;
+		    my $addr_full = NetAddr::IP->new6($addr)->full();
+		    $addr_full =~ s/\:+/-/g;
+		    $data{$scope_id}{name} = $addr_full;
+		}else{
+		    $data{$scope_id}{attrs}{'fixed-address'}{name}  = 'fixed-address';
+		    $data{$scope_id}{attrs}{'fixed-address'}{value} = Ipblock->int2ip($ip, $ipversion);
+		}
+	    }
 	}
     }
 
@@ -780,15 +836,22 @@ sub _assign_name {
 	$self->throw_fatal("DhcpScope::_assign_name: Missing ipblock object")
 	    unless $argv->{ipblock};
 	$name = $argv->{ipblock}->address;
+
     }elsif ( $argv->{type}->name eq 'subnet' ){
 	$self->throw_fatal("DhcpScope::_assign_name: Missing ipblock object")
 	    unless $argv->{ipblock};
-	$name = $argv->{ipblock}->address." netmask ".$argv->{ipblock}->_netaddr->mask;
+	if ( $argv->{ipblock}->version == 6 ){
+	    $name = $argv->{ipblock}->cidr;
+	}else{
+	    $name = $argv->{ipblock}->address." netmask ".$argv->{ipblock}->_netaddr->mask;
+	}
+
     }elsif ( $argv->{type}->name eq 'shared-network' ){
 	$self->throw_fatal("DhcpScope::_assign_name: Missing subnet list")
 	    unless $argv->{subnets};
 	my $subnets = delete $argv->{subnets};
 	$name = join('_', (map { $_->address } sort { $a->address_numeric <=> $b->address_numeric } @$subnets));
+
     }else{
 	$self->throw_fatal("DhcpScope::_assign_name: Don't know how to assign name for type: ".
 			   $argv->{type}->name);

@@ -257,9 +257,9 @@ sub update_links {
 
 	foreach my $iface ( $device1->interfaces ){
 	    next if ( $iface->id == $iface1->id );
-	    if ( int($iface->neighbor) ){
+	    if ( $iface->neighbor ){
 		my $neighbor = $iface->neighbor;
-		if ( int($neighbor->device) && ($neighbor->device->id == $device2->id) ){
+		if ( $neighbor->device && ($neighbor->device->id == $device2->id) ){
 		    $devices_linked_on_other_ports = 1;
 		    last;
 		}
@@ -279,7 +279,7 @@ sub update_links {
 
 	foreach my $iface ( $device2->interfaces ){
 	    next if ( $iface->id == $iface2->id );
-	    if ( int($iface->neighbor) ){
+	    if ( $iface->neighbor ){
 		$device2_has_neighbors = 1;
 		last;
 	    }
@@ -1021,7 +1021,7 @@ sub get_tree_stp_links {
     foreach my $ivid ( keys %ivs ){
 	my $iv = $ivs{$ivid};
 	if ( defined $iv->stp_state && $iv->stp_state =~ /^forwarding|blocking$/ ){
-	    if ( $iv->stp_des_bridge && int($iv->interface->device) ){
+	    if ( $iv->stp_des_bridge && $iv->interface->device ){
 		my $des_b     = $iv->stp_des_bridge;
 		my $des_p     = $iv->stp_des_port;
 		my $int       = $iv->interface->id;
@@ -1102,7 +1102,7 @@ sub get_p2p_links {
 	my @ips = $block->children;
 	my @ints;
 	foreach my $ip ( @ips ){
-	    if ( int($ip->interface) ){
+	    if ( $ip->interface ){
 		my $type = $ip->interface->type || 'unknown';
 		# Ignore virtual interfaces, sice most likely these
 		# are not where the actual physical connection happens

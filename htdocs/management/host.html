@@ -372,7 +372,7 @@ foreach my $o ( values %rrs ) {
 
 	################################################################
 	# DHCP host scopes
-	# Do not show ethernet field unless the subnet has DHCP enabled
+	# Do not show client id options unless the subnet has DHCP enabled
 
 	foreach my $ipblock ( @ips ){
 	    my $gscope; # global scope
@@ -390,7 +390,7 @@ foreach my $o ( values %rrs ) {
 	    print '<div class="containerheadright">';
 
 	    my $scope;
-	    if ( ($scope = $ipblock->dhcp_scopes->first) && ($scope->physaddr() != 0) ){
+	    if ( ($scope = $ipblock->dhcp_scopes->first) && ( $scope->physaddr() || $scope->duid ) ){
 		print '&nbsp;';
 	    }else{
 		if ( $add_dhcp ){
@@ -410,28 +410,45 @@ foreach my $o ( values %rrs ) {
 	    print '<div class="containerbody">';
 
 	    if ( $scope ){
-		# Show the MAC address
-		my $phys = $scope->physaddr();
-		push @field_headers, ('Ethernet: ');
-		push( @cell_data, '<a href="mac.html?id='.$phys.'">'.$phys->address.'</a>' );
-		if ( $edit ){
-		    push @field_headers, 'Delete';
-		    push @cell_data, '<input type="checkbox" name="DhcpScope__'.$scope.'__DELETE">';
+		my $t_width;
+		if ( my $phys = $scope->physaddr() ){
+		    # Show the MAC address
+		    push @field_headers, ('Ethernet: ');
+		    push( @cell_data, '<a href="mac.html?id='.$phys.'">'.$phys->address.'</a>' );
+		    if ( $edit ){
+			push @field_headers, 'Delete';
+			push @cell_data, '<input type="checkbox" name="DhcpScope__'.$scope.'__DELETE">';
+		    }
+		    $t_width = 2;
+		}elsif ( $ipblock->version == 6 ){
+		    push @field_headers, ('DUID: ');
+		    if ( $edit ){
+			push @cell_data, '<input type="text" size="48" name="DhcpScope__'.$scope.'__duid" value=<% $scope->duid %>>';
+		    }else{
+			push( @cell_data, $scope->duid );
+		    }
+		    $t_width = 1;
 		}
-
-		$m->comp('/generic/attribute_table.mhtml', %comphash, width=>2);
+		
+		$m->comp('/generic/attribute_table.mhtml', %comphash, width=>$t_width);
 		(@field_headers, @cell_data) = ((),());
 
 	    }else{
 		if ( $add_dhcp == $ipblock->id ){
 		    # User wants to add a scope with this ip
-		    push @field_headers, ('Ethernet: ');
 		    print '<input name="DhcpScope__NEW__container" value="'.$gscope.'" type="hidden">';
 		    print '<input name="DhcpScope__NEW__type" value="host" type="hidden">';
 		    print '<input name="DhcpScope__NEW__name" value="'.$ipblock->address.'" type="hidden">';
 		    print '<input name="DhcpScope__NEW__ipblock" value="'.$ipblock.'" type="hidden">';
-		    push( @cell_data, '<input name="DhcpScope__NEW__physaddr" value="" type="text">' );
-		    $m->comp('/generic/attribute_table.mhtml', %comphash, width=>2);
+		    if ( $ipblock->version == 4 || 
+			 ($ipblock->version == 6 && Netdot->config->get('DHCPD_ALLOW_ETHERNET_FOR_IPV6_HOST_DECL')) ){
+			push @field_headers, ('Ethernet: ');
+			push( @cell_data, '<input name="DhcpScope__NEW__physaddr" value="" type="text">' );
+		    }elsif ( $ipblock->version == 6 ){
+			push @field_headers, ('DUID: ');
+			push( @cell_data, '<input name="DhcpScope__NEW__duid" value="" type="text" size="48">' );
+		    }
+		    $m->comp('/generic/attribute_table.mhtml', %comphash, width=>1);
 		    (@field_headers, @cell_data) = ((),());
 		}
 	    }

@@ -488,30 +488,33 @@ sub is_loopback{
 ##################################################################
 =head2 is_link_local - Check if address is v6 Link Local
 
-  Arguments:
-    address - IPv6 address
-    prefix  - prefix length. Optional. NetAddr::IP will assume it is a host (/128)
+    Can be called as either class or instance method
 
+  Arguments:
+    address - IPv6 address. Required if called as class method
+    prefix  - Prefix length. Optional. NetAddr::IP will assume it is a host (/128)
   Returns:
     1 or 0
   Example:
-    my $flag = Ipblock->is_loopback('fe80::1');
+    my $flag = Ipblock->is_link_local('fe80::1');
+    my $flag = $ipblock->is_link_local();
 
 =cut
 sub is_link_local{
-    my ( $class, $address, $prefix ) = @_;
-    $class->isa_class_method('is_link_local');
-
-    $class->throw_fatal("Missing required arguments: address")
-	unless $address;
-
+    my ( $self, $address, $prefix ) = @_;
+    my $class = ref($self);
     my $ip;
-    my $str;
-    if ( !($ip = NetAddr::IP->new6($address, $prefix))){
-	$str = ( $address && $prefix ) ? (join '/', $address, $prefix) : $address;
-	$class->throw_user("Invalid IP: $str");
+    if ( $class ){
+	$ip = $self->_netaddr();
+    }else{
+	$self->throw_fatal("Missing required arguments: address")
+	    unless $address;
+	my $str;
+	if ( !($ip = NetAddr::IP->new6($address, $prefix))){
+	    $str = ( $address && $prefix ) ? (join '/', $address, $prefix) : $address;
+	    $self->throw_user("Invalid IP: $str");
+	}
     }
-
     if ( $ip->within(NetAddr::IP->new6("fe80::/10")) ) {
 	return 1;	
     }
@@ -610,7 +613,14 @@ sub insert {
     # Update tree unless we're told not to do so for speed reasons
     # (usually because it will be rebuilt at the end of a device update)
     unless ( $no_update_tree ){
-	$newblock->_update_tree();
+	eval {
+            $newblock->_update_tree();
+        };
+	if ( my $e = $@ ){
+            # assume any errors from _update_tree are caused by $newblock
+	    $newblock->delete();
+	    $e->rethrow() if ref($e);
+	}
     }
     
     #####################################################################
@@ -1094,7 +1104,7 @@ sub get_maxed_out_subnets {
       name_suffix - String to append to host part of IP address
       fzone       - Forward Zone id for DNS records
   Returns:   
-
+    Ipblock object of parent block
   Examples:
 
 =cut
@@ -1600,7 +1610,7 @@ sub delete {
     }
 
     # Generate hostaudit entry if needed
-    if ( $self->parent && $self->parent->dhcp_scopes ){
+    if ( blessed($self->parent) && $self->parent->dhcp_scopes ){
 	my $dyn_id = IpblockStatus->search(name=>'Dynamic')->first->id;
 	if ( $dyn_id == $bak{status}->id ){
 	    my %args;
@@ -2215,6 +2225,7 @@ sub shared_network_subnets{
     my $query = 'SELECT  other.id 
                  FROM    ipblock me, ipblock other, ipblock myaddr, ipblock otheraddr 
                  WHERE   me.id=? AND myaddr.parent=? AND otheraddr.parent=other.id 
+                     AND me.version = other.version
                      AND myaddr.interface=otheraddr.interface 
                      AND myaddr.interface IS NOT NULL AND other.id!=me.id';
 
@@ -2898,7 +2909,7 @@ sub _update_tree{
     my ($self) = @_;
     $self->isa_object_method('_update_tree');
     my $class = ref($self);
-    
+    my $version = $self->version;
     my $tree = $self->_tree_get();
     
     $logger->debug('Ipblock::_update_tree: Updating tree for '. $self->get_label);
@@ -2961,14 +2972,29 @@ sub _update_tree{
 		);
 	    $sth1->execute($parent_id, $self->id);
 	    while ( my ($id,$address,$prefix,$par) = $sth1->fetchrow_array ){
-		my $node = $class->_tree_find(address  => $address,
-					      prefix   => $prefix,
-					      tree     => $tree,
+		my $node;
+		# We do not insert end nodes in the tree for speed
+		# See _build_tree_mem
+		if ( ($version == 4 && $prefix == 32) || ($version == 6 && $prefix == 128) ){
+		    $node = $class->_tree_find(address  => $address,
+					       prefix   => $prefix,
+					       tree     => $tree,
 		    );
-		if ( defined $node && $node->parent 
-		     && $node->parent->data != $par ){
-		    $logger->debug("Ipblock::_update_tree: node $id has new parent");
-		    $parents{$id} = $node->parent->data;
+		    if ( defined $node && $node->data != $par ){
+			$logger->debug("Ipblock::_update_tree: node $id has new parent");
+			$parents{$id} = $node->data;
+		    }
+		}else{
+		    $node = $class->_tree_insert(address  => $address,
+						 prefix   => $prefix,
+						 data     => $id,
+						 tree     => $tree,
+			);
+		    if ( defined $node && $node->parent 
+			 && $node->parent->data != $par ){
+			$logger->debug("Ipblock::_update_tree: node $id has new parent");
+			$parents{$id} = $node->parent->data;
+		    }
 		}
 	    }
 	    # Now update the DB

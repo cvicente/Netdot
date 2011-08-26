@@ -72,7 +72,7 @@ sub update {
 sub get_label {
     my $self = shift;
     $self->isa_object_method('get_label');
-    if ( int($self->floor) && int($self->floor->site) ){
+    if ( $self->floor && $self->floor->site ){
 	return $self->name. " ". $self->floor->site->get_label;
     }else{
 	return $self->name;

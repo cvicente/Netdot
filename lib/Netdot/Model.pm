@@ -174,7 +174,7 @@ BEGIN {
 	    return if ( $args{fields} eq 'modified' );
 	    $zone = $self->zone;
 	}elsif ( $table =~ /^rr/ ){
-	    if ( defined $self->rr && int($self->rr) != 0 ){
+	    if ( defined $self->rr && $self->rr ){
 		if ( blessed($self->rr) ){
 		    $rr = $self->rr;
 		    $zone = $rr->zone;
@@ -251,7 +251,7 @@ BEGIN {
 	    $rr = $self;
 	    $rr->_attribute_set({modified=>$self->timestamp});
 	}elsif ( $table =~ /^rr/ ){
-	    if ( defined $self->rr && int($self->rr) != 0 ){
+	    if ( defined $self->rr && $self->rr ){
 		if ( blessed($self->rr) ){
 		    $rr = $self->rr;
 		}else{
@@ -744,6 +744,18 @@ sub delete {
     $self->throw_fatal("delete does not take any parameters") if shift;
 
     my ($id, $table) = ($self->id, $self->table);
+
+    # Remove any access rights for this object
+    $logger->debug( sub { sprintf("Model::delete: Searching Access Rights for table %s id %s", 
+				  $table, $id) } );
+    if ( my @access_rights = AccessRight->search(object_class=>$table, object_id=>$id) ){
+	foreach my $ar ( @access_rights ){
+	    $logger->debug( sub { sprintf("Model::delete: Deleting AccessRight: %s for table %s id %s", 
+					  $ar->access, $table, $id) } );
+	    $ar->SUPER::delete();
+	}
+    }
+
     eval {
 	$self->SUPER::delete();
     };
@@ -756,16 +768,6 @@ sub delete {
     $logger->debug( sub { sprintf("Model::delete: Deleted record %i, from table: %s", 
 				  $id, $table) } );
 
-    # Remove any access rights for this object
-    $logger->debug( sub { sprintf("Model::delete: Searching Access Rights for table %s id %s", 
-				  $table, $id) } );
-    if ( my @access_rights = AccessRight->search(object_class=>$table, object_id=>$id) ){
-	foreach my $ar ( @access_rights ){
-	    $logger->debug( sub { sprintf("Model::delete: Deleting AccessRight: %s for table %s id %s", 
-					  $ar->access, $table, $id) } );
-	    $ar->SUPER::delete();
-	}
-    }
     return 1;
 }
 
@@ -860,7 +862,7 @@ sub get_label {
 		push @ret, $self->$c;
 	    }else{
 		# The field is a foreign key
-		if ( int($self->$c) && blessed($self->$c) ){
+		if ( $self->$c && blessed($self->$c) ){
 		    push @ret, $self->$c->get_label($delim);
 		}else{
 		    push @ret, $self->$c;
@@ -1043,6 +1045,7 @@ sub time2sqldate {
 #    - Make sure to set integer and bool fields to 0 instead of the empty string.
 #    - Make sure non-nullable fields are inserted as 0 if not passed
 #    - Ignore the empty string when inserting/updating date fields.
+#    - Check the length of the varchar fields.
 #
 # Arguments:
 #   hash with following keys:
@@ -1059,7 +1062,12 @@ sub _adjust_vals{
     my %meta_columns;
     map { $meta_columns{$_->name} = $_ } $class->meta_data->get_columns;
     foreach my $field ( keys %$args ){
-	my $mcol = $meta_columns{$field};
+	my $mcol = $meta_columns{$field} || $class->throw_fatal("Cannot find $field in metadata");
+	if ( !blessed($args->{$field}) && $mcol->sql_type eq 'varchar' && defined($mcol->length) && $mcol->length =~ /^\d+$/ ) {
+            if (length($args->{$field}) > $mcol->length) {
+                $class->throw_user("Value for field '$field' (max " . $mcol->length . ") is too long: '$args->{$field}'");
+            }
+        }
 	if ( !blessed($args->{$field}) && 
 	     (!defined($args->{$field}) || $args->{$field} eq '' || 
 	      $args->{$field} eq 'null' || $args->{$field} eq 'NULL' ) ){

@@ -35,18 +35,6 @@ my %explanation_hash = (
     'contained_scopes' => 'Scopes that inherit attributes from this scope.'
     );
 
-#@exclude is used to exclude certian fields from forms based on scope type.  
-#i.e Enable fallover only needs to be displayed if this is a global scope
-my @exclude = (); 
-
-#@alias is used to specific different names for fields depending on some circumstance
-#for example, we want to display "subnet" if we're a subnet scope, and "ip address" if we're a host scope
-#never match anything
-my @alias = ("");
-
-#we add one entry to both of these lists because perl was complaining when passing these lists into 
-#the form.mhtml component even when that entry was a "" or " "... so "nothing" should never match anything
-
 unless ( $o = $table->retrieve($id) ){
    $m->comp('error.mhtml', error => "Nonexistent record: $id");
 }
@@ -57,36 +45,21 @@ unless ( $manager && $manager->can($user, "view", $o) ){
 }
 
 my $labelstr  = $o->get_label;
-my $type = $o->type->name;
+my $type      = $o->type->name;
 my %linksfrom = $table->meta_data->get_links_from;
-my %order     = $table->meta_data->get_column_order;
 
-
-unless($type eq 'global'){
-    push(@exclude, "enable_failover");
-    push(@exclude, "failover_peer");
-    push(@exclude, "export_file");
+# Override tags from metadata in certain cases
+my %tags;
+if ( $type eq 'subnet' ){
+    $tags{ipblock} = 'Subnet';
+}elsif($type eq 'host'){
+    $tags{ipblock} = 'IP Address';
 }
-unless($type eq 'host'){
-    push(@exclude, "physaddr");
-}
-
-#due to the implementation, aliases use the 
-#short formatted names if that option is on (it is here)
-if($type eq 'subnet'){
-    push(@alias, "IP block:Subnet");
-}
-if($type eq 'host'){
-    push(@alias, "IP block:IP Address");
-}
-
 
 if ( $DEBUG ){
     print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>';
     print '%linksfrom is  <pre>', Dumper(%linksfrom), '</pre><br>';
-    print '%order is  <pre>', Dumper(%order), '</pre><br>';
     print '$type is '."$type <br>";
-    print '@exclude is '."@exclude";
 }
 
 if ( $submit ){
@@ -125,7 +98,7 @@ if ( $submit ){
                 <a href="edit.html?table=<% $table %>">[new]</a>
 %           }
 %	    if ( $manager && $manager->can($user, 'edit', $o) ){
-		<a href="edit.html?table=<% $table %>&id=<% $o %>">[edit]</a>
+		<a href="edit.html?table=<% $table %>&id=<% $o %>&view=<% $type %>">[edit]</a>
 %	    }
 %	}
 %	if ( $manager && $manager->can($user, 'delete', $o) ){
@@ -134,7 +107,7 @@ if ( $submit ){
         <a href="#" onClick="opentextwindow(jspopoutstring,'js','');">[text]</a>
     </div>
     <div class="containerbodyoutside">
-        <& "/generic/form.mhtml", table=>$table, id=>$id, edit=>0, exclude=>\@exclude, alias=>\@alias  &>
+        <& "/generic/form.mhtml", table=>$table, id=>$id, edit=>0, view=>$type, tags=>\%tags  &>
     </div>
 </div>
 <!-- End Display main object values -->

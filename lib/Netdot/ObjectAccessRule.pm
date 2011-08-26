@@ -101,7 +101,7 @@ sub denies(){
 	    # they can only view IP addresses
 	    my $ipblock = $object->ipblock;
 	    my $parent;
-	    if ( int($parent = $ipblock->parent) != 0 ){
+	    if ( $parent = $ipblock->parent ){
 		if ( exists $access->{'Ipblock'} && 
 		     exists $access->{'Ipblock'}->{$parent->id} ){
 		    return &_deny_action_access($action, $access->{'Ipblock'}->{$parent->id});
@@ -111,7 +111,7 @@ sub denies(){
 	    # Grant view access to physaddr if it has a dhcp scope in an allowed subnet
 	    if ( my @scopes = $object->dhcp_hosts ){
 		foreach my $scope ( @scopes ){
-		    if ( int($scope->ipblock) != 0 ){
+		    if ( $scope->ipblock ){
 			my $ipb = $scope->ipblock;
 			return 0 if ( !&_deny_ip_access($action, $access, $ipb) );
 		    }
@@ -120,7 +120,7 @@ sub denies(){
 	    # Or if it has ARP entries in an allowed subnet
 	    if ( my @arp_entries = $object->arp_entries ){
 		foreach my $ae ( @arp_entries ){
-		    if ( int($ae->ipaddr) != 0 ){
+		    if ( $ae->ipaddr ){
 			my $ipb = $ae->ipaddr;
 			return 0 if ( !&_deny_ip_access($action, $access, $ipb) );
 		    }
@@ -130,10 +130,10 @@ sub denies(){
 	}elsif ( $otype eq 'PhysAddrAttr' ){
 	    if ( my @scopes = $object->dhcp_hosts ){
 		foreach my $scope ( @scopes ){
-		    if ( int($scope->ipblock) != 0 ){
+		    if ( $scope->ipblock ){
 			my $ipblock = $scope->ipblock;
 			my $parent;
-			if ( int($parent = $ipblock->parent) != 0 ){
+			if ( $parent = $ipblock->parent ){
 			    if ( exists $access->{'Ipblock'} && 
 				 exists $access->{'Ipblock'}->{$parent->id} ){
 				return 0 if ( !&_deny_action_access($action, $access->{'Ipblock'}->{$parent->id}) );
@@ -159,7 +159,7 @@ sub denies(){
 	    }
  	    foreach my $arecord ( $rr->arecords ){
  		my $ip = $arecord->ipblock;
- 		if ( int($ip->interface) != 0 ){
+ 		if ( $ip->interface ){
  		    $logger->debug("ObjectAccessRule::_denies: ".$rr->get_label." linked to Device interface. Denying access.");
  		    return 1;
  		}
@@ -187,7 +187,7 @@ sub denies(){
 	    }else{
 		if ( my @ipbs = &_get_rr_ips($rr) ){
 		    foreach my $ipb ( @ipbs ){
-			next if int($ipb) == 0;
+			next if !$ipb;
 			return 1 if ( &_deny_rr_access($action, $access, $ipb) );
 		    }
 		    return 0;
@@ -261,12 +261,12 @@ sub _deny_action_access {
 # ip addresses inherit subnet permissions, but users cannot edit or delete them
 sub _deny_ip_access {
     my ($action, $access, $ipblock) = @_;
-    if ( int($ipblock->interface) != 0 ){
+    if ( $ipblock->interface ){
 	$logger->debug("ObjectAccessRule::_deny_ip_access: ".$ipblock->get_label." linked to Device interface. Denying access.");
 	return 1;
     }
     my $parent = $ipblock->parent;
-    if ( int($parent) &&
+    if ( $parent &&
 	 exists $access->{'Ipblock'} && 
 	 exists $access->{'Ipblock'}->{$parent->id} ){
 	if ( $action eq 'delete' || $action eq 'edit' ){
@@ -274,7 +274,7 @@ sub _deny_ip_access {
 			   ." Users cannot edit or delete IP addresses. Denying access.");
 	    return 1;
 	}
-	if ( int($ipblock->status) ){
+	if ( $ipblock->status ){
 	    my $status = $ipblock->status->name;
 	    if ( $status eq 'Dynamic' || $status eq 'Reserved' ){
 		$logger->debug("ObjectAccessRule::_deny_ip_access: ".$ipblock->get_label
@@ -293,15 +293,15 @@ sub _deny_ip_access {
 # RRs inherit IP address permissions, but users are allowed to edit and delete RRs
 sub _deny_rr_access {
     my ($action, $access, $ipblock) = @_;
-    if ( int($ipblock->interface) != 0 ){
+    if ( $ipblock->interface ){
 	$logger->debug("ObjectAccessRule::_deny_rr_access: ".$ipblock->get_label." linked to Device interface. Denying access.");
 	return 1;
     }
     my $parent = $ipblock->parent;
-    if ( int($parent) &&
+    if ( $parent &&
 	 exists $access->{'Ipblock'} && 
 	 exists $access->{'Ipblock'}->{$parent->id} ){
-	if ( int($ipblock->status) ){
+	if ( $ipblock->status ){
 	    my $status = $ipblock->status->name;
 	    if ( $status eq 'Dynamic' || $status eq 'Reserved' ){
 		$logger->debug("ObjectAccessRule::_deny_rr_access: ".$ipblock->get_label

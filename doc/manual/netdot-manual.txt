@@ -42,30 +42,30 @@ Oregon](http://www.uoregon.edu).
 
 Netdot features include:
 
--   Device discovery via SNMP
+*   Device discovery via SNMP
 
--   Layer 2 topology discovery and graphing, using multiple sources of
+*   Layer 2 topology discovery and graphing, using multiple sources of
     information: CDP+LLDP, Spanning Tree Protocol, switch forwarding
     tables, router point-to-point subnets.
 
--   IPv4 and IPv6 address space management (also referred to as IPAM),
+*   IPv4 and IPv6 address space management (also referred to as IPAM),
     including hierarchical organization, address block visualization and
     IP and MAC address location and tracking.
 
--   Cable plant information including: sites, rooms, jacks, closets,
+*   Cable plant information including: sites, rooms, jacks, closets,
     inter and intra-building wiring, circuits, etc.
 
--   Contact information for related entities: departments, providers,
+*   Contact information for related entities: departments, providers,
     vendors, etc.
 
--   Netdot can generate configuration files for various other tools,
+*   Netdot can generate configuration files for various other tools,
     including: [Nagios](http://www.nagios.org),
     [Sysmon](http://www.sysmon.org),
     [RANCID](http://www.shrubbery.net/rancid),
     [Cacti](http://www.cacti.net). Starting with version 0.9, Netdot
     also generates configurations for ISC BIND and ISC DHCPD.
 
--   From version 0.9, Netdot implements access control for users
+*   From version 0.9, Netdot implements access control for users
     and roles, allowing tasks such as IP address management,
     documentation of switch/router ports and updating of contact
     information to be delegated to specific groups with limited access
@@ -121,35 +121,35 @@ Netdot, i.e.
 
 ## Requirements
 
--   Perl 5.6.1 or later
+*   Perl 5.6.1 or later
 
--   Apache2 with `mod_perl2`
+*   Apache2 with `mod_perl2`
 
--   MySQL (5.x preferred) or PostgreSQL (limited support)
+*   MySQL (5.x preferred) or PostgreSQL (limited support)
 
--   Authentication Server (optional). Netdot supports local
+*   Authentication Server (optional). Netdot supports local
     authentication, as well as RADIUS and LDAP.
 
-    -   For RADIUS, we recommend FreeRadius, available at:
+    *   For RADIUS, we recommend FreeRadius, available at:
         <http://www.freeradius.org/>
 
-    -   For LDAP, you can try OpenLdap, available at:
+    *   For LDAP, you can try OpenLdap, available at:
         <http://www.openldap.org/>
 
--   The RRDtool package, including its Perl modules, available at:
+*   The RRDtool package, including its Perl modules, available at:
     <http://oss.oetiker.ch/rrdtool/>
 
--   The GraphViz package, available at:
+*   The GraphViz package, available at:
     <http://www.graphviz.org/>
 
--   Various Perl modules. To test for missing modules in your system,
+*   Various Perl modules. To test for missing modules in your system,
     run:
 
     ~~~~ {.bash}
     ~% make testdeps
     ~~~~
 
--   There are two ways to install the missing modules: The first (and
+*   There are two ways to install the missing modules: The first (and
     the recommended) way is through package managers of your
     distribution.
 
@@ -169,7 +169,7 @@ Netdot, i.e.
     If you are still missing modules after running this step, you can
     complete the process by running the next step.
 
--   Alternatively, you can install any missing modules automatically
+*   Alternatively, you can install any missing modules automatically
     using the CPAN, by running:
 
     ~~~~ {.bash}
@@ -247,10 +247,10 @@ Finally, install the Netdot code and restart Apache:
 
 ## Installing the package for the first time
 
--   Make sure you have created the file etc/Site.conf with your
+*   Make sure you have created the file etc/Site.conf with your
     configurations (See above).
 
--   From the top directory in the package, do:
+*   From the top directory in the package, do:
 
     ~~~~ {.bash}
     ~# make install [parameters]
@@ -269,7 +269,7 @@ Finally, install the Netdot code and restart Apache:
     APACHEGROUP variables to "www-data", which is the user that Apache
     runs as.
 
--   You will then be ready to initialize the database.
+*   You will then be ready to initialize the database.
 
     ~~~~ {.bash}
     ~% make installdb [parameters]
@@ -340,27 +340,27 @@ Then click on the Update button.
 Netdot comes with a few scripts that should be run periodically as cron
 jobs.
 
--   Retrieval of forwarding tables and ARP caches for IP/MAC address
+*   Retrieval of forwarding tables and ARP caches for IP/MAC address
     tracking
 
--   Devices should be re-discovered via SNMP frequently to maintain an
+*   Devices should be re-discovered via SNMP frequently to maintain an
     accurate list of ports, ip addresses, etc.
 
--   Rediscovery of network topology
+*   Rediscovery of network topology
 
--   Netdot keeps history records for some objects every time they are
+*   Netdot keeps history records for some objects every time they are
     updated. With time, old history should be deleted from the database
     to save disk space.
 
--   Netdot can generate text documentation that is easy to find using
+*   Netdot can generate text documentation that is easy to find using
     simple grepping commands, for example, information about people,
     locations, device port assignments, etc. This documentation should
     be kept up to date by exporting it frequently.
 
--   Configurations for external programs can be generated using Netdot
+*   Configurations for external programs can be generated using Netdot
     data. Current supported programs include: Nagios, Sysmon and Rancid.
 
--   The netdot.cron file included in the package is a sample crontab
+*   The netdot.cron file included in the package is a sample crontab
     containing recommended periodic jobs. You should customize it to
     your liking and copy it to your cron directory, for example:
 
@@ -513,16 +513,16 @@ process maintain neighbor relationships.
 Netdot is a useful tool for IP address space management (referred to as
 IPAM these days). Some key features are:
 
--   Address space is hierarchically organized through the use of a fast
+*   Address space is hierarchically organized through the use of a fast
     binary tree algorithm, which is the same technique used by routers
     when doing prefix lookups.
 
--   IPv4 and IPv6 support
+*   IPv4 and IPv6 support
 
--   New subnets can be automatically created based on the interface
+*   New subnets can be automatically created based on the interface
     information retrieved from routers and firewalls.
 
--   Easy visualization of used vs. available address space for easier
+*   Easy visualization of used vs. available address space for easier
     allocations
 
 ### IP blocks
@@ -544,20 +544,20 @@ status values can be assigned.
 
 The status of an end-node address can be one of:
 
--   *Static*: These are addresses that have been statically assigned to
+*   *Static*: These are addresses that have been statically assigned to
     hosts or device interfaces.
 
--   *Dynamic*: Addresses that belong to a DHCP pool
+*   *Dynamic*: Addresses that belong to a DHCP pool
 
--   *Discovered*: Addresses that have not been assigned as static or
+*   *Discovered*: Addresses that have not been assigned as static or
     dynamic, but have been seen on the network (as part of ARP entries,
     for example).
 
--   *Reserved*: Addresses that should not be assigned
+*   *Reserved*: Addresses that should not be assigned
 
 On the other hand, the status of an IP block can be one of:
 
--   *Container*: This kind of block is meant to group or contain other
+*   *Container*: This kind of block is meant to group or contain other
     blocks, such as Subnet blocks or other Container blocks. For
     example, let's say your whole IPv4 address space is 192.168.0.0/16.
     You also have partitioned this space into two /17 blocks, and from
@@ -574,12 +574,12 @@ On the other hand, the status of an IP block can be one of:
             192.168.128.20/24 -> Subnet
     ~~~~
 
--   *Subnet*: This kind of block is meant to represent actual subnets that
+*   *Subnet*: This kind of block is meant to represent actual subnets that
     are configured on the interfaces of your layer 3 devices such as
     routers or firewalls. Subnets usually contain the end-node addresses
     that you assign to your users.
 
--   *Reserved*: Similarly to reserved addresses, reserved blocks are not
+*   *Reserved*: Similarly to reserved addresses, reserved blocks are not
     supposed to be allocated for whatever reason.
 
 ## DNS
@@ -731,18 +731,18 @@ address.
 
 You can create a new host scope from the host page.
 
--   First of all, a Static IP address object needs to exist. You can
+*   First of all, a Static IP address object needs to exist. You can
     create new static IP objects by selecting the desired address from
     the Subnet page.
 
--   Once the Static IP address is created, you need to give it name. Look
+*   Once the Static IP address is created, you need to give it name. Look
     for the DNS A records section and click on [add].
 
--   Once you provide a name for the A record, you will be redirected to
+*   Once you provide a name for the A record, you will be redirected to
     the host page. Here, find the `DHCP for <IP address>` section and
     click on [add]. Type the Ethernet address and save your changes.
 
--   When you click on the Ethernet address, you'll go to the MAC address
+*   When you click on the Ethernet address, you'll go to the MAC address
     page, which has a "DHCP Scopes" section. Clicking on the IP address
     will take you to the DHCP scope page. Here, you can add any specific
     attributes for that specific host.
@@ -894,11 +894,11 @@ Starting with version 0.9, netdot supports multi-level user access.
 There are three types of users that correspond with levels of access in
 Netdot:
 
--   Admin: Full access to the UI and operations on objects.
+*   Admin: Full access to the UI and operations on objects.
 
--   Operator: Full access to the UI, but read-only access to objects.
+*   Operator: Full access to the UI, but read-only access to objects.
 
--   User: Limited UI, with view, edit, and delete access to particular
+*   User: Limited UI, with view, edit, and delete access to particular
     objects.
 
 ## Assigning permissions to users
@@ -911,7 +911,7 @@ more specific permissions (or no permissions) if necessary.
 There is a limited number of objects which unprivileged users can gain
 access to:
 
--   DNS records: Users can create, modify and delete records from a
+*   DNS records: Users can create, modify and delete records from a
     certain zone. Permissions can be given for the entire zone or for
     subsets of it, based on IP blocks. For example, if a user is given
     view, edit and delete permissions to myzone.com, he or she can view,
@@ -922,36 +922,36 @@ access to:
     the administrator can assign view, edit and delete permissions on
     that particular subnet.
 
--   Device interfaces: Users can view port details such as number, name,
+*   Device interfaces: Users can view port details such as number, name,
     vlan, room, jack, description and neighbor. A user can only edit the
     room, jack and description fields. To assign permissions to a user
     on a list of devices, select the Device class and then select one or
     more devices to which the user can have access.
 
--   Contact Lists: A user can add, modify and delete contacts from given
+*   Contact Lists: A user can add, modify and delete contacts from given
     contact lists.
 
 To assign permissions for an individual user, perform the following
 tasks:
 
--   Make sure there is a Person object for the user. You can verify if a
+*   Make sure there is a Person object for the user. You can verify if a
     Person object exists by going to `Contacts -> People` and searching
     for the person's name in the Search box. If the object does not
     exist, you can create a new one by clicking on the [new] button on
     the upper right corner of the same window.
 
--   Make sure that the person object has a Username and a User Type set.
+*   Make sure that the person object has a Username and a User Type set.
     If you have configured netdot to use RADIUS or LDAP authentication,
     make sure that the username corresponds with the login information
     in those central authentication systems. If you are using local
     authentication instead, make sure that you set a local password
     using the Password field.
 
--   On the Person page, you can add permissions by clicking on the
+*   On the Person page, you can add permissions by clicking on the
     [access\_rights] button. This will display current permissions. You
     can now add new ones by clicking on the [add] button on the right.
 
--   On the UserRight window, select the Object Class, the specific
+*   On the UserRight window, select the Object Class, the specific
     object or objects, and one or more access rights (view, edit,
     delete). Only select the 'none' right to revoke all permissions
     inherited from a group. Click on `Insert`.
@@ -1043,7 +1043,7 @@ Netdot::Client::REST. It can be installed by doing something like this:
 
 # FAQ
 
--   Q: Why can't Netdot discover my device using SNMP? I can see it
+*   Q: Why can't Netdot discover my device using SNMP? I can see it
     responds when using snmpwalk.
 
     A: If your device is a Linux server or any other device using the

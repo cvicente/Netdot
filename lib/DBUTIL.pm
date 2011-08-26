@@ -126,15 +126,17 @@ END
         exit unless _yesno();
     }
     
-    my $dbh = "";
+    my $dbh;
 
     print "\nDropping $CONFIG{DB_TYPE} database $CONFIG{DB_DATABASE}.\n";
     if ($CONFIG{DB_TYPE} eq "mysql") {
-        my $dbh = DBI->connect("dbi:mysql:mysql;host=$CONFIG{DB_HOST};port=$CONFIG{DB_PORT}", 
-            $CONFIG{DB_DBA}, $CONFIG{DB_DBA_PASSWORD}) or die $DBI::errstr;
-    } elsif ($CONFIG{DB_TYPE} eq "Pg") {
-        my $dbh = DBI->connect("dbi:Pg:dbname=postgres;host=$CONFIG{DB_HOST};port=$CONFIG{DB_PORT}", 
-            $CONFIG{DB_DBA}, $CONFIG{DB_DBA_PASSWORD}) or die $DBI::errstr;
+        $dbh = DBI->connect("dbi:mysql:mysql;host=$CONFIG{DB_HOST};port=$CONFIG{DB_PORT}", 
+			    $CONFIG{DB_DBA}, $CONFIG{DB_DBA_PASSWORD}) or die $DBI::errstr;
+    }elsif ($CONFIG{DB_TYPE} eq "Pg") {
+        $dbh = DBI->connect("dbi:Pg:dbname=postgres;host=$CONFIG{DB_HOST};port=$CONFIG{DB_PORT}", 
+			    $CONFIG{DB_DBA}, $CONFIG{DB_DBA_PASSWORD}) or die $DBI::errstr;
+    }else {
+	die "Unrecognized DB_TYPE: $CONFIG{DB_TYPE}\n";
     }
     $dbh->do("DROP DATABASE $CONFIG{DB_DATABASE};") or die $DBI::errstr;
 }

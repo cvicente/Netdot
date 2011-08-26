@@ -251,7 +251,7 @@ sub update {
     my $class = ref($self);
     
     if ( exists $argv->{neighbor} ){
-	if ( int($argv->{neighbor}) == 0 ){
+	if ( !$argv->{neighbor} ){
 	    $self->remove_neighbor();
 	}else{
 	    $self->add_neighbor(id    => $argv->{neighbor},
@@ -434,7 +434,7 @@ sub snmp_update {
 	my $name = $self->name;
 
 	# For layer3 switches with virtual VLAN interfaces
-	if ( !$vlan && $name =~ /Vlan(\d+)/ ){
+	if ( !$vlan && $name && $name =~ /Vlan(\d+)/ ){
 	    my $vid = $1;
 	    $vlan = Vlan->search(vid=>$vid)->first;
 	}

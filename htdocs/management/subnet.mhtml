@@ -28,10 +28,14 @@ my $dbh = Netdot::Model->db_Main();
 my $id = $network->id;
 my $manager = $ui->get_permission_manager($r);
 
-my $priv_user = 0;
+my ($priv_user, $can_edit);
 if ( $manager && $manager->can($user, "access_section", 'subnet.mhtml:ip_add_link') ){
     $priv_user = 1;
 }
+if ( $manager && $manager->can($user, 'edit', $network) ){
+    $can_edit = 1;
+}
+
 </%init>
 
 <%perl>
@@ -140,7 +144,7 @@ for( my $i=0; $i<(($net->num()+1)/$cols); $i++ ) {
 
 	    } elsif( $status{$net->numeric} eq "Available" ) {
 		$divclass = "ipaddr_available";
-		$ipaddr = '<a href="ip.html?id='.$iplinks{$net->numeric}.'" class="ipaddr">'.$ipaddr.'</a>' if $priv_user;
+		$ipaddr = '<a href="ip.html?id='.$iplinks{$net->numeric}.'" class="ipaddr">'.$ipaddr.'</a>' if ($priv_user && $can_edit);
 	    }
 
 	    $ipaddr = '<div class="'.$divclass.'" title="'.$divtitle.'" width="100%">'.$ipaddr.'</div>';
@@ -149,7 +153,7 @@ for( my $i=0; $i<(($net->num()+1)/$cols); $i++ ) {
 	    # don't allow selection of network or broadcast addresses
 	    $ipaddr = '<div class="ipaddr_disabled" title="Broadcast">'.$ipaddr.'</div>';
 	} else {
-	    if ( $priv_user ){
+	    if ( $priv_user && $can_edit ){
 		# link this address to the "Add" section in ip.html
 		$ipaddr = '<div class="ipaddr_available"><a href="ip.html?add_block_prefix='.$net->addr().'%2F32&add_block_parent='.$network->id.'&_action=ADD_BLOCK" class="ipaddr">'.$ipaddr.'</a></div>';
 	    }else{

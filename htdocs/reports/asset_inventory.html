@@ -1,3 +1,7 @@
+<%doc>
+Produces a report of Assets which are or are not associated to any devices or device modules
+</%doc>
+
 <%args>
 $report_type => 'product_not_installed'
 </%args>
@@ -6,22 +10,40 @@ $report_type => 'product_not_installed'
 my $DEBUG = 0;
 my (@headers, @rows, @assets) = ();
 
-# We want to hash devices and devicemodules by asset_id
-my $dbh  = Netdot::Model->db_Main();
-my $query = "SELECT id,asset_id FROM device";
-my $rows = $dbh->selectall_arrayref($query);
-my (%devs, %devmods);
-foreach my $row ( @$rows ){
-    my ($id, $asset_id) = @$row;
-    $devs{$asset_id} = $id;
-}
-$query = "SELECT id,asset_id FROM devicemodule";
-$rows = $dbh->selectall_arrayref($query);
-foreach my $row ( @$rows ){
-    my ($id, $asset_id) = @$row;
-    $devmods{$asset_id} = $id;
-}
+my $query;
+if ( $report_type eq 'product_not_installed' ){
+    $query = "SELECT asset.id, asset.serial_number, asset.inventory_number, product.name, producttype.name
+              FROM   asset, product, producttype 
+              WHERE  asset.product_id=product.id
+                 AND product.type=producttype.id 
+                 AND asset.id NOT IN (SELECT asset_id FROM device) 
+                 AND asset.id NOT IN (SELECT asset_id FROM devicemodule);";
 
+}elsif ( $report_type eq 'product_installed' ){
+    $query = "SELECT asset.id, asset.serial_number, asset.inventory_number, product.name, producttype.name
+              FROM   asset, product, producttype 
+              WHERE  asset.product_id=product.id
+                 AND product.type=producttype.id;";
+}
+my $dbh = Netdot::Model->db_Main;
+my $rows = $dbh->selectall_arrayref($query);
+
+my %t;
+my $grandtotal = 0;
+foreach my $row ( @$rows ){
+    my ($id, $sn, $inv, $pname, $ptype) = @$row;
+    $t{$ptype}{total}++;
+    $t{$ptype}{prod}{$pname}{total}++;
+    $t{$ptype}{prod}{$pname}{assets}{$sn}{id}  = $id;
+    $t{$ptype}{prod}{$pname}{assets}{$sn}{inv} = $inv;
+    $grandtotal++;
+}
+if ( $DEBUG ){
+    use Data::Dumper;
+    print '<pre>';
+    print Dumper(%t);
+    print '</pre>';
+}
 </%init>
 
 <div class="container">
@@ -36,65 +58,50 @@ foreach my $row ( @$rows ){
       </form>
 
 <%perl>
-my %t;
-@assets = Asset->retrieve_all();
-my $grandtotal;
-foreach my $pt ( ProductType->retrieve_all ){
-    $t{$pt->name}{total} = 0;
-    $t{$pt->name}{id}    = $pt->id;
-}
 
-foreach my $o (@assets){
-    if ( $report_type eq 'product_not_installed' &&
-	 (exists $devs{$o->id} || exists $devmods{$o->id}) ){
-	next;	
-    }elsif ($report_type eq 'product_installed' &&
-	    !(exists $devs{$o->id} || exists $devmods{$o->id}) ){
-	next;
-    }
-    if ( (!$o->product_id) || (!$o->product_id->type) ){
-        $t{'Unknown'}{prod}{'Unknown'}{num} += 1;
-        $t{'Unknown'}{total} += 1;
-    }else{
-        $t{$o->product_id->type->name}{prod}{$o->product_id->name} = $o->product_id;
-        $t{$o->product_id->type->name}{prod}{$o->product_id->name}{num} += 1;
-        $t{$o->product_id->type->name}{total} += 1;
-	$grandtotal++;
-    }
-}
-
-@headers = ( 'Type', 'Model', 'Count' );
+@headers = ( 'Type', 'Model', 'S/N', 'Inventory', 'Count' );
 my @row = ();
-push( @row, "Total Assets in Inventory:" );
+push( @row, "Total Assets:" );
+push( @row, "&nbsp;" );
+push( @row, "&nbsp;" );
 push( @row, "&nbsp;" );
 push( @row, $grandtotal );
 push( @rows, \@row );
 
-foreach my $pt ( sort keys %t ){
+foreach my $ptype ( sort keys %t ){
     my @row = ();
-    push( @row, "<strong>$pt</strong>" );
-    push( @row, "" );
-    push( @row, '<strong>' . $t{$pt}{total} . '</strong>' );
+    push( @row, "<strong>$ptype</strong>" );
+    push( @row, "&nbsp;" );
+    push( @row, "&nbsp;" );
+    push( @row, "&nbsp;" );
+    push( @row, '<strong>' . $t{$ptype}{total} . '</strong>' );
     push( @rows, \@row );
 
-    foreach my $product ( sort keys %{ $t{$pt}{prod} } ){
+    foreach my $pname ( sort keys %{ $t{$ptype}{prod} } ){
         my @row = ();
-        push( @row, "" );
-        if ( $t{$pt}{prod}{$product}{id} ){
-            push( @row, '<a href="../generic/view.html?table=Product&id=' . $t{$pt}{prod}{$product}{id} . '">' . $product . '</a>' );
-        }
-        elsif ( $product eq "Unknown" ){
-            push( @row, '<a href="../generic/search_obj.html?table=Device&product=0&res=1">' . $product . '</a>' );
-        }
-        push( @row, $t{$pt}{prod}{$product}{num}  );
+        push( @row, "&nbsp;" );
+	push( @row, $pname );
+        push( @row, "&nbsp;" );
+	push( @row, "&nbsp;" );
+        push( @row, $t{$ptype}{prod}{$pname}{total}  );
         push( @rows, \@row );
+	
+	foreach my $sn ( sort keys %{ $t{$ptype}{prod}{$pname}{assets} } ){
+	    my @row = ();
+	    push( @row, "&nbsp;" );
+	    push( @row, "&nbsp;" );
+	    my $id  = $t{$ptype}{prod}{$pname}{assets}{$sn}{id};
+	    push( @row, "<a href=\"../generic/view.html?table=Asset&id=$id\">$sn</a>" );
+	    my $inv = $t{$ptype}{prod}{$pname}{assets}{$sn}{inv};
+	    push( @row, $inv );
+	    push( @row, "&nbsp;" );
+	    push( @rows, \@row );
+	}
     }
-
 }
 
 $m->comp('/generic/data_table.mhtml', field_headers=>\@headers, data=>\@rows);
 </%perl>
-
 
     </div>
   </div>

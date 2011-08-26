@@ -22,6 +22,7 @@ $scope_id        => undef
 $scope_name      => undef
 $scope_type      => undef
 $scope_container => undef
+$scope_version   => undef
 $submit          => undef
 $show_tasks      => undef
 $showheader      => 1
@@ -125,6 +126,15 @@ my $manager = $ui->get_permission_manager($r);
                 </select> (required unless global)
                 </p>
                 <p>
+                <label for="Version">Version:</label>
+                <select name="scope_version">
+                    <option value="">-- Select --</option>
+%               foreach my $ver ( qw( 4 6 ) ){
+      	            <option value="<% $ver %>"><% $ver %></option>
+%               }
+                </select> (Only for global)
+                </p>
+                <p>
                 <input name="submit" value="Add" class="btn" type="submit">
                 </p>
             </form>
@@ -179,6 +189,7 @@ elsif ( $action eq "new" ) {
 	$scope = DhcpScope->insert({name      => $scope_name, 
 				    type      => $scope_type,
 				    container => $scope_container,
+				    version   => $scope_version,
 				   });
     };
     if ( my $e = $@ ){

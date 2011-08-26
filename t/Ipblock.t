@@ -77,6 +77,7 @@ my $hosts = Ipblock->get_host_addrs( $subnet->address ."/". $subnet->prefix );
 is($hosts->[0], '169.254.60.1', 'get_host_addrs');
 
 ok(Ipblock->is_loopback('127.0.0.1'), 'is_loopback');
+ok(Ipblock->is_link_local('fe80:abcd::1234'), 'is_link_local');
 
 is(Ipblock->get_covering_block(address=>'169.254.60.5', prefix=>'32'), $subnet,
    'get_covering_block');

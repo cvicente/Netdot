@@ -114,9 +114,9 @@ foreach my $sn ( keys %assets ){
 # Grab hostaudit data before conversion
 my %haudit;
 my $hq = $dbh->prepare('SELECT          ha.id,zone.name,dhcpscope.name  
-        FROM            hostaudit ha 
-        LEFT OUTER JOIN zone ON ha.zone=zone.id 
-        LEFT OUTER JOIN dhcpscope ON ha.scope=dhcpscope.id');
+                        FROM            hostaudit ha 
+                        LEFT OUTER JOIN zone ON ha.zone=zone.id 
+                        LEFT OUTER JOIN dhcpscope ON ha.scope=dhcpscope.id');
 $hq->execute();
 my $haudits = $hq->fetchall_arrayref();
 
@@ -131,7 +131,7 @@ foreach my $row ( @$haudits ){
 if ($netdot_config->get('DB_TYPE') eq "mysql") {
     my $dbname = $netdot_config->get('DB_DATABASE');
     @statements = (
-            "ALTER DATABASE $dbname CHARACTER SET utf8 COLLATE utf8_bin;",
+            "ALTER DATABASE $dbname CHARACTER SET utf8 COLLATE utf8_general_ci;",
             "ALTER TABLE device ADD COLUMN asset_id bigint NOT NULL AFTER aliases;",
             "ALTER TABLE device ADD COLUMN extension integer NULL AFTER down_until;",
             "ALTER TABLE device_history ADD COLUMN asset_id bigint NOT NULL AFTER aliases;",
@@ -160,6 +160,8 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
             "ALTER TABLE devicemodule DROP COLUMN maint_from;",
             "ALTER TABLE devicemodule DROP COLUMN maint_until;",
             "ALTER TABLE devicemodule ADD INDEX devicemodule2 (asset_id);",
+	    "ALTER TABLE dhcpscope ADD COLUMN duid varchar(255);",
+	    "ALTER TABLE dhcpscope ADD COLUMN version integer;",
             "ALTER TABLE product ADD COLUMN mfg_number varchar(255);",
             "ALTER TABLE datacache MODIFY COLUMN tstamp bigint NOT NULL;",
             "DELETE FROM datacache;",
@@ -185,6 +187,8 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
             "ALTER TABLE hostaudit MODIFY COLUMN scope varchar(255);",
             "ALTER TABLE hostaudit CHANGE COLUMN user username varchar(255);",
             "ALTER TABLE dhcpscope MODIFY COLUMN text text;",
+            "ALTER TABLE dhcpscope MODIFY COLUMN export_file varchar(255);",
+            "ALTER TABLE dhcpscope MODIFY COLUMN failover_peer varchar(128);",
             "ALTER TABLE zone MODIFY COLUMN include text;",
             "ALTER TABLE savedqueries MODIFY COLUMN querytext text;",
             );
@@ -217,6 +221,8 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
             "ALTER TABLE devicemodule DROP COLUMN maint_contract;",
             "ALTER TABLE devicemodule DROP COLUMN maint_from;",
             "ALTER TABLE devicemodule DROP COLUMN maint_until;",
+	    "ALTER TABLE dhcpscope ADD COLUMN duid varchar(255);",
+	    "ALTER TABLE dhcpscope ADD COLUMN version integer;",
             "CREATE INDEX devicemodule2 ON devicemodule(asset_id);",
             "ALTER TABLE product ADD COLUMN mfg_number varchar(255);",
             "DELETE FROM datacache;",
@@ -242,6 +248,8 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
             "ALTER TABLE hostaudit ALTER COLUMN scope TYPE varchar(255);",
             "ALTER TABLE hostaudit RENAME COLUMN \"user\" TO username;",
             "ALTER TABLE dhcpscope ALTER COLUMN text TYPE text;",
+            "ALTER TABLE dhcpscope ALTER COLUMN export_file TYPE varchar(255);",
+            "ALTER TABLE dhcpscope ALTER COLUMN failover_peer TYPE varchar(128);",
             "ALTER TABLE zone ALTER COLUMN include TYPE text;",
             "ALTER TABLE savedqueries ALTER COLUMN querytext TYPE text;",
             );
@@ -281,7 +289,7 @@ foreach my $mtable ( sort { $a->name cmp $b->name } @tables ){
     }
 
     if ($netdot_config->get('DB_TYPE') eq "mysql") {
-        push @statements, "ALTER TABLE $tname CONVERT TO CHARACTER SET utf8 COLLATE utf8_bin;";
+        push @statements, "ALTER TABLE $tname CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci;";
     } 
 }
 
@@ -305,6 +313,21 @@ foreach my $hid ( keys %haudit ){
     $st .= " WHERE id=$hid;";
     push @statements,  $st;
 }
+
+# Set version to 4 on current global DhcpScopes
+push @statements, "UPDATE dhcpscope,dhcpscopetype SET dhcpscope.version=4 WHERE dhcpscopetype.name='global' AND dhcpscope.type=dhcpscopetype.id;";
+
+# Add new DHCP attributes
+push @statements, "INSERT INTO dhcpattrname (name) VALUES ('allow leasequery');",
+push @statements, "INSERT INTO dhcpattrname (name) VALUES ('preferred-lifetime');",
+push @statements, "INSERT INTO dhcpattrname (name) VALUES ('option dhcp6.name-servers');",
+push @statements, "INSERT INTO dhcpattrname (name) VALUES ('option dhcp6.domain-search');",
+push @statements, "INSERT INTO dhcpattrname (name) VALUES ('option dhcp6.preference');",
+push @statements, "INSERT INTO dhcpattrname (name) VALUES ('option dhcp6.rapid-commit');",
+push @statements, "INSERT INTO dhcpattrname (name) VALUES ('option dhcp6.info-refresh-time');",
+push @statements, "INSERT INTO dhcpattrname (name) VALUES ('dhcpv6-lease-file-name');",
+push @statements, "INSERT INTO dhcpattrname (name) VALUES ('range6');",
+push @statements, "INSERT INTO dhcpattrname (name) VALUES ('prefix6');",
 
 &processdata(\@statements);
 

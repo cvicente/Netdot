@@ -245,7 +245,8 @@ $meta = {
     isjoin => '0',
     label => [
       'ipaddr',
-      'physaddr'
+      'physaddr',
+      'interface',
     ],
     primary_key => 'id',
     unique => [],
@@ -259,6 +260,7 @@ $meta = {
       brief => [
         'ipaddr',
         'physaddr',
+	'interface',
       ]
     }
   },
@@ -622,10 +624,10 @@ $meta = {
       },
       length => {
         default => '',
-        description => 'The physical length of this cable (ft)',
+        description => 'The physical length of this cable',
         length => '32',
         nullable => 1,
-        tag => 'Length (ft)',
+        tag => 'Length',
         type => 'varchar'
       },
       name => {
@@ -2905,6 +2907,14 @@ $meta = {
         nullable => 0,
         tag => undef,
         type => 'bigint'
+      }, 
+      duid => {
+        default => '',
+        description => 'DHCP Unique Identifier. Only applies to host scopes. See RFC 3315',
+        length => '255',
+        nullable => 1,
+        tag => 'DUID',
+        type => 'varchar'
       },
       enable_failover => {
         default => '',
@@ -2918,7 +2928,7 @@ $meta = {
         default => '',
         description => 'Path and file name to export config to.',
         length => '255',
-        nullable => 0,
+        nullable => 1,
         tag => 'Export File',
         type => 'varchar'
       },
@@ -2926,7 +2936,7 @@ $meta = {
         default => '',
         description => 'Name of failover peer to assign to pools by default.  Valid in Subnet and Global scopes.  Subnet scope value takes precedence.',
         length => '128',
-        nullable => 0,
+        nullable => 1,
         tag => 'Failover Peer',
         type => 'varchar'
       },
@@ -2997,7 +3007,15 @@ $meta = {
         nullable => 1,
         tag => 'Type',
         type => 'bigint'
-      }
+      },
+      version => {
+        default => '',
+        description => 'IP version (4 or 6). Only applies to global scopes',
+        length => '',
+        nullable => 1,
+        tag => 'Version (4|6)',
+        type => 'integer'
+      },
     },
     description => 'A DHCP Scope',
     has_history => 0,
@@ -3013,9 +3031,11 @@ $meta = {
       all => [
         'name',
         'type',
+        'version',
         'container',
         'ipblock',
         'physaddr',
+        'duid',
         'text',
         'enable_failover',
         'failover_peer',
@@ -3030,8 +3050,11 @@ $meta = {
       global => [
         'name',
         'type',
-        'container',
-        'text'
+        'version',
+        'enable_failover',
+        'failover_peer',
+        'export_file',
+        'text',
       ],
       group => [
         'name',
@@ -3044,6 +3067,7 @@ $meta = {
         'type',
         'container',
         'ipblock',
+        'duid',
         'physaddr',
         'text'
       ],
@@ -3068,9 +3092,11 @@ $meta = {
       subnet => [
         'name',
         'type',
-        'ipblock',
         'container',
-        'info'
+        'ipblock',
+        'enable_failover',
+        'failover_peer',
+        'text'
       ],
       brief => [
         'name',
@@ -3820,7 +3846,7 @@ $meta = {
         description => '',
         length => '',
         linksto => {
-          cascade => 'Nullify',
+          cascade => 'Delete',
           method => 'group_rights',
           table => 'AccessRight'
         },

@@ -263,7 +263,8 @@ sub _validate_arp {
 	    next;
 	}
 	foreach my $ip ( keys %{$cache->{$key}} ){
-	    if ( $version == 6 && Ipblock->is_link_local($ip) ){
+	    if ( $version == 6 && Ipblock->is_link_local($ip) &&
+		 Netdot->config->get('IGNORE_IPV6_LINK_LOCAL') ){
 		next;
 	    }
 	    my $mac = $cache->{$key}->{$ip};
@@ -274,6 +275,15 @@ sub _validate_arp {
 	    }
 	    $mac = $validmac;
 	    if ( Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET') ){
+		if ( !Netdot->config->get('IGNORE_IPV6_LINK_LOCAL') ){
+		    # This check does not work with link-local, so if user wants those
+		    # just validate them
+		    if ( Ipblock->is_link_local($ip) ){
+			$valid{$intid}{$ip} = $mac;
+			$logger->debug(sub{"Device::CiscoIOS::_validate_arp: $host: valid: $iname -> $ip -> $mac" });
+			next;
+		    }
+		}
 		foreach my $nsub ( @{$devsubnets{$intid}} ){
 		    my $nip = NetAddr::IP->new($ip) or
 			$self->throw_fatal(sprintf("Device::CiscoIOS::_validate_arp: Cannot create NetAddr::IP ".
@@ -322,10 +332,7 @@ sub _get_fwt_from_cli {
     # MAP interface names to IDs
     my %int_names;
     foreach my $int ( $self->interfaces ){
-	my $name = $int->name;
-	# Shorten names to match output
-	# i.e GigabitEthernet1/2 -> Gi1/2
-	$name =~ s/^([a-z]{2}).+?([\d\/]+)$/$1$2/i;
+	my $name = $self->_reduce_iname($int->name);
 	$int_names{$name} = $int->id;
     }
     
@@ -347,7 +354,7 @@ sub _get_fwt_from_cli {
 	    $logger->debug(sub{"Device::CiscoIOS::_get_fwt_from_cli: line did not match criteria: $line" });
 	    next;
 	}
-
+	$iname = $self->_reduce_iname($iname);
 	my $intid = $int_names{$iname};
 
 	unless ( $intid ) {
@@ -392,12 +399,10 @@ sub _get_credentials {
     unless ( @$cli_cred_conf ){
 	$self->throw_user("Device::CiscoIOS::_get_credentials: config $config_item is empty");
     }
-
-    my $match = 0;
+    
     foreach my $cred ( @$cli_cred_conf ){
 	my $pattern = $cred->{pattern};
 	if ( $host =~ /$pattern/ ){
-	    $match = 1;
 	    my %args;
 	    $args{login}      = $cred->{login};
 	    $args{password}   = $cred->{password};
@@ -407,9 +412,7 @@ sub _get_credentials {
 	    return \%args;
 	}
     }   
-    if ( !$match ){
-	$logger->warn("Device::CiscoIOS::_get_credentials: $host did not match any patterns in configured credentials.");
-    }
+    $logger->warn("Device::CiscoIOS::_get_credentials: $host did not match any patterns in configured credentials.");
     return;
 }
 
@@ -433,32 +436,29 @@ sub _cli_cmd {
     eval {
 	$logger->debug(sub{"$host: issuing CLI command: '$cmd' over $transport"});
 	my $s = Net::Appliance::Session->new(
-	    Host      => $host,
-	    Transport => $transport,
-	    );
-	
-	$s->do_paging(0);
-	
-	$s->connect(Name      => $login, 
-		    Password  => $password,
-		    SHKC      => 0,
-		    Opts      => [
-			'-o', "ConnectTimeout $timeout",
-			'-o', 'CheckHostIP no',
-			'-o', 'StrictHostKeyChecking no',
-		    ],
-	    );
-	
-	if ( $privileged ){
-	    $s->begin_privileged($privileged);
-	}
-	$s->cmd('terminal length 0');
-	@output = $s->cmd(string=>$cmd, timeout=>$timeout);
-	$s->cmd('terminal length 36');
+	    {
+		host            => $host,
+		transport       => $transport,
+		personality     => 'ios',
+		connect_options => {
+		    shkc => 0,
+		    opts => [
+			'-o', "ConnectTimeout=$timeout",
+			'-o', 'CheckHostIP=no',
+			],
+		},
+	    });
 
-	if ( $privileged ){
-	    $s->end_privileged;
-	}
+#       Uncomment this to debug session exchanges	
+#	$s->set_global_log_at('debug');
+	
+	$s->connect({username  => $login, 
+		     password  => $password,
+		    });
+	
+	$s->begin_privileged({password=>$privileged}) if ( $privileged );
+	@output = $s->cmd($cmd, {timeout=>$timeout});
+	$s->end_privileged if ( $privileged );
 	$s->close;
     };
     if ( my $e = $@ ){
@@ -468,7 +468,7 @@ sub _cli_cmd {
 }
 
 ############################################################################
-# _reduce_name
+# _reduce_iname
 #  Convert "GigabitEthernet0/3 into "Gi0/3" to match the different formats
 #
 # Arguments: 
@@ -479,6 +479,6 @@ sub _cli_cmd {
 sub _reduce_iname{
     my ($self, $name) = @_;
     return unless $name;
-    $name =~ s/^(\w{2})\S*?([\d\/]+)$/$1$2/;
+    $name =~ s/^(\w{2})\S*?([\d\/]+).*/$1$2/;
     return $name;
 }

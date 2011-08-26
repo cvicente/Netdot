@@ -124,7 +124,7 @@ sub print_zone_to_file {
 
     # Make sure that there are NS records
     my $apex = RR->search(name=>'@', zone=>$zone)->first 
-    	|| $self->throw_user('Apex record (@) not defined');
+    	|| $self->throw_user(sprintf('Zone %s: Apex record (@) not defined', $zone->name));
 
     my @ns_records = $apex->ns_records();
     $self->throw_user('Zone has no NS records')
@@ -201,7 +201,7 @@ sub print_zone_to_file {
     }
 
     # Add any includes
-    print $fh $zone->include . "\n";
+    print $fh $zone->include . "\n" if defined $zone->include;
 
     close($fh);
     return $path;

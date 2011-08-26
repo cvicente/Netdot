@@ -38,22 +38,21 @@ sub insert {
 
     $class->throw_fatal('Missing required arguments: rr')
 	unless ( $argv->{rr} );
-
+    
     $class->throw_user("Missing required argument: preference")
 	unless defined $argv->{preference};
-
-    $class->throw_user("Invalid preference value: ".$argv->{preference})
-	if ( $argv->{preference} < 0 || $argv->{preference} > $MAX_PREFERENCE );
-
+    
     $class->throw_user("Missing required argument: exchange")
 	unless $argv->{exchange};
-
+    
     my $rr = (ref $argv->{rr})? $argv->{rr} : RR->retrieve($argv->{rr});
     $class->throw_fatal("Invalid rr argument") unless $rr;
 
     # TTL needs to be set and converted into integer
     $argv->{ttl} = (defined($argv->{ttl}) && length($argv->{ttl}))? $argv->{ttl} : $rr->zone->default_ttl;
     $argv->{ttl} = $class->ttl_from_text($argv->{ttl});
+
+    $class->_validate_args($argv);
 
     # Avoid the "CNAME and other records" error condition
     if ( $rr->cnames ){
@@ -101,10 +100,8 @@ sub update {
     }else{
 	delete $argv->{ttl};
     }
-    if ( defined $argv->{preference} ){
-	$self->throw_user("Invalid preference value: ".$argv->{preference})
-	    if ( $argv->{preference} < 0 || $argv->{preference} > $MAX_PREFERENCE );
-    }
+    
+    $self->_validate_args($argv);
 
     return $self->SUPER::update($argv);
 }
@@ -134,11 +131,46 @@ sub as_text {
 # Private methods
 ##################################################################
 
+# _validate_args - Validate arguments to insert and update
+#
+#  Args: 
+#    hashref
+#  Returns: 
+#    True, or throws exception if validation fails
+#  Examples:
+#    $class->_validate_args($argv);
+#
+sub _validate_args {
+    my ($self, $argv) = @_;
+
+    if ( defined $argv->{preference} ){
+	$self->throw_user("Invalid preference value: ".$argv->{preference})
+	    if ( $argv->{preference} < 0 || $argv->{preference} > $MAX_PREFERENCE );
+    }
+    if ( defined $argv->{exchange} ){
+	# If exchange belongs to a zone we own, and the zone is 
+	# active, then make sure that it contains A/AAAA records.
+	if ( my $z = (Zone->search(name=>$argv->{exchange}))[0] ){
+	    if ( $z->active ){
+		my $name = $argv->{exchange};
+		my $domain = $z->name;
+		$name =~ s/\.$domain$//;
+		my $rr = RR->search(name=>$name, zone=>$z)->first ||
+		    $self->throw_user("Exchange ".$argv->{exchange}.
+				      " within active zone '$domain', but name '$name' does not exist");
+		unless ( $rr->arecords ){
+		    $self->throw_user("Exchange ".$argv->{exchange}.
+				      " has no address (A or AAAA) records");
+		}
+	    }
+	}
+    }
+}
 
 ##################################################################
 sub _net_dns {
     my $self = shift;
-
+    
     my $ndo = Net::DNS::RR->new(
 	name       => $self->rr->get_label,
 	ttl        => $self->ttl,

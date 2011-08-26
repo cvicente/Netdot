@@ -53,6 +53,7 @@ $state_digest      => undef
 $template_zone_for_rev => undef
 $new_blocks_list   => undef
 $new_blocks_status => undef
+$tree_version      => undef
 </%args>
 %
 %
@@ -155,7 +156,6 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
     }
 
     @list = Ipblock->get_roots($rootversion);
-
 </%perl>
        <div class="container">
           <div class="containerheadleft">Root Blocks: (<% scalar(@list) %>)</div>
@@ -181,7 +181,6 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 %             }
           </div>
        </div>
-
 <%perl>
 #######################################################################################
 # Update
@@ -539,8 +538,20 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
     }else{
 	$m->comp('/generic/error.mhtml', error=>"Please provide a name for at least one reverse zone");
     }
-}
 
+#######################################################################################
+# REBUILD_TREE
+#
+#######################################################################################
+}elsif ( $_action eq 'REBUILD_TREE' ){
+
+    if ( $tree_version eq '4' || $tree_version eq 'all' ){
+	Ipblock->build_tree(4);
+    }elsif ( $tree_version eq '6' || $tree_version eq 'all' ){
+	Ipblock->build_tree(6);
+    }
+    $m->comp('.show_message', title=>"Action Message", msg=>"IP Tree Rebuilt Successfully");
+}
 #######################################################################################
 # View
 #
@@ -699,10 +710,10 @@ if ( my @parents = $o->get_ancestors ){
 %	}
      </div>
  <div class="containerbody">
-
 <%perl>
+my $edit_comments = ($edit eq 'comments') ? 1 : 0;
 my %tmp;
-%tmp = $ui->form_field(object=>$o, column=>"info", edit=>$edit);
+%tmp = $ui->form_field(object=>$o, column=>"info", edit=>$edit_comments);
 print $tmp{value};         
 </%perl>
 
@@ -718,7 +729,11 @@ if (!$edit){
     print '<div class="container">';
     print '<div class="containerheadleft">DNS A Records</div>';
     print '<div class="containerheadright">';
-    print "<a href=\"host.html?ipblock=$o&action=new\">[add]</a>";
+    if ( $manager && $manager->can($user, 'edit', $o) ){
+	print "<a href=\"host.html?ipblock=$o&action=new\">[add]</a>";
+    }else{
+	print '&nbsp;';
+    }
     print '</div>';
     print '<div class="containerbody">';
     $m->comp('/generic/sortresults.mhtml', object=>\@rrs);
@@ -730,7 +745,11 @@ if (!$edit){
     print '<div class="container">';
     print '<div class="containerheadleft">DNS PTR Records</div>';
     print '<div class="containerheadright">';
-    print "<a href=\"edit.html?table=RRPTR&ipblock=$o\">[add]</a>";
+    if ( $manager && $manager->can($user, 'edit', $o) ){
+	print "<a href=\"edit.html?table=RRPTR&ipblock=$o\">[add]</a>";
+    }else{
+	print '&nbsp;';
+    }    
     print '</div>';
     print '<div class="containerbody">';
     $m->comp('/generic/sortresults.mhtml', object=>\@prrs);
@@ -763,6 +782,8 @@ if ( $edit ){
     <div class="containerheadright">
 %   if ( $manager && $manager->can($user, 'edit', $o) ){
 	<a href="edit.html?table=IpService&ip=<% $o %>">[add]</a>
+%   }else{
+        &nbsp;
 %   }
     </div>
 <%perl>
@@ -803,7 +824,11 @@ if ( $edit ){
 %     if ( @attributes ) {
         <a href="ip.html?id=<% $o %>&editattr=1">[edit]</a>
 %     }
+%   if ( $manager && $manager->can($user, 'edit', $o) ){
         <a href="edit.html?table=IpblockAttr&ipblock=<% $o %>">[add]</a>
+%   }else{
+        &nbsp;
+%   }
     </div>
     <div class="containerbody">
         <& /generic/sortresults.mhtml, object=>\@attributes, withedit=>$editattr, return_args=>"?id=$id" &>
@@ -960,7 +985,7 @@ if ( $edit ){
     push @data, '<input type="checkbox" name="range_gen_dns" checked="checked">';
 
     push @fields, 'DNS name prefix/suffix:';
-    push @data, '<input type="text" size="5" name="name_prefix"> <input type="text" size="5" name="name_suffix">';
+    push @data, '<input type="text" size="5" name="name_prefix" value="'.Netdot->config->get("IP_RANGE_DNS_DEFAULT_PREFIX").'"> <input type="text" size="5" name="name_suffix" value="'.Netdot->config->get("IP_RANGE_DNS_DEFAULT_SUFFIX").'">';
 
     my $fwzone   = $o->forward_zone();
     my $revzone  = $o->reverse_zone();
@@ -1006,7 +1031,7 @@ if ( $edit ){
 	my $x;
 	$x .= '<select name="dhcp_global_scope" id="dhcp_global_scope">';
 	$x .= '<option value="">-- Select --</option>';
-	foreach my $ent ( DhcpScope->search(type=>'global') ){
+	foreach my $ent ( DhcpScope->search(type=>'global', version=>$o->version) ){
 	    $x .= '<option value="'. $ent->id .'">'. $ent->name .'</option>';
 	}
 	$x .= '</select>';
@@ -1025,8 +1050,10 @@ if ( $edit ){
 	push @data,   "&nbsp;";
 	push @fields, "Subnet:";
 	push @data,   $s->get_label();
-	push @fields, 'Option routers:';
-	push @data,   '<input type="text" name="dhcp_option_routers_'.$s->id.'" class="txt" value="'.$s->_netaddr->first->addr.'">';
+	unless ( $o->version == 6 ){
+	    push @fields, 'Option routers:';
+	    push @data,   '<input type="text" name="dhcp_option_routers_'.$s->id.'" class="txt" value="'.$s->_netaddr->first->addr.'">';
+	}
     }
 
 </%perl>	
@@ -1256,10 +1283,10 @@ if ($o->status->name eq "Subnet") {
 %	}
      </div>
  <div class="containerbody">
-
 <%perl>
+my $edit_comments = ($edit eq 'comments') ? 1 : 0;
 my %tmp;
-%tmp = $ui->form_field(object=>$o, column=>"info", edit=>$edit);
+%tmp = $ui->form_field(object=>$o, column=>"info", edit=>$edit_comments);
 print $tmp{value};         
 </%perl>
 
@@ -1282,7 +1309,13 @@ print $tmp{value};
          <& /generic/sortresults.mhtml, object=>\@scopes &>
       </div>
 %   }else{
-      <div class="containerheadright"><a href="ip.html?id=<% $id %>&edit=enable_dhcp">[enable]</a></div>
+        <div class="containerheadright">
+%       if ( $manager && $manager->can($user, 'edit', $o) ){
+            <a href="ip.html?id=<% $id %>&edit=enable_dhcp">[enable]</a>
+%       }else{
+            &nbsp;
+%       }
+        </div>
 %   }
 % }
     </div>
@@ -1558,10 +1591,10 @@ $msg   => undef
 
 <div class="container">
     <div class="containerhead">
-       <strong><% $title %></strong>   
+       <strong><% $title %></strong>
     </div>
     <div class="containerbody">
-       <% $msg %><br>
+       <p><% $msg %></p>
     </div>
 </div>
 
