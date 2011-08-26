@@ -697,16 +697,16 @@ function showVlan(){
 	    push @row, 
 	    &{sub{
 		my $ac = "";
-		if ( exists $ifvlans{$if} ){
-		    my @links;
-		    foreach my $v ( keys %{$ifvlans{$if}} ){
-			push @links, sprintf("<a href=\"view.html?table=Vlan&id=%s\">%s</a>", $vlans{$v}, $v );
+		if ( exists $ifvlans{$if} && (keys %{$ifvlans{$if}} > 0) ) {
+		    my $rc = "<select name=\"vlan_list\" ";
+		    my $sc = "onChange=\"window.open(this.options[this.selectedIndex].value,'_top')\">\n";
+		    my $tc = "<option value=\"$refresh_url\" selected>--Select--</option>\n";
+		    $ac = $rc . $sc . $tc;
+		    foreach my $v ( sort { $a <=> $b } keys %{$ifvlans{$if}} ) {
+			my $link = "view.html?table=Vlan&id=$vlans{$v}";
+			$ac .= "<option value=\"$link\">$v</option>\n";
 		    }
-		    if ( scalar(@links) <= 3 ){
-			$ac .= join ', ', @links;
-		    }else{
-			$ac .= '>3';
-		    }
+		    $ac .= "</select>\n";
 		}
 		$ac;
 	      }};
