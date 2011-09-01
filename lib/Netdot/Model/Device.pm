@@ -2519,7 +2519,9 @@ sub info_update {
     
     ##############################################################
     if ( $devtmp{product} && $argv{device_is_new} ){
-	$devtmp{monitored} = $self->_assign_device_monitored($devtmp{product});
+	my $val = $self->_assign_device_monitored($devtmp{product});
+	$devtmp{monitored}    = $val;
+	$devtmp{snmp_polling} = $val;
     }
 
     ##############################################################
