@@ -92,6 +92,13 @@ sub generate_records {
 	    $r->delete({no_change_status=>1});
 	}
 
+	if ( my $arpa_zone = $ipb->reverse_zone() ){
+	    my $ptr = Netdot::Model::RRPTR->insert({ptrdname => $ptrdname, 
+						    ipblock  => $ipb, 
+						    zone     => $arpa_zone});
+	    push @rrs, $ptr;
+	}
+	
 	my $rraddr = Netdot::Model::RR->insert({type    => 'A',
 						name    => $name, 
 						ipblock => $ipb, 

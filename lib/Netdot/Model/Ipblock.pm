@@ -1104,7 +1104,7 @@ sub get_maxed_out_subnets {
       name_suffix - String to append to host part of IP address
       fzone       - Forward Zone id for DNS records
   Returns:   
-
+    Ipblock object of parent block
   Examples:
 
 =cut
