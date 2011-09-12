@@ -38,7 +38,7 @@ sub insert {
     my($class, $argv) = @_;
     $class->isa_class_method('insert');
     
-    $class->throw_fatal('Missing required arguments')
+    $class->throw_fatal('Missing required arguments: lastname')
 	unless ( $argv->{lastname} );
     
     unless ( defined $argv->{user_type} && $argv->{user_type} ne '0' ){
