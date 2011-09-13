@@ -1,0 +1,67 @@
+<%doc>
+
+Generic confirmation dialog. Meant to be called from other components
+in order to ask for confirmation of a certain action.
+
+</%doc>
+
+<%args>
+$target            # This is the original component that needs input
+$message => undef  # Message to be displayed for confirmation
+$sid     => undef  # Session ID
+$submit  => undef  # Controls execution flow
+</%args>
+
+<%init>
+my $DEBUG = 0;
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+</%init>
+
+<%perl>
+if ( $submit && ($submit eq 'confirm') ){
+    $m->comp('/generic/error.mhtml', error=>"Missing required session id")
+	unless ( $sid );
+    my $sess = $ui->get_session($sid);
+    map { $ARGS{$_} = $sess->{$_} } keys %$sess;
+
+    print '%ARGS after recovering session is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+
+    # Now back to the calling component
+    # Make sure to delete our own args
+    foreach my $arg ( qw(message target sid) ){
+	delete $ARGS{$arg};
+    }
+    $m->comp($target, %ARGS);
+}else{
+    $m->comp('/generic/error.mhtml', error=>"Missing required arguments: message, target")
+	unless ( $message && $target );
+
+    # Create a session with current arguments
+    my $sess = $ui->mk_session();
+    while ( my($k,$v) = each %ARGS ){
+	$sess->{$k} = $v;
+    }
+    my $sid = $sess->{_session_id};
+</%perl>
+
+    <div class="container">
+    <div class="containerhead">Confirm Action</div>
+    <div class="containerbody">
+    <form name="netdot_confirm_form" action="confirm.html" method="POST">
+    <p><% $message %></p>
+    <p>
+    <input type="hidden" name="sid" value="<% $sid %>">
+    <input type="hidden" name="target" value="<% $target %>">
+    <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+    <input type="submit" name="submit" value="confirm" >
+    </p>
+    </form>
+    </div>
+    </div>
+
+<%perl>
+# We need to stop execution of the calling component
+$m->abort;
+</%perl>
+
+%}
