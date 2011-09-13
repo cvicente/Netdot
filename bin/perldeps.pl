@@ -152,8 +152,11 @@ elsif ( $action eq 'install' || $action eq 'apt-get-install' || $action eq 'rpm-
 }
 
 sub install_modules_cpan{
-    $CPAN::Config->{prerequisites_policy} = 'follow';
-    $ENV{FTP_PASSIVE} = 1;
+
+    $CPAN::Config->{prerequisites_policy}          = 'follow';
+    $CPAN::Config->{ftp_passive}                   = '1';
+    $CPAN::Config->{build_requires_install_policy} = 'yes';
+    
     foreach my $anon_hash (@DEPS){
 	my $module = $anon_hash->{'cpan'};
 	next unless $module;
