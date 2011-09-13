@@ -297,19 +297,24 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 #######################################################################################
 }elsif ( $_action eq "ADD_BLOCK" ){
     
-    if ( $add_block_prefix ){
+    unless ( $add_block_prefix ){
+	$m->comp('/generic/error.mhtml', error=>"You need to specify IP/prefix");
+    }
 
-	$add_block_prefix =~ s/\s+//g; # Remove spaces
+    $add_block_prefix =~ s/\s+//g; # Remove spaces
 
-	unless ( $add_block_prefix =~ /\// ){
-	    $m->comp('/generic/error.mhtml', error=> "$add_block_prefix not a valid CIDR string.");
-	}
+    unless ( $add_block_prefix =~ /\// ){
+	$m->comp('/generic/error.mhtml', error=> "$add_block_prefix not a valid CIDR string.");
+    }
+
+    if ( $submit && ($submit eq 'confirm') ){
+	undef($submit);
 	my ($address, $prefix) = split /\//, $add_block_prefix;
 	if ( (($address =~ $IPV4 && $prefix ne '32') ||
 	      ($address =~ $IPV6 && $prefix ne '128')) &&
 	     ($block_status eq 'Dynamic' || $block_status eq 'Static') ){
 	    $m->comp('/generic/error.mhtml', error=>"IP block cannot be 'Dynamic' or 'Static'.  Specify IP Range instead.");
-        }
+	}
 	my $block;
 	# This has happened. Can't figure out why, but this should avoid errors
 	if ( defined $block_owner && ref($block_owner) eq 'ARRAY' ){
@@ -352,7 +357,12 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 	    }
 	}
     }else{
-	$m->comp('/generic/error.mhtml', error=>"You need to specify IP/prefix");
+	$m->comp('/generic/confirm.html', 
+		 %ARGS, 
+		 target  =>'../management/ip.html', 
+		 message =>'The IP address or block you selected does not yet exist. '.
+		 'Are you sure that you want to create it?',
+	    );
     }
 
 #######################################################################################
