@@ -54,7 +54,7 @@ my @DEPS = (
     {cpan=>'Net::IRR', apt=> '', rpm=>''},
     {cpan=>'Time::Local', apt=> 'libtime-local-perl', rpm=>''},
     {cpan=>'File::Spec',apt=> 'libfile-spec-perl', rpm=>''},
-    {cpan=>'Net::Appliance::Session 3.111690',apt=> '', rpm=>''},
+    {cpan=>'Net::Appliance::Session 3.112510',apt=> '', rpm=>''},
     {cpan=>'BIND::Config::Parser', apt=>'libbind-confparser-perl', rpm=>''},
     {cpan=>'Net::DNS', apt=> 'libnet-dns-perl', rpm=>'perl-Net-DNS'},
     {cpan=>'Text::ParseWords', apt=>'', rpm=>''},
