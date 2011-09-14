@@ -1770,7 +1770,7 @@ sub get_arp {
 	foreach my $pat ( keys %OID2CLASSMAP ){
 	    if ( $obj =~ /$pat/ ){
 		my $class = $OID2CLASSMAP{$pat};
-		$class = 'Netdot::Model::Device::'.$class;
+		$class = 'Netdot::Model::Device::CLI::'.$class;
 		# Re-bless
 		$logger->debug("$host: $obj matches class: $class"); 
 		bless $self, $class;
@@ -1929,7 +1929,7 @@ sub get_fwt {
 	foreach my $pat ( keys %OID2CLASSMAP ){
 	    if ( $obj =~ /$pat/ ){
 		my $class = $OID2CLASSMAP{$pat};
-		$class = 'Netdot::Model::Device::'.$class;
+		$class = 'Netdot::Model::Device::CLI::'.$class;
 		# Re-bless
 		$logger->debug("$host: $obj matches class: $class"); 
 		bless $self, $class;
@@ -5390,4 +5390,5 @@ Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 #Be sure to return 1
 1;
+
 

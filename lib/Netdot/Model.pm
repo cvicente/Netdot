@@ -285,10 +285,10 @@ BEGIN {
     # Do the same as above for these special derived classes
     use Netdot::Model::Device::Airespace;
     eval "package Airespace; use base 'Netdot::Model::Device::Airespace'";
-    use Netdot::Model::Device::CiscoFW;
-    eval "package CiscoFW; use base 'Netdot::Model::Device::CiscoFW'";
-    use Netdot::Model::Device::CiscoIOS;
-    eval "package CiscoFW; use base 'Netdot::Model::Device::CiscoIOS'";
+    use Netdot::Model::Device::CLI::CiscoFW;
+    eval "package CiscoFW; use base 'Netdot::Model::Device::CLI::CiscoFW'";
+    use Netdot::Model::Device::CLI::CiscoIOS;
+    eval "package CiscoFW; use base 'Netdot::Model::Device::CLI::CiscoIOS'";
     
 }
 

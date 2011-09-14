@@ -1,6 +1,6 @@
-package Netdot::Model::Device::CiscoIOS;
+package Netdot::Model::Device::CLI::CiscoIOS;
 
-use base 'Netdot::Model::Device';
+use base 'Netdot::Model::Device::CLI';
 use warnings;
 use strict;
 use Net::Appliance::Session;
@@ -9,7 +9,7 @@ my $logger = Netdot->log->get_logger('Netdot::Model::Device');
 
 =head1 NAME
 
-Netdot::Model::Device::CiscoIOS - Cisco IOS Class
+Netdot::Model::Device::CLI::CiscoIOS - Cisco IOS Class
 
 =head1 SYNOPSIS
 
@@ -21,6 +21,7 @@ Netdot::Model::Device::CiscoIOS - Cisco IOS Class
 =head1 INSTANCE METHODS
 =cut
 
+############################################################################
 =head2 get_arp - Fetch ARP tables
 
   Arguments:
@@ -99,14 +100,14 @@ sub _get_arp_from_cli {
 	    $mac   = $2;
 	    $iname = $3;
 	}else{
-	    $logger->debug(sub{"Device::CiscoIOS::_get_arp_from_cli: line did not match criteria: $line" });
+	    $logger->debug(sub{"Device::CLI::CiscoIOS::_get_arp_from_cli: line did not match criteria: $line" });
 	    next;
 	}
 	$iname = $self->_reduce_iname($iname);
 	my $intid = $int_names{$iname};
 
 	unless ( $intid ) {
-	    $logger->warn("Device::CiscoIOS::_get_arp_from_cli: $host: Could not match $iname to any interface name");
+	    $logger->warn("Device::CLI::CiscoIOS::_get_arp_from_cli: $host: Could not match $iname to any interface name");
 	    next;
 	}
 	
@@ -114,7 +115,7 @@ sub _get_arp_from_cli {
 	if ( $validmac ){
 	    $mac = $validmac;
 	}else{
-	    $logger->debug(sub{"Device::CiscoIOS::_get_arp_from_cli: $host: Invalid MAC: $mac" });
+	    $logger->debug(sub{"Device::CLI::CiscoIOS::_get_arp_from_cli: $host: Invalid MAC: $mac" });
 	    next;
 	}	
 
@@ -128,19 +129,19 @@ sub _get_arp_from_cli {
 		    $invalid_subnet = 0;
 		    last;
 		}else{
-		    $logger->debug(sub{sprintf("Device::CiscoIOS::_get_arp_from_cli: $host: IP $ip not within %s", 
+		    $logger->debug(sub{sprintf("Device::CLI::CiscoIOS::_get_arp_from_cli: $host: IP $ip not within %s", 
 					       $nsub->cidr)});
 		}
 	    }
 	    if ( $invalid_subnet ){
-		$logger->debug(sub{"Device::CiscoIOS::_get_arp_from_cli: $host: IP $ip not within interface $iname subnets"});
+		$logger->debug(sub{"Device::CLI::CiscoIOS::_get_arp_from_cli: $host: IP $ip not within interface $iname subnets"});
 		next;
 	    }
 	}
 
 	# Store in hash
 	$cache{$intid}{$ip} = $mac;
-	$logger->debug(sub{"Device::CiscoIOS::_get_arp_from_cli: $host: $iname -> $ip -> $mac" });
+	$logger->debug(sub{"Device::CLI::CiscoIOS::_get_arp_from_cli: $host: $iname -> $ip -> $mac" });
     }
     
     return \%cache;
@@ -190,14 +191,14 @@ sub _get_fwt_from_cli {
 	    $mac   = $1;
 	    $iname = $2;
 	}else{
-	    $logger->debug(sub{"Device::CiscoIOS::_get_fwt_from_cli: line did not match criteria: $line" });
+	    $logger->debug(sub{"Device::CLI::CiscoIOS::_get_fwt_from_cli: line did not match criteria: $line" });
 	    next;
 	}
 	$iname = $self->_reduce_iname($iname);
 	my $intid = $int_names{$iname};
 
 	unless ( $intid ) {
-	    $logger->warn("Device::CiscoIOS::_get_fwt_from_cli: $host: Could not match $iname to any interface names");
+	    $logger->warn("Device::CLI::CiscoIOS::_get_fwt_from_cli: $host: Could not match $iname to any interface names");
 	    next;
 	}
 	
@@ -205,109 +206,19 @@ sub _get_fwt_from_cli {
 	if ( $validmac ){
 	    $mac = $validmac;
 	}else{
-	    $logger->debug(sub{"Device::CiscoIOS::_get_fwt_from_cli: $host: Invalid MAC: $mac" });
+	    $logger->debug(sub{"Device::CLI::CiscoIOS::_get_fwt_from_cli: $host: Invalid MAC: $mac" });
 	    next;
 	}	
 
 	# Store in hash
 	$fwt{$intid}{$mac} = 1;
-	$logger->debug(sub{"Device::CiscoIOS::_get_fwt_from_cli: $host: $iname -> $mac" });
+	$logger->debug(sub{"Device::CLI::CiscoIOS::_get_fwt_from_cli: $host: $iname -> $mac" });
     }
     
     return \%fwt;
 }
 
 
-############################################################################
-# Get CLI login credentials from config file
-#
-# Arguments: 
-#   host
-# Returns:
-#   hashref
-#
-sub _get_credentials {
-    my ($self, %argv) = @_;
-
-    my $config_item = 'DEVICE_CLI_CREDENTIALS';
-    my $host = $argv{host};
-    my $cli_cred_conf = Netdot->config->get($config_item);
-    unless ( ref($cli_cred_conf) eq 'ARRAY' ){
-	$self->throw_user("Device::CiscoIOS::_get_credentials: config $config_item must be an array reference.");
-    }
-    unless ( @$cli_cred_conf ){
-	$self->throw_user("Device::CiscoIOS::_get_credentials: config $config_item is empty");
-    }
-
-    my $match = 0;
-    foreach my $cred ( @$cli_cred_conf ){
-	my $pattern = $cred->{pattern};
-	if ( $host =~ /$pattern/ ){
-	    $match = 1;
-	    my %args;
-	    $args{login}      = $cred->{login};
-	    $args{password}   = $cred->{password};
-	    $args{privileged} = $cred->{privileged};
-	    $args{transport}  = $cred->{transport} || 'SSH';
-	    $args{timeout}    = $cred->{timeout}   || '30';
-	    return \%args;
-	}
-    }   
-    if ( !$match ){
-	$self->throw_user("Device::CiscoIOS::_get_credentials: $host did not match any patterns in configured credentials.")
-    }
-}
-
-############################################################################
-# Issue CLI command
-#
-# Arguments: 
-#   command
-# Returns:
-#   array
-#
-sub _cli_cmd {
-    my ($self, %argv) = @_;
-    my ($login, $password, $privileged, $transport, $timeout, $host, $cmd) = 
-	@argv{'login', 'password', 'privileged', 'transport', 'timeout', 'host', 'cmd'};
-    
-    $self->throw_user("Device::CiscoIOS::_cli_cmd: $host: Missing required parameters: login/password")
-	unless ( $login && $password && $cmd );
-    
-    my @output;
-    eval {
-	$logger->debug(sub{"$host: issuing CLI command: '$cmd' over $transport"});
-	my $s = Net::Appliance::Session->new(
-	    {
-		host            => $host,
-		transport       => $transport,
-		personality     => 'ios',
-		connect_options => {
-		    shkc => 0,
-		    opts => [
-			'-o', "ConnectTimeout=$timeout",
-			'-o', 'CheckHostIP=no',
-			],
-		},
-	    });
-
-#       Uncomment this to debug session exchanges	
-#	$s->set_global_log_at('debug');
-	
-	$s->connect({username  => $login, 
-		     password  => $password,
-		    });
-	
-	$s->begin_privileged({password=>$privileged}) if ( $privileged );
-	@output = $s->cmd($cmd, {timeout=>$timeout});
-	$s->end_privileged if ( $privileged );
-	$s->close;
-    };
-    if ( my $e = $@ ){
-	$self->throw_user("Device::CiscoIOS::_get_arp_from_cli: $host: $e");
-    }
-    return @output;
-}
 
 ############################################################################
 # _reduce_iname
@@ -324,3 +235,31 @@ sub _reduce_iname{
     $name =~ s/^(\w{2})\S*?([\d\/]+).*/$1$2/;
     return $name;
 }
+
+=head1 AUTHOR
+
+Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
+
+=head1 COPYRIGHT & LICENSE
+
+Copyright 2011 University of Oregon, all rights reserved.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTIBILITY
+or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software Foundation,
+Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+=cut
+
+#Be sure to return 1
+1;
+
