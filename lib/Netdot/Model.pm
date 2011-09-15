@@ -902,28 +902,31 @@ sub search_all_tables {
 
 
 ############################################################################
-=head2 sqldate2time
+=head2 sqldate2time - Convert SQL date or timestamp into epoch value
 
   Arguments:  
-    SQL date string (YYYY-MM-DD)
+    SQL date or timestamp string ('YYYY-MM-DD' or 'YYYY-MM-DD HH:MM:SS')
   Returns:    
     Seconds since epoch (compatible with Perls time function)
 
 =cut
 sub sqldate2time {
     my ($self, $date) = @_;
-    if ( $date =~ /^(\d{4})-(\d{2})-(\d{2})$/ ){
-	my ($y, $m, $d) = ($1, $2, $3);
+    if ( $date =~ /^(\d{4})-(\d{2})-(\d{2})(?: (\d{2}):(\d{2}):(\d{2}))?$/ ){
+	my ($y, $m, $d)  = ($1, $2, $3);
+	my ($h, $mn, $s) = ($4, $5, $6);
 	$self->throw_fatal("Netdot::Model::sqldate2time: Invalid date string: $date.")
-	    unless ($y && $m > 0 && $m <= 12 && $d > 0 && $d <= 31);
-	return timelocal(0,0,0,$d,$m-1,$y);
+	    unless ($y && $m > 0 && $m <= 12 && $d > 0 && $d <= 31 && 
+		    $h >= 0 && $h < 24 && $mn >= 0 && $m < 60 && $s >= 0 && $s < 60);
+	return timelocal($s,$mn,$h,$d,$m-1,$y);
     }else{
-	$self->throw_fatal("Netdot::Model::sqldate2time: Invalid SQL date format: $d. Should be (YYYY-MM-DD).");
+	$self->throw_fatal("Netdot::Model::sqldate2time: Invalid SQL date format: $date. ".
+			   "Should be 'YYYY-MM-DD' or 'YYYY-MM-DD HH:MM:SS'.");
     }
 }
 
 ############################################################################
-=head2 sqldate_days_ago
+=head2 sqldate_days_ago - N days ago in SQL date format
 
   Arguments:  
     number of days (integer)
@@ -940,7 +943,7 @@ sub sqldate_days_ago {
 }
 
 ############################################################################
-=head2 sqldate_today
+=head2 sqldate_today - Today's date in SQL date format
 
   Arguments:  
     None
