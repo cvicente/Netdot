@@ -977,7 +977,7 @@ sub sqldate2time {
 	my ($y, $m, $d)  = ($1, $2, $3);
 	my ($h, $mn, $s) = ($4, $5, $6);
 	$self->throw_fatal("Netdot::Model::sqldate2time: Invalid date string: $date.")
-	    unless ($y && $m > 0 && $m <= 12 && $d > 0 && $d <= 31 && 
+	    unless ($y >= 0 && $m >= 0 && $m <= 12 && $d > 0 && $d <= 31 && 
 		    $h >= 0 && $h < 24 && $mn >= 0 && $m < 60 && $s >= 0 && $s < 60);
 	return timelocal($s,$mn,$h,$d,$m-1,$y);
     }else{
