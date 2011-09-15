@@ -81,10 +81,12 @@ if ( $ENTITY || $NEIG || $SITE || $DAYS ){
 	    push @orphans, $dev unless $found;
 	}
 	if ( $DAYS ){
+	    my $idate = $dev->date_installed;
+	    next if ( $idate eq '0000-00-00 00:00:00' );
 	    my $now = time;
 	    my $days_ago_sql = Netdot::Model->sqldate_days_ago($DAYS);
 	    my $t1 = Netdot::Model->sqldate2time($days_ago_sql);
-	    my $t2 = Netdot::Model->sqldate2time($dev->date_installed);
+	    my $t2 = Netdot::Model->sqldate2time($idate);
 	    push @new, $dev if ( $t2 >= $t1 );
 	}
     }
