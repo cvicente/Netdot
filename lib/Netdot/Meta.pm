@@ -10,10 +10,13 @@ use Carp;
 my $DEFAULT_META_FILE = "<<Make:PREFIX>>/etc/netdot.meta";
 my $ALT_META_FILE     = catpath( ( splitpath( rel2abs $0 ) )[ 0, 1 ], '' ) . "../etc/netdot.meta";
 
+# key must match short class name
+# value[0]: Full class name
+# value[1]: Full Base class name
 my %DERIVED_CLASSES = (
-    'CiscoFW'   => 'Device::CLI',
-    'CiscoIOS'  => 'Device::CLI',
-    'Airespace' => 'Device',
+    'CiscoFW'   => ['Netdot::Model::Device::CLI::CiscoFW',  'Netdot::Model::Device'],
+    'CiscoIOS'  => ['Netdot::Model::Device::CLI::CiscoIOS', 'Netdot::Model::Device'],
+    'Airespace' => ['Netdot::Model::Device::Airespace',     'Netdot::Model::Device'],
     );
 
 # Some private class data and related methods
@@ -310,8 +313,10 @@ sub _get_table_info{
 	%info = %{ $tables->{$name} };
 	$info{name} = $name;
     }elsif ( exists $DERIVED_CLASSES{$name} ){
-	%info = %{ $tables->{$DERIVED_CLASSES{$name}} };
-	$info{name} = $DERIVED_CLASSES{$name};
+	my $base = $DERIVED_CLASSES{$name}->[1];
+	$base =~ s/^.*:://;
+	%info = %{ $tables->{$base} };
+	$info{name} = $base;
     }else{
 	# We might have been given the table's db name
 	foreach my $t ( keys %$tables ){

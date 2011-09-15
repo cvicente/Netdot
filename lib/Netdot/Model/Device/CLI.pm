@@ -111,7 +111,7 @@ sub _cli_cmd {
 	my $s = Net::Appliance::Session->new(\%sess_args);
 
 #       Uncomment this to debug session exchanges	
-	$s->set_global_log_at('debug');
+#	$s->set_global_log_at('debug');
 	
 	$s->connect({username  => $login, 
 		     password  => $password,

@@ -5546,7 +5546,7 @@ sub _netdot_rebless {
     foreach my $pat ( keys %OID2CLASSMAP ){
 	if ( $obj =~ /$pat/ ){
 	    my $subclass = $OID2CLASSMAP{$pat};
-	    $new_class .= "::$subclass";
+	    $new_class .= "::CLI::$subclass";
 	    $logger->debug("Device::_netdot_rebless: $host: changed class to $new_class"); 
 	    bless $self, $new_class;
 	    return $self;
