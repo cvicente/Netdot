@@ -6,14 +6,15 @@ use Getopt::Long qw(:config no_ignore_case bundling);
 use strict;
 
 
-my ($HELP, $ENTITY, $NEIG, $DUPLEX, $SITE, $DEBUG, $EMAIL);
+my ($HELP, $ENTITY, $NEIG, $DUPLEX, $SITE, $NEW, $DEBUG, $EMAIL);
 my $FROM    = Netdot->config->get('ADMINEMAIL');
 my $TO      = Netdot->config->get('NOCEMAIL');
 my $DAYS    = 1;
 my $SUBJECT = 'Netdot Device Checks';
 
 my $usage = <<EOF;
- usage: $0  -e|--entity | -d|--dependencies | -s|--site | -d|--duplex
+ usage: $0  -e|--entity | -d|--dependencies | -s|--site | -d|--duplex 
+            -n|--new | -D|--days
            [-m|--send_mail] [-f|--from] | [-t|--to] | [-S|--subject]
 
     
@@ -21,7 +22,8 @@ my $usage = <<EOF;
     -n, --neighbors                report devices with no neighbors
     -s, --site                     report devices with no site
     -d, --duplex                   report duplex mismatches
-    -n, --new                      report devices discovered within n days (default: $DAYS)
+    -n, --new                      report devices discovered within D days
+    -D, --days                     (default: $DAYS)
     -h, --help                     print help (this message)
     -m, --send_mail                send output via e-mail
     -f, --from                     e-mail From line (default: $FROM)
@@ -35,7 +37,8 @@ my $result = GetOptions( "e|entity"       => \$ENTITY,
 			 "n|neighbors"    => \$NEIG,
 			 "s|site"         => \$SITE,
 			 "d|duplex"       => \$DUPLEX,
-			 "n|new:s"        => \$DAYS,
+			 "n|new"          => \$NEW,
+			 "D|days:s"       => \$DAYS,
 			 "m|send_mail"    => \$EMAIL,
 			 "f|from:s"       => \$FROM,
 			 "t|to:s"         => \$TO,
@@ -51,7 +54,7 @@ if( $HELP ) {
     print $usage;
     exit;
 }
-unless ( $ENTITY || $NEIG || $SITE || $DUPLEX || $DAYS ){
+unless ( $ENTITY || $NEIG || $SITE || $DUPLEX || $NEW ){
     print $usage;
     die "Error: Must specify either -e, -n, -s, -d or -n\n";
 }
@@ -60,7 +63,7 @@ unless ( $ENTITY || $NEIG || $SITE || $DUPLEX || $DAYS ){
 $ENV{REMOTE_USER} = "netdot";
 my (@nameless, @lost, @orphans, @homeless, @new, $output);
 
-if ( $ENTITY || $NEIG || $SITE || $DAYS ){
+if ( $ENTITY || $NEIG || $SITE || $NEW ){
     my $it = Device->retrieve_all;
     while ( my $dev = $it->next ){
 	unless ( $dev->name && $dev->name->name ){
@@ -80,14 +83,15 @@ if ( $ENTITY || $NEIG || $SITE || $DAYS ){
 	    }
 	    push @orphans, $dev unless $found;
 	}
-	if ( $DAYS ){
+	if ( $NEW && $DAYS ){
 	    my $idate = $dev->date_installed;
-	    next if ( $idate eq '0000-00-00 00:00:00' );
-	    my $now = time;
-	    my $days_ago_sql = Netdot::Model->sqldate_days_ago($DAYS);
-	    my $t1 = Netdot::Model->sqldate2time($days_ago_sql);
-	    my $t2 = Netdot::Model->sqldate2time($idate);
-	    push @new, $dev if ( $t2 >= $t1 );
+	    if ( $idate ne '0000-00-00 00:00:00' ){
+		my $now = time;
+		my $days_ago_sql = Netdot::Model->sqldate_days_ago($DAYS);
+		my $t1 = Netdot::Model->sqldate2time($days_ago_sql);
+		my $t2 = Netdot::Model->sqldate2time($idate);
+		push @new, $dev if ( $t2 >= $t1 );
+	    }
 	}
     }
     
