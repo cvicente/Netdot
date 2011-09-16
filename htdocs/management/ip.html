@@ -307,7 +307,7 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 	$m->comp('/generic/error.mhtml', error=> "$add_block_prefix not a valid CIDR string.");
     }
 
-    if ( $submit && ($submit eq 'confirm') ){
+    if ( $submit && (($submit eq 'confirm') || ($submit eq 'Save')) ){
 	undef($submit);
 	my ($address, $prefix) = split /\//, $add_block_prefix;
 	if ( (($address =~ $IPV4 && $prefix ne '32') ||
