@@ -23,10 +23,14 @@ my $trace;
 # we want the user to report it to their netdot administrator, who may submit a bug
 # report to us.  This may be either a Netdot Fatal exception or a Mason Exception
 
-if ( ref($error) =~ /Netdot::Util::Exception/ && $error->isa_netdot_exception('Fatal') ){
-    # Let's separate the error message from the stack trace
+if ( ref($error) =~ /Netdot::Util::Exception/ ){
+    if ( $error->isa_netdot_exception('Fatal') ){
+	# Let's separate the error message from the stack trace
+	$trace = $error->trace->as_string;
+    }
     $err_msg = $error->error;
-    $trace = $error->trace->as_string;
+}else{
+    $err_msg = $error;
 }
 
 </%init>
