@@ -40,6 +40,7 @@ sub insert{
 
     $class->throw_user("Missing required arguments: vlan id")
 	unless (exists $argv->{vid});
+    _validate_vid($argv->{vid});
 
     $argv->{vlangroup} = $class->_find_group($argv->{vid}) || undef;
     
@@ -47,6 +48,22 @@ sub insert{
     return $new;
 }
 
+sub search {
+    my ($class, @args) = @_;
+    $class->isa_class_method('search');
+
+    # Class::DBI::search() might include an extra 'options' hash ref
+    # at the end.  In that case, we want to extract the
+    # field/value hash first.
+    my @nargs = @args;
+    my $opts = @nargs % 2 ? pop @nargs : {};
+    my %args = @nargs;
+
+    if (defined $args{vid}) {
+        _validate_vid($args{vid});
+    }
+    return $class->SUPER::search(@args);
+}
 
 =head1 INSTANCE METHODS
 =cut
@@ -100,6 +117,11 @@ sub _find_group{
     return;
 }
 
+sub _validate_vid {
+    my $vid = shift;
+    __PACKAGE__->throw_user("VLAN id '$vid' is invalid")
+        unless ($vid =~ /^\d+$/) && ($vid >= 1) && ($vid <= 4094);
+}
 
 =head1 AUTHOR
 
