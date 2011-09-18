@@ -4279,7 +4279,7 @@ sub _get_v6_nd_from_snmp {
     my $n2p_addr  = $sinfo->ipv6_n2p_addr();
     my $n2p_if    = $sinfo->ipv6_n2p_if();
 
-    unless ( %$n2p_mac && %$n2p_addr && %$n2p_if ){
+    unless ( ($n2p_mac && $n2p_addr && $n2p_if) && (%$n2p_mac && %$n2p_addr && %$n2p_if) ){
 	$logger->debug(sub{"Device::_get_v6_nd_from_snmp: $host: No IPv6 ND information" });
 	return;
     }
@@ -4305,7 +4305,7 @@ sub _get_v6_nd_from_snmp {
 #   Returns:
 #     Hash ref.
 #   Examples:
-#     $self->_get_v6_nd_from_snmp();
+#     $self->_validate_arp(\%cache, 6);
 #
 #
 sub _validate_arp {
