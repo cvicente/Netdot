@@ -8,6 +8,7 @@ use NetAddr::IP;
 use Net::IPTrie;
 use Storable qw(nfreeze thaw);
 use Scalar::Util qw(blessed);
+use DBI qw(:sql_types);
 
 =head1 NAME
 
@@ -161,25 +162,24 @@ sub search {
 	    # Deal with mysql bug 
 	    # http://bugs.mysql.com/bug.php?id=60213
 	    # We have to build our own query
-	    my @q; my @vals;
-	    while ( my($key,$val) = each(%args) ){
-		if ( $key eq 'address' ){
-		    push @q, "$key=CONVERT(?, DECIMAL(40,0))";
-		}else{
-		    push @q, "$key=?";
-		}
-		push @vals, $val;
-	    }
-	    my $q = join ' AND ', @q;
+	    my @keys = keys %args;
+	    my @vals = values %args;
+	    my $q = join(' AND ', map { "$_=?" } @keys);
 	    my @cols = ('id');
-	    my %co = $class->meta_data->get_column_order_brief();
-	    foreach my $c ( keys %co ){
-		push @cols, $c;
-	    } 
+	    my %essential = $class->meta_data->get_column_order_brief;
+	    push @cols, keys %essential;
 	    my $cols = join ',', @cols;
 	    my $dbh = $class->db_Main();
-	    my $sth = $dbh->prepare("SELECT $cols FROM ipblock WHERE $q;");
-	    $sth->execute(@vals);
+	    my $sth = $dbh->prepare_cached("SELECT $cols FROM ipblock WHERE $q;");
+	    for my $i (1..scalar(@keys)){
+		if ( $keys[$i-1] eq 'address' ){
+		    # Notice that we force the value to be a string
+		    $sth->bind_param($i, "".$vals[$i-1], SQL_INTEGER);
+		}else{
+		    $sth->bind_param($i, $vals[$i-1]);		    
+		}
+	    }
+	    $sth->execute;
 	    return $class->sth_to_objects($sth);
 	}
     }
