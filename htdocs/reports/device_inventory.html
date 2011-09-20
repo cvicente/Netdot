@@ -25,7 +25,7 @@ my (@headers, @rows) = ();
          By <select name="report_type" onChange="document.report_form.submit()">
          <option value="product" <% ($report_type eq "product")?"SELECTED":"" %>>Type/Model</option>
          <option value="product_monitored" <% ($report_type eq "product_monitored")?"SELECTED":"" %>>Type/Model (monitored)</option>
-         <option value="site" <% ($report_type eq "site")?"SELECTED":"" %>>Site/Model</option>
+         <option value="site" <% ($report_type eq "site")?"SELECTED":"" %>>Site/Type/Model</option>
          <option value="os" <% ($report_type eq "os")?"SELECTED":"" %>>Model/OS</option>
          <option value="downtime" <% ($report_type eq "downtime")?"SELECTED":"" %>>Downtime</option>
          <option value="duplex" <% ($report_type eq "duplex")?"SELECTED":"" %>>Duplex Mismatches</option>
@@ -116,42 +116,65 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
                device.product,
                site.name AS site_name,
                product.name AS product_name,
-               entity.name AS manufacturer,
-               count(*) AS count
+               producttype.name,
+               entity.name AS manufacturer
     FROM       device
     LEFT JOIN  site ON site.id=device.site
-    LEFT JOIN  (product,entity) ON product.id=device.product 
-                 AND entity.id=product.manufacturer 
-    GROUP BY   site,product
-    ORDER BY   site_name,product_name
+    LEFT JOIN  (product CROSS JOIN entity CROSS JOIN producttype) 
+                 ON product.id=device.product 
+                  AND producttype.id=product.id
+                  AND entity.id=product.manufacturer 
+    GROUP BY   site,producttype.name,product
+    ORDER BY   site_name,producttype.name,product_name
     ")->{rows};
 
-    @headers = ( 'Site', 'Model', 'Count', );
+    @headers = ( 'Site', 'Type', 'Model', 'Count' );
 
-    my $last_site;
+    my %t;
     foreach my $r ( @$res ) {
-        my $site = ($r->[0] || "undef");
-	my $site_name = ($r->[2] || "Unset");
-	if ($site ne $last_site) {
-	    $last_site = $site;
-	    my @hdr = ();
-	    push( @hdr, "<strong><a href=\"../generic/search_obj.html?table=Device&site=$site&res=1\">$site_name</a></strong>" );
-	    push( @hdr, "" );
-	    push( @hdr, "" );
-	    push( @rows, \@hdr );
+        my $site        = $r->[0] || "_unset";
+	$t{$site}{name} = $r->[2] || "Unset"; 
+	my $product     = $r->[1] || "_unset";
+	my $type        = $r->[4] || "Unset";
+	$t{$site}{types}{$type}{count}++;
+	$t{$site}{types}{$type}{prods}{$product}{name}  = $r->[3] || "Unset";
+	$t{$site}{types}{$type}{prods}{$product}{manuf} = $r->[5] || "Unset";
+	$t{$site}{types}{$type}{prods}{$product}{count}++;
+	$t{$site}{total}++;
+    }
+    foreach my $site ( keys %t ){
+	my $site_name = $t{$site}{name};
+	my @hdr = ();
+	push( @hdr, "<strong><a href=\"../generic/search_obj.html?".
+	      "table=Device&site=$site&res=1\">$site_name</a></strong>" );
+	push( @hdr, "" );
+	push( @hdr, "" );
+	push( @hdr, $t{$site}{total} );
+	push( @rows, \@hdr );
+	foreach my $type ( keys %{$t{$site}{types}} ){
+	    my $tcount = $t{$site}{types}{$type}{count};
+	    my @row = ();
+	    push( @row, "" );
+	    push( @row, $type );
+	    push( @row, "" );
+	    push( @row, $tcount );
+	    push( @rows, \@row );
+	    foreach my $product ( keys %{$t{$site}{types}{$type}{prods}} ){
+		my @row = ();
+		my $product_name = $t{$site}{types}{$type}{prods}{$product}{name};
+		my $manuf = $t{$site}{types}{$type}{prods}{$product}{manuf};
+		my $label = $manuf." ".$product_name;
+		my $pcount = $t{$site}{types}{$type}{prods}{$product}{count};
+		push( @row, "" );
+		push( @row, "" );
+		push( @row, "<strong><a href=\"../generic/search_obj.html?".
+		      "table=Device&site=$site&product=$product&res=1\">$label</a></strong>" );
+		push( @row, '<strong>' . $pcount . '</strong>' );
+		push( @rows, \@row );
+	    }
 	}
-	my @row = ();
-	push( @row, "" );
-	my $product      = ($r->[1] || "undef");
-	my $product_name = ($r->[3] || "Unset");
-	my $manuf        = ($r->[4] || "Unset");
-        my $label        = $manuf." ".$product_name;
-	push( @row, "<a href=\"../generic/search_obj.html?table=Device&site=$site&product=$product&res=1\">$label</a>" );
-	push( @row, '<strong>' . $r->[5] . '</strong>' );
-	push( @rows, \@row );
     }
     $m->comp('/generic/data_table.mhtml', field_headers=>\@headers, data=>\@rows);
-
 
 
 #######################################################################################
