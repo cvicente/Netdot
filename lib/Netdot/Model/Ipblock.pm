@@ -8,6 +8,7 @@ use NetAddr::IP;
 use Net::IPTrie;
 use Storable qw(nfreeze thaw);
 use Scalar::Util qw(blessed);
+use DBI qw(:sql_types);
 
 =head1 NAME
 
@@ -127,16 +128,21 @@ sub int2ip {
     my @objs = Ipblock->search(field => $keyword);
 
 =cut
+
 sub search {
     my ($class, @args) = @_;
     $class->isa_class_method('search');
-
+    
     # Class::DBI::search() might include an extra 'options' hash ref
     # at the end.  In that case, we want to extract the 
     # field/value hash first.
     my $opts = @args % 2 ? pop @args : {}; 
     my %args = @args;
-
+   
+    if ( defined $args{status} ){
+	my $statusid = $class->_get_status_id($args{status});
+	$args{status} = $statusid;
+    }
     if ( defined $args{address} ){
 	if ( $args{address} =~ /\/\d+$/ ){
 	    # Address is in CIDR format
@@ -149,14 +155,33 @@ sub search {
 		$args{address} = $class->ip2int($args{address});
 	    }
 	}
-    }
-    if ( defined $args{status} ){
-	my $statusid = $class->_get_status_id($args{status});
-	$args{status} = $statusid;
+	if ( $class->config->get('DB_TYPE') eq 'mysql' ){
+	    # Deal with mysql bug 
+	    # http://bugs.mysql.com/bug.php?id=60213
+	    # We have to build our own query
+	    my @keys = keys %args;
+	    my @vals = values %args;
+	    my $q = join(' AND ', map { "$_=?" } @keys);
+	    my @cols = ('id');
+	    my %essential = $class->meta_data->get_column_order_brief;
+	    push @cols, keys %essential;
+	    my $cols = join ',', @cols;
+	    my $dbh = $class->db_Main();
+	    my $sth = $dbh->prepare_cached("SELECT $cols FROM ipblock WHERE $q;");
+	    for my $i (1..scalar(@keys)){
+		if ( $keys[$i-1] eq 'address' ){
+		    # Notice that we force the value to be a string
+		    $sth->bind_param($i, "".$vals[$i-1], SQL_INTEGER);
+		}else{
+		    $sth->bind_param($i, $vals[$i-1]);		    
+		}
+	    }
+	    $sth->execute;
+	    return $class->sth_to_objects($sth);
+	}
     }
     return $class->SUPER::search( %args, $opts );
 }
-
 
 ##################################################################
 =head2 search_like - Search IP Blocks that match the specified regular expression
