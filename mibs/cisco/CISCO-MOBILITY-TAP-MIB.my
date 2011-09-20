@@ -1,0 +1,553 @@
+-- *****************************************************************
+-- CISCO-MOBILITY-TAP-MIB.my:  Cisco intercept ("tap") MIB for Mobility
+-- Gateway products.
+--   
+-- July 2008, Ryan Rueth, Srinivas Goud Aileni, Zaryab Munir.
+--   
+-- Copyright (c) 2008,2010 by Cisco Systems, Inc.
+-- All rights reserved.
+--   
+-- *****************************************************************
+
+CISCO-MOBILITY-TAP-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY,
+    OBJECT-TYPE
+        FROM SNMPv2-SMI
+    MODULE-COMPLIANCE,
+    OBJECT-GROUP
+        FROM SNMPv2-CONF
+    RowStatus,
+    StorageType,
+    TEXTUAL-CONVENTION,
+    TruthValue
+        FROM SNMPv2-TC
+    cTap2MediationContentId,
+    cTap2StreamIndex
+        FROM CISCO-TAP2-MIB
+    ciscoMgmt
+        FROM CISCO-SMI;
+
+
+ciscoMobilityTapMIB MODULE-IDENTITY
+    LAST-UPDATED    "201006160000Z"
+    ORGANIZATION    "Cisco Systems, Inc."
+    CONTACT-INFO
+            "Cisco Systems
+            Customer Service
+
+
+            Postal:170 W. Tasman Drive
+            San Jose, CA  95134
+            USA
+
+
+            Tel:+1 800 553-NETS
+
+
+            E-mail:cs-li@cisco.com"
+    DESCRIPTION
+        "This module manages Cisco's intercept feature for
+        Mobility Gateway Products.
+
+        This MIB is used along with CISCO-TAP2-MIB MIB to
+        intercept Mobility Gateway traffic. CISCO-TAP2-MIB MIB 
+        along with specific filter MIBs like this MIB replace
+        the CISCO-TAP-MIB MIB.
+
+        To create a Mobility intercept, an entry 
+        cmtapStreamEntry is created which contains the filter 
+        details. An entry cTap2StreamEntry of CISCO-TAP2-MIB is 
+        created which is the common stream information for all 
+        kinds of intercepts and type of the specific stream is 
+        set to 'mobility' in this entry."
+    REVISION        "201006160000Z"
+    DESCRIPTION
+        "Added a new textual convention:
+        CmtapLawfulInterceptID.
+        Added following three objects to cmtapStreamTable.
+        cmtapStreamLIIdentifier.
+        cmtapStreamLocationInfo.
+        cmtapStreamInterceptType.
+        Added the following new MODULE-COMPLIANCE.
+        ciscoMobilityTapMIBComplianceRev01.
+        Added the following new OBJECT-GROUP.
+        ciscoMobilityTapStreamGroupSup1."
+    REVISION        "201004150000Z"
+    DESCRIPTION
+        "Added enumeration 'servedMdn' for mtapStreamCapabilities object
+        and CmtapSubscriberIDType."
+    REVISION        "200808050000Z"
+    DESCRIPTION
+        "Initial version of this MIB module."
+    ::= { ciscoMgmt 672 }
+
+
+ciscoMobilityTapMIBNotifs  OBJECT IDENTIFIER
+    ::= { ciscoMobilityTapMIB 0 }
+
+ciscoMobilityTapMIBObjects  OBJECT IDENTIFIER
+    ::= { ciscoMobilityTapMIB 1 }
+
+ciscoMobilityTapMIBConform  OBJECT IDENTIFIER
+    ::= { ciscoMobilityTapMIB 2 }
+
+cmtapStreamGroup  OBJECT IDENTIFIER
+    ::= { ciscoMobilityTapMIBObjects 1 }
+
+
+CmtapLawfulInterceptID ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT    "256a"
+    STATUS          current
+    DESCRIPTION
+        "An octet string containing the Lawful Intercept Identifier
+        (LIID)assigned to the intercepted target by a law enforcement
+        agency defined by Communications Assistance for Law Enforcement
+        Act (CALEA)."
+    SYNTAX          OCTET STRING (SIZE (3..256))
+
+CmtapSubscriberIDType ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION
+        "A value that represents the type of address that is used to
+        identify a subscriber.  The following types are
+        currently supported:
+                unknown:   The Subscriber's identifier type is not
+                           known.
+                msid:      A Mobile Subscriber Identity (MSID).
+                imsi:      An International Mobile Subscriber
+        Identity(IMSI) number.
+                nai:       A Network Access Identifier (NAI).
+                esn:       An Electronic Serial Number (ESN).
+                servedMdn: Served Mdn(mobile directory number) 
+                           is a vendor specific attribute.
+                           It is similar to the class IETF attribute.
+                           Refer to RFC 2865 for vendor 
+                           specific attribute format.
+                           Example:dsg-mdn."
+    SYNTAX          INTEGER  {
+                        unknown(1),
+                        msid(2),
+                        imsi(3),
+                        nai(4),
+                        esn(5),
+                        servedMdn(6)
+                    }
+
+CmtapSubscriberID ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT    "256a"
+    STATUS          current
+    DESCRIPTION
+        "An octet string containing a subscriber's
+        identification, preferably in human-readable form.
+
+        A CmtapStreamSubscriberID value is always interpreted
+        within the context of an CmtapStreamSubscriberIDType value.
+        Every usage of the CmtapStreamSubscriberID textual
+        convention is required to specify the identity that 
+        corresponds to a CmtapStreamSubscriberIDType object."
+    SYNTAX          OCTET STRING (SIZE (3..256))
+
+-- The filter specifics for intercepting Mobility Gateway traffic.
+
+cmtapStreamCapabilities OBJECT-TYPE
+    SYNTAX          BITS {
+                        tapEnable(0),
+                        interface(1),
+                        calledSubscriberID(2),
+                        nonvolatileStorage(3),
+                        msid(4),
+                        imsi(5),
+                        nai(6),
+                        esn(7),
+                        servedMdn(8)
+                    }
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the Mobility Gateway intercept
+        features that are implemented by this device and are
+        manageable through this MIB.
+            tapEnable:          set if table entries with
+                                cTap2StreamInterceptEnable set to 
+                                'false' are used to pre-screen packets
+                                for intercept; otherwise these entries
+                                are ignored.
+            interface:          SNMP ifIndex Value may be used to
+                                select interception of all data 
+                                crossing an interface or set of
+                                interfaces.
+            nonvolatileStorage: The cmTapStreamTable supports the
+                                ability to store rows in nonvolatile
+                                memory.
+            calledSubscriberID: The cmtapStreamCalledSubscriberID can
+                                be used to specify intercepts.
+                                Otherwise, this field is disabled.
+            msid:               A Mobile Subscriber Identity (MSID) can
+                                be used in the ID strings to specify
+                                intercepts.
+            imsi:               An International Mobile Subscriber
+                                Identity (IMSI) number can be used ID
+                                strings to specify intercepts.
+            nai:                A Network Access Identifier (NAI) can
+                                be used in the ID strings to specify
+                                intercepts.
+            esn:                An Electronic Serial Number (ESN) can
+                                be used in the ID strings to specify
+                                intercepts. 
+           servedMdn:           Vendor specific attribute Served-Mobile Directory
+                                Number(MDN) can be used in the ID strings 
+                                to specify intercepts." 
+    ::= { cmtapStreamGroup 1 }
+-- The "access list" for intercepting calls over Mobility Gateways
+
+cmtapStreamTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CmtapStreamEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The Mobility Stream Table lists the data streams to be
+        intercepted. The same data stream may be required by multiple 
+        taps. 
+
+
+        This essentially provides options for packet selection, only 
+        some of which might be used. For example, if all the traffic to 
+        or from a subscriber is to be intercepted, one would configure 
+        an entry listing SubscriberID along with the SubscriberIDType  
+        corresponding to the stream that one wishes to intercept. 
+
+
+        The first index indicates which Mediation Device the 
+        intercepted traffic will be diverted to. The second index,
+        which indicates the specific intercept stream, permits multiple
+        classifiers to be used together.  For example, an IP stream
+        and a Mobility stream could both be listed in their respective
+        tables, yet still correspond to the same Mediation Device
+        entry.
+
+        Entries are added to this table via cmtapStreamStatus in  
+        accordance with the RowStatus convention."
+    ::= { cmtapStreamGroup 2 }
+
+cmtapStreamEntry OBJECT-TYPE
+    SYNTAX          CmtapStreamEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "A stream entry indicates a single data stream to be
+        intercepted to a Mediation Device. Many selected data
+        streams may go to the same application interface and many
+        application interfaces are supported."
+    INDEX           {
+                        cTap2MediationContentId,
+                        cTap2StreamIndex
+                    } 
+    ::= { cmtapStreamTable 1 }
+
+CmtapStreamEntry ::= SEQUENCE {
+        cmtapStreamCalledSubscriberIDType CmtapSubscriberIDType,
+        cmtapStreamCalledSubscriberID     CmtapSubscriberID,
+        cmtapStreamSubscriberIDType       CmtapSubscriberIDType,
+        cmtapStreamSubscriberID           CmtapSubscriberID,
+        cmtapStreamStorageType            StorageType,
+        cmtapStreamStatus                 RowStatus,
+        cmtapStreamLIIdentifier           CmtapLawfulInterceptID,
+        cmtapStreamLocationInfo           TruthValue,
+        cmtapStreamInterceptType          INTEGER
+}
+
+cmtapStreamCalledSubscriberIDType OBJECT-TYPE
+    SYNTAX          CmtapSubscriberIDType
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "Identifies the type of address that is stored in the
+        cmtapStreamCalledSubscriberID string."
+    DEFVAL          { unknown } 
+    ::= { cmtapStreamEntry 1 }
+
+cmtapStreamCalledSubscriberID OBJECT-TYPE
+    SYNTAX          CmtapSubscriberID
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "A string used to identify the party being contacted.
+
+        The type of this identification is determined by the
+        cmtapStreamCalledSubscriberIDType object." 
+    ::= { cmtapStreamEntry 2 }
+
+cmtapStreamSubscriberIDType OBJECT-TYPE
+    SYNTAX          CmtapSubscriberIDType
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "Identifies the type of address that is stored in the
+        cmtapStreamSubscriberID string."
+    DEFVAL          { unknown } 
+    ::= { cmtapStreamEntry 3 }
+
+cmtapStreamSubscriberID OBJECT-TYPE
+    SYNTAX          CmtapSubscriberID
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "A string used to identify the subscriber to tap.
+
+        The type of this indentification is determined by the
+        cmtapStreamSubscriberIDType object." 
+    ::= { cmtapStreamEntry 4 }
+
+cmtapStreamStorageType OBJECT-TYPE
+    SYNTAX          StorageType
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the storage type of this conceptual row.
+        If it is set to 'nonVolatile', this entry can be saved into
+        non-volatile memory."
+    DEFVAL          { volatile } 
+    ::= { cmtapStreamEntry 5 }
+
+cmtapStreamStatus OBJECT-TYPE
+    SYNTAX          RowStatus
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "The status of this conceptual row. This object manages
+        creation, modification, and deletion of rows in this table.
+        When any field must be changed, cmtapStreamStatus must be
+        first set to 'notInService'." 
+    ::= { cmtapStreamEntry 6 }
+
+cmtapStreamLIIdentifier OBJECT-TYPE
+    SYNTAX          CmtapLawfulInterceptID
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object is an identifier assigned by a Law Enforcement
+        Agency (LEA) to facilitate LI operations as defined in 3GPP TS
+        33.108 v8.7.0 standards document."
+    DEFVAL          { "not set" } 
+    ::= { cmtapStreamEntry 7 }
+
+cmtapStreamLocationInfo OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object indicates, if the userLocationInfo object should be
+        included in the Intercept Related Information (IRI) messages
+        sent by the gateway to mediation gateway(s) for interception
+        taps.
+
+        The userLocationInfo is defined as part of the IRI messages in
+        3GPP 33.108 v8.7.0 standards document."
+    DEFVAL          { true } 
+    ::= { cmtapStreamEntry 8 }
+
+cmtapStreamInterceptType OBJECT-TYPE
+    SYNTAX          INTEGER  {
+                        ccOnly(1),
+                        iriOnly(2),
+                        both(3)
+                    }
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the intercept type of the tapped stream.
+        The tap can be provisioned to intercept control messages (IRI)
+        from the tapped stream, the payload (CC) messages from the
+        tapped stream or both.  The format of these messages in defined
+        in 3GPP TS 33.108 v8.7.0 standards document.    
+        ccOnly(1)  - Content of communication interception only. 
+        iriOnly(2) - Intercept Related Information only.
+        both(3)    - Intercept both:  CC and IRI."
+    DEFVAL          { both } 
+    ::= { cmtapStreamEntry 9 }
+ 
+
+-- Conformance
+
+ciscoMobilityTapMIBCompliances  OBJECT IDENTIFIER
+    ::= { ciscoMobilityTapMIBConform 1 }
+
+ciscoMobilityTapMIBGroups  OBJECT IDENTIFIER
+    ::= { ciscoMobilityTapMIBConform 2 }
+
+
+-- compliance statement
+
+ciscoMobilityTapMIBCompliance MODULE-COMPLIANCE
+    STATUS          deprecated
+    DESCRIPTION
+        "The compliance statement for entities which implement the
+        Cisco Intercept MIB for Mobility Gateways"
+    MODULE          -- this module
+    MANDATORY-GROUPS { ciscoMobilityTapCapabilityGroup }
+
+    GROUP           ciscoMobilityTapStreamGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    OBJECT          cmtapStreamCalledSubscriberIDType
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cmtapStreamCalledSubscriberID
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cmtapStreamSubscriberIDType
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cmtapStreamSubscriberID
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cmtapStreamStorageType
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cmtapStreamStatus
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+    ::= { ciscoMobilityTapMIBCompliances 1 }
+
+ciscoMobilityTapMIBComplianceRev01 MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for entities which implement the Cisco
+        Intercept MIB for Mobility Gateways."
+    MODULE          -- this module
+    MANDATORY-GROUPS { ciscoMobilityTapCapabilityGroup }
+
+    GROUP           ciscoMobilityTapStreamGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           ciscoMobilityTapStreamGroupSup1
+    DESCRIPTION
+        "Implementation of this group is conditionally mandatory if the
+        ciscoMobilityTapStreamGroup is implemented and lawful
+        interception for 4G mobile calls is supported."
+
+    OBJECT          cmtapStreamCalledSubscriberIDType
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cmtapStreamSubscriberIDType
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cmtapStreamStorageType
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cmtapStreamCalledSubscriberID
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cmtapStreamSubscriberID
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          cmtapStreamStatus
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+    ::= { ciscoMobilityTapMIBCompliances 2 }
+
+-- Units of Conformance
+
+ciscoMobilityTapCapabilityGroup OBJECT-GROUP
+    OBJECTS         { cmtapStreamCapabilities }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects which provide Mobility Gateway
+        capabilities for the system."
+    ::= { ciscoMobilityTapMIBGroups 1 }
+
+ciscoMobilityTapStreamGroup OBJECT-GROUP
+    OBJECTS         {
+                        cmtapStreamCalledSubscriberIDType,
+                        cmtapStreamCalledSubscriberID,
+                        cmtapStreamSubscriberIDType,
+                        cmtapStreamSubscriberID,
+                        cmtapStreamStorageType,
+                        cmtapStreamStatus
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects which provide information about
+        the stream from which we wish to intercept packets."
+    ::= { ciscoMobilityTapMIBGroups 2 }
+
+ciscoMobilityTapStreamGroupSup1 OBJECT-GROUP
+    OBJECTS         {
+                        cmtapStreamLIIdentifier,
+                        cmtapStreamLocationInfo,
+                        cmtapStreamInterceptType
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects which provide additional information
+        about the stream from which we wish to intercept packets."
+    ::= { ciscoMobilityTapMIBGroups 3 }
+
+END
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

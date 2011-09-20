@@ -1,0 +1,168 @@
+        CONTIVITY-ID-V1-MIB DEFINITIONS ::= BEGIN
+                
+        IMPORTS
+				MODULE-IDENTITY				 		FROM SNMPv2-SMI
+-- SNMPv2-SMI(RFC2578 or STD58)
+				contivity							FROM NEWOAK-MIB;
+
+		id-ces  MODULE-IDENTITY
+			LAST-UPDATED "0604062230Z"  -- April 06, 2006 6:30pm EST
+			ORGANIZATION "Nortel"
+			CONTACT-INFO
+				   "support@nortel.com
+            Postal: Nortel
+                    600 Technology Park Drive
+                    Billerica, MA 01821
+            Tel:    +1 978 670 8888
+            E-Mail: support@nortel.com"
+
+			DESCRIPTION
+				"on the VPN Router."
+
+            REVISION     "0105102300Z"   -- May 10, 2001 7:00pm EST
+            DESCRIPTION
+               "Added tunnel licensing OIDs.
+                            "
+			::= { contivity 16 }
+
+    id-Software-ces OBJECT-IDENTITY
+       STATUS current
+       DESCRIPTION
+           "All software IDs are based from this OID."
+        ::= {id-ces 1}
+
+    id-SW-Server-ces OBJECT-IDENTITY
+       STATUS current
+       DESCRIPTION
+           "All software IDs are based from this OID."
+        ::= {id-Software-ces 1}
+
+	id-SW-Routing-ces OBJECT-IDENTITY
+       STATUS current
+       DESCRIPTION
+           "All hardware IDs are based from this OID."
+		::= {id-SW-Server-ces 1}
+
+	id-SW-Routing-RoutingInformationProtocol-ces OBJECT-IDENTITY
+       STATUS current
+       DESCRIPTION
+           "Routing Information Protocol (RIP)."
+		::= {id-SW-Routing-ces 1}
+
+	id-SW-Routing-AdvancedRouting-ces OBJECT-IDENTITY
+       STATUS current
+       DESCRIPTION
+           "All hardware IDs are based from this OID."
+		::= {id-SW-Routing-ces 2}
+
+
+	id-SW-AdvancedRouting-OpenShortestPathFirst-ces OBJECT-IDENTITY
+       STATUS current
+       DESCRIPTION
+           "Open Shortest Path First (OSPF)."
+		::= {id-SW-Routing-AdvancedRouting-ces 2}
+
+	id-SW-AdvancedRouting-VirtualRouterRedundancyProtocol-ces OBJECT-IDENTITY
+       STATUS current
+       DESCRIPTION
+           "Virtual Router Redundancy Protocol (VRRP)."
+		::= {id-SW-Routing-AdvancedRouting-ces 3}
+
+	id-SW-AdvancedRouting-BandWidthManagement-ces OBJECT-IDENTITY
+       STATUS current
+       DESCRIPTION
+           "Bandwidth management (BWM)."
+		::= {id-SW-Routing-AdvancedRouting-ces 4}
+
+	id-SW-AdvancedRouting-DiffServ-ces OBJECT-IDENTITY
+       STATUS current
+       DESCRIPTION
+           "Differentiated Services (DiffServ)."
+		::= {id-SW-Routing-AdvancedRouting-ces 5}
+
+	id-SW-DataLinkSwitchingFeature-ces OBJECT-IDENTITY
+       STATUS current
+       DESCRIPTION
+           "Data Link Switching (DLSW)."
+		::= {id-SW-Routing-ces 3}
+
+	id-SW-Routing-BGPRouting-ces OBJECT-IDENTITY
+       STATUS current
+       DESCRIPTION
+           "All hardware IDs are based from this OID."
+		::= {id-SW-Routing-ces 4}
+
+	id-SW-BorderGatewayProtocol-ces OBJECT-IDENTITY
+       STATUS current
+       DESCRIPTION
+           "Border Gateway Protocol (BGP)."
+		::= {id-SW-Routing-BGPRouting-ces 1}
+                
+        id-SW-Routing-Premium-Routing-ces OBJECT-IDENTITY
+       STATUS current
+       DESCRIPTION
+           "All hardware IDs are based from this OID."
+		::= {id-SW-Routing-ces 5}
+
+        
+	id-SW-Security-ces OBJECT-IDENTITY
+       STATUS current
+       DESCRIPTION
+           "All Software Security IDs are based from this OID."
+		::= {id-SW-Server-ces 2}
+
+	id-SW-Security-Firewall-ces OBJECT-IDENTITY
+       STATUS current
+       DESCRIPTION
+           "All Software Firewall IDs are based from this OID."
+		::= {id-SW-Security-ces 1}
+
+	id-SW-Firewall-Contivity-ces OBJECT-IDENTITY
+       STATUS current
+       DESCRIPTION
+           "All Contivity Firewall IDs are based from this OID."
+		::= {id-SW-Security-Firewall-ces 1}
+
+	id-SW-Contivity-Stateful-Inspection-ces OBJECT-IDENTITY
+       STATUS current
+       DESCRIPTION
+           "Contivity Firewall Stateful Inspection OID."
+		::= {id-SW-Firewall-Contivity-ces 1}
+
+	id-SW-Contivity-Interface-Filters-ces OBJECT-IDENTITY
+       STATUS current
+       DESCRIPTION
+           "Contivity Firewall Interface Filters OID."
+		::= {id-SW-Firewall-Contivity-ces 2}
+
+	id-SW-Firewall-CheckPoint-ces OBJECT-IDENTITY
+       STATUS current
+       DESCRIPTION
+           "CheckPoint Firewall OID."
+		::= {id-SW-Security-Firewall-ces 2}
+
+	id-SW-Security-FIPS-ces OBJECT-IDENTITY
+       STATUS current
+       DESCRIPTION
+           "All Software FIPS IDs are based from this OID."
+		::= {id-SW-Security-ces 2}
+
+	id-SW-Tunnel-ces OBJECT-IDENTITY
+       STATUS current
+       DESCRIPTION
+           "All Tunneling related IDs are based from this OID."
+		::= {id-SW-Server-ces 3}
+
+	id-SW-Tunnel-BaseLevel-ces OBJECT-IDENTITY
+       STATUS current
+       DESCRIPTION
+           "Brings box up to the base level of tunnels.."
+		::= {id-SW-Tunnel-ces 1}
+
+    id-Hardware-ces OBJECT-IDENTITY
+       STATUS current
+       DESCRIPTION
+           "All hardware IDs are based from this OID."
+        ::= {id-ces 2}
+
+	END

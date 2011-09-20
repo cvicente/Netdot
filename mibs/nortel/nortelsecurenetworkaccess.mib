@@ -20,7 +20,7 @@ IMPORTS
         FROM SYNOPTICS-ROOT-MIB;
 
 nortelSecureNetworkAccessMib MODULE-IDENTITY
-    LAST-UPDATED    "200705210000Z"
+    LAST-UPDATED    "200706290000Z"
     ORGANIZATION    "Nortel Networks"
     CONTACT-INFO    "Nortel Networks"
     DESCRIPTION
@@ -37,6 +37,9 @@ nortelSecureNetworkAccessMib MODULE-IDENTITY
          This Specification is supplied 'AS IS,' and Nortel Networks
          makes no warranty, either express or implied, as to the use,
          operation, condition, or performance of the Specification."
+
+    REVISION "200706290000Z" -- 29 June 2007
+    DESCRIPTION "v21:  Clarified description of nsnaNsnasStatusQuoInterval."
 
     REVISION "200705210000Z" -- 21 May 2007
     DESCRIPTION "v20:  Added additional enumerations in
@@ -223,9 +226,11 @@ nsnaNsnasStatusQuoInterval OBJECT-TYPE
         "The status-quo interval for the current or last SSCP connection.
          If the NSNAS is disconnected from the switch for any reason, the
          switch will wait this period of time before moving all NSNA enabled
-         ports to the red VLAN.  The maximum value, 65535, indicates that no
-         status quo interval is used, and SSA enabled ports will not be
-         moved to the red VLAN.
+         ports to the red VLAN.  The maximum value, 65535, indicates an
+         infinite status quo interval, i.e., SSA enabled ports will not be
+         moved to the red VLAN.  A value of 0 means no status quo interval
+         is used, and ports are immediately moved the the red VLAN if the
+         NSNAS is disconnected.
 
          If the NSNAS has disconnected and the status-quo interval timer is
          running, this value will reflect the remaining time until the

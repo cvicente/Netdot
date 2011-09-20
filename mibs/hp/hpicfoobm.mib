@@ -1,0 +1,281 @@
+HP-ICF-OOBM-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    InetAddress, InetAddressType
+        FROM INET-ADDRESS-MIB
+    OBJECT-TYPE, MODULE-IDENTITY
+        FROM SNMPv2-SMI
+    MODULE-COMPLIANCE, OBJECT-GROUP
+        FROM SNMPv2-CONF
+    TEXTUAL-CONVENTION, TruthValue
+        FROM SNMPv2-TC 
+    hpSwitch
+        FROM HP-ICF-OID
+    snmpTargetAddrEntry
+        FROM SNMP-TARGET-MIB;
+
+
+hpicfOobmMIB MODULE-IDENTITY
+    LAST-UPDATED "200902130000Z"  -- February 13, 2009
+    ORGANIZATION 
+       "Hewlett-Packard Company
+        Procurve Networking Business"
+    CONTACT-INFO 
+       "Hewlett-Packard Company
+       8000 Foothills Blvd.
+       Roseville, CA 95747"    
+    DESCRIPTION  "The MIB module is for representing Oobm entity"
+
+    REVISION     "200902130000Z"   -- Feb 13, 2009
+    DESCRIPTION  "Initial Revision"
+    ::= { hpSwitch 58 }
+
+-- *********************************************************************
+   -- hpicfOobmMIB - the main groups
+-- *********************************************************************
+
+   hpicfOobmNotifications       OBJECT IDENTIFIER
+                         ::= { hpicfOobmMIB 0 }
+
+   hpicfOobmObjects             OBJECT IDENTIFIER
+                         ::= { hpicfOobmMIB 1 }
+
+   hpicfOobmConformance         OBJECT IDENTIFIER
+                         ::= { hpicfOobmMIB 3 }
+
+-- *********************************************************************
+-- OOBM Textual Conventions
+-- *********************************************************************
+HpicfOobmServerIndex ::= TEXTUAL-CONVENTION
+    STATUS       current
+    DESCRIPTION  "An enumerated value that indications the Server 
+                  Application type. Server application type is index
+                  for this table."
+    SYNTAX       INTEGER {
+       telnet(1),
+       ssh(2),
+       tftp(3),
+       http(4),
+       snmp(5)     
+    }
+
+HpicfOobmServerState ::= TEXTUAL-CONVENTION
+    STATUS         current
+    DESCRIPTION   "An enumerated value which provides an indication of
+                   the Application server's presence. Default value is
+                   oobm only. Application server can be run for oobm 
+                   only, data only, or for both."
+    SYNTAX        INTEGER  {
+       oobm(1),
+       data(2),
+       both(3)
+    }
+
+-- *********************************************************************
+-- OOBM Scalars
+-- *********************************************************************
+hpicfOobmScalars OBJECT IDENTIFIER ::= { hpicfOobmObjects 1 }
+
+    hpicfOobmStatus OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    enable(1),
+                    disable(2)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION "Global Oobm (Out Of Band Management) status. By default
+                 oobm is globally enabled."
+    DEFVAL      { enable }
+    ::= { hpicfOobmScalars 1 }
+
+-- ********************************************************************
+-- Oobm server applications entry 
+-- ********************************************************************
+
+hpicfOobmServers  OBJECT IDENTIFIER ::= { hpicfOobmObjects 2 }
+
+hpicfOobmServerTable   OBJECT-TYPE
+    SYNTAX      SEQUENCE OF HpicfOobmServerEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION "This table contains one row for every server 
+                 application in the switch entity."
+    ::= { hpicfOobmServers 1 }
+
+hpicfOobmServerEntry   OBJECT-TYPE
+    SYNTAX      HpicfOobmServerEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION "Information about Server Application table."
+    INDEX       { hpicfOobmServerType }
+    ::= { hpicfOobmServerTable 1 }
+
+HpicfOobmServerEntry ::= SEQUENCE {
+      hpicfOobmServerType           HpicfOobmServerIndex,
+      hpicfOobmServerListenMode     HpicfOobmServerState
+}
+
+hpicfOobmServerType    OBJECT-TYPE
+    SYNTAX       HpicfOobmServerIndex
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  "The index that is used to access the switch server
+                  application table."
+    ::= { hpicfOobmServerEntry 1 }
+
+hpicfOobmServerListenMode OBJECT-TYPE
+    SYNTAX      HpicfOobmServerState 
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION "The current state of the server application. Default
+                 value is Oobm. Depending on the interface on which 
+                 server application is running, incoming queries will
+                 be listened by the switch."
+    ::= { hpicfOobmServerEntry 2 }
+
+    hpicfOobmSnmpTargetAddrIsOobm OBJECT IDENTIFIER ::= { hpicfOobmObjects 3 }
+
+    hpicfSnmpTargetAddrIsOobmTable OBJECT-TYPE
+        SYNTAX      SEQUENCE OF HpicfSnmpTargetAddrIsOobmEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Adds an HpicfSnmpTargetAddrIsOobmEntry to
+                     snmpTargetAddrTable."
+        ::= { hpicfOobmSnmpTargetAddrIsOobm 1}
+
+    hpicfSnmpTargetAddrIsOobmEntry OBJECT-TYPE
+        SYNTAX      HpicfSnmpTargetAddrIsOobmEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION "Adds an HpicfSnmpTargetAddrIsOobmEntry to
+                     snmpTargetAddrTable."
+        AUGMENTS    { snmpTargetAddrEntry }
+        ::= { hpicfSnmpTargetAddrIsOobmTable 1 }
+
+    HpicfSnmpTargetAddrIsOobmEntry ::= SEQUENCE {
+        hpicfSnmpTargetAddrIsOobm TruthValue
+    }
+
+    hpicfSnmpTargetAddrIsOobm OBJECT-TYPE
+        SYNTAX      TruthValue
+        MAX-ACCESS  read-create
+        STATUS      current
+        DESCRIPTION "This object indicates if the target is reachable 
+                     over OOBM (Out OF Band Management) interface or 
+                     not. This mib object will be applicable only if 
+                     there is a physical OOBM port on the device."
+        DEFVAL      { false }   -- SNMP traps only
+        ::= { hpicfSnmpTargetAddrIsOobmEntry 1 }
+-- ********************************************************************
+-- Oobm Default Gateway entry 
+-- ********************************************************************
+
+hpicfOobmDefGateway  OBJECT IDENTIFIER ::= { hpicfOobmObjects 4 }
+
+hpicfOobmDefGatewayTable   OBJECT-TYPE
+    SYNTAX      SEQUENCE OF HpicfOobmDefGatewayEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION "This table contains one row for every default
+		gateway configured for OOBM Interface."
+    ::= { hpicfOobmDefGateway 1 }
+
+hpicfOobmDefGatewayEntry   OBJECT-TYPE
+    SYNTAX      HpicfOobmDefGatewayEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION "Information about Default Gateway table."
+    INDEX       { hpicfOobmDefGatewayType }
+    ::= { hpicfOobmDefGatewayTable 1 }
+
+HpicfOobmDefGatewayEntry ::= SEQUENCE {
+      hpicfOobmDefGatewayType           InetAddressType,
+      hpicfOobmDefGatewayAddr           InetAddress
+}
+
+hpicfOobmDefGatewayType    OBJECT-TYPE
+    SYNTAX       InetAddressType
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION  "Address type of default gateway configured
+                  for OOBM Interface."
+    ::= { hpicfOobmDefGatewayEntry 1 }
+
+hpicfOobmDefGatewayAddr OBJECT-TYPE
+    SYNTAX      InetAddress 
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION "The IP Address of the default gateway
+                configured for OOBM interface."
+    ::= { hpicfOobmDefGatewayEntry 2 }
+
+
+-- ********************************************************************
+-- Oobm Conformance
+--********************************************************************
+
+   hpicfOobmCompliance  OBJECT IDENTIFIER ::= { hpicfOobmConformance 1 }
+   hpicfOobmGroups      OBJECT IDENTIFIER ::= { hpicfOobmConformance 2 }
+
+-- ********************************************************************
+-- OOBM Application Servers Complicance
+-- ********************************************************************
+   hpicfOobmMibCompliance MODULE-COMPLIANCE
+      STATUS       current
+      DESCRIPTION  "The compliance statement for entries which implement
+                    the Oobm application servers MIB."
+      MODULE        -- This module
+      MANDATORY-GROUPS
+      {
+          hpicfOobmScalarsGroup,
+          hpicfOobmServersGroup,
+          hpicfSnmpTargetAddrIsOobmGroup,
+	  hpicfOobmDefGatewayGroup
+      }
+      GROUP        hpicfOobmGroups
+      DESCRIPTION  "Objects associated with switch Oobm configuration
+                    entity."
+      ::= { hpicfOobmCompliance 1 } 
+
+--
+-- Oobm Application Servers Groups
+--
+   hpicfOobmScalarsGroup OBJECT-GROUP
+      OBJECTS
+      {
+           hpicfOobmStatus
+      }
+      STATUS      current
+      DESCRIPTION "Basic Scalars required in Oobm MIB implementation."
+      ::= { hpicfOobmGroups 1 }
+
+   hpicfOobmServersGroup OBJECT-GROUP
+      OBJECTS
+      {          
+          hpicfOobmServerListenMode            
+      }
+      STATUS      current
+      DESCRIPTION "Oobm Server MIB parameters."
+      ::= { hpicfOobmGroups 2 }
+
+   hpicfSnmpTargetAddrIsOobmGroup OBJECT-GROUP
+      OBJECTS 
+      {          
+          hpicfSnmpTargetAddrIsOobm
+      }
+      STATUS      current
+      DESCRIPTION "A group of objects to add an 
+                   HpicfSnmpTargetAddrIsOobmEntry to 
+                   snmpTargetAddrTable."
+      ::= { hpicfOobmGroups 3 }
+
+   hpicfOobmDefGatewayGroup OBJECT-GROUP
+      OBJECTS
+      {          
+	  hpicfOobmDefGatewayAddr           
+      }
+      STATUS      current
+      DESCRIPTION "OOBM Default Gateway MIB parameters"
+      ::= { hpicfOobmGroups 4 }
+
+END

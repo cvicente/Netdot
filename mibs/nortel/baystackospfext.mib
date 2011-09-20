@@ -14,13 +14,13 @@ IMPORTS
         FROM SYNOPTICS-ROOT-MIB;
 
 bayStackOspfExtMib MODULE-IDENTITY
-    LAST-UPDATED    "200609260000Z"
+    LAST-UPDATED    "200911100000Z"
     ORGANIZATION    "Nortel Networks"
     CONTACT-INFO    "Nortel Networks"
     DESCRIPTION
         "Nortel Networks OSPF Extension MIB
 
-         Copyright 2005 Nortel Networks, Inc.
+         Copyright 2005-2009 Nortel Networks, Inc.
          All rights reserved.
          This Nortel Networks SNMP Management Information Base
          Specification embodies Nortel Networks' confidential and
@@ -31,6 +31,9 @@ bayStackOspfExtMib MODULE-IDENTITY
          This Specification is supplied 'AS IS,' and Nortel Networks
          makes no warranty, either express or implied, as to the use,
          operation, condition, or performance of the Specification."
+
+    REVISION "200911100000Z" -- 10 Nov 2009
+    DESCRIPTION "v8:  Added bsoeHardwareCompatibilityMode."
 
     REVISION "200609260000Z" -- 26 Sept 2006
     DESCRIPTION "v7:  Added bsoeOspfVirtIfExtType."
@@ -86,6 +89,17 @@ bsoeApplyRedistribute OBJECT-TYPE
          it will cause the 'apply' to occur for the specified protocol.  The
          value returned is always none(0)."
     ::= { bsoeScalars 1 }
+
+bsoeHardwareCompatibilityMode OBJECT-TYPE
+    SYNTAX      INTEGER {
+                          ers5510(1),
+                          noneErs5510(2)
+                        }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object is used to set the 5510 hardware compatilibity mode."
+    ::= { bsoeScalars 2 }
 
 -- -------------------------------------------------------------
 -- OSPF Interface Extensions Table

@@ -3,7 +3,7 @@
 --
 -- April, 2003 Lilian Jiang 
 --
--- Copyright (c) 2003 by cisco Systems, Inc.
+-- Copyright (c) 2003, 2004 by cisco Systems, Inc.
 -- All rights reserved.
 -- *****************************************************************
 CISCO-CABLE-DIAG-MIB DEFINITIONS ::= BEGIN
@@ -32,7 +32,7 @@ IMPORTS
     ;
 
 ciscoCableDiagMIB MODULE-IDENTITY
-    LAST-UPDATED    "200401150000Z"
+    LAST-UPDATED    "200409130000Z"
     ORGANIZATION    "Cisco Systems Inc. "
     CONTACT-INFO
         "Cisco Systems
@@ -56,6 +56,11 @@ ciscoCableDiagMIB MODULE-IDENTITY
         Examples of cable diagnostic test methods are: PRBS
         (Pesudo Random Binary Sequence), TDR (Time Domain 
         reflectometery), etc.."    
+    REVISION    "200409130000Z"
+    DESCRIPTION 
+        "Added a new enum value indeterminate(9) in
+         ccdTdrIfResultPairStatus."
+
     REVISION    "200401150000Z"
     DESCRIPTION
             "Initial version of this MIB module."
@@ -469,7 +474,8 @@ ccdTdrIfResultPairStatus OBJECT-TYPE
                    open(5),
                    shorted(6),
                    impedanceMismatch(7),
-                   broken(8)
+                   broken(8),
+                   indeterminate(9)
                } 
     MAX-ACCESS read-only 
     STATUS     current
@@ -492,7 +498,9 @@ ccdTdrIfResultPairStatus OBJECT-TYPE
         'impedanceMismatch' -- the impedance of the pair is 
                                mismatched.
 
-        'broken'       -- the pair is broken."
+        'broken'       -- the pair is broken.
+
+        'indeterminate' -- the status of the pair is indeterminate."
     ::= { ccdTdrIfResultEntry 8 }
 
 --

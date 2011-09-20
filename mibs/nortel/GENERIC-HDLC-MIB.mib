@@ -1,0 +1,206 @@
+
+GENERIC-HDLC-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+	MODULE-IDENTITY,OBJECT-TYPE, 
+	Integer32,Counter32
+  		FROM SNMPv2-SMI
+	nnbundleId
+		FROM 	BUNDLE-MIB
+	ntEnterpriseDataTasmanMgmt 
+		FROM NT-ENTERPRISE-DATA-MIB;
+
+nngenHdlcMib MODULE-IDENTITY
+	LAST-UPDATED "9907010000Z" 
+	ORGANIZATION "Nortel Networks"
+	CONTACT-INFO
+        	" Nortel Networks
+        	8200 Dixie Road
+        	Brampton, Ontario L6T 5P6
+        	Canada        
+        	1-800-4Nortel 
+        	www.nortelnetworks.com "		
+	DESCRIPTION
+		"The MIB defines objects for configuring generic HDLC
+        	bundles and thier monitoring"
+	::= { ntEnterpriseDataTasmanMgmt 15 } 
+
+-- Generic Hdlc Table definition
+
+nngenHdlcTable 	OBJECT-TYPE
+	SYNTAX		SEQUENCE OF NnGenHdlcTableEntry
+	MAX-ACCESS	not-accessible
+	STATUS 		current
+	DESCRIPTION
+		"All the parameters pertinent to HDLC encapsulation on 
+		a bundle are defined in this table."
+	::= {nngenHdlcMib 1}
+
+nngenHdlcTableEntry	OBJECT-TYPE
+	SYNTAX			NnGenHdlcTableEntry
+	MAX-ACCESS		not-accessible
+	STATUS			current
+	DESCRIPTION
+		"An entry in the GenHdlc Table"
+	INDEX	{ nnbundleId }
+	::= {nngenHdlcTable 1}
+
+NnGenHdlcTableEntry ::= SEQUENCE {
+        nngenHdlcKeepAlive    Integer32,
+        nngenHdlcMtu    Integer32
+	}
+ 
+
+nngenHdlcKeepAlive	OBJECT-TYPE
+	SYNTAX	Integer32(0..120)
+	UNITS   "seconds"
+	MAX-ACCESS	read-write
+	STATUS	current
+	DESCRIPTION 
+		"The link's keep-alive interval.  System will send 
+		messages once every chosen interval to check bundle's status."
+	DEFVAL { 10 }
+	::= { nngenHdlcTableEntry 1}
+
+nngenHdlcMtu	OBJECT-TYPE
+	SYNTAX	Integer32 -- RANGE
+	MAX-ACCESS		read-write
+	STATUS	current
+	DESCRIPTION 
+		"Maximum transmission unit ie. the maximum packet size to 
+		be sent."
+	DEFVAL { 1500 }
+	::= { nngenHdlcTableEntry 2}
+
+-- GenHdlcStats Table Definition
+
+nngenHdlcStatsTable 	OBJECT-TYPE
+	SYNTAX		SEQUENCE OF NnGenHdlcStatsTableEntry
+	MAX-ACCESS	not-accessible
+	STATUS 		current
+	DESCRIPTION
+		"All the statistics parameters pertinent to HDLC encapsulation 
+		on a bundle are defined in this table."
+	::= {nngenHdlcMib 2}
+
+nngenHdlcStatsTableEntry	OBJECT-TYPE
+	SYNTAX			NnGenHdlcStatsTableEntry
+	MAX-ACCESS		not-accessible
+	STATUS			current
+	DESCRIPTION
+		"An entry in the genHdlcStats Table"
+	INDEX	{ nnbundleId }
+	::= {nngenHdlcStatsTable 1}
+
+NnGenHdlcStatsTableEntry ::= SEQUENCE {
+        nngenHdlcStatsBytesRxLastBootClear    Counter32,
+        nngenHdlcStatsBytesTxLastBootClear    Counter32,
+        nngenHdlcStatsPktsRxLastBootClear  Counter32,
+        nngenHdlcStatsPktsTxLastBootClear  Counter32,
+        nngenHdlcStatsErrPktsRxLastBootClear  Counter32,
+        nngenHdlcStatsUpDownStatesLastBootClear  Counter32,
+        nngenHdlcStatsBytesRxLastFiveMins  Counter32,
+        nngenHdlcStatsBytesTxLastFiveMins  Counter32,
+        nngenHdlcStatsPktsRxLastFiveMins  Counter32,
+        nngenHdlcStatsPktsTxLastFiveMins Counter32,
+        nngenHdlcStatsErrPktsRxLastFiveMins  Counter32,
+        nngenHdlcStatsUpDownStatesLastFiveMins Counter32
+	}
+	
+nngenHdlcStatsBytesRxLastBootClear	OBJECT-TYPE
+	SYNTAX	Counter32
+	MAX-ACCESS	read-only
+	STATUS	current
+	DESCRIPTION 
+		""
+	::= { nngenHdlcStatsTableEntry 1 }
+
+nngenHdlcStatsBytesTxLastBootClear	OBJECT-TYPE
+	SYNTAX	Counter32
+	MAX-ACCESS	read-only
+	STATUS	current
+	DESCRIPTION 
+		""
+	::= { nngenHdlcStatsTableEntry 2 }
+
+nngenHdlcStatsPktsRxLastBootClear	OBJECT-TYPE
+	SYNTAX	Counter32
+	MAX-ACCESS	read-only
+	STATUS	current
+	DESCRIPTION 
+		""
+	::= { nngenHdlcStatsTableEntry 3 }
+
+nngenHdlcStatsPktsTxLastBootClear	OBJECT-TYPE
+	SYNTAX	Counter32
+	MAX-ACCESS	read-only
+	STATUS	current
+	DESCRIPTION 
+		""
+	::= { nngenHdlcStatsTableEntry 4 }
+
+nngenHdlcStatsErrPktsRxLastBootClear	OBJECT-TYPE
+	SYNTAX	Counter32
+	MAX-ACCESS	read-only
+	STATUS	current
+	DESCRIPTION 
+		""
+	::= { nngenHdlcStatsTableEntry 5 }
+
+nngenHdlcStatsUpDownStatesLastBootClear	OBJECT-TYPE
+	SYNTAX	Counter32
+	MAX-ACCESS	read-only
+	STATUS	current
+	DESCRIPTION 
+		""
+	::= { nngenHdlcStatsTableEntry 6 }
+
+nngenHdlcStatsBytesRxLastFiveMins	OBJECT-TYPE
+	SYNTAX	Counter32
+	MAX-ACCESS	read-only
+	STATUS	current
+	DESCRIPTION 
+		""
+	::= { nngenHdlcStatsTableEntry 7 }
+
+nngenHdlcStatsBytesTxLastFiveMins	OBJECT-TYPE
+	SYNTAX	Counter32
+	MAX-ACCESS	read-only
+	STATUS	current
+	DESCRIPTION 
+		""
+	::= { nngenHdlcStatsTableEntry 8 }
+
+nngenHdlcStatsPktsRxLastFiveMins	OBJECT-TYPE
+	SYNTAX	Counter32
+	MAX-ACCESS	read-only
+	STATUS	current
+	DESCRIPTION 
+		""
+	::= { nngenHdlcStatsTableEntry 9 }
+
+nngenHdlcStatsPktsTxLastFiveMins	OBJECT-TYPE
+	SYNTAX	Counter32
+	MAX-ACCESS	read-only
+	STATUS	current
+	DESCRIPTION 
+		""
+	::= { nngenHdlcStatsTableEntry 10 }
+
+nngenHdlcStatsErrPktsRxLastFiveMins	OBJECT-TYPE
+	SYNTAX	Counter32
+	MAX-ACCESS	read-only
+	STATUS	current
+	DESCRIPTION 
+		""
+	::= { nngenHdlcStatsTableEntry 11 }
+
+nngenHdlcStatsUpDownStatesLastFiveMins	OBJECT-TYPE
+	SYNTAX	Counter32
+	MAX-ACCESS	read-only
+	STATUS	current
+	DESCRIPTION 
+		""
+	::= { nngenHdlcStatsTableEntry 12 }
+
+END

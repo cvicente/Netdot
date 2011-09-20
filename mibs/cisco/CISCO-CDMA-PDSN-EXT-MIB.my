@@ -1,9 +1,9 @@
 -- $d: $
 -- ************************************************************
 -- CISCO-CDMA-PDSN-EXT-MIB.my:CDMA PDSN Extension MIB
--- March.2008, Srinivas goud Aileni 
+-- July.2009 Srinivas goud Aileni 
 --
--- Copyright (c) 2008 by Cisco Systems, Inc.
+-- Copyright (c) 2008-2009 by Cisco Systems, Inc.
 -- All rights reserved.
 --
 -- *********************************************************
@@ -25,7 +25,8 @@ IMPORTS
          OBJECT-GROUP
                FROM SNMPv2-CONF
          cCdmaPcfSoRpRegStatsEntry,
-         cCdmaServingPdsnHostname
+         cCdmaServingPdsnHostname,
+         cCdmaPcfSoPppSetupStatsEntry
                FROM CISCO-CDMA-PDSN-MIB
          ZeroBasedCounter32
                FROM RMON2-MIB
@@ -34,7 +35,7 @@ IMPORTS
 
 
 ciscoCdmaPdsnExtMIB MODULE-IDENTITY
-         LAST-UPDATED         "200808080000Z"
+         LAST-UPDATED         "200909170000Z"
          ORGANIZATION         "Cisco Systems, Inc."
          CONTACT-INFO
                  "        Cisco Systems
@@ -49,7 +50,7 @@ ciscoCdmaPdsnExtMIB MODULE-IDENTITY
                  E-mail: cs-pdsn@cisco.com"
          DESCRIPTION
                  "This MIB is an extension to the 
-                  CISCO-CDMA-PDSN-MIB.  A CDMA2000
+                  CISCO-CDMA-PDSN-MIB.  A CDMA
                   network supports wireless data
                   communication through 3G CDMA radio 
                   access technology and 3G A10/A11
@@ -59,7 +60,7 @@ ciscoCdmaPdsnExtMIB MODULE-IDENTITY
                   mobile station.
 
                   The high level architecture of a third
-                  generation CDMA2000 network is shown below:
+                  generation CDMA network is shown below:
 
                  +========+=+           +====+        +=======+
                  | RAdio  |P|           |    | Data   |  Home |
@@ -79,7 +80,7 @@ ciscoCdmaPdsnExtMIB MODULE-IDENTITY
                  +========+
                                                                     
                 The following diagram illustrates protocols
-                usage by the CDMA2000 network elements:
+                usage by the CDMA network elements:
 
                 MS=== RAN=== PDSN === DCN == Home Network
                   |        |  A10/A11   |               |
@@ -132,12 +133,15 @@ ciscoCdmaPdsnExtMIB MODULE-IDENTITY
                                   protocol used for maintaining a
                                   logical connection between 
                                   the RAN and PDSN.
+                 CAC              Call Admission Control
 
                  CDMA             Code Division Multiple Access
 
                  DCN              Data Core Network
 
                  DSCP             Differentiated Services Code Point
+                 
+                 GRE              Generic Routing Encapsulation
 
                  HRPD             High Rate Packet Data
 
@@ -180,7 +184,15 @@ ciscoCdmaPdsnExtMIB MODULE-IDENTITY
                  SO               Service Option
                     
                  TFT              Traffic Flow Template."
-       
+         REVISION        "200909170000Z"
+         DESCRIPTION
+             "+ Added following table
+                ccpCdmaExtPcfSoPppSetupStatsTable.
+              + Added ccpCdmaExtCacEnabled to
+                ccpCdmaExtSystemInfo.
+              + Added ciscoCdmaPdsnExtMIBComplianceRev1.
+              + Added ciscoCdmaExtPdsnPcfSoPppGroup ,
+                ciscoCdmaExtSystemPdsnCacGroup."
          REVISION       "200808080000Z"
          DESCRIPTION
                  "Initial version of this MIB module"
@@ -230,6 +242,10 @@ ccpCdmaExtRpSessUpdStats       OBJECT IDENTIFIER
 
 ccpCdmaExtPcfSoRpRegStats      OBJECT IDENTIFIER
     ::= { ccpCdmaExtPerformanceStats 6 }
+
+ccpCdmaExtPcfSoPppSetupStats   OBJECT IDENTIFIER
+    ::= { ccpCdmaExtPerformanceStats 7 }
+
 
 
 -- System Information 
@@ -365,6 +381,24 @@ ccpCdmaExtLoadHighReachedNotifEnabled OBJECT-TYPE
                   reached."
          DEFVAL { false }
          ::= { ccpCdmaExtSystemInfo 11 }
+ 
+ ccpCdmaExtCacEnabled OBJECT-TYPE
+         SYNTAX      TruthValue
+         MAX-ACCESS  read-write
+         STATUS      current
+         DESCRIPTION
+                 "An indication which determines if 
+                  the PDSN system supports call 
+                  admission control feature for the 
+                  session.
+
+                 'true' indicates call admission control 
+                  supported for the session. 
+
+                 'false' indicates call admission control 
+                  not supported for the session."
+         ::= { ccpCdmaExtSystemInfo 12 }
+
 
 -- Registration Statistics 
 
@@ -825,7 +859,7 @@ ccpCdmaExtPcfSoRpRegStatsTable OBJECT-TYPE
                   additional attributes to the PCF profiles 
                   that exists ccpCdmaPcfSoRpRegStatsTable
                   in CISCO-CDMA-PDSN-MIB."
-         ::= { ccpCdmaExtPcfSoRpRegStats 1 }
+         ::= { ccpCdmaExtPcfSoRpRegStats  1 }
 
 ccpCdmaExtPcfSoRpRegStatsEntry OBJECT-TYPE
          SYNTAX      CcpCdmaExtPcfSoRpRegStatsEntry 
@@ -1028,6 +1062,495 @@ ccpCdmaExtPcfSoRpRegStatsNonExistA10s OBJECT-TYPE
          ::= {  ccpCdmaExtPcfSoRpRegStatsEntry  10 }
 
 
+-- PCF and Service Option 
+-- based PPP Setup Counters Table  
+
+ccpCdmaExtPcfSoPppSetupStatsTable OBJECT-TYPE
+         SYNTAX      SEQUENCE OF CcpCdmaExtPcfSoPppSetupStatsEntry 
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         DESCRIPTION
+                 "This table contains 
+                  additional attributes to the PCF profiles 
+                  that present in cCdmaPcfSoPppSetupStatsTable
+                  in CISCO-CDMA-PDSN-MIB."
+          ::= { ccpCdmaExtPcfSoPppSetupStats 1 }
+
+ccpCdmaExtPcfSoPppSetupStatsEntry OBJECT-TYPE
+         SYNTAX      CcpCdmaExtPcfSoPppSetupStatsEntry 
+         MAX-ACCESS  not-accessible
+         STATUS      current
+         DESCRIPTION
+                 "An entry in ccpCdmaExtPcfSoPppSetupStatsTable.Each 
+                  entry contains PPP negotiation statistics information 
+                  on IPCP,LCP etc."
+         AUGMENTS { cCdmaPcfSoPppSetupStatsEntry }
+         ::= { ccpCdmaExtPcfSoPppSetupStatsTable 1 }
+
+CcpCdmaExtPcfSoPppSetupStatsEntry ::= SEQUENCE {  
+    ccpCdmaExtPcfSoPppPreLCPPdsnA10Rls             ZeroBasedCounter32,
+    ccpCdmaExtPcfSoPppPreLCPPcfA10Rls              ZeroBasedCounter32,
+    ccpCdmaExtPcfSoPppLcpOptionIssueFailures       ZeroBasedCounter32,
+    ccpCdmaExtPcfSoPppLcpFailuresMaxRetrans        ZeroBasedCounter32,
+    ccpCdmaExtPcfSoPppLcpFailuresUnknown           ZeroBasedCounter32,
+    ccpCdmaExtPcfSoPppLcpPhaseRxTermreqs           ZeroBasedCounter32,
+    ccpCdmaExtPcfSoPppLcpPcfA10Rls                 ZeroBasedCounter32,        
+    ccpCdmaExtPcfSoPppAuthFailures                 ZeroBasedCounter32,
+    ccpCdmaExtPcfSoPppAuthAAATimeouts              ZeroBasedCounter32,
+    ccpCdmaExtPcfSoPppAuthFailuresUnknown          ZeroBasedCounter32,
+    ccpCdmaExtPcfSoPppAuthMaxRetransFailures       ZeroBasedCounter32,
+    ccpCdmaExtPcfSoPppAuthPhaseRxTermreqs          ZeroBasedCounter32,
+    ccpCdmaExtPcfSoPppAuthPcfA10Rls                ZeroBasedCounter32,
+    ccpCdmaExtPcfSoPppIpcpOptionIssueFailures      ZeroBasedCounter32,
+    ccpCdmaExtPcfSoPppIpcpFailuresMaxRetrans       ZeroBasedCounter32,
+    ccpCdmaExtPcfSoPppIpcpFailuresUnknown          ZeroBasedCounter32,
+    ccpCdmaExtPcfSoPppIpcpPhaseRxTermreqs          ZeroBasedCounter32,
+    ccpCdmaExtPcfSoPppIpcpPcfA10Rls                ZeroBasedCounter32,
+    ccpCdmaExtPcfSoPppIpcpIpResourceFail           ZeroBasedCounter32,
+    ccpCdmaExtPcfSoPppRenegTotalReqs               ZeroBasedCounter32,
+    ccpCdmaExtPcfSoPppRenegByPdsnReqs              ZeroBasedCounter32,
+    ccpCdmaExtPcfSoPppRenegByMobileReqs            ZeroBasedCounter32,
+    ccpCdmaExtPcfSoPppRenegSuccesses               ZeroBasedCounter32,
+    ccpCdmaExtPcfSoPppRenegFailures                ZeroBasedCounter32,
+    ccpCdmaExtPcfSoPppRenegConnectionsAborted      ZeroBasedCounter32,
+    ccpCdmaExtPcfSoPppRenegAddrMismatchReqs        ZeroBasedCounter32,
+    ccpCdmaExtPcfSoPppRenegAccessNwIdChanges       ZeroBasedCounter32,
+    ccpCdmaExtPcfSoPppRenegGreChangeReqs           ZeroBasedCounter32,
+    ccpCdmaExtPcfSoPppRenegOtherReasonReqs         ZeroBasedCounter32
+}
+
+ccpCdmaExtPcfSoPppPreLCPPdsnA10Rls OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+                 "This object indicates total number of A10 connections                                      
+                  released per PCF by PDSN before the PPP enters LCP  
+                  negotiation phase."
+        REFERENCE
+                 "Refer to TIA/EIA international telecommunications
+                  organization standard TR 45.4 for A11/A10 interface
+                  and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                  1962, 1974, 2509, 2716, 2284, 2118, 1994"
+         ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 1  }
+
+ccpCdmaExtPcfSoPppPreLCPPcfA10Rls OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+                 "This object indicates total number of A10 connections                                      
+                  released by PCF before the PPP enters LCP
+                  negotiation phase."
+         REFERENCE
+                 "Refer to TIA/EIA international telecommunications
+                  organization standard TR 45.4 for A11/A10 interface
+                  and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                  1962, 1974, 2509, 2716, 2284, 2118, 1994"
+         ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 2 }
+
+ccpCdmaExtPcfSoPppLcpOptionIssueFailures OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+                 "This object indicates total number of PPP connection
+                  requests terminated per PCF due to LCP options
+                  negotiation failure such as call back user
+                  not negotiating the call back option."
+         REFERENCE
+                 "Refer to TIA/EIA international telecommunications
+                  organization standard TR 45.4 for A11/A10 interface
+                  and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                  1962, 1974, 2509, 2716, 2284, 2118, 1994"
+         ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 3 }
+
+ccpCdmaExtPcfSoPppLcpFailuresMaxRetrans OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+		 "This object indicates total number of PPP connection
+                  requests failed per PCF at LCP stage after max             
+                  number of retransmissions."
+         REFERENCE
+                 "Refer to TIA/EIA international telecommunications
+                  organization standard TR 45.4 for A11/A10 interface
+                  and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                  1962, 1974, 2509, 2716, 2284, 2118, 1994"
+         ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 4 }
+
+ccpCdmaExtPcfSoPppLcpFailuresUnknown OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+		 "This object indicates total number of PPP connection
+                  requests  failed per PCF at LCP stage due to an
+                  unknown reason."
+         REFERENCE
+                 "Refer to TIA/EIA international telecommunications
+                  organization standard TR 45.4 for A11/A10 interface
+                  and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                  1962, 1974, 2509, 2716, 2284, 2118, 1994"
+         ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 5 }
+
+ccpCdmaExtPcfSoPppLcpPhaseRxTermreqs OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+                 "This object indicates total number of PPP  
+                  negotiations terminated per PCF due to PPP 
+                  receiving TERM request during the LCP phase."
+         REFERENCE
+               "Refer to TIA/EIA international telecommunications
+                organization standard TR 45.4 for A11/A10 interface
+                and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                1962, 1974, 2509, 2716, 2284, 2118, 1994"
+         ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 6 }
+
+ccpCdmaExtPcfSoPppLcpPcfA10Rls OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+                 "This object indicates total number of A10 connections 
+                  released by PCF during the LCP negotiation phase."
+         REFERENCE
+                 "Refer to TIA/EIA international telecommunications
+                  organization standard TR 45.4 for A11/A10 interface
+                  and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                  1962, 1974, 2509, 2716, 2284, 2118, 1994"
+         ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 7 }
+
+ccpCdmaExtPcfSoPppAuthFailures OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+                 "This object indicates total number of PPP Setup 
+                  connections failed per PCF at authentication 
+                  stage."
+         REFERENCE
+                 "Refer to TIA/EIA international telecommunications
+                  organization standard TR 45.4 for A11/A10 interface
+                  and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                  1962, 1974, 2509, 2716, 2284, 2118, 1994"
+         ::=  { ccpCdmaExtPcfSoPppSetupStatsEntry 8 }
+
+ccpCdmaExtPcfSoPppAuthAAATimeouts OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+                 "This object indicates total number of PPP                      
+                  authentication failures per PCF, due to 
+                  AAA timeouts."
+         REFERENCE
+                 "Refer to TIA/EIA international telecommunications
+                  organization standard TR 45.4 for A11/A10 interface
+                  and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                  1962, 1974, 2509, 2716, 2284, 2118, 1994"
+         ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 9 }
+
+ccpCdmaExtPcfSoPppAuthFailuresUnknown OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+                 "This object indicates total number of PPP connection 
+                  Per PCF requests, that failed at authentication stage 
+                  due to an unknown reason."    
+         REFERENCE
+                 "Refer to TIA/EIA international telecommunications
+                  organization standard TR 45.4 for A11/A10 interface
+                  and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                  1962, 1974, 2509, 2716, 2284, 2118, 1994"
+         ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 10 }
+
+ ccpCdmaExtPcfSoPppAuthMaxRetransFailures OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+                 "This object indicates total number of PPP connection 
+                  per PCF requests, that failed at authentication 
+                  stage after max number of retransmissions."
+         REFERENCE
+                 "Refer to TIA/EIA international telecommunications
+                  organization standard TR 45.4 for A11/A10 interface
+                  and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                  1962, 1974, 2509, 2716, 2284, 2118, 1994"
+         ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 11 }
+
+ccpCdmaExtPcfSoPppAuthPhaseRxTermreqs OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+                 "This object indicates total number of PPP 
+                  negotiations terminated per PCF due to PPP receiving 
+                  TERM request during the authentication phase."
+         REFERENCE
+                 "Refer to TIA/EIA international telecommunications
+                  organization standard TR 45.4 for A11/A10 interface
+                  and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                  1962, 1974, 2509, 2716, 2284, 2118, 1994"
+         ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 12 }
+
+ccpCdmaExtPcfSoPppAuthPcfA10Rls OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+                 "This object indicates total number of A10 connections 
+                  released by PCF during the PPP authentication phase."
+         REFERENCE
+                 "Refer to TIA/EIA international telecommunications
+                  organization standard TR 45.4 for A11/A10 interface
+                  and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                  1962, 1974, 2509, 2716, 2284, 2118, 1994"
+         ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 13 }
+
+ccpCdmaExtPcfSoPppIpcpOptionIssueFailures OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+                 "This object indicates total number of PPP connections 
+                  terminated per PCF due to IPCP options negotiation 
+                  failure such as ip address negotiation."
+         REFERENCE
+                 "Refer to TIA/EIA international telecommunications
+                  organization standard TR 45.4 for A11/A10 interface
+                  and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                  1962, 1974, 2509, 2716, 2284, 2118, 1994"
+         ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 14 }
+
+ccpCdmaExtPcfSoPppIpcpFailuresMaxRetrans OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+                 "This object indicates total number of PPP connection          
+                  requests failed per PCF at IPCP stage  after max
+                  number of retransmissions."
+         REFERENCE
+                 "Refer to TIA/EIA international telecommunications
+                  organization standard TR 45.4 for A11/A10 interface
+                  and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                  1962, 1974, 2509, 2716, 2284, 2118, 1994"
+         ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 15 }
+
+ccpCdmaExtPcfSoPppIpcpFailuresUnknown OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+                 "This object indicates total number of PPP connection    
+                  requests failed per PCF at IPCP stage due to 
+                  an unknown reason."
+         REFERENCE
+                 "Refer to TIA/EIA international telecommunications
+                  organization standard TR 45.4 for A11/A10 interface
+                  and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                  1962, 1974, 2509, 2716, 2284, 2118, 1994"
+          ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 16 }
+
+ccpCdmaExtPcfSoPppIpcpPhaseRxTermreqs OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+                 "This object indicates total number of PPP      
+                  negotiations terminated per PCF due to PPP 
+                  receiving TERM request during the IPCP phase."
+         REFERENCE
+                 "Refer to TIA/EIA international telecommunications
+                  organization standard TR 45.4 for A11/A10 interface
+                  and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                  1962, 1974, 2509, 2716, 2284, 2118, 1994"
+         ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 17 }
+
+ccpCdmaExtPcfSoPppIpcpPcfA10Rls OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+                  "This object indicates total number of A10 
+                   connections released by PCF during the IPCP 
+                   negotiation phase."
+         REFERENCE
+                 "Refer to TIA/EIA international telecommunications
+                  organization standard TR 45.4 for A11/A10 interface
+                  and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                  1962, 1974, 2509, 2716, 2284, 2118, 1994"
+         ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 18 }
+
+ccpCdmaExtPcfSoPppIpcpIpResourceFail OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+                 "This object indicates total number of PPP
+                  negotiations terminated per PCF due to IP
+                  address exhaustion in the IP pool."
+         REFERENCE
+                "Refer to TIA/EIA international telecommunications
+                 organization standard TR 45.4 for A11/A10 interface
+                 and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                 1962, 1974, 2509, 2716, 2284, 2118, 1994"
+         ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 19 }
+
+ccpCdmaExtPcfSoPppRenegTotalReqs OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+                 "This object indicates total number of PPP connections 
+                  renegotiated per PCF by either PDSN or mobile node."     
+         REFERENCE
+                 "Refer to TIA/EIA international telecommunications
+                  organization standard TR 45.4 for A11/A10 interface
+                  and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                  1962, 1974, 2509, 2716, 2284, 2118, 1994"
+         ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 20 }
+ 
+ccpCdmaExtPcfSoPppRenegByPdsnReqs OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+                 "This object indicates total number of PPP connections   
+                  renegotiation requests initiated per PCF by PDSN."
+         REFERENCE
+                 "Refer to TIA/EIA international telecommunications
+                  organization standard TR 45.4 for A11/A10 interface
+                  and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                  1962, 1974, 2509, 2716, 2284, 2118, 1994"
+         ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 21 }
+
+ccpCdmaExtPcfSoPppRenegByMobileReqs OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+             	 "This object indicates total number of PPP   
+                  connections renegotiation  requests
+                  initiated per PCF by mobile node."     
+         REFERENCE
+                 "Refer to TIA/EIA international telecommunications
+                  organization standard TR 45.4 for A11/A10 interface
+                  and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                  1962, 1974, 2509, 2716, 2284, 2118, 1994"
+         ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 22 }
+
+ccpCdmaExtPcfSoPppRenegSuccesses OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+                 "This object indicates total number of PPP 
+                  re-negotiations per Pcf that have been 
+                  successfully brought to active state."     
+         REFERENCE
+                 "Refer to TIA/EIA international telecommunications
+                  organization standard TR 45.4 for A11/A10 interface
+                  and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                  1962, 1974, 2509, 2716, 2284, 2118, 1994"
+         ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 23 }
+
+ccpCdmaExtPcfSoPppRenegFailures OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+	         "This object indicates total number of PPP 
+                  re-negotiations failed per PCF at PDSN."     
+         REFERENCE
+                 "Refer to TIA/EIA international telecommunications
+                  organization standard TR 45.4 for A11/A10 interface
+                  and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                  1962, 1974, 2509, 2716, 2284, 2118, 1994"
+         ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 24 }
+
+ccpCdmaExtPcfSoPppRenegConnectionsAborted OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+                 "This object indicates total number of PPP 
+                  re-negotiations terminated per PCF prematurely 
+                  due to reasons such as MN power off etc."
+         REFERENCE
+                 "Refer to TIA/EIA international telecommunications
+                  organization standard TR 45.4 for A11/A10 interface
+                  and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                  1962, 1974, 2509, 2716, 2284, 2118, 1994"
+         ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 25 }
+
+ccpCdmaExtPcfSoPppRenegAddrMismatchReqs OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+	         "This object indicates total number of PPP 
+                  connections renegotiated per PCF due to 
+                  ip address mismatch."
+         REFERENCE
+                "Refer to TIA/EIA international telecommunications
+                 organization standard TR 45.4 for A11/A10 interface
+                 and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                 1962, 1974, 2509,  2716, 2284, 2118, 1994"
+         ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 26 }
+
+ccpCdmaExtPcfSoPppRenegAccessNwIdChanges OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+	         "This object indicates total number of PPP 
+                  connections renegotiated per PCF due to 
+                  access-network id(anid) change during session 
+                  handoff."
+        REFERENCE
+                "Refer to TIA/EIA international telecommunications
+                 organization standard TR 45.4 for A11/A10 interface
+                 and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                 1962, 1974, 2509, 2716, 2284, 2118, 1994"
+        ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 27 }
+
+ccpCdmaExtPcfSoPppRenegGreChangeReqs OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+	         "This object indicates total number of PPP 
+                  connections renegotiated per PCF due to GRE 
+                  key change requests received from MN."
+         REFERENCE
+                 "Refer to TIA/EIA international telecommunications
+                  organization standard TR 45.4 for A11/A10 interface
+                  and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                  1962, 1974, 2509, 2716, 2284, 2118, 1994"
+         ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 28 }
+
+ccpCdmaExtPcfSoPppRenegOtherReasonReqs OBJECT-TYPE
+         SYNTAX      ZeroBasedCounter32 
+         MAX-ACCESS  read-only
+         STATUS      current
+         DESCRIPTION
+                 "This object indicates total number of PPP 
+                  connections renegotiated per PCF due to 
+                  reasons other than IP address mismatch."     
+        REFERENCE
+                "Refer to TIA/EIA international telecommunications
+                 organization standard TR 45.4 for A11/A10 interface
+                 and PPP related RFC 1661, 1662, 1332, 1570, 1979,
+                 1962, 1974, 2509, 2661, 2716, 2284, 2118, 1994"
+        ::= { ccpCdmaExtPcfSoPppSetupStatsEntry 29 }
+
 -- Notification Objects
 
 ccpCdmaExtNotifReason OBJECT-TYPE
@@ -1037,7 +1560,7 @@ ccpCdmaExtNotifReason OBJECT-TYPE
                        procthreshold(3),
                        iomemthreshold(4)
                      }
-         MAX-ACCESS  accessible-for-notify
+         MAX-ACCESS  accessible-for-notify 
          STATUS      current 
          DESCRIPTION
                  "This object indicates the notification causes 
@@ -1054,7 +1577,7 @@ ccpCdmaExtNotifReason OBJECT-TYPE
 
 ccpCdmaExtNotifReasonCurrentValue OBJECT-TYPE
          SYNTAX      Gauge32
-         MAX-ACCESS  accessible-for-notify
+         MAX-ACCESS  accessible-for-notify 
          STATUS      current
          DESCRIPTION
                  "This object indicates current value of ccpCdmaExtNotifReason."
@@ -1098,7 +1621,6 @@ ciscoCdmaExtLoadHighReachedNotif NOTIFICATION-TYPE
  
            ::= { ciscoCdmaPdsnExtMIBNotifs 2 }
 
-
 -- Conformance
 
 ciscoCdmaPdsnExtMIBCompliances  OBJECT IDENTIFIER
@@ -1110,7 +1632,7 @@ ciscoCdmaPdsnExtMIBGroups       OBJECT IDENTIFIER
 -- Compliance
 
 ciscoCdmaPdsnExtMIBCompliance MODULE-COMPLIANCE
-         STATUS  current
+         STATUS  deprecated -- superseded by ciscoCdmaPdsnExtMIBComplianceRev1
          DESCRIPTION
                  "The compliance statement for entities 
                   which implement the CDMA PDSN Management
@@ -1136,6 +1658,39 @@ ciscoCdmaPdsnExtMIBCompliance MODULE-COMPLIANCE
                  "Write access is not required."
          ::= { ciscoCdmaPdsnExtMIBCompliances 1 }
 
+ciscoCdmaPdsnExtMIBComplianceRev1 MODULE-COMPLIANCE
+         STATUS  current
+         DESCRIPTION
+                 "The compliance statement for entities 
+                  which implement the CDMA PDSN Management
+                  Extension MIB."
+         MODULE  -- this module
+         MANDATORY-GROUPS { ciscoCdmaExtSystemPdsnGroup,
+                            ciscoCdmaExtPdsnPcfSoRpRegGroup, 
+                            ciscoCdmaExtPdsnPcfSoPppGroup,
+                            ciscoCdmaExtSystemPdsnCacGroup,
+                            ciscoCdmaExtNotifPdsnGroup }
+
+         OBJECT          ccpCdmaExtSessionAuxConnectionsEnabled 
+         MIN-ACCESS      read-only
+         DESCRIPTION
+                 "Write access is not required."
+      
+         OBJECT          ccpCdmaExtPolicingEnabled
+         MIN-ACCESS      read-only
+         DESCRIPTION
+                 "Write access is not required."
+
+         OBJECT          ccpCdmaExtLoadHighReachedNotifEnabled 
+         MIN-ACCESS      read-only
+         DESCRIPTION
+                 "Write access is not required."
+
+         OBJECT          ccpCdmaExtCacEnabled
+         MIN-ACCESS      read-only
+         DESCRIPTION
+                 "Write access is not required."
+         ::= { ciscoCdmaPdsnExtMIBCompliances 2 }
 
 -- Units of conformance
 
@@ -1180,7 +1735,7 @@ ciscoCdmaExtSystemPdsnGroup OBJECT-GROUP
              ccpCdmaExtLoadHighReachedNotifEnabled,
              ccpCdmaExtSessionMaxAuxConnectionsAllowed,
              ccpCdmaExtRpSessionUpdSubQoses,
-
+             
              ccpCdmaExtRegReqMaxServiceFlows,
              ccpCdmaExtRegReqUnSupportedSOs,
              ccpCdmaExtRegReqNonExistA10s,
@@ -1216,14 +1771,60 @@ ciscoCdmaExtPdsnPcfSoRpRegGroup OBJECT-GROUP
              ccpCdmaExtPcfSoRpRegStatsUnsupportedSOs,
              ccpCdmaExtPcfSoRpRegStatsNonExistA10s,  
              ccpCdmaExtPcfSoRpRegStatsBwUnavailableSess     
- 
-         }
+          }
          STATUS current
          DESCRIPTION
                  "A collection of PCF RP registration statistics 
                   MIB objects needed for PDSN."
-         ::= { ciscoCdmaPdsnExtMIBGroups 3 }         
+         ::= { ciscoCdmaPdsnExtMIBGroups 3 } 
 
+ciscoCdmaExtSystemPdsnCacGroup OBJECT-GROUP
+         OBJECTS {
+             ccpCdmaExtCacEnabled
+         }
+         STATUS current 
+         DESCRIPTION
+                 "System Information object
+                  needed for PDSN to specify call admission 
+                  control feature is enabled or not." 
+         ::= { ciscoCdmaPdsnExtMIBGroups 4}
+
+ciscoCdmaExtPdsnPcfSoPppGroup OBJECT-GROUP
+         OBJECTS {
+             ccpCdmaExtPcfSoPppPreLCPPdsnA10Rls,
+             ccpCdmaExtPcfSoPppPreLCPPcfA10Rls, 
+	     ccpCdmaExtPcfSoPppLcpOptionIssueFailures, 
+	     ccpCdmaExtPcfSoPppLcpFailuresMaxRetrans,
+	     ccpCdmaExtPcfSoPppLcpFailuresUnknown, 
+             ccpCdmaExtPcfSoPppLcpPhaseRxTermreqs,
+	     ccpCdmaExtPcfSoPppLcpPcfA10Rls,
+	     ccpCdmaExtPcfSoPppAuthFailures,
+	     ccpCdmaExtPcfSoPppAuthAAATimeouts,
+	     ccpCdmaExtPcfSoPppAuthMaxRetransFailures,
+             ccpCdmaExtPcfSoPppAuthPhaseRxTermreqs,
+             ccpCdmaExtPcfSoPppAuthFailuresUnknown,
+	     ccpCdmaExtPcfSoPppAuthPcfA10Rls, 
+             ccpCdmaExtPcfSoPppIpcpOptionIssueFailures,
+	     ccpCdmaExtPcfSoPppIpcpFailuresMaxRetrans,
+	     ccpCdmaExtPcfSoPppIpcpFailuresUnknown,
+	     ccpCdmaExtPcfSoPppIpcpPhaseRxTermreqs,
+             ccpCdmaExtPcfSoPppIpcpPcfA10Rls,
+	     ccpCdmaExtPcfSoPppIpcpIpResourceFail,
+ 	     ccpCdmaExtPcfSoPppRenegTotalReqs,
+             ccpCdmaExtPcfSoPppRenegByPdsnReqs,
+             ccpCdmaExtPcfSoPppRenegByMobileReqs,
+             ccpCdmaExtPcfSoPppRenegSuccesses,
+             ccpCdmaExtPcfSoPppRenegFailures,
+             ccpCdmaExtPcfSoPppRenegConnectionsAborted,
+             ccpCdmaExtPcfSoPppRenegAddrMismatchReqs,
+             ccpCdmaExtPcfSoPppRenegAccessNwIdChanges, 
+             ccpCdmaExtPcfSoPppRenegGreChangeReqs,
+             ccpCdmaExtPcfSoPppRenegOtherReasonReqs
+        }
+         STATUS current
+         DESCRIPTION
+                 "A collection of PCF PPP statistics 
+                  MIB objects needed for PDSN."
+         ::= { ciscoCdmaPdsnExtMIBGroups 5 }
 END
-
 

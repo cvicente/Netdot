@@ -3,9 +3,9 @@
 --   
 -- Definitions of managed objects supporting Virtual Switch.
 --   
--- Augest 2007, Frank Chao
+-- Frank Chao
 --   
--- Copyright (c) 2006-2008 by cisco Systems Inc.
+-- Copyright (c) 2006-2010 by cisco Systems, Inc.
 -- All rights reserved.
 -- *****************************************************************
 
@@ -16,28 +16,29 @@ IMPORTS
     NOTIFICATION-TYPE,
     OBJECT-TYPE,
     Unsigned32,
-    Counter32
+    Counter32,
+    Counter64
         FROM SNMPv2-SMI
-    MODULE-COMPLIANCE,
-    NOTIFICATION-GROUP,
-    OBJECT-GROUP
-        FROM SNMPv2-CONF
     TEXTUAL-CONVENTION,
     RowStatus,
     TimeStamp,
     DateAndTime,
     TruthValue
         FROM SNMPv2-TC
+    MODULE-COMPLIANCE,
+    NOTIFICATION-GROUP,
+    OBJECT-GROUP
+        FROM SNMPv2-CONF
     entPhysicalIndex
         FROM ENTITY-MIB
-    InterfaceIndex
-        FROM IF-MIB
     ciscoMgmt
-        FROM CISCO-SMI;
+        FROM CISCO-SMI
+    InterfaceIndex
+        FROM IF-MIB;
 
 
 ciscoVirtualSwitchMIB MODULE-IDENTITY
-    LAST-UPDATED    "200709180000Z"
+    LAST-UPDATED    "201001210000Z"
     ORGANIZATION    "Cisco Systems, Inc."
     CONTACT-INFO
             "Cisco Systems
@@ -74,7 +75,11 @@ ciscoVirtualSwitchMIB MODULE-IDENTITY
         The concept of virtual switch is to collect many physical
         switches chassis together to form a single management unit to
         simplify the whole network architecture."
-    REVISION        "200709180000Z"
+    REVISION        "201001210000Z"
+    DESCRIPTION
+        "New group cvsVSLStatisticsExtGroup and
+        cvsVssModuleStandbyGroupis are added."
+    REVISION        "200709250000Z"
     DESCRIPTION
         "Initial version of this MIB module."
     ::= { ciscoMgmt 388 }
@@ -150,8 +155,8 @@ VSSwitchRole ::= TEXTUAL-CONVENTION
         active : it means this chassis device is an active core switch
         in the virtual switch architecture.
 
-        standby : it means this chassis device is a standby core switch in
-        the virtual switch architecture."
+        standby : it means this chassis device is a standby core
+        switch in the virtual switch architecture."
     SYNTAX          INTEGER  {
                         standalone(1),
                         active(2),
@@ -508,12 +513,44 @@ cvsVSLStatsEntry OBJECT-TYPE
     ::= { cvsVSLStatsTable 1 }
 
 CvsVSLStatsEntry ::= SEQUENCE {
-        cvsVSLTxTotalPkts     Counter32,
-        cvsVSLTxErrorPkts     Counter32,
-        cvsVSLTxChksumErrPkts Counter32,
-        cvsVSLRxTotalPkts     Counter32,
-        cvsVSLRxErrorPkts     Counter32,
-        cvsVSLRxChksumErrPkts Counter32
+        cvsVSLTxTotalPkts       Counter32,
+        cvsVSLTxErrorPkts       Counter32,
+        cvsVSLTxChksumErrPkts   Counter32,
+        cvsVSLRxTotalPkts       Counter32,
+        cvsVSLRxErrorPkts       Counter32,
+        cvsVSLRxChksumErrPkts   Counter32,
+        cvsVSLTxLmpPkts         Counter64,
+        cvsVSLTxRrpPkts         Counter64,
+        cvsVSLTxPingPkts        Counter64,
+        cvsVSLTxProtoPkts       Counter64,
+        cvsVSLTxDataPkts        Counter64,
+        cvsVSLTxAckPkts         Counter64,
+        cvsVSLRxLmpPkts         Counter64,
+        cvsVSLRxRrpPkts         Counter64,
+        cvsVSLRxPingPkts        Counter64,
+        cvsVSLRxProtoPkts       Counter64,
+        cvsVSLRxDataPkts        Counter64,
+        cvsVSLRxAckPkts         Counter64,
+        cvsVSLTxTotalEobcPkts   Counter64,
+        cvsVSLTxLmpEobcPkts     Counter64,
+        cvsVSLTxRrpEobcPkts     Counter64,
+        cvsVSLTxPingEobcPkts    Counter64,
+        cvsVSLTxProtoEobcPkts   Counter64,
+        cvsVSLTxDataEobcPkts    Counter64,
+        cvsVSLTxAckEobcPkts     Counter64,
+        cvsVSLRxTotalEobcPkts   Counter64,
+        cvsVSLRxLmpEobcPkts     Counter64,
+        cvsVSLRxRrpEobcPkts     Counter64,
+        cvsVSLRxPingEobcPkts    Counter64,
+        cvsVSLRxProtoEobcPkts   Counter64,
+        cvsVSLRxDataEobcPkts    Counter64,
+        cvsVSLRxAckEobcPkts     Counter64,
+        cvsVSLTxTotalHCPkts     Counter64,
+        cvsVSLTxErrorHCPkts     Counter64,
+        cvsVSLTxChksumErrHCPkts Counter64,
+        cvsVSLRxTotalHCPkts     Counter64,
+        cvsVSLRxErrorHCPkts     Counter64,
+        cvsVSLRxChksumErrHCPkts Counter64
 }
 
 cvsVSLTxTotalPkts OBJECT-TYPE
@@ -563,6 +600,273 @@ cvsVSLRxChksumErrPkts OBJECT-TYPE
     DESCRIPTION
         "The number of received packets with checksum error." 
     ::= { cvsVSLStatsEntry 6 }
+
+cvsVSLTxLmpPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of transmitted LMP (Link Maintenance Protocol)
+        packets." 
+    ::= { cvsVSLStatsEntry 7 }
+
+cvsVSLTxRrpPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of transmitted RRP (Role Resolution Protocol)
+        packets." 
+    ::= { cvsVSLStatsEntry 8 }
+
+cvsVSLTxPingPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of transmitted VSL PING packets." 
+    ::= { cvsVSLStatsEntry 9 }
+
+cvsVSLTxProtoPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of transmitted protocol packets, such as
+        ISSU's (In Service software Upgrade) protocol." 
+    ::= { cvsVSLStatsEntry 10 }
+
+cvsVSLTxDataPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of transmitted data packets, such as
+        ISSU's ." 
+    ::= { cvsVSLStatsEntry 11 }
+
+cvsVSLTxAckPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of transmitted ACK (Acknowledge) packets." 
+    ::= { cvsVSLStatsEntry 12 }
+
+cvsVSLRxLmpPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of received LMP packets." 
+    ::= { cvsVSLStatsEntry 13 }
+
+cvsVSLRxRrpPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of received RRP packets." 
+    ::= { cvsVSLStatsEntry 14 }
+
+cvsVSLRxPingPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of received VSL PING packets." 
+    ::= { cvsVSLStatsEntry 15 }
+
+cvsVSLRxProtoPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of received ISSU's protocol packets." 
+    ::= { cvsVSLStatsEntry 16 }
+
+cvsVSLRxDataPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of received ISSU's data packets." 
+    ::= { cvsVSLStatsEntry 17 }
+
+cvsVSLRxAckPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of received ACK packets." 
+    ::= { cvsVSLStatsEntry 18 }
+
+cvsVSLTxTotalEobcPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The total number of transmitted EOBC (Ethernet
+        Out-of-Band Channel) packets." 
+    ::= { cvsVSLStatsEntry 19 }
+
+cvsVSLTxLmpEobcPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of transmitted LMP EOBC packets." 
+    ::= { cvsVSLStatsEntry 20 }
+
+cvsVSLTxRrpEobcPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of transmitted RRP EOBC packets." 
+    ::= { cvsVSLStatsEntry 21 }
+
+cvsVSLTxPingEobcPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of transmitted VSL PING EOBC packets." 
+    ::= { cvsVSLStatsEntry 22 }
+
+cvsVSLTxProtoEobcPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of transmitted ISSU's protocol EOBC packets." 
+    ::= { cvsVSLStatsEntry 23 }
+
+cvsVSLTxDataEobcPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of transmitted ISSU's data EOBC packets." 
+    ::= { cvsVSLStatsEntry 24 }
+
+cvsVSLTxAckEobcPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of transmitted ACK EOBC packets." 
+    ::= { cvsVSLStatsEntry 25 }
+
+cvsVSLRxTotalEobcPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The total number of received EOBC packets." 
+    ::= { cvsVSLStatsEntry 26 }
+
+cvsVSLRxLmpEobcPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of received LMP EOBC packets." 
+    ::= { cvsVSLStatsEntry 27 }
+
+cvsVSLRxRrpEobcPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of received RRP EOBC packets." 
+    ::= { cvsVSLStatsEntry 28 }
+
+cvsVSLRxPingEobcPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of received VSL PING EOBC packets." 
+    ::= { cvsVSLStatsEntry 29 }
+
+cvsVSLRxProtoEobcPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of received ISSU's protocol EOBC packets." 
+    ::= { cvsVSLStatsEntry 30 }
+
+cvsVSLRxDataEobcPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of received ISSU's data EOBC packets." 
+    ::= { cvsVSLStatsEntry 31 }
+
+cvsVSLRxAckEobcPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of received ACK EOBC packets." 
+    ::= { cvsVSLStatsEntry 32 }
+
+cvsVSLTxTotalHCPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The high capacity counter for the total number of
+        transmitted packets." 
+    ::= { cvsVSLStatsEntry 33 }
+
+cvsVSLTxErrorHCPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The high capacity counter for the total number of
+        transmitted error packets." 
+    ::= { cvsVSLStatsEntry 34 }
+
+cvsVSLTxChksumErrHCPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The high capacity counter for the number of
+        transmitted packets with checksum error." 
+    ::= { cvsVSLStatsEntry 35 }
+
+cvsVSLRxTotalHCPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The high capacity counter for the total number of
+        received packets." 
+    ::= { cvsVSLStatsEntry 36 }
+
+cvsVSLRxErrorHCPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The high capacity counter for the number of received
+        error packets." 
+    ::= { cvsVSLStatsEntry 37 }
+
+cvsVSLRxChksumErrHCPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The high capacity counter for the number of received
+        received packets with checksum error." 
+    ::= { cvsVSLStatsEntry 38 }
  
 
 -- VSL Port statistics table
@@ -592,13 +896,19 @@ cvsVSLPortStatsEntry OBJECT-TYPE
     ::= { cvsVSLPortStatsTable 1 }
 
 CvsVSLPortStatsEntry ::= SEQUENCE {
-        cvsVSLPortStatsIfindex InterfaceIndex,
-        cvsVSLPortTxOkPkts     Counter32,
-        cvsVSLPortTxFailPkts   Counter32,
-        cvsVSLPortRxBidirPkts  Counter32,
-        cvsVSLPortRxUnidirPkts Counter32,
-        cvsVSLPortRxFailPkts   Counter32,
-        cvsVSLPortRxBadPkts    Counter32
+        cvsVSLPortStatsIfindex           InterfaceIndex,
+        cvsVSLPortTxOkPkts               Counter32,
+        cvsVSLPortTxFailPkts             Counter32,
+        cvsVSLPortRxBidirPkts            Counter32,
+        cvsVSLPortRxUnidirPkts           Counter32,
+        cvsVSLPortRxFailPkts             Counter32,
+        cvsVSLPortRxBadPkts              Counter32,
+        cvsVSLPortRxMyInfoMismatchPkts   Counter32,
+        cvsVSLPortRxMyInfoAbsentPkts     Counter32,
+        cvsVSLPortRxBadMacAddressPkts    Counter32,
+        cvsVSLPortRxBadSwitchIdPkts      Counter32,
+        cvsVSLPortRxDomainIdMismatchPkts Counter32,
+        cvsVSLPortRxPeerInfoMismatchPkts Counter32
 }
 
 cvsVSLPortStatsIfindex OBJECT-TYPE
@@ -615,7 +925,8 @@ cvsVSLPortTxOkPkts OBJECT-TYPE
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
-        "The number of transmitted packets without errors for the port." 
+        "The number of transmitted packets without errors for the
+         port." 
     ::= { cvsVSLPortStatsEntry 2 }
 
 cvsVSLPortTxFailPkts OBJECT-TYPE
@@ -663,6 +974,60 @@ cvsVSLPortRxBadPkts OBJECT-TYPE
         "The number of received packets with in invalid states for the
         port." 
     ::= { cvsVSLPortStatsEntry 7 }
+
+cvsVSLPortRxMyInfoMismatchPkts OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of received packets with mismatched local switch
+        information for the port." 
+    ::= { cvsVSLPortStatsEntry 8 }
+
+cvsVSLPortRxMyInfoAbsentPkts OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of received packets without local switch information
+        for the port." 
+    ::= { cvsVSLPortStatsEntry 9 }
+
+cvsVSLPortRxBadMacAddressPkts OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of received packets with bad MAC addresses
+        information for the port." 
+    ::= { cvsVSLPortStatsEntry 10 }
+
+cvsVSLPortRxBadSwitchIdPkts OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of received packets with bad switch IDs information
+        for the port." 
+    ::= { cvsVSLPortStatsEntry 11 }
+
+cvsVSLPortRxDomainIdMismatchPkts OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of received packets with mismatched domain IDs
+        information for the port." 
+    ::= { cvsVSLPortStatsEntry 12 }
+
+cvsVSLPortRxPeerInfoMismatchPkts OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The number of received packets with mismatched peer information
+        for the port." 
+    ::= { cvsVSLPortStatsEntry 13 }
  
 
 -- Virtual Switch module table
@@ -673,14 +1038,10 @@ cvsModuleTable OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "This table describes the information of the physical modules
-        listed in the ENTITY-MIB entPhysicalTable in the virtual switch
-        architecture, whose entPhysicalClass is module(9).  This table
-        only contains physical linecards, no sub-linecards or port level
-        module entities.
-
-        This table will only be instantiated when the value of
-        cvsSwitchMode is 'multiNode' in the virtual switch
-        architecture."
+        listed in the ENTITY-MIB entPhysicalTable, whose
+        entPhysicalClass is module(9).  This table only contains
+        physical linecards, no sub-linecards or port level module
+        entities."
     ::= { cvsModuleObjects 1 }
 
 cvsModuleEntry OBJECT-TYPE
@@ -688,15 +1049,15 @@ cvsModuleEntry OBJECT-TYPE
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
-        "An entry describes the present physical module information in
-        the virtual switch architecture."
+        "An entry describes the present physical module information."
     INDEX           { entPhysicalIndex } 
     ::= { cvsModuleTable 1 }
 
 CvsModuleEntry ::= SEQUENCE {
         cvsModuleVSSupported TruthValue,
         cvsModuleVSLCapable  TruthValue,
-        cvsModuleSlotNumber  Unsigned32
+        cvsModuleSlotNumber  Unsigned32,
+        cvsModuleRprWarm     INTEGER
 }
 
 cvsModuleVSSupported OBJECT-TYPE
@@ -732,6 +1093,29 @@ cvsModuleSlotNumber OBJECT-TYPE
         slot number.  If it is in the standalone environment, this
         object returns physical slot number." 
     ::= { cvsModuleEntry 3 }
+
+cvsModuleRprWarm OBJECT-TYPE
+    SYNTAX          INTEGER  {
+                        notApplicable(1),
+                        rprWarm(2)
+                    }
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The object indicates in-chassis supervisor module is in
+        the RPR Warm standby status or not.
+
+        The RPR Warm status indicates a supervisor module is in the
+        standby mode of the same chassis in the VS environment and 
+        the supervisor is acting like a DFC (Distributed Forwarding
+        Card).
+
+        'notApplicable' : the module is not applicable for the RPR
+        warm status.
+
+        'rprWarm' : the module is the in-chassis standby supervisor
+        in the VS environment." 
+    ::= { cvsModuleEntry 4 }
  
 
 
@@ -756,7 +1140,7 @@ cvsMIBGroups  OBJECT IDENTIFIER
 -- Compliance
 
 cvsMIBCompliance MODULE-COMPLIANCE
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The compliance statement for entities which implement
         the CISCO-VIRTUAL-SWITCH-MIB."
@@ -803,6 +1187,63 @@ cvsMIBCompliance MODULE-COMPLIANCE
         only mandatory for the managed system in the virtual
         switch environment."
     ::= { cvsMIBCompliances 1 }
+
+cvsMIBComplianceV02 MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for entities which implement
+        the CISCO-VIRTUAL-SWITCH-MIB."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        cvsGlobalGroup,
+                        cvsModuleGroup,
+                        cvsVssModuleStandbyGroup
+                    }
+
+    GROUP           cvsCoreSwitchGroup
+    DESCRIPTION
+        "This group contains the selection information of the
+        active or standby core switches in the virtual switch
+        environment.  This is only mandatory for the managed
+        system with supporting the configuring information
+        of core switches."
+
+    GROUP           cvsChassisGroup
+    DESCRIPTION
+        "This group contains physical chassis information in
+        the virtual switch environment.  This is only
+        mandatory for the managed system in the virtual
+        switch environment."
+
+    GROUP           cvsVSLConnectionGroup
+    DESCRIPTION
+        "This is the group to construct the VSL (Virtual
+        switch link) connection between core switches in the
+        virtual switch architecture and also provide the
+        information for the VSL.  This is only mandatory
+        for the managed system with supporting the
+        configuration of VSL."
+
+    GROUP           cvsVSLStatisticsGroup
+    DESCRIPTION
+        "This group contains the VSL (Virtual switch
+        link) statistics information in the virtual switch
+        environment.  This is only mandatory for the managed
+        system in the virtual switch environment."
+
+    GROUP           cvsConnectionNotifsGroup
+    DESCRIPTION
+        "The notifications for VSL connection status. This is
+        only mandatory for the managed system in the virtual
+        switch environment."
+
+    GROUP           cvsVSLStatisticsExtGroup
+    DESCRIPTION
+        "This group contains the VSL (Virtual switch link) more
+        detail statistics information in the virtual switch
+        environment.  This is only mandatory for the managed
+        system in the virtual switch environment."
+    ::= { cvsMIBCompliances 2 }
 
 -- Units of Conformance
 
@@ -903,7 +1344,60 @@ cvsConnectionNotifsGroup NOTIFICATION-GROUP
         virtual switch environment."
     ::= { cvsMIBGroups 7 }
 
+cvsVSLStatisticsExtGroup OBJECT-GROUP
+    OBJECTS         {
+                        cvsVSLTxLmpPkts,
+                        cvsVSLTxRrpPkts,
+                        cvsVSLTxPingPkts,
+                        cvsVSLTxProtoPkts,
+                        cvsVSLTxDataPkts,
+                        cvsVSLTxAckPkts,
+                        cvsVSLRxLmpPkts,
+                        cvsVSLRxRrpPkts,
+                        cvsVSLRxPingPkts,
+                        cvsVSLRxProtoPkts,
+                        cvsVSLRxDataPkts,
+                        cvsVSLRxAckPkts,
+                        cvsVSLTxTotalEobcPkts,
+                        cvsVSLTxLmpEobcPkts,
+                        cvsVSLTxRrpEobcPkts,
+                        cvsVSLTxPingEobcPkts,
+                        cvsVSLTxProtoEobcPkts,
+                        cvsVSLTxDataEobcPkts,
+                        cvsVSLTxAckEobcPkts,
+                        cvsVSLRxTotalEobcPkts,
+                        cvsVSLRxLmpEobcPkts,
+                        cvsVSLRxRrpEobcPkts,
+                        cvsVSLRxPingEobcPkts,
+                        cvsVSLRxProtoEobcPkts,
+                        cvsVSLRxDataEobcPkts,
+                        cvsVSLRxAckEobcPkts,
+                        cvsVSLTxTotalHCPkts,
+                        cvsVSLTxErrorHCPkts,
+                        cvsVSLTxChksumErrHCPkts,
+                        cvsVSLRxTotalHCPkts,
+                        cvsVSLRxErrorHCPkts,
+                        cvsVSLRxChksumErrHCPkts,
+                        cvsVSLPortRxMyInfoMismatchPkts,
+                        cvsVSLPortRxMyInfoAbsentPkts,
+                        cvsVSLPortRxBadMacAddressPkts,
+                        cvsVSLPortRxBadSwitchIdPkts,
+                        cvsVSLPortRxDomainIdMismatchPkts,
+                        cvsVSLPortRxPeerInfoMismatchPkts
+                    }
+    STATUS          current
+    DESCRIPTION
+        "The collection of objects which are used to monitor
+        the  more detail VSL statistics information in
+        virtual switch architecture."
+    ::= { cvsMIBGroups 8 }
+
+cvsVssModuleStandbyGroup OBJECT-GROUP
+    OBJECTS         { cvsModuleRprWarm }
+    STATUS          current
+    DESCRIPTION
+        "The collection of objects which are used to monitor the
+        module in-chassis standby status information."
+    ::= { cvsMIBGroups 9 }
+
 END
-
-
-

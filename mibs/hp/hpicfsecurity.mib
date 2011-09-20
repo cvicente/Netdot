@@ -25,6 +25,9 @@
                          devices in the HP Integrated Communication
                          Facility product line."
 
+            REVISION     "200803050900Z"  -- March 05, 2008
+            DESCRIPTION  "Added icfAuthIPMgrAccessMethod."
+
             REVISION     "200710010903Z"  -- October 01, 2007
             DESCRIPTION  "Deprecated icfAuthIPMgrAddress and icfAuthIPMgrMask."
 
@@ -539,7 +542,8 @@
                 icfAuthIPMgrInetAddrType     InetAddressType,
                 icfAuthIPMgrInetAddress      InetAddress,
                 icfAuthIPMgrInetAddrMaskType InetAddressType,
-                icfAuthIPMgrInetAddrMask     InetAddress
+                icfAuthIPMgrInetAddrMask     InetAddress,
+                icfAuthIPMgrAccessMethod     INTEGER
            }
 
        icfAuthIPMgrIndex OBJECT-TYPE
@@ -631,6 +635,23 @@
                         managers on a particular IP subnet.This object can
                         hold the version neutral IP address Mask."
            ::= { icfAuthIPMgrEntry 9 }
+
+       icfAuthIPMgrAccessMethod OBJECT-TYPE
+           SYNTAX      INTEGER {
+                            all(1),
+                            ssh(2),
+                            telnet(3),
+                            web(4),
+                            snmp(5),
+                            tftp(6)
+                        }
+           MAX-ACCESS  read-create
+           STATUS      current 
+           DESCRIPTION "This object defines the access method for a
+                        given manager.  The different access methods are
+                        all, ssh, telnet, web, snmp, tftp"
+           DEFVAL      { 1 }
+           ::= { icfAuthIPMgrEntry 10 }
 
        -- Conformance information
 

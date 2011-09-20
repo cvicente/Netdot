@@ -1,31 +1,48 @@
-
 BAY-STACK-DHCP-SNOOPING-MIB DEFINITIONS ::= BEGIN
 
 IMPORTS
-    OBJECT-TYPE, MODULE-IDENTITY, Unsigned32
+    NOTIFICATION-TYPE, OBJECT-TYPE, MODULE-IDENTITY, Unsigned32
         FROM SNMPv2-SMI
-    TruthValue, MacAddress, RowStatus
+    TruthValue, MacAddress, RowStatus, DisplayString
         FROM SNMPv2-TC
     InterfaceIndex
         FROM IF-MIB
     VlanIndex
         FROM Q-BRIDGE-MIB
-    InetAddressType, InetAddress
+    InetAddressType, InetAddress, InetPortNumber
         FROM INET-ADDRESS-MIB
     bayStackMibs
         FROM SYNOPTICS-ROOT-MIB;
 
 bayStackDhcpSnoopingMib MODULE-IDENTITY
-      LAST-UPDATED "200606230000Z"
+      LAST-UPDATED "200909230000Z"
       ORGANIZATION "Nortel Ltd."
       CONTACT-INFO "nortel.com"
       DESCRIPTION
               "This MIB module is used for DHCP snooping configuration
                settings in Nortel's software and products."
 
-      REVISION     "200606230000Z"  -- June 23, 2006
-      DESCRIPTION
-              "Ver 1:  Initial version."
+      REVISION    "200909230000Z"  -- September 23, 2009
+      DESCRIPTION "Ver 7:  Added bsDhcpOption82MaxLengthExceeded."
+
+      REVISION    "200904010000Z"  -- April 01, 2009
+      DESCRIPTION "Ver 6:  Fixed bsDhcpSnoopingNotificationMsgType."
+
+      REVISION    "200903300000Z"  -- March 30, 2009
+      DESCRIPTION "Ver 5:  Added support for static dhcp bindings."
+
+      REVISION    "200903260000Z"  -- March 26, 2009
+      DESCRIPTION "Ver 4:  Added support for DHCP option 82."
+
+      REVISION    "200810300000Z"  -- October 30, 2008
+      DESCRIPTION "Ver 3:  Added new notification types."
+
+      REVISION    "200806020000Z"  -- June 02, 2008
+      DESCRIPTION "Ver 2:  Added bsDhcpSnoopingBindingTimeToExpiry."
+
+      REVISION    "200606230000Z"  -- June 23, 2006
+      DESCRIPTION "Ver 1:  Initial version."
+
       ::= { bayStackMibs 17 }
 
 bsDhcpSnoopingNotifications OBJECT IDENTIFIER ::= { bayStackDhcpSnoopingMib 0 }
@@ -46,6 +63,16 @@ bsDhcpSnoopingEnabled OBJECT-TYPE
          globally.  When globally enabled, DHCP snooping is enabled or
          disabled for each individual VLAN in the bsDhcpSnoopingVlanTable."
     ::= { bsDhcpSnoopingScalars 1 }
+
+bsDhcpSnoopingOption82Enabled OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "This object is used to control whether DHCP option 82 is enabled
+         globally.  When globally enabled, DHCP option 82 is enabled or
+         disabled for each individual VLAN in the bsDhcpSnoopingVlanTable."
+    ::= { bsDhcpSnoopingScalars 2 }
 
 --
 -- VLAN table
@@ -71,8 +98,9 @@ bsDhcpSnoopingVlanEntry OBJECT-TYPE
 
 BsDhcpSnoopingVlanEntry ::=
     SEQUENCE {
-        bsDhcpSnoopingVlanId        VlanIndex,
-        bsDhcpSnoopingVlanEnabled   TruthValue
+        bsDhcpSnoopingVlanId              VlanIndex,
+        bsDhcpSnoopingVlanEnabled         TruthValue,
+        bsDhcpSnoopingVlanOption82Enabled TruthValue
     }
 
 bsDhcpSnoopingVlanId OBJECT-TYPE
@@ -91,6 +119,15 @@ bsDhcpSnoopingVlanEnabled OBJECT-TYPE
         "This object is used to control whether DHCP snooping is enabled
          for this VLAN."
     ::= { bsDhcpSnoopingVlanEntry 2 }
+
+bsDhcpSnoopingVlanOption82Enabled OBJECT-TYPE
+    SYNTAX       TruthValue
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "This object is used to control whether DHCP option 82 is enabled
+         for this VLAN."
+    ::= { bsDhcpSnoopingVlanEntry 3 }
 
 --
 -- Interface table
@@ -116,8 +153,9 @@ bsDhcpSnoopingIfEntry OBJECT-TYPE
 
 BsDhcpSnoopingIfEntry ::=
     SEQUENCE {
-        bsDhcpSnoopingIfIndex     InterfaceIndex,
-        bsDhcpSnoopingIfTrusted   TruthValue
+        bsDhcpSnoopingIfIndex                InterfaceIndex,
+        bsDhcpSnoopingIfTrusted              TruthValue,
+        bsDhcpSnoopingIfOption82SubscriberId DisplayString
     }
 
 bsDhcpSnoopingIfIndex OBJECT-TYPE
@@ -136,6 +174,16 @@ bsDhcpSnoopingIfTrusted OBJECT-TYPE
         "This object is used to control whether this interface is trusted
          for DHCP snooping purposes."
     ::= { bsDhcpSnoopingIfEntry 2 }
+
+bsDhcpSnoopingIfOption82SubscriberId OBJECT-TYPE
+    SYNTAX       DisplayString
+    MAX-ACCESS   read-write
+    STATUS       current
+    DESCRIPTION
+        "This object contains the DHCP option 82 subscriber ID string to
+         be used in sub-option 6.  If the value is an empty string, then
+         sub-option 6 is not included in option 82."
+    ::= { bsDhcpSnoopingIfEntry 3 }
 
 --
 -- Binding table
@@ -160,13 +208,15 @@ bsDhcpSnoopingBindingEntry OBJECT-TYPE
 
 BsDhcpSnoopingBindingEntry ::=
     SEQUENCE {
-        bsDhcpSnoopingBindingVlanId      VlanIndex,
-        bsDhcpSnoopingBindingMacAddress  MacAddress,
-        bsDhcpSnoopingBindingAddressType InetAddressType,
-        bsDhcpSnoopingBindingAddress     InetAddress,
-        bsDhcpSnoopingBindingInterface   InterfaceIndex,
-        bsDhcpSnoopingBindingLeaseTime   Unsigned32,
-        bsDhcpSnoopingBindingRowStatus   RowStatus
+        bsDhcpSnoopingBindingVlanId       VlanIndex,
+        bsDhcpSnoopingBindingMacAddress   MacAddress,
+        bsDhcpSnoopingBindingAddressType  InetAddressType,
+        bsDhcpSnoopingBindingAddress      InetAddress,
+        bsDhcpSnoopingBindingInterface    InterfaceIndex,
+        bsDhcpSnoopingBindingLeaseTime    Unsigned32,
+        bsDhcpSnoopingBindingRowStatus    RowStatus,
+        bsDhcpSnoopingBindingTimeToExpiry Unsigned32,
+        bsDhcpSnoopingBindingSource       INTEGER
     }
 
 bsDhcpSnoopingBindingVlanId OBJECT-TYPE
@@ -187,7 +237,7 @@ bsDhcpSnoopingBindingMacAddress OBJECT-TYPE
 
 bsDhcpSnoopingBindingAddressType OBJECT-TYPE
     SYNTAX       InetAddressType
-    MAX-ACCESS   read-only
+    MAX-ACCESS   read-create
     STATUS       current
     DESCRIPTION
         "The type of address contained in the corresponding instance of
@@ -196,7 +246,7 @@ bsDhcpSnoopingBindingAddressType OBJECT-TYPE
 
 bsDhcpSnoopingBindingAddress OBJECT-TYPE
     SYNTAX       InetAddress
-    MAX-ACCESS   read-only
+    MAX-ACCESS   read-create
     STATUS       current
     DESCRIPTION
         "The internet address assigned to this DHCP client."
@@ -204,7 +254,7 @@ bsDhcpSnoopingBindingAddress OBJECT-TYPE
 
 bsDhcpSnoopingBindingInterface OBJECT-TYPE
     SYNTAX       InterfaceIndex
-    MAX-ACCESS   read-only
+    MAX-ACCESS   read-create
     STATUS       current
     DESCRIPTION
         "The interface to which the DHCP client is connected."
@@ -213,7 +263,7 @@ bsDhcpSnoopingBindingInterface OBJECT-TYPE
 bsDhcpSnoopingBindingLeaseTime OBJECT-TYPE
     SYNTAX       Unsigned32
     UNITS        "seconds"
-    MAX-ACCESS   read-only
+    MAX-ACCESS   read-create
     STATUS       current
     DESCRIPTION
         "The lease time of this DHCP client's binding."
@@ -224,13 +274,134 @@ bsDhcpSnoopingBindingRowStatus OBJECT-TYPE
     MAX-ACCESS   read-create
     STATUS       current
     DESCRIPTION
-        "This object is used only to delete DHCP bindings from the table of
-         learned bindings (this does not actually delete the binding, only
-         this system's knowledge of the binding).  Entries in this table cannot
-         be created using this object, only deleted.  On retrieval, its value
-         will always be active(1).  Setting it to destroy(6) will delete the
-         DHCP binding from the table of learned bindings."
+        "This object is used only to delete learned DHCP bindings from the
+        table of learned bindings (this does not actually delete the binding,
+        only this system's knowledge of the binding), or to
+        create/modify/delete static binding table entries.  Learned entries
+        in this table cannot be created using this object, only deleted.  On
+        retrieval, the value for such an entry will always be active(1).
+        Setting it to destroy(6) will delete the DHCP binding from the table
+        of learned bindings.  Static binding table entries may be created
+        using this object.  All writable objects must also be set before the
+        entry can become valid."
     ::= { bsDhcpSnoopingBindingEntry 7 }
+
+bsDhcpSnoopingBindingTimeToExpiry OBJECT-TYPE
+    SYNTAX       Unsigned32
+    UNITS        "seconds"
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "The time to expiry of this DHCP client's binding."
+    ::= { bsDhcpSnoopingBindingEntry 8 }
+
+bsDhcpSnoopingBindingSource OBJECT-TYPE
+    SYNTAX       INTEGER {
+                     learned(1),
+                     static(2)
+                 }
+    MAX-ACCESS   read-only
+    STATUS       current
+    DESCRIPTION
+        "Indicates the source of this entry.  If the entry was learned
+        through DHCP snooping, the type is learned(1).  In this case, the
+        only thing that can be set in the entry is to set the RowStatus
+        object to destroy(6) to delete the entry.  If the entry was created
+        through a management operation (Set request), the type is static(2).
+        In this case, any writable column can be modified."
+    ::= { bsDhcpSnoopingBindingEntry 9 }
+
+--
+-- Notification Objects
+--
+
+bsDhcpSnoopingNotificationObjects
+    OBJECT IDENTIFIER ::= { bsDhcpSnoopingObjects 5 }
+
+bsDhcpSnoopingNotificationSourcePort  OBJECT-TYPE
+    SYNTAX      InetPortNumber (1..65535)
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current 
+    DESCRIPTION
+        "This value identifies the source port number of a dropped DHCP packet."
+    ::= { bsDhcpSnoopingNotificationObjects 1 }
+
+bsDhcpSnoopingNotificationMsgType  OBJECT-TYPE
+    SYNTAX      INTEGER {
+                    dhcpDiscover(1),
+                    dhcpOffer(2),
+                    dhcpRequest(3),
+                    dhcpDecline(4),
+                    dhcpAck(5),
+                    dhcpNak(6),
+                    dhcpRelease(7),
+                    dhcpInform(8),
+                    dhcpForceRenew(9),
+                    dhcpLeaseQuery(10),
+                    dhcpLeaseUnassigned(11),
+                    dhcpLeaseUnknown(12),
+                    dhcpLeaseActive(13)                
+                }
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "This value indicates the message type of a dropped DHCP packet."
+    ::= { bsDhcpSnoopingNotificationObjects 2 }
+
+bsDhcpSnoopingNotificationSourceMACAddr  OBJECT-TYPE
+    SYNTAX      MacAddress
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "This value indicates the source MAC Address of a dropped DHCP packet."
+    ::= { bsDhcpSnoopingNotificationObjects 3 }
+
+bsDhcpSnoopingNotificationClientMACAddr  OBJECT-TYPE
+    SYNTAX      MacAddress
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+        "This value indicates the client MAC Address of a dropped DHCP packet."
+    ::= { bsDhcpSnoopingNotificationObjects 4 }
+
+--
+-- Notifications
+--
+
+bsDhcpSnoopingBindingTableFull    NOTIFICATION-TYPE
+    OBJECTS {
+        bsDhcpSnoopingNotificationClientMACAddr
+    } 
+    STATUS current
+    DESCRIPTION
+        "This notification is generated when an attempt is made to add a new
+        DHCP binding entry when the binding table is full.  The value of
+        bsDhcpSnoopingNotificationClientMACAddr gives the MAC address that
+        could not be added to the binding table.  This notification also
+        indicates that additional untrusted DHCP packets will not be added to
+        the binding table and will be dropped."
+    ::= { bsDhcpSnoopingNotifications 1 }
+
+bsDhcpSnoopingTrap  NOTIFICATION-TYPE
+    OBJECTS {
+        bsDhcpSnoopingNotificationSourcePort,
+        bsDhcpSnoopingNotificationMsgType,
+        bsDhcpSnoopingNotificationSourceMACAddr, 
+        bsDhcpSnoopingNotificationClientMACAddr, 
+        bsDhcpSnoopingIfTrusted
+    }
+    STATUS current
+    DESCRIPTION
+        "This notification is generated when a DHCP packet is dropped."
+    ::= { bsDhcpSnoopingNotifications 2 }
+
+bsDhcpOption82MaxLengthExceeded  NOTIFICATION-TYPE
+    STATUS current
+    DESCRIPTION
+        "This notification is generated when the DHCP Option 82 information
+         could not be added to a DHCP packet because the resulting packet
+         would be too long."
+    ::= { bsDhcpSnoopingNotifications 3 }
 
 END
 

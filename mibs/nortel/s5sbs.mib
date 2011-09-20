@@ -2,39 +2,40 @@
 S5-SWITCH-BAYSECURE-MIB DEFINITIONS ::= BEGIN
 
 IMPORTS
-    MODULE-IDENTITY,
-    OBJECT-TYPE,
-    IpAddress,
-    Integer32
+    MODULE-IDENTITY, OBJECT-TYPE, IpAddress, Integer32
         FROM SNMPv2-SMI
-    TEXTUAL-CONVENTION,
-    MacAddress,
-    TimeInterval,
-    TruthValue
+    TEXTUAL-CONVENTION, MacAddress, TimeInterval, TruthValue
         FROM SNMPv2-TC
     s5Com
         FROM S5-ROOT-MIB;
 
 s5SbsAuth    MODULE-IDENTITY
-    LAST-UPDATED    "200609180000Z" -- 18 September 2006
+    LAST-UPDATED    "200905280000Z" -- 18 September 2006
     ORGANIZATION    "Nortel Networks"
     CONTACT-INFO    "Global Optical Customer Service
                         Tel:   1-800 (ASK-TRAN) or
                                1-800 (ASK-ETAS)"
     DESCRIPTION
-        "5000 Switch BaySecure MIB Release 1.0.3
+        "BaySecure MIB - MAC-based Security MIB
 
-         Copyright 1999 Bay Networks, Inc.
+         Copyright 1999-2009 Nortel Networks, Inc.
          All rights reserved.
          This Bay Networks SNMP Management Information Base Specification
-         (Specification) embodies Bay Networks' confidential and
+         (Specification) embodies Nortel Networks' confidential and
          proprietary intellectual property. Bay Networks retains all
          title and ownership in the Specification, including any
          revisions.
 
-         This Specification is supplied 'AS IS,' and Bay Networks makes
+         This Specification is supplied 'AS IS,' and Nortel Networks makes
          no warranty, either express or implied, as to the use,
          operation, condition, or performance of the Specification."
+
+    REVISION "200905280000Z" -- 28 May 2009
+    DESCRIPTION "Version 112:  Added support for port lock-out feature."
+
+    REVISION "200902240000Z" -- 24 February 2009
+    DESCRIPTION "Version 111:  Added support for 'sticky-mac' feature.
+                               Made some SMIv2 compliance fixes."
 
     REVISION "200609180000Z" -- 18 September 2006
     DESCRIPTION "Version 110:  Fix DESCRIPTIONS"
@@ -59,6 +60,7 @@ s5SbsAuth    MODULE-IDENTITY
     ::= { s5Com 3 }
 
 PortSet ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT "1x:"
     STATUS      current
     DESCRIPTION
         "The string is a variable length string which may vary from
@@ -98,7 +100,7 @@ s5SbsAuthSecurityLock OBJECT-TYPE
 
  
 s5SbsAuthCtlPartTime OBJECT-TYPE
-    SYNTAX        INTEGER (0..65535)
+    SYNTAX        Integer32 (0..65535)
     MAX-ACCESS    read-write
     STATUS        current
     DESCRIPTION
@@ -174,7 +176,7 @@ s5SbsSecurityAction OBJECT-TYPE
 
 
 s5SbsCurrNodesAllowed OBJECT-TYPE
-    SYNTAX      INTEGER (0..2147483647)
+    SYNTAX      Integer32 (0..2147483647)
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
@@ -184,7 +186,7 @@ s5SbsCurrNodesAllowed OBJECT-TYPE
 
 
 s5SbsMaxNodesAllowed OBJECT-TYPE
-    SYNTAX      INTEGER (0..2147483647)
+    SYNTAX      Integer32 (0..2147483647)
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
@@ -193,7 +195,7 @@ s5SbsMaxNodesAllowed OBJECT-TYPE
     ::= {  s5SbsAuth 7 }
 
 s5SbsCurrNodesBlocked OBJECT-TYPE
-    SYNTAX      INTEGER (0..2147483647)
+    SYNTAX      Integer32 (0..2147483647)
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
@@ -203,7 +205,7 @@ s5SbsCurrNodesBlocked OBJECT-TYPE
 
 
 s5SbsMaxNodesBlocked OBJECT-TYPE
-    SYNTAX      INTEGER (0..2147483647)
+    SYNTAX      Integer32 (0..2147483647)
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
@@ -247,12 +249,12 @@ s5SbsAuthCfgEntry OBJECT-TYPE
 
 S5SbsAuthCfgEntry ::= 
     SEQUENCE {
-        s5SbsAuthCfgBrdIndx         INTEGER,
-        s5SbsAuthCfgPortIndx        INTEGER,
+        s5SbsAuthCfgBrdIndx         Integer32,
+        s5SbsAuthCfgPortIndx        Integer32,
         s5SbsAuthCfgMACIndx         MacAddress,
         s5SbsAuthCfgAccessCtrlType  INTEGER,
         s5SbsAuthCfgStatus          INTEGER,
-        s5SbsAuthCfgSecureList      INTEGER,
+        s5SbsAuthCfgSecureList      Integer32,
         s5SbsAuthCfgSource          INTEGER,
         s5SbsAuthCfgLifetime        TimeInterval
     }
@@ -260,7 +262,7 @@ S5SbsAuthCfgEntry ::=
 
 
 s5SbsAuthCfgBrdIndx OBJECT-TYPE
-    SYNTAX        INTEGER (0..65535)
+    SYNTAX        Integer32 (0..65535)
     MAX-ACCESS        read-only
     STATUS        current
     DESCRIPTION
@@ -272,7 +274,7 @@ s5SbsAuthCfgBrdIndx OBJECT-TYPE
 
 
 s5SbsAuthCfgPortIndx OBJECT-TYPE
-    SYNTAX  INTEGER (0..65535)
+    SYNTAX  Integer32 (0..65535)
     MAX-ACCESS  read-only
     STATUS  current
     DESCRIPTION
@@ -312,7 +314,8 @@ s5SbsAuthCfgStatus OBJECT-TYPE
                 valid(1),
                 create(2),
                 delete(3),
-                modify(4)
+                modify(4),
+                createSticky(5)
                 }
     MAX-ACCESS        read-write
     STATUS        current
@@ -330,13 +333,14 @@ s5SbsAuthCfgStatus OBJECT-TYPE
          from the table.
 
          This object cannot be modified for entries whose value of
-         s5SbsAuthCfgSource is autoLearn(2).  Any such attempt
+         s5SbsAuthCfgSource is autoLearn(2) if the value of
+         s5SbsAutoLearningSticky is false(2).  Any such attempt
          will generate an inconsistentValue error."
     ::= { s5SbsAuthCfgEntry 5 } 
 
 
 s5SbsAuthCfgSecureList OBJECT-TYPE
-    SYNTAX        INTEGER(0..65535)
+    SYNTAX        Integer32(0..65535)
     MAX-ACCESS  read-write
     STATUS  current
     DESCRIPTION
@@ -346,24 +350,30 @@ s5SbsAuthCfgSecureList OBJECT-TYPE
          it should have the value of zero. This value is used
          as an index into s5SbsSecurityListTable.
          The corresponding MAC Address of this entry is allowed or blocked
-         on all the ports of that port list. "
+         on all the ports of that port list.  Note that this value must
+         be 0 for entries where the value of s5SbsAuthCfgSource is either
+         autoLearn(2) or sticky(3)."
     ::= { s5SbsAuthCfgEntry 6 }
 
 
 s5SbsAuthCfgSource OBJECT-TYPE
     SYNTAX      INTEGER {
                     static(1),
-                    autoLearn(2)
+                    autoLearn(2),
+                    sticky(3)
                 }
     MAX-ACCESS  read-only
     STATUS  current
     DESCRIPTION
         "This object indicates the source of an entry.  A value of static(1)
          indicates that the entry was manually created by a user.  A value
-         of autoLearn(2) indicates that the entry was auto-learned.  Note
-         that an auto-learned entry cannot be directly deleted, though disabling
+         of autoLearn(2) indicates that the entry was auto-learned.
+
+         Note that if the value of s5SbsAutoLearningSticky is false(2), then
+         an auto-learned entry cannot be directly deleted, though disabling
          auto-learning for a port will delete all auto-learned MAC addresses
-         for the port."
+         for the port.  However, if the value of s5SbsAutoLearningSticky is
+         true(1), then auto-learned addresses can be deleted normally."
     ::= { s5SbsAuthCfgEntry 7 }
 
 
@@ -417,9 +427,9 @@ s5SbsAuthStatusEntry OBJECT-TYPE
 S5SbsAuthStatusEntry ::= 
         SEQUENCE {
         s5SbsAuthStatusBrdIndx  
-                INTEGER,
+                Integer32,
         s5SbsAuthStatusPortIndx  
-                INTEGER,
+                Integer32,
         s5SbsAuthStatusMACIndx  
                 MacAddress,
         s5SbsCurrentAccessCtrlType 
@@ -433,7 +443,7 @@ S5SbsAuthStatusEntry ::=
 
 
 s5SbsAuthStatusBrdIndx OBJECT-TYPE
-    SYNTAX        INTEGER(0..255)
+    SYNTAX        Integer32(0..255)
     MAX-ACCESS        read-only
     STATUS        current
     DESCRIPTION
@@ -444,7 +454,7 @@ s5SbsAuthStatusBrdIndx OBJECT-TYPE
 
 
 s5SbsAuthStatusPortIndx OBJECT-TYPE
-    SYNTAX        INTEGER(0..255)
+    SYNTAX        Integer32(0..255)
     MAX-ACCESS        read-only
     STATUS        current
     DESCRIPTION
@@ -573,9 +583,9 @@ s5SbsViolationStatusEntry OBJECT-TYPE
 S5SbsViolationStatusEntry ::= 
         SEQUENCE {
         s5SbsViolationStatusBrdIndx  
-                INTEGER,
+                Integer32,
         s5SbsViolationStatusPortIndx  
-                INTEGER,
+                Integer32,
         s5SbsViolationStatusMACAddress
                 MacAddress
         }
@@ -583,7 +593,7 @@ S5SbsViolationStatusEntry ::=
 
 
 s5SbsViolationStatusBrdIndx OBJECT-TYPE
-    SYNTAX        INTEGER(1..255)
+    SYNTAX        Integer32(1..255)
     MAX-ACCESS        read-only
     STATUS        current
     DESCRIPTION
@@ -594,7 +604,7 @@ s5SbsViolationStatusBrdIndx OBJECT-TYPE
 
 
 s5SbsViolationStatusPortIndx OBJECT-TYPE
-    SYNTAX        INTEGER(1..255)
+    SYNTAX        Integer32(1..255)
     MAX-ACCESS        read-only
     STATUS        current
     DESCRIPTION
@@ -660,7 +670,7 @@ s5SbsPortLearnStatus OBJECT-TYPE
 
 
 s5SbsCurrSecurityLists OBJECT-TYPE
-    SYNTAX        INTEGER (0..65535)
+    SYNTAX        Integer32 (0..65535)
     MAX-ACCESS        read-only
     STATUS        current
     DESCRIPTION
@@ -670,7 +680,7 @@ s5SbsCurrSecurityLists OBJECT-TYPE
 
 
 s5SbsMaxSecurityLists OBJECT-TYPE
-    SYNTAX        INTEGER (0..65535)
+    SYNTAX        Integer32 (0..65535)
     MAX-ACCESS        read-only
     STATUS        current
     DESCRIPTION
@@ -703,13 +713,13 @@ s5SbsSecurityListEntry OBJECT-TYPE
 
 S5SbsSecurityListEntry ::= 
     SEQUENCE {
-        s5SbsSecurityListIndx     INTEGER,
+        s5SbsSecurityListIndx     Integer32,
         s5SbsSecurityListMembers  PortSet,
         s5SbsSecurityListStatus   INTEGER
     }
 
 s5SbsSecurityListIndx OBJECT-TYPE
-    SYNTAX        INTEGER(1..255)
+    SYNTAX        Integer32(1..255)
     MAX-ACCESS        read-only
     STATUS        current
     DESCRIPTION
@@ -797,8 +807,8 @@ s5SbsMacViolationEntry OBJECT-TYPE
 S5SbsMacViolationEntry ::= 
     SEQUENCE {
         s5SbsMacViolationAddress  MacAddress,
-        s5SbsMacViolationBrd      INTEGER,
-        s5SbsMacViolationPort     INTEGER
+        s5SbsMacViolationBrd      Integer32,
+        s5SbsMacViolationPort     Integer32
     }
 
 s5SbsMacViolationAddress OBJECT-TYPE
@@ -811,7 +821,7 @@ s5SbsMacViolationAddress OBJECT-TYPE
 
 
 s5SbsMacViolationBrd OBJECT-TYPE
-    SYNTAX      INTEGER (0..65535)
+    SYNTAX      Integer32 (0..65535)
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
@@ -820,7 +830,7 @@ s5SbsMacViolationBrd OBJECT-TYPE
     ::= { s5SbsMacViolationEntry 2 }
 
 s5SbsMacViolationPort OBJECT-TYPE
-    SYNTAX      INTEGER (0..65535)
+    SYNTAX      Integer32 (0..65535)
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
@@ -867,14 +877,14 @@ s5SbsAutoLearningConfigEntry OBJECT-TYPE
 
 S5SbsAutoLearningConfigEntry ::= 
     SEQUENCE {
-        s5SbsAutoLearningConfigBrd      INTEGER,
-        s5SbsAutoLearningConfigPort     INTEGER,
+        s5SbsAutoLearningConfigBrd      Integer32,
+        s5SbsAutoLearningConfigPort     Integer32,
         s5SbsAutoLearningConfigEnabled  TruthValue,
         s5SbsAutoLearningConfigMaxMacs  Integer32
     }
 
 s5SbsAutoLearningConfigBrd OBJECT-TYPE
-    SYNTAX      INTEGER (0..65535)
+    SYNTAX      Integer32 (0..65535)
     MAX-ACCESS  not-accessible
     STATUS      current
     DESCRIPTION
@@ -882,7 +892,7 @@ s5SbsAutoLearningConfigBrd OBJECT-TYPE
     ::= { s5SbsAutoLearningConfigEntry 1 }
 
 s5SbsAutoLearningConfigPort OBJECT-TYPE
-    SYNTAX      INTEGER (0..65535)
+    SYNTAX      Integer32 (0..65535)
     MAX-ACCESS  not-accessible
     STATUS      current
     DESCRIPTION
@@ -925,5 +935,22 @@ s5SbsAutoLearningPorts OBJECT-TYPE
          learning is enabled.  It is an alternative to
          s5SbsAutoLearningConfigEnabled."
     ::= { s5SbsAuth 23 }
+
+s5SbsAutoLearningSticky OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object controls whether the 'sticky-mac' feature is enabled."
+    ::= { s5SbsAuth 24 }
+
+s5SbsSecurityLockoutPortList OBJECT-TYPE
+    SYNTAX      PortSet
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object controls the set of ports that are locked such that they
+        cannot have mac-security enabled."
+    ::= { s5SbsAuth 25 }
 
 END

@@ -3,8 +3,8 @@
 --   
 -- Dec 1999, Huiyang Yang
 -- Oct 2007, 2008 Annie Mishalini Devasahayam
---  
--- Copyright (c) 1999-2008 by Cisco Systems, Inc.
+--   
+-- Copyright (c) 1999-2010 by Cisco Systems Inc.
 --   
 -- All rights reserved.
 -- *****************************************************************
@@ -45,7 +45,7 @@ IMPORTS
 
 
 ciscoGprsAccPtMIB MODULE-IDENTITY
-    LAST-UPDATED    "200812190000Z"
+    LAST-UPDATED    "201004022000Z"
     ORGANIZATION    "Cisco Systems, Inc."
     CONTACT-INFO
             "Cisco Systems
@@ -103,6 +103,8 @@ ciscoGprsAccPtMIB MODULE-IDENTITY
 
         Acronyms and terms:
 
+            3GPP   3rd Generation Partnership Project
+
             APN    Access Point Name
 
             BSS    Base Station Subsystem
@@ -110,6 +112,8 @@ ciscoGprsAccPtMIB MODULE-IDENTITY
             CAC    Call Admission Control
 
             COA    Change of Authorization
+
+            CSG2   Content Service Gateway Release 2
 
             ETSI   European Telecommunications Standards 
                    Instititute 
@@ -128,6 +132,8 @@ ciscoGprsAccPtMIB MODULE-IDENTITY
 
             IMS    IP Multimedia Subsystem
 
+            MME    Mobility Management Entity
+
             MS     Mobile Station
 
             P-CSCF Proxy Call Session Control Function
@@ -142,6 +148,8 @@ ciscoGprsAccPtMIB MODULE-IDENTITY
 
             PLMN   Public Land Mobile Network
 
+            QOS    Quality Of Service
+
             SGSN   Serving GPRS support Node
 
             UE     User Equipment
@@ -149,7 +157,7 @@ ciscoGprsAccPtMIB MODULE-IDENTITY
             VPN    Virtual Private Network
 
             VRF    VPN Routing and Forwarding
- 
+
         REFERENCE
 
         [1] GSM 03.60: Digital cellular telecommunications 
@@ -159,15 +167,62 @@ ciscoGprsAccPtMIB MODULE-IDENTITY
         [2] GSM 03.03: Digital cellular telecommunication 
             system (Phase 2+); General Packet Radio Service 
             (GPRS); Service description; Stage 1."
+    REVISION        "201004022000Z"
+    DESCRIPTION
+        "The following changes have been made.
+
+        [1] The following objects has been added
+            to cgprsAccPtStatisticsTable.
+
+            cgprsAccPtTotalBearers,
+            cgprsAccPtTotRmtInitCreateBearers,
+            cgprsAccPtSuccRmtInitCreateBearers,
+            cgprsAccPtNetworkInitDeleteBearers,
+            cgprsAccPtTotNetworkInitUpdateBearers,
+            cgprsAccPtSuccNetworkInitUpdateBearers,
+            cgprsAccPtTotNetworkInitCreateDedBearers,
+            cgprsAccPtSuccNetworkInitCreateDedBearers,
+            cgprsAccPtTotRmtInitModifyBearers,
+            cgprsAccPtSuccRmtInitModifyBearers,
+            cgprsAccPtTotNetworkInitCreateIPv6DedBearers,
+            cgprsAccPtSuccNetworkInitCreateIPv6DedBearers
+
+        [2] The following objects has been added
+            to cgprsAccPtExtTable.
+
+            cgprsAccPtChargingRecordType,
+            cgprsAccPtChargingGrp,
+            cgprsAccPtIpAddrPoolNoRedistribute
+
+        [3] The following object has been added to 
+            cgprsAccPtAggregTable.
+
+            cgprsAccPtAggregCsgGroup
+
+        [4] Added cgprsAccPtCsgGroupTable to ciscoGprsAccPtConfig.
+
+        [5] Added group cgprsAccPtStatisticsGroupSup2, which
+            deprecates cgprsAccPtStatisticsGroupSup1.
+
+        [6] Added group cgprsAccPtMIBR90GroupRev1, which
+            deprecates cgprsAccPtMIBR90Group.
+
+        [7] Added new group cgprsAccPtMIBR92Group.  
+
+        [8] Added new group cgprsAccPtMIBR100Group.   
+
+        [9] Deprecated MODULE-COMPLIANCE
+            cgprsAccPtMIBComplianceRev10 and is superceded by
+            cgprsAccPtMIBComplianceRev11."
     REVISION        "200812190000Z"
     DESCRIPTION
         "Added cgprsAccPtGxEnable,
-         cgprsAccPtPcscfLoadBalance,
-         cgprsAccPtNetworkBehindMsEnable,
-         cgprsAccPtMaxSubnetsBehindMobile to
-         cgprsAccPtExtTable."
+        cgprsAccPtPcscfLoadBalance,
+        cgprsAccPtNetworkBehindMsEnable,
+        cgprsAccPtMaxSubnetsBehindMobile to
+        cgprsAccPtExtTable."
     REVISION        "200803030000Z"
-    DESCRIPTION 
+    DESCRIPTION
         "Added cgprsAccPtAaaAccountInterRadius to
         cgprsAccPtExtTable."
     REVISION        "200802270000Z"
@@ -330,7 +385,7 @@ AccessControlListId ::= TEXTUAL-CONVENTION
         ACLs are configured/defined outside the scope of 
         this MIB. The value of an object with this syntax 
         associates to an ACL with the same ACL number."
-    SYNTAX          Integer32 (1..2699 )
+    SYNTAX          Integer32 (1..2699)
 
 AccessControlListOrZero ::= TEXTUAL-CONVENTION
     STATUS          current
@@ -347,7 +402,7 @@ AccessControlListOrZero ::= TEXTUAL-CONVENTION
         associates to an ACL with the same ACL number.
 
         A value of zero indicates no ACL is configured."
-    SYNTAX          Integer32 (0..199  |  1300..2699 )
+    SYNTAX          Integer32 (0..199 | 1300..2699)
 
 AccessControlListName ::= TEXTUAL-CONVENTION
     STATUS          current
@@ -444,7 +499,7 @@ CgprsAccPtEntry ::= SEQUENCE {
 }
 
 cgprsAccPtIndex OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..65535 )
+    SYNTAX          Unsigned32 (1..65535)
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
@@ -759,7 +814,7 @@ cgprsAccPtUsers OBJECT-TYPE
     ::= { cgprsAccPtEntry 19 }
 
 cgprsAccPtIdlePdpPurgeTimer OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..168 )
+    SYNTAX          Unsigned32 (0..168)
     UNITS           "hours"
     MAX-ACCESS      read-create
     STATUS          current
@@ -949,7 +1004,7 @@ cgprsAccPtPppRegenEnable OBJECT-TYPE
     ::= { cgprsAccPtEntry 32 }
 
 cgprsAccPtPppRegenMaxSessions OBJECT-TYPE
-    SYNTAX          Integer32 (1..65535 )
+    SYNTAX          Integer32 (1..65535)
     MAX-ACCESS      read-create
     STATUS          current
     DESCRIPTION
@@ -965,7 +1020,7 @@ cgprsAccPtPppRegenMaxSessions OBJECT-TYPE
     ::= { cgprsAccPtEntry 33 }
 
 cgprsAccPtPppRegenSetupTime OBJECT-TYPE
-    SYNTAX          Integer32 (1..65535 )
+    SYNTAX          Integer32 (1..65535)
     UNITS           "seconds"
     MAX-ACCESS      read-create
     STATUS          current
@@ -1042,7 +1097,8 @@ CgprsAccPtAggregEntry ::= SEQUENCE {
         cgprsAccPtAggregIpAddrType InetAddressType,
         cgprsAccPtAggregIpAddr     InetAddress,
         cgprsAccPtAggregIpMask     CiscoInetAddressMask,
-        cgprsAccPtAggregRowStatus  RowStatus
+        cgprsAccPtAggregRowStatus  RowStatus,
+        cgprsAccPtAggregCsgGroup   SnmpAdminString
 }
 
 cgprsAccPtAggregIpAddrType OBJECT-TYPE
@@ -1087,6 +1143,18 @@ cgprsAccPtAggregRowStatus OBJECT-TYPE
         To create a row, set this object to 'createAndGo'.
         To delete a row, set this object to 'destroy'." 
     ::= { cgprsAccPtAggregEntry 4 }
+
+cgprsAccPtAggregCsgGroup OBJECT-TYPE
+    SYNTAX          SnmpAdminString
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the name of the CSG Group.
+
+        The value must be same as an entry in
+        cgprsAccPtCsgGroupTable identified by
+        cgprsAccPtCsgGroupName." 
+    ::= { cgprsAccPtAggregEntry 5 }
  
 
 
@@ -1105,7 +1173,6 @@ cgprsAccPtExtEntry OBJECT-TYPE
     DESCRIPTION
         "An entry in cgprsAccPtExtTable."
     AUGMENTS           { cgprsAccPtEntry  } 
- 
     ::= { cgprsAccPtExtTable 1 }
 
 CgprsAccPtExtEntry ::= SEQUENCE {
@@ -1136,7 +1203,10 @@ CgprsAccPtExtEntry ::= SEQUENCE {
         cgprsAccPtGxEnable                   TruthValue,
         cgprsAccPtPcscfLoadBalance           TruthValue,
         cgprsAccPtNetworkBehindMsEnable      TruthValue,
-        cgprsAccPtMaxSubnetsBehindMobile     Unsigned32
+        cgprsAccPtMaxSubnetsBehindMobile     Unsigned32,
+        cgprsAccPtChargingRecordType         INTEGER,
+        cgprsAccPtChargingGrp                Unsigned32,
+        cgprsAccPtIpAddrPoolNoRedistribute   TruthValue
 }
 
 cgprsAccPtIPAccListInEnable OBJECT-TYPE
@@ -1351,7 +1421,7 @@ cgprsAccPtOperationMode OBJECT-TYPE
     ::= { cgprsAccPtExtEntry 12 }
 
 cgprsAccPtAbsoluteSessionTimer OBJECT-TYPE
-    SYNTAX          Unsigned32 (0 |  30..4294967 )
+    SYNTAX          Unsigned32 (0 | 30..4294967)
     UNITS           "seconds"
     MAX-ACCESS      read-create
     STATUS          current
@@ -1473,7 +1543,7 @@ cgprsAccPtGtpUpdateFailDelete OBJECT-TYPE
     ::= { cgprsAccPtExtEntry 22 }
 
 cgprsAccPtAaaAccountInterPeriod OBJECT-TYPE
-    SYNTAX          Unsigned32 (0 |  15..71582 )
+    SYNTAX          Unsigned32 (0 | 15..71582)
     UNITS           "minutes"
     MAX-ACCESS      read-create
     STATUS          current
@@ -1487,74 +1557,137 @@ cgprsAccPtAaaAccountInterPeriod OBJECT-TYPE
     DEFVAL          { 0 } 
     ::= { cgprsAccPtExtEntry 23 }
 
-cgprsAccPtAaaAccountInterRadius  OBJECT-TYPE
-    SYNTAX      TruthValue
-    MAX-ACCESS  read-create
-    STATUS      current
+cgprsAccPtAaaAccountInterRadius OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-create
+    STATUS          current
     DESCRIPTION
         "This object when set to 'true', enables GGSN to receive
-         and use the Accounting Periodic Interval from Radius for 
-         the PDP contexts on this APN."
-    DEFVAL      { false }
+        and use the Accounting Periodic Interval from Radius for 
+        the PDP contexts on this APN."
+    DEFVAL          { false } 
     ::= { cgprsAccPtExtEntry 24 }
 
 cgprsAccPtGxEnable OBJECT-TYPE
-    SYNTAX      TruthValue
-    MAX-ACCESS  read-create
-    STATUS      current
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-create
+    STATUS          current
     DESCRIPTION
         "This object when set to 'true', indicates that this APN
-         is Gx enabled."
-    DEFVAL      { false }
+        is Gx enabled."
+    DEFVAL          { false } 
     ::= { cgprsAccPtExtEntry 25 }
 
 cgprsAccPtPcscfLoadBalance OBJECT-TYPE
-    SYNTAX      TruthValue
-    MAX-ACCESS  read-create
-    STATUS      current
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-create
+    STATUS          current
     DESCRIPTION
         "The Proxy-CSCF server group represented by the object
-         cgprsAccPtPcscfServerGroupName contains a list of
-         Proxy-CSCF addresses which will be provided to the MS(UE)
-         in the PCO (Protocol Configuration Option) response message.
-         The object cgprsAccPtPcscfLoadBalance when set to 'true',
-         enables GGSN to include the IP address of the least loaded
-         P-CSCF server in the PCO response message. Round Robin
-         algorithm is used for the selection of the least loaded
-         P-CSCF server."
-    DEFVAL      { false }
+        cgprsAccPtPcscfServerGroupName contains a list of
+        Proxy-CSCF addresses which will be provided to the MS(UE)
+        in the PCO (Protocol Configuration Option) response message.
+        The object cgprsAccPtPcscfLoadBalance when set to 'true',
+        enables GGSN to include the IP address of the least loaded
+        P-CSCF server in the PCO response message. Round Robin
+        algorithm is used for the selection of the least loaded
+        P-CSCF server."
+    DEFVAL          { false } 
     ::= { cgprsAccPtExtEntry 26 }
 
 cgprsAccPtNetworkBehindMsEnable OBJECT-TYPE
-    SYNTAX      TruthValue
-    MAX-ACCESS  read-create
-    STATUS      current
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-create
+    STATUS          current
     DESCRIPTION
         "This object when set to 'true', enables GGSN to support
-         a network behind the Mobile Station."
-    DEFVAL      { false }
+        a network behind the Mobile Station."
+    DEFVAL          { false } 
     ::= { cgprsAccPtExtEntry 27 }
 
 cgprsAccPtMaxSubnetsBehindMobile OBJECT-TYPE
-    SYNTAX      Unsigned32 (0..16)
-    MAX-ACCESS  read-create
-    STATUS      current
+    SYNTAX          Unsigned32 (0..16)
+    MAX-ACCESS      read-create
+    STATUS          current
     DESCRIPTION
         "This object indicates the number of subnetworks that can
-         be permitted behind the Mobile station. This object can be
-         set only when the object cgprsAccPtNetworkBehindMsEnable is
-         set to 'true' as this object can take effect only when
-         cgprsAccPtNetworkBehindMsEnable is 'true'. Setting the value
-         of '0' to this object will not take effect. The value of this
-         object will be set to '0' only if the object
-         cgprsAccPtNetworkBehindMsEnable is set to 'false'."
-    DEFVAL      { 0 }
+        be permitted behind the Mobile station. This object can be
+        set only when the object cgprsAccPtNetworkBehindMsEnable is
+        set to 'true' as this object can take effect only when
+        cgprsAccPtNetworkBehindMsEnable is 'true'. Setting the value
+        of '0' to this object will not take effect. The value of this
+        object will be set to '0' only if the object
+        cgprsAccPtNetworkBehindMsEnable is set to 'false'."
+    DEFVAL          { 0 } 
     ::= { cgprsAccPtExtEntry 28 }
+
+cgprsAccPtChargingRecordType OBJECT-TYPE
+    SYNTAX          INTEGER  {
+                        noconfig(0),
+                        none(1),
+                        gcdr(2),
+                        egcdr(3)
+                    }
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object denotes the charging record type of this APN.
+        Each type has different PDP context behavior and is given
+        as below:
+
+        noconfig - When no record type is configured.
+
+        none -  when there are no active PDP contexts under
+               this APN
+
+        gcdr -  When the derived record type is gcdr, GGSN indicates
+               CSG2 that gcdr generation is configured for this
+               user, so that CSG2 will generate service level CDRs.
+
+        egcdr - When the derived record type is egcdr, GGSN
+               indicates CSG2 that egcdr generation is configured
+               for this user, so that CSG2 will not generate
+               service level CDRs."
+    DEFVAL          { noconfig } 
+    ::= { cgprsAccPtExtEntry 29 }
+
+cgprsAccPtChargingGrp OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..29)
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object provides the charging group identifier to
+        which an access point is associated with. By default the
+        value of this object is 0, it indicates that the default
+        charging group is associated with this access point entry.
+
+        The value of this object must be same as one of the values
+        identified by cgprsCgGroupIndex."
+    REFERENCE
+        "csgprsCgGroupIndex is defined in CISCO-GPRS-CHARGING-MIB."
+    DEFVAL          { 0 } 
+    ::= { cgprsAccPtExtEntry 30 }
+
+cgprsAccPtIpAddrPoolNoRedistribute OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object indicates whether route propagation from PCOP to
+        SUP (Supervisor) shall occur. This object can be set/unset
+        only when thw object cgprsAccPtIpAddressPool is configured.
+        By default the value of this object is false.
+        Setting it to true does not allow the redistribution of routes 
+        from PCOP to the SUP."
+    DEFVAL          { false } 
+    ::= { cgprsAccPtExtEntry 31 }
+ 
 
 -- Generic Servers
 
 cgprsAccPtGenServerConfigs  OBJECT IDENTIFIER
     ::= { ciscoGprsAccPtConfig 4 }
+
 
 cgprsAccPtGenServerConfigTable OBJECT-TYPE
     SYNTAX          SEQUENCE OF CgprsAccPtGenServerConfigEntry 
@@ -1573,7 +1706,6 @@ cgprsAccPtGenServerConfigEntry OBJECT-TYPE
     DESCRIPTION
         "An entry in cgprsAccPtGenServerConfigTable."
     AUGMENTS           { cgprsAccPtEntry  } 
- 
     ::= { cgprsAccPtGenServerConfigTable 1 }
 
 CgprsAccPtGenServerConfigEntry ::= SEQUENCE {
@@ -1697,7 +1829,6 @@ cgprsAccPtImsConfigEntry OBJECT-TYPE
     DESCRIPTION
         "An entry in cgprsAccPtImsConfigTable"
     AUGMENTS           { cgprsAccPtEntry  } 
- 
     ::= { cgprsAccPtImsConfigTable 1 }
 
 CgprsAccPtImsConfigEntry ::= SEQUENCE {
@@ -1937,7 +2068,6 @@ cgprsAccPtCacEntry OBJECT-TYPE
     DESCRIPTION
         "An entry in cgprsAccPtCacTable."
     AUGMENTS           { cgprsAccPtEntry  } 
- 
     ::= { cgprsAccPtCacTable 1 }
 
 CgprsAccPtCacEntry ::= SEQUENCE {
@@ -2026,7 +2156,6 @@ cgprsAccPtRouteProbeEntry OBJECT-TYPE
     DESCRIPTION
         "An entry in cgprsAccPtRouteProbeTable."
     AUGMENTS           { cgprsAccPtEntry  } 
- 
     ::= { cgprsAccPtRouteProbeTable 1 }
 
 CgprsAccPtRouteProbeEntry ::= SEQUENCE {
@@ -2082,7 +2211,7 @@ cgprsAccPtRpDestPort OBJECT-TYPE
     ::= { cgprsAccPtRouteProbeEntry 4 }
 
 cgprsAccPtRpTtl OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..255 )
+    SYNTAX          Unsigned32 (1..255)
     UNITS           "seconds"
     MAX-ACCESS      read-create
     STATUS          current
@@ -2129,7 +2258,6 @@ cgprsAccPtIpv6Entry OBJECT-TYPE
         agent writes the configuration to memory before 
         restart."
     AUGMENTS           { cgprsAccPtEntry  } 
- 
     ::= { cgprsAccPtIpv6Table 1 }
 
 CgprsAccPtIpv6Entry ::= SEQUENCE {
@@ -2379,6 +2507,69 @@ cgprsAccPtIpv6SecurityVerifyDst OBJECT-TYPE
     ::= { cgprsAccPtIpv6Entry 15 }
  
 
+-- APN CSG Group Configs
+
+cgprsAccPtCsgGroupTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CgprsAccPtCsgGroupEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table contains the list of CSG Groups
+        configured on this APN."
+    ::= { ciscoGprsAccPtConfig 10 }
+
+cgprsAccPtCsgGroupEntry OBJECT-TYPE
+    SYNTAX          CgprsAccPtCsgGroupEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "An Entry contains the CSG Group name configured
+        under the access point entry with index
+        cgprsAccPtIndex.
+        The agent can create/destroy a CSG group under
+        access point."
+    INDEX           {
+                        cgprsAccPtIndex,
+                        cgprsAccPtCsgGroupName
+                    } 
+    ::= { cgprsAccPtCsgGroupTable 1 }
+
+CgprsAccPtCsgGroupEntry ::= SEQUENCE {
+        cgprsAccPtCsgGroupName      SnmpAdminString,
+        cgprsAccPtCsgGroupRowStatus RowStatus
+}
+
+cgprsAccPtCsgGroupName OBJECT-TYPE
+    SYNTAX          SnmpAdminString
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This object specifies CSG Group name to use to
+        communicate with the CSG server in an access point
+        configuration.
+
+        The value must be same as an entry in cGgsnSACsgTable
+        identified by cGgsnSACsgGroupName."
+    REFERENCE
+        "cGgsnSACsgGroupName is defined in
+        CISCO-GGSN-SERVICE-AWARE-MIB." 
+    ::= { cgprsAccPtCsgGroupEntry 1 }
+
+cgprsAccPtCsgGroupRowStatus OBJECT-TYPE
+    SYNTAX          RowStatus
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object is used to create a new row or delete an
+        existing row in this table.
+        This object must be set to 'creatAndGo' to create 
+        an entry and set to 'destroy' to delete an entry.
+
+        The value in any column may be modified any time even the
+        value of this entry rowStatus object is 'active'." 
+    ::= { cgprsAccPtCsgGroupEntry 2 }
+ 
+
 -- *********************************************************************
 -- Configuration change notification history information
 -- *********************************************************************
@@ -2434,11 +2625,11 @@ cgprsAccPtCfgNotifHistEntry OBJECT-TYPE
 CgprsAccPtCfgNotifHistEntry ::= SEQUENCE {
         cgprsAccPtCfgNotifIndex      Unsigned32,
         cgprsAccPtCfgNotifAccPtIndex Unsigned32,
-        cgprsAccPtCfgNotifReason     INTEGER 
+        cgprsAccPtCfgNotifReason     INTEGER
 }
 
 cgprsAccPtCfgNotifIndex OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..4294967295 )
+    SYNTAX          Unsigned32 (1..4294967295)
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
@@ -2451,7 +2642,7 @@ cgprsAccPtCfgNotifIndex OBJECT-TYPE
     ::= { cgprsAccPtCfgNotifHistEntry 1 }
 
 cgprsAccPtCfgNotifAccPtIndex OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..65535 )
+    SYNTAX          Unsigned32 (1..65535)
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
@@ -2491,7 +2682,7 @@ cgprsAccPtCfgNotifEnable OBJECT-TYPE
     ::= { ciscoGprsAccPtCfgNotifInfo 2 }
 
 cgprsAccPtCfgNotifHistMax OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..5000 )
+    SYNTAX          Unsigned32 (1..5000)
     MAX-ACCESS      read-write
     STATUS          current
     DESCRIPTION
@@ -2504,7 +2695,7 @@ cgprsAccPtCfgNotifHistMax OBJECT-TYPE
     ::= { ciscoGprsAccPtCfgNotifInfo 3 }
 
 cgprsAccPtCfgNotifLatestIndex OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..4294967295 )
+    SYNTAX          Unsigned32 (1..4294967295)
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
@@ -2531,52 +2722,63 @@ cgprsAccPtStatisticsEntry OBJECT-TYPE
     DESCRIPTION
         "Entry for each APN in statistics table."
     AUGMENTS           { cgprsAccPtEntry  } 
- 
     ::= { cgprsAccPtStatisticsTable 1 }
 
 CgprsAccPtStatisticsEntry ::= SEQUENCE {
-        cgprsAccPtMsActivatedPdps              Counter32,
-        cgprsAccPtSuccMsActivatedPdps          Counter32,
-        cgprsAccPtMsActivatedDynPdps           Counter32,
-        cgprsAccPtSuccMsActivatedDynPdps       Counter32,
-        cgprsAccPtMsDeactivatedPdps            Counter32,
-        cgprsAccPtSuccMsDeactivatedPdps        Counter32,
-        cgprsAccPtNetworkInitPdps              Counter32,
-        cgprsAccPtSuccNetworkInitPdps          Counter32,
-        cgprsAccPtGgsnDeactivatedPdps          Counter32,
-        cgprsAccPtSuccGgsDeactivatedPdps       Counter32,
-        cgprsAccPtActivePdps                   Gauge32,
-        cgprsAccPtUpstreamTrafficVol           Counter32,
-        cgprsAccPtDownstreamTrafficVol         Counter32,
-        cgprsAccPtSourceAddrViolTpdus          Counter32,
-        cgprsAccPtDestAddrViolTpdus            Counter32,
-        cgprsAccPtRedirInterMobilTraffic       Counter32,
-        cgprsAccPtRevUpstreamTrafficVol        Counter64,
-        cgprsAccPtRevDownstrTrafficVol         Counter64,
-        cgprsAccPtUpstreamPacketCount          Counter32,
-        cgprsAccPtDownstreamPacketCount        Counter32,
-        cgprsAccPtDhcpAddrRequests             Counter32,
-        cgprsAccPtSuccDhcpAddrRequests         Counter32,
-        cgprsAccPtDhcpAddrReleases             Counter32,
-        cgprsAccPtIpv6MsActivatedPdps          Counter32,
-        cgprsAccPtIpv6MsSuccActivatedPdps      Counter32,
-        cgprsAccPtIpv6NetworkInitDeactPdps     Counter32,
-        cgprsAccPtIpv6NetworkInitDeactSuccPdps Counter32,
-        cgprsAccPtIpv6MsActivatedDynPdps       Counter32,
-        cgprsAccPtIpv6MsSuccActivatedDynPdps   Counter32,
-        cgprsAccPtIpv6MsDeactivatedPdps        Counter32,
-        cgprsAccPtIpv6MsSuccDeactivatedPdps    Counter32,
-        cgprsAccPtIpv6GgsnDeactivatedPdps      Counter32,
-        cgprsAccPtIpv6GgsnSuccDeactivatedPdps  Counter32,
-        cgprsAccPtIpv6UpstreamTrafficVolume    Counter64,
-        cgprsAccPtIpv6DownstreamTrafficVolume  Counter64,
-        cgprsAccPtIpv6UpstreamPackets          Counter32,
-        cgprsAccPtIpv6DownstreamPackets        Counter32,
-        cgprsAccPtPdpUpdateReqSent             Counter32,
-        cgprsAccPtSuccPdpUpdateResRcvd         Counter32,
-        cgprsAccPtCoaRcvd                      Counter32,
-        cgprsAccPtCoaSuccess                   Counter32,
-        cgprsAccPtDtEnabled                    Counter32
+        cgprsAccPtMsActivatedPdps                     Counter32,
+        cgprsAccPtSuccMsActivatedPdps                 Counter32,
+        cgprsAccPtMsActivatedDynPdps                  Counter32,
+        cgprsAccPtSuccMsActivatedDynPdps              Counter32,
+        cgprsAccPtMsDeactivatedPdps                   Counter32,
+        cgprsAccPtSuccMsDeactivatedPdps               Counter32,
+        cgprsAccPtNetworkInitPdps                     Counter32,
+        cgprsAccPtSuccNetworkInitPdps                 Counter32,
+        cgprsAccPtGgsnDeactivatedPdps                 Counter32,
+        cgprsAccPtSuccGgsDeactivatedPdps              Counter32,
+        cgprsAccPtActivePdps                          Gauge32,
+        cgprsAccPtUpstreamTrafficVol                  Counter32,
+        cgprsAccPtDownstreamTrafficVol                Counter32,
+        cgprsAccPtSourceAddrViolTpdus                 Counter32,
+        cgprsAccPtDestAddrViolTpdus                   Counter32,
+        cgprsAccPtRedirInterMobilTraffic              Counter32,
+        cgprsAccPtRevUpstreamTrafficVol               Counter64,
+        cgprsAccPtRevDownstrTrafficVol                Counter64,
+        cgprsAccPtUpstreamPacketCount                 Counter32,
+        cgprsAccPtDownstreamPacketCount               Counter32,
+        cgprsAccPtDhcpAddrRequests                    Counter32,
+        cgprsAccPtSuccDhcpAddrRequests                Counter32,
+        cgprsAccPtDhcpAddrReleases                    Counter32,
+        cgprsAccPtIpv6MsActivatedPdps                 Counter32,
+        cgprsAccPtIpv6MsSuccActivatedPdps             Counter32,
+        cgprsAccPtIpv6NetworkInitDeactPdps            Counter32,
+        cgprsAccPtIpv6NetworkInitDeactSuccPdps        Counter32,
+        cgprsAccPtIpv6MsActivatedDynPdps              Counter32,
+        cgprsAccPtIpv6MsSuccActivatedDynPdps          Counter32,
+        cgprsAccPtIpv6MsDeactivatedPdps               Counter32,
+        cgprsAccPtIpv6MsSuccDeactivatedPdps           Counter32,
+        cgprsAccPtIpv6GgsnDeactivatedPdps             Counter32,
+        cgprsAccPtIpv6GgsnSuccDeactivatedPdps         Counter32,
+        cgprsAccPtIpv6UpstreamTrafficVolume           Counter64,
+        cgprsAccPtIpv6DownstreamTrafficVolume         Counter64,
+        cgprsAccPtIpv6UpstreamPackets                 Counter32,
+        cgprsAccPtIpv6DownstreamPackets               Counter32,
+        cgprsAccPtPdpUpdateReqSent                    Counter32,
+        cgprsAccPtSuccPdpUpdateResRcvd                Counter32,
+        cgprsAccPtCoaRcvd                             Counter32,
+        cgprsAccPtCoaSuccess                          Counter32,
+        cgprsAccPtDtEnabled                           Counter32,
+        cgprsAccPtTotalBearers                        Counter32,
+        cgprsAccPtTotRmtInitCreateBearers             Counter32,
+        cgprsAccPtSuccRmtInitCreateBearers            Counter32,
+        cgprsAccPtNetworkInitDeleteBearers            Counter32,
+        cgprsAccPtTotRmtInitModifyBearers             Counter32,
+        cgprsAccPtSuccRmtInitModifyBearers            Counter32,
+        cgprsAccPtTotNetworkInitUpdateBearers         Counter32,
+        cgprsAccPtSuccNetworkInitUpdateBearers        Counter32,
+        cgprsAccPtTotNetworkInitCreateDedBearers      Counter32,
+        cgprsAccPtSuccNetworkInitCreateDedBearers     Counter32,
+        cgprsAccPtTotNetworkInitCreateIPv6DedBearers  Counter32,
+        cgprsAccPtSuccNetworkInitCreateIPv6DedBearers Counter32
 }
 
 cgprsAccPtMsActivatedPdps OBJECT-TYPE
@@ -3141,7 +3343,7 @@ cgprsAccPtCoaRcvd OBJECT-TYPE
     STATUS          current
     DESCRIPTION
         "This object represents the total number of Change of
-        Authorization (COA) messages received on this APN.                                                                  
+        Authorization (COA) messages received on this APN.
         Trigger condition: This counter is triggered when a COA
         message is received." 
     ::= { cgprsAccPtStatisticsEntry 40 }
@@ -3169,6 +3371,114 @@ cgprsAccPtDtEnabled OBJECT-TYPE
         tunnel is enabled for the PDP contexts on this APN
         in GGSN." 
     ::= { cgprsAccPtStatisticsEntry 42 }
+
+cgprsAccPtTotalBearers OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the total number of bearers
+        in this APN." 
+    ::= { cgprsAccPtStatisticsEntry 43 }
+
+cgprsAccPtTotRmtInitCreateBearers OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the total number of bearer
+        creation intiated by MME, SGSN or MS." 
+    ::= { cgprsAccPtStatisticsEntry 44 }
+
+cgprsAccPtSuccRmtInitCreateBearers OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the total number of successful
+        bearer creation intiated by MME, SGSN or MS." 
+    ::= { cgprsAccPtStatisticsEntry 45 }
+
+cgprsAccPtNetworkInitDeleteBearers OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the total number of bearer
+        delete initiated by network." 
+    ::= { cgprsAccPtStatisticsEntry 46 }
+
+cgprsAccPtTotRmtInitModifyBearers OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the total number of bearer
+        modify initiated by MME or SGSN." 
+    ::= { cgprsAccPtStatisticsEntry 47 }
+
+cgprsAccPtSuccRmtInitModifyBearers OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the total number of successful
+        bearer modify initiated by MME or SGSN." 
+    ::= { cgprsAccPtStatisticsEntry 48 }
+
+cgprsAccPtTotNetworkInitUpdateBearers OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the total number of bearer
+        update initiated by network." 
+    ::= { cgprsAccPtStatisticsEntry 49 }
+
+cgprsAccPtSuccNetworkInitUpdateBearers OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the total number of successful
+        bearer update initiated by network." 
+    ::= { cgprsAccPtStatisticsEntry 50 }
+
+cgprsAccPtTotNetworkInitCreateDedBearers OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the total number of dedicated
+        bearer creation initiated by network." 
+    ::= { cgprsAccPtStatisticsEntry 51 }
+
+cgprsAccPtSuccNetworkInitCreateDedBearers OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the total number of successful
+        dedicated bearer creation initiated by network." 
+    ::= { cgprsAccPtStatisticsEntry 52 }
+
+cgprsAccPtTotNetworkInitCreateIPv6DedBearers OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the total number of IPv6
+        dedicated bearer creation initiated by network." 
+    ::= { cgprsAccPtStatisticsEntry 53 }
+
+cgprsAccPtSuccNetworkInitCreateIPv6DedBearers OBJECT-TYPE
+    SYNTAX          Counter32
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the total number of IPv6
+        dedicated bearer creation initiated by network." 
+    ::= { cgprsAccPtStatisticsEntry 54 }
  
 
 -- *******************************************************************
@@ -3206,7 +3516,7 @@ CgprsAccPtThruputStatsEntry ::= SEQUENCE {
 }
 
 cgprsAccPtThruputInterval OBJECT-TYPE
-    SYNTAX          Integer32 (1..65535 )
+    SYNTAX          Integer32 (1..65535)
     UNITS           "minutes"
     MAX-ACCESS      not-accessible
     STATUS          current
@@ -3218,7 +3528,7 @@ cgprsAccPtThruputInterval OBJECT-TYPE
     ::= { cgprsAccPtThruputStatsEntry 1 }
 
 cgprsAccPtThruPutLastCollected OBJECT-TYPE
-    SYNTAX          Integer32 (0..65535 )
+    SYNTAX          Integer32 (0..65535)
     UNITS           "minutes"
     MAX-ACCESS      read-only
     STATUS          current
@@ -3553,7 +3863,7 @@ cgprsAccPtMIBComplianceRev7 MODULE-COMPLIANCE
     ::= { cgprsAccPtMIBCompliances 8 }
 
 cgprsAccPtMIBComplianceRev8 MODULE-COMPLIANCE
-    STATUS          deprecated 
+    STATUS          deprecated
     DESCRIPTION
         "The compliance statements for entities which
         implement the CISCO-GPRS-ACC-PT-MIB. This is deprecated
@@ -3608,10 +3918,11 @@ cgprsAccPtMIBComplianceRev9 MODULE-COMPLIANCE
     ::= { cgprsAccPtMIBCompliances 10 }
 
 cgprsAccPtMIBComplianceRev10 MODULE-COMPLIANCE
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The compliance statements for entities which
-        implement the CISCO-GPRS-ACC-PT-MIB."
+        implement the CISCO-GPRS-ACC-PT-MIB. This is
+        deprecated by cgprsAccPtMIBComplianceRev11."
     MODULE          -- this module
     MANDATORY-GROUPS {
                         cgprsAccPtMIBGroupRev1,
@@ -3634,6 +3945,36 @@ cgprsAccPtMIBComplianceRev10 MODULE-COMPLIANCE
                         cgprsAccPtMIBR90Group
                     }
     ::= { cgprsAccPtMIBCompliances 11 }
+
+cgprsAccPtMIBComplianceRev11 MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statements for entities which
+        implement the CISCO-GPRS-ACC-PT-MIB."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        cgprsAccPtMIBGroupRev1,
+                        cgprsAccPtCfgNotifGroup,
+                        cgprsAccPtExtMIBGroupRev3,
+                        cgprsAccPtGenServerGroup,
+                        cgprsAccPtChargingGroup,
+                        cgprsAccPtCacGroup,
+                        cgprsAccPtRouteProbeGroup,
+                        cgprsAccPtStatisticsGroupRev3,
+                        cgprsAccPtThruPutGroup,
+                        cgprsAccPtNotifInfoGroup,
+                        cgprsAccPtMIBNotifGroupRev1,
+                        cgprsAccPtMIBR60Group,
+                        cgprsAccPtIpv6Group,
+                        cgprsAccPtPcscfGroup,
+                        cgprsAccPtMIBR80Group,
+                        cgprsAccPtStatisticsGroupSup2,
+                        cgprsAccPtMIBR80GroupSup1,
+                        cgprsAccPtMIBR92Group,
+                        cgprsAccPtMIBR90GroupRev1,
+                        cgprsAccPtMIBR100Group
+                    }
+    ::= { cgprsAccPtMIBCompliances 12 }
 
 -- Unit Conformance
 
@@ -4065,7 +4406,7 @@ cgprsAccPtStatisticsGroupRev3 OBJECT-GROUP
                         cgprsAccPtIpv6UpstreamPackets,
                         cgprsAccPtIpv6DownstreamPackets
                     }
-    STATUS          current 
+    STATUS          current
     DESCRIPTION
         "A collection of objects providing GPRS access point
         performance statistics per name."
@@ -4096,30 +4437,93 @@ cgprsAccPtStatisticsGroupSup1 OBJECT-GROUP
                         cgprsAccPtCoaSuccess,
                         cgprsAccPtDtEnabled
                     }
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "A collection of objects providing GPRS access point
-        performance statistics per name."
+        performance statistics per name. This is deprecated by
+        cgprsAccPtStatisticsGroupSup2."
     ::= { cgprsAccPtMIBGroups 25 }
 
 cgprsAccPtMIBR80GroupSup1 OBJECT-GROUP
-    OBJECTS         {
-                        cgprsAccPtAaaAccountInterRadius
-                    }
+    OBJECTS         { cgprsAccPtAaaAccountInterRadius }
     STATUS          current
     DESCRIPTION
         "A collection of config objects added for GGSN 8.0."
     ::= { cgprsAccPtMIBGroups 26 }
 
-cgprsAccPtMIBR90Group     OBJECT-GROUP
+cgprsAccPtMIBR90Group OBJECT-GROUP
     OBJECTS         {
                         cgprsAccPtGxEnable,
                         cgprsAccPtPcscfLoadBalance,
                         cgprsAccPtNetworkBehindMsEnable,
                         cgprsAccPtMaxSubnetsBehindMobile
                     }
+    STATUS          deprecated
+    DESCRIPTION
+        "A collection of config objects added for GGSN 9.0.
+        This is deprecated by cgprsAccPtMIBR90GroupRev1."
+    ::= { cgprsAccPtMIBGroups 27 }
+
+cgprsAccPtStatisticsGroupSup2 OBJECT-GROUP
+    OBJECTS         {
+                        cgprsAccPtPdpUpdateReqSent,
+                        cgprsAccPtSuccPdpUpdateResRcvd,
+                        cgprsAccPtCoaRcvd,
+                        cgprsAccPtCoaSuccess,
+                        cgprsAccPtDtEnabled,
+                        cgprsAccPtTotalBearers,
+                        cgprsAccPtTotRmtInitCreateBearers,
+                        cgprsAccPtSuccRmtInitCreateBearers,
+                        cgprsAccPtNetworkInitDeleteBearers,
+                        cgprsAccPtTotNetworkInitUpdateBearers,
+                        cgprsAccPtSuccNetworkInitUpdateBearers,
+                        cgprsAccPtTotNetworkInitCreateDedBearers,
+                        cgprsAccPtSuccNetworkInitCreateDedBearers,
+                        cgprsAccPtTotRmtInitModifyBearers,
+                        cgprsAccPtSuccRmtInitModifyBearers,
+                        cgprsAccPtTotNetworkInitCreateIPv6DedBearers,
+                        cgprsAccPtSuccNetworkInitCreateIPv6DedBearers
+                    }
     STATUS          current
     DESCRIPTION
-        "A collection of config objects added for GGSN 9.0."
-    ::= { cgprsAccPtMIBGroups 27 }
+        "A collection of objects providing GPRS access point
+        performance statistics per name."
+    ::= { cgprsAccPtMIBGroups 28 }
+
+cgprsAccPtMIBR92Group OBJECT-GROUP
+    OBJECTS         { cgprsAccPtChargingRecordType }
+    STATUS          current
+    DESCRIPTION
+        "A collection of config objects added for GGSN."
+    ::= { cgprsAccPtMIBGroups 29 }
+
+cgprsAccPtMIBR90GroupRev1 OBJECT-GROUP
+    OBJECTS         {
+                        cgprsAccPtGxEnable,
+                        cgprsAccPtPcscfLoadBalance,
+                        cgprsAccPtNetworkBehindMsEnable,
+                        cgprsAccPtMaxSubnetsBehindMobile,
+                        cgprsAccPtChargingGrp
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of config objects added for GGSN."
+    ::= { cgprsAccPtMIBGroups 30 }
+
+cgprsAccPtMIBR100Group OBJECT-GROUP
+    OBJECTS         {
+                        cgprsAccPtAggregCsgGroup,
+                        cgprsAccPtCsgGroupRowStatus,
+                        cgprsAccPtIpAddrPoolNoRedistribute
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of config objects added for providing the name
+        of the CSG Group and allowing the redistribution of routes 
+        from PCOP to the SUP (Supervisor)."
+    ::= { cgprsAccPtMIBGroups 31 }
+
 END
+
+
+

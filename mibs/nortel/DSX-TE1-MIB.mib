@@ -1,0 +1,3282 @@
+
+DSX-TE1-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY,OBJECT-TYPE,Integer32,Unsigned32
+        FROM SNMPv2-SMI
+    nndsxT1E1IfGroup
+        FROM DSX-TC-MIB
+    TruthValue
+        FROM SNMPv2-TC
+    DisplayString
+        FROM RFC1213-MIB
+    NOTIFICATION-GROUP 
+        FROM SNMPv2-CONF
+    ntEnterpriseDataTasmanInterfaces 
+        FROM NT-ENTERPRISE-DATA-MIB;	
+
+nndsxT1E1MIB MODULE-IDENTITY
+    LAST-UPDATED "9904230000Z"
+    ORGANIZATION "Nortel Networks"
+    CONTACT-INFO
+    	 	" Nortel Networks
+        	8200 Dixie Road
+        	Brampton, Ontario L6T 5P6
+        	Canada        
+        	1-800-4Nortel 
+        	www.nortelnetworks.com "
+    DESCRIPTION
+            " Interface MIB definitions for T1/E1 interface modules."
+    REVISION "9904230000Z"
+    DESCRIPTION
+            "Initial revision."
+    ::= { nndsxT1E1IfGroup 1 }
+    
+ -- TE1 Interface Group 
+ -- A definition template to be used for all other types of 
+ -- interfaces
+ -- Assigments for T1E1 Traps
+
+nndsxT1E1Traps  OBJECT IDENTIFIER ::= { nndsxT1E1IfGroup 2}
+
+nndsxT1E1TrapVariables OBJECT IDENTIFIER  ::= { nndsxT1E1Traps 1}
+nndsxT1E1Notifications OBJECT IDENTIFIER ::= {nndsxT1E1Traps 0}
+ -- T1/E1 Interface sub-group definitions
+ 
+nndsxT1E1IfConfigGroup      OBJECT IDENTIFIER ::= { nndsxT1E1MIB 1 }
+nndsxT1E1IfStatusGroup      OBJECT IDENTIFIER ::= { nndsxT1E1MIB 2 }
+nndsxT1E1IfStatsGroup       OBJECT IDENTIFIER ::= { nndsxT1E1MIB 3 }
+
+-- DSX T1/E1 Interface Configuration group definitions
+
+-- DSX T1/E1 interface configuration table
+
+nndsxT1E1IfConfigLineTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnDsxT1E1IfConfigLineEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A list of T1/E1 interfaces currently configured."
+    ::= { nndsxT1E1IfConfigGroup 1 }
+
+nndsxT1E1IfConfigLineEntry OBJECT-TYPE
+    SYNTAX      NnDsxT1E1IfConfigLineEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "An entry containing configuration for each  T1/E1 interface."
+    INDEX   { nndsxT1E1IfIndex }
+    ::= { nndsxT1E1IfConfigLineTable 1 }
+
+NnDsxT1E1IfConfigLineEntry ::=
+    SEQUENCE {
+        nndsxT1E1IfIndex                        Integer32,
+        nndsxT1E1IfConfigServiceMode            TruthValue,
+        nndsxT1E1IfConfigLineMode               INTEGER,
+        nndsxT1E1IfConfigLineType               INTEGER,
+        nndsxT1E1IfConfigLineCode               INTEGER,
+        nndsxT1E1IfConfigLBO                    INTEGER,
+        nndsxT1E1IfConfigCableLength            INTEGER,
+        nndsxT1E1IfConfigRaiAlarm               INTEGER,
+        nndsxT1E1IfConfigTransmitClock          INTEGER,
+        nndsxT1E1IfConfigTimeSlotMap            OCTET STRING,
+        nndsxT1E1IfConfigCableType	      INTEGER,
+        nndsxT1E1IfCircuitId                    DisplayString,
+        nndsxT1E1IfContactInfo                  DisplayString,
+        nndsxT1E1IfDescription                  DisplayString,
+        nndsxT1E1IfConfigJitter                 INTEGER,
+        nndsxT1E1IfConfigAlarmHierarchy         TruthValue
+    }
+
+nndsxT1E1IfIndex OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  accessible-for-notify
+    STATUS      current
+    DESCRIPTION
+            "An integer value which is an index in to the entries of 
+            ifTable (MIB-II) whose interface type is ds1" 
+    ::= { nndsxT1E1IfConfigLineEntry 1 }
+    
+nndsxT1E1IfConfigServiceMode OBJECT-TYPE
+    SYNTAX      TruthValue 
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION 
+			"Indicates the T1/E1 interface is in service if it is TRUE. "
+    ::= { nndsxT1E1IfConfigLineEntry 2 }
+
+nndsxT1E1IfConfigLineMode OBJECT-TYPE
+    SYNTAX      INTEGER 
+                {
+                    linemode-csu        (1),
+                    linemode-dsx        (2)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION 
+				"Line Mode for this T1/E1 interface"
+    ::= { nndsxT1E1IfConfigLineEntry 3 }
+
+nndsxT1E1IfConfigLineType OBJECT-TYPE
+    SYNTAX      INTEGER 
+                {
+                    linetype-esf     (2),
+                    linetype-d4      (3),
+--************************************************************************
+--	Added by Smita , Wipro Technologies, to incorporate an OE1 card
+
+		    linetype-e1crcmf    (5),
+                    linetype-e1mf       (6),
+                    linetype-e1unframed (7)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+                "This variable indicates the variety of T1/E1
+                interpretation of the  usage and error statistics.
+				The values, in sequence, describe:
+
+                TITLE:        SPECIFICATION:
+                esf           Extended SuperFrame DS1
+                d4            AT&T D4 format DS1
+--***************************************************************************
+--	Added by Smita , Wipro Technologies, to incorporate an OE1 card
+
+		e1-MF	      G.704 (Table 4a) with TS16 multiframing enabled
+                e1-CRC-MF     G.704 (Table 4b) with TS16 multiframing enabled"                                
+--****************************************************************************
+    ::= { nndsxT1E1IfConfigLineEntry 4 }
+    
+nndsxT1E1IfConfigLineCode OBJECT-TYPE
+    SYNTAX      INTEGER 
+                {
+                    linecode-b8zs    (2),
+                    linecode-ami     (5),
+--************************************************************************
+--	Added by Smita , Wipro Technologies, to incorporate an OE1 card
+
+                    linecode-hdb3    (3)
+--************************************************************************
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+                "This variable describes the variety of Zero
+                Code Suppression used on the link, which in
+                turn affects a number of its characteristics.
+
+                b8zs refers to the use of a specified pattern
+                of normal bits and bipolar violations
+                which are used to replace a sequence of eight
+                zero bits.
+
+                ami refers to a mode wherein no zero code
+                suppression is present and the line encoding
+                does not solve the problem directly. In this
+                application, the higher layer must provide data
+                which meets or exceeds the pulse density re-
+                quirements, such as inverting HDLC data.
+
+--************************************************************************
+--	Added by Smita , Wipro Technologies, to incorporate an OE1 card
+
+ 		E1 links, with or without CRC, use dsx1HDB3  or
+                dsx1AMI."
+    ::= { nndsxT1E1IfConfigLineEntry 5 }
+    
+nndsxT1E1IfConfigLBO OBJECT-TYPE
+    SYNTAX      INTEGER 
+                {
+                    lbo-zero-db (1),
+                    lbo-75-db   (2),
+                    lbo-15-db   (3),
+                    lbo-225-db  (4),
+		    lbo-12-db	(5),-- Added by Smita, Wipro technologies 
+		    lbo-43-db	(6) -- for an E1 interface 
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+               "Signal attenuation at 772 kHz
+                lbo-zero-db     carrier advised LBO code A 0.0 - 5.5 db
+                lbo-75-db       carrier advised LBO code B 7.5 - 13.0 db
+                lbo-15-db       carrier advised LBO code C 15.0 - 22.0 db
+		lbo-12-db	carrier advised LBO code for E1 short haul
+		lbo-43-db	carrier advised LBO code for E1 long haul
+                This variable can be set only for CSU linemode"
+    ::= { nndsxT1E1IfConfigLineEntry 6 }
+--Modified for an E1 interface,Wipro Technologies   
+nndsxT1E1IfConfigCableLength OBJECT-TYPE
+    SYNTAX      INTEGER 
+                {
+		    cable-length-none       (0),
+                    cable-length-0-133-or-0-110        (1),
+                    cable-length-133-266-or-110-220      (2),
+                    cable-length-266-399-or-220-330      (3),
+                    cable-length-399-533-or-330-440      (4),
+                    cable-length-533-655-or-440-550      (5),
+                    cable-length-550-660                 (6)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+            "This variable specifies the length of the 
+			cable  in feet."
+    ::= { nndsxT1E1IfConfigLineEntry 7 }
+    
+nndsxT1E1IfConfigRaiAlarm OBJECT-TYPE
+    SYNTAX      INTEGER
+                {
+                    rai-gen-enable      (1),
+                    rai-det-enable      (2),
+                    rai-gen-det-enable   (3),
+                    rai-disable         (4)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+            "Configurition of Remote Alarm Indication 
+			 Alarm generation and detection."
+    ::= { nndsxT1E1IfConfigLineEntry 8 }
+
+nndsxT1E1IfConfigTransmitClock OBJECT-TYPE
+    SYNTAX      INTEGER
+                {
+                    timing-line     (1),
+                    timing-internal    (2),
+                    timing-backplane   (3)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+               "The source of Transmit Clock.
+   
+                 'timing-line' indicates that the recovered  re-
+                ceive clock is used as the transmit clock.
+
+                 'timing-internal' indicates  that  a  local  clock
+                source is used."
+
+    ::= { nndsxT1E1IfConfigLineEntry 9 }
+
+nndsxT1E1IfConfigTimeSlotMap OBJECT-TYPE
+    SYNTAX      OCTET STRING (SIZE (4) )
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+               "Time slot map of the  T1/E1 line that are being used
+				if it is used corresponding bit position is set."
+    ::= { nndsxT1E1IfConfigLineEntry 10 }
+--************************************************************************
+--      Added by Smita , Wipro Technologies, to incorporate an OE1 card
+
+nndsxT1E1IfConfigCableType OBJECT-TYPE
+    SYNTAX      INTEGER
+                {
+		    cable-type-none        (0),
+                    cable-type-coax        (1),
+                    cable-type-twistedpair (2)
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+               "The cable type that is being used.
+
+                 'cable-type-coax' indicates that the cable is coaxial and the impedance is 75 ohm
+
+                 'cable-type-twistedpair' indicates  that the cable is a twisted pair and the impedance is 120 ohm."
+
+    ::= { nndsxT1E1IfConfigLineEntry 11 }
+nndsxT1E1IfCircuitId  OBJECT-TYPE
+    SYNTAX         DisplayString (SIZE(0..64))
+    MAX-ACCESS     read-write
+    STATUS         current
+    DESCRIPTION    ""
+    ::= { nndsxT1E1IfConfigLineEntry 12 }
+
+nndsxT1E1IfContactInfo  OBJECT-TYPE
+    SYNTAX            DisplayString (SIZE(0..64))
+    MAX-ACCESS        read-write
+    STATUS            current
+    DESCRIPTION       ""
+    ::= { nndsxT1E1IfConfigLineEntry 13 }
+
+nndsxT1E1IfDescription  OBJECT-TYPE
+    SYNTAX            DisplayString (SIZE(0..76))
+    MAX-ACCESS        read-write
+    STATUS            current
+    DESCRIPTION       ""
+    ::= { nndsxT1E1IfConfigLineEntry 14 }
+
+nndsxT1E1IfConfigJitter OBJECT-TYPE
+    SYNTAX      INTEGER
+                {
+		    jitter-none        (0),
+     		    jitter-disable     (1),
+		    jitter-enable      (2)                    
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION 
+	       "Applicable only for E1 interface.
+                Enable/Disable jitter attenuation at LIU. "
+    ::= { nndsxT1E1IfConfigLineEntry 15 }
+
+nndsxT1E1IfConfigAlarmHierarchy OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION 
+               "Enable/Disable alarm hierarchy for T1/E1 interface."
+    ::= { nndsxT1E1IfConfigLineEntry 16 }
+
+
+--************************************************************************
+
+-- DSX T1/E1 interface FDL configuration table
+-- This table is applicable for T1 lines that are in ESF mode
+
+nndsxT1E1IfConfigFdlTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnDsxT1E1IfConfigFdlEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A list of T1/E1 interface currently configured."
+    ::= { nndsxT1E1IfConfigGroup 2 }
+
+nndsxT1E1IfConfigFdlEntry OBJECT-TYPE
+    SYNTAX      NnDsxT1E1IfConfigFdlEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+         "Configurable Facility Data Link (FDL) field for 
+		enable/disable the FDL utility on T1/E1 interface."
+    AUGMENTS { nndsxT1E1IfConfigLineEntry }
+    ::= { nndsxT1E1IfConfigFdlTable 1 }
+
+NnDsxT1E1IfConfigFdlEntry ::=
+    SEQUENCE {
+        nndsxT1E1IfConfigFdl               INTEGER,
+        nndsxT1E1IfConfigFdlCsuDsuType     INTEGER
+    }
+
+nndsxT1E1IfConfigFdl      OBJECT-TYPE
+    SYNTAX      INTEGER
+                {
+                    fdl-ansi-only    (1),
+                    fdl-att-only     (2),
+                    fdl-ansi-att     (3)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION 
+			"The configuration FDL type 
+				fdl-ansi-only - only supports ANSI FDL ,
+				fdl-att-only    only supports ATT FDL,
+				fdl-ansi-att     supports both ANSI and ATT FDL."
+
+    ::= { nndsxT1E1IfConfigFdlEntry 1 }
+
+nndsxT1E1IfConfigFdlCsuDsuType OBJECT-TYPE
+    SYNTAX      INTEGER
+                {
+                    fdl-csu     (1),
+                    fdl-dsu     (2),
+                    fdl-csudsu  (3)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION 
+				"The configuration of the type of equipment
+					fdl-csu - responds to only CSU FDL requests
+					fdl-dsu - responds to only DSU FDL requests
+					fdl-csudsu - responds to both CSU and DSU requests."
+
+    ::= { nndsxT1E1IfConfigFdlEntry 2 }
+
+-- DSX T1/E1 interface alarm configuration table
+
+nndsxT1E1IfAlarmConfigGroup OBJECT IDENTIFIER ::= {nndsxT1E1IfConfigGroup 3 }
+
+-- DSX T1/E1 Alarm Threshold Configuration Table
+-- In order to configure a alarm Threshold, all the columns are mandatory
+-- and failure to proide all the columns will result in badValue Error
+   
+nndsxT1E1IfAlarmThresholdConfigTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnDsxT1E1IfAlarmThresholdConfigEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A list of T1/E1 interface alarm threshold configuration
+			parameters."
+    ::= { nndsxT1E1IfAlarmConfigGroup 1 }
+
+nndsxT1E1IfAlarmThresholdConfigEntry OBJECT-TYPE
+    SYNTAX      NnDsxT1E1IfAlarmThresholdConfigEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "An entry containing alarm configuration parameters 
+			for each  T1/E1 interface.  "
+    INDEX { nndsxT1E1IfIndex, nndsxT1E1IfAlarmThresholdConfigIndex }
+    ::= { nndsxT1E1IfAlarmThresholdConfigTable 1 }
+
+NnDsxT1E1IfAlarmThresholdConfigEntry ::=
+    SEQUENCE {
+        nndsxT1E1IfAlarmThresholdConfigIndex             Integer32,
+        nndsxT1E1IfAlarmThresholdConfigObject            INTEGER,
+        nndsxT1E1IfAlarmThresholdConfigSamplingInterval  INTEGER,
+        nndsxT1E1IfAlarmThresholdConfigSampleType        INTEGER,
+--        nndsxT1E1IfAlarmThresholdConfigStartupType       TruthValue,
+        nndsxT1E1IfAlarmThresholdConfigRisingThreshold   Integer32,
+        nndsxT1E1IfAlarmThresholdConfigFallingThreshold  Integer32,
+        nndsxT1E1IfAlarmThresholdConfigEnable            TruthValue
+    }
+
+
+nndsxT1E1IfAlarmThresholdConfigIndex OBJECT-TYPE
+    SYNTAX      Integer32	
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Index of the Threshold Alarms 1 - 10."
+    ::= { nndsxT1E1IfAlarmThresholdConfigEntry 1 }
+
+nndsxT1E1IfAlarmThresholdConfigObject OBJECT-TYPE
+    SYNTAX      INTEGER 
+                {
+                   te1-object-none(0),
+                   te1-object-eev (1),
+                   te1-object-es  (2),
+                   te1-object-uas (3),
+                   te1-object-bes (4),
+                   te1-object-ses (5),
+                   te1-object-lofc (6),
+                   te1-object-css (7),
+                   te1-object-bpv (8),
+                   te1-object-oof (9),
+                   te1-object-crc (10)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+            "Threshold alarm - variables being monitored."
+    ::= { nndsxT1E1IfAlarmThresholdConfigEntry 2 }
+
+nndsxT1E1IfAlarmThresholdConfigSamplingInterval OBJECT-TYPE
+    SYNTAX      INTEGER (1..65535)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+            "Sampling Interval is the time between each sampling 
+			period."
+    ::= { nndsxT1E1IfAlarmThresholdConfigEntry 3 }
+
+nndsxT1E1IfAlarmThresholdConfigSampleType OBJECT-TYPE
+    SYNTAX      INTEGER
+                {
+                    sample-absolute     (1),
+                    sample-delta        (2)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+            "Threshold Alarm: Sampling type 
+			sample-absolute - compares the monitored variable value
+						 againist the  thresholds,
+			sample-delta - compares the monitored variable value change
+							from previous interval against thresholds."
+    ::= { nndsxT1E1IfAlarmThresholdConfigEntry 4 }
+
+--dsxT1E1IfAlarmThresholdConfigStartupType OBJECT-TYPE
+--    SYNTAX      TruthValue
+--    MAX-ACCESS  read-write
+--    STATUS      current
+--    DESCRIPTION
+--            "Threshold Alarm :if TRUE the first sample will be
+--			ignored if thresholds are crossed."
+--    ::= { nndsxT1E1IfAlarmThresholdConfigEntry 5 }
+
+nndsxT1E1IfAlarmThresholdConfigRisingThreshold OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+            "Threshold Alarm: Rising threshold limit  "
+    ::= { nndsxT1E1IfAlarmThresholdConfigEntry 5 }
+
+nndsxT1E1IfAlarmThresholdConfigFallingThreshold OBJECT-TYPE
+    SYNTAX      Integer32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+            "Threshold Alarm: Falling threshold limit "
+    ::= { nndsxT1E1IfAlarmThresholdConfigEntry 6 }
+
+nndsxT1E1IfAlarmThresholdConfigEnable OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+            "Config Enable: If TRUE then configure the
+             threshold. FALSE then remove the threshold."
+    ::= { nndsxT1E1IfAlarmThresholdConfigEntry 7 }
+
+-- DSX T1/E1 interface Test configuration table
+
+nndsxT1E1IfTestConfigTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnDsxT1E1IfTestConfigEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A list of T1/E1 interface test configuration parameters."
+    ::= { nndsxT1E1IfConfigGroup 4 }
+
+nndsxT1E1IfTestConfigEntry OBJECT-TYPE
+    SYNTAX      NnDsxT1E1IfTestConfigEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "An entry containing test configuration parameters for each
+			currently T1/E1 interface."
+    AUGMENTS { nndsxT1E1IfConfigLineEntry }
+    ::= { nndsxT1E1IfTestConfigTable 1 }
+
+NnDsxT1E1IfTestConfigEntry ::=
+    SEQUENCE {
+        nndsxT1E1IfTestConfigType               INTEGER,
+        nndsxT1E1IfTestConfigTime               Unsigned32,
+        nndsxT1E1IfTestConfigPattern            INTEGER,
+        nndsxT1E1IfTestConfigLoopCode           INTEGER,
+        nndsxT1E1IfMonitorPortConfigType        INTEGER,  
+        nndsxT1E1IfMonitorPortTxInjectType      INTEGER
+    }
+
+nndsxT1E1IfTestConfigType OBJECT-TYPE
+    SYNTAX      INTEGER
+                {
+                    no-test                  (1),
+                    payload-loopback-test    (2),
+                    line-loopback-test       (3),
+                    local-loopback-test       (4),
+                    line-local-loopback-test  (5),
+                    inward1-loopback-test    (6),
+                    inward1-analog-loopback-test (7),
+                    inward2-loopback-test    (8),
+                    pattern-test             (9),
+                    remote-lpup-test         (10),
+                    remote-lpdn-test         (11)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+            "Test type. Specifies the type of test to execute on this
+			T1/E1 interface.
+             To perform no-test, payload-loopback-test, line-loopback-test
+             only TestType is mandatory.
+             To perform pattern-test, ConfigTime and ConfigPattern are
+             mandatory. 
+             To perform remote-lpup-test and remote-lpdn-test, ConfigLoopCode 
+             is mandatory"
+    ::= { nndsxT1E1IfTestConfigEntry 1 }
+nndsxT1E1IfTestConfigTime OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+            "Test time. when set to 0, test time is unlimited.
+			Otherwise  duration of test,  specified in seconds."
+    ::= { nndsxT1E1IfTestConfigEntry 2 }
+    
+nndsxT1E1IfTestConfigPattern OBJECT-TYPE
+    SYNTAX      INTEGER 
+                {   pattern-none                (0),	
+                    pattern-all-ones            (1),
+                    pattern-all-zeros           (2),
+                    pattern-alternating         (3),
+                    pattern-3in24               (4),
+                    pattern-1in3                (5),
+                    pattern-1in5                (6),
+                    pattern-1in7                (7),
+                    pattern-smartjack-lpup      (8),
+                    pattern-smartjack-lpdown    (9),
+                    pattern-user1               (10),
+                    pattern-user2               (11),
+                    pattern-29minus1            (12),
+                    pattern-215minus1           (13),
+                    pattern-220minus1           (14),
+                    pattern-qrw                 (15),
+                    pattern-223minus1           (16),
+                    pattern-std-setcode         (17),
+                    pattern-std-resetcod        (18),
+                    pattern-alt-setcode         (19),
+                    pattern-alt-resetcod        (20),
+                    pattern-211minus1           (21)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+            "Bit Pattern type used in testing T1/E1 for Pattern Test."
+    ::= { nndsxT1E1IfTestConfigEntry 3 }
+    
+nndsxT1E1IfTestConfigLoopCode OBJECT-TYPE
+    SYNTAX      INTEGER
+                {
+                    loopcode-none             (1),
+                    loopcode-line-standard    (2),
+                    loopcode-line-alternate   (3),
+                    loopcode-line-ansiFDL     (4),
+                    loopcode-payload-ATTFDL   (6),
+                    loopcode-payload-ansiFDL  (7),
+                    loopcode-v54              (8),
+                    loopcode-smartjack        (9)
+                }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+            " Type of loopcode is used for loopback test."
+    ::= { nndsxT1E1IfTestConfigEntry 4 }
+
+nndsxT1E1IfMonitorPortConfigType     OBJECT-TYPE
+    SYNTAX      INTEGER
+                {
+                    monitor-none     (1),
+                    monitor-enable   (2)
+                }
+        
+    MAX-ACCESS  read-create
+    STATUS	current
+    DESCRIPTION	"Configure monitoring on the T1/E1 link"
+    ::= { nndsxT1E1IfTestConfigEntry 5 }            
+    
+nndsxT1E1IfMonitorPortTxInjectType   OBJECT-TYPE
+    SYNTAX      INTEGER
+                {
+                    inject-none      (1),
+                    inject-sendtype  (2)
+                }
+    MAX-ACCESS  read-create
+    STATUS	current
+    DESCRIPTION	"Configure inject type on Tx"
+    ::= { nndsxT1E1IfTestConfigEntry 6 }            
+
+    
+-- DSX T1/E1 interface status Group definitions
+
+nndsxT1E1IfStatusTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnDsxT1E1IfStatusEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A list of T1/E1 interface status entries"
+    ::= { nndsxT1E1IfStatusGroup 1 }
+
+nndsxT1E1IfStatusEntry OBJECT-TYPE
+    SYNTAX      NnDsxT1E1IfStatusEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "An entry containing status entry for each currently active 
+            T1/E1 interface."
+    AUGMENTS { nndsxT1E1IfConfigLineEntry }
+    ::= { nndsxT1E1IfStatusTable 1 }
+
+NnDsxT1E1IfStatusEntry ::=
+    SEQUENCE {
+        nndsxT1E1IfStatusLineStatus     BITS,
+        nndsxT1E1IfStatusTransmitClock  INTEGER
+    }
+
+nndsxT1E1IfStatusLineStatus OBJECT-TYPE
+    SYNTAX      BITS
+                {
+                    reserved1            (0),
+                    reserved2            (1),
+                    rraiStatus           (2),
+                    traiStatus           (3),
+                    rlosStatus           (4),
+                    risStatus            (5),
+                    rexzStatus           (6),
+                    reserved3            (7),
+                    reserved4            (8),
+                    reserved5            (9),
+                    lorcStatus           (10),
+                    tpdeStatus           (11),
+                    reserved6            (12),
+                    reserved7            (13),
+                    sendLineCode         (14),
+                    sendPayLoadCode      (15),
+                    sendResetCode        (16),
+                    sendTE1Code          (17),
+                    sendPattern          (18),
+                    reserved8            (19),
+                    rcvTestCode          (20),
+                    reserved9            (21),
+                    reserved10           (22),
+                    reserved11           (23),
+                    loopbackStatus       (24),
+                    reserved12           (25),
+                    reserved13           (26),
+                    taisStatus           (27),
+                    raisStatus           (28),
+                    reserved14           (29),
+                    rlofStatus           (30),
+                    reserved15           (31)
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The summary of the status
+	     RRAIStatus       - Recieve RAI (Recieve Alarm Indication),
+	     TRAIStatus       - Transmit RAI ,
+	     RLOSStatus       - Recieve Loss Of Sync,
+	     RISStatus        - Recieve Idle Signal
+	     REXZStatus       - Recieve Excessive Zeros,
+	     LORCStatus       - Loss Of Recive Clock (LORC),
+	     TDEStatus        - transmit pulse density,
+             SendLineCode     - transmit linecode
+             SendPayLoadCode  - transmit paylode code
+             SendResetCode    - transmit reset code,
+             SendTE1Code      - transmit T1/E1 linecode,
+             SendPattern      - transmit T1/E1 Pattern,
+	     RcvTestCode      - recive test code,
+	     LoopbackStatus   - Status of Loop back,
+	     TAISStatus       - Transmit Alarm Indication Siganl,
+             RAISStatus       - Recieve Alarm Indication Signal,
+	     LOFStatus        - Loss Of Frame.  "
+    ::= { nndsxT1E1IfStatusEntry 1 }
+
+nndsxT1E1IfStatusTransmitClock OBJECT-TYPE
+    SYNTAX      INTEGER
+                {
+                    timing-line     (1),
+                    timing-internal (2)
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The source of Tranmit Clock.
+   
+                 'timing-line' indicates that the recovered  re-
+                ceive clock is used as the transmit clock.
+
+                 'timing-internal' indicates  that  a  local  clock
+                source is used."
+
+    ::= { nndsxT1E1IfStatusEntry 2 }
+    
+-- DSX T1/E1 interface alarm status Group definitions
+
+nndsxT1E1IfAlarmStatusTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnDsxT1E1IfAlarmStatusEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A list of T1/E1 interface alarm status entries"
+    ::= { nndsxT1E1IfStatusGroup 2 }
+
+nndsxT1E1IfAlarmStatusEntry OBJECT-TYPE
+    SYNTAX      NnDsxT1E1IfAlarmStatusEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "An entry containing alarm status  for each T1/E1 interface."
+    AUGMENTS { nndsxT1E1IfConfigLineEntry }
+    ::= { nndsxT1E1IfAlarmStatusTable 1 }
+
+NnDsxT1E1IfAlarmStatusEntry ::=
+    SEQUENCE {
+        nndsxT1E1IfAlarmStatusAlarmStatus       BITS,
+        nndsxT1E1IfAlarmStatusThresholdStatus   BITS
+    }
+
+nndsxT1E1IfAlarmStatusAlarmStatus OBJECT-TYPE
+    SYNTAX      BITS
+                {
+                    rraiAlarm           (0),
+                    traiAlarm           (1),
+                    raisAlarm           (2),
+                    taisAlarm           (3),
+                    rlofAlarm           (4),
+                    rlosAlarm           (5),
+                    loopbackStateAlarm  (6),
+                    rcvTestCode         (7),
+                    risAlarm            (8),
+                    rexzAlarm           (9),
+                    rfebeAlarm          (10),
+                    rpeAlarm            (11),
+                    rcpeAlarm           (12),
+                    lorcAlarm           (13),
+                    tpdeAlarm           (14),
+                    tfebeAlarm          (15),
+                    ibTestAlarm         (16)
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Alarm Status of T1/E1 interface.
+			RRAI - Recieve Rx Alarm Indication,
+			TRAI - Transmit Rx Alarm Indication,
+			RAIS - Recieve Alarm Indication Signal,
+			TAIS - Transmit Alarm Indication Signal,
+			RLOF - Recieve Loss Of Frame,
+			RLOS - Recieve Loss Of Signal,
+			Loopback - if looped back state is true,
+			RIS  - Recieve Idle Signal,
+			REXZ - Recieve Excessive Zeros,
+			RFEBE - Recieve Far End Block Error,
+			RPE  - Recieve Parity Error,
+			RCPE - Recieve C-Parity Error,
+			LORC - Loss Of Recieve Clock,
+			TPDE -  Transmit Pulse DEnsity,
+			TFEBE - Transmit Far End Block Error,
+			ibTest - InBand Test running if true."
+			 
+	::= { nndsxT1E1IfAlarmStatusEntry 1 }
+
+nndsxT1E1IfAlarmStatusThresholdStatus OBJECT-TYPE
+    SYNTAX      BITS
+                {
+                    threshold1  (0),
+                    threshold2  (1),
+                    threshold3  (2),
+                    threshold4  (3),
+                    threshold5  (4),
+                    threshold6  (5),
+                    threshold7  (6),
+                    threshold8  (7),
+                    threshold9  (8),
+                    threshold10 (9)
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Status of the user configurable threshold Alarms
+			1 means present."
+    ::= { nndsxT1E1IfAlarmStatusEntry 2 }
+
+
+-- DSX T1/E1 interface test status Group definitions
+
+nndsxT1E1IfTestStatusTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnDsxT1E1IfTestStatusEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A list of T1/E1 interface test status entries"
+    ::= { nndsxT1E1IfStatusGroup 3 }
+
+nndsxT1E1IfTestStatusEntry OBJECT-TYPE
+    SYNTAX      NnDsxT1E1IfTestStatusEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "An entry containing  test status entry for each 
+            T1/E1 interface."
+    AUGMENTS { nndsxT1E1IfConfigLineEntry }
+    ::= { nndsxT1E1IfTestStatusTable 1 }
+
+NnDsxT1E1IfTestStatusEntry ::=
+    SEQUENCE {
+        nndsxT1E1IfTestStatusTestType           INTEGER,
+        nndsxT1E1IfTestStatusTestTime           Unsigned32,
+        nndsxT1E1IfTestStatusTestState          INTEGER,
+        nndsxT1E1IfTestStatusTestPattern        INTEGER,
+        nndsxT1E1IfTestStatusLockedSeconds      Unsigned32,
+        nndsxT1E1IfTestStatusSyncLossCount      Unsigned32,
+        nndsxT1E1IfTestStatusErrorCount         Unsigned32,
+        nndsxT1E1IfTestStatusLoopCode           INTEGER
+    }
+    
+nndsxT1E1IfTestStatusTestType OBJECT-TYPE
+    SYNTAX      INTEGER 
+
+
+                {
+		    testtype-notest                    (1),
+                    testtype-payload-loopback          (2),
+                    testtype-line-loopback             (3),
+                    testtype-local-loopback            (4),
+                    testtype-line-local-loopback       (5),
+                    testtype-inward1-loopback          (6),
+                    testtype-inward1-analog-loopback   (7),
+                    testtype-inward2-loopback          (8),
+                    testtype-pattern                   (9),
+                    testtype-remote-lpup               (10),
+                    testtype-remote-lpdn               (11),
+                    monitor-inject                     (12)
+    
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Test type  initiated on T1/E1 line."
+    ::= { nndsxT1E1IfTestStatusEntry 1 }
+
+nndsxT1E1IfTestStatusTestTime OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Time elapsed since the test started on T1/E1 line "
+    ::= { nndsxT1E1IfTestStatusEntry 2 }
+
+nndsxT1E1IfTestStatusTestState OBJECT-TYPE
+    SYNTAX      INTEGER
+                {
+                    test-state-idle         (1),
+                    test-state-searching    (2),
+                    test-state-locked       (3),
+                    test-state-relocked     (4),
+                    test-state-inprogress   (5),
+                    test-state-passed       (6),
+                    test-state-failed       (7)
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Current state of the running test on T1/E1 line "
+    ::= { nndsxT1E1IfTestStatusEntry 3 }
+
+nndsxT1E1IfTestStatusTestPattern OBJECT-TYPE
+    SYNTAX      INTEGER
+                {	
+		    pattern-none                (0),
+                    pattern-all-ones            (1),
+                    pattern-all-zeros           (2),
+                    pattern-alternating         (3),
+                    pattern-3in24               (4),
+                    pattern-1in3                (5),
+                    pattern-1in5                (6),
+                    pattern-1in7                (7),
+                    pattern-smartjack-lpup      (8),
+                    pattern-smartjack-lpdown    (9),
+                    pattern-user1               (10),
+                    pattern-user2               (11),
+                    pattern-29minus1            (12),
+                    pattern-215minus1           (13),
+                    pattern-220minus1           (14),
+                    pattern-qrw                 (15),
+                    pattern-223minus1           (16),
+                    pattern-std-setcode         (17),
+                    pattern-std-resetcod        (18),
+                    pattern-alt-setcode         (19),
+                    pattern-alt-resetcod        (20),
+                    pattern-211minus1           (21)
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Bit Pattern generated to test the T1/E1, only relevent to
+			Pattern Test. "
+    ::= { nndsxT1E1IfTestStatusEntry 4 }
+
+nndsxT1E1IfTestStatusLockedSeconds OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Count of seconds, during which the pattern is
+				synchronized  "
+    ::= { nndsxT1E1IfTestStatusEntry 5 }
+
+nndsxT1E1IfTestStatusSyncLossCount OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            " Counter for the pattern  synchronization losses "
+    ::= { nndsxT1E1IfTestStatusEntry 6 }
+
+nndsxT1E1IfTestStatusErrorCount OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Counter for the Bit error during the test "
+    ::= { nndsxT1E1IfTestStatusEntry 7 }
+    
+nndsxT1E1IfTestStatusLoopCode OBJECT-TYPE
+    SYNTAX      INTEGER
+                {
+                    loopcode-none             (1),
+                    loopcode-line-standard    (2),
+                    loopcode-line-alternate   (3),
+                    loopcode-line-ansiFDL     (4),
+                    loopcode-payload-ATTFDL   (6),
+                    loopcode-payload-ansiFDL  (7),
+                    loopcode-v54              (8),
+                    loopcode-smartjack        (9)
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The loop codes transmitted on the T1/E1 interface
+			Only relevent to the Remote LoopUp and Remote LoopDown tests."
+    ::= { nndsxT1E1IfTestStatusEntry 8 }
+    
+-- T1/E1 Last Test Result Table 
+
+nndsxT1E1IfLastTestResultTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnDsxT1E1IfLastTestResultEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A list of T1/E1 interface previous test status entries"
+    ::= { nndsxT1E1IfStatusGroup 4 }
+
+nndsxT1E1IfLastTestResultEntry OBJECT-TYPE
+    SYNTAX      NnDsxT1E1IfLastTestResultEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "An entry containing previous test status entry for each
+			T1/E1 interface."
+    AUGMENTS { nndsxT1E1IfConfigLineEntry }
+    ::= { nndsxT1E1IfLastTestResultTable 1 }
+
+NnDsxT1E1IfLastTestResultEntry ::=
+    SEQUENCE {
+        nndsxT1E1IfLastTestResultTestType           INTEGER,
+        nndsxT1E1IfLastTestResultTestTime           Unsigned32,
+        nndsxT1E1IfLastTestResultTestState          INTEGER,
+        nndsxT1E1IfLastTestResultTestPattern        INTEGER,
+        nndsxT1E1IfLastTestResultLockedSeconds      Unsigned32,
+        nndsxT1E1IfLastTestResultSyncLossCount      Unsigned32,
+        nndsxT1E1IfLastTestResultErrorCount         Unsigned32,
+        nndsxT1E1IfLastTestResultLoopCode           INTEGER
+    }
+    
+nndsxT1E1IfLastTestResultTestType OBJECT-TYPE
+    SYNTAX      INTEGER 
+                {
+                    testtype-notest                    (1),
+                    testtype-payload-loopback          (2),
+                    testtype-line-loopback             (3),
+                    testtype-pattern                   (9),
+                    testtype-remote-lpup               (10),
+                    testtype-remote-lpdn               (11)
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Status of the previous test conducted on this T1/E1 interface,
+			this field corresponds to Type of Test conducted"
+    ::= { nndsxT1E1IfLastTestResultEntry 1 }
+
+nndsxT1E1IfLastTestResultTestTime OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Duration of the test conducted in previous test "
+    ::= { nndsxT1E1IfLastTestResultEntry 2 }
+
+nndsxT1E1IfLastTestResultTestState OBJECT-TYPE
+    SYNTAX      INTEGER
+                {
+                    test-state-idle         (1),
+                    test-state-searching    (2),
+                    test-state-locked       (3),
+                    test-state-relocked     (4),
+                    test-state-inprogress   (5),
+                    test-state-passed       (6),
+                    test-state-failed       (7)
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            " This field shows in which state previous test was 
+			ended "
+    ::= { nndsxT1E1IfLastTestResultEntry 3 }
+
+nndsxT1E1IfLastTestResultTestPattern OBJECT-TYPE
+    SYNTAX      INTEGER
+                {
+       		    pattern-none		(0),
+                    pattern-all-ones            (1),
+                    pattern-all-zeros           (2),
+                    pattern-alternating         (3),
+                    pattern-3in24               (4),
+                    pattern-1in3                (5),
+                    pattern-1in5                (6),
+                    pattern-1in7                (7),
+                    pattern-smartjack-lpup      (8),
+                    pattern-smartjack-lpdown    (9),
+                    pattern-user1               (10),
+                    pattern-user2               (11),
+                    pattern-29minus1            (12),
+                    pattern-215minus1           (13),
+                    pattern-220minus1           (14),
+                    pattern-qrw                 (15),
+                    pattern-223minus1           (16),
+	            pattern-std-setcode         (17),
+                    pattern-std-resetcod        (18),
+                    pattern-alt-setcode         (19),
+                    pattern-alt-resetcod        (20),
+                    pattern-211minus1           (21)	
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "If the previous test conducted was  pattern test, This
+			field will have type of pattern used to test. "
+    ::= { nndsxT1E1IfLastTestResultEntry 4 }
+
+nndsxT1E1IfLastTestResultLockedSeconds OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Duration in which signal was synchronized while under test. "
+    ::= { nndsxT1E1IfLastTestResultEntry 5 }
+
+nndsxT1E1IfLastTestResultSyncLossCount OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Counter for the pattern  synchronization losses in 
+			previous test results."
+    ::= { nndsxT1E1IfLastTestResultEntry 6 }
+
+nndsxT1E1IfLastTestResultErrorCount OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Counter for the Bit error during the test in previous test"
+    ::= { nndsxT1E1IfLastTestResultEntry 7 }
+    
+nndsxT1E1IfLastTestResultLoopCode OBJECT-TYPE
+    SYNTAX      INTEGER
+                {
+                    loopcode-none             (1),
+                    loopcode-line-standard    (2),
+                    loopcode-line-alternate   (3),
+                    loopcode-line-ansiFDL     (4),
+                    loopcode-payload-ATTFDL   (6),
+                    loopcode-payload-ansiFDL  (7),
+                    loopcode-v54              (8),
+                    loopcode-smartjack        (9)
+                }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Type loopcode used to put interface under remote loop back"
+    ::= { nndsxT1E1IfLastTestResultEntry 8 }
+    
+
+-- DSX T1/E1 Stats Group Definitions
+
+-- T1/E1 ArchiveValidIntervals table
+
+-- Table to store the valid intervals of archive stats tables
+
+nndsxT1E1IfArchiveStatsValidIntervalsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnDsxT1E1IfArchiveStatsValidIntervalsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Number of intervals available in archive statistics table for 
+				this T1/E1 interface"
+    ::= { nndsxT1E1IfStatsGroup 1 }
+
+nndsxT1E1IfArchiveStatsValidIntervalsEntry  OBJECT-TYPE
+    SYNTAX      NnDsxT1E1IfArchiveStatsValidIntervalsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "An entry containing statistics entry for each 
+            T1/E1 interface."
+    AUGMENTS { nndsxT1E1IfConfigLineEntry }
+    ::= { nndsxT1E1IfArchiveStatsValidIntervalsTable 1 }
+
+NnDsxT1E1IfArchiveStatsValidIntervalsEntry ::=
+    SEQUENCE {
+        nndsxT1E1IfAnsiArchiveStatsValidIntervals        Unsigned32, 
+        nndsxT1E1IfAttArchiveStatsValidIntervals         Unsigned32, 
+--************************************************************************
+--	Added by Smita , Wipro Technologies, to incorporate an OE1 card	
+	nndsxT1E1IfItutArchiveStatsValidIntervals	       Unsigned32,
+--************************************************************************  
+        nndsxT1E1IfIetfArchiveStatsValidIntervals	       Unsigned32,
+        nndsxT1E1IfUserTotalStatsValidDays               Unsigned32, 
+        nndsxT1E1IfUserArchiveStatsValidIntervals        Integer32
+    }
+    
+nndsxT1E1IfAnsiArchiveStatsValidIntervals OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Total number of archived statistics collected according to
+			ANSI standards."
+    ::= { nndsxT1E1IfArchiveStatsValidIntervalsEntry 1 }
+    
+nndsxT1E1IfAttArchiveStatsValidIntervals OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Total number of archived statistics collected according to
+			ATT standards."
+    ::= { nndsxT1E1IfArchiveStatsValidIntervalsEntry 2 }
+    
+--************************************************************************
+--	Added by Smita , Wipro Technologies, to incorporate an OE1 card	
+nndsxT1E1IfItutArchiveStatsValidIntervals OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Total number of archived statistics collected according to
+			ITU-T standards."
+    ::= { nndsxT1E1IfArchiveStatsValidIntervalsEntry 3 }
+--************************************************************************    
+nndsxT1E1IfIetfArchiveStatsValidIntervals OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            " Total number of archived statistics collected according to
+			IETF standards."
+    ::= { nndsxT1E1IfArchiveStatsValidIntervalsEntry 4 }
+    
+nndsxT1E1IfUserTotalStatsValidDays OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Total number of days archived statistics collected according to
+			User definations."
+    ::= { nndsxT1E1IfArchiveStatsValidIntervalsEntry 5 }
+    
+nndsxT1E1IfUserArchiveStatsValidIntervals OBJECT-TYPE
+    SYNTAX   	Integer32
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+            " User Archive Stats Valid Interval.
+              Setting this variable to 0 will clear
+              all the User Statistics Tables "
+    ::= { nndsxT1E1IfArchiveStatsValidIntervalsEntry 6 }
+
+
+-- DSX T1/E1 Stats Group Definitions
+
+nndsxT1E1IfAnsiStatsGroup   OBJECT IDENTIFIER   ::= { nndsxT1E1IfStatsGroup 2 }
+nndsxT1E1IfAttStatsGroup    OBJECT IDENTIFIER   ::= { nndsxT1E1IfStatsGroup 3 }
+--************************************************************************
+--	Added by Smita , Wipro Technologies, to incorporate an OE1 card	
+nndsxT1E1IfItutStatsGroup   OBJECT IDENTIFIER   ::= { nndsxT1E1IfStatsGroup 4 }
+--*************************************************************************
+nndsxT1E1IfIetfStatsGroup   OBJECT IDENTIFIER   ::= { nndsxT1E1IfStatsGroup 5 }
+nndsxT1E1IfUserStatsGroup   OBJECT IDENTIFIER   ::= { nndsxT1E1IfStatsGroup 6 }
+-- DSX T1/E1 ANSI Stats Group definitions
+
+-- ANSI Current Stats table
+
+nndsxT1E1IfAnsiCurrentStatsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnDsxT1E1IfAnsiCurrentStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Statistics collected according ANSI standards 
+			 and collected in current 900 secondss period."
+    ::= { nndsxT1E1IfAnsiStatsGroup 1 }
+
+nndsxT1E1IfAnsiCurrentStatsEntry  OBJECT-TYPE
+    SYNTAX      NnDsxT1E1IfAnsiCurrentStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Statistics collected in current 900 secs ( i.e. 15 mins) kept 
+			in this table"
+    AUGMENTS { nndsxT1E1IfConfigLineEntry }
+    ::= { nndsxT1E1IfAnsiCurrentStatsTable 1 }
+
+NnDsxT1E1IfAnsiCurrentStatsEntry ::=
+    SEQUENCE {
+        nndsxT1E1IfAnsiCurrentStatsUASState        TruthValue,
+        nndsxT1E1IfAnsiCurrentStatsTimeInCurrent   Unsigned32,
+        nndsxT1E1IfAnsiCurrentPathStatsCV          Unsigned32,
+        nndsxT1E1IfAnsiCurrentPathStatsES          Unsigned32,
+        nndsxT1E1IfAnsiCurrentPathStatsSES         Unsigned32,
+        nndsxT1E1IfAnsiCurrentPathStatsSAS         Unsigned32,
+        nndsxT1E1IfAnsiCurrentPathStatsCSS         Unsigned32,
+        nndsxT1E1IfAnsiCurrentPathStatsUAS         Unsigned32,
+        nndsxT1E1IfAnsiCurrentLineStatsCV          Unsigned32,
+        nndsxT1E1IfAnsiCurrentLineStatsES          Unsigned32,
+        nndsxT1E1IfAnsiCurrentLineStatsSES         Unsigned32
+    }
+    
+nndsxT1E1IfAnsiCurrentStatsUASState OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The State of T1/E1 line according to ANSI standards"
+    ::= { nndsxT1E1IfAnsiCurrentStatsEntry 1 }
+
+nndsxT1E1IfAnsiCurrentStatsTimeInCurrent OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The number of seconds that have elapsed since the
+         beginning of the  current error measurement period"
+    ::= { nndsxT1E1IfAnsiCurrentStatsEntry 2 }
+
+nndsxT1E1IfAnsiCurrentPathStatsCV OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Path Coding  Violations  encoun-
+                tered  by  a T1/E1 interface  in the current 15
+                minute interval. "
+    ::= { nndsxT1E1IfAnsiCurrentStatsEntry 3 }
+
+nndsxT1E1IfAnsiCurrentPathStatsES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Errored Seconds, encountered  by
+                a T1/E1 interface in the current 15 minute inter-
+                val. "
+    ::= { nndsxT1E1IfAnsiCurrentStatsEntry 4 }
+
+nndsxT1E1IfAnsiCurrentPathStatsSES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Severely Errored Seconds encoun-
+                tered  by  a  T1/E1  interface  in the current 15
+                minute interval. "
+    ::= { nndsxT1E1IfAnsiCurrentStatsEntry 5 }
+
+nndsxT1E1IfAnsiCurrentPathStatsSAS OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+                "Seconds with Severe Alarms"
+    ::= { nndsxT1E1IfAnsiCurrentStatsEntry 6 }
+
+nndsxT1E1IfAnsiCurrentPathStatsCSS OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Controlled Slip Seconds  encoun-
+                tered  by  a  T1/E1  interface  in the current 15
+                minute interval. "
+    ::= { nndsxT1E1IfAnsiCurrentStatsEntry 7 }
+
+nndsxT1E1IfAnsiCurrentPathStatsUAS OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Unavailable Seconds  encountered
+                by a T1/E1 interface in the current 15 minute in-
+                terval. "
+    ::= { nndsxT1E1IfAnsiCurrentStatsEntry 8 }
+
+
+nndsxT1E1IfAnsiCurrentLineStatsCV OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Line Coding  Violations  encoun-
+                tered  by  a  T1/E1  interface  in the current 15
+                minute interval. "
+    ::= { nndsxT1E1IfAnsiCurrentStatsEntry 9 }
+
+nndsxT1E1IfAnsiCurrentLineStatsES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Errored Seconds, encountered  by
+                a T1/E1 interface in the current 15 minute inter-
+                val. "
+    ::= { nndsxT1E1IfAnsiCurrentStatsEntry 10 }
+
+nndsxT1E1IfAnsiCurrentLineStatsSES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Severely Errored Seconds encoun-
+                tered  by  a  T1/E1  interface  in the current 15
+                minute interval. "
+    ::= { nndsxT1E1IfAnsiCurrentStatsEntry 11 }
+
+
+-- ANSI Total Path stats table
+
+nndsxT1E1IfAnsiTotalStatsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnDsxT1E1IfAnsiTotalStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Table for the Total Statistics over past 24 hrs"
+    ::= { nndsxT1E1IfAnsiStatsGroup 2 }
+
+nndsxT1E1IfAnsiTotalStatsEntry  OBJECT-TYPE
+    SYNTAX      NnDsxT1E1IfAnsiTotalStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Table for the Total Statistics over past 24 hrs"
+    AUGMENTS { nndsxT1E1IfConfigLineEntry }
+    ::= { nndsxT1E1IfAnsiTotalStatsTable 1 }
+
+NnDsxT1E1IfAnsiTotalStatsEntry ::=
+    SEQUENCE {
+        nndsxT1E1IfAnsiTotalPathStatsCV          Unsigned32,
+        nndsxT1E1IfAnsiTotalPathStatsES          Unsigned32,
+        nndsxT1E1IfAnsiTotalPathStatsSES         Unsigned32,
+        nndsxT1E1IfAnsiTotalPathStatsSAS         Unsigned32,
+        nndsxT1E1IfAnsiTotalPathStatsCSS         Unsigned32,
+        nndsxT1E1IfAnsiTotalPathStatsUAS         Unsigned32,
+        nndsxT1E1IfAnsiTotalLineStatsCV          Unsigned32,
+        nndsxT1E1IfAnsiTotalLineStatsES          Unsigned32,
+        nndsxT1E1IfAnsiTotalLineStatsSES         Unsigned32
+    }
+    
+nndsxT1E1IfAnsiTotalPathStatsCV OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Path Coding  Violations  encoun-
+                tered  by  a  T1/E1  interface in the previous 24
+                hour interval. "
+    ::= { nndsxT1E1IfAnsiTotalStatsEntry 1 }
+
+nndsxT1E1IfAnsiTotalPathStatsES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Errored Seconds encountered by a
+                T1/E1 interface in the previous 24 hour interval. "
+    ::= { nndsxT1E1IfAnsiTotalStatsEntry 2 }
+
+nndsxT1E1IfAnsiTotalPathStatsSES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Severely Errored Seconds encoun-
+                tered  by  a  T1/E1  interface in the previous 24
+                hour interval. "
+    ::= { nndsxT1E1IfAnsiTotalStatsEntry 3 }
+
+nndsxT1E1IfAnsiTotalPathStatsSAS OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+                "Total No seconds with Severe Alarms in past 24 hrs"
+    ::= { nndsxT1E1IfAnsiTotalStatsEntry 4 }
+
+nndsxT1E1IfAnsiTotalPathStatsCSS OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Controlled Slip Seconds  encoun-
+                tered  by  a  T1/E1  interface in the previous 24
+                hour interval. "
+    ::= { nndsxT1E1IfAnsiTotalStatsEntry 5 }
+
+nndsxT1E1IfAnsiTotalPathStatsUAS OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Unavailable Seconds  encountered
+                by  a T1/E1 interface in the previous 24 hour in-
+                terval. "
+    ::= { nndsxT1E1IfAnsiTotalStatsEntry 6 }
+
+
+nndsxT1E1IfAnsiTotalLineStatsCV OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Line Coding  Violations  encoun-
+                tered  by  a  T1/E1  interface in the previous 24
+                hour interval. "
+    ::= { nndsxT1E1IfAnsiTotalStatsEntry 7 }
+
+nndsxT1E1IfAnsiTotalLineStatsES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Errored Seconds encountered by a
+                T1/E1 interface in the previous 24 hour interval. "
+    ::= { nndsxT1E1IfAnsiTotalStatsEntry 8 }
+
+nndsxT1E1IfAnsiTotalLineStatsSES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Severely Errored Seconds encoun-
+                tered  by  a  T1/E1  interface in the previous 24
+                hour interval. "
+    ::= { nndsxT1E1IfAnsiTotalStatsEntry 9 }
+
+
+-- ANSI ARCHIVE INTERVAL STATISTICS TABLE
+
+nndsxT1E1IfAnsiArchiveIntervalStatsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnDsxT1E1IfAnsiArchiveIntervalStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A list of T1/E1 interface test status entries"
+    ::= { nndsxT1E1IfAnsiStatsGroup 3 }
+
+nndsxT1E1IfAnsiArchiveIntervalStatsEntry  OBJECT-TYPE
+    SYNTAX      NnDsxT1E1IfAnsiArchiveIntervalStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "An entry containing status entry for each currently active 
+            T1/E1 interface."
+    INDEX { nndsxT1E1IfIndex, nndsxT1E1IfAnsiArchiveStatsInterval }
+    ::= { nndsxT1E1IfAnsiArchiveIntervalStatsTable 1 }
+
+NnDsxT1E1IfAnsiArchiveIntervalStatsEntry ::=
+    SEQUENCE {
+        nndsxT1E1IfAnsiArchiveStatsInterval                Unsigned32,
+        nndsxT1E1IfAnsiArchiveIntervalPathStatsCV          Unsigned32,
+        nndsxT1E1IfAnsiArchiveIntervalPathStatsES          Unsigned32,
+        nndsxT1E1IfAnsiArchiveIntervalPathStatsSES         Unsigned32,
+        nndsxT1E1IfAnsiArchiveIntervalPathStatsSAS         Unsigned32,
+        nndsxT1E1IfAnsiArchiveIntervalPathStatsCSS         Unsigned32,
+        nndsxT1E1IfAnsiArchiveIntervalPathStatsUAS         Unsigned32,
+        nndsxT1E1IfAnsiArchiveIntervalLineStatsCV          Unsigned32,
+        nndsxT1E1IfAnsiArchiveIntervalLineStatsES          Unsigned32,
+        nndsxT1E1IfAnsiArchiveIntervalLineStatsSES         Unsigned32
+    }
+
+nndsxT1E1IfAnsiArchiveStatsInterval OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Number of Intervals available in archive table "
+    ::= { nndsxT1E1IfAnsiArchiveIntervalStatsEntry 1 }
+    
+nndsxT1E1IfAnsiArchiveIntervalPathStatsCV OBJECT-TYPE
+    SYNTAX   Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Path Coding  Violations  encoun-
+             tered  by  a  T1  interface  in the archive
+             intervals. "
+    ::= { nndsxT1E1IfAnsiArchiveIntervalStatsEntry 2 }
+
+nndsxT1E1IfAnsiArchiveIntervalPathStatsES OBJECT-TYPE
+    SYNTAX   Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Errored Seconds, encountered  by
+             a DS3 interface in the archive intervals. "
+    ::= { nndsxT1E1IfAnsiArchiveIntervalStatsEntry 3 }
+
+nndsxT1E1IfAnsiArchiveIntervalPathStatsSES OBJECT-TYPE
+    SYNTAX   Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Severely Errored Seconds encoun-
+                tered  by  a  T1/E1  interface  in the archive 
+                intervals . "
+    ::= { nndsxT1E1IfAnsiArchiveIntervalStatsEntry 4 }
+
+nndsxT1E1IfAnsiArchiveIntervalPathStatsSAS OBJECT-TYPE
+    SYNTAX   Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Severely Errored Framing Seconds
+                encountered  by  a T1/E1 interface in the archive
+                intervals. "
+    ::= { nndsxT1E1IfAnsiArchiveIntervalStatsEntry 5 }
+
+nndsxT1E1IfAnsiArchiveIntervalPathStatsCSS OBJECT-TYPE
+    SYNTAX   Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+                "The number of Controlled Slip Seconds
+                encountered  by  a T1/E1 interface in the archive
+                intervals. "
+    ::= { nndsxT1E1IfAnsiArchiveIntervalStatsEntry 6 }
+
+nndsxT1E1IfAnsiArchiveIntervalPathStatsUAS OBJECT-TYPE
+    SYNTAX   Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Unavailable Seconds  encountered
+             by a T1/E1 interface in the archive intervals. "
+    ::= { nndsxT1E1IfAnsiArchiveIntervalStatsEntry 7 }
+
+nndsxT1E1IfAnsiArchiveIntervalLineStatsCV OBJECT-TYPE
+    SYNTAX   Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Line Coding  Violations  encoun-
+             tered  by  a  T1/E1  interface  in the archive
+             intervals. "
+    ::= { nndsxT1E1IfAnsiArchiveIntervalStatsEntry 8 }
+
+nndsxT1E1IfAnsiArchiveIntervalLineStatsES OBJECT-TYPE
+    SYNTAX   Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Errored Seconds, encountered  by
+             a T1/E1 interface in the archive intervals. "
+    ::= { nndsxT1E1IfAnsiArchiveIntervalStatsEntry 9 }
+
+nndsxT1E1IfAnsiArchiveIntervalLineStatsSES OBJECT-TYPE
+    SYNTAX   Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Severely Errored Seconds encoun-
+                tered  by  a  T1/E1  interface  in the archive 
+                intervals . "
+    ::= { nndsxT1E1IfAnsiArchiveIntervalStatsEntry 10 }
+
+
+-- ATT Stats Group
+
+-- ATT Stats Current Table
+nndsxT1E1IfAttCurrentStatsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnDsxT1E1IfAttCurrentStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A list of T1/E1 interface statistics for current 
+			interval"
+    ::= { nndsxT1E1IfAttStatsGroup 1 }
+
+nndsxT1E1IfAttCurrentStatsEntry  OBJECT-TYPE
+    SYNTAX      NnDsxT1E1IfAttCurrentStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "An entry containing statistics for each currently active 
+            T1/E1 interface."
+    AUGMENTS { nndsxT1E1IfConfigLineEntry }
+    ::= { nndsxT1E1IfAttCurrentStatsTable 1 }
+
+NnDsxT1E1IfAttCurrentStatsEntry ::=
+    SEQUENCE {
+        nndsxT1E1IfAttCurrentStatsUASState                TruthValue,
+        nndsxT1E1IfAttCurrentStatsTimeInCurrent           Unsigned32,
+        nndsxT1E1IfAttCurrentStatsEEV                     Unsigned32,
+        nndsxT1E1IfAttCurrentStatsES                      Unsigned32,
+        nndsxT1E1IfAttCurrentStatsUAS                     Unsigned32,
+--      nndsxT1E1IfAttCurrentStatsBES                     Unsigned32,
+        nndsxT1E1IfAttCurrentStatsSES                     Unsigned32,
+--      nndsxT1E1IfAttCurrentStatsLOFC                    Unsigned32,
+	  nndsxT1E1IfAttCurrentStatsCSS                     Unsigned32
+    }
+    
+nndsxT1E1IfAttCurrentStatsUASState OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The Current state of availablity of T1/E1 interface"
+    ::= { nndsxT1E1IfAttCurrentStatsEntry 1 }
+    
+nndsxT1E1IfAttCurrentStatsTimeInCurrent OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of seconds that  have  elapsed
+                     since the beginning of the far end current
+                     error-measurement period. "
+    ::= { nndsxT1E1IfAttCurrentStatsEntry 2 }
+    
+nndsxT1E1IfAttCurrentStatsEEV OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Far Far End Errored EVents  en-
+                countered  by a T1/E1 interface in the current 15
+                minute interval. "
+    ::= { nndsxT1E1IfAttCurrentStatsEntry 3 }
+
+nndsxT1E1IfAttCurrentStatsES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Far Far End Errored Seconds  en-
+                countered  by a T1/E1 interface in the current 15
+                minute interval. "
+    ::= { nndsxT1E1IfAttCurrentStatsEntry 4 }
+
+nndsxT1E1IfAttCurrentStatsUAS OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Unavailable Seconds  encountered
+                by a T1/E1 interface in the current 15 minute in-
+                terval. "
+    ::= { nndsxT1E1IfAttCurrentStatsEntry 5 }
+
+--nndsxT1E1IfAttCurrentStatsBES OBJECT-TYPE
+--  SYNTAX      Unsigned32
+--  MAX-ACCESS  read-only
+--  STATUS      current
+--  DESCRIPTION
+--          "The number of Bursty  Errored  Seconds  (BESs)
+--              encountered  by  a T1/E1 interface in the current
+--              15 minute interval. "
+--  ::= { nndsxT1E1IfAttCurrentStatsEntry 6 }
+
+nndsxT1E1IfAttCurrentStatsSES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Far End Severely Errored Seconds
+                encountered  by  a T1/E1 interface in the current
+                15 minute interval. "
+    ::= { nndsxT1E1IfAttCurrentStatsEntry 7 }
+
+--nndsxT1E1IfAttCurrentStatsLOFC OBJECT-TYPE
+--  SYNTAX      Unsigned32
+--  MAX-ACCESS  read-only
+--  STATUS      current
+--  DESCRIPTION
+--          "The number of loss of frames occurred in the 
+--           current 15 minute interval. "
+--  ::= { nndsxT1E1IfAttCurrentStatsEntry 8 }
+
+
+nndsxT1E1IfAttCurrentStatsCSS OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Far End Controlled Slip  Seconds
+                encountered  by  a T1/E1 interface in the current
+                interval. "
+    ::= { nndsxT1E1IfAttCurrentStatsEntry 9 }
+    
+
+-- ATT TOTAL STATS
+
+nndsxT1E1IfAttTotalStatsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnDsxT1E1IfAttTotalStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A list of T1/E1 interface test status entries"
+    ::= { nndsxT1E1IfAttStatsGroup 2 }
+
+nndsxT1E1IfAttTotalStatsEntry  OBJECT-TYPE
+    SYNTAX      NnDsxT1E1IfAttTotalStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "An entry containing status entry for each currently active 
+            T1/E1 interface."
+    AUGMENTS { nndsxT1E1IfConfigLineEntry }
+    ::= { nndsxT1E1IfAttTotalStatsTable 1 }
+
+NnDsxT1E1IfAttTotalStatsEntry ::=
+    SEQUENCE {
+        nndsxT1E1IfAttTotalStatsEEV                     Unsigned32,
+        nndsxT1E1IfAttTotalStatsES                      Unsigned32,
+        nndsxT1E1IfAttTotalStatsUAS                     Unsigned32,
+  --    nndsxT1E1IfAttTotalStatsBES                     Unsigned32,
+        nndsxT1E1IfAttTotalStatsSES                     Unsigned32,
+  --    nndsxT1E1IfAttTotalStatsLOFC                    Unsigned32,
+        nndsxT1E1IfAttTotalStatsCSS                     Unsigned32
+    }
+    
+nndsxT1E1IfAttTotalStatsEEV OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Invoke the configured test. "
+    ::= { nndsxT1E1IfAttTotalStatsEntry 1 }
+
+nndsxT1E1IfAttTotalStatsES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Near End Errored Seconds  encoun-
+                tered  by  a  T1/E1  interface. "
+    ::= { nndsxT1E1IfAttTotalStatsEntry 2 }
+
+nndsxT1E1IfAttTotalStatsUAS OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Unavailable Seconds  encountered
+                by  a T1/E1 interface. "
+    ::= { nndsxT1E1IfAttTotalStatsEntry 3 }
+
+--nndsxT1E1IfAttTotalStatsBES OBJECT-TYPE
+--  SYNTAX      Unsigned32
+--  MAX-ACCESS  read-only
+--  STATUS      current
+--  DESCRIPTION
+--          "The number of Bursty  Errored  Seconds  (BESs)
+--              encountered  by a T1/E1 interface. "
+--  ::= { nndsxT1E1IfAttTotalStatsEntry 4 }
+
+nndsxT1E1IfAttTotalStatsSES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Near End Severely Errored Seconds
+                encountered  by a T1/E1 interface. "
+    ::= { nndsxT1E1IfAttTotalStatsEntry 5 }
+
+--nndsxT1E1IfAttTotalStatsLOFC OBJECT-TYPE
+--  SYNTAX      Unsigned32
+--  MAX-ACCESS  read-only
+--  STATUS      current
+--  DESCRIPTION
+--          "Count of loss of frames. "
+--  ::= { nndsxT1E1IfAttTotalStatsEntry 6 }
+
+
+nndsxT1E1IfAttTotalStatsCSS OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Near End Controlled Slip  Seconds
+                encountered  by a T1/E1 interface. "
+    ::= { nndsxT1E1IfAttTotalStatsEntry 7 }
+    
+-- ATT ARCHIVE STATS
+
+nndsxT1E1IfAttArchiveStatsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnDsxT1E1IfAttArchiveStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A list of T1/E1 interface test status entries"
+    ::= { nndsxT1E1IfAttStatsGroup 3 }
+
+nndsxT1E1IfAttArchiveStatsEntry  OBJECT-TYPE
+    SYNTAX      NnDsxT1E1IfAttArchiveStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "An entry containing status entry for each currently active 
+            T1/E1 interface."
+    INDEX { nndsxT1E1IfIndex, nndsxT1E1IfAttArchiveInterval }
+    ::= { nndsxT1E1IfAttArchiveStatsTable 1 }
+
+NnDsxT1E1IfAttArchiveStatsEntry ::=
+    SEQUENCE {
+        nndsxT1E1IfAttArchiveInterval                     Unsigned32,
+        nndsxT1E1IfAttArchiveStatsEEV                     Unsigned32,
+        nndsxT1E1IfAttArchiveStatsES                      Unsigned32,
+        nndsxT1E1IfAttArchiveStatsUAS                     Unsigned32,
+  --    nndsxT1E1IfAttArchiveStatsBES                     Unsigned32,
+        nndsxT1E1IfAttArchiveStatsSES                     Unsigned32,
+  --    nndsxT1E1IfAttArchiveStatsLOFC                    Unsigned32,
+        nndsxT1E1IfAttArchiveStatsCSS                     Unsigned32
+    }
+    
+nndsxT1E1IfAttArchiveInterval OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Time interval for archiving the statistics. "
+    ::= { nndsxT1E1IfAttArchiveStatsEntry 1 }
+        
+nndsxT1E1IfAttArchiveStatsEEV OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Invoke the configured test. "
+    ::= { nndsxT1E1IfAttArchiveStatsEntry 2 }
+
+nndsxT1E1IfAttArchiveStatsES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Near End Errored Seconds  encoun-
+                tered  by  a  T1/E1  interface. "
+    ::= { nndsxT1E1IfAttArchiveStatsEntry 3 }
+
+nndsxT1E1IfAttArchiveStatsUAS OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Unavailable Seconds  encountered
+                by  a T1/E1 interface. "
+    ::= { nndsxT1E1IfAttArchiveStatsEntry 4 }
+
+--nndsxT1E1IfAttArchiveStatsBES OBJECT-TYPE
+--  SYNTAX      Unsigned32
+--  MAX-ACCESS  read-only
+--  STATUS      current
+--  DESCRIPTION
+--          "The number of Bursty  Errored  Seconds  (BESs)
+--              encountered  by a T1/E1 interface. "
+--  ::= { nndsxT1E1IfAttArchiveStatsEntry 5 }
+
+nndsxT1E1IfAttArchiveStatsSES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Near End Severely Errored Seconds
+                encountered  by a T1/E1 interface. "
+    ::= { nndsxT1E1IfAttArchiveStatsEntry 6 }
+
+--nndsxT1E1IfAttArchiveStatsLOFC OBJECT-TYPE
+--  SYNTAX      Unsigned32
+--  MAX-ACCESS  read-only
+--  STATUS      current
+--  DESCRIPTION
+--          "Count of loss of frames. "
+--  ::= { nndsxT1E1IfAttArchiveStatsEntry 7 }
+
+
+nndsxT1E1IfAttArchiveStatsCSS OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Near End Controlled Slip  Seconds
+                encountered  by a T1/E1 interface. "
+    ::= { nndsxT1E1IfAttArchiveStatsEntry 8 }
+
+--************************************************************************
+--	Added by Smita , Wipro Technologies, to incorporate an OE1 card	
+
+-- ITU-T Stats Group
+
+-- ITUT Stats Current Table
+nndsxT1E1IfItutCurrentStatsTable OBJECT-TYPE
+    SYNTAX      	SEQUENCE OF NnDsxT1E1IfItutCurrentStatsEntry
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+            "A list of T1/E1 interface statistics for current interval"
+    ::= { nndsxT1E1IfItutStatsGroup 1 }
+
+nndsxT1E1IfItutCurrentStatsEntry  OBJECT-TYPE
+    SYNTAX      	NnDsxT1E1IfItutCurrentStatsEntry
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+            "An entry containing statistics for each currently active T1/E1 interface."
+    AUGMENTS { nndsxT1E1IfConfigLineEntry }
+    ::= { nndsxT1E1IfItutCurrentStatsTable 1 }
+
+NnDsxT1E1IfItutCurrentStatsEntry ::=
+    SEQUENCE {
+        nndsxT1E1IfItutCurrentStatsUASState              		TruthValue,
+        nndsxT1E1IfItutCurrentStatsTimeInCurrent       		Unsigned32,
+        nndsxT1E1IfItutCurrentStatsES                      	Unsigned32,
+        nndsxT1E1IfItutCurrentStatsUAS                     	Unsigned32,
+        nndsxT1E1IfItutCurrentStatsBBE                     	Unsigned32,
+        nndsxT1E1IfItutCurrentStatsSES                     	Unsigned32
+}
+    
+nndsxT1E1IfItutCurrentStatsUASState OBJECT-TYPE
+    SYNTAX      		TruthValue
+    MAX-ACCESS  		read-only
+    STATUS      		current
+    DESCRIPTION
+            "The Current state of availablity of T1/E1 interface"
+    ::= { nndsxT1E1IfItutCurrentStatsEntry 1 }
+    
+nndsxT1E1IfItutCurrentStatsTimeInCurrent OBJECT-TYPE
+    SYNTAX      		Unsigned32
+    MAX-ACCESS  		read-only
+    STATUS      		current
+    DESCRIPTION
+            "The number of seconds that have elapsed since the beginning of the far end current
+              error-measurement period. "
+    ::= { nndsxT1E1IfItutCurrentStatsEntry 2 }
+    
+
+nndsxT1E1IfItutCurrentStatsES OBJECT-TYPE
+    SYNTAX      		Unsigned32
+    MAX-ACCESS  		read-only
+    STATUS      		current
+    DESCRIPTION
+            "The number of Far Far End Errored Seconds  en-
+                countered  by a T1/E1 interface in the current 15
+                minute interval. "
+    ::= { nndsxT1E1IfItutCurrentStatsEntry 3 }
+
+nndsxT1E1IfItutCurrentStatsUAS OBJECT-TYPE
+    SYNTAX      		Unsigned32
+    MAX-ACCESS  		read-only
+    STATUS      		current
+    DESCRIPTION
+            "The number of Unavailable Seconds  encountered
+                by a T1/E1 interface in the current 15 minute in-
+                terval. "
+    ::= { nndsxT1E1IfItutCurrentStatsEntry 4 }
+
+nndsxT1E1IfItutCurrentStatsBBE OBJECT-TYPE
+    SYNTAX      		Unsigned32
+    MAX-ACCESS  		read-only
+    STATUS      		current
+    DESCRIPTION
+"The number of Background Block Errors encountered  by  a T1/E1 interface in the current 15 minute interval. "
+    ::= { nndsxT1E1IfItutCurrentStatsEntry 5 }
+
+nndsxT1E1IfItutCurrentStatsSES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Far End Severely Errored Seconds encountered  by  a T1/E1 interface in the current 15 minute interval. "
+    ::= { nndsxT1E1IfItutCurrentStatsEntry 6 }
+
+-- ITUT TOTAL STATS
+
+nndsxT1E1IfItutTotalStatsTable OBJECT-TYPE
+    SYNTAX      	SEQUENCE OF NnDsxT1E1IfItutTotalStatsEntry
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+            "A list of T1/E1 interface test status entries"
+    ::= { nndsxT1E1IfItutStatsGroup 2 }
+
+nndsxT1E1IfItutTotalStatsEntry  OBJECT-TYPE
+    SYNTAX      	NnDsxT1E1IfItutTotalStatsEntry
+    MAX-ACCESS  	not-accessible
+    STATUS      	current
+    DESCRIPTION
+            "An entry containing status entry for each currently active T1/E1 interface."
+    AUGMENTS { nndsxT1E1IfConfigLineEntry }
+    ::= { nndsxT1E1IfItutTotalStatsTable 1 }
+
+NnDsxT1E1IfItutTotalStatsEntry ::=
+    SEQUENCE {
+        nndsxT1E1IfItutTotalStatsES                      Unsigned32,
+        nndsxT1E1IfItutTotalStatsUAS                     Unsigned32,
+        nndsxT1E1IfItutTotalStatsBBE                     Unsigned32,
+        nndsxT1E1IfItutTotalStatsSES                     Unsigned32
+}
+    
+nndsxT1E1IfItutTotalStatsES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Near End Errored Seconds  encoun-
+                tered  by  a  T1/E1  interface. "
+    ::= { nndsxT1E1IfItutTotalStatsEntry 1 }
+
+nndsxT1E1IfItutTotalStatsUAS OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Unavailable Seconds  encountered
+                by  a T1/E1 interface. "
+    ::= { nndsxT1E1IfItutTotalStatsEntry 2 }
+
+nndsxT1E1IfItutTotalStatsBBE OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Background Block Errors  (BBEs)
+                encountered  by a T1/E1 interface. "
+    ::= { nndsxT1E1IfItutTotalStatsEntry 3 }
+
+nndsxT1E1IfItutTotalStatsSES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Near End Severely Errored Seconds
+                encountered  by a T1/E1 interface. "
+    ::= { nndsxT1E1IfItutTotalStatsEntry 4 }
+
+-- ITUT ARCHIVE STATS
+
+nndsxT1E1IfItutArchiveStatsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnDsxT1E1IfItutArchiveStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A list of T1/E1 interface test status entries"
+    ::= { nndsxT1E1IfItutStatsGroup 3 }
+
+nndsxT1E1IfItutArchiveStatsEntry  OBJECT-TYPE
+    SYNTAX      NnDsxT1E1IfItutArchiveStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "An entry containing status entry for each currently active 
+            T1/E1 interface."
+    INDEX { nndsxT1E1IfIndex, nndsxT1E1IfItutArchiveInterval }
+    ::= { nndsxT1E1IfItutArchiveStatsTable 1 }
+
+NnDsxT1E1IfItutArchiveStatsEntry ::=
+    SEQUENCE {
+        nndsxT1E1IfItutArchiveInterval                     Unsigned32,
+	nndsxT1E1IfItutArchiveStatsES                      Unsigned32,
+        nndsxT1E1IfItutArchiveStatsUAS                     Unsigned32,
+        nndsxT1E1IfItutArchiveStatsBBE                     Unsigned32,
+        nndsxT1E1IfItutArchiveStatsSES                     Unsigned32
+    }
+    
+nndsxT1E1IfItutArchiveInterval OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Time interval for archiving the statistics. "
+    ::= { nndsxT1E1IfItutArchiveStatsEntry 1 }
+        
+nndsxT1E1IfItutArchiveStatsES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Near End Errored Seconds encountered by a T1/E1 interface. "
+    ::= { nndsxT1E1IfItutArchiveStatsEntry 2 }
+
+nndsxT1E1IfItutArchiveStatsUAS OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Unavailable Seconds encountered by a T1/E1 interface. "
+    ::= { nndsxT1E1IfItutArchiveStatsEntry 3 }
+
+nndsxT1E1IfItutArchiveStatsBBE OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Background Block Errors  Errored  Seconds  (BESs)encountered  by a T1/E1interface."
+    ::= { nndsxT1E1IfItutArchiveStatsEntry 4 }
+
+nndsxT1E1IfItutArchiveStatsSES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+ "The number of Near End Severely Errored Seconds encountered  by a T1/E1 interface. "
+    ::= { nndsxT1E1IfItutArchiveStatsEntry 5 }
+
+--********************************************************************
+-- IETF Stats Group
+
+-- IETF Current Stats Table
+
+nndsxT1E1IfIetfCurrentStatsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnDsxT1E1IfIetfCurrentStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A list of T1/E1 interface test status entries"
+    ::= { nndsxT1E1IfIetfStatsGroup 1 }
+
+nndsxT1E1IfIetfCurrentStatsEntry  OBJECT-TYPE
+    SYNTAX      NnDsxT1E1IfIetfCurrentStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "An entry containing status entry for each currently active 
+            T1/E1 interface."
+    AUGMENTS { nndsxT1E1IfConfigLineEntry }
+    ::= { nndsxT1E1IfIetfCurrentStatsTable 1 }
+
+NnDsxT1E1IfIetfCurrentStatsEntry ::=
+    SEQUENCE {
+        nndsxT1E1IfIetfCurrentStatsUASState                 TruthValue,
+        nndsxT1E1IfIetfCurrentStatsTimeInCurrent            Unsigned32,
+        nndsxT1E1IfIetfCurrentStatsES                       Unsigned32,
+        nndsxT1E1IfIetfCurrentStatsSES                      Unsigned32,
+        nndsxT1E1IfIetfCurrentStatsSEFS                     Unsigned32,
+        nndsxT1E1IfIetfCurrentStatsUAS                      Unsigned32,
+        nndsxT1E1IfIetfCurrentStatsCSS                      Unsigned32,
+        nndsxT1E1IfIetfCurrentStatsPCV                      Unsigned32,
+        nndsxT1E1IfIetfCurrentStatsLES                      Unsigned32,
+        nndsxT1E1IfIetfCurrentStatsBES                      Unsigned32,
+        nndsxT1E1IfIetfCurrentStatsDM                       Unsigned32,
+        nndsxT1E1IfIetfCurrentStatsLCV                      Unsigned32        
+    }
+    
+nndsxT1E1IfIetfCurrentStatsUASState OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The Current state of availablity of T1/E1 interface."
+    ::= { nndsxT1E1IfIetfCurrentStatsEntry 1 }
+    
+nndsxT1E1IfIetfCurrentStatsTimeInCurrent OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of seconds that  have  elapsed
+                     since the beginning of the IETF current
+                     error-measurement period. "
+    ::= { nndsxT1E1IfIetfCurrentStatsEntry 2 }
+    
+nndsxT1E1IfIetfCurrentStatsES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of IETF Errored Seconds  encoun-
+                tered  by  a  T1/E1  interface. "
+    ::= { nndsxT1E1IfIetfCurrentStatsEntry 3 }
+
+nndsxT1E1IfIetfCurrentStatsSES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Far End Severely Errored Seconds
+                encountered  by a T1/E1 interface. "
+    ::= { nndsxT1E1IfIetfCurrentStatsEntry 4 }
+
+nndsxT1E1IfIetfCurrentStatsSEFS OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of IETF Severely Errored Framing
+                Seconds  encountered  by a T1/E1 interface. "
+    ::= { nndsxT1E1IfIetfCurrentStatsEntry 5 }
+
+nndsxT1E1IfIetfCurrentStatsUAS OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Unavailable Seconds  encountered
+                by  a T1/E1 interface. "
+    ::= { nndsxT1E1IfIetfCurrentStatsEntry 6 }
+
+nndsxT1E1IfIetfCurrentStatsCSS OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of IETF Controlled Slip  Seconds
+                encountered  by a T1/E1 interface. "
+    ::= { nndsxT1E1IfIetfCurrentStatsEntry 7 }
+
+nndsxT1E1IfIetfCurrentStatsPCV OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of IETF Path  Coding  Violations
+                reported  via the far end block error count en-
+                countered by a T1/E1 interface. "
+    ::= { nndsxT1E1IfIetfCurrentStatsEntry 8 }
+
+
+nndsxT1E1IfIetfCurrentStatsLES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of IETF Line Errored Seconds en-
+                countered by a T1/E1 interface. "
+   ::= { nndsxT1E1IfIetfCurrentStatsEntry 9 }
+
+nndsxT1E1IfIetfCurrentStatsBES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Bursty  Errored  Seconds  (BESs)
+                encountered  by a T1/E1 interface. "
+   ::= { nndsxT1E1IfIetfCurrentStatsEntry 10 }
+    
+nndsxT1E1IfIetfCurrentStatsDM OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Degraded Minutes  (DMs)  encoun-
+                tered  by  a  T1/E1  interface. "
+   ::= { nndsxT1E1IfIetfCurrentStatsEntry 11 }
+    
+nndsxT1E1IfIetfCurrentStatsLCV OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Invoke the configured test. "
+   ::= { nndsxT1E1IfIetfCurrentStatsEntry 12 }
+
+
+-- IETF Total Stats Table
+
+nndsxT1E1IfIetfTotalStatsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnDsxT1E1IfIetfTotalStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A list of T1/E1 interface test status entries"
+    ::= { nndsxT1E1IfIetfStatsGroup 2 }
+
+nndsxT1E1IfIetfTotalStatsEntry  OBJECT-TYPE
+    SYNTAX      NnDsxT1E1IfIetfTotalStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "An entry containing status entry for each currently active 
+            T1/E1 interface."
+    AUGMENTS { nndsxT1E1IfConfigLineEntry }
+    ::= { nndsxT1E1IfIetfTotalStatsTable 1 }
+
+NnDsxT1E1IfIetfTotalStatsEntry ::=
+    SEQUENCE {
+        nndsxT1E1IfIetfTotalStatsES                       Unsigned32,
+        nndsxT1E1IfIetfTotalStatsSES                      Unsigned32,
+        nndsxT1E1IfIetfTotalStatsSEFS                     Unsigned32,
+        nndsxT1E1IfIetfTotalStatsUAS                      Unsigned32,
+        nndsxT1E1IfIetfTotalStatsCSS                      Unsigned32,
+        nndsxT1E1IfIetfTotalStatsPCV                      Unsigned32,
+        nndsxT1E1IfIetfTotalStatsLES                      Unsigned32,
+        nndsxT1E1IfIetfTotalStatsBES                      Unsigned32,
+        nndsxT1E1IfIetfTotalStatsDM                       Unsigned32,
+        nndsxT1E1IfIetfTotalStatsLCV                      Unsigned32        
+    }
+    
+nndsxT1E1IfIetfTotalStatsES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of IETF Errored Seconds  encoun-
+                tered  by  a  T1/E1  interface. "
+    ::= { nndsxT1E1IfIetfTotalStatsEntry 1 }
+
+nndsxT1E1IfIetfTotalStatsSES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of IETF Severely Errored Seconds
+                encountered  by a T1/E1 interface. "
+    ::= { nndsxT1E1IfIetfTotalStatsEntry 2 }
+
+nndsxT1E1IfIetfTotalStatsSEFS OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of IETF Severely Errored Framing
+                Seconds  encountered  by a T1/E1 interface. "
+    ::= { nndsxT1E1IfIetfTotalStatsEntry 3 }
+
+nndsxT1E1IfIetfTotalStatsUAS OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Unavailable Seconds  encountered
+                by  a T1/E1 interface. "
+    ::= { nndsxT1E1IfIetfTotalStatsEntry 4 }
+
+nndsxT1E1IfIetfTotalStatsCSS OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of IETF Controlled Slip  Seconds
+                encountered  by a T1/E1 interface. "
+    ::= { nndsxT1E1IfIetfTotalStatsEntry 5 }
+
+nndsxT1E1IfIetfTotalStatsPCV OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of IETF Path  Coding  Violations
+                reported  via the far end block error count en-
+                countered by a T1/E1 interface. "
+    ::= { nndsxT1E1IfIetfTotalStatsEntry 6 }
+
+
+nndsxT1E1IfIetfTotalStatsLES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of IETF Line Errored Seconds en-
+                countered by a T1/E1 interface. "
+   ::= { nndsxT1E1IfIetfTotalStatsEntry 7 }
+
+nndsxT1E1IfIetfTotalStatsBES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Bursty  Errored  Seconds  (BESs)
+                encountered  by a T1/E1 interface. "
+   ::= { nndsxT1E1IfIetfTotalStatsEntry 8 }
+    
+nndsxT1E1IfIetfTotalStatsDM OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Degraded Minutes  (DMs)  encoun-
+                tered  by  a  T1/E1  interface. "
+   ::= { nndsxT1E1IfIetfTotalStatsEntry 9 }
+    
+nndsxT1E1IfIetfTotalStatsLCV OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Invoke the configured test. "
+   ::= { nndsxT1E1IfIetfTotalStatsEntry 10 }
+
+
+--  IETF Archive Stats
+
+nndsxT1E1IfIetfArchiveStatsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnDsxT1E1IfIetfArchiveStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A list of T1/E1 interface test status entries"
+    ::= { nndsxT1E1IfIetfStatsGroup 3 }
+
+nndsxT1E1IfIetfArchiveStatsEntry  OBJECT-TYPE
+    SYNTAX      NnDsxT1E1IfIetfArchiveStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "An entry containing status entry for each currently active 
+            T1/E1 interface."
+    INDEX { nndsxT1E1IfIndex, nndsxT1E1IfIetfArchiveStatsInterval }
+    ::= { nndsxT1E1IfIetfArchiveStatsTable 1 }
+
+NnDsxT1E1IfIetfArchiveStatsEntry ::=
+    SEQUENCE {
+        nndsxT1E1IfIetfArchiveStatsInterval                 Unsigned32, 
+        nndsxT1E1IfIetfArchiveStatsES                       Unsigned32,
+        nndsxT1E1IfIetfArchiveStatsSES                      Unsigned32,
+        nndsxT1E1IfIetfArchiveStatsSEFS                     Unsigned32,
+        nndsxT1E1IfIetfArchiveStatsUAS                      Unsigned32,
+        nndsxT1E1IfIetfArchiveStatsCSS                      Unsigned32,
+        nndsxT1E1IfIetfArchiveStatsPCV                      Unsigned32,
+        nndsxT1E1IfIetfArchiveStatsLES                      Unsigned32,
+        nndsxT1E1IfIetfArchiveStatsBES                      Unsigned32,
+        nndsxT1E1IfIetfArchiveStatsDM                       Unsigned32,
+        nndsxT1E1IfIetfArchiveStatsLCV                      Unsigned32        
+    }
+    
+nndsxT1E1IfIetfArchiveStatsInterval OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "The number of seconds that  have  elapsed
+                     since the beginning of the IETF current
+                     error-measurement period. "
+    ::= { nndsxT1E1IfIetfArchiveStatsEntry 1 }
+    
+nndsxT1E1IfIetfArchiveStatsES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of IETF Errored Seconds  encoun-
+                tered  by  a  T1/E1  interface. "
+    ::= { nndsxT1E1IfIetfArchiveStatsEntry 2 }
+
+nndsxT1E1IfIetfArchiveStatsSES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of IETF Severely Errored Seconds
+                encountered  by a T1/E1 interface. "
+    ::= { nndsxT1E1IfIetfArchiveStatsEntry 3 }
+
+nndsxT1E1IfIetfArchiveStatsSEFS OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of IETF Severely Errored Framing
+                Seconds  encountered  by a T1/E1 interface. "
+    ::= { nndsxT1E1IfIetfArchiveStatsEntry 4 }
+
+nndsxT1E1IfIetfArchiveStatsUAS OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Unavailable Seconds  encountered
+                by  a T1/E1 interface. "
+    ::= { nndsxT1E1IfIetfArchiveStatsEntry 5 }
+
+nndsxT1E1IfIetfArchiveStatsCSS OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of IETF Controlled Slip  Seconds
+                encountered  by a T1/E1 interface. "
+    ::= { nndsxT1E1IfIetfArchiveStatsEntry 6 }
+
+nndsxT1E1IfIetfArchiveStatsPCV OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of IETF Path  Coding  Violations
+                reported  via the far end block error count en-
+                countered by a T1/E1 interface. "
+    ::= { nndsxT1E1IfIetfArchiveStatsEntry 7 }
+
+
+nndsxT1E1IfIetfArchiveStatsLES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of IETF Line Errored Seconds en-
+                countered by a T1/E1 interface. "
+   ::= { nndsxT1E1IfIetfArchiveStatsEntry 8 }
+
+nndsxT1E1IfIetfArchiveStatsBES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Bursty  Errored  Seconds  (BESs)
+                encountered  by a T1/E1 interface. "
+   ::= { nndsxT1E1IfIetfArchiveStatsEntry 9 }
+    
+nndsxT1E1IfIetfArchiveStatsDM OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Degraded Minutes  (DMs)  encoun-
+                tered  by  a  T1/E1  interface. "
+   ::= { nndsxT1E1IfIetfArchiveStatsEntry 10 }
+    
+nndsxT1E1IfIetfArchiveStatsLCV OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Invoke the configured test. "
+   ::= { nndsxT1E1IfIetfArchiveStatsEntry 11 }    
+   
+-- User Stats Group
+
+-- USER Current Stats Table
+
+nndsxT1E1IfUserCurrentStatsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnDsxT1E1IfUserCurrentStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A list of T1/E1 interface test status entries"
+    ::= { nndsxT1E1IfUserStatsGroup 1 }
+
+nndsxT1E1IfUserCurrentStatsEntry  OBJECT-TYPE
+    SYNTAX      NnDsxT1E1IfUserCurrentStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "An entry containing status entry for each currently active 
+            T1/E1 interface."
+    AUGMENTS { nndsxT1E1IfConfigLineEntry }
+    ::= { nndsxT1E1IfUserCurrentStatsTable 1 }
+
+NnDsxT1E1IfUserCurrentStatsEntry ::=
+    SEQUENCE {
+        nndsxT1E1IfUserCurrentStatsUASState             TruthValue,
+        nndsxT1E1IfUserCurrentStatsTimeInCurrent        Unsigned32,
+        nndsxT1E1IfUserCurrentStatsEEV                  Unsigned32,
+        nndsxT1E1IfUserCurrentStatsES                   Unsigned32,
+        nndsxT1E1IfUserCurrentStatsUAS                  Unsigned32,
+        nndsxT1E1IfUserCurrentStatsBES                  Unsigned32,
+        nndsxT1E1IfUserCurrentStatsSES                  Unsigned32,
+        nndsxT1E1IfUserCurrentStatsLOFC                 Unsigned32,
+        nndsxT1E1IfUserCurrentStatsCSS                  Unsigned32,
+        nndsxT1E1IfUserCurrentStatsBPV                  Unsigned32,
+        nndsxT1E1IfUserCurrentStatsOOF                  Unsigned32,
+        nndsxT1E1IfUserCurrentStatsCRC                  Unsigned32        
+    }
+
+nndsxT1E1IfUserCurrentStatsUASState OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Current state of availablity of T1/E1 interface"
+    ::= { nndsxT1E1IfUserCurrentStatsEntry 1 }
+    
+nndsxT1E1IfUserCurrentStatsTimeInCurrent OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of seconds that  have  elapsed
+                     since the beginning of the IETF current
+                     error-measurement period. "
+    ::= { nndsxT1E1IfUserCurrentStatsEntry 2 }
+    
+    
+nndsxT1E1IfUserCurrentStatsEEV OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Invoke the configured test. "
+    ::= { nndsxT1E1IfUserCurrentStatsEntry 3 }
+
+nndsxT1E1IfUserCurrentStatsES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Errored Seconds  encoun-
+                tered  by  a  T1/E1  interface. "
+    ::= { nndsxT1E1IfUserCurrentStatsEntry 4 }
+
+nndsxT1E1IfUserCurrentStatsUAS OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Unavailable Seconds  encountered
+                by  a T1/E1 interface. "
+    ::= { nndsxT1E1IfUserCurrentStatsEntry 5 }
+
+nndsxT1E1IfUserCurrentStatsBES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Bursty  Errored  Seconds  (BESs)
+                encountered  by a T1/E1 interface. "
+    ::= { nndsxT1E1IfUserCurrentStatsEntry 6 }
+
+nndsxT1E1IfUserCurrentStatsSES OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Severely Errored Seconds
+                encountered  by a T1/E1 interface. "
+    ::= { nndsxT1E1IfUserCurrentStatsEntry 7 }
+
+nndsxT1E1IfUserCurrentStatsLOFC OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Count of loss of frames. "
+    ::= { nndsxT1E1IfUserCurrentStatsEntry 8 }
+
+
+nndsxT1E1IfUserCurrentStatsCSS OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Controlled Slip  Seconds
+                encountered  by a T1/E1 interface. "
+   ::= { nndsxT1E1IfUserCurrentStatsEntry 9 }
+
+nndsxT1E1IfUserCurrentStatsBPV OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Bipolar Violation Error Event occurred 
+             for this interface. "
+   ::= { nndsxT1E1IfUserCurrentStatsEntry 10 }
+    
+nndsxT1E1IfUserCurrentStatsOOF OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Out of Frame Defect occurred for this
+             interface. "
+   ::= { nndsxT1E1IfUserCurrentStatsEntry 11 }
+    
+nndsxT1E1IfUserCurrentStatsCRC OBJECT-TYPE
+    SYNTAX      Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of CRC Defects that occurred for this interface. "
+   ::= { nndsxT1E1IfUserCurrentStatsEntry 12 } 
+    
+
+-- USER Total Stats Table
+
+nndsxT1E1IfUserTotalStatsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnDsxT1E1IfUserTotalStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "A list of T1/E1 interface test status entries"
+    ::= { nndsxT1E1IfUserStatsGroup 2 }
+
+nndsxT1E1IfUserTotalStatsEntry  OBJECT-TYPE
+    SYNTAX      NnDsxT1E1IfUserTotalStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "An entry containing status entry for each currently active 
+            T1/E1 interface."
+    INDEX { nndsxT1E1IfIndex, nndsxT1E1IfUserTotalStatsDay }
+    ::= { nndsxT1E1IfUserTotalStatsTable 1 }
+
+NnDsxT1E1IfUserTotalStatsEntry ::=
+    SEQUENCE {
+        nndsxT1E1IfUserTotalStatsDay                  Unsigned32, 
+        nndsxT1E1IfUserTotalStatsEEV                  Unsigned32,
+        nndsxT1E1IfUserTotalStatsES                   Unsigned32,
+        nndsxT1E1IfUserTotalStatsUAS                  Unsigned32,
+        nndsxT1E1IfUserTotalStatsBES                  Unsigned32,
+        nndsxT1E1IfUserTotalStatsSES                  Unsigned32,
+        nndsxT1E1IfUserTotalStatsLOFC                 Unsigned32,
+        nndsxT1E1IfUserTotalStatsCSS                  Unsigned32,
+        nndsxT1E1IfUserTotalStatsBPV                  Unsigned32,
+        nndsxT1E1IfUserTotalStatsOOF                  Unsigned32,
+        nndsxT1E1IfUserTotalStatsCRC                  Unsigned32        
+    }
+    
+nndsxT1E1IfUserTotalStatsDay OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Total number of days elapsed since event recording 
+             started for this interface. "
+    ::= { nndsxT1E1IfUserTotalStatsEntry 1 }
+    
+nndsxT1E1IfUserTotalStatsEEV OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Invoke the configured test. "
+    ::= { nndsxT1E1IfUserTotalStatsEntry 2 }
+
+nndsxT1E1IfUserTotalStatsES OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Errored Seconds  encoun-
+                tered  by  a  T1/E1  interface. "
+    ::= { nndsxT1E1IfUserTotalStatsEntry 3 }
+
+nndsxT1E1IfUserTotalStatsUAS OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Unavailable Seconds  encountered
+                by  a T1/E1 interface. "
+    ::= { nndsxT1E1IfUserTotalStatsEntry 4 }
+
+nndsxT1E1IfUserTotalStatsBES OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Bursty  Errored  Seconds  (BESs)
+                encountered  by a T1/E1 interface. "
+    ::= { nndsxT1E1IfUserTotalStatsEntry 5 }
+
+nndsxT1E1IfUserTotalStatsSES OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Severely Errored Seconds
+                encountered  by a T1/E1 interface. "
+    ::= { nndsxT1E1IfUserTotalStatsEntry 6 }
+
+nndsxT1E1IfUserTotalStatsLOFC OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Count of loss of frames. "
+    ::= { nndsxT1E1IfUserTotalStatsEntry 7 }
+
+
+nndsxT1E1IfUserTotalStatsCSS OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Controlled Slip  Seconds
+                encountered  by a T1/E1 interface. "
+   ::= { nndsxT1E1IfUserTotalStatsEntry 8 }
+
+nndsxT1E1IfUserTotalStatsBPV OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Bipolar Violation Error Event occurred 
+             for this interface. "
+   ::= { nndsxT1E1IfUserTotalStatsEntry 9 }
+    
+nndsxT1E1IfUserTotalStatsOOF OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Out of Frame Defect occurred for this
+             interface. "
+   ::= { nndsxT1E1IfUserTotalStatsEntry 10 }
+    
+nndsxT1E1IfUserTotalStatsCRC OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Out of Frame Defect occurred for this
+             interface. "
+   ::= { nndsxT1E1IfUserTotalStatsEntry 11 }  
+    
+-- User Lifetime Stats Table
+
+nndsxT1E1IfUserLifetimeStatsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnDsxT1E1IfUserLifetimeStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "Table maintained to keep the statistics for the whole lifetime
+			of the system since it is first powered on."
+    ::= { nndsxT1E1IfUserStatsGroup 3 }
+
+nndsxT1E1IfUserLifetimeStatsEntry  OBJECT-TYPE
+    SYNTAX      NnDsxT1E1IfUserLifetimeStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "An entry containing status entry for each currently active 
+            T1/E1 interface."
+    AUGMENTS { nndsxT1E1IfConfigLineEntry }
+    ::= { nndsxT1E1IfUserLifetimeStatsTable 1 }
+
+NnDsxT1E1IfUserLifetimeStatsEntry ::=
+    SEQUENCE {
+        nndsxT1E1IfUserLifetimeStatsEEV                  Unsigned32,
+        nndsxT1E1IfUserLifetimeStatsES                   Unsigned32,
+        nndsxT1E1IfUserLifetimeStatsUAS                  Unsigned32,
+        nndsxT1E1IfUserLifetimeStatsBES                  Unsigned32,
+        nndsxT1E1IfUserLifetimeStatsSES                  Unsigned32,
+        nndsxT1E1IfUserLifetimeStatsLOFC                 Unsigned32,
+        nndsxT1E1IfUserLifetimeStatsCSS                  Unsigned32,
+        nndsxT1E1IfUserLifetimeStatsBPV                  Unsigned32,
+        nndsxT1E1IfUserLifetimeStatsOOF                  Unsigned32,
+        nndsxT1E1IfUserLifetimeStatsCRC                  Unsigned32        
+    }
+    
+nndsxT1E1IfUserLifetimeStatsEEV OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The Total number of Error Events occured during since the system brought up"
+    ::= { nndsxT1E1IfUserLifetimeStatsEntry 1 }
+
+nndsxT1E1IfUserLifetimeStatsES OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Errored Seconds  encoun-
+                tered  by  a  T1/E1  interface. "
+    ::= { nndsxT1E1IfUserLifetimeStatsEntry 2 }
+
+nndsxT1E1IfUserLifetimeStatsUAS OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Unavailable Seconds  encountered
+                by  a T1/E1 interface. "
+    ::= { nndsxT1E1IfUserLifetimeStatsEntry 3 }
+
+nndsxT1E1IfUserLifetimeStatsBES OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Bursty  Errored  Seconds  (BESs)
+                encountered  by a T1/E1 interface. "
+    ::= { nndsxT1E1IfUserLifetimeStatsEntry 4 }
+
+nndsxT1E1IfUserLifetimeStatsSES OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Severely Errored Seconds
+                encountered  by a T1/E1 interface. "
+    ::= { nndsxT1E1IfUserLifetimeStatsEntry 5 }
+
+nndsxT1E1IfUserLifetimeStatsLOFC OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Count of loss of frames. "
+    ::= { nndsxT1E1IfUserLifetimeStatsEntry 6 }
+
+
+nndsxT1E1IfUserLifetimeStatsCSS OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Controlled Slip  Seconds
+                encountered  by a T1/E1 interface. "
+   ::= { nndsxT1E1IfUserLifetimeStatsEntry 7}
+
+nndsxT1E1IfUserLifetimeStatsBPV OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Bipolar Violation Error Event occurred 
+             for this interface. "
+   ::= { nndsxT1E1IfUserLifetimeStatsEntry 8 }
+    
+nndsxT1E1IfUserLifetimeStatsOOF OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Out of Frame Defect occurred for this
+             interface. "
+   ::= { nndsxT1E1IfUserLifetimeStatsEntry 9 }
+    
+nndsxT1E1IfUserLifetimeStatsCRC OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Out of Frame Defect occurred for this
+             interface. "
+   ::= { nndsxT1E1IfUserLifetimeStatsEntry 10 }  
+    
+-- USER Archive Stats
+
+nndsxT1E1IfUserArchiveStatsTable OBJECT-TYPE
+    SYNTAX      SEQUENCE OF NnDsxT1E1IfUserArchiveStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "The table maintained to keep last 24 hrs statistics in "
+    ::= { nndsxT1E1IfUserStatsGroup 4 }
+
+nndsxT1E1IfUserArchiveStatsEntry  OBJECT-TYPE
+    SYNTAX      NnDsxT1E1IfUserArchiveStatsEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "An entry containing status entry for each currently active 
+            T1/E1 interface."
+    INDEX { nndsxT1E1IfIndex, nndsxT1E1IfUserArchiveStatsInterval }
+    ::= { nndsxT1E1IfUserArchiveStatsTable 1 }
+
+NnDsxT1E1IfUserArchiveStatsEntry ::=
+    SEQUENCE {
+        nndsxT1E1IfUserArchiveStatsInterval             Unsigned32, 
+        nndsxT1E1IfUserArchiveStatsEEV                  Unsigned32,
+        nndsxT1E1IfUserArchiveStatsES                   Unsigned32,
+        nndsxT1E1IfUserArchiveStatsUAS                  Unsigned32,
+        nndsxT1E1IfUserArchiveStatsBES                  Unsigned32,
+        nndsxT1E1IfUserArchiveStatsSES                  Unsigned32,
+        nndsxT1E1IfUserArchiveStatsLOFC                 Unsigned32,
+        nndsxT1E1IfUserArchiveStatsCSS                  Unsigned32,
+        nndsxT1E1IfUserArchiveStatsBPV                  Unsigned32,
+        nndsxT1E1IfUserArchiveStatsOOF                  Unsigned32,
+        nndsxT1E1IfUserArchiveStatsCRC                  Unsigned32        
+    }
+    
+nndsxT1E1IfUserArchiveStatsInterval OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+            "The number of seconds that  have  elapsed
+                     since the beginning of the IETF current
+                     error-measurement period. "
+    ::= { nndsxT1E1IfUserArchiveStatsEntry 1 }
+    
+nndsxT1E1IfUserArchiveStatsEEV OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Error Events collected over each period of 15 mins"
+    ::= { nndsxT1E1IfUserArchiveStatsEntry 2 }
+
+nndsxT1E1IfUserArchiveStatsES OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Errored Seconds  encoun-
+                tered  by  a  T1/E1  interface. "
+    ::= { nndsxT1E1IfUserArchiveStatsEntry 3 }
+
+nndsxT1E1IfUserArchiveStatsUAS OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Unavailable Seconds  encountered
+                by  a T1/E1 interface. "
+    ::= { nndsxT1E1IfUserArchiveStatsEntry 4 }
+
+nndsxT1E1IfUserArchiveStatsBES OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Bursty  Errored  Seconds  (BESs)
+                encountered  by a T1/E1 interface. "
+    ::= { nndsxT1E1IfUserArchiveStatsEntry 5 }
+
+nndsxT1E1IfUserArchiveStatsSES OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Severely Errored Seconds
+                encountered  by a T1/E1 interface. "
+    ::= { nndsxT1E1IfUserArchiveStatsEntry 6 }
+
+nndsxT1E1IfUserArchiveStatsLOFC OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "Count of loss of frames. "
+    ::= { nndsxT1E1IfUserArchiveStatsEntry 7 }
+
+
+nndsxT1E1IfUserArchiveStatsCSS OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Controlled Slip  Seconds
+                encountered  by a T1/E1 interface. "
+   ::= { nndsxT1E1IfUserArchiveStatsEntry 8 }
+
+nndsxT1E1IfUserArchiveStatsBPV OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Bipolar Violation Error Event occurred 
+             for this interface. "
+   ::= { nndsxT1E1IfUserArchiveStatsEntry 9 }
+    
+nndsxT1E1IfUserArchiveStatsOOF OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Out of Frame Defect occurred for this
+             interface. "
+   ::= { nndsxT1E1IfUserArchiveStatsEntry 10 }
+    
+nndsxT1E1IfUserArchiveStatsCRC OBJECT-TYPE
+    SYNTAX   	Unsigned32
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+            "The number of Out of Frame Defect occurred for this
+             interface. "
+   ::= { nndsxT1E1IfUserArchiveStatsEntry 11 }  
+    
+
+-- TRAP definitions for the T1E1 Interfaces
+--
+--
+
+nndsxT1E1Number   OBJECT-TYPE
+    SYNTAX  DisplayString (SIZE(0..15)) 
+    MAX-ACCESS  accessible-for-notify
+    STATUS  current
+    DESCRIPTION
+        " This is the T1/E1 number of the interface from where this 
+          alarm is originating."
+    ::= { nndsxT1E1TrapVariables 1}
+
+nndsxT1E1Type   OBJECT-TYPE
+    SYNTAX  INTEGER {
+                      type-t1(1),
+                      type-t1-within-ct3(2),
+		      type-e1(3),
+		      type-e1-within-ce3(4) 
+                    }
+    MAX-ACCESS  accessible-for-notify
+    STATUS  current
+    DESCRIPTION
+        " This variable indicates whether this T1/E1 interface is with in a
+          T3/E3 or by itself."
+    ::= { nndsxT1E1TrapVariables 2}
+
+nndsxT1E1T3Number   OBJECT-TYPE
+    SYNTAX    DisplayString (SIZE(0..15))
+    MAX-ACCESS  accessible-for-notify
+    STATUS  current
+    DESCRIPTION
+        " This variable is applicable only if dsxT1E1Type is 
+          'type_t1_within_ct3' and it indicates the T3/E3 interface 
+          number this T1 belongs to."
+    ::= { nndsxT1E1TrapVariables 3}
+
+nndsxT1E1AlarmType   OBJECT-TYPE
+    SYNTAX  INTEGER {
+                te1-alarm-rais (1),
+                te1-alarm-rrai (2),
+                te1-alarm-roof (3),
+                te1-alarm-rlos (4),
+                te1-alarm-rlof (5),
+                te1-alarm-rexz (6),
+                te1-alarm-rfbe (7),
+                te1-alarm-lorc (8),
+                te1-alarm-tpde (9),
+                te1-alarm-tais (10),
+                te1-alarm-tblu (11),
+                te1-alarm-trai (12),
+                te1-alarm-ibtest(13),
+                te1-alarm-threshold1 (14),
+                te1-alarm-threshold2 (15),
+                te1-alarm-threshold3 (16),
+                te1-alarm-threshold4 (17),
+                te1-alarm-threshold5 (18),
+                te1-alarm-threshold6 (19),
+                te1-alarm-threshold7 (20),
+                te1-alarm-threshold8 (21),
+                te1-alarm-threshold9 (22),
+                te1-alarm-threshold10 (23)
+
+                }
+        MAX-ACCESS  accessible-for-notify
+        STATUS  current
+        DESCRIPTION
+             "Status of alarms for the T1/E1 interface
+                                RRAI - Recieve RAI (Recieve Alarm Indication),
+                                RLOS - Recieve Loss Of Sync,
+                                REXZ - Recieve Excessive Zeros,
+                                LORC - Loss Of Receive Clock (LORC),
+                                TPDE - transmit pulse density,
+                                TAIS - Transmit Alarm Indication Signal,
+                                RAIS - Recieve Alarm Indication Signal,
+                                RLOF - Recieve Loss Of Frame.
+                                RFBE - Recieve Frame Bit Error,
+                                ROOF - Recieve Out Of Frame,
+                                TRAI - Transmit RAI (Recieve Alarm Indication),
+                                Threshold 1-10 : TRUE if it is configured.
+                                "
+        ::= { nndsxT1E1TrapVariables 4}
+
+nndsxT1E1AlarmOnTrap NOTIFICATION-TYPE
+        OBJECTS { nndsxT1E1IfIndex,
+                    nndsxT1E1Number,
+                    nndsxT1E1Type,
+                    nndsxT1E1T3Number,
+                    nndsxT1E1AlarmType }
+        STATUS current
+	DESCRIPTION
+             "T1/E1 interface alarm traps for the Alarm On state."
+	     --#TYPE "T1/E1 Alarm On state"
+             --#SUMMARY "T1/E1 Alarm On trap sent from Interface index: %s T1/E1 number: %s with T1/E1 type: %s T1/E1 T3 number: %s and Alarm type: %s"
+             --#ARGUMENTS {0,1,2,3,4}
+             --#SEVERITY MAJOR
+		
+        ::={nndsxT1E1Notifications 1}
+
+nndsxT1E1AlarmOffTrap NOTIFICATION-TYPE
+        OBJECTS { nndsxT1E1IfIndex,
+                    nndsxT1E1Number,
+                    nndsxT1E1Type,
+                    nndsxT1E1T3Number,
+                    nndsxT1E1AlarmType }
+        STATUS current 
+	DESCRIPTION
+             "T1/E1 interface alarm trap for the Alarm Off state."
+						 --#TYPE "T1/E1 Alarm Off state"
+             --#SUMMARY "T1/E1 Alarm Off trap sent from Interface index: %s T1/E1 number: %s with T1/E1 type: %s T1/E1 T3 number: %s and Alarm type: %s"
+             --#ARGUMENTS {0,1,2,3,4}
+             --#SEVERITY NORMAL
+        ::= {nndsxT1E1Notifications 2}
+
+nndsxT1E1NotificationGroup NOTIFICATION-GROUP
+NOTIFICATIONS
+{
+	nndsxT1E1AlarmOnTrap,
+	nndsxT1E1AlarmOffTrap
+}
+STATUS current
+DESCRIPTION 
+"The DsxT1E1 group notifications group"
+::={nndsxT1E1IfGroup 3}
+END

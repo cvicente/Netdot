@@ -1,24 +1,27 @@
 -- *********************************************************************
--- CISCO-RADIUS-MIB.my: Radius Configuration Mib
+-- CISCO-RADIUS-MIB.my: Radius Configuration MIB
 --   
 -- October 2002, Vinay Gaonkar
 -- March   2004, Binh Le
+-- Jan 2009, Paari Elangovan
 --   
--- Copyright (c) 2002-2008 by cisco Systems Inc.
+-- Copyright (c) 2002-2009 by cisco Systems, Inc.
 --   
 
 -- All rights reserved.
 --   
--- ******************************************************************
+-- *******************************************************************
 
 CISCO-RADIUS-MIB DEFINITIONS ::= BEGIN
 
 IMPORTS
     MODULE-IDENTITY,
+    NOTIFICATION-TYPE,
     OBJECT-TYPE,
     Unsigned32
         FROM SNMPv2-SMI
     MODULE-COMPLIANCE,
+    NOTIFICATION-GROUP,
     OBJECT-GROUP
         FROM SNMPv2-CONF
     RowStatus,
@@ -39,7 +42,7 @@ IMPORTS
 
 
 ciscoRadiusMIB MODULE-IDENTITY
-    LAST-UPDATED    "200707220000Z"
+    LAST-UPDATED    "200902060000Z"
     ORGANIZATION    "Cisco Systems Inc."
     CONTACT-INFO
             "Cisco Systems
@@ -69,6 +72,31 @@ ciscoRadiusMIB MODULE-IDENTITY
         enabling/disabling telnet and SSH (Secure Shell) 
         authentication. Secure Shell is program which is used 
         to log into another machine over a secured session."
+    REVISION        "200902060000Z"
+    DESCRIPTION
+        "The following objects have been added
+        [1] crRadiusServerRTTThldNorm
+        [2] crRadiusServerRTTThldHi
+        [3] crRadiusServerRetransThldNorm
+        [4] crRadiusServerRetransThldHi
+        [5] crRadiusServerRTTNormNotifEnable
+        [6] crRadiusServerRTTHiNotifEnable
+        [7] crRadiusServerRetransNormNotifEnable
+        [8] crRadiusServerRetransHiNotifEnable
+
+        The following notifications have been added
+        [1] crRadiusServerRTTNormNotif
+        [2] crRadiusServerRTTHiNotif
+        [3] crRadiusServerRetransNormNotif
+        [4] crRadiusServerRetransHiNotif
+
+        The following object-groups have been added
+        [1] crmRadiusServerNotifGroup
+        [2] crmNotificationControlGroup
+        [3] crmRadiusServerNotifCntlGroup
+
+        The compliance statement ciscoRadiusMIBCompliance3 has been
+        deprecated by ciscoRadiusMIBCompliance4."
     REVISION        "200707220000Z"
     DESCRIPTION
         "Added support of crmRadiusKeepAliveUserGroup."
@@ -121,6 +149,12 @@ crRadiusVlanConfigGroup  OBJECT IDENTIFIER
 crRadiusKeepAliveConfig  OBJECT IDENTIFIER
     ::= { ciscoRadiusMIBObjects 5 }
 
+crRadiusServerNotifCntl  OBJECT IDENTIFIER
+    ::= { ciscoRadiusMIBObjects 6 }
+
+ciscoRadiusMIBNotifications  OBJECT IDENTIFIER
+    ::= { ciscoRadiusMIB 3 }
+
 
 -- Textual Conventions
 
@@ -136,6 +170,24 @@ CiscoRadiusAuthKey ::= TEXTUAL-CONVENTION
         encrypted.
         Note that this object has same format as TC DisplayString."
     SYNTAX          OCTET STRING (SIZE (0..65))
+
+CiscoRadiusRoundTripTimePercent ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT    "d-2"
+    STATUS          current
+    DESCRIPTION
+        "This textual convention represents a round-trip time per
+        session expressed as a percent of the round-trip time
+        configured for the RADIUS server."
+    SYNTAX          Unsigned32 (1..100)
+
+CiscoRadiusRetransPercent ::= TEXTUAL-CONVENTION
+    DISPLAY-HINT    "d-2"
+    STATUS          current
+    DESCRIPTION
+        "This textual convention represents the number of retransmisions
+        per session expressed as a percent of the retransmissions
+        configured for the RADIUS server."
+    SYNTAX          Unsigned32 (1..100)
 
 -- the RADIUS Configuration group
 
@@ -163,7 +215,7 @@ crRadiusLoginAuthentication OBJECT-TYPE
     ::= { crRadiusGenericConfig 1 }
 
 crRadiusDeadtime OBJECT-TYPE
-    SYNTAX          TimeIntervalMin (0..1440 )
+    SYNTAX          TimeIntervalMin (0..1440)
     UNITS           "minutes"
     MAX-ACCESS      read-write
     STATUS          current
@@ -192,7 +244,7 @@ crRadiusAuthKey OBJECT-TYPE
     ::= { crRadiusGenericConfig 3 }
 
 crRadiusTimeout OBJECT-TYPE
-    SYNTAX          TimeIntervalSec (1..1000 )
+    SYNTAX          TimeIntervalSec (1..1000)
     UNITS           "seconds"
     MAX-ACCESS      read-write
     STATUS          current
@@ -203,7 +255,7 @@ crRadiusTimeout OBJECT-TYPE
     ::= { crRadiusGenericConfig 4 }
 
 crRadiusRetransmits OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..100 )
+    SYNTAX          Unsigned32 (0..100)
     UNITS           "retransmits"
     MAX-ACCESS      read-write
     STATUS          current
@@ -214,7 +266,7 @@ crRadiusRetransmits OBJECT-TYPE
     ::= { crRadiusGenericConfig 5 }
 
 crRadiusAccountingLogMaxSize OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..30000 )
+    SYNTAX          Unsigned32 (0..30000)
     UNITS           "bytes"
     MAX-ACCESS      read-write
     STATUS          current
@@ -265,7 +317,7 @@ crRadiusFramedMtu OBJECT-TYPE
     ::= { crRadiusAttributesConfig 2 }
 
 crRadiusServerTableMaxEntries OBJECT-TYPE
-    SYNTAX          Unsigned32 (0..65536 )
+    SYNTAX          Unsigned32 (0..65536)
     MAX-ACCESS      read-only
     STATUS          current
     DESCRIPTION
@@ -313,19 +365,23 @@ crRadiusServerEntry OBJECT-TYPE
     ::= { crRadiusServerTable 1 }
 
 CrRadiusServerEntry ::= SEQUENCE {
-        crRadiusServerIndex     Unsigned32,
-        crRadiusServerAddrType  InetAddressType,
-        crRadiusServerAddr      InetAddress,
-        crRadiusServerAuthPort  CiscoPort,
-        crRadiusServerAcctPort  CiscoPort,
-        crRadiusServerKey       CiscoRadiusAuthKey,
-        crRadiusServerType      INTEGER,
-        crRadiusServerMode      INTEGER,
-        crRadiusServerRowStatus RowStatus
+        crRadiusServerIndex           Unsigned32,
+        crRadiusServerAddrType        InetAddressType,
+        crRadiusServerAddr            InetAddress,
+        crRadiusServerAuthPort        CiscoPort,
+        crRadiusServerAcctPort        CiscoPort,
+        crRadiusServerKey             CiscoRadiusAuthKey,
+        crRadiusServerType            INTEGER,
+        crRadiusServerMode            INTEGER,
+        crRadiusServerRowStatus       RowStatus,
+        crRadiusServerRTTThldNorm     CiscoRadiusRoundTripTimePercent,
+        crRadiusServerRTTThldHi       CiscoRadiusRoundTripTimePercent,
+        crRadiusServerRetransThldNorm CiscoRadiusRetransPercent,
+        crRadiusServerRetransThldHi   CiscoRadiusRetransPercent
 }
 
 crRadiusServerIndex OBJECT-TYPE
-    SYNTAX          Unsigned32 (1..4294967295 )
+    SYNTAX          Unsigned32 (1..4294967295)
     MAX-ACCESS      not-accessible
     STATUS          current
     DESCRIPTION
@@ -390,7 +446,7 @@ crRadiusServerKey OBJECT-TYPE
 
         Note that if this object is a zero length string, then 
         'crRadiusAuthKey' is used as the key for this server."
-    DEFVAL          { ''H } 
+    DEFVAL          { '00000000'H } 
     ::= { crRadiusServerEntry 6 }
 
 crRadiusServerType OBJECT-TYPE
@@ -435,6 +491,68 @@ crRadiusServerRowStatus OBJECT-TYPE
     DESCRIPTION
         "Status of this row." 
     ::= { crRadiusServerEntry 9 }
+
+crRadiusServerRTTThldNorm OBJECT-TYPE
+    SYNTAX          CiscoRadiusRoundTripTimePercent
+    UNITS           "percent"
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object represents the normal threshold on the
+        round-trip time of RADIUS authentication messages. This is
+        measured as a percentage of configured round-trip time as per
+        RFC-2865. If the round-trip time is less than or equal to this
+        threshold, the agent generates the crRadiusServerRTTNormNotif
+        notification. The value configured through this object should
+        never be greater than that configured through
+        crRadiusServerRTTThldHi." 
+    ::= { crRadiusServerEntry 10 }
+
+crRadiusServerRTTThldHi OBJECT-TYPE
+    SYNTAX          CiscoRadiusRoundTripTimePercent
+    UNITS           "percent"
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object represents the high threshold on the round-trip
+        time of RADIUS authentication messages. This is measured as a
+        percentage of configured round-trip time as per RFC-2865. If the
+        round-trip time is greater than or equal to this threshold, the
+        agent generates the crRadiusServerRTTHiNotif notification. The
+        value configured through this object should never be smaller
+        than that configured through crRadiusServerRTTThldNorm." 
+    ::= { crRadiusServerEntry 11 }
+
+crRadiusServerRetransThldNorm OBJECT-TYPE
+    SYNTAX          CiscoRadiusRetransPercent
+    UNITS           "percent"
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object represents the normal threshold on the
+        retransmitted RADIUS authentication messages per session. This
+        is measured as a percentage of crRadiusRetransmits. If the
+        number of retransmits is less than or equal to this threshold,
+        the agent generates the crRadiusServerRetransNormNotif
+        notification. The value configured through this object should
+        never be greater than that configured through
+        crRadiusServerRetransThldHi." 
+    ::= { crRadiusServerEntry 12 }
+
+crRadiusServerRetransThldHi OBJECT-TYPE
+    SYNTAX          CiscoRadiusRetransPercent
+    UNITS           "percent"
+    MAX-ACCESS      read-create
+    STATUS          current
+    DESCRIPTION
+        "This object represents the high threshold on the retransmitted
+        RADIUS authentication messages per session. This is measured as
+        a percentage of crRadiusRetransmits. If the number of
+        retransmits is greater than or equal to this threshold, the
+        agent generates the crRadiusServerRetransHiNotif notification.
+        The value configured through this object should never be smaller
+        than that configured through crRadiusServerRetransThldNorm." 
+    ::= { crRadiusServerEntry 13 }
  
 
 
@@ -637,6 +755,125 @@ crRadiusKeepAliveUserName OBJECT-TYPE
         "Specifies the user name used in keep-alive communication
         with RADIUS server." 
     ::= { crRadiusKeepAliveConfig 5 }
+
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-- The RADIUS Server Notif Control Group
+--   
+-- This group of objects controls the sending of
+-- RADIUS Server Notifications
+-- +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+crRadiusServerRTTNormNotifEnable OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object is used to control the generation of
+        crRadiusServerRTTNormNotif notification.  A value of 'true'
+        indicates that the notification will be generated when the
+        current server round-trip time is less than or equal to
+        crRadiusServerRTTThldNorm."
+    DEFVAL          { false } 
+    ::= { crRadiusServerNotifCntl 1 }
+
+crRadiusServerRTTHiNotifEnable OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object is used to control the generation of
+        crRadiusServerRTTHiNotif notification.  A value of 'true'
+        indicates that the notification will be generated when the
+        current server round-trip time is greater than or equal to
+        crRadiusServerRTTThldHi."
+    DEFVAL          { false } 
+    ::= { crRadiusServerNotifCntl 2 }
+
+crRadiusServerRetransNormNotifEnable OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object is used to control the generation of
+        crRadiusServerRetransNormNotif notification.  A value of 'true'
+        indicates that the notification will be generated when the
+        current number of server retransmissions are less than or
+        equal to crRadiusServerRetransThldNorm."
+    DEFVAL          { false } 
+    ::= { crRadiusServerNotifCntl 3 }
+
+crRadiusServerRetransHiNotifEnable OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object is used to control the generation of
+        crRadiusServerRetransHiNotif notification.  A value of 'true'
+        indicates that the notification will be generated when the
+        current number of server retransmissions are greater than or
+        equal to crRadiusServerRetransThldHi."
+    DEFVAL          { false } 
+    ::= { crRadiusServerNotifCntl 4 }
+
+crRadiusServerRTTNormNotif NOTIFICATION-TYPE
+    OBJECTS         {
+                        crRadiusServerRTTThldNorm,
+                        crRadiusServerAddr,
+                        crRadiusServerAuthPort
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This notification indicates that the current server round-trip
+        time is less than or equal to crRadiusServerRTTThldNorm. Once
+        sent, this notification will be disarmed until the round-trip
+        time exceeds the value configured through
+        crRadiusServerRTTThldHi."
+   ::= { ciscoRadiusMIBNotifications 1 }
+
+crRadiusServerRTTHiNotif NOTIFICATION-TYPE
+    OBJECTS         {
+                        crRadiusServerRTTThldHi,
+                        crRadiusServerAddr,
+                        crRadiusServerAuthPort
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This notification indicates that the current server round-trip
+        time is greater than or equal to crRadiusServerRTTThldHi. Once
+        sent, this notification will be disarmed until the round-trip
+        time falls below the value configured through
+        crRadiusServerRTTThldNorm."
+   ::= { ciscoRadiusMIBNotifications 2 }
+
+crRadiusServerRetransNormNotif NOTIFICATION-TYPE
+    OBJECTS         {
+                        crRadiusServerRetransThldNorm,
+                        crRadiusServerAddr,
+                        crRadiusServerAuthPort
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This notification indicates that the current number of server
+        retransmissions are less than or equal to
+        crRadiusServerRetransThldNorm. Once sent, this notification will
+        be disarmed until the number of retransmissions exceed the value
+        configured through crRadiusServerRetransThldHi."
+   ::= { ciscoRadiusMIBNotifications 3 }
+
+crRadiusServerRetransHiNotif NOTIFICATION-TYPE
+    OBJECTS         {
+                        crRadiusServerRetransThldHi,
+                        crRadiusServerAddr,
+                        crRadiusServerAuthPort
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This notification indicates that the current number of server
+        retransmissions are greater than or equal to
+        crRadiusServerRetransThldHi. Once sent, this notification will
+        be disarmed until the number of retransmissions falls below the
+        value configured through crRadiusServerRetransThldNorm."
+   ::= { ciscoRadiusMIBNotifications 4 }
 -- Conformance
 
 ciscoRadiusMIBCompliances  OBJECT IDENTIFIER
@@ -655,12 +892,12 @@ ciscoRadiusMIBCompliance MODULE-COMPLIANCE
     MANDATORY-GROUPS { crmConfigurationGroup }
 
     OBJECT          crRadiusTimeout
-    SYNTAX          TimeIntervalSec (1..60 )
+    SYNTAX          TimeIntervalSec (1..60)
     DESCRIPTION
         "Only the range 1-60 needs to be supported."
 
     OBJECT          crRadiusRetransmits
-    SYNTAX          Unsigned32 (0..5 )
+    SYNTAX          Unsigned32 (0..5)
     DESCRIPTION
         "Only the range 0-5 needs to be supported."
 
@@ -718,12 +955,12 @@ ciscoRadiusMIBCompliance2 MODULE-COMPLIANCE
         configuration."
 
     OBJECT          crRadiusTimeout
-    SYNTAX          TimeIntervalSec (1..60 )
+    SYNTAX          TimeIntervalSec (1..60)
     DESCRIPTION
         "Only the range 1-60 needs to be supported."
 
     OBJECT          crRadiusRetransmits
-    SYNTAX          Unsigned32 (0..5 )
+    SYNTAX          Unsigned32 (0..5)
     DESCRIPTION
         "Only the range 0-5 needs to be supported."
 
@@ -752,7 +989,7 @@ ciscoRadiusMIBCompliance2 MODULE-COMPLIANCE
     ::= { ciscoRadiusMIBCompliances 2 }
 
 ciscoRadiusMIBCompliance3 MODULE-COMPLIANCE
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The compliance statement for entities which implement the
         CISCO-RADIUS-MIB."
@@ -791,12 +1028,12 @@ ciscoRadiusMIBCompliance3 MODULE-COMPLIANCE
         which supports RADIUS keep-alive user configuration."
 
     OBJECT          crRadiusTimeout
-    SYNTAX          TimeIntervalSec (1..60 )
+    SYNTAX          TimeIntervalSec (1..60)
     DESCRIPTION
         "Only the range 1-60 needs to be supported."
 
     OBJECT          crRadiusRetransmits
-    SYNTAX          Unsigned32 (0..5 )
+    SYNTAX          Unsigned32 (0..5)
     DESCRIPTION
         "Only the range 0-5 needs to be supported."
 
@@ -823,6 +1060,84 @@ ciscoRadiusMIBCompliance3 MODULE-COMPLIANCE
     DESCRIPTION
         "Only read-only access is needed to be implemented."
     ::= { ciscoRadiusMIBCompliances 3 }
+
+ciscoRadiusMIBCompliance4 MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for entities which implement the
+        CISCO-RADIUS-MIB."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        crmConfigurationGroup,
+                        crmConfigurationGroupSup1,
+                        crmRadiusServerNotifGroup,
+                        crmRadiusServerNotifCntlGroup
+                    }
+
+    GROUP           crmAttributesGroup
+    DESCRIPTION
+        "This group is mandatory only in implementation
+        which supports RADIUS attribute configuration."
+
+    GROUP           crmKeepAliveGroup
+    DESCRIPTION
+        "This group is mandatory only in implementation
+        which supports RADIUS keep-alive feature."
+
+    GROUP           crmAutoInitializeConfigGroup
+    DESCRIPTION
+        "This group is mandatory only in implementation
+        which supports RADIUS port auto initialization."
+
+    GROUP           crmAttributesGroup2
+    DESCRIPTION
+        "This group is mandatory only in implementation
+        which supports additional RADIUS attribute
+        configuration."
+
+    GROUP           crmVlanConfigGroup
+    DESCRIPTION
+        "This group is mandatory only in implementation
+        which supports RADIUS VLAN assignment configuration."
+
+    GROUP           crmRadiusKeepAliveUserGroup
+    DESCRIPTION
+        "This group is mandatory only in implementation
+        which supports RADIUS keep-alive user configuration."
+
+    OBJECT          crRadiusTimeout
+    SYNTAX          TimeIntervalSec (1..60)
+    DESCRIPTION
+        "Only the range 1-60 needs to be supported."
+
+    OBJECT          crRadiusRetransmits
+    SYNTAX          Unsigned32 (0..5)
+    DESCRIPTION
+        "Only the range 0-5 needs to be supported."
+
+    OBJECT          crRadiusServerAddrType
+    SYNTAX          INTEGER  {
+                        ipv4(1),
+                        dns(16)
+                    }
+    DESCRIPTION
+        "Only dns and ipv4 addresses are needed to be supported."
+
+    OBJECT          crRadiusServerRowStatus
+    SYNTAX          INTEGER  {
+                        active(1),
+                        createAndGo(4),
+                        destroy(6)
+                    }
+    DESCRIPTION
+        "Only 'active', 'createAndGo' and 'destroy' are needed to be
+        supported."
+
+    OBJECT          crRadiusDeadtime
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Only read-only access is needed to be implemented."
+    ::= { ciscoRadiusMIBCompliances 4 }
 
 -- Units of Conformance
 
@@ -906,5 +1221,45 @@ crmRadiusKeepAliveUserGroup OBJECT-GROUP
         "A collection of objects for RADIUS keep-alive
         user configuration."
     ::= { ciscoRadiusMIBGroups 7 }
+
+crmRadiusServerNotifGroup NOTIFICATION-GROUP
+   NOTIFICATIONS    {
+                        crRadiusServerRTTNormNotif,
+                        crRadiusServerRTTHiNotif,
+                        crRadiusServerRetransNormNotif,
+                        crRadiusServerRetransHiNotif
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This collection of notifications is used to monitor the
+        responsiveness of the RADIUS server."
+    ::= { ciscoRadiusMIBGroups 8 }
+
+crmConfigurationGroupSup1 OBJECT-GROUP
+    OBJECTS         {
+                        crRadiusServerRTTThldNorm,
+                        crRadiusServerRTTThldHi,
+                        crRadiusServerRetransThldNorm,
+                        crRadiusServerRetransThldHi
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This group supplements crmConfigurationGroup, to
+        configure the thresholds on the round-trip times and
+        retransmission counts."
+    ::= { ciscoRadiusMIBGroups 9 }
+
+crmRadiusServerNotifCntlGroup OBJECT-GROUP
+    OBJECTS         {
+                        crRadiusServerRTTNormNotifEnable,
+                        crRadiusServerRTTHiNotifEnable,
+                        crRadiusServerRetransNormNotifEnable,
+                        crRadiusServerRetransHiNotifEnable
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This collection of objects control the generation of
+        notifications related to RADIUS server."
+    ::= { ciscoRadiusMIBGroups 10 }
 
 END

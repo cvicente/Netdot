@@ -8,11 +8,13 @@ IMPORTS
         FROM SNMPv2-TC
     InterfaceIndex, InterfaceIndexOrZero
         FROM IF-MIB
+    PortList, VlanIdOrNone
+        FROM Q-BRIDGE-MIB
     bayStackMibs
         FROM SYNOPTICS-ROOT-MIB;
 
 bayStackAdacMib MODULE-IDENTITY
-    LAST-UPDATED    "200610160000Z"
+    LAST-UPDATED    "200905200000Z"
     ORGANIZATION    "Nortel Networks"
     CONTACT-INFO    "Nortel Networks"
     DESCRIPTION
@@ -31,9 +33,13 @@ bayStackAdacMib MODULE-IDENTITY
          makes no warranty, either express or implied, as to the use,
          operation, condition, or performance of the Specification."
 
+    REVISION "200905200000Z" -- 20 May 2009
+    DESCRIPTION "v6:  Added bsAdacCallServerPortList and bsAdacUplinkPortList."
+
     REVISION "200610160000Z" -- 16 October 2006
     DESCRIPTION "v5:  Added bsAdacPortOperEnable, bsAdacPortMacDetectionEnable,
-	              bsAdacPortLldpDetectionEnable, bsAdacPortOperDisabledNotification"
+	              bsAdacPortLldpDetectionEnable,
+                      bsAdacPortOperDisabledNotification"
 
     REVISION "200605240000Z" -- 24 May 2006
     DESCRIPTION "v4:  Removed untagAll enumeration."
@@ -112,7 +118,11 @@ bsAdacCallServerPort OBJECT-TYPE
          is used only when the current operating mode is either
          untaggedFramesAdvanced(2) or taggedFrames(3).  It may not
          be changed to 0 if the current operating mode is one of
-         these values."
+         these values.
+
+         Note that an implementation should support either
+         bsAdacCallServerPort and bsAdacUplinkPort, or
+         bsAdacCallServerPortList and bsAdacUplinkPortList, but not both."
     ::= { bsAdacScalars 4 }
 
 bsAdacUplinkPort OBJECT-TYPE
@@ -125,11 +135,15 @@ bsAdacUplinkPort OBJECT-TYPE
          is used only when the current operating mode is either
          untaggedFramesAdvanced(2) or taggedFrames(3).  It may not
          be changed to 0 if the current operating mode is one of
-         these values."
+         these values.
+
+         Note that an implementation should support either
+         bsAdacCallServerPort and bsAdacUplinkPort, or
+         bsAdacCallServerPortList and bsAdacUplinkPortList, but not both."
     ::= { bsAdacScalars 5 }
 
 bsAdacVoiceVlan OBJECT-TYPE
-    SYNTAX      INTEGER (0..4094)
+    SYNTAX      VlanIdOrNone
     MAX-ACCESS  read-write
     STATUS      current
     DESCRIPTION
@@ -161,9 +175,10 @@ bsAdacMacAddrRangeControl OBJECT-TYPE
     STATUS      current
     DESCRIPTION
         "This object always returns none(1) when retrieved.  When set to
-         clearTable(2), it will delete all entries from the bsAdacMacAddrRangeTable.
-         When set to defaultTable(3), it will delete all entries from the
-         bsAdacMacAddrRangeTable and replace them with factory default entries."
+         clearTable(2), it will delete all entries from the
+         bsAdacMacAddrRangeTable.  When set to defaultTable(3), it will
+         delete all entries from the bsAdacMacAddrRangeTable and replace
+         them with factory default entries."
     ::= { bsAdacScalars 8 }
 
 bsAdacOperEnable OBJECT-TYPE
@@ -171,12 +186,46 @@ bsAdacOperEnable OBJECT-TYPE
     MAX-ACCESS  read-only
     STATUS      current
     DESCRIPTION
-        "This object indicates whether ADAC is operationally enabled.  A value of
-         true(1) indicates that it is enabled, while a value of false(2) indicates
-         that it is disabled.  Note a value of false(2) for this object and a value
-         of true(1) for bsAdacAdminEnable indicates that ADAC is not operational
-         due to some condition such as missing Uplink and Call Server ports."
+        "This object indicates whether ADAC is operationally enabled.  A
+         value of true(1) indicates that it is enabled, while a value of
+         false(2) indicates that it is disabled.  Note a value of false(2)
+         for this object and a value of true(1) for bsAdacAdminEnable
+         indicates that ADAC is not operational due to some condition such
+         as missing Uplink and Call Server ports."
     ::= { bsAdacScalars 9 }
+
+bsAdacCallServerPortList OBJECT-TYPE
+    SYNTAX      PortList
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The ports on which the Call Server is connected.  This value
+         is used only when the current operating mode is either
+         untaggedFramesAdvanced(2) or taggedFrames(3).  It may not
+         be changed to an empty set of ports if the current operating
+         mode is one of these values.
+
+         Note that an implementation should support either
+         bsAdacCallServerPort and bsAdacUplinkPort, or
+         bsAdacCallServerPortList and bsAdacUplinkPortList, but not both."
+    ::= { bsAdacScalars 10 }
+
+bsAdacUplinkPortList OBJECT-TYPE
+    SYNTAX      PortList
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The uplink ports are used usually when the Call Server is not
+         connected directly to the current module/stack.  This value
+         is used only when the current operating mode is either
+         untaggedFramesAdvanced(2) or taggedFrames(3).  It may not
+         be changed to an empty set of ports if the current operating
+         mode is one of these values.
+
+         Note that an implementation should support either
+         bsAdacCallServerPort and bsAdacUplinkPort, or
+         bsAdacCallServerPortList and bsAdacUplinkPortList, but not both."
+    ::= { bsAdacScalars 11 }
 
 --
 -- ADAC Port Table

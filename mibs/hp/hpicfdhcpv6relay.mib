@@ -1,0 +1,250 @@
+HP-ICF-DHCPv6-RELAY DEFINITIONS ::= BEGIN
+
+    IMPORTS
+        MODULE-IDENTITY, OBJECT-TYPE, Counter32
+            FROM SNMPv2-SMI
+        RowStatus
+            FROM SNMPv2-TC
+        ifIndex, InterfaceIndex
+            FROM IF-MIB
+        InetAddressType, InetAddress
+            FROM INET-ADDRESS-MIB
+        MODULE-COMPLIANCE, OBJECT-GROUP
+            FROM SNMPv2-CONF
+        hpSwitch
+            FROM HP-ICF-OID;
+
+
+hpicfDhcpv6Relay MODULE-IDENTITY
+    LAST-UPDATED "200804080605Z"      -- Apr 08, 2008 at 06:05 GMT
+    ORGANIZATION
+        "Hewlett-Packard Company
+        ProCurve Networking Business"
+    CONTACT-INFO
+        "Hewlett-Packard Company
+        8000 Foothills Blvd.
+        Roseville, CA 95747"
+    DESCRIPTION
+        "Initial revision."
+    ::= { hpSwitch 50 }
+        
+hpicfDhcpv6RelayAdminStatus OBJECT-TYPE
+    SYNTAX INTEGER  { 
+        enabled (1),
+        disabled (2)
+    }
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "The global administrative status of the DHCPv6 relay. This object
+         indicates if the DHCPv6 relay has been administratively enabled or
+         disabled on the device."
+    ::= { hpicfDhcpv6Relay 1 }
+
+
+hpicfDhcpRelayHelperAddressTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF HpicfDhcpRelayHelperAddressEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Table of helper addresses configurable on the DHCP relay."
+    ::= { hpicfDhcpv6Relay 2 }
+
+
+hpicfDhcpRelayHelperAddressEntry OBJECT-TYPE
+    SYNTAX HpicfDhcpRelayHelperAddressEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "An instance of a DHCP relay helper address."
+    INDEX { ifIndex,
+            hpicfDhcpRelayHelperAddressType, 
+            hpicfDhcpRelayHelperAddress }
+    ::= { hpicfDhcpRelayHelperAddressTable 1 }
+
+HpicfDhcpRelayHelperAddressEntry ::=
+    SEQUENCE {
+        hpicfDhcpRelayHelperAddressType       InetAddressType,
+        hpicfDhcpRelayHelperAddress           InetAddress,
+        hpicfDhcpRelayHelperAddressEgressInterface   InterfaceIndex,
+        hpicfDhcpRelayHelperAddressStatus     RowStatus
+     }
+
+hpicfDhcpRelayHelperAddressType OBJECT-TYPE
+    SYNTAX InetAddressType
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Type of the helper address being configured."
+    ::= { hpicfDhcpRelayHelperAddressEntry 1 }
+
+hpicfDhcpRelayHelperAddress OBJECT-TYPE
+    SYNTAX InetAddress
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "The helper address being configured.The address type of this object
+         is specified in hpicfDhcpRelayHelperAddressType"
+    ::= { hpicfDhcpRelayHelperAddressEntry 2 }
+
+hpicfDhcpRelayHelperAddressEgressInterface OBJECT-TYPE
+    SYNTAX InterfaceIndex
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION
+        "The egress interface through which the DHCP relay must send out
+         its packets if the helper address is a multicast address. In case of
+         a unicast helper address, this object must be set to zero.By default,
+         this value is zero"
+    DEFVAL { 0 }
+    ::= { hpicfDhcpRelayHelperAddressEntry 3 }
+
+hpicfDhcpRelayHelperAddressStatus OBJECT-TYPE
+    SYNTAX RowStatus
+    MAX-ACCESS read-create
+    STATUS current
+    DESCRIPTION
+        "The row status of this helper address instance."
+    ::= { hpicfDhcpRelayHelperAddressEntry 4 }
+
+hpicfDhcpRelayPerInterfaceStatsTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF HpicfDhcpRelayPerInterfaceStatsEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "Table of DHCP relay statistics per Vlan."
+    ::= { hpicfDhcpv6Relay 3 }
+
+hpicfDhcpRelayPerInterfaceStatsEntry OBJECT-TYPE
+    SYNTAX HpicfDhcpRelayPerInterfaceStatsEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "An instance of the per Vlan statistics table"
+    INDEX { ifIndex }
+    ::= { hpicfDhcpRelayPerInterfaceStatsTable 1 }
+
+HpicfDhcpRelayPerInterfaceStatsEntry ::=
+    SEQUENCE {
+        hpicfDhcpRelayPerInterfaceClientPktsRecd       Counter32,
+        hpicfDhcpRelayPerInterfaceClientPktsDropped    Counter32,
+        hpicfDhcpRelayPerInterfaceClientPktsXmitFail   Counter32,
+        hpicfDhcpRelayPerInterfaceServerPktsRecd       Counter32,
+        hpicfDhcpRelayPerInterfaceServerPktsDropped    Counter32,
+        hpicfDhcpRelayPerInterfaceServerPktsXmitFail   Counter32
+     }
+
+hpicfDhcpRelayPerInterfaceClientPktsRecd OBJECT-TYPE
+    SYNTAX Counter32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "The number of valid DHCPv6 client requests received on 
+         this interface."
+    ::= { hpicfDhcpRelayPerInterfaceStatsEntry 1 }
+
+hpicfDhcpRelayPerInterfaceClientPktsDropped OBJECT-TYPE
+    SYNTAX Counter32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "The number of DHCPv6 client requests that were dropped at ingress."
+    ::= { hpicfDhcpRelayPerInterfaceStatsEntry 2 }
+
+hpicfDhcpRelayPerInterfaceClientPktsXmitFail OBJECT-TYPE
+    SYNTAX Counter32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "The number of DHCPv6 client requests that failed to get relayed 
+         at egress."
+    ::= { hpicfDhcpRelayPerInterfaceStatsEntry 3 }
+
+hpicfDhcpRelayPerInterfaceServerPktsRecd OBJECT-TYPE
+    SYNTAX Counter32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "The number of valid DHCPv6 server responses received on this 
+         interface."
+    ::= { hpicfDhcpRelayPerInterfaceStatsEntry 4 }
+
+hpicfDhcpRelayPerInterfaceServerPktsDropped OBJECT-TYPE
+    SYNTAX Counter32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "The number of DHCPv6 server responses dropped on this interface 
+         at ingress."
+    ::= { hpicfDhcpRelayPerInterfaceStatsEntry 5 }
+
+hpicfDhcpRelayPerInterfaceServerPktsXmitFail OBJECT-TYPE
+    SYNTAX Counter32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "The number of DHCPv6 server responses that failed to get relayed 
+         at egress."
+    ::= { hpicfDhcpRelayPerInterfaceStatsEntry 6 }
+
+   -- -------------------------------------------------------------
+   -- Conformance Information
+   -- -------------------------------------------------------------
+
+hpicfDhcpRelayConformance OBJECT IDENTIFIER
+                            ::= { hpicfDhcpv6Relay 4 }
+
+hpicfDhcpRelayGroups OBJECT IDENTIFIER
+                            ::= { hpicfDhcpRelayConformance 1}
+
+hpicfDhcpRelayCompliances OBJECT IDENTIFIER
+                            ::= { hpicfDhcpRelayConformance 2}
+
+   -- -------------------------------------------------------------
+   -- Units of Conformance
+   -- -------------------------------------------------------------
+
+hpicfDhcpRelayConfigGroup OBJECT-GROUP
+    OBJECTS {
+        hpicfDhcpv6RelayAdminStatus,
+        hpicfDhcpRelayHelperAddressEgressInterface,
+        hpicfDhcpRelayHelperAddressStatus
+    }
+    STATUS current
+    DESCRIPTION
+        "A collection of objects related to configuration for DHCP relay"
+    ::= { hpicfDhcpRelayGroups 1 }
+
+hpicfDhcpRelayStatsGroup OBJECT-GROUP
+    OBJECTS {
+        hpicfDhcpRelayPerInterfaceClientPktsRecd,
+        hpicfDhcpRelayPerInterfaceClientPktsDropped,
+        hpicfDhcpRelayPerInterfaceClientPktsXmitFail,
+        hpicfDhcpRelayPerInterfaceServerPktsRecd,
+        hpicfDhcpRelayPerInterfaceServerPktsDropped,
+        hpicfDhcpRelayPerInterfaceServerPktsXmitFail
+    }
+    STATUS current
+    DESCRIPTION
+        "A collection of objects providing statistics about the DHCP relay"
+    ::= { hpicfDhcpRelayGroups 2 }
+
+   -- -------------------------------------------------------------
+   -- compliance Statements
+   -- -------------------------------------------------------------
+
+ hpicfDhcpRelayCompliance MODULE-COMPLIANCE
+    STATUS current
+    DESCRIPTION
+        "The compliance statement for SNMP entities which implement the
+         hpicfDhcpv6Relay MIB with support for writable objects. Such an
+         implementation can be both monitored and configured via SNMP."
+    MODULE -- this module
+    MANDATORY-GROUPS {
+        hpicfDhcpRelayConfigGroup,
+        hpicfDhcpRelayStatsGroup
+    }
+
+    ::= {hpicfDhcpRelayCompliances 1 }
+
+END

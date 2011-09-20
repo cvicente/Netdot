@@ -4,7 +4,7 @@ HP-ICF-IP-ROUTING DEFINITIONS ::= BEGIN
         OBJECT-TYPE, MODULE-IDENTITY, Integer32,
         Unsigned32
             FROM SNMPv2-SMI
-        PhysAddress, RowStatus
+        PhysAddress, RowStatus,TruthValue
             FROM SNMPv2-TC
         MODULE-COMPLIANCE, OBJECT-GROUP
             FROM SNMPv2-CONF
@@ -16,11 +16,11 @@ HP-ICF-IP-ROUTING DEFINITIONS ::= BEGIN
             FROM IP-FORWARD-MIB
         hpSwitch
             FROM HP-ICF-OID
-								ipDefaultRouterEntry
-								    FROM IP-MIB;
+                        ipDefaultRouterEntry
+                            FROM IP-MIB;
 
     hpicfIpRouting MODULE-IDENTITY
-        LAST-UPDATED "200704200000Z" -- Apr 20, 2007
+        LAST-UPDATED "200804080000Z" -- Apr 8, 2008
         ORGANIZATION "Hewlett-Packard Company
                       Workgroup Networks Division"
         CONTACT-INFO "Hewlett-Packard Company
@@ -28,6 +28,12 @@ HP-ICF-IP-ROUTING DEFINITIONS ::= BEGIN
                       Roseville, CA 95747"
         DESCRIPTION  "This MIB module contains HP proprietary
                      objects for managing IP Routing."
+     
+        REVISION     "200804080000Z" -- April 8, 2008      
+        DESCRIPTION  "Added hpicfIpv6RtrAdvPrefixTable."
+        
+        REVISION     "200803040000Z" -- Mar 4, 2008      
+        DESCRIPTION  "Added hpicfIpv6ND."
 
         REVISION     "200704200000Z" -- Apr 20, 2007      
         DESCRIPTION  "Added hpicfArpAgingTime."
@@ -696,7 +702,7 @@ HP-ICF-IP-ROUTING DEFINITIONS ::= BEGIN
 
     hpicfArpAgingTime OBJECT-TYPE
         SYNTAX      Integer32 (0..16666666)
-        MAX-ACCESS  read-create
+        MAX-ACCESS  read-write
         STATUS      current
         DESCRIPTION "The timeout period in minutes for aging out
                      an arp entry in the arp cache.  Default value
@@ -827,7 +833,7 @@ HP-ICF-IP-ROUTING DEFINITIONS ::= BEGIN
 
    -- Default Router table extensions
     hpicfIpDefaultRouterProperties OBJECT IDENTIFIER ::= 
-				                                   { hpicfIpRoutingObjects 8 }
+                                               { hpicfIpRoutingObjects 8 }
 
     hpicfIpDefaultRouterTable OBJECT-TYPE
         SYNTAX      SEQUENCE OF HpicfIpDefaultRouterEntry
@@ -847,7 +853,7 @@ HP-ICF-IP-ROUTING DEFINITIONS ::= BEGIN
     HpicfIpDefaultRouterEntry ::=
         SEQUENCE {
             hpicfIpDefaultRouterMTU         Integer32,
-												hpicfIpDefaultRouterHopLimit         Integer32
+                                    hpicfIpDefaultRouterHopLimit         Integer32
         }
 
     hpicfIpDefaultRouterMTU OBJECT-TYPE
@@ -863,6 +869,196 @@ HP-ICF-IP-ROUTING DEFINITIONS ::= BEGIN
         STATUS      current
         DESCRIPTION "The hop limit to be used by the host on outgoing packets."
         ::= { hpicfIpDefaultRouterEntry 2 }
+
+    -- Ipv6 Neighbor Discovery objects
+
+    hpicfIpv6ND OBJECT IDENTIFIER ::= { hpicfIpRoutingObjects 9 }
+
+    -- IPV6 neighbor discovery router advertisement global admin status.
+    -- Similar to hpicfRdiscAdminStatus which globally enables/disables
+    -- ipv4 irdp, except this setting will affect ipv6 nd ras.
+
+    hpicfIpv6NDRAAdminStatus OBJECT-TYPE
+        SYNTAX     TruthValue
+        MAX-ACCESS read-write
+        STATUS     current
+   DESCRIPTION
+           "A flag indicating whether or not the router sends periodic
+            router advertisements and responds to router solicitations."
+        ::= { hpicfIpv6ND 1 }
+
+    -- IPV6 router advertisement prefix list.
+    
+    hpicfIpv6RtrAdvPrefixTable OBJECT-TYPE
+        SYNTAX     SEQUENCE OF HpicfIpv6RtrAdvPrefixEntry
+        MAX-ACCESS not-accessible
+        STATUS     current
+        DESCRIPTION
+               "This table describes the router advertisement
+               configuration variables for each interface."
+        REFERENCE "For IPv6 RFC2461,especially section 6.2.1"           
+        ::= { hpicfIpv6ND 2 }
+
+
+    hpicfIpv6RtrAdvPrefixEntry OBJECT-TYPE
+        SYNTAX     HpicfIpv6RtrAdvPrefixEntry
+        MAX-ACCESS not-accessible
+        STATUS     current
+        DESCRIPTION
+               "An entry in the hpicfIpv6RtrAdvPrefixTable."
+        INDEX    { hpicfIpv6RtrAdvPrefixIfIndex,
+                   hpicfIpv6RtrAdvPrefixType,
+                   hpicfIpv6RtrAdvPrefixPrefix,
+                   hpicfIpv6RtrAdvPrefixLength }
+        ::= { hpicfIpv6RtrAdvPrefixTable 1 }
+
+
+    HpicfIpv6RtrAdvPrefixEntry ::= SEQUENCE {
+            hpicfIpv6RtrAdvPrefixIfIndex              InterfaceIndex,
+            hpicfIpv6RtrAdvPrefixType                 InetAddressType,
+            hpicfIpv6RtrAdvPrefixPrefix               InetAddress,
+            hpicfIpv6RtrAdvPrefixLength  InetAddressPrefixLength,
+            hpicfIpv6RtrAdvPrefixOnLinkFlag           TruthValue,
+            hpicfIpv6RtrAdvPrefixAutonomousFlag       TruthValue,
+            hpicfIpv6RtrAdvPrefixLifetimeType         INTEGER,
+            hpicfIpv6RtrAdvPrefixPreferredLifetime    Unsigned32,
+            hpicfIpv6RtrAdvPrefixValidLifetime        Unsigned32,
+            hpicfIpv6RtrAdvPrefixRowStatus            RowStatus 
+        }
+
+    hpicfIpv6RtrAdvPrefixIfIndex OBJECT-TYPE
+          SYNTAX     InterfaceIndex
+          MAX-ACCESS not-accessible
+          STATUS     current
+          DESCRIPTION
+                   "The index value which uniquely identifies the
+                   interface on  which this prefix is configured.
+                   The interface identified by a particular value of
+                   this index is the same interface as identified by 
+                   the same value of the IF-MIB's ifIndex."
+            ::= { hpicfIpv6RtrAdvPrefixEntry 1 }
+            
+    hpicfIpv6RtrAdvPrefixType OBJECT-TYPE
+      SYNTAX     InetAddressType
+      MAX-ACCESS not-accessible
+      STATUS     current
+      DESCRIPTION
+             "The address type of hpicfIpv6RtrAdvPrefixPrefix."
+      ::= { hpicfIpv6RtrAdvPrefixEntry 2 }
+ 
+ 
+    hpicfIpv6RtrAdvPrefixPrefix OBJECT-TYPE
+      SYNTAX     InetAddress
+      MAX-ACCESS not-accessible
+      STATUS     current
+      DESCRIPTION
+         "The address prefix.  The address type of this object is
+          specified in hpicfIpv6RtrAdvPrefixType. 
+          The length of this object is the standard length for 
+          objects of that type." 
+    ::= { hpicfIpv6RtrAdvPrefixEntry 3 }
+
+
+    hpicfIpv6RtrAdvPrefixLength OBJECT-TYPE
+        SYNTAX     InetAddressPrefixLength
+        MAX-ACCESS not-accessible
+        STATUS     current
+        DESCRIPTION
+               "The prefix length associated with this prefix.
+                The value 0 has no special meaning for this object. It
+                simply refers to address '::/0'."
+        ::= { hpicfIpv6RtrAdvPrefixEntry 4 }
+
+
+    hpicfIpv6RtrAdvPrefixOnLinkFlag OBJECT-TYPE
+        SYNTAX     TruthValue
+        MAX-ACCESS read-create
+        STATUS     current
+        DESCRIPTION
+               "Router Advertisement messages are sent out with the
+               On-Link flag (L-bit) field set to this value."
+        DEFVAL { true }
+        ::= { hpicfIpv6RtrAdvPrefixEntry 5 }
+
+
+    hpicfIpv6RtrAdvPrefixAutonomousFlag OBJECT-TYPE
+        SYNTAX     TruthValue
+        MAX-ACCESS read-create
+        STATUS     current
+        DESCRIPTION
+               "Autonomous address configuration flag.
+                Router Advertisement messages are sent out with 
+                the autonomous flag field set to this value
+                in the Prefix Information."
+        DEFVAL { true }
+        ::= { hpicfIpv6RtrAdvPrefixEntry 6 }
+
+     hpicfIpv6RtrAdvPrefixLifetimeType OBJECT-TYPE
+        SYNTAX     INTEGER {
+                   fixed(1),
+                   realTime(2)
+                   }
+        MAX-ACCESS read-create
+        STATUS     current
+        DESCRIPTION
+               "Specifies if the 
+               hpicfIpv6RtrAdvPrefixPreferredLifetime
+               and hpicfIpv6RtrAdvPrefixValidLifetime are of 
+               the kind where consecutive advertisements have the
+               same time(fixed) or a time that decrements in real time.
+               The realTime(2) can be used to specify a time
+               in future at which the LifeTimes become zero."
+        DEFVAL { fixed }
+        ::= { hpicfIpv6RtrAdvPrefixEntry 7 }
+
+
+
+    hpicfIpv6RtrAdvPrefixPreferredLifetime OBJECT-TYPE
+        SYNTAX     Unsigned32
+        UNITS       "seconds"
+        MAX-ACCESS read-create
+        STATUS     current
+        DESCRIPTION
+               "The length of time ,in seconds,that this prefix will be 
+               preferred. A value of 4,294,967,295 represents infinity.
+               The Router Advertisement messages are sent out with the
+               Preferrend LifeTime field set to this value.
+               To specify in a realTime way,set this object to a future 
+               time in number of seconds since January 1, 1970, 
+               Coordinated Universal Time and also set
+               The default value is 7 days(604800 seconds) fixed time"     
+        DEFVAL { 604800 }
+        ::= { hpicfIpv6RtrAdvPrefixEntry 8 }
+
+
+    hpicfIpv6RtrAdvPrefixValidLifetime OBJECT-TYPE
+        SYNTAX     Unsigned32
+        UNITS      "seconds"
+        MAX-ACCESS read-create
+        STATUS     current
+        DESCRIPTION
+               "The length of time, in seconds, that this prefix
+                will continue to be valid, i.e. time until invalidation.
+                A value of 4,294,967,295 represents infinity.
+                The Router advertisement messages are sent out with the
+                Valid LifeTime field set to this value.
+                To specify in a realTime way,set this object to a future                time in number of seconds since January 1, 1970, 
+                Coordinated Universal Time and also set
+                hpicfIpv6RtrAdvPrefixTimeType to realTime.                       The default value is 30 days (or 2592000 seconds)
+                fixed time."
+        DEFVAL { 2592000 }
+        ::= { hpicfIpv6RtrAdvPrefixEntry 9 }
+
+    hpicfIpv6RtrAdvPrefixRowStatus OBJECT-TYPE
+        SYNTAX    RowStatus
+        MAX-ACCESS read-create
+        STATUS     current
+        DESCRIPTION
+               "The status of this conceptual row.
+                As all objects in this conceptual row have default 
+                values a row can be created and made active by 
+                setting this object appropriately."
+        ::= { hpicfIpv6RtrAdvPrefixEntry 10 }
 
     hpicfIpRoutingConformance OBJECT IDENTIFIER ::= { hpicfIpRouting 2 }
 
@@ -953,6 +1149,20 @@ HP-ICF-IP-ROUTING DEFINITIONS ::= BEGIN
                     objects."
         ::= { hpicfIpRoutingGroups 10 }
 
+    hpicfIpv6RtrAdvPrefixGroup OBJECT-GROUP
+    OBJECTS   { hpicfIpv6RtrAdvPrefixOnLinkFlag,
+                hpicfIpv6RtrAdvPrefixAutonomousFlag ,
+                hpicfIpv6RtrAdvPrefixLifetimeType,
+                hpicfIpv6RtrAdvPrefixPreferredLifetime,
+                hpicfIpv6RtrAdvPrefixValidLifetime,
+                hpicfIpv6RtrAdvPrefixRowStatus }
+    STATUS     current
+    DESCRIPTION
+           "The group of objects in a table for configuring the Router
+           Advertisement options.
+            "
+    ::= { hpicfIpRoutingGroups 11 }
+
     hpicfIpRoutingCompliances OBJECT IDENTIFIER ::=
          { hpicfIpRoutingConformance 2 }
 
@@ -1006,6 +1216,16 @@ HP-ICF-IP-ROUTING DEFINITIONS ::= BEGIN
             MANDATORY-GROUPS { hpicfArpBaseGroup }
 
         ::= { hpicfIpRoutingCompliances 4 }
+        
+    hpicfIpv6RtrAdvPrefixCompliance MODULE-COMPLIANCE
+        STATUS      current
+        DESCRIPTION "The compliance statement for HP Routing switches
+                    that support Router Advertisements"
+        MODULE
+            MANDATORY-GROUPS { hpicfIpv6RtrAdvPrefixGroup }
+        ::= { hpicfIpRoutingCompliances 5 }
+
 
 
 END
+

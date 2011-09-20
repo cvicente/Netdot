@@ -1,0 +1,960 @@
+
+SYSTEM-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+        OBJECT-TYPE,IpAddress,Counter32,Integer32,
+        MODULE-IDENTITY,NOTIFICATION-TYPE
+                FROM SNMPv2-SMI
+        DisplayString,TruthValue,
+	  RowStatus,TEXTUAL-CONVENTION
+                FROM SNMPv2-TC
+	  NOTIFICATION-GROUP 
+		    FROM SNMPv2-CONF
+	ntEnterpriseDataTasmanMgmt
+	          FROM NT-ENTERPRISE-DATA-MIB;
+
+nnsystemMib MODULE-IDENTITY 
+  	LAST-UPDATED "0008180000Z"
+  	ORGANIZATION "Nortel Networks"
+	CONTACT-INFO
+        	" Nortel Networks
+        	8200 Dixie Road
+        	Brampton, Ontario L6T 5P6
+        	Canada        
+        	1-800-4Nortel 
+        	www.nortelnetworks.com "
+  	DESCRIPTION
+  		"System group MIBs"
+  	REVISION      "0008180000Z"
+  	DESCRIPTION
+  		"Initial version of this MIB module."
+        ::= { ntEnterpriseDataTasmanMgmt 1}
+
+SntpEnabled ::= TEXTUAL-CONVENTION
+    STATUS  current
+    DESCRIPTION
+   	"Enabled flag for sntp client."
+    SYNTAX INTEGER 
+    {
+    not-enabled(1),
+    enabled(2)
+    }   
+    
+    
+nnsystemObjects 		OBJECT IDENTIFIER ::= { nnsystemMib 1 }
+nndnsGroup 			OBJECT IDENTIFIER ::= { nnsystemMib 2 }
+nnsystemEnableNotification	OBJECT IDENTIFIER ::= { nnsystemMib 3 }
+nnsystemNotifications	OBJECT IDENTIFIER ::= { nnsystemMib 4 }
+nnuserAdminGroup		OBJECT IDENTIFIER ::= { nnsystemMib 5 }
+nnsntpGroup              OBJECT IDENTIFIER ::= { nnsystemMib 10 }
+nnsntpNotificationEnables OBJECT IDENTIFIER ::= { nnsystemMib 11 }
+nnsntpNotifications       OBJECT IDENTIFIER ::= { nnsystemMib 12 }
+nnenableBgpNotifications          OBJECT IDENTIFIER ::= { nnsystemMib 14 }
+nnsystemNotificationsVars	OBJECT IDENTIFIER ::= { nnsystemMib 15 }
+--nnethernetTrackBundleGroup   OBJECT IDENTIFIER ::= { nnsystemMib 17 }
+nnsystemTraps            OBJECT IDENTIFIER ::= {nnsystemNotifications 0}
+nnsntpTraps             OBJECT IDENTIFIER ::={nnsntpNotifications 0}
+nnsysDst             OBJECT IDENTIFIER ::= { nnsystemMib 20 } 
+nnssmTraps              OBJECT IDENTIFIER ::= { nnsystemMib 21 }
+nnssmNotifications     OBJECT IDENTIFIER ::= {nnssmTraps 0}
+nnssmTrapVariables     OBJECT IDENTIFIER  ::= {nnssmTraps 1}
+
+nnsysIpAddr OBJECT-TYPE
+        SYNTAX        IpAddress
+        MAX-ACCESS        read-only
+        STATUS        current
+        DESCRIPTION   "This entity's IP address."
+        ::= { nnsystemObjects 1 }
+
+nnsysNetMask 			OBJECT-TYPE
+      SYNTAX        	IpAddress
+      MAX-ACCESS    	read-only
+      STATUS        	current
+      DESCRIPTION   "This entity's subnet mask."
+        ::= { nnsystemObjects 2 }
+
+nnsysBroadcast 		OBJECT-TYPE
+      SYNTAX        	IpAddress
+      MAX-ACCESS    	read-only
+      STATUS        	current
+      DESCRIPTION   "This entity's broadcast address."
+        ::= { nnsystemObjects 3 }
+
+nnsysVersion 			OBJECT-TYPE
+	SYNTAX  		DisplayString (SIZE (0..64))
+	MAX-ACCESS      	read-only
+      STATUS        	current
+      DESCRIPTION
+            "This variable contains a printable octet
+             string that contains the system bootstrap
+             and software version identification."
+        ::= { nnsystemObjects 4 }
+        
+nnsysHostName 		OBJECT-TYPE
+	SYNTAX  		DisplayString (SIZE (0..64))
+	MAX-ACCESS      	read-write
+	STATUS          	current
+	DESCRIPTION
+		"
+		Hostname of the system.
+		"
+	::= { nnsystemObjects 6 }
+
+nnsysDomainName 		OBJECT-TYPE
+	SYNTAX  		DisplayString (SIZE (0..64))
+	MAX-ACCESS  	read-write
+	STATUS  		current
+	DESCRIPTION
+		"
+		Domain name of the host.
+		"
+	::= { nnsystemObjects 7 }
+
+nnsysAlarmStatus 		OBJECT-TYPE
+      SYNTAX        	INTEGER {
+		clear(1),
+		minor(2),
+		major(3)
+                                }
+      MAX-ACCESS    	read-only
+      STATUS        	current
+   	DESCRIPTION   
+			"This variable is set to major when the summary LED 
+			on the system is illuminated. This happens when any 
+			of the WAN physical interfaces have at least one 
+			alarm."
+      ::= { nnsystemObjects 8 }
+
+nnsysReset 			OBJECT-TYPE
+     	SYNTAX        	INTEGER {
+		other(1),   -- none of the following
+		reset(2)    -- do systemreset
+                                }
+     	MAX-ACCESS   	read-write
+     	STATUS        	current
+     	DESCRIPTION   "
+		      Writing a 2 to this object resets the system.
+		      "
+        ::= { nnsystemObjects 10 }
+
+
+nnsysDateTime 		OBJECT-TYPE
+     	SYNTAX    		OCTET STRING(SIZE(10))
+     	MAX-ACCESS    	read-write
+     	STATUS        	current
+     	DESCRIPTION   "
+		      System date/time
+--    A date-time specification.
+--    
+--     field  octets  contents                  range
+--     =====  ======  ========                  =====
+--       1       1    direction from UTC        '+' / '-'
+--       2       1    hours from UTC            0..23
+--       3       1    minutes from UTC          0..59
+
+--       4       1    month                     1..12
+--       5       1    day                       1..31
+--       6       2    year                      1970..2100
+
+--       7       1    hour                      0..23
+--       8       1    minutes                   0..59
+--       9       1    seconds                   0..60
+--                    (use 60 for leap-second)
+
+--    
+--    For example, Tuesday May 26, 1992 at 1:30:15 PM
+--    EDT would be displayed as:
+--    
+--                1992-5-26,13:30:15.0,-4:0
+--    
+--    Note that if only local time is known, then
+--    time zone information (fields 8-10) is not
+--    present.
+
+		      "
+        ::= { nnsystemObjects 11 }
+
+nnarpClearAtTable 		OBJECT-TYPE
+	SYNTAX  		Integer32
+	MAX-ACCESS  	read-write
+	STATUS  		current
+	DESCRIPTION
+		"Perform a clearing of the entire ARP address translation 
+		 table. MIB II address translation table can be used to 
+		 delete an individual entry.
+		"
+	::= { nnsystemObjects 12 }
+
+
+nnipClearRouteTable 	OBJECT-TYPE
+	SYNTAX  		Integer32
+	MAX-ACCESS  	read-write
+	STATUS  		current
+	DESCRIPTION
+		"Perform a clearing of the entire Routing table.
+		 MIB II routing table can be used to delete an individual 
+		 entry.
+		"
+	::= { nnsystemObjects 13 }
+    
+nnarpTimeOut       	OBJECT-TYPE
+	SYNTAX  	INTEGER (60..28800)
+	MAX-ACCESS  	read-write
+	STATUS  	current
+	DESCRIPTION
+		"Configure global ARP cache timeout
+                 for dynamic arp entries."
+	::= { nnsystemObjects 14 }
+	        
+--
+-- the DNS group using this MIB group an a DNS server can be configured 
+-- or deleted if is is already configured.
+--
+
+
+nndnsEnable 			OBJECT-TYPE
+   	SYNTAX		INTEGER 	{ 
+				enabled(1), 
+				disabled(2) 
+				}
+    	MAX-ACCESS		read-write
+     	STATUS        	current
+    	DESCRIPTION   "Indicates if the DNS feature is enabled or 
+			   disabled."
+    	DEFVAL { disabled }
+      ::= {nndnsGroup 1}
+
+nndnsServerTable 		OBJECT-TYPE
+      SYNTAX        	SEQUENCE OF NnDnsServerEntry
+      MAX-ACCESS   	not-accessible
+      STATUS        	current
+      DESCRIPTION 	"This table lists a maximum of 3 DNS servers
+		      	dnsEntryStatus variable is used to add an 
+				entry or remove an entry from table. The first
+		      	added entry will be used first. If it is not
+		      	reachable, the next entry in the list will be 
+		      	tried, and the next one, and so on.
+
+                      	When creating a row, send oids for both 
+                      	dnsServerEntryType dnsServerAddr in the same 
+				snmp SET request. A row creation request for 
+				a secondary request should return a failure 
+				unless a primary name server has already been 
+				configured."
+      ::= { nndnsGroup 2 }
+
+nndnsServerEntry 		OBJECT-TYPE
+    	SYNTAX        	NnDnsServerEntry
+     	MAX-ACCESS    	not-accessible
+     	STATUS        	current
+     	DESCRIPTION   "A DNS server table entry."
+     	INDEX         	{ nndnsServerAddr }
+     	::= { nndnsServerTable 1 }
+
+NnDnsServerEntry ::= SEQUENCE {
+		nndnsServerEntryType INTEGER,
+                nndnsServerAddr		IpAddress
+                }
+
+nndnsServerEntryType 	OBJECT-TYPE
+     	SYNTAX        	INTEGER {
+                       	invalid(1),   -- remove this entry
+                       	primary(2),   -- the primary entry
+                        other(3)      -- a lower priority entry
+                         }
+    	MAX-ACCESS   	read-write
+   	STATUS        	current
+    	DESCRIPTION   	"To add a new entry to the dnsServerTable, set 
+				this object to primary(2) or other(3) for an 
+				IP address that is not already in the table. 
+				The primary entry will be used first, if it 
+				is reachable. Otherwise, one of the other 
+				entries will be used. Setting one entry to
+                        primary(2) causes any previous primary entry
+                        to change to other(3). To remove an entry 
+				from the table, set this object to 
+				invalid(1). "
+      ::= { nndnsServerEntry 1 }
+
+nndnsServerAddr 		OBJECT-TYPE
+  	SYNTAX        	IpAddress
+     	MAX-ACCESS    	read-write
+    	STATUS        	current
+   	DESCRIPTION   	"The IP address of a DNS server."
+    	::= { nndnsServerEntry 2 }
+
+--
+-- the userAdminGroup is used to administer the user accounts, etc.
+--
+nnuserName 			OBJECT-TYPE
+	SYNTAX  		DisplayString (SIZE (0..64))
+	MAX-ACCESS  	not-accessible
+	STATUS  		current
+	DESCRIPTION
+		"
+		Name of the user.
+		"
+	::= { nnuserAdminGroup 1 }
+
+
+
+nnenableBgpEstablishedNotification      OBJECT-TYPE
+        SYNTAX                          TruthValue
+        MAX-ACCESS                      read-only
+        STATUS                          current
+        DESCRIPTION
+               "Indicates whether the system produces the
+                bgpEstablished trap. The default is yes.
+                "
+        DEFVAL { true }
+        ::= { nnenableBgpNotifications 1 }
+
+nnenableBgpBackwardNotification  OBJECT-TYPE
+        SYNTAX                                  TruthValue
+        MAX-ACCESS                              read-only
+        STATUS                                  current
+        DESCRIPTION
+               "Indicates whether the system produces the
+                bgpBackwardTransition trap. The default is yes.
+                "
+        DEFVAL { true }
+        ::= { nnenableBgpNotifications 2 }
+
+  
+--
+--
+-- sntpGroup
+--
+nnsntpClieenabled OBJECT-TYPE
+	SYNTAX		SntpEnabled
+	MAX-ACCESS	read-create
+	STATUS		current
+	DESCRIPTION	"Sntp Client Enabled Flag."
+        DEFVAL          { not-enabled }
+	::= { nnsntpGroup 1 }    
+            
+nnsntpServerAddr OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (0..30))
+        MAX-ACCESS      read-create
+        STATUS          current
+        DESCRIPTION
+            "The IP address or host name of an SNTP/NTP server.
+             It can be set only when set along with the
+             sntpClieenabled object.
+            "
+        ::= { nnsntpGroup 2 }
+
+                       
+nnsntpTimeout OBJECT-TYPE
+        SYNTAX           Integer32
+        MAX-ACCESS       read-create
+        STATUS           current
+        DESCRIPTION
+            "The timeout value for the sntp client.
+             It can be set only when set along with the
+             sntpClieenabled object.
+            "
+        DEFVAL           { 1024 }
+        ::= { nnsntpGroup 3 }
+
+--
+-- sntp mib objects
+--
+
+nnenableSntpNotification OBJECT-TYPE
+        SYNTAX          TruthValue
+        MAX-ACCESS      read-write
+        STATUS          current
+        DESCRIPTION
+               "Indicates whether the system produces the
+                sntpNotification. Default is yes.
+                "
+        DEFVAL         { true }
+        ::= { nnsntpNotificationEnables 1 }
+
+nnsntpEnableNotification NOTIFICATION-TYPE
+        OBJECTS { nnsntpServerAddr,
+                   nnsntpTimeout 
+                  }
+		  STATUS current 
+		  DESCRIPTION
+                "
+                A sntpNotification is sent when an sntp client
+                is enabled.
+                "
+        ::= {nnsntpTraps 1}
+
+nnsntpDisableNotification NOTIFICATION-TYPE
+        OBJECTS { nnsntpServerAddr,
+                    nnsntpTimeout 
+                  }
+		  STATUS current
+        DESCRIPTION
+                "
+                A sntpNotification is sent when an sntp client
+                is disabled.
+                "
+        ::= {nnsntpTraps 2} 
+
+nnsntpSuccessNotification NOTIFICATION-TYPE
+       OBJECTS { nnsntpServerAddr,
+                   nnsntpTimeout 
+                 }
+		 STATUS current
+       DESCRIPTION
+               "
+               A sntpSuccessNotification is sent when an sntp client
+               is successful in receiving time from the server.
+               "
+       ::= {nnsntpTraps 3}
+
+nnsntpErrorNotification NOTIFICATION-TYPE
+       OBJECTS { nnsntpServerAddr,
+                   nnsntpTimeout 
+                 }
+		 STATUS current
+       DESCRIPTION
+               "
+               A sntpErrorNotification is sent when an sntp client
+               has error in receiving time from the server.
+               "
+       ::={nnsntpTraps 4}       
+
+
+--
+-- systemNotification contains the managed objects to enable the 
+-- notifications if system is shutdown for reasons.
+-- 
+
+nnenableSysShutDownNotification OBJECT-TYPE
+  	SYNTAX 	    		TruthValue
+      MAX-ACCESS   		read-write
+      STATUS     			current
+      DESCRIPTION
+            "Indicates whether the system produces the 
+		shutDownNotification TRAP. The default is yes.
+		"
+      DEFVAL { true }
+      ::= { nnsystemEnableNotification 1 }
+
+nnenableUserLoginNotification 	OBJECT-TYPE
+     	SYNTAX 	    		TruthValue
+      MAX-ACCESS      		read-write
+      STATUS      		current
+      DESCRIPTION
+            "Indicates whether the system produces the 
+		userLoginNotification TRAP. The default is yes.
+		"
+      DEFVAL { true }
+      ::= { nnsystemEnableNotification 2 }
+
+nnenableUserLogOffNotification 	OBJECT-TYPE
+      SYNTAX 	    		TruthValue
+      MAX-ACCESS      		read-write
+      STATUS      		current
+      DESCRIPTION
+            "Indicates whether the system produces the 
+		userLoginOffNotification TRAP. The default is yes.
+		"
+      DEFVAL { true }
+      ::= { nnsystemEnableNotification 3 }
+
+nnenableUserLoginFailNotification 	OBJECT-TYPE
+      SYNTAX 	    			TruthValue
+      MAX-ACCESS      			read-write
+      STATUS      			current
+      DESCRIPTION
+            "Indicates whether the system produces the 
+		userLoginFailNotification TRAP. the default is yes.
+		"
+      DEFVAL { true }
+      ::= { nnsystemEnableNotification 4 }
+
+nnenableAuthenticationLoginFailNotification 	OBJECT-TYPE
+      SYNTAX 	    			TruthValue
+      MAX-ACCESS      			read-write
+      STATUS      			current
+      DESCRIPTION
+            "Indicates whether the system produces the 
+		enableAuthenticationLoginFailNotification TRAP. the default is yes.
+		"
+      DEFVAL { true }
+      ::= { nnsystemEnableNotification 5 }
+      
+nnenableAuthenticationLoginSuccessNotification 	OBJECT-TYPE
+      SYNTAX 	    			TruthValue
+      MAX-ACCESS      			read-write
+      STATUS      			current
+      DESCRIPTION
+            "Indicates whether the system produces the 
+		enableAuthenticationLoginSuccessNotification TRAP. the default is yes.
+		"
+      DEFVAL { true }
+      ::= { nnsystemEnableNotification 6 }
+nnenableLogoutNotification 	OBJECT-TYPE
+      SYNTAX 	    			TruthValue
+      MAX-ACCESS      			read-write
+      STATUS      			current
+      DESCRIPTION
+            "Indicates whether the system produces the 
+		enableLogoutNotification TRAP. the default is yes.
+		"
+      DEFVAL { true }
+      ::= { nnsystemEnableNotification 7 }
+--
+-- Variables for system traps
+--
+
+nnsysRestartMsg 	OBJECT-TYPE
+	SYNTAX  		DisplayString (SIZE (0..64))
+	MAX-ACCESS      	accessible-for-notify
+      STATUS        	current
+      DESCRIPTION
+            "This variable contains a printable octet
+             string that contains the origin and timestamp
+             of system reboot."
+        ::= { nnsystemNotificationsVars 1 }
+        
+nnsysLoginMsg 	OBJECT-TYPE
+	SYNTAX  		DisplayString (SIZE (0..64))
+	MAX-ACCESS      	accessible-for-notify
+      STATUS        	current
+      DESCRIPTION
+            "This variable contains a printable octet
+             string that contains the origin and timestamp
+             for system login."
+        ::= { nnsystemNotificationsVars 2 }
+        
+nnsysLogoutMsg 	OBJECT-TYPE
+	SYNTAX  		DisplayString (SIZE (0..64))
+	MAX-ACCESS      	accessible-for-notify
+      STATUS        	current
+      DESCRIPTION
+            "This variable contains a printable octet
+             string that contains the origin and timestamp
+             for system logout."
+        ::= { nnsystemNotificationsVars 3 }
+        
+nnsysLoginFailMsg 	OBJECT-TYPE
+	SYNTAX  		DisplayString (SIZE (0..64))
+	MAX-ACCESS      	accessible-for-notify
+      STATUS        	current
+      DESCRIPTION
+            "This variable contains a printable octet
+             string that contains the origin and timestamp
+             for system login failure."
+        ::= { nnsystemNotificationsVars 4 }
+
+nnprotocolType 	OBJECT-TYPE
+     	SYNTAX        	INTEGER {
+                       	gui(1),   -- gui session
+                       	ssh(2),   -- ssh session
+                        other(3)      -- for further enhancements
+                         }
+      MAX-ACCESS      	accessible-for-notify
+      STATUS        	current
+      DESCRIPTION
+            "This variable contains a protocol type for dfferent types of login failure."
+        ::= { nnsystemNotificationsVars 5 }
+
+
+nnclientIpAddress 	OBJECT-TYPE
+      SYNTAX        	DisplayString (SIZE (0..64))
+      MAX-ACCESS      	accessible-for-notify
+      STATUS        	current
+      DESCRIPTION
+            "This variable contains a client Ip address from where the session request comes from."
+        ::= { nnsystemNotificationsVars 6 }
+
+        
+nntimeStamp 	OBJECT-TYPE
+	SYNTAX  		DisplayString (SIZE (0..64))
+      MAX-ACCESS      	accessible-for-notify
+      STATUS        	current
+      DESCRIPTION
+      "This variable contains a printable octet
+             string that contains timestamp
+             for system login failure."
+        ::= { nnsystemNotificationsVars 7} 
+        
+
+nnreasonForFailure	OBJECT-TYPE
+     	SYNTAX        	INTEGER {
+                       	username(1),   -- gui session
+                       	password(2),   -- ssh session
+                            other(3)      -- for further enhancements like ipaddress,presharedkey.,etc
+                         }
+      MAX-ACCESS      	accessible-for-notify
+      STATUS        	current
+      DESCRIPTION
+      "This variable contains reason for failure like username password ipaddress shared key, preshared key, id 
+      (future enhancements for SSh,telnet (Radius,tacacs) VPN security
+      current implementation takes only 2 values usename and password."
+        ::= { nnsystemNotificationsVars 8} 
+--
+-- sysNotifications group is used to define notifications.
+--
+
+nnshutDownNotification NOTIFICATION-TYPE
+     	OBJECTS {nnsysRestartMsg}
+	STATUS current
+	DESCRIPTION
+		"
+		A shutDownNotification is sent for the reboot command.
+		"
+             --#TYPE "System shutdown notification"
+             --#SUMMARY "System shutdown notification"
+             --#SEVERITY NORMAL                       
+	::= {nnsystemTraps 1}
+
+nnuserLoginNotification NOTIFICATION-TYPE
+    	OBJECTS { nnsysLoginMsg }
+	STATUS current 
+	DESCRIPTION
+		"
+		A userAccessNotification is sent when a user logs in 
+		successfully.
+		"
+             --#TYPE "User login successful"
+             --#SUMMARY "User: %s login successful"
+             --#ARGUMENTS {0}
+             --#SEVERITY NORMAL                        
+	::={nnsystemTraps 2}
+
+nnuserLogOffNotification NOTIFICATION-TYPE
+    	OBJECTS { nnsysLogoutMsg }
+	STATUS current
+	DESCRIPTION
+		"
+		A userAccessNotification is sent when a user logs off.
+		"
+             --#TYPE "User logoff"
+             --#SUMMARY "User: %s logoff"
+             --#ARGUMENTS {0}
+             --#SEVERITY NORMAL            
+	::= {nnsystemTraps 3}
+	
+nnuserLoginFailNotification NOTIFICATION-TYPE
+    	OBJECTS { nnsysLoginFailMsg }
+	STATUS current
+	DESCRIPTION
+		"
+		A userAccessNotification is sent when a user login fails.
+		"
+             --#TYPE "User login failure"
+             --#SUMMARY "User: %s login failure"
+             --#ARGUMENTS {0}
+             --#SEVERITY MINOR            
+	::= {nnsystemTraps 4}
+nnauthenticationFailureNotification NOTIFICATION-TYPE
+        OBJECTS {     nnprotocolType,
+                             nnclientIpAddress,
+                             nntimeStamp,
+                             nnreasonForFailure
+                             }
+        STATUS current
+DESCRIPTION    "An Enterprise Authentication Failure Notification is sent when authentication fails for reasons like username/password/Ipaddress mismatch."
+        ::= {nnsystemTraps 5}
+
+nnauthenticationLoginSuccessNotification NOTIFICATION-TYPE
+        OBJECTS {     nnprotocolType,
+                             nnclientIpAddress,
+                             nntimeStamp
+                            }
+        STATUS current
+DESCRIPTION    "An Enterprise Authentication Login Success Notification is sent when authentication succeeds for reasons like username/password/Ipaddress matches."
+        ::= {nnsystemTraps 6}
+
+nnlogoutNotification NOTIFICATION-TYPE
+        OBJECTS {     nnprotocolType,
+                             nnclientIpAddress,
+                             nntimeStamp
+                           }
+        STATUS current
+DESCRIPTION    "On successful Logout, an Enterprise Logout  Notification is generated "
+        ::= {nnsystemTraps 7}
+  
+--
+-- nnethernetTrackBundleGroup
+--
+--nnethernetTrackBundleTable OBJECT-TYPE
+  	--SYNTAX            SEQUENCE OF NnEthernetTrackIntfEntry
+   	--MAX-ACCESS        not-accessible
+   	--STATUS            current
+    	--DESCRIPTION       "A table maintaining tracking information for Ethernet 
+      --                    interfaces."
+      --  ::= { nnethernetTrackBundleGroup 1 }
+
+--nnethernetTrackBundleEntry OBJECT-TYPE
+      --SYNTAX              NnEthernetTrackIntfEntry
+      --MAX-ACCESS          not-accessible
+      --STATUS              current
+      --DESCRIPTION         "Ethernet track parameters related to a
+      --                     given ethernet are specified in this table."
+      --INDEX               { nnethernetIndex, nnethTrackIntfId }
+      --::= { nnethernetTrackBundleTable 1 }
+
+--NnEthernetTrackIntfEntry ::= SEQUENCE {
+      --nnethernetIndex             Integer32,
+      --nnethTrackIntfId            Integer32,
+      --nnethTrackIntfName          DisplayString,
+      --nnethTrackIntfStatus        INTEGER,
+      --nnethTrackRowStatus         RowStatus
+      --}
+
+--nnethernetIndex          OBJECT-TYPE
+        --SYNTAX          Integer32
+        --MAX-ACCESS      not-accessible  
+        --STATUS          current
+        --DESCRIPTION     "index of the ethernet tracking bundles."
+        --::= { nnethernetTrackBundleEntry 1 } 
+      
+--nnethTrackIntfId          OBJECT-TYPE
+        --SYNTAX          Integer32
+        --MAX-ACCESS      not-accessible  
+        --STATUS          current
+        --
+        --DESCRIPTION     "trackIntfId is the identifier of the
+        --                 bundle being tracked."
+        --::= { nnethernetTrackBundleEntry 2 } 
+        
+--nnethTrackIntfName        OBJECT-TYPE
+        --SYNTAX          DisplayString (SIZE (1..8))
+        --MAX-ACCESS      read-create
+        --STATUS          current
+        --DESCRIPTION     "Name of the bundle being tracked."
+        --::= { nnethernetTrackBundleEntry 3 }
+
+
+--nnethTrackIntfStatus     OBJECT-TYPE
+        --SYNTAX          INTEGER {
+        --                  up(1),
+        --                  down(2)
+        --                }
+        --MAX-ACCESS      read-only
+        --STATUS          current
+        --DESCRIPTION     "intfStatus displays the status of the
+        --                 bundle being tracked."
+        --::= { nnethernetTrackBundleEntry 4 }
+
+--nnethTrackRowStatus      OBJECT-TYPE
+        --SYNTAX          RowStatus
+        --MAX-ACCESS      read-create   
+        --STATUS          current
+        --DESCRIPTION   
+        --    "Used to configure or delete a tracking interface. To configure
+        --    a interface, set the value of this object to createAndGo. To delete
+        --    a interface, set the value of this object to destroy."
+        --::= { nnethernetTrackBundleEntry 5 }
+
+    
+--nnethernetTrackHoldDownTable OBJECT-TYPE
+  	--SYNTAX              SEQUENCE OF NnEthernetIntfHoldDownEntry
+   	--MAX-ACCESS          not-accessible
+   	--STATUS              current
+    	--DESCRIPTION         "A table maintaining tracking information for Ethernet 
+      --                      interfaces."
+      --  ::= { nnethernetTrackBundleGroup 2 }
+
+--nnethernetTrackHoldDownEntry OBJECT-TYPE
+      --SYNTAX                NnEthernetIntfHoldDownEntry
+      --MAX-ACCESS            not-accessible
+      --STATUS                current
+      --DESCRIPTION           "Ethernet track parameters related to a
+      --                       given ethernet are specified in this table."
+      --INDEX                 { nnethernetIndex }
+      --::= { nnethernetTrackHoldDownTable 1 }
+
+--NnEthernetIntfHoldDownEntry ::= SEQUENCE {
+     -- nnethTrackHoldDown          INTEGER
+      --
+     -- }
+
+--nnethTrackHoldDown       OBJECT-TYPE
+        --SYNTAX          INTEGER (1..100)
+        --MAX-ACCESS      read-create  
+        --STATUS          current
+        --DESCRIPTION     "Hold Down timer for ethernet."
+        --DEFVAL          { 5 }
+        --::= { nnethernetTrackHoldDownEntry 1 } 
+        
+
+nnsystemNotificationGroup NOTIFICATION-GROUP
+NOTIFICATIONS
+		{
+		nnshutDownNotification,
+		nnuserLoginNotification,
+		nnuserLogOffNotification,
+		nnuserLoginFailNotification,
+		nnauthenticationFailureNotification,
+		nnauthenticationLoginSuccessNotification,
+		nnlogoutNotification			
+		}
+STATUS current
+DESCRIPTION "System Notification group"
+::={nnsystemMib 18}
+
+nnsntpNotificationGroup NOTIFICATION-GROUP
+NOTIFICATIONS
+		{
+		nnsntpEnableNotification,
+		nnsntpDisableNotification,
+		nnsntpSuccessNotification,
+		nnsntpErrorNotification
+
+		}
+STATUS current
+DESCRIPTION "System Notification group"
+::={nnsystemMib 19}
+
+--
+-- nnsysDst
+--
+
+nnsysDstLocation        OBJECT-TYPE
+	SYNTAX		DisplayString (SIZE (0..30))
+	MAX-ACCESS	read-write
+	STATUS		current
+	DESCRIPTION	"Dst location string."
+        	::= { nnsysDst 1 }    
+
+
+
+nnsysDstCurTimeZone        OBJECT-TYPE
+	SYNTAX		OCTET STRING(SIZE(3))
+	MAX-ACCESS	read-only
+	STATUS		current
+	DESCRIPTION	"Dst Current timezone value
+ --     field  octets  contents                  range
+--     =====  ======  ========                  =====
+--       1       1    direction from UTC        '+' / '-'
+--       2       1    hours from UTC            0..23
+--       3       1    minutes from UTC          0..59 "
+
+        	::= { nnsysDst 2 }    
+
+
+
+nnsysDstCurTime               OBJECT-TYPE
+	SYNTAX		OCTET STRING(SIZE(10))
+	MAX-ACCESS	read-write
+	STATUS		current
+	DESCRIPTION	"Day Light savings CurrentTime
+--     field  octets  contents                  range
+--     =====  ======  ========                  =====
+--       1       1    day                       0...7
+--       2       1    month                     1..12
+--       3       2    date                      0..31
+
+--       4       1    hour                      0..23
+--       5       1    minutes                   0..59
+--       6       1    seconds                   0..60
+--                    (use 60 for leap-second)
+--       7       2    year                      1970..2100 
+--    
+--    For example, WED MAY 21 15:40:17 2008
+--     would be displayed as:
+--    
+--                03 05 15 05 28 2F 07 D8 00 00"
+
+        	::= { nnsysDst 3 }    
+
+
+nnsysDstAutomated            OBJECT-TYPE
+	SYNTAX		INTEGER 	{ 
+				enabled(1), 
+				disabled(2) 
+				}
+	MAX-ACCESS	read-only
+	STATUS		current
+	DESCRIPTION	"This indicates whether DST  is enabled or disabled."
+                      DEFVAL  { disabled }
+
+        	::= { nnsysDst 4 }    
+
+
+nnsysDstStatus                  OBJECT-TYPE
+	SYNTAX		INTEGER 	{ 
+				active(1), 
+				notactive(2) 
+				}
+
+	MAX-ACCESS	read-only
+	STATUS		current
+	DESCRIPTION	"This indicates whether DST is active or not active"
+                      DEFVAL  { notactive }
+        	::= { nnsysDst 5 }    
+
+nnsysDstStart                       OBJECT-TYPE
+	SYNTAX		OCTET STRING(SIZE(7))
+	MAX-ACCESS	read-write
+	STATUS		current
+	DESCRIPTION	"Day Light savings Start Time "
+        	::= { nnsysDst 6 }   
+
+
+nnsysDstEnd                  OBJECT-TYPE
+	SYNTAX		OCTET STRING(SIZE(7))
+	MAX-ACCESS	read-write
+	STATUS		current
+	DESCRIPTION	"Day Light savings End Time "
+        	::= { nnsysDst 7 }   
+
+
+nnsysDstDuration                  OBJECT-TYPE
+	SYNTAX		OCTET STRING(SIZE(2))
+	MAX-ACCESS	read-only
+	STATUS		current
+	DESCRIPTION	"Day Light savings Duration
+--     field  octets  contents                  range
+--     =====  ======  ========                  =====
+--       1       1    hour                      0..23
+--       2       1    minutes                   0..59"
+
+        	::= { nnsysDst 8 }   
+
+--
+-- nnssmTraps
+--
+
+nnenableSsmModeNotification  OBJECT-TYPE
+       SYNTAX            TruthValue
+       MAX-ACCESS        read-write
+       STATUS            current
+       DESCRIPTION
+               "Indicates whether the system produces the
+                SSM Mode Traps . The default is yes."
+       DEFVAL { true }
+              ::= { nnssmTraps 2 }
+
+nnssmCurrentState       OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (1..16))
+        MAX-ACCESS      accessible-for-notify
+        STATUS          current
+        DESCRIPTION     "Current State of SSM."
+              ::= { nnssmTrapVariables 1}
+
+nnssmPreviousState       OBJECT-TYPE
+        SYNTAX          DisplayString (SIZE (1..16))
+        MAX-ACCESS      accessible-for-notify
+        STATUS          current
+        DESCRIPTION     "Previous State of SSM."
+              ::= { nnssmTrapVariables 2}
+
+nnssmFromNormalTrap NOTIFICATION-TYPE
+        OBJECTS {nnssmCurrentState}
+        STATUS current
+        DESCRIPTION
+             "Trap being generated when ssm switches from Normal mode."
+        ::= {nnssmNotifications  1}
+
+nnssmToNormalTrap NOTIFICATION-TYPE
+        OBJECTS {nnssmPreviousState}
+        STATUS current
+        DESCRIPTION
+             "Trap being generated when ssm switches to Normal mode."
+        ::= {nnssmNotifications  2}
+
+
+
+END

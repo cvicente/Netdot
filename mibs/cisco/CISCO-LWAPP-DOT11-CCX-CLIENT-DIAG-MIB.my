@@ -1,0 +1,1568 @@
+--* Ambika Mohanty
+--
+--Copyright (c) 2006 by Cisco Systems, Inc.
+--All rights reserved.
+--
+--This MIB captures all the elements used to represent the requests
+--and responses during the dignostic tests of a ccxv5 client.
+--
+--The Diagnostic Channel capability is a mechanism that automates
+--the troubleshooting of client problems communicating with the WLAN.
+--The mechanism is available, on demand, from any AP in the WLAN
+--advertising the capability.When triggered by a client having
+--difficulties, the diagnostic channel is a WLAN configured to
+--provide the most robust communication methods with the least
+--obstacles to communication placed in the path of the client.
+--The client and AP will proceed through a defined set of tests
+--and responses in an attempt to identify the cause of the
+--communication difficulties experienced by the client.
+--*******************************************************************
+
+CISCO-LWAPP-DOT11-CCX-CLIENT-DIAG-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS 
+        MODULE-IDENTITY, 
+        OBJECT-TYPE,
+        Unsigned32
+                FROM SNMPv2-SMI
+        MODULE-COMPLIANCE, 
+        OBJECT-GROUP
+                FROM SNMPv2-CONF
+        MacAddress,
+        TruthValue,
+        RowStatus,
+        TimeStamp,
+	TEXTUAL-CONVENTION
+                FROM SNMPv2-TC 
+        InetAddressType,
+        InetAddress
+                FROM INET-ADDRESS-MIB
+	CiscoMilliSeconds
+	        FROM CISCO-TC
+        CiscoLwappDot11ClientAuthMethod,
+	CLDot11ClientDiagAssocReason
+                FROM CISCO-LWAPP-DOT11-CLIENT-CCX-TC-MIB
+        cldcClientMacAddress,
+        ciscoLwappDot11ClientCcxMIBObjects
+                FROM CISCO-LWAPP-DOT11-CLIENT-MIB
+        ciscoMgmt
+                FROM CISCO-SMI;
+
+--********************************************************************
+--*  MODULE IDENTITY
+--********************************************************************
+
+ciscoLwappDot11CcxClientDiagMIB   MODULE-IDENTITY
+
+        LAST-UPDATED   "200606240000Z"
+        ORGANIZATION   "Cisco Systems Inc."
+        CONTACT-INFO  
+               "        Cisco Systems,
+                        Customer Service
+                Postal: 170 West Tasman Drive
+                        San Jose, CA  95134
+                        USA
+                   Tel: +1 800 553-NETS
+
+                 Email: cs-wnbu-snmp@cisco.com"
+
+        DESCRIPTION             
+                "This MIB is intended to be implemented on all those
+                devices operating as Central Controllers (CC) that
+                terminate the Light Weight Access Point Protocol
+                (LWAPP) tunnel from Light-weight  Access Points.
+
+                Link Test is performed to learn the backhaul link 
+                quality between two mesh neighboring mesh nodes.
+
+                The arrangement of the controller 
+                (referred to as CC in the diagram) and mesh nodes
+                (RAP and MAP) LWAPP APs ,client(MN) and NMS appear 
+                as follows.
+
+                 +.......+                 +.......+
+                 +       +                 +       +
+                 +  NMS  +                 +  NMS  +
+                 +       +                 +       +
+                 +.......+                 +.......+
+                    .                         .
+                 .    .                     .   .
+              .         .                .        .
+            .            .             .            .
+        +......+     +......+     +......+           +......+
+        +      +     +      +     +      +           +      +
+        +  CC  +     +  CC  +     +  CC  +           +  CC  +
+        +      +     +      +     +      +           +      +
+        +......+     +......+     +......+           +......+
+          ..            .             .                 .
+          ..            .             .                 .
+         .  .            .             .                 .
+        .    .            .             .                 .
+       .      .            .             .                 .
+      .        .            .             .                 .
+   +......+ +......+     +......+      +......+          +......+
+   +      + +      +     +      +      +      +          +      +
+   +  RAP + +  RAP +     +  RAP  +     +  RAP +          +  RAP +
+   +      + +      +     +      +      +      +          +      +
+   +......+ +......+     +......+      +......+          +......+
+      .        .              .             .                 .
+       .        .              .             .                 .
+        .        .              .             .                 .
+        .          .              .             .                 .
+        .           .              .             .                 .
+      +......+ +......+     +......+      +......+          +......+
+      +      + +      +     +      +      +      +          +      +
+      +  MAP + +  MN  +     +  MAP +      +  MAP +          +  MAP +
+      +      + +      +     +      +      +      +          +      +
+      +......+ +......+     +......+      +......+          +......+
+          .                    .                          ..    . 
+          . .                  .                     ..        .
+          .   .                .                  ..            .
+          .     .              .              .                .
+      +......+ +......+     +......+      +......+.         +......+
+      +      + +      +     +      +      +      +          +      +
+      +  MAP + +  MAP +     +  MAP +      +  MAP +          +  MN  +
+      +      + +      +     +      +      +      +          +      +
+      +......+ +......+     +......+      +......+          +......+
+
+
+
+
+                The LWAPP tunnel exists between the controller and
+                the APs.  The MNs communicate with the APs through
+                the protocol defined by the 802.11 standard.  The
+                controllers and the IDS systems exchange information
+                through Cisco proprietary event exchange mechanisms.
+                
+                LWAPP APs, upon bootup, discover and join one of the
+                controllers and the controller pushes the 
+                configuration, that includes the WLAN parameters, to 
+                the LWAPP APs. The APs then encapsulate all the 802.11 
+                frames from wireless clients inside LWAPP frames and 
+                forward the LWAPP frames to the controller.
+              
+                                   GLOSSARY
+
+                Access Point ( AP )
+
+                An entity that contains an 802.11 medium access
+                control ( MAC ) and physical layer ( PHY ) interface
+                and provides access to the distribution services via
+                the wireless medium for associated clients.  
+
+                LWAPP APs encapsulate all the 802.11 frames in
+                LWAPP frames and sends them to the controller to which
+                it is logically connected.
+
+                Central Controller ( CC )
+
+                The central entity that terminates the LWAPP protocol
+                tunnel from the LWAPP APs.  Throughout this MIB,
+                this entity is also referred to as 'controller'.
+
+                Mobile Node ( MN )
+
+                A roaming 802.11 wireless device in a wireless
+                network associated with an access point. Mobile Node 
+                and client are used interchangeably. 
+
+                Network Management System ( NMS )
+
+                The station from which the administrator manages the
+                wired and wireless networks.
+                
+                Mesh Node
+                                
+                A mesh node is defined as a physical or logical entity
+                in the mesh network participating in forming the mesh 
+                backhaul. There are two types of mesh nodes supported 
+                in Cisco mesh network:RAP and MAP.
+                
+                Root AP (RAP)
+                
+                The AP forming the bridge between a wired and a mesh
+                network with an Ethernet interface to the wired 
+                network and a 802.11 radio interface to the mesh 
+                network
+                
+                Mesh AP (MAP).
+                
+                The AP extending wireless coverage similar to a 
+                repeater in a mesh network and consists of a 802.11 
+                uplink and a 802.11 downlink. On a single-radio 
+                backhaul, both uplink and downlink exist on the same 
+                radio and are logical links only. On a multi-radio 
+                backhaul, they may exist on different radios.MAP APs 
+                associates directly with RAP APs or with another MAP 
+                AP. Each association of AP (MAP-MAP or RAP-MAP) with 
+                another AP forms parent-child relationship. 
+                
+                Mesh Network
+                
+                Network starting with the wireless backhaul downlink
+                of the RAP and all the entities below except any 
+                attached network to the Ethernet link of MAPs. A mesh 
+                network below a single RAP is also referred to as a 
+                'Mesh Sector'.A mesh network consists of mesh nodes. 
+                A single mesh network is always augmented to a single 
+                wired network.
+                
+                Mesh Link
+                
+                A logical 802.11 link between two mesh nodes. A single 
+                link is point-to-point. All point-to-multipoint links 
+                are considered as multiple mesh links. Often referred 
+                to as mesh backhaul link.
+                
+                Mesh Backhaul
+                
+                A Mesh backhaul consists of mesh nodes and mesh links 
+                terminating at a RAP. This necessarily creates a one-
+                to-one relationship between a 'mesh network', 'mesh
+                sector' and a 'mesh backhaul' where these terms can be 
+                used interchangeably.
+                
+                SNR
+                Signal to Noise ratio on the 802.11 radio.
+                
+                Bridged network 
+                The bridged network is defined as the network(s)
+                attached to the Ethernet port of any MAP. There can be
+                multiple such networks attached to a single mesh 
+                network.
+                
+                REFERENCE
+ 
+                [1] Wireless LAN Medium Access Control ( MAC ) and
+                Physical Layer ( PHY ) Specifications.
+  
+                [2] Draft-obara-capwap-lwapp-00.txt, IETF Light 
+                Weight Access Point Protocol "
+        
+        REVISION      "200604100000Z" 
+        DESCRIPTION
+                "Initial version of this MIB module."   
+        ::= { ciscoLwappDot11ClientCcxMIBObjects 2 }
+
+ciscoLwappDot11CcxClientDiagMIBObjects  OBJECT IDENTIFIER 
+        ::={ ciscoLwappDot11CcxClientDiagMIB 0 }
+	
+ciscoLwappDot11CcxClientDiagMIBNotifs OBJECT IDENTIFIER
+	::={ ciscoLwappDot11CcxClientDiagMIB 1 }
+
+ciscoLwappDot11CcxClientDiagMIBNotifObjs OBJECT IDENTIFIER
+	::={ ciscoLwappDot11CcxClientDiagMIB 2 }
+
+ciscoClientCcxDiagRequest OBJECT IDENTIFIER  
+	::={ ciscoLwappDot11CcxClientDiagMIBObjects 1 }
+
+ciscoClientCcxDiagResponse OBJECT IDENTIFIER  
+	::={ ciscoLwappDot11CcxClientDiagMIBObjects 2 }
+
+ciscoClientCcxDiagStatus OBJECT IDENTIFIER  
+	::={ ciscoLwappDot11CcxClientDiagMIBObjects 3 }
+
+--- *************************************************************
+--- This textual convention is used to represet the test result
+--- of the various diagnostic tests
+--- *************************************************************                             
+
+CiscoLwappCcxDiagResponseStatus ::= TEXTUAL-CONVENTION
+
+	STATUS    current
+	DESCRIPTION 
+		"This attribute represents the response status of the ccx
+                diag tests."
+		
+	SYNTAX INTEGER {
+         successful(0),
+         fail(1),
+         refused(3),
+         incapable(4),
+         unknown(5)
+	}
+
+CiscoLwappCcxDiagTestStatus ::= TEXTUAL-CONVENTION
+
+	STATUS    current
+	DESCRIPTION 
+		"This attribute represents the last test status of the ccx
+                diag tests."
+		
+	SYNTAX INTEGER {
+         successful(0),
+         pending(1),
+         timeout(3),
+         stopped(4),
+         mismatch(5)
+	}
+
+
+CiscoLwappDot11ClientDot1xCredential::= TEXTUAL-CONVENTION
+
+	STATUS    current
+	DESCRIPTION
+                "This attribute represents the dotx 
+                credential identifier."
+		
+	SYNTAX INTEGER {
+          pre-sharedkey(0), 
+          username-password(1),
+          xdot(2),
+          other-cert(3),
+          one-time-password(4),
+          secure-id-token(5),
+          none(255)
+          }
+
+CiscoLwappDot11ClientAbortTestReason::= TEXTUAL-CONVENTION
+
+	STATUS    current
+	DESCRIPTION
+                "This attribute represents the reason 
+                for abortion of ccx diag test."
+		
+	SYNTAX INTEGER {
+	reserved(0),
+	timeout(1),
+	cancelled-by-operator(2)
+        }
+
+CiscoLwappDot11ClientInitiateTest::= TEXTUAL-CONVENTION
+
+	STATUS    current
+	DESCRIPTION
+                "This attribute says whether the test 
+		is to be started or aborted."
+		
+	SYNTAX INTEGER {
+	initiate-test(1),
+	abort-test(2)
+        }
+
+--- *******************************************************************                          
+--- To determine that DHCP is operating properly between the controller
+--- and client, the DHCP test executes a complete DHCP Discover/Offer/
+--- Request/ACK exchange.The client shall attempt to obtain a DHCP 
+--- lease, beginning with a broadcast DHCP Discover packet.  The client
+--- shall log the time of transmission and reception of each DHCP 
+--- packet, as well as the entire content of the frame containing those
+--- packets, for subsequent transmission to the AP.The frames captured
+--- and logged shall be in Cleartext, even if the frames were 
+--- cldccDiagDhcpTestClientMacAddress  MacAddress,
+--- originally encrypted.The following two tables are used to represent
+--- request and response parameters of DHCP Test.               
+--- *******************************************************************  
+
+--- ******************************************************************* 
+-- DHCP Test Request Table
+--- ******************************************************************* 
+
+cldccDiagDhcpTestReqTable   OBJECT-TYPE
+
+    SYNTAX      SEQUENCE OF CldccDiagDhcpTestReqEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION	
+               "This table contains request params for dhcp test to
+               be performed by the client."
+		
+::= { ciscoClientCcxDiagRequest 1}
+
+cldccDiagDhcpTestReqEntry   OBJECT-TYPE
+
+    SYNTAX       CldccDiagDhcpTestReqEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION	
+               "There is an entry in the table identified by the
+               client mac address."
+    INDEX
+    {
+      cldcClientMacAddress
+    }
+
+::= {cldccDiagDhcpTestReqTable 1}
+
+
+CldccDiagDhcpTestReqEntry::=
+
+    SEQUENCE
+    {
+       cldccDiagDhcpTestReqRowStatus RowStatus
+    }
+
+cldccDiagDhcpTestReqRowStatus OBJECT-TYPE
+
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION	
+                "This field is used to add/remove entries from this 
+		table.To add a row in this table, createAndGo row status
+                will be used.To remove a row, this field will be set to
+                destroy."
+
+::= { cldccDiagDhcpTestReqEntry 1}
+
+
+---******************************************************************* 
+--- DHCP Test Response Table 
+---******************************************************************* 
+
+cldccDiagDhcpTestRespTable   OBJECT-TYPE
+
+   SYNTAX      SEQUENCE OF CldccDiagDhcpTestRespEntry 
+   MAX-ACCESS  not-accessible
+   STATUS      current
+   DESCRIPTION	
+               "This table contains response for dhcp 
+               test performed by the client."
+
+::= { ciscoClientCcxDiagResponse  1}
+
+cldccDiagDhcpTestRespEntry  OBJECT-TYPE
+
+   SYNTAX       CldccDiagDhcpTestRespEntry
+   MAX-ACCESS   not-accessible
+   STATUS       current
+   DESCRIPTION	
+              "There is an entry in the table 
+              identified by the client mac address."
+   INDEX						
+	{
+         cldcClientMacAddress           
+        }
+
+::= { cldccDiagDhcpTestRespTable 1}
+
+
+CldccDiagDhcpTestRespEntry::= 
+
+	SEQUENCE  
+        {
+        cldccDiagDhcpTestRespDhcpOffer OCTET STRING
+	}
+
+
+cldccDiagDhcpTestRespDhcpOffer    OBJECT-TYPE
+
+     SYNTAX      OCTET STRING (SIZE(1..256 ))
+     MAX-ACCESS  read-only
+     STATUS      current	
+     DESCRIPTION	
+                 "This field will have the complete set
+                 of DHCP options returned in the DHCP Offer."
+
+::= { cldccDiagDhcpTestRespEntry 1}
+
+--- *******************************************************************
+--- To determine that IP connectivity exists to the Dns server,
+--- the Dns server ping test causes the client to execute a ping
+--- test of the Dns server obtained in the DHCP test.
+--- Upon receipt of the Dns server ping test request element, the client
+--- shall cause the normally instantiated protocol stack to transmit 
+--- one or more ICMP echo request packets (ping packets) to the Dns 
+--- server, using the parameters supplied in the ping request from the 
+--- AP.For the duration of the test, the client shall log the time of
+--- transmission and reception of all packets, as well as the entire 
+--- content of the frames containing those packets, for subsequent
+--- transmission to the AP.   
+---  
+--- The following two tables represent request and response tables for
+--- ping tests. 
+--- *******************************************************************
+
+
+--- *******************************************************************
+--- Dns Server Ping Test  Request
+-- ********************************************************************
+
+
+cldccDiagPingTestReqTable  OBJECT-TYPE
+
+  SYNTAX       SEQUENCE OF CldccDiagPingTestReqEntry 
+  MAX-ACCESS   not-accessible
+  STATUS       current
+  DESCRIPTION	
+	     "This table contains the parameters for DNS ping test
+	     request."
+			  		
+ ::= { ciscoClientCcxDiagRequest 2 }
+
+cldccDiagPingTestReqEntry  OBJECT-TYPE
+
+    SYNTAX      CldccDiagPingTestReqEntry
+    MAX-ACCESS 	not-accessible
+    STATUS     	current
+    DESCRIPTION	
+	      "There is an entry in the table where each entry is identified
+	      by the client mac address."
+     INDEX						
+     {
+	cldcClientMacAddress
+     }
+
+ ::= { cldccDiagPingTestReqTable 1 }
+
+
+CldccDiagPingTestReqEntry::=
+
+    SEQUENCE {
+        cldccDiagPingTestType INTEGER,
+	cldccDiagPingTestReqRowStatus RowStatus
+    }
+
+cldccDiagPingTestType OBJECT-TYPE
+
+    SYNTAX      INTEGER {
+                 dns-server(1),
+                 default-gw(2)
+		}
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+                "This field is used to distinguish the type of
+                test.It can be a ping to the dns server or the
+	       	default gateway."
+
+::= { cldccDiagPingTestReqEntry 1 }
+
+cldccDiagPingTestReqRowStatus OBJECT-TYPE
+
+    SYNTAX      RowStatus
+    MAX-ACCESS  read-create
+    STATUS      current
+    DESCRIPTION
+                "This field is used to add/remove entries from this 
+		table.To add a row in this table, createAndGo row status
+                will be used.To remove a row, this field will be set to
+                destroy."
+
+::= { cldccDiagPingTestReqEntry 2 }
+
+
+--- *******************************************************************
+--- Dns Server Ping Test  Response
+--- *******************************************************************
+
+cldccDiagPingTestRespTable  OBJECT-TYPE
+
+     SYNTAX       SEQUENCE OF CldccDiagPingTestRespEntry 
+     MAX-ACCESS   not-accessible
+     STATUS       current
+     DESCRIPTION	
+                  "This table contains response for Dns ping test 
+		  request."
+
+::= { ciscoClientCcxDiagResponse  2 }
+    
+    
+cldccDiagPingTestRespEntry  OBJECT-TYPE
+
+        SYNTAX      CldccDiagPingTestRespEntry
+        MAX-ACCESS  not-accessible
+        STATUS      current
+        DESCRIPTION	
+                    "There is an entry in the table where each entry is 
+                    identified by the client mac address."
+	INDEX						
+        {
+         cldcClientMacAddress           
+        }
+
+::= { cldccDiagPingTestRespTable 2 }
+
+
+CldccDiagPingTestRespEntry ::=
+
+      SEQUENCE
+       {
+       cldccDiagPingTestRespIPAddressType InetAddressType,
+       cldccDiagPingTestRespIPAddress InetAddress,
+       cldccDiagPingTestRespDestMacAddress MacAddress,
+       cldccDiagPingTestRespPingsSent Unsigned32,
+       cldccDiagPingTestRespPingsReceived Unsigned32,
+       cldccDiagPingTestRespMaxEchoTIme CiscoMilliSeconds,
+       cldccDiagPingTestRespMinEchoTIme CiscoMilliSeconds
+      }
+
+cldccDiagPingTestRespIPAddressType  OBJECT-TYPE
+
+    SYNTAX       InetAddressType
+    MAX-ACCESS 	 read-only
+    STATUS     	 current	
+    DESCRIPTION	
+                  "The value of this field shall be the IP address 
+		  type of the destination of the ICMP echo
+                  request frames."			
+              
+::= { cldccDiagPingTestRespEntry 1 }
+
+
+cldccDiagPingTestRespIPAddress  OBJECT-TYPE
+
+    SYNTAX       InetAddress
+    MAX-ACCESS 	 read-only
+    STATUS     	 current	
+    DESCRIPTION	
+                  "The value of this field shall be the IP address 
+                  of the destination of the ICMP Echo Request 
+                  frames."
+              
+::= { cldccDiagPingTestRespEntry 2 }
+
+
+cldccDiagPingTestRespDestMacAddress OBJECT-TYPE
+
+     SYNTAX       MacAddress
+     MAX-ACCESS   read-only
+     STATUS       current	
+     DESCRIPTION	
+                  "The value of this field shall be the MAC address 
+                  of the destination of the ICMP Echo Request 
+                  frames."
+              
+::= { cldccDiagPingTestRespEntry 3 }
+
+
+cldccDiagPingTestRespPingsSent OBJECT-TYPE
+
+    SYNTAX        Unsigned32
+    MAX-ACCESS 	  read-only
+    STATUS     	  current	
+    DESCRIPTION	
+                 "The value of this field shall be the number 
+                 of ICMP Echo Request frames sent."
+              
+::= { cldccDiagPingTestRespEntry 4 }
+
+
+cldccDiagPingTestRespPingsReceived OBJECT-TYPE
+
+     SYNTAX       Unsigned32
+     MAX-ACCESS   read-only
+     STATUS       current	
+     DESCRIPTION	
+                "The value of this field shall be the number of 
+                ICMP Echo Response frames received."
+              	
+::= { cldccDiagPingTestRespEntry 5 }
+
+
+cldccDiagPingTestRespMinEchoTIme OBJECT-TYPE
+
+   SYNTAX      CiscoMilliSeconds
+   MAX-ACCESS  read-only
+   STATUS      current
+   DESCRIPTION
+              "The value of this field shall be the shortest time,in    
+               milliseconds, between the transmission of an ICMP echo
+	       request frame and the receipt of the corresponding ICMP
+	       Echo Response frame."
+              
+::= { cldccDiagPingTestRespEntry 6 }
+
+
+cldccDiagPingTestRespMaxEchoTIme OBJECT-TYPE
+
+   SYNTAX      CiscoMilliSeconds
+   MAX-ACCESS  read-only
+   STATUS      current
+   DESCRIPTION
+              "The value of this field shall be the longest time
+	      in milliseconds,between the transmission of an ICMP 
+              echo Request between the transmission of an ICMP echo
+              request frame and the receipt of the corresponding
+	      ICMP echo response frame.
+              ICMP echo request  frames for which no corresponding 
+              response is received shall be ignored in the
+	      determination of this value."
+            
+::= { cldccDiagPingTestRespEntry 7 }
+
+-- *******************************************************************
+-- To determine that name resolution is functioning correctly,
+-- the DNS test causes the client to attempt to resolve a network
+-- name known to be resolvable.Upon receipt of the DNS name
+-- resolution test request element, the client shall cause the
+-- normally instantiated protocol stack to request the resolution
+-- of the network (host) name provided in the element.For the duration
+-- of the test, the client shall log the time of transmission and
+-- reception of all packets, as well as the content of the entire
+-- frame containing those packets, for subsequent transmission to the
+-- AP.Upon completion of the DNS exchange, whether by successful
+-- resolution of the network name or normal protocol timeout, the
+-- client shall report the success or failure of the test to the AP.  
+-- *******************************************************************
+
+--- Dns Name Resolution Request Table ----
+
+cldccDiagDnsNameResolTestReqTable OBJECT-TYPE
+
+    SYNTAX      SEQUENCE OF CldccDiagDnsNameResolTestReqEntry
+    MAX-ACCESS 	not-accessible
+    STATUS     	current
+    DESCRIPTION	
+               "This table contains Dns Name resolution request 
+               params to be used for sending out a Diagnostic
+               request to a client for resolving a network name."
+
+::= { ciscoClientCcxDiagRequest  3}
+
+
+cldccDiagDnsNameResolTestReqEntry  OBJECT-TYPE
+
+    SYNTAX     	CldccDiagDnsNameResolTestReqEntry
+    MAX-ACCESS 	not-accessible
+    STATUS     	current
+    DESCRIPTION	
+               "There is an entry in the table where each entry
+               is identified by the client mac address."
+    INDEX
+    {
+        cldcClientMacAddress
+    }
+
+::= { cldccDiagDnsNameResolTestReqTable 1}
+
+CldccDiagDnsNameResolTestReqEntry::= 
+
+    SEQUENCE  
+    {
+    cldccDiagDnsNameResolTestReqNetworkName OCTET STRING,
+    cldccDiagDnsNameResolTestReqRowStatus RowStatus
+    }
+
+cldccDiagDnsNameResolTestReqNetworkName    OBJECT-TYPE
+
+    SYNTAX      OCTET STRING(SIZE(1..256))
+    MAX-ACCESS 	read-create
+    STATUS     	current	
+    DESCRIPTION
+               "This is the name of the network which will be
+	       resolved by the client and the result reported
+	       to the controller."
+ 
+::= { cldccDiagDnsNameResolTestReqEntry  1}
+
+cldccDiagDnsNameResolTestReqRowStatus OBJECT-TYPE
+
+    SYNTAX      RowStatus
+    MAX-ACCESS 	read-create
+    STATUS     	current
+    DESCRIPTION	
+             "This field is used to add/remove entries from this 
+             table.To add a row in this table, createAndGo row
+             status will be used.To remove a row, this field
+             will be set to destroy."
+                     
+::= { cldccDiagDnsNameResolTestReqEntry  2 }
+
+--- Dns Name Resolution Response Table ----
+
+cldccDiagDnsNameResolTestRespTable OBJECT-TYPE
+
+   SYNTAX      SEQUENCE OF CldccDiagDnsNameResolTestRespEntry 
+   MAX-ACCESS  not-accessible
+   STATUS      current
+   DESCRIPTION	
+              "This table contains Dns Name Resolution test results
+              sent by the client to the controller."
+		
+::= { ciscoClientCcxDiagResponse  3}
+
+
+cldccDiagDnsNameResolTestRespEntry  OBJECT-TYPE
+
+   SYNTAX       CldccDiagDnsNameResolTestRespEntry
+   MAX-ACCESS 	not-accessible
+   STATUS     	current
+   DESCRIPTION	
+              "There is an entry in the table where each entry is
+              identified by a client mac address."
+   INDEX						
+   {
+      cldcClientMacAddress           
+   }
+
+::= { cldccDiagDnsNameResolTestRespTable 1}
+
+
+CldccDiagDnsNameResolTestRespEntry::= 
+
+    SEQUENCE  {
+    cldccDiagDnsNameResolTestRespIpAddressType  InetAddressType,
+    cldccDiagDnsNameResolTestRespIpAddress  InetAddress,
+    cldccDiagDnsNameResolTestRespServerName OCTET STRING
+    }
+
+cldccDiagDnsNameResolTestRespIpAddressType OBJECT-TYPE
+
+    SYNTAX     InetAddressType
+    MAX-ACCESS 	read-only
+    STATUS     	current	
+    DESCRIPTION	
+               "This is type of the ip address of the
+	       DNS server whose name was sent in the
+               request."
+ 
+::= { cldccDiagDnsNameResolTestRespEntry  1}
+
+
+cldccDiagDnsNameResolTestRespIpAddress OBJECT-TYPE
+
+    SYNTAX     InetAddress
+    MAX-ACCESS 	read-only
+    STATUS     	current	
+    DESCRIPTION	
+               "This is the ip address of the DNS server
+               whose name was sent in the request." 
+              	
+::= { cldccDiagDnsNameResolTestRespEntry  2}
+
+cldccDiagDnsNameResolTestRespServerName OBJECT-TYPE
+
+    SYNTAX      OCTET STRING(SIZE(1..256))
+    MAX-ACCESS 	read-only
+    STATUS     	current
+    DESCRIPTION
+               "This is the name of the server whose
+	       ip address was resolved."
+              	
+::= { cldccDiagDnsNameResolTestRespEntry  3 }
+
+
+cldccDiagAssociationTestReqTable   OBJECT-TYPE
+
+   SYNTAX      SEQUENCE OF CldccDiagAssociationTestReqEntry 
+   MAX-ACCESS  not-accessible
+   STATUS      current
+   DESCRIPTION
+              "This table contains association test request values
+              for various clients."
+		
+::= { ciscoClientCcxDiagRequest 4}
+
+cldccDiagAssociationTestReqEntry  OBJECT-TYPE
+
+     SYNTAX        CldccDiagAssociationTestReqEntry
+     MAX-ACCESS    not-accessible
+     STATUS        current
+     DESCRIPTION	
+                 "There is an entry in the table for each entry 
+                 identified by the client mac address."
+    INDEX
+    {
+       cldcClientMacAddress
+    }
+
+::= {cldccDiagAssociationTestReqTable 1}
+
+CldccDiagAssociationTestReqEntry::= 
+
+   SEQUENCE  
+    {
+    cldccDiagAssocTestReqBssid	MacAddress,
+    cldccDiagAssocTestReqSsid	OCTET STRING,
+    cldccDiagAssocTestReqChannel INTEGER,
+    cldccDiagAssocTestReqBand INTEGER,
+    cldccDiagAssocTestReqPhyType INTEGER,
+    cldccDiagAssocTestReqRowStatus RowStatus
+    }
+
+cldccDiagAssocTestReqBssid OBJECT-TYPE
+
+    SYNTAX       MacAddress
+    MAX-ACCESS 	 read-create
+    STATUS     	 current
+    DESCRIPTION
+              "This is the bssid of the AP which the client
+              has to try connecting to as a part of association 
+	      test."
+
+::= { cldccDiagAssociationTestReqEntry 1 }
+
+
+cldccDiagAssocTestReqSsid  OBJECT-TYPE
+
+    SYNTAX       OCTET STRING (SIZE(1..32))
+    MAX-ACCESS 	 read-create
+    STATUS     	 current
+    DESCRIPTION	
+              "This is the name of the SSID which the client has
+              to try connecting to as a part of association test."
+
+::= { cldccDiagAssociationTestReqEntry 2 }
+
+cldccDiagAssocTestReqChannel OBJECT-TYPE
+
+    SYNTAX       INTEGER(0..255)
+    MAX-ACCESS 	 read-create
+    STATUS     	 current
+    DESCRIPTION	
+              "This is channel number on which the client will
+	      try to connect to the AP."
+
+::= { cldccDiagAssociationTestReqEntry 3 }
+
+cldccDiagAssocTestReqBand OBJECT-TYPE
+
+    SYNTAX       INTEGER(0..255)
+    MAX-ACCESS 	 read-create
+    STATUS     	 current
+    DESCRIPTION	
+              "This is band on which the client will
+	      try to connect to the AP."
+
+::= { cldccDiagAssociationTestReqEntry 4 }
+
+cldccDiagAssocTestReqPhyType OBJECT-TYPE
+
+    SYNTAX       INTEGER(0..255)
+    MAX-ACCESS 	 read-create
+    STATUS     	 current
+    DESCRIPTION	
+              "This is phy type."
+
+::= { cldccDiagAssociationTestReqEntry 5 }
+
+cldccDiagAssocTestReqRowStatus OBJECT-TYPE
+		
+    SYNTAX     	 RowStatus
+    MAX-ACCESS 	 read-create
+    STATUS     	 current
+    DESCRIPTION
+               "This field is used to add/remove entries from this
+               table.To add a row in this table, createAndGo row
+               status will be used.To remove a row, this field
+               will be set to destroy."
+
+::= { cldccDiagAssociationTestReqEntry 6 }
+
+-- Association Response Table 
+
+cldccDiagAssociationTestRespTable   OBJECT-TYPE
+
+   SYNTAX       SEQUENCE OF CldccDiagAssociationTestRespEntry
+   MAX-ACCESS 	not-accessible
+   STATUS     	current
+   DESCRIPTION
+                "This table contains association test
+                response values for various clients."
+		
+::= { ciscoClientCcxDiagResponse 4 }
+
+
+cldccDiagAssociationTestRespEntry  OBJECT-TYPE
+
+    SYNTAX       CldccDiagAssociationTestRespEntry
+    MAX-ACCESS 	 not-accessible
+    STATUS     	 current
+    DESCRIPTION	
+                 "There is an entry in the table for each entry
+                  identified by the client mac address."
+    INDEX						
+    {
+          cldcClientMacAddress           
+    }
+
+::= { cldccDiagAssociationTestRespTable 4}
+
+
+CldccDiagAssociationTestRespEntry::=
+ 
+    SEQUENCE  
+    {
+        cldccDiagAssociationTestRespIsAssocComplete    TruthValue,
+        cldccDiagAssocTestRespReturnedStatus Unsigned32
+    }
+
+  cldccDiagAssociationTestRespIsAssocComplete    OBJECT-TYPE
+
+    SYNTAX       TruthValue
+    MAX-ACCESS 	 read-only
+    STATUS     	 current
+    DESCRIPTION			
+                "Value of this field shall be 1 if the 802.11
+                association concluded normally,0 otherwise."
+
+  ::= { cldccDiagAssociationTestRespEntry 1 }
+
+
+  cldccDiagAssocTestRespReturnedStatus	OBJECT-TYPE
+
+    SYNTAX        Unsigned32 
+    MAX-ACCESS 	  read-only
+    STATUS     	  current
+    DESCRIPTION			
+                "Value of this field shall be the value returned 
+	       	in the final 802.11 association response frame 
+                during the test. "
+
+  ::= { cldccDiagAssociationTestRespEntry 2 }
+
+--- Authentication Request Table 
+
+cldccDiagAuthenticationTestReqTable    OBJECT-TYPE
+
+  SYNTAX       SEQUENCE OF CldccDiagAuthenticationTestReqEntry
+  MAX-ACCESS   not-accessible
+  STATUS       current
+  DESCRIPTION
+              "This table contains association test request values
+	      for various clients."
+		
+::= { ciscoClientCcxDiagRequest  5}
+
+cldccDiagAuthenticationTestReqEntry  OBJECT-TYPE
+
+  SYNTAX       CldccDiagAuthenticationTestReqEntry
+  MAX-ACCESS   not-accessible
+  STATUS       current
+  DESCRIPTION	
+            "There is an entry in the table for each entry
+	    identified by the client mac address."
+  INDEX	
+  {
+       cldcClientMacAddress
+  }
+
+::= { cldccDiagAuthenticationTestReqTable 1}
+
+
+CldccDiagAuthenticationTestReqEntry::=
+
+   SEQUENCE
+   {
+    cldccDiagAuthenticationTestReqBssid MacAddress,
+    cldccDiagAuthenticationTestReqProfileId  Unsigned32,
+    cldccDiagAuthenticationTestReqChannel  INTEGER,
+    cldccDiagAuthenticationTestReqBand  INTEGER,
+    cldccDiagAuthenticationTestReqPhyType INTEGER,
+    cldccDiagAuthenticationTestReqRowStatus RowStatus
+  }
+
+cldccDiagAuthenticationTestReqBssid OBJECT-TYPE
+
+  SYNTAX      MacAddress
+  MAX-ACCESS  read-create
+  STATUS      current	
+  DESCRIPTION	
+          "This is the name of the AP which the client has to try 
+	  connecting to as a part of authentication test."
+
+::= { cldccDiagAuthenticationTestReqEntry 1 }
+
+cldccDiagAuthenticationTestReqProfileId  OBJECT-TYPE
+
+  SYNTAX      Unsigned32
+  MAX-ACCESS  read-create
+  STATUS      current	
+  DESCRIPTION	
+             "This is the name of the ProfileId which the client has to try 
+	     connecting to as a part of authentication test."
+
+::= { cldccDiagAuthenticationTestReqEntry 2 }
+
+cldccDiagAuthenticationTestReqChannel OBJECT-TYPE
+
+  SYNTAX      INTEGER(0..255)
+  MAX-ACCESS  read-create
+  STATUS      current	
+  DESCRIPTION	
+          "This attribute represents the channel number."
+
+::= { cldccDiagAuthenticationTestReqEntry 3 }
+
+cldccDiagAuthenticationTestReqBand OBJECT-TYPE
+
+  SYNTAX      INTEGER(0..255)
+  MAX-ACCESS  read-create
+  STATUS      current	
+  DESCRIPTION	
+          "This attribute represents the band."
+
+::= { cldccDiagAuthenticationTestReqEntry 5 }
+
+cldccDiagAuthenticationTestReqPhyType OBJECT-TYPE
+
+  SYNTAX      INTEGER(0..255)
+  MAX-ACCESS  read-create
+  STATUS      current	
+  DESCRIPTION	
+          "This attribute represents the phy type."
+
+::= { cldccDiagAuthenticationTestReqEntry 6 }
+
+cldccDiagAuthenticationTestReqRowStatus OBJECT-TYPE
+		
+  SYNTAX      RowStatus
+  MAX-ACCESS  read-create
+  STATUS      current
+  DESCRIPTION	
+           "This field is used to add/remove entries from this
+           table.To add a row in this table,createAndGo row
+           status will be used.To remove a row, this field will
+           be set to destroy."
+
+::= { cldccDiagAuthenticationTestReqEntry 9}
+
+--- Authentication Respose Table 
+
+cldccDiagAuthenticationTestRespTable   OBJECT-TYPE
+	
+    SYNTAX      SEQUENCE OF CldccDiagAuthenticationTestRespEntry
+    MAX-ACCESS  not-accessible
+    STATUS     	current
+    DESCRIPTION	
+                 "This table contains authentication test response 
+                 values for various clients."
+		
+::= { ciscoClientCcxDiagResponse 5}
+
+cldccDiagAuthenticationTestRespEntry  OBJECT-TYPE
+
+   SYNTAX        CldccDiagAuthenticationTestRespEntry
+   MAX-ACCESS 	 not-accessible
+   STATUS     	 current
+   DESCRIPTION	
+                "There is an entry in the table for each entry 
+                identified by the client mac address."
+   INDEX						
+    {
+       cldcClientMacAddress           
+    }
+
+::= { cldccDiagAuthenticationTestRespTable 5}
+
+
+CldccDiagAuthenticationTestRespEntry::= 
+
+   SEQUENCE  {
+   cldccDiagAuthenticationTestRespIsCompleted  TruthValue,
+   cldccDiagAuthenticationTestRespReturnedStatus INTEGER,
+   cldccDiagAuthenticationTestRespEAPMethod
+	                       OCTET STRING
+   }
+
+cldccDiagAuthenticationTestRespIsCompleted   OBJECT-TYPE
+
+  SYNTAX       TruthValue
+  MAX-ACCESS   read-only
+  STATUS       current
+  DESCRIPTION			
+            "Value of this field shall be 1 if the 802.11 
+             association concluded normally,0 otherwise."
+
+::= { cldccDiagAuthenticationTestRespEntry 1 }
+
+
+cldccDiagAuthenticationTestRespReturnedStatus	OBJECT-TYPE
+
+  SYNTAX       INTEGER(0..255)
+  MAX-ACCESS    read-only
+  STATUS     	current
+  DESCRIPTION			
+                 "Value of this field shall be the value returned in
+                 the final 802.11 authentication response frame 
+                 during the test "
+
+::= { cldccDiagAuthenticationTestRespEntry  2 }
+		
+
+cldccDiagAuthenticationTestRespEAPMethod  OBJECT-TYPE
+
+  SYNTAX        OCTET STRING(SIZE (0..255))
+  MAX-ACCESS    read-only
+  STATUS        current
+  DESCRIPTION			
+                "Value of this field shall be the EAP method returned
+                in the final 802.11 authentication response frame
+                during the test. "
+
+::= { cldccDiagAuthenticationTestRespEntry 3 }
+		
+
+cldccDiagMsgDisplayReqTable    OBJECT-TYPE
+
+    SYNTAX       SEQUENCE OF CldccDiagMsgDisplayReqEntry
+    MAX-ACCESS 	 not-accessible
+    STATUS     	 current
+    DESCRIPTION	
+                "This table contains message display request values for
+                 various clients."
+		
+::= { ciscoClientCcxDiagRequest  6}
+
+cldccDiagMsgDisplayReqEntry OBJECT-TYPE
+
+    SYNTAX       CldccDiagMsgDisplayReqEntry
+    MAX-ACCESS   not-accessible
+    STATUS     	 current
+    DESCRIPTION	
+                "There is an entry in the table for each entry
+	       	identified by the client mac address."
+   INDEX						
+   {
+       cldcClientMacAddress
+   }
+
+::= { cldccDiagMsgDisplayReqTable 1}
+
+CldccDiagMsgDisplayReqEntry::= 
+	
+   SEQUENCE  
+    {
+     cldccDiagMsgDisplayMsgType      INTEGER,
+     cldccDiagMsgDisplayReqRowStatus RowStatus
+  }
+
+cldccDiagMsgDisplayMsgType OBJECT-TYPE
+
+   SYNTAX        INTEGER
+                 {
+                  invalid-ssid(1),
+                  invalid-network-settings(2),
+                  wlan-capability-mismatch(3),
+                  bad-credentials(4),
+                  call-support(5),
+                  problem-resolved(6),
+                  resolution-incomplete(7),
+                  try-again-later(8),
+                  user-action-required(9),
+                  trouble-shooting-refused-by-network(10),
+                  retrieving-client-reports(11),
+                  retrieving-client-logs(12),
+                  retrieval-complete(13),
+                  begining-association-test(14),
+                  begining-dhcp-test(15),
+                  begining-network-connectivity-test(16),
+                  begining-dns-ping-test(17),
+                  begining-name-resolution-test(18),
+                  begining-dot1x-test(19),
+                  redirecting-client-to-a-profile(20),
+                  test-complete(21),
+                  test-passed(22),
+                  test-failed(23),
+                  cancel-diag-channel-operation(24),
+                  log-retrieval-refused(25),
+                  client-report-retrieval-refused(26),
+                  test-request-refused-by-client(27),
+                  invalid-network-address(28),
+                  known-problem-with-network(29),
+                  scheduled-maint-period(30),
+                  wlan-security-incorrect(31),
+                  waln-encryption-incorrect(32),
+                  wlan-auth-incorrect(33)  
+                 }
+   MAX-ACCESS 	 read-create
+   STATUS     	 current
+   DESCRIPTION
+              "This attribute represents the type of message
+              to be displayed."
+
+::= { cldccDiagMsgDisplayReqEntry 1 }
+
+cldccDiagMsgDisplayReqRowStatus   OBJECT-TYPE
+		
+	SYNTAX     RowStatus
+	MAX-ACCESS read-create
+	STATUS     current
+	DESCRIPTION	
+               "This field is used to add/remove entries from this table.
+               To add a row in this table, createAndGo row status will
+               be used.To remove a row, this field will be set to 
+               destroy."
+
+::= { cldccDiagMsgDisplayReqEntry 2 }
+
+cldccDiagProfileRedirectReqTable    OBJECT-TYPE
+
+    SYNTAX       SEQUENCE OF CldccDiagProfileRedirectReqEntry
+    MAX-ACCESS 	 not-accessible
+    STATUS     	 current
+    DESCRIPTION	
+                "This table contains profile redirect request values for
+                 various clients."
+		
+::= { ciscoClientCcxDiagRequest  7}
+
+cldccDiagProfileRedirectReqEntry OBJECT-TYPE
+
+    SYNTAX       CldccDiagProfileRedirectReqEntry
+    MAX-ACCESS   not-accessible
+    STATUS     	 current
+    DESCRIPTION	
+                "There is an entry in the table for each entry
+	       	identified by the client mac address."
+   INDEX						
+   {
+       cldcClientMacAddress
+   }
+
+::= { cldccDiagProfileRedirectReqTable 1}
+
+CldccDiagProfileRedirectReqEntry::= 
+
+   SEQUENCE  
+    {
+     cldccDiagProfileRedirectReqProfileId      Unsigned32,
+     cldccDiagProfileRedirectReqRowStatus RowStatus
+    }
+
+cldccDiagProfileRedirectReqProfileId OBJECT-TYPE
+
+   SYNTAX        Unsigned32
+   MAX-ACCESS 	 read-create
+   STATUS     	 current
+   DESCRIPTION
+              "This attribute represents the profile Id 
+              to which the client should be redirected."
+
+::= { cldccDiagProfileRedirectReqEntry 1 }
+
+cldccDiagProfileRedirectReqRowStatus   OBJECT-TYPE
+		
+    SYNTAX     RowStatus
+    MAX-ACCESS read-create
+    STATUS     current
+    DESCRIPTION
+               "This field is used to add/remove entries from this table.
+               To add a row in this table, createAndGo row status will
+               be used.To remove a row, this field will be set to 
+               destroy."
+
+::= { cldccDiagProfileRedirectReqEntry 2 }
+
+
+cldccDiagMsgDisplayRespTable    OBJECT-TYPE
+
+     SYNTAX      SEQUENCE OF CldccDiagMsgDisplayRespEntry
+     MAX-ACCESS  not-accessible
+     STATUS      current
+     DESCRIPTION	
+                "This table contains message display request values
+                for various clients."
+		
+::= { ciscoClientCcxDiagResponse 6}
+
+cldccDiagMsgDisplayRespEntry OBJECT-TYPE
+
+  SYNTAX      CldccDiagMsgDisplayRespEntry
+  MAX-ACCESS  not-accessible
+  STATUS      current
+  DESCRIPTION	
+             "There is an entry in the table for each entry
+	     identified by the client mac address."
+  INDEX						
+  {
+   cldcClientMacAddress           
+  }
+
+::= { cldccDiagMsgDisplayRespTable 1}
+
+CldccDiagMsgDisplayRespEntry::=
+
+      SEQUENCE
+      {
+       cldccDiagMsgDisplayRespString OCTET STRING
+      }
+
+cldccDiagMsgDisplayRespString    OBJECT-TYPE
+
+   SYNTAX       OCTET STRING (SIZE(1..256))
+   MAX-ACCESS 	read-only
+   STATUS     	current	
+   DESCRIPTION	
+              "This is string which was sent to the client for display."
+
+::= { cldccDiagMsgDisplayRespEntry 1 }
+
+
+cldccDiagTestLoggedFrameTable OBJECT-TYPE
+
+   SYNTAX     SEQUENCE OF CldccDiagTestLoggedFrameEntry
+   MAX-ACCESS not-accessible
+   STATUS     current
+   DESCRIPTION
+              "This table contains logged frame data."
+
+::= { ciscoClientCcxDiagResponse 8 }
+
+cldccDiagTestLoggedFrameEntry OBJECT-TYPE
+
+    SYNTAX     CldccDiagTestLoggedFrameEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    DESCRIPTION
+               "There is an entry in the table where each entry
+               is identified by the client mac address."
+    INDEX
+    {
+       cldcClientMacAddress,
+       cldccDiagTestLoggedFrameIndex
+    }
+
+::= { cldccDiagTestLoggedFrameTable 1}
+
+
+CldccDiagTestLoggedFrameEntry::= 
+
+    SEQUENCE
+    {
+    cldccDiagTestLoggedFrameIndex Unsigned32,
+    cldccDiagTestLoggedFrameDirection INTEGER,
+    cldccDiagTestLoggedFrameTimeStamp TimeStamp,
+    cldccDiagTestLoggedFrameData OCTET STRING
+    }
+
+cldccDiagTestLoggedFrameIndex OBJECT-TYPE
+
+    SYNTAX      Unsigned32
+    MAX-ACCESS 	read-only
+    STATUS     	current
+    DESCRIPTION
+             "The value of this field shall be the ordinal
+	     value of the logged frame."
+              
+::= { cldccDiagTestLoggedFrameEntry 1 }
+
+
+cldccDiagTestLoggedFrameDirection OBJECT-TYPE
+
+    SYNTAX     INTEGER
+               {
+                 up(0),
+                 down(1)
+               }
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION	
+           "The value of this field shall be zero,
+	   when the logged frame in the Frame Content field
+	   is sent from (transmitted by) the client.
+	   It shall be one, otherwise."
+
+::= { cldccDiagTestLoggedFrameEntry 2}
+
+
+cldccDiagTestLoggedFrameTimeStamp OBJECT-TYPE
+
+    SYNTAX      TimeStamp
+    MAX-ACCESS 	read-only
+    STATUS     	current
+    DESCRIPTION
+             "The value of this field shall be the
+	     timestamp value of the logged frame."
+              
+::= { cldccDiagTestLoggedFrameEntry 3 }
+
+
+cldccDiagTestLoggedFrameData OBJECT-TYPE
+
+    SYNTAX      OCTET STRING(SIZE(1..4096))
+    MAX-ACCESS 	read-only
+    STATUS     	current
+    DESCRIPTION	
+             "The value of this field shall be the actual
+             frame that was transmitted or received."
+                     
+::= { cldccDiagTestLoggedFrameEntry 4}
+
+cldccDiagTestStatusTable OBJECT-TYPE
+
+    SYNTAX      SEQUENCE OF CldccDiagTestStatusEntry
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION	
+               "This table contains the status params for 
+               all the tests performed on the client."
+		
+::= { ciscoClientCcxDiagStatus 1}
+
+cldccDiagTestStatusEntry OBJECT-TYPE
+
+    SYNTAX       CldccDiagTestStatusEntry
+    MAX-ACCESS   not-accessible
+    STATUS       current
+    DESCRIPTION	
+               "There is an entry in the table identified by the
+               client mac address."
+    INDEX
+    {
+      cldcClientMacAddress
+    }
+
+::= {cldccDiagTestStatusTable 1}
+
+
+CldccDiagTestStatusEntry::=
+
+    SEQUENCE
+    {
+    cldccDiagTestLastTestStatus CiscoLwappCcxDiagTestStatus,
+    cldccDiagTestLastResponseStatus CiscoLwappCcxDiagResponseStatus 
+    }
+
+cldccDiagTestLastTestStatus OBJECT-TYPE
+
+    SYNTAX      CiscoLwappCcxDiagTestStatus
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION	
+                "This field is used to represent the status of the 
+                last test performed."
+
+::= { cldccDiagTestStatusEntry 1 }
+
+cldccDiagTestLastResponseStatus OBJECT-TYPE
+
+    SYNTAX      CiscoLwappCcxDiagResponseStatus
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION	
+                "This field is used to represent the response of the 
+                last test performed."
+
+::= { cldccDiagTestStatusEntry 2 }
+
+
+--********************************************************************
+--*    Notification objects
+--********************************************************************
+
+cldccDiagClientMacAddress OBJECT-TYPE
+        SYNTAX     MacAddress 
+        MAX-ACCESS accessible-for-notify
+        STATUS     current
+        DESCRIPTION
+                "This object indicates the macaddress of the client 
+		associated to the diagnostic WLAN. "
+        ::= { ciscoLwappDot11CcxClientDiagMIBNotifObjs 1 }
+
+cldccDiagAssocReasonCode OBJECT-TYPE
+	SYNTAX	   CLDot11ClientDiagAssocReason
+	MAX-ACCESS accessible-for-notify
+	STATUS     current
+	DESCRIPTION
+		"This object indicates the reason code for which
+		the client has associated the diagnostic WLAN."
+	::= { ciscoLwappDot11CcxClientDiagMIBNotifObjs 2 }
+ 
+--********************************************************************
+--*    Notifications 
+--********************************************************************
+ 
+cldccDiagClientAssociatedToDiagWlan NOTIFICATION-TYPE
+        OBJECTS { 
+                cldccDiagClientMacAddress,
+		cldccDiagAssocReasonCode 
+        }
+        STATUS  current
+        DESCRIPTION
+             "This notification is generated when a client associates
+             to a diagnostic WLAN. " 
+        ::= { ciscoLwappDot11CcxClientDiagMIBNotifs 1 }
+
+END

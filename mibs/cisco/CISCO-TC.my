@@ -3,7 +3,7 @@
 --   
 -- May 1994, Jeffrey T. Johnson
 --   
--- Copyright (c) 1994-2008 and by cisco Systems Inc.
+-- Copyright (c) 1994-2009 and by cisco Systems Inc.
 -- All rights reserved.
 --   
 -- ***************************************************************
@@ -24,7 +24,7 @@ IMPORTS
 
 
 ciscoTextualConventions MODULE-IDENTITY
-    LAST-UPDATED    "200804020000Z"
+    LAST-UPDATED    "200906180000Z"
     ORGANIZATION    "Cisco Systems, Inc."
     CONTACT-INFO
             "Cisco Systems
@@ -40,6 +40,15 @@ ciscoTextualConventions MODULE-IDENTITY
     DESCRIPTION
         "This module defines textual conventions used throughout
         cisco enterprise mibs."
+    REVISION        "200906180000Z"
+    DESCRIPTION
+        "Added the new textual convention CiscoVrfName"
+    REVISION        "200903100000Z"
+    DESCRIPTION
+        "Added the new textual convention CiscoInterfaceIndexList"
+    REVISION        "200902260000Z"
+    DESCRIPTION
+        "Added the new textual convention Cisco2KVlanList"
     REVISION        "200804020000Z"
     DESCRIPTION
         "Added the new textual convention CiscoBridgeDomain."
@@ -153,7 +162,7 @@ Layer2Cos ::= TEXTUAL-CONVENTION
     REFERENCE
         "IEEE 802.1D, 2004 Edition, Annex G User priorities and traffic
             classes."
-    SYNTAX          Integer32 (0..7 )
+    SYNTAX          Integer32 (0..7)
 
 CiscoNetworkProtocol ::= TEXTUAL-CONVENTION
     STATUS          current
@@ -248,7 +257,7 @@ InterfaceIndexOrZero ::= TEXTUAL-CONVENTION
     DESCRIPTION
         "Either the value 0, or the ifIndex value of an
         interface in the ifTable."
-    SYNTAX          Integer32 (0..2147483647 )
+    SYNTAX          Integer32 (0..2147483647)
 
 SAPType ::= TEXTUAL-CONVENTION
     STATUS          current
@@ -256,7 +265,7 @@ SAPType ::= TEXTUAL-CONVENTION
         "Service Access Point - is a term that denotes the means
         by which a user entity in layer n+1 accesses a service
         of a provider entity in layer n."
-    SYNTAX          Integer32 (0..254 )
+    SYNTAX          Integer32 (0..254)
 
 CountryCode ::= TEXTUAL-CONVENTION
     STATUS          current
@@ -264,7 +273,7 @@ CountryCode ::= TEXTUAL-CONVENTION
         "Represents a case-insensitive 2-letter country code taken
         from ISO-3166. Unrecognized countries are represented as 
         empty string."
-    SYNTAX          OCTET STRING (SIZE (0  |  2))
+    SYNTAX          OCTET STRING (SIZE (0 | 2))
 
 CountryCodeITU ::= TEXTUAL-CONVENTION
     STATUS          current
@@ -273,7 +282,7 @@ CountryCodeITU ::= TEXTUAL-CONVENTION
         non-standard facilities in telematic services."
 
     REFERENCE       "ITU-T T.35 - Section 3.1 Country Code"
-    SYNTAX          Unsigned32 (0..255 )
+    SYNTAX          Unsigned32 (0..255)
 
 EntPhysicalIndexOrZero ::= TEXTUAL-CONVENTION
     STATUS          current
@@ -282,7 +291,7 @@ EntPhysicalIndexOrZero ::= TEXTUAL-CONVENTION
         If non-zero, the object is an entPhysicalIndex. If zero, no
         appropriate entPhysicalIndex exists. Any additional semantics
         are object specific."
-    SYNTAX          Integer32 (0..2147483647 )
+    SYNTAX          Integer32 (0..2147483647)
 
 CiscoRowOperStatus ::= TEXTUAL-CONVENTION
     STATUS          current
@@ -321,7 +330,7 @@ CiscoPort ::= TEXTUAL-CONVENTION
     REFERENCE
         "Transmission Control Protocol. J. Postel. RFC793,
             User Datagram Protocol. J. Postel. RFC768"
-    SYNTAX          Integer32 (0..65535 )
+    SYNTAX          Integer32 (0..65535)
 
 CiscoIpProtocol ::= TEXTUAL-CONVENTION
     STATUS          current
@@ -329,7 +338,7 @@ CiscoIpProtocol ::= TEXTUAL-CONVENTION
         "IP protocol number range."
 
     REFERENCE       "Internet Protocol. J. Postel. RFC791"
-    SYNTAX          Integer32 (0..255 )
+    SYNTAX          Integer32 (0..255)
 
 CiscoLocationClass ::= TEXTUAL-CONVENTION
     STATUS          current
@@ -445,7 +454,7 @@ CiscoInetAddressMask ::= TEXTUAL-CONVENTION
 
     REFERENCE
         "RFC2851, Textual Conventions for Internet Network Addresses."
-    SYNTAX          Unsigned32 (0..128 )
+    SYNTAX          Unsigned32 (0..128)
 
 CiscoAbsZeroBasedCounter32 ::= TEXTUAL-CONVENTION
     STATUS          current
@@ -730,7 +739,7 @@ ConfigIterator ::= TEXTUAL-CONVENTION
         the bulk configuration to the same table before the previous
         bulk operation has been completed. These two objects will 
         represent the last bulk operation in the table."
-    SYNTAX          Unsigned32 (1..4294967295 )
+    SYNTAX          Unsigned32 (1..4294967295)
 
 BulkConfigResult ::= TEXTUAL-CONVENTION
     STATUS          current
@@ -756,7 +765,7 @@ ListIndex ::= TEXTUAL-CONVENTION
         list that is defined. The object using this 
         convention should give all the object specific 
         details including the list type."
-    SYNTAX          Integer32 (1..2147483647 )
+    SYNTAX          Integer32 (1..2147483647)
 
 ListIndexOrZero ::= TEXTUAL-CONVENTION
     STATUS          current
@@ -768,7 +777,7 @@ ListIndexOrZero ::= TEXTUAL-CONVENTION
         should be given the description of that object. 
         In most cases, a value 0 means that the it does 
         not represent any lists."
-    SYNTAX          Integer32 (0..2147483647 )
+    SYNTAX          Integer32 (0..2147483647)
 
 TimeIntervalSec ::= TEXTUAL-CONVENTION
     STATUS          current
@@ -1515,7 +1524,7 @@ EntLogicalIndexOrZero ::= TEXTUAL-CONVENTION
         If zero, no appropriate entLogicalIndex exists.  Any additional 
         semantics must be defined as part of the description of any 
         object which uses this syntax."
-    SYNTAX          Integer32 (0..2147483647 )
+    SYNTAX          Integer32 (0..2147483647)
 
 CiscoURLString ::= TEXTUAL-CONVENTION
     STATUS          current
@@ -1563,7 +1572,7 @@ CiscoHTTPResponseStatusCode ::= TEXTUAL-CONVENTION
 
     REFERENCE
         "RFC 2616 Section 6.1.1 Status Code and Reason Phrase."
-    SYNTAX          Unsigned32 (100..599 )
+    SYNTAX          Unsigned32 (100..599)
 
 
 CvE164Address ::= TEXTUAL-CONVENTION
@@ -1591,7 +1600,7 @@ CiscoVlanList ::= TEXTUAL-CONVENTION
         represents the first 8 VLANs of the range of VLANs
         specified by the object, the second octet represents
         the next 8 VLANs, etc. When a VLAN range is not
-        specified, a default port range of '0 - 1023' is assumed.
+        specified, a default VLAN range of '0 - 1023' is assumed.
 
         Within each octet, the most significant bit represents
         the lowest numbered VLAN, and the least significant bit
@@ -1631,7 +1640,7 @@ CiscoPbbServiceIdentifier ::= TEXTUAL-CONVENTION
         the Provider Backbone Bridge frame."
 
     REFERENCE       "IEEE P802.1ah/D3.3 chapter 9.8, December 2006"
-    SYNTAX          Unsigned32 (1..16777216 )
+    SYNTAX          Unsigned32 (1..16777216)
 
 CiscoBridgeDomain ::= TEXTUAL-CONVENTION
     STATUS          current
@@ -1646,7 +1655,64 @@ CiscoBridgeDomain ::= TEXTUAL-CONVENTION
         interfaces in other bridge domain. In such devices, the
         combination of bridge-domain-number and VLAN-id can be used to
         uniquely identify any VLAN across all interfaces."
-    SYNTAX          Unsigned32 (1..65535 )
+    SYNTAX          Unsigned32 (1..65535)
+
+Cisco2KVlanList ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION
+        "Each octet within this value specifies a set of eight VLANs.
+        The object defined by this textual convention can specify a VLAN
+        range of 2k VLANs in its description. Example: 0 - 2047, 2048 -
+        4095, etc. The first octet represents the first 8 VLANs of the
+        range of VLANs specified by the object, the second octet
+        represents the next 8 VLANs, etc.
+
+        Within each octet, the most significant bit represents the
+        lowest numbered VLAN, and the least significant bit represents
+        the highest numbered VLAN. Thus, each VLAN of the device is
+        represented by a single bit within the value of this object. If
+        that bit has a value of '1' then that VLAN is included in the
+        set of VLANs; the VLAN is not included if its bit has a value of
+        '0'.
+
+        Note that if the length of this string is less than 256 octets,
+        any 'missing' octets are assumed to contain the value zero. An
+        NMS may omit any zero-valued octets from the end of this string
+        in order to reduce SetPDU size, and the agent may also omit
+        zero-valued trailing octets, to reduce the size of GetResponse
+        PDUs."
+    SYNTAX          OCTET STRING (SIZE (0..256))
+
+CiscoInterfaceIndexList ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION
+        "This textual convention contains a list of ifIndex values.
+
+        Each ifIndex value is represented by four octets.
+        Every set of four octets represents a value of an instance
+        of ifIndex object, defined in IF-MIB, corresponding to a
+        particular interface.
+
+        For example, the first octet to the fourth octet represent a 
+        value of the instance of ifIndex object for the first 
+        interface in the list.  The fifth octet to the eighth octet 
+        represent a value of the instance of ifIndex object for
+        the second interface in the list.
+
+        Up to 64 interfaces can be represented by this textual 
+        convention."
+    SYNTAX          OCTET STRING (SIZE (0..256))
+
+CiscoVrfName ::= TEXTUAL-CONVENTION
+    STATUS          current
+    DESCRIPTION
+        "The name of the Virtual Private Network Routing and
+        Forwarding (VRF) domain.
+
+        Semantics of a zero length CiscoVrfName are object-specific
+        and must be defined as part of the description of any object
+        which uses this syntax."
+    SYNTAX          OCTET STRING (SIZE (0..32))
 
 END
 

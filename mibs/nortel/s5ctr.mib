@@ -10,7 +10,7 @@ IMPORTS
             FROM S5-CHASSIS-MIB;
 
 s5ChassisTrapMib MODULE-IDENTITY
-       LAST-UPDATED    "200407200000Z"
+       LAST-UPDATED    "200907290000Z"
        ORGANIZATION    "Nortel Networks"
        CONTACT-INFO    "Nortel Networks"
        DESCRIPTION
@@ -28,6 +28,9 @@ s5ChassisTrapMib MODULE-IDENTITY
             no warranty, either express or implied, as to the use,
             operation, condition, or performance of the Specification."
 
+       REVISION "200907290000Z" -- 29 July 2009
+       DESCRIPTION "Version 123:  Fixed conversion to SMIv2"
+
        REVISION "200407200000Z" -- 20 July 2004
        DESCRIPTION "Version 122:  Conversion to SMIv2"
 
@@ -36,6 +39,11 @@ s5ChassisTrapMib MODULE-IDENTITY
 
 -- SECTION 2: SynOptics 5000 Chassis Trap Definitions
 
+
+--
+-- The following traps were not converted from SMIv1->SMIv2 properly.
+-- See the new versions below
+--
 
 s5CtrHotSwap NOTIFICATION-TYPE
 	OBJECTS	{ s5ChasComType,
@@ -114,6 +122,89 @@ s5CtrUnitDown NOTIFICATION-TYPE
 		instance identifying the group, component,
 		and sub-component."
 	::= { s5ChaTrap 4 }
+
+
+--
+-- Proper conversion from SMIv1->SMIv2
+--
+
+s5CtrNewHotSwap NOTIFICATION-TYPE
+	OBJECTS	{ s5ChasComType,
+		  s5ChasComOperState }
+	STATUS	current
+	DESCRIPTION
+		"A component or sub-component was inserted or
+		deinserted in the chassis. This trap is sent only
+		once when the condition is first detected. The
+		following values are returned:
+                s5ChasComType........the type of the component
+		(or sub-component) that was inserted or
+		deinserted, with the instance identifying
+		the group, component, and sub-component.
+		s5ChasComOperState...the operational status of
+		the component or sub-component, with the
+		instance identifying the group, component,
+		and sub-component. The value is removed(3)
+		when the item is removed."
+	::= { s5ChassisTrapMib 1 }
+
+s5CtrNewProblem NOTIFICATION-TYPE
+	OBJECTS	{ s5ChasComType,
+		  s5ChasComOperState }
+	STATUS	current
+	DESCRIPTION
+		"A component or sub-component has a problem
+		condition, either warning, nonfatal, or fatal.
+		This trap is sent only once when the condition
+		is first detected. The following values are
+		returned:
+		s5ChasComType........the type of the component
+		(or sub-component) that has the problem
+		condition, with the instance identifying
+		the group, component, and sub-component.
+		s5ChasComOperState...the operational status of
+		the component or sub-component, with the
+		instance identifying the group, component,
+		and sub-component."
+	::= { s5ChassisTrapMib 2 }
+
+s5CtrNewUnitUp NOTIFICATION-TYPE
+	OBJECTS	{ s5ChasComType,
+		  s5ChasComOperState }
+	STATUS	current
+	DESCRIPTION
+		"A component or sub-component has been newly detected.
+		This trap is sent only once when the condition
+		is first detected. The following values are
+		returned:
+		s5ChasComType........the type of the component
+		(or sub-component) that has the problem
+		condition, with the instance identifying
+		the group, component, and sub-component.
+		s5ChasComOperState...the operational status of
+		the component or sub-component, with the
+		instance identifying the group, component,
+		and sub-component."
+	::= { s5ChassisTrapMib 3 }
+
+s5CtrNewUnitDown NOTIFICATION-TYPE
+	OBJECTS	{ s5ChasComType,
+		  s5ChasComOperState }
+	STATUS	current
+	DESCRIPTION
+		"A component or sub-component is no longer detected.
+		This trap is sent only once when the condition
+		is first detected. The following values are
+		returned:
+		s5ChasComType........the type of the component
+		(or sub-component) that has the problem
+		condition, with the instance identifying
+		the group, component, and sub-component.
+		s5ChasComOperState...the operational status of
+		the component or sub-component, with the
+		instance identifying the group, component,
+		and sub-component."
+	::= { s5ChassisTrapMib 4 }
 
 END
 

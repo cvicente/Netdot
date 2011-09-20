@@ -1,980 +1,1742 @@
--- ***************************************************************** 
--- Cisco Port QoS MIB file. 
---    
--- November 2000, Ranbir Parmar 
---    
--- Copyright (c) 2000-2008 by Cisco Systems, Inc. 
--- All rights reserved. 
---    
--- ***************************************************************** 
- 
-CISCO-PORT-QOS-MIB DEFINITIONS ::= BEGIN 
- 
-IMPORTS 
-    MODULE-IDENTITY, 
-    OBJECT-TYPE, 
-    Integer32, 
-    Counter64, 
-    Unsigned32 
-        FROM SNMPv2-SMI 
-    MODULE-COMPLIANCE, 
-    OBJECT-GROUP 
-        FROM SNMPv2-CONF 
-    TruthValue 
-        FROM SNMPv2-TC 
-    ifIndex 
-        FROM IF-MIB 
-    vtpVlanIndex 
-        FROM CISCO-VTP-MIB 
-    ciscoMgmt 
-        FROM CISCO-SMI; 
- 
- 
-ciscoPortQosMIB MODULE-IDENTITY 
-    LAST-UPDATED    "200803050000Z" 
-    ORGANIZATION    "Cisco Systems, Inc." 
-    CONTACT-INFO 
-            "Cisco Systems 
-            Customer Service  
- 
-            Postal:    170 W. Tasman Drive  
-            San Jose, CA  95134-1706  
-            USA  
- 
-            Tel: +1 800 553-NETS  
- 
-            E-mail: cs-port-qos@cisco.com" 
-    DESCRIPTION 
-        "Cisco PORT QOS MIB - Overview 
- 
-        This MIB module is for the management of Cisco's  
-        per port rate-limiting and traffic shaping on L3  
-        switch/Router Platform(s).  
- 
-        Per-port rate-limiting is a traffic control method.  
-        A set of rate limits are applied to the traffic  
-        traversing an interface. Each rate limit has a  
-        configurable action that is taken when rate  
-        limiting criteria is met.  
- 
-        Per-port traffic shaping is a traffic control  
-        method. The user can restrict the amount of traffic  
-        coming out of a physical port. Excess traffic is   
-        buffered within the router/switch to the extent   
-        possible.  
- 
-        This MIB module also provides per port QoS statistics." 
-    REVISION        "200803050000Z" 
-    DESCRIPTION 
-        "Added cportQosVlanInProfPolicyOctets, 
-        cportQosVlanOutOfProfPolicyOctets,   
-        cportQosVlanViolateProfPolicyPkts and   
-        cportQosVlanViolateProfPolicyOctets to the   
-        cportQosInVlanStatsTable." 
-    REVISION        "200801090000Z" 
-    DESCRIPTION 
-        "Added cportQosInProfPolicyOctets, 
-        cportQosOutOfProfPolicyOctets,   
-        cportQosViolateProfPolicyPkts and   
-        cportQosViolateProfPolicyOctets to the   
-        cportQosStatsTable." 
-    REVISION        "200602170000Z" 
-    DESCRIPTION 
-        "Added per port per vlan ingress 
-        statistics table." 
-    REVISION        "200502230000Z" 
-    DESCRIPTION 
-        "Deprecated the cportQosIndexType added the 
-        cportQosIndexTypeNew which is read-write.  
-        In addition, added the cportQosInProfPolicyPkts and  
-        cportQosOutOfProfPolicyPkts objects to the  
-        statistic table." 
-    REVISION        "200405200000Z" 
-    DESCRIPTION 
-        "Extend per port QoS Statistics table by adding 
-        no_change object." 
-    REVISION        "200401300000Z" 
-    DESCRIPTION 
-        "Add cos(4) to cportQosIndexType." 
-    REVISION        "200203200000Z" 
-    DESCRIPTION 
-        "Add per port QoS Statistics table." 
-    REVISION        "200105150000Z" 
-    DESCRIPTION 
-        "Add cportQosRLConfigEnable and cportQosTSConfigEnable 
-        and renumber the objects." 
-    REVISION        "200012200000Z" 
-    DESCRIPTION 
-        "Initial version of this MIB module." 
-    ::= { ciscoMgmt 189 } 
- 
- 
-ciscoPortQosMIBObjects  OBJECT IDENTIFIER 
-    ::= { ciscoPortQosMIB 1 } 
- 
--- Subgroups: 
--- Rate-limit(RL) 
--- Traffic-Shaping(TS) 
--- Statistics 
- 
-cportQosRLConfig  OBJECT IDENTIFIER 
-    ::= { ciscoPortQosMIBObjects 1 } 
- 
-cportQosTSConfig  OBJECT IDENTIFIER 
-    ::= { ciscoPortQosMIBObjects 2 } 
- 
-cportQosStatistics  OBJECT IDENTIFIER 
-    ::= { ciscoPortQosMIBObjects 3 } 
- 
- 
-cportQosRLConfigTable OBJECT-TYPE 
-    SYNTAX          SEQUENCE OF CportQosRLConfigEntry  
-    MAX-ACCESS      not-accessible 
-    STATUS          current 
-    DESCRIPTION 
-        "A table of rate limit configuration entries. 
-        Rate Limiting is a method of traffic control. It allows  
-        a set of rate limits to be configured and applied to  
-        packets flowing into/out of an interface to regulate  
-        network traffic." 
-    ::= { cportQosRLConfig 1 } 
- 
-cportQosRLConfigEntry OBJECT-TYPE 
-    SYNTAX          CportQosRLConfigEntry 
-    MAX-ACCESS      not-accessible 
-    STATUS          current 
-    DESCRIPTION 
-        "A collection of rate-limit configuration 
-        objects for a particular interface. Entries   
-        in the cportQosRLConfigTable are created and   
-        deleted by non-SNMP methods. Creation of these  
-        entries is dependent upon configuration of a   
-        physical interface. Further, the physical   
-        interfaces which are configured for port-qos,  
-        can only have these entries.  
- 
-        The ifIndex in the INDEX clause identifies the  
-        interface number for a physical interface." 
-    INDEX           { 
-                        ifIndex, 
-                        cportQosRLConfigDirection 
-                    }  
-    ::= { cportQosRLConfigTable 1 } 
- 
-CportQosRLConfigEntry ::= SEQUENCE { 
-        cportQosRLConfigDirection INTEGER , 
-        cportQosRLConfigEnable    TruthValue, 
-        cportQosRLConfigRate      Integer32, 
-        cportQosRLConfigBurstSize Integer32 
-} 
- 
-cportQosRLConfigDirection OBJECT-TYPE 
-    SYNTAX          INTEGER  { 
-                        input(1), 
-                        output(2) 
+-- *****************************************************************
+-- Cisco Port QoS MIB file.
+--   
+-- November 2000, Ranbir Parmar
+--   
+-- Copyright (c) 2000-2008 by Cisco Systems, Inc.
+-- All rights reserved.
+--   
+-- *****************************************************************
+
+CISCO-PORT-QOS-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY,
+    OBJECT-TYPE,
+    Integer32,
+    Counter64,
+    Gauge32,
+    Unsigned32
+        FROM SNMPv2-SMI
+    MODULE-COMPLIANCE,
+    OBJECT-GROUP
+        FROM SNMPv2-CONF
+    TruthValue,
+    TimeStamp
+        FROM SNMPv2-TC
+    ifIndex
+        FROM IF-MIB
+    vtpVlanIndex
+        FROM CISCO-VTP-MIB
+    ciscoMgmt
+        FROM CISCO-SMI
+    Dscp,
+    QosLayer2Cos
+        FROM CISCO-QOS-PIB-MIB
+    SnmpAdminString
+        FROM SNMP-FRAMEWORK-MIB;
+
+
+ciscoPortQosMIB MODULE-IDENTITY
+    LAST-UPDATED    "200809100000Z"
+    ORGANIZATION    "Cisco Systems, Inc."
+    CONTACT-INFO
+            "Cisco Systems
+            Customer Service    
+
+            Postal:    170 W. Tasman Drive    
+            San Jose, CA  95134-1706    
+            USA    
+
+            Tel: +1 800 553-NETS    
+
+            E-mail: cs-port-qos@cisco.com"
+    DESCRIPTION
+        "Cisco PORT QOS MIB - Overview
+
+        This MIB module is for the management of Cisco's    
+        per port rate-limiting and traffic shaping on L3    
+        switch/Router Platform(s).    
+
+        Per-port rate-limiting is a traffic control method.    
+        A set of rate limits are applied to the traffic    
+        traversing an interface. Each rate limit has a    
+        configurable action that is taken when rate    
+        limiting criteria is met.    
+
+        Per-port traffic shaping is a traffic control    
+        method. The user can restrict the amount of traffic    
+        coming out of a physical port. Excess traffic is     
+        buffered within the router/switch to the extent     
+        possible. 
+
+        A class represents a class of traffic. It is defined 
+        via the specification of the packet matching criteria 
+        that identifies packets that are to belong to the class.
+
+        Class-default: In addition to user defined classes, 
+        a pre-existing class named 'class-default' exists to 
+        represent all packets that do not match any of the user 
+        defined classes. This class-default exists so that 
+        policies can be defined for this group of packets that 
+        do not match any user defined classes.
+
+        Actions are individual policies (e.g.: policing) that 
+        can be applied to a traffic class.
+
+        A policy represents a set of actions that are to be 
+        applied to a set of traffic classes. The policy is 
+        associated with a target (like a port) and the direction 
+        of traffic on that target to which the policy is to be 
+        applied.
+
+        A hierarchical policy is one in which an entire policy 
+        is directly assigned to a class of traffic. Thus, a 
+        hierarchical policy is a nested policy that contains 
+        a set of the pair of a child-policy and the 
+        traffic-class to which it is applied.
+        
+        DSCP (Differentiated Services Code Point) is the six 
+        most significant bits of the ToS field in a IP packet 
+        header.
+        
+        CoS (Class of Service) is the three bits in the layer 2 
+        header that indicates user priority value assigned to 
+        this packet. 
+
+        This MIB module also provides per port QoS statistics."
+    REVISION        "200809100000Z"
+    DESCRIPTION
+        "Added the following tables:
+        cportQosEgressQueueStatsTable,  
+        cportQosClassEgressStatsTable,  
+        cportQosClassIngressStatsTable,  
+        cportQosDscpStatsTable and  
+        cportQosCosStatsTable.
+        Deprecated ciscoPortQosMIBComplianceRev5  
+        added ciscoPortQosMIBComplianceRev6."
+    REVISION        "200803050000Z"
+    DESCRIPTION
+        "Added cportQosVlanInProfPolicyOctets,
+        cportQosVlanOutOfProfPolicyOctets,     
+        cportQosVlanViolateProfPolicyPkts and     
+        cportQosVlanViolateProfPolicyOctets to the     
+        cportQosInVlanStatsTable."
+    REVISION        "200801090000Z"
+    DESCRIPTION
+        "Added cportQosInProfPolicyOctets,
+        cportQosOutOfProfPolicyOctets,     
+        cportQosViolateProfPolicyPkts and     
+        cportQosViolateProfPolicyOctets to the     
+        cportQosStatsTable."
+    REVISION        "200602170000Z"
+    DESCRIPTION
+        "Added per port per vlan ingress
+        statistics table."
+    REVISION        "200502230000Z"
+    DESCRIPTION
+        "Deprecated the cportQosIndexType added the
+        cportQosIndexTypeNew which is read-write.    
+        In addition, added the cportQosInProfPolicyPkts and    
+        cportQosOutOfProfPolicyPkts objects to the    
+        statistic table."
+    REVISION        "200405200000Z"
+    DESCRIPTION
+        "Extend per port QoS Statistics table by adding
+        no_change object."
+    REVISION        "200401300000Z"
+    DESCRIPTION
+        "Add cos(4) to cportQosIndexType."
+    REVISION        "200203200000Z"
+    DESCRIPTION
+        "Add per port QoS Statistics table."
+    REVISION        "200105150000Z"
+    DESCRIPTION
+        "Add cportQosRLConfigEnable and cportQosTSConfigEnable
+        and renumber the objects."
+    REVISION        "200012200000Z"
+    DESCRIPTION
+        "Initial version of this MIB module."
+    ::= { ciscoMgmt 189 }
+
+
+ciscoPortQosMIBObjects  OBJECT IDENTIFIER
+    ::= { ciscoPortQosMIB 1 }
+
+-- Subgroups:
+-- Rate-limit(RL)
+-- Traffic-Shaping(TS)
+-- Statistics
+
+cportQosRLConfig  OBJECT IDENTIFIER
+    ::= { ciscoPortQosMIBObjects 1 }
+
+cportQosTSConfig  OBJECT IDENTIFIER
+    ::= { ciscoPortQosMIBObjects 2 }
+
+cportQosStatistics  OBJECT IDENTIFIER
+    ::= { ciscoPortQosMIBObjects 3 }
+
+
+cportQosRLConfigTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CportQosRLConfigEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "A table of rate limit configuration entries.
+        Rate Limiting is a method of traffic control. It allows    
+        a set of rate limits to be configured and applied to    
+        packets flowing into/out of an interface to regulate    
+        network traffic."
+    ::= { cportQosRLConfig 1 }
+
+cportQosRLConfigEntry OBJECT-TYPE
+    SYNTAX          CportQosRLConfigEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "A collection of rate-limit configuration
+        objects for a particular interface. Entries     
+        in the cportQosRLConfigTable are created and     
+        deleted by non-SNMP methods. Creation of these    
+        entries is dependent upon configuration of a     
+        physical interface. Further, the physical     
+        interfaces which are configured for port-qos,    
+        can only have these entries.    
+
+        The ifIndex in the INDEX clause identifies the    
+        interface number for a physical interface."
+    INDEX           {
+                        ifIndex,
+                        cportQosRLConfigDirection
                     } 
-    MAX-ACCESS      not-accessible 
-    STATUS          current 
-    DESCRIPTION 
-        "The direction in which the rate-limit is applied 
-        to packet:  
-                input  statistics of the input packets.  
-                output statistics of the output packets."  
-    ::= { cportQosRLConfigEntry 1 } 
+    ::= { cportQosRLConfigTable 1 }
+
+CportQosRLConfigEntry ::= SEQUENCE {
+        cportQosRLConfigDirection INTEGER,
+        cportQosRLConfigEnable    TruthValue,
+        cportQosRLConfigRate      Integer32,
+        cportQosRLConfigBurstSize Integer32
+}
+
+cportQosRLConfigDirection OBJECT-TYPE
+    SYNTAX          INTEGER  {
+                        input(1),
+                        output(2)
+                    }
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The direction in which the rate-limit is applied
+        to packet:    
+                input  statistics of the input packets.    
+                output statistics of the output packets." 
+    ::= { cportQosRLConfigEntry 1 }
+
+cportQosRLConfigEnable OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This indicates the rate-limit is enabled or disabled.
+        A value of true(1) indicates the rate-limit is enabled    
+        and a value of false(2) indicates it's disabled.    
+        Writing a value of true(1) to this object also     
+        requires writing a valid value to the      
+        cportQosRLConfigRate at the same time.     
+        Writing to cportQosRLConfigBurstSize is optional." 
+    ::= { cportQosRLConfigEntry 2 }
+
+cportQosRLConfigRate OBJECT-TYPE
+    SYNTAX          Integer32 (32000..2147483647)
+    UNITS           "bits per second"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This is the sustained rate permitted by the rate
+        limit.    
+        Writing to this object also requires writing a value of    
+        true(1) to cportQosRLConfigEnable at the same time." 
+    ::= { cportQosRLConfigEntry 3 }
+
+cportQosRLConfigBurstSize OBJECT-TYPE
+    SYNTAX          Integer32 (0..64000)
+    UNITS           "bytes"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The burst size.  The amount of traffic, in bytes,
+        in excess of the sustained rate which will be    
+        instantaneously permitted by the rate limit.    
+        Writing to this object also requires writing a value     
+        of true(1) to cportQosRLConfigEnable and a valid value    
+        to the cportQosRLConfigRate at the same time." 
+    ::= { cportQosRLConfigEntry 4 }
  
-cportQosRLConfigEnable OBJECT-TYPE 
-    SYNTAX          TruthValue 
-    MAX-ACCESS      read-write 
-    STATUS          current 
-    DESCRIPTION 
-        "This indicates the rate-limit is enabled or disabled. 
-        A value of true(1) indicates the rate-limit is enabled  
-        and a value of false(2) indicates it's disabled.  
-        Writing a value of true(1) to this object also   
-        requires writing a valid value to the    
-        cportQosRLConfigRate at the same time.   
-        Writing to cportQosRLConfigBurstSize is optional."  
-    ::= { cportQosRLConfigEntry 2 } 
+
+
+cportQosTSConfigTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CportQosTSConfigEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "A table of traffic-shaping action configuration
+        entries."
+    ::= { cportQosTSConfig 1 }
+
+cportQosTSConfigEntry OBJECT-TYPE
+    SYNTAX          CportQosTSConfigEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "A collection of traffic shaping action
+        configuration objects for a particular interface.    
+        Entries in the cportQosTSConfigTable are created    
+        and deleted by non-SNMP methods. Creation of these    
+        entries is dependent upon configuration of a    
+        physical interface. Further, the physical interfaces    
+        which are configured for port-qos, can only have     
+        these entries.    
+
+        The ifIndex in the INDEX clause identifies the    
+        interface number for a physical interface."
+    INDEX           { ifIndex } 
+    ::= { cportQosTSConfigTable 1 }
+
+CportQosTSConfigEntry ::= SEQUENCE {
+        cportQosTSConfigEnable    TruthValue,
+        cportQosTSConfigRate      Integer32,
+        cportQosTSConfigBurstSize Integer32
+}
+
+cportQosTSConfigEnable OBJECT-TYPE
+    SYNTAX          TruthValue
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This indicates the traffic shaping is enabled or
+        disabled. A value of true(1) indicates the traffic    
+        shaping is enabled and a value of false(2) indicates     
+        it's disabled.    
+        Writing a value of true(1) to this object also     
+        requires writing a valid value to the      
+        cportQosTSConfigRate at the same time.     
+        Writing to cportQosTSConfigBurstSize is optional." 
+    ::= { cportQosTSConfigEntry 1 }
+
+cportQosTSConfigRate OBJECT-TYPE
+    SYNTAX          Integer32 (32000..2147483647)
+    UNITS           "bits per second"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This is the sustained rate permitted by the
+        traffic shaping. Writing to this object also    
+        requires writing a value of true(1) to     
+        cportQosTSConfigEnable at the same time." 
+    ::= { cportQosTSConfigEntry 2 }
+
+cportQosTSConfigBurstSize OBJECT-TYPE
+    SYNTAX          Integer32 (0..512000)
+    UNITS           "bits"
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The amount of traffic, in bits, in excess
+        of the sustained traffic shaping rate that    
+        will be instantaneously permitted by this feature.    
+        Writing to this object also requires writing a value     
+        of true(1) to cportQosTSConfigEnable and a valid value    
+        to the cportQosTSConfigRate at the same time." 
+    ::= { cportQosTSConfigEntry 3 }
  
-cportQosRLConfigRate OBJECT-TYPE 
-    SYNTAX          Integer32 (32000..2147483647 ) 
-    UNITS           "bits per second" 
-    MAX-ACCESS      read-write 
-    STATUS          current 
-    DESCRIPTION 
-        "This is the sustained rate permitted by the rate 
-        limit.  
-        Writing to this object also requires writing a value of  
-        true(1) to cportQosRLConfigEnable at the same time."  
-    ::= { cportQosRLConfigEntry 3 } 
- 
-cportQosRLConfigBurstSize OBJECT-TYPE 
-    SYNTAX          Integer32 (0..64000 ) 
-    UNITS           "bytes" 
-    MAX-ACCESS      read-write 
-    STATUS          current 
-    DESCRIPTION 
-        "The burst size.  The amount of traffic, in bytes, 
-        in excess of the sustained rate which will be  
-        instantaneously permitted by the rate limit.  
-        Writing to this object also requires writing a value   
-        of true(1) to cportQosRLConfigEnable and a valid value  
-        to the cportQosRLConfigRate at the same time."  
-    ::= { cportQosRLConfigEntry 4 } 
-  
- 
- 
-cportQosTSConfigTable OBJECT-TYPE 
-    SYNTAX          SEQUENCE OF CportQosTSConfigEntry  
-    MAX-ACCESS      not-accessible 
-    STATUS          current 
-    DESCRIPTION 
-        "A table of traffic-shaping action configuration 
-        entries." 
-    ::= { cportQosTSConfig 1 } 
- 
-cportQosTSConfigEntry OBJECT-TYPE 
-    SYNTAX          CportQosTSConfigEntry 
-    MAX-ACCESS      not-accessible 
-    STATUS          current 
-    DESCRIPTION 
-        "A collection of traffic shaping action 
-        configuration objects for a particular interface.  
-        Entries in the cportQosTSConfigTable are created  
-        and deleted by non-SNMP methods. Creation of these  
-        entries is dependent upon configuration of a  
-        physical interface. Further, the physical interfaces  
-        which are configured for port-qos, can only have   
-        these entries.  
- 
-        The ifIndex in the INDEX clause identifies the  
-        interface number for a physical interface." 
-    INDEX           { ifIndex }  
-    ::= { cportQosTSConfigTable 1 } 
- 
-CportQosTSConfigEntry ::= SEQUENCE { 
-        cportQosTSConfigEnable    TruthValue, 
-        cportQosTSConfigRate      Integer32, 
-        cportQosTSConfigBurstSize Integer32 
-} 
- 
-cportQosTSConfigEnable OBJECT-TYPE 
-    SYNTAX          TruthValue 
-    MAX-ACCESS      read-write 
-    STATUS          current 
-    DESCRIPTION 
-        "This indicates the traffic shaping is enabled or 
-        disabled. A value of true(1) indicates the traffic  
-        shaping is enabled and a value of false(2) indicates   
-        it's disabled.  
-        Writing a value of true(1) to this object also   
-        requires writing a valid value to the    
-        cportQosTSConfigRate at the same time.   
-        Writing to cportQosTSConfigBurstSize is optional."  
-    ::= { cportQosTSConfigEntry 1 } 
- 
-cportQosTSConfigRate OBJECT-TYPE 
-    SYNTAX          Integer32 (32000..2147483647 ) 
-    UNITS           "bits per second" 
-    MAX-ACCESS      read-write 
-    STATUS          current 
-    DESCRIPTION 
-        "This is the sustained rate permitted by the 
-        traffic shaping. Writing to this object also  
-        requires writing a value of true(1) to   
-        cportQosTSConfigEnable at the same time."  
-    ::= { cportQosTSConfigEntry 2 } 
- 
-cportQosTSConfigBurstSize OBJECT-TYPE 
-    SYNTAX          Integer32 (0..512000 ) 
-    UNITS           "bits" 
-    MAX-ACCESS      read-write 
-    STATUS          current 
-    DESCRIPTION 
-        "The amount of traffic, in bits, in excess 
-        of the sustained traffic shaping rate that  
-        will be instantaneously permitted by this feature.  
-        Writing to this object also requires writing a value   
-        of true(1) to cportQosTSConfigEnable and a valid value  
-        to the cportQosTSConfigRate at the same time."  
-    ::= { cportQosTSConfigEntry 3 } 
-  
- 
- 
--- Statistics information 
- 
-cportQosIndexType OBJECT-TYPE 
-    SYNTAX          INTEGER  { 
-                        none(1), 
-                        dscp(2), 
-                        ipPrecedence(3), 
-                        cos(4) 
+
+
+-- Statistics information
+
+cportQosIndexType OBJECT-TYPE
+    SYNTAX          INTEGER  {
+                        none(1),
+                        dscp(2),
+                        ipPrecedence(3),
+                        cos(4)
+                    }
+    MAX-ACCESS      read-only
+    STATUS          deprecated
+    DESCRIPTION
+        "This object specifies the sorting mechanism used to
+        collect and store the statistical QoS information.      
+        This object value is device dependent and it could be    
+        optionally configured via command-line.    
+
+        This object has been deprecated in order to make the    
+        selection of sorting mechanism selectable from the    
+        MIB. The replacement object is cportQosIndexTypeNew." 
+    ::= { cportQosStatistics 1 }
+
+cportQosStatsTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CportQosStatsEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table specifies QoS port related Statistical
+        information."
+    ::= { cportQosStatistics 2 }
+
+cportQosStatsEntry OBJECT-TYPE
+    SYNTAX          CportQosStatsEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "Each entry in this table describes the QoS port
+        statistical information which are : pre/post policy     
+        pkts/octets counts, drop pkts/octets,     
+        classified pkts/octets."
+    INDEX           {
+                        ifIndex,
+                        cportQosDirection,
+                        cportQosIndex
                     } 
-    MAX-ACCESS      read-only 
-    STATUS          deprecated 
-    DESCRIPTION 
-        "This object specifies the sorting mechanism used to 
-        collect and store the statistical QoS information.    
-        This object value is device dependent and it could be  
-        optionally configured via command-line.  
+    ::= { cportQosStatsTable 1 }
+
+CportQosStatsEntry ::= SEQUENCE {
+        cportQosDirection               INTEGER,
+        cportQosIndex                   Unsigned32,
+        cportQosPrePolicyPkts           Counter64,
+        cportQosPrePolicyOctets         Counter64,
+        cportQosPostPolicyPkts          Counter64,
+        cportQosPostPolicyOctets        Counter64,
+        cportQosDropPkts                Counter64,
+        cportQosDropOctets              Counter64,
+        cportQosClassifiedOctets        Counter64,
+        cportQosClassifiedPkts          Counter64,
+        cportQosNoChangePkts            Counter64,
+        cportQosNoChangeOctets          Counter64,
+        cportQosInProfPolicyPkts        Counter64,
+        cportQosOutOfProfPolicyPkts     Counter64,
+        cportQosInProfPolicyOctets      Counter64,
+        cportQosOutOfProfPolicyOctets   Counter64,
+        cportQosViolateProfPolicyPkts   Counter64,
+        cportQosViolateProfPolicyOctets Counter64
+}
+
+cportQosDirection OBJECT-TYPE
+    SYNTAX          INTEGER  {
+                        ingress(1),
+                        egress(2)
+                    }
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "The direction of the reported statistics:
+        -'ingress' statistics for the input direction.    
+        -'egress' statistics for the output direction." 
+    ::= { cportQosStatsEntry 1 }
+
+cportQosIndex OBJECT-TYPE
+    SYNTAX          Unsigned32
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "An arbitrary integer to identify this entry.
+        cportQosIndex value, which may have non-contiguous    
+        range, is linked to cportQosIndexType:    
+
+         -if cportQosIndexTypeNew equals 'none', cportQosIndex     
+          is constant with the value of 1 and all statistics    
+          are classified per port    
+
+         -if cportQosIndexTypeNew equals 'DSCP', cportQosIndex    
+          range is from 1 to 65 and all statistics are    
+          classified per port and DSCP value.  The range    
+          of DSCP values reported is shifted up one meaning     
+          a cportQosIndex of 1 translates to a packet DSCP    
+          value of 0.    
+          Value of 65 is an arbitrary number used to report    
+          aggregate counts of packets which were not displayed    
+          in the 1 to 64 range.  This usually happens when the    
+          range value of cportQosIndex is non-contiguous    
+
+         -if cportQosIndexTypeNew equals 'ipPrecedence',     
+          cportQosIndex range is from 1 to 8 and all    
+          statistics are classified per port and IP precedence    
+          value.  The range of IP precedence values reported    
+          is shifted up one meaning a cportQosIndex of 1    
+          translates to an IP precedence value of 0    
+
+         -if cportQosIndexTypeNew equals 'cos',     
+          cportQosIndex range is from 1 to 8 and all    
+          statistics are classified per interface and L2 COS    
+          value.  The range of COS values reported    
+          is shifted up one meaning a cportQosIndex of 1    
+          translates to a COS value of 0    
+
+         -if cportQosIndexTypeNew equals 'police',     
+          cportQosIndex range is from 1 to 65 and all    
+          statistics are classified per interface and police    
+          index.     
+          The police indexes are arbitrary numbers that do    
+          not correlate to policers names or identifiers." 
+    ::= { cportQosStatsEntry 2 }
+
+cportQosPrePolicyPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The count of packets prior to executing any QoS
+        policies." 
+    ::= { cportQosStatsEntry 3 }
+
+cportQosPrePolicyOctets OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "octets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The count of octets prior to executing any QoS
+        policies." 
+    ::= { cportQosStatsEntry 4 }
+
+cportQosPostPolicyPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The count of packets after executing QoS policies." 
+    ::= { cportQosStatsEntry 5 }
+
+cportQosPostPolicyOctets OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "octets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The count of octets after executing QoS policies." 
+    ::= { cportQosStatsEntry 6 }
+
+cportQosDropPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The count of dropped packets as the result of
+        queuing and scheduling related QoS features that    
+        can produce drops." 
+    ::= { cportQosStatsEntry 7 }
+
+cportQosDropOctets OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "octets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The count of dropped octets as the result of
+        queuing and scheduling related QoS features that    
+        can produce drops." 
+    ::= { cportQosStatsEntry 8 }
+
+cportQosClassifiedOctets OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "octets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The count of classified octets during QoS." 
+    ::= { cportQosStatsEntry 9 }
+
+cportQosClassifiedPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The count of classified packets during QoS." 
+    ::= { cportQosStatsEntry 10 }
+
+cportQosNoChangePkts OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The count of packets maintain unchange after
+        executing QoS policies." 
+    ::= { cportQosStatsEntry 11 }
+
+cportQosNoChangeOctets OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "octets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The count of octets maintain unchange after
+        executing QoS policies." 
+    ::= { cportQosStatsEntry 12 }
+
+cportQosInProfPolicyPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The count of packets that are within the policer
+        profile limit configured for this policy." 
+    ::= { cportQosStatsEntry 13 }
+
+cportQosOutOfProfPolicyPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The count of packets that exceed the policer
+        profile limit configured for this policy." 
+    ::= { cportQosStatsEntry 14 }
+
+cportQosInProfPolicyOctets OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "octets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The count of octets that are within the policer
+        profile limit configured for this policy." 
+    ::= { cportQosStatsEntry 15 }
+
+cportQosOutOfProfPolicyOctets OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "octets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The count of octets that exceed the policer
+        profile limit configured for this policy." 
+    ::= { cportQosStatsEntry 16 }
+
+cportQosViolateProfPolicyPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The count of packets that violate the policer
+        profile limit configured for this policy." 
+    ::= { cportQosStatsEntry 17 }
+
+cportQosViolateProfPolicyOctets OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "octets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The count of octets that violate the policer
+        profile limit configured for this policy." 
+    ::= { cportQosStatsEntry 18 }
  
-        This object has been deprecated in order to make the  
-        selection of sorting mechanism selectable from the  
-        MIB. The replacement object is cportQosIndexTypeNew."  
-    ::= { cportQosStatistics 1 } 
- 
-cportQosStatsTable OBJECT-TYPE 
-    SYNTAX          SEQUENCE OF CportQosStatsEntry  
-    MAX-ACCESS      not-accessible 
-    STATUS          current 
-    DESCRIPTION 
-        "This table specifies QoS port related Statistical 
-        information." 
-    ::= { cportQosStatistics 2 } 
- 
-cportQosStatsEntry OBJECT-TYPE 
-    SYNTAX          CportQosStatsEntry 
-    MAX-ACCESS      not-accessible 
-    STATUS          current 
-    DESCRIPTION 
-        "Each entry in this table describes the QoS port 
-        statistical information which are : pre/post policy   
-        pkts/octets counts, drop pkts/octets,   
-        classified pkts/octets." 
-    INDEX           { 
-                        ifIndex, 
-                        cportQosDirection, 
-                        cportQosIndex 
-                    }  
-    ::= { cportQosStatsTable 1 } 
- 
-CportQosStatsEntry ::= SEQUENCE { 
-        cportQosDirection               INTEGER , 
-        cportQosIndex                   Unsigned32, 
-        cportQosPrePolicyPkts           Counter64, 
-        cportQosPrePolicyOctets         Counter64, 
-        cportQosPostPolicyPkts          Counter64, 
-        cportQosPostPolicyOctets        Counter64, 
-        cportQosDropPkts                Counter64, 
-        cportQosDropOctets              Counter64, 
-        cportQosClassifiedOctets        Counter64, 
-        cportQosClassifiedPkts          Counter64, 
-        cportQosNoChangePkts            Counter64, 
-        cportQosNoChangeOctets          Counter64, 
-        cportQosInProfPolicyPkts        Counter64, 
-        cportQosOutOfProfPolicyPkts     Counter64, 
-        cportQosInProfPolicyOctets      Counter64, 
-        cportQosOutOfProfPolicyOctets   Counter64, 
-        cportQosViolateProfPolicyPkts   Counter64, 
-        cportQosViolateProfPolicyOctets Counter64 
-} 
- 
-cportQosDirection OBJECT-TYPE 
-    SYNTAX          INTEGER  { 
-                        ingress(1), 
-                        egress(2) 
+
+
+cportQosIndexTypeNew OBJECT-TYPE
+    SYNTAX          INTEGER  {
+                        none(1),
+                        dscp(2),
+                        ipPrecedence(3),
+                        cos(4),
+                        police(5)
+                    }
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the sorting mechanism used to
+        collect and store the statistical QoS information.      
+        This object value is device dependent." 
+    ::= { cportQosStatistics 3 }
+
+cportQosInVlanStatsTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CportQosInVlanStatsEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table specifies QoS port related ingress
+        statistical information. The type of information     
+        is controlled by the cportQosIndexTypeNew object."
+    ::= { cportQosStatistics 4 }
+
+cportQosInVlanStatsEntry OBJECT-TYPE
+    SYNTAX          CportQosInVlanStatsEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "It exists an entry in this table for each port
+        on which QoS is configured per port and per VLAN."
+    INDEX           {
+                        ifIndex,
+                        vtpVlanIndex,
+                        cportQosIndex
                     } 
-    MAX-ACCESS      not-accessible 
-    STATUS          current 
-    DESCRIPTION 
-        "The direction of the reported statistics: 
-        -'ingress' statistics for the input direction.  
-        -'egress' statistics for the output direction."  
-    ::= { cportQosStatsEntry 1 } 
+    ::= { cportQosInVlanStatsTable 1 }
+
+CportQosInVlanStatsEntry ::= SEQUENCE {
+        cportQosVlanInProfPolicyPkts        Counter64,
+        cportQosVlanOutOfProfPolicyPkts     Counter64,
+        cportQosVlanInProfPolicyOctets      Counter64,
+        cportQosVlanOutOfProfPolicyOctets   Counter64,
+        cportQosVlanViolateProfPolicyPkts   Counter64,
+        cportQosVlanViolateProfPolicyOctets Counter64
+}
+
+cportQosVlanInProfPolicyPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The count of packets that are within the policer
+        profile limit configured for this policy." 
+    ::= { cportQosInVlanStatsEntry 1 }
+
+cportQosVlanOutOfProfPolicyPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The count of packets that exceeds the policer
+        profile limit configured for this policy." 
+    ::= { cportQosInVlanStatsEntry 2 }
+
+cportQosVlanInProfPolicyOctets OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "octets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The count of octets that are within the policer
+        profile limit configured for this policy." 
+    ::= { cportQosInVlanStatsEntry 3 }
+
+cportQosVlanOutOfProfPolicyOctets OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "octets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The count of octets that exceed the policer
+        profile limit configured for this policy." 
+    ::= { cportQosInVlanStatsEntry 4 }
+
+cportQosVlanViolateProfPolicyPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The count of packets that violate the policer
+        profile limit configured for this policy." 
+    ::= { cportQosInVlanStatsEntry 5 }
+
+cportQosVlanViolateProfPolicyOctets OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "octets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The count of octets that violate the policer
+        profile limit configured for this policy." 
+    ::= { cportQosInVlanStatsEntry 6 }
  
-cportQosIndex OBJECT-TYPE 
-    SYNTAX          Unsigned32 
-    MAX-ACCESS      not-accessible 
-    STATUS          current 
-    DESCRIPTION 
-        "An arbitrary integer to identify this entry. 
-        cportQosIndex value, which may have non-contiguous  
-        range, is linked to cportQosIndexType:  
- 
-         -if cportQosIndexTypeNew equals 'none', cportQosIndex   
-          is constant with the value of 1 and all statistics  
-          are classified per port  
- 
-         -if cportQosIndexTypeNew equals 'DSCP', cportQosIndex  
-          range is from 1 to 65 and all statistics are  
-          classified per port and DSCP value.  The range  
-          of DSCP values reported is shifted up one meaning   
-          a cportQosIndex of 1 translates to a packet DSCP  
-          value of 0.  
-          Value of 65 is an arbitrary number used to report  
-          aggregate counts of packets which were not displayed  
-          in the 1 to 64 range.  This usually happens when the  
-          range value of cportQosIndex is non-contiguous  
- 
-         -if cportQosIndexTypeNew equals 'ipPrecedence',   
-          cportQosIndex range is from 1 to 8 and all  
-          statistics are classified per port and IP precedence  
-          value.  The range of IP precedence values reported  
-          is shifted up one meaning a cportQosIndex of 1  
-          translates to an IP precedence value of 0  
- 
-         -if cportQosIndexTypeNew equals 'cos',   
-          cportQosIndex range is from 1 to 8 and all  
-          statistics are classified per interface and L2 COS  
-          value.  The range of COS values reported  
-          is shifted up one meaning a cportQosIndex of 1  
-          translates to a COS value of 0  
- 
-         -if cportQosIndexTypeNew equals 'police',   
-          cportQosIndex range is from 1 to 65 and all  
-          statistics are classified per interface and police  
-          index.   
-          The police indexes are arbitrary numbers that do  
-          not correlate to policers names or identifiers."  
-    ::= { cportQosStatsEntry 2 } 
- 
-cportQosPrePolicyPkts OBJECT-TYPE 
-    SYNTAX          Counter64 
-    UNITS           "packets" 
-    MAX-ACCESS      read-only 
-    STATUS          current 
-    DESCRIPTION 
-        "The count of packets prior to executing any QoS 
-        policies."  
-    ::= { cportQosStatsEntry 3 } 
- 
-cportQosPrePolicyOctets OBJECT-TYPE 
-    SYNTAX          Counter64 
-    UNITS           "octets" 
-    MAX-ACCESS      read-only 
-    STATUS          current 
-    DESCRIPTION 
-        "The count of octets prior to executing any QoS 
-        policies."  
-    ::= { cportQosStatsEntry 4 } 
- 
-cportQosPostPolicyPkts OBJECT-TYPE 
-    SYNTAX          Counter64 
-    UNITS           "packets" 
-    MAX-ACCESS      read-only 
-    STATUS          current 
-    DESCRIPTION 
-        "The count of packets after executing QoS policies."  
-    ::= { cportQosStatsEntry 5 } 
- 
-cportQosPostPolicyOctets OBJECT-TYPE 
-    SYNTAX          Counter64 
-    UNITS           "octets" 
-    MAX-ACCESS      read-only 
-    STATUS          current 
-    DESCRIPTION 
-        "The count of octets after executing QoS policies."  
-    ::= { cportQosStatsEntry 6 } 
- 
-cportQosDropPkts OBJECT-TYPE 
-    SYNTAX          Counter64 
-    UNITS           "packets" 
-    MAX-ACCESS      read-only 
-    STATUS          current 
-    DESCRIPTION 
-        "The count of dropped packets as the result of 
-        queuing and scheduling related QoS features that  
-        can produce drops."  
-    ::= { cportQosStatsEntry 7 } 
- 
-cportQosDropOctets OBJECT-TYPE 
-    SYNTAX          Counter64 
-    UNITS           "octets" 
-    MAX-ACCESS      read-only 
-    STATUS          current 
-    DESCRIPTION 
-        "The count of dropped octets as the result of 
-        queuing and scheduling related QoS features that  
-        can produce drops."  
-    ::= { cportQosStatsEntry 8 } 
- 
-cportQosClassifiedOctets OBJECT-TYPE 
-    SYNTAX          Counter64 
-    UNITS           "octets" 
-    MAX-ACCESS      read-only 
-    STATUS          current 
-    DESCRIPTION 
-        "The count of classified octets during QoS."  
-    ::= { cportQosStatsEntry 9 } 
- 
-cportQosClassifiedPkts OBJECT-TYPE 
-    SYNTAX          Counter64 
-    UNITS           "packets" 
-    MAX-ACCESS      read-only 
-    STATUS          current 
-    DESCRIPTION 
-        "The count of classified packets during QoS."  
-    ::= { cportQosStatsEntry 10 } 
- 
-cportQosNoChangePkts OBJECT-TYPE 
-    SYNTAX          Counter64 
-    UNITS           "packets" 
-    MAX-ACCESS      read-only 
-    STATUS          current 
-    DESCRIPTION 
-        "The count of packets maintain unchange after 
-        executing QoS policies."  
-    ::= { cportQosStatsEntry 11 } 
- 
-cportQosNoChangeOctets OBJECT-TYPE 
-    SYNTAX          Counter64 
-    UNITS           "octets" 
-    MAX-ACCESS      read-only 
-    STATUS          current 
-    DESCRIPTION 
-        "The count of octets maintain unchange after 
-        executing QoS policies."  
-    ::= { cportQosStatsEntry 12 } 
- 
-cportQosInProfPolicyPkts OBJECT-TYPE 
-    SYNTAX          Counter64 
-    UNITS           "packets" 
-    MAX-ACCESS      read-only 
-    STATUS          current 
-    DESCRIPTION 
-        "The count of packets that are within the policer 
-        profile limit configured for this policy."  
-    ::= { cportQosStatsEntry 13 } 
- 
-cportQosOutOfProfPolicyPkts OBJECT-TYPE 
-    SYNTAX          Counter64 
-    UNITS           "packets" 
-    MAX-ACCESS      read-only 
-    STATUS          current 
-    DESCRIPTION 
-        "The count of packets that exceed the policer 
-        profile limit configured for this policy."  
-    ::= { cportQosStatsEntry 14 } 
- 
-cportQosInProfPolicyOctets OBJECT-TYPE 
-    SYNTAX          Counter64 
-    UNITS           "octets" 
-    MAX-ACCESS      read-only 
-    STATUS          current 
-    DESCRIPTION 
-        "The count of octets that are within the policer 
-        profile limit configured for this policy."  
-    ::= { cportQosStatsEntry 15 } 
- 
-cportQosOutOfProfPolicyOctets OBJECT-TYPE 
-    SYNTAX          Counter64 
-    UNITS           "octets" 
-    MAX-ACCESS      read-only 
-    STATUS          current 
-    DESCRIPTION 
-        "The count of octets that exceed the policer 
-        profile limit configured for this policy."  
-    ::= { cportQosStatsEntry 16 } 
- 
-cportQosViolateProfPolicyPkts OBJECT-TYPE 
-    SYNTAX          Counter64 
-    UNITS           "packets" 
-    MAX-ACCESS      read-only 
-    STATUS          current 
-    DESCRIPTION 
-        "The count of packets that violate the policer 
-        profile limit configured for this policy."  
-    ::= { cportQosStatsEntry 17 } 
- 
-cportQosViolateProfPolicyOctets OBJECT-TYPE 
-    SYNTAX          Counter64 
-    UNITS           "octets" 
-    MAX-ACCESS      read-only 
-    STATUS          current 
-    DESCRIPTION 
-        "The count of octets that violate the policer 
-        profile limit configured for this policy."  
-    ::= { cportQosStatsEntry 18 } 
-  
- 
- 
-cportQosIndexTypeNew OBJECT-TYPE 
-    SYNTAX          INTEGER  { 
-                        none(1), 
-                        dscp(2), 
-                        ipPrecedence(3), 
-                        cos(4), 
-                        police(5) 
+
+
+cportQosEgressQueueStatsTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CportQosEgressQueueStatsEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table specifies QoS related statistical
+        information for egress queues on each port.   
+        The agent will add an entry in this table for each 
+        queue, threshold and port."
+    ::= { cportQosStatistics 5 }
+
+cportQosEgressQueueStatsEntry OBJECT-TYPE
+    SYNTAX          CportQosEgressQueueStatsEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "A conceptual row in cportQosEgressQueueStatsTable."
+    INDEX           {
+                        ifIndex,
+                        cportQosQueueId,
+                        cportQosQueueThreshold
                     } 
-    MAX-ACCESS      read-write 
-    STATUS          current 
-    DESCRIPTION 
-        "This object specifies the sorting mechanism used to 
-        collect and store the statistical QoS information.    
-        This object value is device dependent."  
-    ::= { cportQosStatistics 3 } 
+    ::= { cportQosEgressQueueStatsTable 1 }
+
+CportQosEgressQueueStatsEntry ::= SEQUENCE {
+        cportQosQueueId          Unsigned32,
+        cportQosQueueThreshold   Unsigned32,
+        cportQosQueueEnqueuePkts Counter64,
+        cportQosQueueDropPkts    Counter64
+}
+
+cportQosQueueId OBJECT-TYPE
+    SYNTAX          Unsigned32 (1..2147483647)
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This object identifies the queue ID of this port for
+        which QoS statistics are collected. 
+
+        For example, if a port has 4 queues, this index value
+        can be 1,2,3,4." 
+    ::= { cportQosEgressQueueStatsEntry 1 }
+
+cportQosQueueThreshold OBJECT-TYPE
+    SYNTAX          Unsigned32 (1..2147483647)
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This object identifies the threshold number 
+        of the queue threshold associated with this
+        queue. A queue can have more than one threshold.
+
+        For example, if a queue has 3 thresholds, this index
+        could be 1,2,3." 
+    ::= { cportQosEgressQueueStatsEntry 2 }
+
+cportQosQueueEnqueuePkts OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "Packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the number of egress packets
+        that have been enqueued for this queue and threshold." 
+    ::= { cportQosEgressQueueStatsEntry 3 }
+
+cportQosQueueDropPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "Packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the number of egress packets
+        that have been dropped for this queue and threshold." 
+    ::= { cportQosEgressQueueStatsEntry 4 }
  
-cportQosInVlanStatsTable OBJECT-TYPE 
-    SYNTAX          SEQUENCE OF CportQosInVlanStatsEntry  
-    MAX-ACCESS      not-accessible 
-    STATUS          current 
-    DESCRIPTION 
-        "This table specifies QoS port related ingress 
-        statistical information. The type of information   
-        is controlled by the cportQosIndexTypeNew object." 
-    ::= { cportQosStatistics 4 } 
- 
-cportQosInVlanStatsEntry OBJECT-TYPE 
-    SYNTAX          CportQosInVlanStatsEntry 
-    MAX-ACCESS      not-accessible 
-    STATUS          current 
-    DESCRIPTION 
-        "It exists an entry in this table for each port 
-        on which QoS is configured per port and per VLAN." 
-    INDEX           { 
-                        ifIndex, 
-                        vtpVlanIndex, 
-                        cportQosIndex 
-                    }  
-    ::= { cportQosInVlanStatsTable 1 } 
- 
-CportQosInVlanStatsEntry ::= SEQUENCE { 
-        cportQosVlanInProfPolicyPkts        Counter64, 
-        cportQosVlanOutOfProfPolicyPkts     Counter64, 
-        cportQosVlanInProfPolicyOctets      Counter64, 
-        cportQosVlanOutOfProfPolicyOctets   Counter64, 
-        cportQosVlanViolateProfPolicyPkts   Counter64, 
-        cportQosVlanViolateProfPolicyOctets Counter64 
-} 
- 
-cportQosVlanInProfPolicyPkts OBJECT-TYPE 
-    SYNTAX          Counter64 
-    UNITS           "packets" 
-    MAX-ACCESS      read-only 
-    STATUS          current 
-    DESCRIPTION 
-        "The count of packets that are within the policer 
-        profile limit configured for this policy."  
-    ::= { cportQosInVlanStatsEntry 1 } 
- 
-cportQosVlanOutOfProfPolicyPkts OBJECT-TYPE 
-    SYNTAX          Counter64 
-    UNITS           "packets" 
-    MAX-ACCESS      read-only 
-    STATUS          current 
-    DESCRIPTION 
-        "The count of packets that exceeds the policer 
-        profile limit configured for this policy."  
-    ::= { cportQosInVlanStatsEntry 2 } 
- 
-cportQosVlanInProfPolicyOctets OBJECT-TYPE 
-    SYNTAX          Counter64 
-    UNITS           "octets" 
-    MAX-ACCESS      read-only 
-    STATUS          current 
-    DESCRIPTION 
-        "The count of octets that are within the policer 
-        profile limit configured for this policy."  
-    ::= { cportQosInVlanStatsEntry 3 } 
- 
-cportQosVlanOutOfProfPolicyOctets OBJECT-TYPE 
-    SYNTAX          Counter64 
-    UNITS           "octets" 
-    MAX-ACCESS      read-only 
-    STATUS          current 
-    DESCRIPTION 
-        "The count of octets that exceed the policer 
-        profile limit configured for this policy."  
-    ::= { cportQosInVlanStatsEntry 4 } 
- 
-cportQosVlanViolateProfPolicyPkts OBJECT-TYPE 
-    SYNTAX          Counter64 
-    UNITS           "packets" 
-    MAX-ACCESS      read-only 
-    STATUS          current 
-    DESCRIPTION 
-        "The count of packets that violate the policer 
-        profile limit configured for this policy."  
-    ::= { cportQosInVlanStatsEntry 5 } 
- 
-cportQosVlanViolateProfPolicyOctets OBJECT-TYPE 
-    SYNTAX          Counter64 
-    UNITS           "octets" 
-    MAX-ACCESS      read-only 
-    STATUS          current 
-    DESCRIPTION 
-        "The count of octets that violate the policer 
-        profile limit configured for this policy."  
-    ::= { cportQosInVlanStatsEntry 6 } 
-  
- 
--- Notifications 
- 
-ciscoPortQosMIBNotifications  OBJECT IDENTIFIER 
-    ::= { ciscoPortQosMIB 2 } 
- 
--- (no notifications are currently defined) 
---    
- 
--- conformance information 
- 
-ciscoPortQosMIBConformance  OBJECT IDENTIFIER 
-    ::= { ciscoPortQosMIB 3 } 
- 
-ciscoPortQosMIBCompliances  OBJECT IDENTIFIER 
-    ::= { ciscoPortQosMIBConformance 1 } 
- 
-ciscoPortQosMIBGroups  OBJECT IDENTIFIER 
-    ::= { ciscoPortQosMIBConformance 2 } 
- 
- 
--- compliance statement 
- 
-ciscoPortQosMIBCompliance MODULE-COMPLIANCE 
-    STATUS          deprecated 
-    DESCRIPTION 
-        "The compliance statement for entities which 
-        implement Port QoS functions on a Cisco router." 
-    MODULE          -- this module 
-    MANDATORY-GROUPS { ciscoPortQosMIBGroup } 
- 
-    GROUP           ciscoPortQosStatsMIBGroup 
-    DESCRIPTION 
-        "Implementation of this group is optional based 
-        on the device capabilities.  
-        Replaced by: ciscoPortQosMIBComplianceRev1" 
-    ::= { ciscoPortQosMIBCompliances 1 } 
- 
-ciscoPortQosMIBComplianceRev1 MODULE-COMPLIANCE 
-    STATUS          deprecated 
-    DESCRIPTION 
-        "The compliance statement for entities which 
-        implement Port QoS functions on a Cisco router." 
-    MODULE          -- this module 
-    MANDATORY-GROUPS { ciscoPortQosMIBGroup } 
- 
-    GROUP           ciscoPortQosStatsMIBGroupRev1 
-    DESCRIPTION 
-        "Implementation of this group is optional based 
-        on the device capabilities." 
-    ::= { ciscoPortQosMIBCompliances 2 } 
- 
-ciscoPortQosMIBComplianceRev2 MODULE-COMPLIANCE 
-    STATUS          deprecated 
-    DESCRIPTION 
-        "The compliance statement for entities which 
-        implement Port QoS functions on a Cisco router." 
-    MODULE          -- this module 
-    MANDATORY-GROUPS { ciscoPortQosMIBGroup } 
- 
-    GROUP           ciscoPortQosStatsMIBGroupRev2 
-    DESCRIPTION 
-        "Implementation of this group is optional based 
-        on the device capabilities." 
- 
-    OBJECT          cportQosIndexTypeNew 
-    MIN-ACCESS      read-only 
-    DESCRIPTION 
-        "Read-only access for devices that do not 
-        support configuration of the sorting mechanism." 
-    ::= { ciscoPortQosMIBCompliances 3 } 
- 
-ciscoPortQosMIBComplianceRev3 MODULE-COMPLIANCE 
-    STATUS          deprecated 
-    DESCRIPTION 
-        "The compliance statement for entities which 
-        implement Port QoS functions on a Cisco router." 
-    MODULE          -- this module 
-    MANDATORY-GROUPS { ciscoPortQosMIBGroup } 
- 
-    GROUP           ciscoPortQosStatsMIBGroupRev2 
-    DESCRIPTION 
-        "Implementation of this group is optional based 
-        on the device capabilities." 
- 
-    GROUP           ciscoPortQosStatsMIBGroupRev2Supp1 
-    DESCRIPTION 
-        "Implementation of this group is optional based 
-        on the device capabilities." 
- 
-    OBJECT          cportQosIndexTypeNew 
-    MIN-ACCESS      read-only 
-    DESCRIPTION 
-        "Read-only access for devices that do not 
-        support configuration of the sorting mechanism." 
-    ::= { ciscoPortQosMIBCompliances 4 } 
- 
-ciscoPortQosMIBComplianceRev4 MODULE-COMPLIANCE 
-    STATUS          deprecated 
-    DESCRIPTION 
-        "The compliance statement for entities which 
-        implement Port QoS functions on a Cisco router." 
-    MODULE          -- this module 
-    MANDATORY-GROUPS { ciscoPortQosMIBGroup } 
- 
-    GROUP           ciscoPortQosStatsMIBGroupRev2 
-    DESCRIPTION 
-        "Implementation of this group is optional based 
-        on the device capabilities." 
- 
-    GROUP           ciscoPortQosStatsMIBGroupRev2Supp1 
-    DESCRIPTION 
-        "Implementation of this group is optional based 
-        on the device capabilities." 
- 
-    GROUP           ciscoPortQosStatsMIBGroupRev2Supp2 
-    DESCRIPTION 
-        "Implementation of this group is optional based 
-        on the device capabilities." 
- 
-    OBJECT          cportQosIndexTypeNew 
-    MIN-ACCESS      read-only 
-    DESCRIPTION 
-        "Read-only access for devices that do not 
-        support configuration of the sorting mechanism." 
-    ::= { ciscoPortQosMIBCompliances 5 } 
- 
-ciscoPortQosMIBComplianceRev5 MODULE-COMPLIANCE 
-    STATUS          current 
-    DESCRIPTION 
-        "The compliance statement for entities which 
-        implement Port QoS functions on a Cisco router." 
-    MODULE          -- this module 
-    MANDATORY-GROUPS { ciscoPortQosMIBGroup } 
- 
-    GROUP           ciscoPortQosStatsMIBGroupRev2 
-    DESCRIPTION 
-        "Implementation of this group is optional based 
-        on the device capabilities." 
- 
-    GROUP           ciscoPortQosStatsMIBGroupRev2Supp1 
-    DESCRIPTION 
-        "Implementation of this group is optional based 
-        on the device capabilities." 
- 
-    GROUP           ciscoPortQosStatsMIBGroupRev2Supp2 
-    DESCRIPTION 
-        "Implementation of this group is optional based 
-        on the device capabilities." 
- 
-    GROUP           ciscoPortQosStatsMIBGroupRev2Supp3 
-    DESCRIPTION 
-        "Implementation of this group is optional based 
-        on the device capabilities." 
- 
-    OBJECT          cportQosIndexTypeNew 
-    MIN-ACCESS      read-only 
-    DESCRIPTION 
-        "Read-only access for devices that do not 
-        support configuration of the sorting mechanism." 
-    ::= { ciscoPortQosMIBCompliances 6 } 
- 
--- units of conformance 
- 
-ciscoPortQosMIBGroup OBJECT-GROUP 
-    OBJECTS         { 
-                        cportQosRLConfigEnable, 
-                        cportQosRLConfigRate, 
-                        cportQosRLConfigBurstSize, 
-                        cportQosTSConfigEnable, 
-                        cportQosTSConfigRate, 
-                        cportQosTSConfigBurstSize 
+
+
+cportQosClassEgressStatsTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CportQosClassEgressStatsEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table specifies egress QoS related statistical
+        information for classes associated with an egress QoS 
+        policy. Each queue on a port is uniquely mapped to a  
+        class in an egress QoS policy. This table provides 
+        the statistical information for each class-queue
+        on each port. 
+
+        The agent will add an entry in this table for each 
+        queue and threshold on a port associated with a class."
+    ::= { cportQosStatistics 6 }
+
+cportQosClassEgressStatsEntry OBJECT-TYPE
+    SYNTAX          CportQosClassEgressStatsEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "A conceptual row in cportQosClassEgressStatsTable."
+    INDEX           {
+                        ifIndex,
+                        cportQosClassId,
+                        cportQosClassThreshold
                     } 
-    STATUS          current 
-    DESCRIPTION 
-        "A collection of objects providing Port QoS 
-        features." 
-    ::= { ciscoPortQosMIBGroups 1 } 
+    ::= { cportQosClassEgressStatsTable 1 }
+
+CportQosClassEgressStatsEntry ::= SEQUENCE {
+        cportQosClassId                Unsigned32,
+        cportQosClassThreshold         Unsigned32,
+        cportQosClassName              SnmpAdminString,
+        cportQosClassEnqueuePkts       Counter64,
+        cportQosClassDropPkts          Counter64,
+        cportQosClassDiscontinuityTime TimeStamp
+}
+
+cportQosClassId OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..2147483647)
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This object identifies the class-ID of the class in
+        an egress policy for which QoS statistics are being 
+        collected.
+
+        Each queue on a port is uniquely mapped to a class 
+        in an egress policy. Each class in a policy is 
+        uniquely identified by a class-ID. A value of 0 
+        indicates the default queue/class-default." 
+    ::= { cportQosClassEgressStatsEntry 1 }
+
+cportQosClassThreshold OBJECT-TYPE
+    SYNTAX          Unsigned32 (1..2147483647)
+    UNITS           "Number of buffers"
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This object identifies the tail-drop queue thresholds
+        value on a class-queue on a port. These values can
+        either be the default value or each could be an 
+        explicitly configured value. 
+
+        For example, if a queue has 3 thresholds, 16, 64 and 256, 
+        this index value for each threshold would be 16, 64, 
+        256 respectively." 
+    ::= { cportQosClassEgressStatsEntry 2 }
+
+cportQosClassName OBJECT-TYPE
+    SYNTAX          SnmpAdminString
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the class name that is associated
+        with the class-ID indicated by the cportQosClassId 
+        object." 
+    ::= { cportQosClassEgressStatsEntry 3 }
+
+cportQosClassEnqueuePkts OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "Packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the number of egress packets
+        that have been enqueued for this queue and threshold." 
+    ::= { cportQosClassEgressStatsEntry 4 }
+
+cportQosClassDropPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "Packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the number of egress packets
+        that have been dropped for this queue and threshold." 
+    ::= { cportQosClassEgressStatsEntry 5 }
+
+cportQosClassDiscontinuityTime OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The value of sysUpTime on the most recent occasion
+        at which any of this entry's counter experienced a 
+        discontinuity. If discontinuities have not occurred 
+        since the last re-initialization of the local 
+        management subsystem, then this object contains a 
+        zero value." 
+    ::= { cportQosClassEgressStatsEntry 6 }
  
-ciscoPortQosStatsMIBGroup OBJECT-GROUP 
-    OBJECTS         { 
-                        cportQosIndexType, 
-                        cportQosPrePolicyPkts, 
-                        cportQosPrePolicyOctets, 
-                        cportQosPostPolicyOctets, 
-                        cportQosPostPolicyPkts, 
-                        cportQosDropPkts, 
-                        cportQosDropOctets, 
-                        cportQosClassifiedOctets, 
-                        cportQosClassifiedPkts 
+
+
+cportQosClassIngressStatsTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CportQosClassIngressStatsEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table specifies QoS related statistical
+        information per port for ingress traffic belonging to
+        QoS classes configured with an action that support
+        statistics (for example: a policer)."
+    ::= { cportQosStatistics 7 }
+
+cportQosClassIngressStatsEntry OBJECT-TYPE
+    SYNTAX          CportQosClassIngressStatsEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "A conceptual row in cportQosClassIngressStatsTable.
+        An entry is added per port for ingress traffic belonging
+        to QoS classes, indicated by cportQosClassIdLevel1 and
+        cportQosClassIdLevel2, configured with an action that
+        supports statistics."
+    INDEX           {
+                        ifIndex,
+                        cportQosClassIdLevel1,
+                        cportQosClassIdLevel2
                     } 
-    STATUS          deprecated 
-    DESCRIPTION 
-        "A collection of objects providing per Port QoS 
-        statistics.   
-        Replaced by: ciscoPortQosStatsMIBGroupRev1" 
-    ::= { ciscoPortQosMIBGroups 2 } 
+    ::= { cportQosClassIngressStatsTable 1 }
+
+CportQosClassIngressStatsEntry ::= SEQUENCE {
+        cportQosClassIdLevel1           Unsigned32,
+        cportQosClassIdLevel2           Unsigned32,
+        cportQosClassNameLevel1         SnmpAdminString,
+        cportQosClassNameLevel2         SnmpAdminString,
+        cportQosPoliceConformPkts       Counter64,
+        cportQosPoliceConformOctets     Counter64,
+        cportQosPoliceExceedPkts        Counter64,
+        cportQosPoliceExceedOctets      Counter64,
+        cportQosPoliceViolatePkts       Counter64,
+        cportQosPoliceViolateOctets     Counter64,
+        cportQosPoliceConformRate       Gauge32,
+        cportQosPoliceExceedRate        Gauge32,
+        cportQosPoliceViolateRate       Gauge32,
+        cportQosPoliceDiscontinuityTime TimeStamp
+}
+
+cportQosClassIdLevel1 OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..2147483647)
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This object identifies the class-ID of a class at the
+        first (highest) level of a hierarchical policy. A value
+        of  0 indicates class default. For a non-hierarchical
+        policy, the value of this object is always 0." 
+    ::= { cportQosClassIngressStatsEntry 1 }
+
+cportQosClassIdLevel2 OBJECT-TYPE
+    SYNTAX          Unsigned32 (0..2147483647)
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This object identifies the class-ID of a class at the
+        second level of a hierarchical policy, or at the first
+        (only) level in a non-hierarchical policy. For a two 
+        level policy, this object identifies the class-ID at the  
+        second level of the policy. For a non-hierarchical/
+        single level policy this object identifies the class-ID
+        of a class at the first (only) level of the policy. A
+        value of 0 indicates class default." 
+    ::= { cportQosClassIngressStatsEntry 2 }
+
+cportQosClassNameLevel1 OBJECT-TYPE
+    SYNTAX          SnmpAdminString
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the class name that is associated
+        with the class-ID indicated by the cportQosClassIdLevel1 
+        object." 
+    ::= { cportQosClassIngressStatsEntry 3 }
+
+cportQosClassNameLevel2 OBJECT-TYPE
+    SYNTAX          SnmpAdminString
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the class name that is associated
+        with the class-ID indicated by the cportQosClassIdLevel2 
+        object." 
+    ::= { cportQosClassIngressStatsEntry 4 }
+
+cportQosPoliceConformPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "Packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the number of ingress packets
+        that conforms to the policing rate for traffic belonging 
+        to the classes indicated by the cportQosClassIdLevel1 
+        and cportQosClassIdLevel2 indices." 
+    ::= { cportQosClassIngressStatsEntry 5 }
+
+cportQosPoliceConformOctets OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "Octets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the number of ingress octets
+        that conforms to the policing rate for traffic belonging 
+        to the classes indicated by the cportQosClassIdLevel1 
+        and cportQosClassIdLevel2 indices." 
+    ::= { cportQosClassIngressStatsEntry 6 }
+
+cportQosPoliceExceedPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "Packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the number of ingress packets
+        that exceeds the policing rate for traffic belonging 
+        to the classes indicated by the cportQosClassIdLevel1 
+        and cportQosClassIdLevel2 indices." 
+    ::= { cportQosClassIngressStatsEntry 7 }
+
+cportQosPoliceExceedOctets OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "Octets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the number of ingress octets
+        that exceeds the policing rate for traffic belonging 
+        to the classes indicated by the cportQosClassIdLevel1 
+        and cportQosClassIdLevel2 indices." 
+    ::= { cportQosClassIngressStatsEntry 8 }
+
+cportQosPoliceViolatePkts OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "Packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the number of ingress packets
+        that violates the policing rate for traffic belonging 
+        to the classes indicated by the cportQosClassIdLevel1 
+        and cportQosClassIdLevel2 indices." 
+    ::= { cportQosClassIngressStatsEntry 9 }
+
+cportQosPoliceViolateOctets OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "Octets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the number of ingress octets
+        that violates the policing rate for traffic belonging 
+        to the classes indicated by the cportQosClassIdLevel1 
+        and cportQosClassIdLevel2 indices." 
+    ::= { cportQosClassIngressStatsEntry 10 }
+
+cportQosPoliceConformRate OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "bits per second"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the rate of ingress packets
+        that conforms to the policing rate for traffic belonging
+        to the classes indicated by the cportQosClassIdLevel1 
+        and cportQosClassIdLevel2 indices." 
+    ::= { cportQosClassIngressStatsEntry 11 }
+
+cportQosPoliceExceedRate OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "bits per second"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the rate of ingress packets
+        that exceeds the policing for traffic belonging to
+        the classes indicated by the cportQosClassIdLevel1 
+        and cportQosClassIdLevel2 indices." 
+    ::= { cportQosClassIngressStatsEntry 12 }
+
+cportQosPoliceViolateRate OBJECT-TYPE
+    SYNTAX          Gauge32
+    UNITS           "bits per second"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the rate of ingress packets
+        that violates the policing for traffic belonging to
+        the classes indicated by the cportQosClassIdLevel1 
+        and cportQosClassIdLevel2 indices." 
+    ::= { cportQosClassIngressStatsEntry 13 }
+
+cportQosPoliceDiscontinuityTime OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The value of sysUpTime on the most recent occasion
+        at which any of this entry's counter experienced a 
+        discontinuity. If discontinuities have not occurred 
+        since the last re-initialization of the local 
+        management subsystem, then this object contains a 
+        zero value." 
+    ::= { cportQosClassIngressStatsEntry 14 }
  
-ciscoPortQosStatsMIBGroupRev1 OBJECT-GROUP 
-    OBJECTS         { 
-                        cportQosIndexType, 
-                        cportQosPrePolicyPkts, 
-                        cportQosPrePolicyOctets, 
-                        cportQosPostPolicyOctets, 
-                        cportQosPostPolicyPkts, 
-                        cportQosDropPkts, 
-                        cportQosDropOctets, 
-                        cportQosClassifiedOctets, 
-                        cportQosClassifiedPkts, 
-                        cportQosNoChangePkts, 
-                        cportQosNoChangeOctets 
+
+
+cportQosDscpStatsTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CportQosDscpStatsEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table indicates QoS related statistical
+        DSCP information. The statistics are collected   
+        per physical port and DSCP value."  
+    ::= { cportQosStatistics 8 }
+
+cportQosDscpStatsEntry OBJECT-TYPE
+    SYNTAX          CportQosDscpStatsEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "A conceptual row in cportQosDscpStatsTable. There is
+        an entry in this table for each port and each DSCP  
+        value."
+    INDEX           {
+                        ifIndex,
+                        cportQosDscpValue
                     } 
-    STATUS          deprecated 
-    DESCRIPTION 
-        "A collection of objects providing per Port QoS 
-        statistics." 
-    ::= { ciscoPortQosMIBGroups 3 } 
+    ::= { cportQosDscpStatsTable 1 }
+
+CportQosDscpStatsEntry ::= SEQUENCE {
+        cportQosDscpValue         Dscp,
+        cportQosDscpIngressPkts   Counter64,
+        cportQosDscpIngressOctets Counter64,
+        cportQosDscpEgressPkts    Counter64,
+        cportQosDscpEgressOctets  Counter64
+}
+
+cportQosDscpValue OBJECT-TYPE
+    SYNTAX          Dscp
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This object identifies the DSCP value for
+        incoming or outgoing packets." 
+    ::= { cportQosDscpStatsEntry 1 }
+
+cportQosDscpIngressPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "Packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the number of ingress packets
+        whose DSCP value matched the value of the 
+        cportQosDscpValue object." 
+    ::= { cportQosDscpStatsEntry 2 }
+
+cportQosDscpIngressOctets OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "Octets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the number of ingress octets
+        whose DSCP value matched the value of the 
+        cportQosDscpValue object." 
+    ::= { cportQosDscpStatsEntry 3 }
+
+cportQosDscpEgressPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "Packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the number of egress packets
+        whose DSCP value matched the value of the 
+        cportQosDscpValue object." 
+    ::= { cportQosDscpStatsEntry 4 }
+
+cportQosDscpEgressOctets OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "Octets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the number of egress octets
+        whose DSCP value matched the value of the 
+        cportQosDscpValue object." 
+    ::= { cportQosDscpStatsEntry 5 }
  
-ciscoPortQosStatsMIBGroupRev2 OBJECT-GROUP 
-    OBJECTS         { 
-                        cportQosIndexTypeNew, 
-                        cportQosPrePolicyPkts, 
-                        cportQosPrePolicyOctets, 
-                        cportQosPostPolicyOctets, 
-                        cportQosPostPolicyPkts, 
-                        cportQosDropPkts, 
-                        cportQosDropOctets, 
-                        cportQosClassifiedOctets, 
-                        cportQosClassifiedPkts, 
-                        cportQosNoChangePkts, 
-                        cportQosNoChangeOctets, 
-                        cportQosInProfPolicyPkts, 
-                        cportQosOutOfProfPolicyPkts 
+
+
+cportQosCosStatsTable OBJECT-TYPE
+    SYNTAX          SEQUENCE OF CportQosCosStatsEntry 
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This table indicates QoS related statistical
+        COS information. The statistics are collected   
+        per  physical port and COS value."  
+        ::= { cportQosStatistics 9 }
+
+cportQosCosStatsEntry OBJECT-TYPE
+    SYNTAX          CportQosCosStatsEntry
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "A conceptual row in cportQosCosStatsTable. There is
+        an entry in this table for each port and each COS  
+        value."
+    INDEX           {
+                        ifIndex,
+                        cportQosCosValue
                     } 
-    STATUS          current 
-    DESCRIPTION 
-        "A collection of objects providing per Port QoS 
-        statistics." 
-    ::= { ciscoPortQosMIBGroups 4 } 
+    ::= { cportQosCosStatsTable 1 }
+
+CportQosCosStatsEntry ::= SEQUENCE {
+        cportQosCosValue         QosLayer2Cos,
+        cportQosCosIngressPkts   Counter64,
+        cportQosCosIngressOctets Counter64,
+        cportQosCosEgressPkts    Counter64,
+        cportQosCosEgressOctets  Counter64
+}
+
+cportQosCosValue OBJECT-TYPE
+    SYNTAX          QosLayer2Cos
+    MAX-ACCESS      not-accessible
+    STATUS          current
+    DESCRIPTION
+        "This object identifies the COS value for
+        each received or sent packet." 
+    ::= { cportQosCosStatsEntry 1 }
+
+cportQosCosIngressPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "Packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the number of ingress
+        packets whose COS value matched the value of the 
+        cportQosCosValue object." 
+    ::= { cportQosCosStatsEntry 2 }
+
+cportQosCosIngressOctets OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "Octets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the number of ingress
+        octets whose COS value matched the value of the 
+        cportQosCosValue object." 
+    ::= { cportQosCosStatsEntry 3 }
+
+cportQosCosEgressPkts OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "Packets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the number of egress
+        packets whose COS value matched the value of the 
+        cportQosCosValue object." 
+    ::= { cportQosCosStatsEntry 4 }
+
+cportQosCosEgressOctets OBJECT-TYPE
+    SYNTAX          Counter64
+    UNITS           "Octets"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the number of egress
+        octets whose COS value matched the value of the 
+        cportQosCosValue object." 
+    ::= { cportQosCosStatsEntry 5 }
  
-ciscoPortQosStatsMIBGroupRev2Supp1 OBJECT-GROUP 
-    OBJECTS         { 
-                        cportQosVlanInProfPolicyPkts, 
-                        cportQosVlanOutOfProfPolicyPkts 
-                    } 
-    STATUS          current 
-    DESCRIPTION 
-        "A collection of objects providing per Port QoS 
-        statistics." 
-    ::= { ciscoPortQosMIBGroups 5 } 
- 
-ciscoPortQosStatsMIBGroupRev2Supp2 OBJECT-GROUP 
-    OBJECTS         { 
-                        cportQosInProfPolicyOctets, 
-                        cportQosOutOfProfPolicyOctets, 
-                        cportQosViolateProfPolicyPkts, 
-                        cportQosViolateProfPolicyOctets 
-                    } 
-    STATUS          current 
-    DESCRIPTION 
-        "A collection of objects providing per Port QoS 
-        statistics." 
-    ::= { ciscoPortQosMIBGroups 6 } 
- 
-ciscoPortQosStatsMIBGroupRev2Supp3 OBJECT-GROUP 
-    OBJECTS         { 
-                        cportQosVlanInProfPolicyOctets, 
-                        cportQosVlanOutOfProfPolicyOctets, 
-                        cportQosVlanViolateProfPolicyPkts, 
-                        cportQosVlanViolateProfPolicyOctets 
-                    } 
-    STATUS          current 
-    DESCRIPTION 
-        "A collection of objects providing per Port QoS 
-        statistics." 
-    ::= { ciscoPortQosMIBGroups 7 } 
- 
-END 
- 
- 
- 
+
+-- Notifications
+
+ciscoPortQosMIBNotifications  OBJECT IDENTIFIER
+    ::= { ciscoPortQosMIB 2 }
+
+-- (no notifications are currently defined)
+--   
+
+-- conformance information
+
+ciscoPortQosMIBConformance  OBJECT IDENTIFIER
+    ::= { ciscoPortQosMIB 3 }
+
+ciscoPortQosMIBCompliances  OBJECT IDENTIFIER
+    ::= { ciscoPortQosMIBConformance 1 }
+
+ciscoPortQosMIBGroups  OBJECT IDENTIFIER
+    ::= { ciscoPortQosMIBConformance 2 }
+
+
+-- compliance statement
+
+ciscoPortQosMIBCompliance MODULE-COMPLIANCE
+    STATUS          deprecated
+    DESCRIPTION
+        "The compliance statement for entities which
+        implement Port QoS functions on a Cisco router."
+    MODULE          -- this module
+    MANDATORY-GROUPS { ciscoPortQosMIBGroup }
+
+    GROUP           ciscoPortQosStatsMIBGroup
+    DESCRIPTION
+        "Implementation of this group is optional based
+        on the device capabilities.    
+        Replaced by: ciscoPortQosMIBComplianceRev1"
+    ::= { ciscoPortQosMIBCompliances 1 }
+
+ciscoPortQosMIBComplianceRev1 MODULE-COMPLIANCE
+    STATUS          deprecated
+    DESCRIPTION
+        "The compliance statement for entities which
+        implement Port QoS functions on a Cisco router."
+    MODULE          -- this module
+    MANDATORY-GROUPS { ciscoPortQosMIBGroup }
+
+    GROUP           ciscoPortQosStatsMIBGroupRev1
+    DESCRIPTION
+        "Implementation of this group is optional based
+        on the device capabilities."
+    ::= { ciscoPortQosMIBCompliances 2 }
+
+ciscoPortQosMIBComplianceRev2 MODULE-COMPLIANCE
+    STATUS          deprecated
+    DESCRIPTION
+        "The compliance statement for entities which
+        implement Port QoS functions on a Cisco router."
+    MODULE          -- this module
+    MANDATORY-GROUPS { ciscoPortQosMIBGroup }
+
+    GROUP           ciscoPortQosStatsMIBGroupRev2
+    DESCRIPTION
+        "Implementation of this group is optional based
+        on the device capabilities."
+
+    OBJECT          cportQosIndexTypeNew
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Read-only access for devices that do not
+        support configuration of the sorting mechanism."
+    ::= { ciscoPortQosMIBCompliances 3 }
+
+ciscoPortQosMIBComplianceRev3 MODULE-COMPLIANCE
+    STATUS          deprecated
+    DESCRIPTION
+        "The compliance statement for entities which
+        implement Port QoS functions on a Cisco router."
+    MODULE          -- this module
+    MANDATORY-GROUPS { ciscoPortQosMIBGroup }
+
+    GROUP           ciscoPortQosStatsMIBGroupRev2
+    DESCRIPTION
+        "Implementation of this group is optional based
+        on the device capabilities."
+
+    GROUP           ciscoPortQosStatsMIBGroupRev2Supp1
+    DESCRIPTION
+        "Implementation of this group is optional based
+        on the device capabilities."
+
+    OBJECT          cportQosIndexTypeNew
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Read-only access for devices that do not
+        support configuration of the sorting mechanism."
+    ::= { ciscoPortQosMIBCompliances 4 }
+
+ciscoPortQosMIBComplianceRev4 MODULE-COMPLIANCE
+    STATUS          deprecated
+    DESCRIPTION
+        "The compliance statement for entities which
+        implement Port QoS functions on a Cisco router."
+    MODULE          -- this module
+    MANDATORY-GROUPS { ciscoPortQosMIBGroup }
+
+    GROUP           ciscoPortQosStatsMIBGroupRev2
+    DESCRIPTION
+        "Implementation of this group is optional based
+        on the device capabilities."
+
+    GROUP           ciscoPortQosStatsMIBGroupRev2Supp1
+    DESCRIPTION
+        "Implementation of this group is optional based
+        on the device capabilities."
+
+    GROUP           ciscoPortQosStatsMIBGroupRev2Supp2
+    DESCRIPTION
+        "Implementation of this group is optional based
+        on the device capabilities."
+
+    OBJECT          cportQosIndexTypeNew
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Read-only access for devices that do not
+        support configuration of the sorting mechanism."
+    ::= { ciscoPortQosMIBCompliances 5 }
+
+ciscoPortQosMIBComplianceRev5 MODULE-COMPLIANCE
+    STATUS          deprecated
+    DESCRIPTION
+        "The compliance statement for entities which
+        implement Port QoS functions on a Cisco router."
+    MODULE          -- this module
+    MANDATORY-GROUPS { ciscoPortQosMIBGroup }
+
+    GROUP           ciscoPortQosStatsMIBGroupRev2
+    DESCRIPTION
+        "Implementation of this group is optional based
+        on the device capabilities."
+
+    GROUP           ciscoPortQosStatsMIBGroupRev2Supp1
+    DESCRIPTION
+        "Implementation of this group is optional based
+        on the device capabilities."
+
+    GROUP           ciscoPortQosStatsMIBGroupRev2Supp2
+    DESCRIPTION
+        "Implementation of this group is optional based
+        on the device capabilities."
+
+    GROUP           ciscoPortQosStatsMIBGroupRev2Supp3
+    DESCRIPTION
+        "Implementation of this group is optional based
+        on the device capabilities."
+
+    OBJECT          cportQosIndexTypeNew
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Read-only access for devices that do not
+        support configuration of the sorting mechanism."
+    ::= { ciscoPortQosMIBCompliances 6 }
+
+ciscoPortQosMIBComplianceRev6 MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for entities which
+        implement Port QoS functions on a Cisco router."
+    MODULE          -- this module
+    MANDATORY-GROUPS { ciscoPortQosMIBGroup }
+
+    GROUP           ciscoPortQosStatsMIBGroupRev2
+    DESCRIPTION
+        "Implementation of this group is optional based
+        on the device capabilities."
+
+    GROUP           ciscoPortQosStatsMIBGroupRev2Supp1
+    DESCRIPTION
+        "Implementation of this group is optional based
+        on the device capabilities."
+
+    GROUP           ciscoPortQosStatsMIBGroupRev2Supp2
+    DESCRIPTION
+        "Implementation of this group is optional based
+        on the device capabilities."
+
+    GROUP           ciscoPortQosStatsMIBGroupRev2Supp3
+    DESCRIPTION
+        "Implementation of this group is optional based
+        on the device capabilities."
+
+    GROUP           ciscoPortQosStatsMIBGroupRev2Supp4
+    DESCRIPTION
+        "Implementation of this group is optional based
+        on the device capabilities."
+
+    GROUP           ciscoPortQosStatsMIBGroupRev2Supp5
+    DESCRIPTION
+        "Implementation of this group is optional based
+        on the device capabilities."
+
+    GROUP           ciscoPortQosStatsMIBGroupRev2Supp6
+    DESCRIPTION
+        "Implementation of this group is optional based
+        on the device capabilities."
+
+    GROUP           ciscoPortQosStatsMIBGroupRev2Supp7
+    DESCRIPTION
+        "Implementation of this group is optional based
+        on the device capabilities."
+
+    GROUP           ciscoPortQosStatsMIBGroupRev2Supp8
+    DESCRIPTION
+        "Implementation of this group is optional based
+        on the device capabilities."
+
+    OBJECT          cportQosIndexTypeNew
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Read-only access for devices that do not
+        support configuration of the sorting mechanism."
+    ::= { ciscoPortQosMIBCompliances 7 }
+
+-- units of conformance
+
+ciscoPortQosMIBGroup OBJECT-GROUP
+    OBJECTS         {
+                        cportQosRLConfigEnable,
+                        cportQosRLConfigRate,
+                        cportQosRLConfigBurstSize,
+                        cportQosTSConfigEnable,
+                        cportQosTSConfigRate,
+                        cportQosTSConfigBurstSize
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects providing Port QoS
+        features."
+    ::= { ciscoPortQosMIBGroups 1 }
+
+ciscoPortQosStatsMIBGroup OBJECT-GROUP
+    OBJECTS         {
+                        cportQosIndexType,
+                        cportQosPrePolicyPkts,
+                        cportQosPrePolicyOctets,
+                        cportQosPostPolicyOctets,
+                        cportQosPostPolicyPkts,
+                        cportQosDropPkts,
+                        cportQosDropOctets,
+                        cportQosClassifiedOctets,
+                        cportQosClassifiedPkts
+                    }
+    STATUS          deprecated
+    DESCRIPTION
+        "A collection of objects providing per Port QoS
+        statistics.     
+        Replaced by: ciscoPortQosStatsMIBGroupRev1"
+    ::= { ciscoPortQosMIBGroups 2 }
+
+ciscoPortQosStatsMIBGroupRev1 OBJECT-GROUP
+    OBJECTS         {
+                        cportQosIndexType,
+                        cportQosPrePolicyPkts,
+                        cportQosPrePolicyOctets,
+                        cportQosPostPolicyOctets,
+                        cportQosPostPolicyPkts,
+                        cportQosDropPkts,
+                        cportQosDropOctets,
+                        cportQosClassifiedOctets,
+                        cportQosClassifiedPkts,
+                        cportQosNoChangePkts,
+                        cportQosNoChangeOctets
+                    }
+    STATUS          deprecated
+    DESCRIPTION
+        "A collection of objects providing per Port QoS
+        statistics."
+    ::= { ciscoPortQosMIBGroups 3 }
+
+ciscoPortQosStatsMIBGroupRev2 OBJECT-GROUP
+    OBJECTS         {
+                        cportQosIndexTypeNew,
+                        cportQosPrePolicyPkts,
+                        cportQosPrePolicyOctets,
+                        cportQosPostPolicyOctets,
+                        cportQosPostPolicyPkts,
+                        cportQosDropPkts,
+                        cportQosDropOctets,
+                        cportQosClassifiedOctets,
+                        cportQosClassifiedPkts,
+                        cportQosNoChangePkts,
+                        cportQosNoChangeOctets,
+                        cportQosInProfPolicyPkts,
+                        cportQosOutOfProfPolicyPkts
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects providing per Port QoS
+        statistics."
+    ::= { ciscoPortQosMIBGroups 4 }
+
+ciscoPortQosStatsMIBGroupRev2Supp1 OBJECT-GROUP
+    OBJECTS         {
+                        cportQosVlanInProfPolicyPkts,
+                        cportQosVlanOutOfProfPolicyPkts
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects providing per Port QoS
+        statistics."
+    ::= { ciscoPortQosMIBGroups 5 }
+
+ciscoPortQosStatsMIBGroupRev2Supp2 OBJECT-GROUP
+    OBJECTS         {
+                        cportQosInProfPolicyOctets,
+                        cportQosOutOfProfPolicyOctets,
+                        cportQosViolateProfPolicyPkts,
+                        cportQosViolateProfPolicyOctets
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects providing per Port QoS
+        statistics."
+    ::= { ciscoPortQosMIBGroups 6 }
+
+ciscoPortQosStatsMIBGroupRev2Supp3 OBJECT-GROUP
+    OBJECTS         {
+                        cportQosVlanInProfPolicyOctets,
+                        cportQosVlanOutOfProfPolicyOctets,
+                        cportQosVlanViolateProfPolicyPkts,
+                        cportQosVlanViolateProfPolicyOctets
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects providing per Port QoS
+        statistics."
+    ::= { ciscoPortQosMIBGroups 7 }
+
+ciscoPortQosStatsMIBGroupRev2Supp4 OBJECT-GROUP
+    OBJECTS         {
+                        cportQosQueueEnqueuePkts,
+                        cportQosQueueDropPkts
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects providing per Port QoS
+        statistics."
+    ::= { ciscoPortQosMIBGroups 8 }
+
+ciscoPortQosStatsMIBGroupRev2Supp5 OBJECT-GROUP
+    OBJECTS         {
+                        cportQosClassName,
+                        cportQosClassEnqueuePkts,
+                        cportQosClassDropPkts,
+                        cportQosClassDiscontinuityTime
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects providing per Port QoS
+        statistics."
+    ::= { ciscoPortQosMIBGroups 9 }
+
+ciscoPortQosStatsMIBGroupRev2Supp6 OBJECT-GROUP
+    OBJECTS         {
+                        cportQosClassNameLevel1,
+                        cportQosClassNameLevel2,
+                        cportQosPoliceConformPkts,
+                        cportQosPoliceConformOctets,
+                        cportQosPoliceExceedPkts,
+                        cportQosPoliceExceedOctets,
+                        cportQosPoliceViolatePkts,
+                        cportQosPoliceViolateOctets,
+                        cportQosPoliceConformRate,
+                        cportQosPoliceExceedRate,
+                        cportQosPoliceViolateRate,
+                        cportQosPoliceDiscontinuityTime
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects providing per Port QoS
+        statistics."
+    ::= { ciscoPortQosMIBGroups 10 }
+
+ciscoPortQosStatsMIBGroupRev2Supp7 OBJECT-GROUP
+    OBJECTS         {
+                        cportQosDscpIngressPkts,
+                        cportQosDscpIngressOctets,
+                        cportQosDscpEgressPkts,
+                        cportQosDscpEgressOctets
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects providing per Port QoS
+        statistics."
+    ::= { ciscoPortQosMIBGroups 11 }
+
+ciscoPortQosStatsMIBGroupRev2Supp8 OBJECT-GROUP
+    OBJECTS         {
+                        cportQosCosIngressPkts,
+                        cportQosCosIngressOctets,
+                        cportQosCosEgressPkts,
+                        cportQosCosEgressOctets
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects providing per Port QoS
+        statistics."
+    ::= { ciscoPortQosMIBGroups 12 }
+
+END
+
+
+

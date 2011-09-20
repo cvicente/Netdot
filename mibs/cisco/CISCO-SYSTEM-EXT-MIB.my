@@ -2,7 +2,6 @@
 -- CISCO-SYSTEM-EXT-MIB.my: System Extension MIB
 --   
 -- October 2002, Vinay Gaonkar
---   
 -- Copyright (c) 2002, 2003, 2005-2007 by cisco Systems Inc.
 -- All rights reserved.
 --   
@@ -32,14 +31,15 @@ IMPORTS
         FROM INET-ADDRESS-MIB
     sysName
         FROM SNMPv2-MIB
-    EntPhysicalIndexOrZero
+    EntPhysicalIndexOrZero,
+    TimeIntervalSec
         FROM CISCO-TC
     ciscoMgmt
         FROM CISCO-SMI;
 
 
 ciscoSystemExtMIB MODULE-IDENTITY
-    LAST-UPDATED    "200611290000Z"
+    LAST-UPDATED    "200708060000Z"
     ORGANIZATION    "Cisco Systems Inc."
     CONTACT-INFO
             "Cisco Systems
@@ -55,7 +55,13 @@ ciscoSystemExtMIB MODULE-IDENTITY
         information on core files that are generated in the
         system.
         GLOSSARY
-        FIPS Federal Information Processing Standards Publication"
+        FIPS Federal Information Processing Standards Publication."
+    REVISION        "200708060000Z"
+    DESCRIPTION
+        "-Added a scalar object 'cseSysUpTime'
+        -Added an Object Group ciscoSystemExtInfoGroupRev3 and
+         a MODULE-COMPLIANCE ciscoSystemExtMIBComplianceRev8
+         to include the new object."
     REVISION        "200611290000Z"
     DESCRIPTION
         "Added ciscoSystemExtInfoFIPSGroup.
@@ -309,6 +315,23 @@ cseSysFIPSModeActivation OBJECT-TYPE
                Modules"
     DEFVAL          { false } 
     ::= { ciscoSysInfoGroup 9 }
+
+cseSysUpTime OBJECT-TYPE
+    SYNTAX          TimeIntervalSec
+    UNITS           "Seconds"
+    MAX-ACCESS      read-only
+    STATUS          current
+    DESCRIPTION
+        "The time (in seconds) since the entire system
+        was last re-initialized as a result of reload. The 
+        initialization being system loaded and running with a system
+        image software on the first active supervisor (SUP). In High 
+        Availibility (HA) capable system / System that provides 
+        Supervisor module redundancy, this uptime indicates time 
+        elapsed since the first active SUP was booted. This will not 
+        change even if the active SUP goes down and stand-by takes
+        over as active." 
+    ::= { ciscoSysInfoGroup 10 }
 
 cseSnmpErrorTable OBJECT-TYPE
     SYNTAX          SEQUENCE OF CseSnmpErrorEntry 
@@ -852,7 +875,7 @@ ciscoSystemExtMIBComplianceRev6 MODULE-COMPLIANCE
     ::= { ciscoSystemExtMIBCompliances 7 }
 
 ciscoSystemExtMIBComplianceRev7 MODULE-COMPLIANCE
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The compliance statement for entities which
         implement the CISCO-SYTEM-EXT-MIB."
@@ -887,6 +910,43 @@ ciscoSystemExtMIBComplianceRev7 MODULE-COMPLIANCE
     DESCRIPTION
         "Implementation of this group is optional."
     ::= { ciscoSystemExtMIBCompliances 8 }
+
+ciscoSystemExtMIBComplianceRev8 MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for entities which
+        implement the CISCO-SYTEM-EXT-MIB."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        ciscoSystemExtInfoGroupRev3,
+                        ciscoSystemExtInfoGroupRev2,
+                        ciscoSystemExtErrorGroup,
+                        ciscoSystemExtHaGroup,
+                        ciscoSystemExtNotificationGroup,
+                        ciscoSystemExtNotificationGroupSup1,
+                        ciscoSystemExtHaGroupRev1
+                    }
+
+    GROUP           ciscoSystemExtInfoGroupOptional
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           ciscoSystemExtSwFailureGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           ciscoSystemExtSwFailureGroup2
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           ciscoSystemExtInfoTelnetGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           ciscoSystemExtInfoFIPSGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+    ::= { ciscoSystemExtMIBCompliances 9 }
 
 -- Units of Conformance
 
@@ -938,7 +998,7 @@ ciscoSystemExtInfoGroupRev1 OBJECT-GROUP
                         cseSysAutoSync,
                         cseSysAutoSyncState
                     }
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "A collection of objects for system information."
     ::= { ciscoSystemExtMIBGroups 5 }
@@ -1035,6 +1095,19 @@ ciscoSystemExtInfoFIPSGroup OBJECT-GROUP
         to the device."
     ::= { ciscoSystemExtMIBGroups 16 }
 
-END
+ciscoSystemExtInfoGroupRev3 OBJECT-GROUP
+    OBJECTS         {
+                        cseSysCPUUtilization,
+                        cseSysMemoryUtilization,
+                        cseSysConfLastChange,
+                        cseSysAutoSync,
+                        cseSysAutoSyncState,
+                        cseSysUpTime
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of objects for system information."
+    ::= { ciscoSystemExtMIBGroups 17 }
 
+END
 

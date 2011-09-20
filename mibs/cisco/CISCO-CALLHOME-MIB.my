@@ -3,7 +3,7 @@
 --   
 -- October 2002, Vinay Gaonkar, Dipesh Gorashia
 --   
--- Copyright (c) 2002-2004, 2006-2008 by cisco Systems Inc.
+-- Copyright (c) 2002-2004, 2006, 2007, 2009 by cisco Systems Inc.
 -- All rights reserved.
 --   
 -- *********************************************************************
@@ -33,17 +33,20 @@ IMPORTS
     InetAddressType,
     InetAddress
         FROM INET-ADDRESS-MIB
+    sysName
+        FROM SNMPv2-MIB
     SyslogSeverity
         FROM CISCO-SYSLOG-MIB
-    ciscoMgmt
-        FROM CISCO-SMI
     CiscoURLString,
-    EntPhysicalIndexOrZero
-        FROM CISCO-TC;
+    EntPhysicalIndexOrZero,
+    CiscoVrfName
+        FROM CISCO-TC
+    ciscoMgmt
+        FROM CISCO-SMI;
 
 
 ciscoCallHomeMIB MODULE-IDENTITY
-    LAST-UPDATED    "200807010000Z"
+    LAST-UPDATED    "200906050000Z"
     ORGANIZATION    "Cisco Systems Inc."
     CONTACT-INFO
             "Cisco Systems
@@ -70,6 +73,24 @@ ciscoCallHomeMIB MODULE-IDENTITY
         features that allow storage systems to send 
         performance, accounting and system health information 
         in addition to just the fault information."
+    REVISION        "200906050000Z"
+    DESCRIPTION
+        "Updated the DESCRIPTION for callHomeDestEmailAddressIndex."
+    REVISION        "200905040000Z"
+    DESCRIPTION
+        "Added ccmCallHomeVrfGroup."
+    REVISION        "200904090000Z"
+    DESCRIPTION
+        "Added the following notification objects :
+        - ccmEventDescription
+        - ccmEventTime
+        - ccmEventUrgencyLevel 
+        Added new notification  
+        - ccmEventNotif
+        Added new Group 
+        - ccmEventNotifGroup and 
+        Added new compliance  
+        - chMIBCompliance6."
     REVISION        "200807010000Z"
     DESCRIPTION
         "Added support for ccmOnDemandMsgSendControlGroup,
@@ -174,6 +195,12 @@ ccmCallHomeOnDemandActions  OBJECT IDENTIFIER
 
 ccmSmartCallHomeActions  OBJECT IDENTIFIER
     ::= { ciscoCallHomeMIBObjects 5 }
+
+ccmCallHomeVrf  OBJECT IDENTIFIER
+    ::= { ciscoCallHomeMIBObjects 6 }
+
+ccmCallhomeEvents  OBJECT IDENTIFIER
+    ::= { ciscoCallHomeMIBObjects 8 }
 
 
 -- Textual Conventions
@@ -701,6 +728,10 @@ callHomeDestEmailAddressIndex OBJECT-TYPE
         "An arbitrary integer value, greater than zero, and less
         than and equal to callHomeEmailAddrTblMaxEntries, which 
         identifies an Email address. 
+
+        The object can be any value in the supported range if the 
+        value of callHomeEmailAddrTblMaxEntries is zero.
+
         These integer values should be non-volatile." 
     ::= { callHomeDestEmailAddressEntry 1 }
 
@@ -1940,6 +1971,33 @@ callHomeUserDefMaxCmds OBJECT-TYPE
         system." 
     ::= { ccmCallHomeAlertGroupCfg 5 }
 
+ccmEventDescription OBJECT-TYPE
+    SYNTAX          SnmpAdminString
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION
+        "This object indicates the description of the Call Home
+        event that occurred in the system." 
+    ::= { ccmCallhomeEvents 1 }
+
+ccmEventTime OBJECT-TYPE
+    SYNTAX          TimeStamp
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION
+        "This object indicates Time when the last
+        Call Home alert was triggered." 
+    ::= { ccmCallhomeEvents 2 }
+
+ccmEventUrgencyLevel OBJECT-TYPE
+    SYNTAX          CallHomeMsgLevel
+    MAX-ACCESS      accessible-for-notify
+    STATUS          current
+    DESCRIPTION
+        "This object specifies the minimum urgency level, associated
+        with Call Home event that occurred in the system." 
+    ::= { ccmCallhomeEvents 3 }
+
 callHomeUserDefCmdTable OBJECT-TYPE
     SYNTAX          SEQUENCE OF CallHomeUserDefCmdEntry 
     MAX-ACCESS      not-accessible
@@ -2393,6 +2451,19 @@ ccmSmartCallHomeTrigger OBJECT-TYPE
         When read, this object always returns 'false'." 
     ::= { ccmSmartCallHomeActions 5 }
 
+ccmCallHomeVrfName OBJECT-TYPE
+    SYNTAX          CiscoVrfName
+    MAX-ACCESS      read-write
+    STATUS          current
+    DESCRIPTION
+        "The name of Virtual Routing and Forwarding (VRF) domain
+        configured for Call Home feature.
+
+        A zero length string indicates that there is no VRF domain
+        configured and the default VRF domain is used by Call Home
+        feature." 
+    ::= { ccmCallHomeVrf 1 }
+
 -- Notifications
 
 ccmSmtpServerFailNotif NOTIFICATION-TYPE
@@ -2444,6 +2515,21 @@ ccmSmtpMsgSendFailNotif NOTIFICATION-TYPE
         fails to send an e-mail notification through all of the
         SMTP servers in ccmSmtpServersTable."
    ::= { ccmCallHomeNotifications 4 }
+
+ccmEventNotif NOTIFICATION-TYPE
+    OBJECTS         {
+                        sysName,
+                        ccmEventDescription,
+                        ccmEventTime,
+                        ccmEventUrgencyLevel
+                    }
+    STATUS          current
+    DESCRIPTION
+        "This notification is generated every time a Call Home
+        external event is triggered in the system. Internal events 
+        like Periodic Configuration and Inventory events do not 
+        generate notifications."
+   ::= { ccmCallHomeNotifications 5 }
 -- Conformance
 
 chMIBCompliances  OBJECT IDENTIFIER
@@ -3275,7 +3361,7 @@ chMIBCompliance4 MODULE-COMPLIANCE
     ::= { chMIBCompliances 5 }
 
 chMIBCompliance5 MODULE-COMPLIANCE
-    STATUS          current
+    STATUS          deprecated
     DESCRIPTION
         "The compliance statement for entities which
         implement the Call Home feature.
@@ -3558,6 +3644,603 @@ chMIBCompliance5 MODULE-COMPLIANCE
         support an address of size 0 to 63 
         octets."
     ::= { chMIBCompliances 6 }
+
+chMIBCompliance6 MODULE-COMPLIANCE
+    STATUS          deprecated
+    DESCRIPTION
+        "The compliance statement for entities which
+        implement the Call Home feature. It is deprecated 
+        and superceded by chMIBCompliance7 statement.
+
+        OBJECT ccmSmtpServersAddrType 
+        SYNTAX  INTEGER { ipv4(1) }
+        DESCRIPTION
+                An implementation is only required to 
+                support IPv4 addresses."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        ccmConfigurationGroup3,
+                        chStatisticsGroup
+                    }
+
+    GROUP           chSystemInformationGroup1
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           chSystemServicePriorityGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           chEmailMsgDispGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           ccmAlertActionGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for
+        the platforms which generate test messages for all
+        (and not any particular) of configured destination
+        profiles which meet test message generation criteria
+        determined by platform."
+
+    GROUP           ccmProfileMessageLevelGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for
+        the platforms which allow user to filter Call Home 
+        messages based on their associated levels."
+
+    GROUP           ccmProfileActivationGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for
+        the platforms which provide user control to enable or
+        disable configured Call Home profiles."
+
+    GROUP           ccmProfileTestGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for
+        the platforms which are capable of generating test
+        messages specifically for a configured destination
+        profile."
+
+    GROUP           ccmProfileAlertGroupsGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for
+        the platforms which categorize various events that result
+        in Call Home messages in different alert-groups and
+        provide user control to associate different alert-groups
+        to configured profiles."
+
+    GROUP           ccmProfileAlertGroupControlGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for
+        the platforms which implement ccmProfileAlertGroupsGroup
+        and can enable or disable various alert-groups."
+
+    GROUP           ccmThrottleConfigurationGroup
+    DESCRIPTION
+        "Implementation of this group is only for the systems
+        which support such message throttling functionality."
+
+    GROUP           chSwInventoryInfoGroup1
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           chPeriodicSwInventoryInfoGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           ccmPeriodicSwInventoryInfoGroup1
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           chSingleSmtpServerGroup
+    DESCRIPTION
+        "This group is mandatory for devices which support
+        single SMTP server."
+
+    GROUP           chMultipleSmtpServersGroup
+    DESCRIPTION
+        "This group is mandatory for devices which support
+        multiple SMTP servers."
+
+    GROUP           ccmSmtpServersPriorityGroup
+    DESCRIPTION
+        "This group is mandatory for devices which support
+        prioritization among multiple SMTP servers."
+
+    GROUP           ccmSysLogSeverityGroup
+    DESCRIPTION
+        "This group is mandatory for devices that issue
+        Call Home alerts based on  severity level of the 
+        syslog messages generated on the device."
+
+    GROUP           ccmMIBNotificationsConfigGroup
+    DESCRIPTION
+        "The ccmMIBNotificationsConfigGroup is optional."
+
+    GROUP           ccmMIBNotificationsGroup1
+    DESCRIPTION
+        "The ccmMIBNotificationsGroup1 is optional."
+
+    GROUP           ccmHttpCfgGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which support http as a transport method to deliver
+        Call Home messages."
+
+    GROUP           ccmSeverityAlertGroupCfgGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which support severity based alert groups."
+
+    GROUP           ccmPeriodicAlertGroupCfgGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which support periodic alert groups."
+
+    GROUP           ccmPatternAlertGroupCfgGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which support pattern based alert groups."
+
+    GROUP           ccmEventAlertGroupCfgGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which support event based alert groups."
+
+    GROUP           ccmAlertGroupCapabilityGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which support alert group capabilities."
+
+    GROUP           ccmUserDefCmdGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           ccmSmtpMsgSendFailNotifCtrlGroup
+    DESCRIPTION
+        "Implementation of chSmtpMsgSendFailNotifCtrlGroup
+        is optional."
+
+    GROUP           ccmSmtpMsgSendFailNotifGroup
+    DESCRIPTION
+        "Implementation of chSmtpMsgSendFailNotifGroup
+        is optional."
+
+    GROUP           ccmAlertHCStatisticsGroup
+    DESCRIPTION
+        "Implementation of this group mandatory only for the
+        devices which support 64 bit Call Home alert statistics."
+
+    GROUP           ccmAlertRateLimitGroup
+    DESCRIPTION
+        "Implementation of this group mandatory only for the
+        devices which support Call Home alert rate limit feature."
+
+    GROUP           ccmSmtpServerStatusGroup
+    DESCRIPTION
+        "Implementation of this group mandatory only for the
+        devices which support Call Home SMTP Server status
+        check feature."
+
+    GROUP           ccmProfileHiMessageSizeGroup
+    DESCRIPTION
+        "Implementation of this group mandatory only for the
+        devices which support the maximum size of message 
+        greater than 1000,000 bytes."
+
+    GROUP           ccmOnDemandMsgSendControlGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which support on demand Call Home messages."
+
+    GROUP           ccmOnDemandMsgStatusGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which do not support concurrent generation of
+        on demand Call Home messages."
+
+    GROUP           ccmSmartCallHomeGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which support Smart Call Home messages."
+
+    GROUP           ccmEventStatsGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which maintain statistical information CallHome
+        events."
+
+    GROUP           ccmEventNotifGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           ccmCallhomeEventsGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    OBJECT          callHomeDestProfileTrnsprtMthd
+    SYNTAX          INTEGER  {
+                        email(1)
+                    }
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Only 'email' needs to be supported."
+
+    OBJECT          callHomeDestProfileMsgFormat
+    SYNTAX          INTEGER  {
+                        shortText(3)
+                    }
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Only 'shortText' needs to be supported."
+
+    OBJECT          callHomeDestProfileStatus
+    SYNTAX          INTEGER  {
+                        active(1),
+                        createAndGo(4),
+                        destroy(6)
+                    }
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Only 'active' needs to be supported."
+
+    OBJECT          callHomeDestEmailAddress
+    SYNTAX          SnmpAdminString (SIZE (1..63))
+    DESCRIPTION
+        "An implementation is only required to
+        support an address of size 1 to 63
+        octets."
+
+    OBJECT          callHomeDestEmailAddressStatus
+    SYNTAX          INTEGER  {
+                        active(1),
+                        createAndGo(4),
+                        destroy(6)
+                    }
+    DESCRIPTION
+        "Only 'active', 'createAndGo' and 'destroy' needs
+        to be supported."
+
+    OBJECT          ccmSmtpServersPort
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          ccmSmtpServersStatus
+    SYNTAX          INTEGER  {
+                        active(1),
+                        createAndGo(4),
+                        destroy(6)
+                    }
+    DESCRIPTION
+        "Only 'active', 'createAndGo' and 'destroy' needs
+        to be supported."
+
+    OBJECT          callHomeEmailFrom
+    SYNTAX          SnmpAdminString (SIZE (0..63))
+    DESCRIPTION
+        "An implementation is only required to
+        support an address of size 0 to 63
+        octets."
+
+    OBJECT          callHomeEmailReplyTo
+    SYNTAX          SnmpAdminString (SIZE (0..63))
+    DESCRIPTION
+        "An implementation is only required to
+        support an address of size 0 to 63
+        octets."
+
+    OBJECT          callHomeEmailMsgDispNotification
+    SYNTAX          SnmpAdminString (SIZE (0..63))
+    DESCRIPTION
+        "An implementation is only required to
+        support an address of size 0 to 63 
+        octets."
+    ::= { chMIBCompliances 7 }
+
+chMIBCompliance7 MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for entities which
+        implement the Call Home feature.
+
+        OBJECT ccmSmtpServersAddrType
+        SYNTAX  INTEGER { ipv4(1) }
+        DESCRIPTION
+                An implementation is only required to
+                support IPv4 addresses."
+    MODULE          -- this module
+    MANDATORY-GROUPS {
+                        ccmConfigurationGroup3,
+                        chStatisticsGroup
+                    }
+
+    GROUP           chSystemInformationGroup1
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           chSystemServicePriorityGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           chEmailMsgDispGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           ccmAlertActionGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for
+        the platforms which generate test messages for all
+        (and not any particular) of configured destination
+        profiles which meet test message generation criteria
+        determined by platform."
+
+    GROUP           ccmProfileMessageLevelGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for
+        the platforms which allow user to filter Call Home
+        messages based on their associated levels."
+
+    GROUP           ccmProfileActivationGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for
+        the platforms which provide user control to enable or
+        disable configured Call Home profiles."
+
+    GROUP           ccmProfileTestGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for
+        the platforms which are capable of generating test
+        messages specifically for a configured destination
+        profile."
+
+    GROUP           ccmProfileAlertGroupsGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for
+        the platforms which categorize various events that result
+        in Call Home messages in different alert-groups and
+        provide user control to associate different alert-groups
+        to configured profiles."
+
+    GROUP           ccmProfileAlertGroupControlGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for
+        the platforms which implement ccmProfileAlertGroupsGroup
+        and can enable or disable various alert-groups."
+
+    GROUP           ccmThrottleConfigurationGroup
+    DESCRIPTION
+        "Implementation of this group is only for the systems
+        which support such message throttling functionality."
+
+    GROUP           chSwInventoryInfoGroup1
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           chPeriodicSwInventoryInfoGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           ccmPeriodicSwInventoryInfoGroup1
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           chSingleSmtpServerGroup
+    DESCRIPTION
+        "This group is mandatory for devices which support
+        single SMTP server."
+
+    GROUP           chMultipleSmtpServersGroup
+    DESCRIPTION
+        "This group is mandatory for devices which support
+        multiple SMTP servers."
+
+    GROUP           ccmSmtpServersPriorityGroup
+    DESCRIPTION
+        "This group is mandatory for devices which support
+        prioritization among multiple SMTP servers."
+
+    GROUP           ccmSysLogSeverityGroup
+    DESCRIPTION
+        "This group is mandatory for devices that issue
+        Call Home alerts based on  severity level of the
+        syslog messages generated on the device."
+
+    GROUP           ccmMIBNotificationsConfigGroup
+    DESCRIPTION
+        "The ccmMIBNotificationsConfigGroup is optional."
+
+    GROUP           ccmMIBNotificationsGroup1
+    DESCRIPTION
+        "The ccmMIBNotificationsGroup1 is optional."
+
+    GROUP           ccmHttpCfgGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which support http as a transport method to deliver
+        Call Home messages."
+
+    GROUP           ccmSeverityAlertGroupCfgGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which support severity based alert groups."
+
+    GROUP           ccmPeriodicAlertGroupCfgGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which support periodic alert groups."
+
+    GROUP           ccmPatternAlertGroupCfgGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which support pattern based alert groups."
+
+    GROUP           ccmEventAlertGroupCfgGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which support event based alert groups."
+
+    GROUP           ccmAlertGroupCapabilityGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which support alert group capabilities."
+
+    GROUP           ccmUserDefCmdGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           ccmSmtpMsgSendFailNotifCtrlGroup
+    DESCRIPTION
+        "Implementation of chSmtpMsgSendFailNotifCtrlGroup
+        is optional."
+
+    GROUP           ccmSmtpMsgSendFailNotifGroup
+    DESCRIPTION
+        "Implementation of chSmtpMsgSendFailNotifGroup
+        is optional."
+
+    GROUP           ccmAlertHCStatisticsGroup
+    DESCRIPTION
+        "Implementation of this group mandatory only for the
+        devices which support 64 bit Call Home alert statistics."
+
+    GROUP           ccmAlertRateLimitGroup
+    DESCRIPTION
+        "Implementation of this group mandatory only for the
+        devices which support Call Home alert rate limit feature."
+
+    GROUP           ccmSmtpServerStatusGroup
+    DESCRIPTION
+        "Implementation of this group mandatory only for the
+        devices which support Call Home SMTP Server status
+        check feature."
+
+    GROUP           ccmProfileHiMessageSizeGroup
+    DESCRIPTION
+        "Implementation of this group mandatory only for the
+        devices which support the maximum size of message
+        greater than 1000,000 bytes."
+
+    GROUP           ccmOnDemandMsgSendControlGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which support on demand Call Home messages."
+
+    GROUP           ccmOnDemandMsgStatusGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which do not support concurrent generation of
+        on demand Call Home messages."
+
+    GROUP           ccmSmartCallHomeGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which support Smart Call Home messages."
+
+    GROUP           ccmEventStatsGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which maintain statistical information CallHome
+        events."
+
+    GROUP           ccmEventNotifGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           ccmCallhomeEventsGroup
+    DESCRIPTION
+        "Implementation of this group is optional."
+
+    GROUP           ccmCallHomeVrfGroup
+    DESCRIPTION
+        "Implementation of this group is mandatory only for the
+        devices which maintain VRF information for CallHome."
+
+    OBJECT          callHomeDestProfileTrnsprtMthd
+    SYNTAX          INTEGER  {
+                        email(1)
+                    }
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Only 'email' needs to be supported."
+
+    OBJECT          callHomeDestProfileMsgFormat
+    SYNTAX          INTEGER  {
+                        shortText(3)
+                    }
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Only 'shortText' needs to be supported."
+
+    OBJECT          callHomeDestProfileStatus
+    SYNTAX          INTEGER  {
+                        active(1),
+                        createAndGo(4),
+                        destroy(6)
+                    }
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Only 'active' needs to be supported."
+
+    OBJECT          callHomeDestEmailAddress
+    SYNTAX          SnmpAdminString (SIZE (1..63))
+    DESCRIPTION
+        "An implementation is only required to
+        support an address of size 1 to 63
+        octets."
+
+    OBJECT          callHomeDestEmailAddressStatus
+    SYNTAX          INTEGER  {
+                        active(1),
+                        createAndGo(4),
+                        destroy(6)
+                    }
+    DESCRIPTION
+        "Only 'active', 'createAndGo' and 'destroy' needs
+        to be supported."
+
+    OBJECT          ccmSmtpServersPort
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+
+    OBJECT          ccmSmtpServersStatus
+    SYNTAX          INTEGER  {
+                        active(1),
+                        createAndGo(4),
+                        destroy(6)
+                    }
+    DESCRIPTION
+        "Only 'active', 'createAndGo' and 'destroy' needs
+        to be supported."
+
+    OBJECT          callHomeEmailFrom
+    SYNTAX          SnmpAdminString (SIZE (0..63))
+    DESCRIPTION
+        "An implementation is only required to
+        support an address of size 0 to 63
+        octets."
+
+    OBJECT          callHomeEmailReplyTo
+    SYNTAX          SnmpAdminString (SIZE (0..63))
+    DESCRIPTION
+        "An implementation is only required to
+        support an address of size 0 to 63
+        octets."
+
+    OBJECT          callHomeEmailMsgDispNotification
+    SYNTAX          SnmpAdminString (SIZE (0..63))
+    DESCRIPTION
+        "An implementation is only required to
+        support an address of size 0 to 63
+        octets."
+
+    OBJECT          ccmCallHomeVrfName
+    MIN-ACCESS      read-only
+    DESCRIPTION
+        "Write access is not required."
+    ::= { chMIBCompliances 8 }
 
 -- Units of Conformance
 
@@ -4087,5 +4770,33 @@ ccmEventStatsGroup OBJECT-GROUP
         "A collection of object(s) indicating statistical information
         for the Call Home events."
     ::= { chMIBGroups 44 }
+
+ccmEventNotifGroup NOTIFICATION-GROUP
+   NOTIFICATIONS    { ccmEventNotif }
+    STATUS          current
+    DESCRIPTION
+        "A collection of object(s) indicating the Call Home events that
+        occured in the system."
+    ::= { chMIBGroups 45 }
+
+ccmCallhomeEventsGroup OBJECT-GROUP
+    OBJECTS         {
+                        ccmEventDescription,
+                        ccmEventTime,
+                        ccmEventUrgencyLevel
+                    }
+    STATUS          current
+    DESCRIPTION
+        "A collection of notification objects required for Call Home
+        events that occured in the system."
+    ::= { chMIBGroups 46 }
+
+ccmCallHomeVrfGroup OBJECT-GROUP
+    OBJECTS         { ccmCallHomeVrfName }
+    STATUS          current
+    DESCRIPTION
+        "A collection of object(s) to manage VRF information for
+        Call Home feature."
+    ::= { chMIBGroups 47 }
 
 END

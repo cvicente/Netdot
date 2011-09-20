@@ -2,9 +2,7 @@
 BAY-STACK-MIB DEFINITIONS ::= BEGIN
 
 IMPORTS
-    MODULE-IDENTITY,
-    OBJECT-TYPE,
-    Integer32
+    MODULE-IDENTITY, OBJECT-TYPE, Integer32, Unsigned32
         FROM SNMPv2-SMI
     TruthValue
         FROM SNMPv2-TC
@@ -12,11 +10,20 @@ IMPORTS
         FROM SYNOPTICS-ROOT-MIB;
 
 bayStackMib    MODULE-IDENTITY
-   LAST-UPDATED "200508220000Z"
+   LAST-UPDATED "200909280000Z"
    ORGANIZATION "Nortel Networks"
-   CONTACT-INFO ""
+   CONTACT-INFO "Nortel Networks"
    DESCRIPTION
        "General BayStack MIB."
+
+   REVISION "200909280000Z" -- 28 September 2009
+   DESCRIPTION
+       "Version 3:  Added bayStackConfigStackRebootOnFailure and
+                          bayStackConfigStackRetryCount."
+
+   REVISION "200709040000Z" -- 04 September 2007
+   DESCRIPTION
+       "Version 2:  Added per-unit configuration table."
 
    REVISION "200508220000Z" -- 22 August 2005
    DESCRIPTION
@@ -60,6 +67,83 @@ bayStackConfigStackErrorNotificationEnabled OBJECT-TYPE
         "This objects controls whether bsnStackConfigurationError
          notifications are generated."
     ::= { bayStackConfig 3 }
+
+bayStackConfigStackRebootUnitOnFailure OBJECT-TYPE
+    SYNTAX      TruthValue
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "This object controls whether to reboot any unit in a stack whose
+         stack ports do not go logically up."
+    ::= { bayStackConfig 4 }
+
+bayStackConfigStackRetryCount OBJECT-TYPE
+    SYNTAX      Unsigned32 (0..4294967295)
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "Stack retry count."
+    ::= { bayStackConfig 5 }
+
+--
+-- General Stack Per-Unit Configuration Table
+--
+
+bayStackUnitConfigTable OBJECT-TYPE
+    SYNTAX SEQUENCE OF BayStackUnitConfigEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "This table contains per-unit configuration data for a stack."
+    ::= { bayStackObjects 2 }
+
+bayStackUnitConfigEntry OBJECT-TYPE
+    SYNTAX BayStackUnitConfigEntry
+    MAX-ACCESS not-accessible
+    STATUS current
+    DESCRIPTION
+        "An entry of configuration data for a stacked unit."
+    INDEX { bayStackUnitConfigIndex }
+    ::= { bayStackUnitConfigTable 1 }
+
+BayStackUnitConfigEntry ::=
+    SEQUENCE {
+        bayStackUnitConfigIndex              Integer32,
+        bayStackUnitConfigRearPortAdminMode  INTEGER,
+        bayStackUnitConfigRearPortOperMode   INTEGER
+    }
+
+bayStackUnitConfigIndex OBJECT-TYPE
+    SYNTAX      Integer32 (1..8)
+    MAX-ACCESS  not-accessible
+    STATUS      current
+    DESCRIPTION
+        "The unit number of an entry."
+    ::= { bayStackUnitConfigEntry 1 }
+
+bayStackUnitConfigRearPortAdminMode OBJECT-TYPE
+    SYNTAX      INTEGER {
+                            standalone(1),
+                            stacking(2)
+                        }
+    MAX-ACCESS  read-write
+    STATUS      current
+    DESCRIPTION
+        "The current administrative rear-port mode for this unit.  This
+         value will be applied at the next stack re-boot if it is different
+         from the current operational value."
+    ::= { bayStackUnitConfigEntry 2 }
+
+bayStackUnitConfigRearPortOperMode OBJECT-TYPE
+    SYNTAX      INTEGER {
+                            standalone(1),
+                            stacking(2)
+                        }
+    MAX-ACCESS  read-only
+    STATUS      current
+    DESCRIPTION
+        "The current operational rear-port mode for this unit."
+    ::= { bayStackUnitConfigEntry 3 }
 
 END
 

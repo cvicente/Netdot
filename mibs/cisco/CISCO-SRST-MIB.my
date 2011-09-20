@@ -3,7 +3,7 @@
 --
 -- March 2005,  Lizzie Cheung
 --
--- Copyright (c) 2005 by cisco Systems, Inc.
+-- Copyright (c) 2005-2007 by cisco Systems, Inc.
 -- All rights reserved.
 -- *****************************************************************
 
@@ -14,7 +14,7 @@ IMPORTS
         MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
         Integer32, Unsigned32, Counter32, Gauge32
                 FROM SNMPv2-SMI
-        TEXTUAL-CONVENTION, TruthValue
+        TEXTUAL-CONVENTION, TruthValue, DisplayString
                 FROM SNMPv2-TC
         MODULE-COMPLIANCE, OBJECT-GROUP, NOTIFICATION-GROUP
                 FROM SNMPv2-CONF
@@ -29,7 +29,7 @@ IMPORTS
 
 
 ciscoSrstMIB MODULE-IDENTITY
-        LAST-UPDATED        "200506200000Z"
+        LAST-UPDATED        "200702270000Z"
         ORGANIZATION        "Cisco Systems, Inc."
         CONTACT-INFO
                 "       Cisco Systems
@@ -59,6 +59,18 @@ ciscoSrstMIB MODULE-IDENTITY
                 in CISCO-CCME-MIB. Ephone specific notifications 
                 which are common to CCME and SRST are also defined
                 in CISCO-CCME-MIB."
+        REVISION        "200702270000Z"
+        DESCRIPTION
+                "[1] Default value for csrstTransferSystem is changed
+                     from 'blind' to 'fullConsult'. 
+                 [2] Added csrstUserLocaleInfoRev1 which is the revised
+                     version for csrstUserLocaleInfo. It can support 5 
+                     user locale at the same time.
+                 [3] csrstConfGroup is deprecated and revised with 
+                     csrstConfGroupRev1. 
+                 [4] ciscoSrstMIBCompliance is deprecated and revised with
+                     ciscoSrstMIBComplianceRev1."
+
         REVISION        "200506200000Z"
         DESCRIPTION
                 "Initial version of this MIB module."
@@ -455,16 +467,20 @@ csrstTransferSystem OBJECT-TYPE
                "
        REFERENCE
                "ITU-T H.450.2 Call Transfers"
-       DEFVAL  { blind }
+       DEFVAL  { fullConsult }
        ::= { csrstConf 22 }
 
 csrstUserLocaleInfo OBJECT-TYPE
        SYNTAX     CountryCode 
        MAX-ACCESS read-only
-       STATUS     current
+       STATUS     deprecated
        DESCRIPTION
                "Cisco SRST language for displays on 
                Cisco IP phone by country.
+               Deprecated and superseded by 
+               csrstUserLocaleInfoRev1, as current 
+               implementation supports 5 user locales
+               at the same time.
                "
        DEFVAL  { "US" }
        ::= { csrstConf 23 }
@@ -858,6 +874,41 @@ csrstNotificationEnabled OBJECT-TYPE
             "
         DEFVAL {false}
         ::= { csrstConf 34 }
+
+csrstUserLocaleInfoRev1 OBJECT-TYPE
+       SYNTAX     DisplayString  (SIZE (14..64))
+       MAX-ACCESS read-only
+       STATUS     current
+       DESCRIPTION
+               "Cisco SRST language for displays on Cisco IP phone by country.
+                Every set of character separated by a forward slash ('/')
+                represents one user-locale whose value may be any one of
+                the following languages or one configured by the user. 
+                At the same time 5 user locales can be configured.
+                 ---------------------------
+                | DE     Germany            |
+                | DK     Denmark            |
+                | ES     Spain              |
+                | FR     France             |
+                | IT     Italy              |
+                | JP     Japan              |
+                | NL     Netherlands        |
+                | NO     Norway             |
+                | PT     Portugal           |
+                | RU     Russian Federation |
+                | SE     Sweden             |
+                | US     United States      |
+                 ---------------------------
+
+                Example: if csrstUserLocaleInfoRev1 returns 'DE/US/SE/FR/RU'
+                         then : UserLocale 1 = DE
+                                UserLocale 2 = US
+                                UserLocale 3 = SE
+                                UserLocale 4 = FR
+                                UserLocale 5 = RU
+               "
+       DEFVAL  { "US/US/US/US/US" }
+       ::= { csrstConf 35 }
 
 --
 -- SRST Notification Information Group
@@ -1508,7 +1559,7 @@ ciscoSrstMIBGroups
           OBJECT IDENTIFIER ::= { ciscoSrstMIBConformance 2 }
 
 ciscoSrstMIBCompliance MODULE-COMPLIANCE
-    STATUS  current
+    STATUS  deprecated
     DESCRIPTION
             "The compliance statement for the Cisco
             Survivable Remote Site Telephony (SRST) MIB.
@@ -1547,6 +1598,47 @@ ciscoSrstMIBCompliance MODULE-COMPLIANCE
             values supported at this time."
 
          ::= { ciscoSrstMIBCompliances 1 }
+
+ciscoSrstMIBComplianceRev1 MODULE-COMPLIANCE
+    STATUS  current
+    DESCRIPTION
+            "The compliance statement for the Cisco
+            Survivable Remote Site Telephony (SRST) MIB.
+            "
+    MODULE  -- this module
+    MANDATORY-GROUPS {
+                        csrstNotifInfoGroup,
+                        csrstSipConfGroup,
+                        csrstActiveStatsGroup,
+                        csrstMIBNotifsGroup,
+                        csrstConfGroupRev1
+                     }
+
+    OBJECT csrstIPAddressType
+    SYNTAX INTEGER {ipv4(1), ipv6(2) }
+    DESCRIPTION
+            "The values of ipv4 and ipv6 are the only
+            values supported at this time."
+
+    OBJECT csrstMohMulticastAddrType
+    SYNTAX INTEGER {ipv4(1), ipv6(2) }
+    DESCRIPTION
+            "The values of ipv4 and ipv6 are the only
+            values supported at this time."
+
+    OBJECT csrstSipVoRegPoolIpAddrType
+    SYNTAX INTEGER {ipv4(1), ipv6(2) }
+    DESCRIPTION
+            "The values of ipv4 and ipv6 are the only
+            values supported at this time."
+
+    OBJECT csrstSipEndpointIpAddrType
+    SYNTAX INTEGER {ipv4(1), ipv6(2) }
+    DESCRIPTION
+            "The values of ipv4 and ipv6 are the only
+            values supported at this time."
+
+         ::= { ciscoSrstMIBCompliances 2 }
 
 -- Units of Conformance
 
@@ -1594,7 +1686,7 @@ csrstConfGroup OBJECT-GROUP
                 csrstLimitDN,
                 csrstNotificationEnabled
             }
-    STATUS      current
+    STATUS      deprecated
     DESCRIPTION
             "A collection of objects which are used to
             show the current running configuration of 
@@ -1677,4 +1769,59 @@ csrstMIBNotifsGroup NOTIFICATION-GROUP
             "
          ::= { ciscoSrstMIBGroups 5 }
 
+csrstConfGroupRev1 OBJECT-GROUP
+    OBJECTS {
+                csrstEnabled,
+                csrstVersion,
+                csrstIPAddressType,
+                csrstIPAddress,
+                csrstPortNumber,
+                csrstMaxConferences,
+                csrstMaxEphones,
+                csrstMaxDN,
+                csrstSipPhoneUnRegThreshold,
+                csrstCallFwdNoAnswer,
+                csrstCallFwdNoAnswerTo,
+                csrstCallFwdBusy,
+                csrstMohFilename,
+                csrstMohMulticastAddrType,
+                csrstMohMulticastAddr,
+                csrstMohMulticastPort,
+                csrstVoiceMailNumber,
+                csrstSystemMessagePrimary,
+                csrstSystemMessageSecondary,
+                csrstScriptName,
+                csrstSecondaryDialTone,
+                csrstTransferSystem,
+                csrstDateFormat,
+                csrstTimeFormat,
+                csrstInterdigitTo,
+                csrstBusyTo,
+                csrstAlertTo,
+                csrstXlateCalledNumber,
+                csrstXlateCallingNumber,
+                csrstAliasTag,
+                csrstAliasNumPattern,
+                csrstAliasAltNumber,
+                csrstAliasPreference,
+                csrstAliasHuntStopEnabled,
+                csrstAccessCodeType,
+                csrstAccessCode,
+                csrstAccessCodeDIDEnabled,
+                csrstLimitDNType,
+                csrstLimitDN,
+                csrstNotificationEnabled,
+                csrstUserLocaleInfoRev1
+            }
+    STATUS      current
+    DESCRIPTION
+            "A collection of objects which are used to
+            show the current running configuration of
+            Cisco SRST feature.
+            "
+         ::= { ciscoSrstMIBGroups 6 }
+
 END
+
+
+

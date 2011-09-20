@@ -1,0 +1,129 @@
+
+NT-ENTERPRISE-DATA-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE
+        FROM SNMPv2-SMI
+    nortel
+        FROM NORTEL-MIB;
+
+ntEnterpriseData MODULE-IDENTITY
+   LAST-UPDATED "200802250000Z"
+   ORGANIZATION "Nortel Networks"
+   CONTACT-INFO ""
+   DESCRIPTION
+       "EDN Enterprise Data root MIB."
+
+   REVISION "200810130000Z" -- 13 October 2008
+   DESCRIPTION
+       "Version 9:  Added ntSecureRouter2000Series."
+
+   REVISION "200802250000Z" -- 26 February 2008
+   DESCRIPTION
+       "Version 8:  Added ntSecureRouter4000Series."
+
+   REVISION "200706010000Z" -- 01 June 2007
+   DESCRIPTION
+       "Version 7:  Added branches for Newbury MIBs."
+
+   REVISION "200703150000Z" -- 15 March 2007
+   DESCRIPTION
+       "Version 6:  Added ntSecureRouterNESeries."
+
+   REVISION "200602070000Z" -- 07 February 2006
+   DESCRIPTION
+       "Version 5:  Added ntEnterpriseDataTasmanModules."
+
+   REVISION "200602010000Z" -- 01 February 2006
+   DESCRIPTION
+       "Version 4:  Added branches for Tasman MIBs."
+
+   REVISION "200601250000Z" -- 25 January 2006
+   DESCRIPTION
+       "Version 3:  Added additional items under ntSecureRouter3000Series
+                    and ntSecureRouter1000Series."
+
+   REVISION "200601180000Z" -- 18 January 2006
+   DESCRIPTION
+       "Version 2:  Added ntSecureRouter3000Series and ntSecureRouter1000Series."
+
+   REVISION "200511210000Z" -- 21 November 2005
+   DESCRIPTION
+       "Version 1:  Initial version."
+
+   ::= { nortel 73 }
+
+-- ----------------------------------------------------------------------------
+-- Common EDN Enterprise MIBs may be rooted under this branch.  A separate arc
+-- for each such MIB should be created in this file.
+-- ----------------------------------------------------------------------------
+ntEnterpriseDataMibs OBJECT IDENTIFIER ::= { ntEnterpriseData 1 }
+
+ntEnterpriseDataTasmanMibs OBJECT IDENTIFIER ::= { ntEnterpriseDataMibs 1 }
+ntEnterpriseDataTasmanMgmt OBJECT IDENTIFIER ::= { ntEnterpriseDataTasmanMibs 1 }
+ntEnterpriseDataTasmanInterfaces OBJECT IDENTIFIER ::= { ntEnterpriseDataTasmanMibs 2 }
+ntEnterpriseDataTasmanModules OBJECT IDENTIFIER ::= { ntEnterpriseDataTasmanMibs 3 }
+
+ntEnterpriseDataNewburyMibs OBJECT IDENTIFIER ::= { ntEnterpriseDataMibs 2 }
+
+-- ----------------------------------------------------------------------------
+-- OID registration values for EDN Enterprise products and components are
+-- defined under this branch.  A separate arc should be created for different
+-- types of components, different types of products, different families of
+-- products, etc..
+-- ----------------------------------------------------------------------------
+ntEnterpriseDataRegistration OBJECT IDENTIFIER ::= { ntEnterpriseData 2 }
+
+-- ----------------------------------------------------------------------------
+-- EDN Enterprise switch product registrations
+-- ----------------------------------------------------------------------------
+ntEnterpriseSwitches OBJECT IDENTIFIER ::= { ntEnterpriseDataRegistration 1 }
+
+ntEthernetSwitch OBJECT IDENTIFIER ::= { ntEnterpriseSwitches 1 }
+
+ntEthernetRoutingSwitch OBJECT IDENTIFIER ::= { ntEnterpriseSwitches 2 }
+
+-- ----------------------------------------------------------------------------
+-- EDN Enterprise router product registrations
+-- ----------------------------------------------------------------------------
+ntEnterpriseRouters OBJECT IDENTIFIER ::= { ntEnterpriseDataRegistration 2 }
+
+ntSecureRouter6200Series OBJECT IDENTIFIER ::= { ntEnterpriseRouters 1 }
+ntSecureRouter6230 OBJECT IDENTIFIER ::= { ntSecureRouter6200Series 1 }
+ntSecureRouter6280 OBJECT IDENTIFIER ::= { ntSecureRouter6200Series 2 }
+
+ntSecureRouter3000Series OBJECT IDENTIFIER ::= { ntEnterpriseRouters 2 }
+ntSecureRouter3120 OBJECT IDENTIFIER ::= { ntSecureRouter3000Series 1 }
+
+ntSecureRouter1000Series OBJECT IDENTIFIER ::= { ntEnterpriseRouters 3 }
+ntSecureRouter1001 OBJECT IDENTIFIER ::= { ntSecureRouter1000Series 1 }
+ntSecureRouter1002 OBJECT IDENTIFIER ::= { ntSecureRouter1000Series 2 }
+ntSecureRouter1004 OBJECT IDENTIFIER ::= { ntSecureRouter1000Series 3 }
+ntSecureRouter1002E OBJECT IDENTIFIER ::= { ntSecureRouter1000Series 4 }
+ntSecureRouter1004E OBJECT IDENTIFIER ::= { ntSecureRouter1000Series 5 }
+ntSecureRouter1001S OBJECT IDENTIFIER ::= { ntSecureRouter1000Series 6 }
+
+ntSecureRouterNESeries OBJECT IDENTIFIER ::= { ntEnterpriseRouters 4 }
+ntSecureRouterNE05 OBJECT IDENTIFIER ::= { ntSecureRouterNESeries 1 }
+ntSecureRouterNE08 OBJECT IDENTIFIER ::= { ntSecureRouterNESeries 2 }
+ntSecureRouterNE16 OBJECT IDENTIFIER ::= { ntSecureRouterNESeries 3 }
+ntSecureRouterNE20 OBJECT IDENTIFIER ::= { ntSecureRouterNESeries 4 }
+
+ntSecureRouter4000Series OBJECT IDENTIFIER ::= { ntEnterpriseRouters 5 }
+ntSecureRouter4134 OBJECT IDENTIFIER ::= { ntSecureRouter4000Series 1 }
+
+ntSecureRouter2000Series OBJECT IDENTIFIER ::= { ntEnterpriseRouters 6 }
+ntSecureRouter2330 OBJECT IDENTIFIER ::= { ntSecureRouter2000Series 1 }
+
+-- ----------------------------------------------------------------------------
+-- EDN Enterprise service gateway product registrations
+-- ----------------------------------------------------------------------------
+ntEnterpriseServiceGateways OBJECT IDENTIFIER ::= { ntEnterpriseDataRegistration 3 }
+-- ----------------------------------------------------------------------------
+-- EDN Enterprise  gateway product registrations
+-- ----------------------------------------------------------------------------
+enterpriseGateway OBJECT IDENTIFIER ::= { ntEnterpriseDataRegistration 4 }
+advancedGateway2000Series OBJECT IDENTIFIER ::= { enterpriseGateway 1 }
+advancedGateway2330 OBJECT IDENTIFIER ::= { advancedGateway2000Series  1 }
+
+END
