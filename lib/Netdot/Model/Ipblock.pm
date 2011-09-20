@@ -2953,11 +2953,14 @@ sub _tree_get {
     my $TTL = $self->config->get('IP_TREE_TTL');
     for ( 1..2 ){
 	my $cache = DataCache->search(name=>$name)->first;
-	if ( defined $cache && ($self->timestamp - $cache->tstamp) < $TTL ){ 
+	my $tstamp;
+	if ( defined($cache) && 
+	     ($tstamp = $class->sqldate2time($cache->tstamp)) &&
+	     ($self->timestamp - $tstamp) < $TTL ){ 
 	    $tree = thaw $cache->data;
 	    $logger->debug("Ipblock::_tree_get: $name thawed from cache");
 	    my $tree_class = ref($tree);
-	    if ( $tree_class eq 'Net::IPTrie' ){
+	    if ( defined $tree_class && ($tree_class eq 'Net::IPTrie') ){
 		$logger->debug("Ipblock::_tree_get: Retrieved $name");
 		return $tree;
 	    }else{
