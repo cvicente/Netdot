@@ -160,7 +160,7 @@ if ( $action eq "search" && $submit ){
 	$search = $ui->rem_lt_sp($search);
 	if ( $search =~ /$MAC/ ){
 	    @list = PhysAddr->search(address=>$search);
-	}elsif ( $search =~ /$IPV4|$IPV6/ ){
+	}elsif ( $search =~ /^($IPV4)$|^($IPV6)$/ ){
 	    @list = Ipblock->search(address=>$search);
 	}else{
 	    my %args = (name=>$search);
