@@ -233,18 +233,24 @@ if ( $submit ){
 %       }
 
 %	if ($search_address){
-        <p>
-        <div class="container">
-          <div class="containerhead">Live Search:</div>
-          <div class="containerbody">
-            <p>Would you like to perform a "live" search in the network? (It might take a while).
-            <p>
-            <form action="address_tasks.html" method="POST">
-              <input name="submit" value="Live Search" class="btn" type="submit">
-              <input type="hidden" name="search_live" value="<% $search %>">
-            </form>
-         </div>
-       </div>
+%           # We do not want to offer a live search unless it's an end-node address
+%           my $nip = NetAddr::IP->new($search_address);
+%           if ( defined($nip) && 
+%		 (($nip->version == 4 && $nip->masklen == 32) ||
+%	         ($nip->version == 6 && $nip->masklen == 128)) ){
+                <p>
+                <div class="container">
+                <div class="containerhead">Live Search:</div>
+                <div class="containerbody">
+                <p>Would you like to perform a "live" search in the network? (It might take a while).
+                <p>
+                <form action="address_tasks.html" method="POST">
+                 <input name="submit" value="Live Search" class="btn" type="submit">
+                 <input type="hidden" name="search_live" value="<% $search %>">
+                </form>
+                </div>
+                </div>
+%           }
 %      }
 %   }
 % }
