@@ -149,10 +149,13 @@ sub search {
 	    my ($address, $prefix) = split /\//, $args{address};
 	    $args{address} = $class->ip2int($address);
 	    $args{prefix}  = $prefix;
-	}else{
-	    # Ony convert to integer if address is human-readable
+	}elsif ( $args{address} =~ /\D/ ){
+	    # Address contains non-digits
 	    if ( $args{address} =~ /^$IPV4$|^$IPV6$/ ){
+		# Ony convert to integer if address matches valid IP formats
 		$args{address} = $class->ip2int($args{address});
+	    }else{
+		$class->throw_user(sprintf("Address %s does not match valid IP v4/v6 formats", $args{address}));
 	    }
 	}
 	if ( $class->config->get('DB_TYPE') eq 'mysql' ){
