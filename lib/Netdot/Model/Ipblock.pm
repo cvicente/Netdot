@@ -2959,7 +2959,7 @@ sub _tree_get {
 	my $tstamp;
 	if ( defined($cache) && 
 	     ($tstamp = $class->sqldate2time($cache->tstamp)) &&
-	     ($self->timestamp - $tstamp) < $TTL ){ 
+	     (time - $tstamp) < $TTL ){ 
 	    $tree = thaw $cache->data;
 	    $logger->debug("Ipblock::_tree_get: $name thawed from cache");
 	    my $tree_class = ref($tree);
