@@ -341,11 +341,14 @@ sub search_like {
 =head2 assign_name - Determine and assign correct name to device
 
     This method will try to find or create an appropriate 
-    Resource Record for a Device, given a hostname or ip address.
+    Resource Record for a Device, given a hostname or ip address,
+    andn optionally a sysname as backup in case that name or IP
+    do not resolve
 
   Arguments: 
     hash with following keys:
-        host - hostname or IP address (string)
+        host    - hostname or IP address (string)
+        sysname - System name value from SNMP
   Returns:    
     RR object if successful
   Examples:
@@ -355,6 +358,7 @@ sub assign_name {
     my ($class, %argv) = @_;
     $class->isa_class_method('assign_name');
     my $host = $argv{host};
+    my $sysname = $argv{sysname};
 
     $class->throw_fatal("Model::Device::assign_name: Missing arguments: host")
 	unless $host;
@@ -409,6 +413,7 @@ sub assign_name {
 	    }
 	}
     }
+    $fqdn ||= $sysname;
     $fqdn ||= $host;
     $fqdn = lc($fqdn);
 
@@ -1316,7 +1321,7 @@ sub discover {
 	# Set some values in the new Device based on the SNMP info obtained
 	my $main_ip = $argv{main_ip} || $class->_get_main_ip($info);
 	my $host    = $main_ip || $name;
-	my $newname = $class->assign_name(host=>$host);
+	my $newname = $class->assign_name(host=>$host, sysname=>$info->{sysname});
 	my %devtmp = (snmp_managed  => 1,
 		      snmp_polling  => 1,
 		      canautoupdate => 1,
