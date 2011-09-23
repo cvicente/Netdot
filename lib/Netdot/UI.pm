@@ -1543,7 +1543,7 @@ sub build_backbone_graph_html {
     
     my $g = $self->build_backbone_graph(%argv);
 
-    return "<img src=\"$img\" usemap=\"#test\" border=\"0\">" . $g->as_cmapx;
+    return "<img alt=\"Backbone Graph\" width=\"100%\" src=\"$img\" usemap=\"#test\" border=\"0\">" . $g->as_cmapx;
 }
 
 ############################################################################
