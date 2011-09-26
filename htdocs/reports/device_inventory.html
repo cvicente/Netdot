@@ -256,6 +256,7 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 	my $devid = $dev->id;
 	$t{$manuf}{total}++;
 	$t{$manuf}{product}{$prod}{total}++;
+	$t{$manuf}{product}{$prod}{latest} = $dev->product->latest_os;
 	$t{$manuf}{product}{$prod}{os}{$os}{dev}{$devid}{total}++;
     }
 
@@ -279,7 +280,7 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 	    }else{
 		push( @row, $prod );
 	    }
-	    push( @row, " ", " " );
+	    push( @row, " ", $t{$m}{product}{$prod}{latest} );
 	    push( @rows, \@row );
 	    foreach my $os (keys %{$t{$m}{product}{$prod}{os}} ){
 		foreach my $devid (keys %{$t{$m}{product}{$prod}{os}{$os}{dev}} ){
