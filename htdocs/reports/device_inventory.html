@@ -213,7 +213,12 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 	    foreach my $os ( keys %{$t{$m}{product}{$prod}{os}} ){
 		my @row = ();
 		push( @row, " ", " " );
-		push( @row, "<a href=\"../generic/search_obj.html?table=Device&product=$prod&os=$os&res=1\">" . $os . '</a>' );
+		my $class = " ";
+		if ( $latest_os && ($os ne $latest_os) ){
+		    $class = 'warn';
+		}
+		push( @row, "<a class=\"$class\" href=\"../generic/search_obj.html?table=Device&product=$prod&os=$os&res=1\">" . 
+		      $os . '</a>' );
 		push( @row, $t{$m}{product}{$prod}{os}{$os}{total} );
 		push( @rows, \@row );
 	    }
