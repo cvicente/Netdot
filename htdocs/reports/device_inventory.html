@@ -118,7 +118,7 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
     LEFT JOIN  site ON site.id=device.site
     LEFT JOIN  (product CROSS JOIN entity CROSS JOIN producttype) 
                  ON product.id=device.product 
-                  AND producttype.id=product.id
+                  AND producttype.id=product.type
                   AND entity.id=product.manufacturer 
     GROUP BY   site,producttype.name,product
     ORDER BY   site_name,producttype.name,product_name
