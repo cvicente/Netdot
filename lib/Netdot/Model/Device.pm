@@ -830,28 +830,6 @@ sub get_snmp_info {
 	}
     }
 
-    ################################################################
-    # Try to guess product type based on name
-    if ( my $NAME2TYPE = $self->config->get('DEV_NAME2TYPE') ){
-	foreach my $str ( keys %$NAME2TYPE ){
-	    if ( $args{host} =~ /$str/ ){
-		$dev{type} = $NAME2TYPE->{$str};
-		last;
-	    }
-	}
-    }
-
-    # If not, assign type based on layers
-    unless ( $dev{type} ){
-	$dev{type}  = "Server"  if ( $sinfo->class =~ /Layer7/ );
-	$dev{type}  = "Router"  if ( $sinfo->class =~ /Layer3/ && $dev{ipforwarding} );
-	$dev{type}  = "Switch"  if ( $sinfo->class =~ /Layer2/ );
-	$dev{type}  = "Hub"     if ( $sinfo->class =~ /Layer1/ );
-	$dev{type}  = "Unknown" unless defined $dev{type};
-    }
-    
-    $logger->debug(sub{"$args{host} type is $dev{type}"});
-
     # Set some defaults specific to device types
     if ( $dev{ipforwarding} ){
 	$dev{bgplocalas}  =  $sinfo->bgp_local_as();
@@ -1371,6 +1349,7 @@ sub discover {
 	my $main_ip = $argv{main_ip} || $class->_get_main_ip($info);
 	my $host    = $main_ip || $name;
 	my $newname = $class->assign_name(host=>$host, sysname=>$info->{sysname});
+
 	my %devtmp = (snmp_managed  => 1,
 		      snmp_polling  => 1,
 		      canautoupdate => 1,
@@ -1393,6 +1372,26 @@ sub discover {
 		$devtmp{$arg2field{$arg}} = $argv{$arg} if defined $argv{$arg};
 	    }
 	}
+
+	################################################################
+	# Try to guess product type based on name
+	if ( my $NAME2TYPE = $class->config->get('DEV_NAME2TYPE') ){
+	    foreach my $str ( keys %$NAME2TYPE ){
+		if ( $newname->get_label =~ /$str/ ){
+		    $info->{type} = $NAME2TYPE->{$str};
+		    last;
+		}
+	    }
+	}
+	# If not, assign type based on layers
+	if ( !$info->{type} && $info->{layers} ){
+	    $info->{type}  = "Hub"     if ( $class->_layer_active($info->{layers}, 1) );
+	    $info->{type}  = "Switch"  if ( $class->_layer_active($info->{layers}, 2) );
+	    $info->{type}  = "Router"  if ( $class->_layer_active($info->{layers}, 3) && $info->{ipforwarding} );
+	    $info->{type}  = "Server"  if ( $class->_layer_active($info->{layers}, 7) );
+	    $info->{type}  = "Unknown" unless defined $info->{type};
+	}
+	$logger->debug(sub{sprintf("%s type is: %s", $newname->get_label, $info->{type})});
 
 	if ( $info->{layers} ){
 	    # We collect rptrAddrTrackNewLastSrcAddress from hubs
