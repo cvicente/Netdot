@@ -150,7 +150,8 @@ sub insert {
 	unless ( defined $argv->{name} || defined $argv->{rr} );
 
     # Set default zone if needed
-    if ( $argv->{type} eq 'CNAME' && defined($argv->{name}) && $argv->{name} =~ /\.$/ ){
+    if ( defined($argv->{type}) && $argv->{type} eq 'CNAME' && 
+	 defined($argv->{name}) && $argv->{name} =~ /\.$/ ){
 	# In this particular case, the user specified a dot at the end, which indicates
 	# that the label should not get the zone name appended
 	if ( my $z = (Zone->search(name=>$argv->{name}))[0] ){
