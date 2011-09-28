@@ -56,30 +56,35 @@ sub search {
 	# No use searching for non-digits in id field
 	$argv{id} = 0;
     }
-    
-    if ( $class->SUPER::search(%argv, $opts) ){
-	return $class->SUPER::search(%argv, $opts);
+
+    my (@result, $result);
+    if (wantarray) {
+        @result = $class->SUPER::search(%argv, $opts);
+    } else {
+        $result = $class->SUPER::search(%argv, $opts);
+    }
+
+    if (@result || $result) {
+	return wantarray ? @result : $result;
     }elsif ( defined $argv{name} ){
 	if ( my $alias = ZoneAlias->search(name=>$argv{name})->first ) {
-	    return $class->retrieve($alias->zone->id);
+	    return $class->SUPER::search(id => $alias->zone->id, $opts);
 	}elsif ( $argv{name} =~ /\./ && !Ipblock->matches_v4($argv{name}) ){
 	    my @sections = split '\.', $argv{name};
 	    while ( @sections ){
 		$argv{name} = join '.', @sections;
 		$logger->debug(sub{ "Zone::search: $argv{name}" });
-		if ( $class->SUPER::search(%argv) ){
+		if ( $class->SUPER::search(%argv, $opts) ){
 		    # We call the method again to not mess
 		    # with CDBI's wantarray checks
 		    $logger->debug(sub{ "Zone::search: found: ", $argv{name} });
-		    return $class->SUPER::search(%argv);
+		    return $class->SUPER::search(%argv, $opts);
 		}
 		shift @sections;
 	    }
 	}
     }
-    else{
-	return $class->SUPER::search(%argv, $opts);
-    }
+    return wantarray ? @result : $result;
 }
 
 ############################################################################
@@ -98,22 +103,28 @@ sub search {
 
 =cut
 sub search_like {
-    my ($class, %argv) = @_;
+    my ($class, @args) = @_;
     $class->isa_class_method('search_like');
 
-    my @res;
-    if ( @res = $class->SUPER::search_like(%argv) ){
-	return @res;
+    @args = %{ $args[0] } if ref $args[0] eq "HASH";
+    my $opts = @args % 2 ? pop @args : {};
+    my %argv = @args;
+
+    my (@result, $result);
+    if (wantarray) {
+        @result = $class->SUPER::search_like(%argv, $opts);
+    } else {
+        $result = $class->SUPER::search_like(%argv, $opts);
+    }
+
+    if (@result || $result) {
+	return wantarray ? @result : $result;
     }elsif ( defined $argv{name} ){
 	if ( my $alias = ZoneAlias->search_like(name=>$argv{name})->first ) {
-	    return $class->retrieve($alias->zone->id);
-	} else {
-	    # maybe just a return; would suffice..
-	    return $class->SUPER::search_like(%argv);
-	}
-    }else{
-	return $class->SUPER::search_like(%argv);
+	    return $class->SUPER::search(id => $alias->zone->id, $opts);
+        }
     }
+    return wantarray ? @result : $result;
 }
 
 
