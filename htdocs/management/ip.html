@@ -304,15 +304,13 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 
     $add_block_prefix =~ s/\s+//g; # Remove spaces
 
-    unless ( $add_block_prefix =~ /\// ){
-	$m->comp('/generic/error.mhtml', error=> "$add_block_prefix not a valid CIDR string.");
-    }
-
     if ( $submit && (($submit eq 'confirm') || ($submit eq 'Save')) ){
 	undef($submit);
-	my ($address, $prefix) = split /\//, $add_block_prefix;
-	if ( ((Ipblock->matches_v4($address) && $prefix ne '32') ||
-	      (Ipblock->matches_v6($address) && $prefix ne '128')) &&
+	my $nip = NetAddr::IP->new($add_block_prefix) ||
+	    $m->comp('/generic/error.mhtml', error=>"Invalid block: $add_block_prefix");
+	my ($address, $prefix) = ($nip->addr, $nip->masklen);
+	if ( (($nip->version == 4 && $prefix != 32) ||
+	      ($nip->version == 6 && $prefix != 128)) &&
 	     ($block_status eq 'Dynamic' || $block_status eq 'Static') ){
 	    $m->comp('/generic/error.mhtml', error=>"IP block cannot be 'Dynamic' or 'Static'.  Specify IP Range instead.");
 	}
