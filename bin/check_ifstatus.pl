@@ -22,15 +22,18 @@
 # Report bugs to: cvicente(at)ns.uoregon.edu
 #
 # 07/28/2009 Version 1.0
+# 09/29/2011 Version 1.1 - Fixed incorrect return values
 #
 
 use SNMP;
 use strict;
 use Getopt::Long qw(:config no_ignore_case bundling);
-my %ERRORS = ('UNKNOWN'  => '-1',
-              'OK'       => '0',
-              'WARNING'  => '1',
-              'CRITICAL' => '2');
+my %ERRORS = (
+    'OK'       => 0,
+    'WARNING'  => 1,
+    'CRITICAL' => 2,
+    'UNKNOWN'  => 3,
+    );
 
 my $state = 'UNKNOWN';
 my %self;
