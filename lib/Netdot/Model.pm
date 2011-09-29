@@ -414,16 +414,20 @@ sub insert {
 
 =cut
 sub search_like {
-    my ($class, %argv) = @_;
+    my ($class, @args) = @_;
     $class->isa_class_method('search_like');
-    
+
+    @args = %{ $args[0] } if ref $args[0] eq "HASH";
+    my $opts = @args % 2 ? pop @args : {};
+    my %argv = @args;
+
     foreach my $key ( keys %argv ){
 	# Don't do it for foreign key fields
 	unless ( $class->meta_data->get_column($key)->links_to() ){
 	    $argv{$key} = $class->_convert_search_keyword($argv{$key});
 	}
     }
-    return $class->SUPER::search_like(%argv);
+    return $class->SUPER::search_like(%argv, $opts);
 }
 
 ############################################################################
