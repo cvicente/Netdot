@@ -155,7 +155,7 @@ if ( $stateval ){
     exit $ERRORS{$state};        
 }
 
-if ( $bgp_state eq 'established' ) { 
+if ( $bgp_state eq 'established' || $bgp_state eq 'idle' ) { 
     $state = 'OK';
     print "$state\n";
 }else { 
