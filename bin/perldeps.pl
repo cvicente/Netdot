@@ -30,6 +30,7 @@ my @DEPS = (
     {cpan=>'Module::Build' , apt=> 'libmodule-build-perl', rpm=>'perl-Module-Build'},
     {cpan=>'CGI 3.20' , apt=> 'libcgi-pm-perl', rpm=>''},
     {cpan=>'DBD::mysql', apt=> 'libdbd-mysql-perl', rpm=>'perl-DBD-MySQL'},
+    {cpan=>'DBD::Pg', apt=> 'libdbd-pg-perl', rpm=>'perl-DBD-Pg'},
     {cpan=>'Class::DBI 3.0.17', apt=> 'libclass-dbi-perl', rpm=>'perl-Class-DBI'},
     {cpan=>'Class::DBI::AbstractSearch', apt=> 'libclass-dbi-abstractsearch-perl', rpm=> 'perl-Class-DBI-AbstractSearch'},
     {cpan=>'Apache2::Request', apt=>'libapache2-request-perl', rpm=>'libapreq2 libapreq2-devel perl-libapreq2'},
