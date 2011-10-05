@@ -1310,7 +1310,7 @@ sub discover {
 		      snmp_version  => $info->{snmp_version},
 		      );
 
-	if ( $devtmp{snmp_version} == 3 ){
+	if ( defined $devtmp{snmp_version} && $devtmp{snmp_version} == 3 ){
 	    my %arg2field = (sec_name   => 'snmp_securityname',
 			     sec_level  => 'snmp_securitylevel',
 			     auth_proto => 'snmp_authprotocol',
@@ -3879,10 +3879,12 @@ sub snmp_update_parallel {
     }
     
     my %uargs;
-    foreach my $field ( qw(version timeout retries add_subnets subs_inherit 
-                           bgp_peers pretend do_info do_fwt do_arp) ){
+    foreach my $field ( qw(version timeout retries sec_name sec_level auth_proto auth_pass 
+                           priv_proto priv_pass add_subnets subs_inherit bgp_peers pretend 
+                           do_info do_fwt do_arp) ){
 	$uargs{$field} = $argv{$field} if defined ($argv{$field});
     }
+
     $uargs{no_update_tree} = 1;
     $uargs{timestamp}      = $class->timestamp;
     my %do_devs;
