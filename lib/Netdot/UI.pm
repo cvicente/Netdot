@@ -1590,7 +1590,11 @@ sub build_ip_tree_graph {
 	push @lbls, $ip->get_label;
 	push @lbls, $ip->description if $ip->description;
 	my $lbl = join '\n', @lbls;
-	
+
+	# Graph will not work if description contains non-ascii characters
+	use Encode;
+	$lbl = encode('utf8', $lbl);
+
 	$g->add_node(
 	    name      => $ip->get_label,
 	    label     => $lbl,
