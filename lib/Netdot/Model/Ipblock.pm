@@ -1521,6 +1521,7 @@ sub update {
     # This makes sure we have the latest values
     $self = $class->retrieve($self->id);
 
+
     # Only rebuild the tree if address/prefix have changed
     if ( $self->address ne $bak{address} || $self->prefix ne $bak{prefix} ){
 	$self->_update_tree();
@@ -2916,15 +2917,14 @@ sub _update_tree{
     my $tree = $self->_tree_get();
     
     $logger->debug('Ipblock::_update_tree: Updating tree for '. $self->get_label);
-    
+
     if ( $self->is_address ){
-	
 	# Search the tree.  
 	my $n = $class->_tree_find(address => $self->address_numeric,
 				   prefix  => $self->prefix,
 				   tree    => $tree,
 	    );
-	
+
 	# Get parent id
 	if ( $n ){
 	    my $parent;
@@ -2938,14 +2938,25 @@ sub _update_tree{
 	    $self->SUPER::update({parent=>$parent}) if $parent;
 	}
     }else{
+	# Search by id, and get a list back of matching nodes
+	#  then, iterate through them and delete any where the
+	#  address doesn't match the current address
+	my $n = $class->_tree_find(data => $self->id, tree=> $tree);
+
+	foreach my $node (@$n) {
+	  if ($node->address != $self->address_numeric) {
+	    $node->delete();
+	  }
+	}
+		
 	# This is a new block (subnet, container, etc)
 	# Insert it in the tree
-	my $n =  $class->_tree_insert(address => $self->address_numeric,
+	$n = $class->_tree_insert(address => $self->address_numeric,
 				      prefix  => $self->prefix, 
 				      data    => $self->id,
 				      tree    => $tree,
 	    );
-	
+
 	if ( defined $n && $n->parent && $n->parent->data ){
 	    my $parent_id = $n->parent->data;
 	    if ( $parent_id == $self->id ){
@@ -3088,11 +3099,14 @@ sub _tree_insert{
 # Find a node in the memory tree
 #
 #   Arguments:
-#     address (numeric)
+#     address (optoinal - numeric)
+#     data (optional - either address or data must be defined)
 #     prefix (optional - defaults to host mask)
 #     tree - Net::IPTrie object
 #   Returns:
 #     Tree node
+#     Or
+#     Arrayref of tree nodes
 #   Examples:
 #    
 #
@@ -3100,16 +3114,44 @@ sub _tree_find{
     my ($class, %argv) = @_;
     $class->isa_class_method('_tree_find');
     $class->throw_fatal("Ipblock::_tree_find: Missing required arguments")
-	unless ( $argv{address} && $argv{tree} );
-
-    my $n;
-    my %args = ( iaddress=>$argv{address} );
-    $args{prefix} = $argv{prefix} if defined $argv{prefix};
+	unless ( ($argv{address} || $argv{data}) && $argv{tree} );
 
     my $tree = $argv{tree};
-    $n = $tree->find(%args);
+
+    my $n;
+    my $l = ();
+
+    if ($argv{address}) {
+      my %args = ( iaddress=>$argv{address} );
+      $args{prefix} = $argv{prefix} if defined $argv{prefix};
+
+      $n = $tree->find(%args);
+    } elsif ($argv{data}) {
+      # create code to iterate through the tree, and push all nodes
+      #  on to the list we return
+      my $code = sub {
+        my $node = $_[0];
+        if ($argv{data} == $node->data) {
+	  push @$l, $node;
+        }
+      };
+
+      $tree->traverse(code=>$code);
+    }
+
+    # if we dont have data defined, we must have had an address
+    #  so return the single node
+    if (!$argv{data}) {
+      return $n;
+    }
+
+    # if we have $n and data defined, join them
+    if ($n && $argv{data}) {
+      push @$l, $n;
+    }
+
+    return $l;
     
-    return $n;
 }
 
 ##################################################################
@@ -3170,7 +3212,7 @@ sub _tree_get {
 			    " arg: 'version' when called as class method")
 	    unless ($version);
     }
-    
+
     my $tree;
     my $name = 'iptree'.$version;
     my $TTL = $self->config->get('IP_TREE_TTL');
