@@ -3125,7 +3125,7 @@ sub _tree_find{
     my $l = ();
 
     if ($argv{address} || $argv{str_address}) {
-      my %args = {};
+      my %args = ();
       if ($argv{address}) {
         $args{iaddress} = $argv{address};
       } else {
