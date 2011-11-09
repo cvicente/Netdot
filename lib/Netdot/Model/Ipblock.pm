@@ -2085,18 +2085,25 @@ sub shared_network_subnets{
     my $dbh = $self->db_Main();
     
     my $query = 'SELECT  other.id 
-                 FROM    ipblock me, ipblock other, ipblock myaddr, ipblock otheraddr 
-                 WHERE   me.id=? AND myaddr.parent=? AND otheraddr.parent=other.id 
+                 FROM    ipblock me, ipblock other, ipblock myaddr, ipblock otheraddr, 
+                         ipblockstatus otherstatus
+                 WHERE   me.id=? AND myaddr.parent=me.id AND otheraddr.parent=other.id 
+                     AND me.version = other.version
+                     AND myaddr.interface IS NOT NULL 
+	             AND myaddr.interface != 0
                      AND myaddr.interface=otheraddr.interface 
-                     AND myaddr.interface != 0 AND other.id!=me.id';
+                     AND other.id!=me.id
+                     AND other.status=otherstatus.id
+                     AND otherstatus.name=\'Subnet\'
+                GROUP BY other.id';
 
     my $sth = $dbh->prepare_cached($query);
-    $sth->execute($self->id, $self->id);
+    $sth->execute($self->id);
     my $rows = $sth->fetchall_arrayref();
     my @subnets;
     foreach my $row ( @$rows ){
 	my $b = Ipblock->retrieve($row->[0]);
-	push @subnets, $b if $b->status->name eq 'Subnet';
+	push @subnets, $b;
     }
     
     return @subnets if scalar @subnets;
