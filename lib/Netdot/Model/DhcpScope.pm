@@ -57,11 +57,14 @@ sub search {
       - Insert given attributes
       - Convert ethernet string into object
       - Assign default version on global scopes
+      - Assign name based on arguments
+      - Assign contained subnets to shared-network
  Argsuments: 
     Hashref with following keys:
       name
       type        - DhcpScopeType name, id or object
       attributes  - A hash ref with attribute key/value pairs
+      subnets     - Arrayref of Ipblock objects
   Returns: 
     DhcpScope object
   Examples:
@@ -73,6 +76,8 @@ sub insert {
     $class->isa_class_method('insert');
     $class->throw_fatal('DhcpScope::insert: Missing required parameters')
 	unless ( defined $argv->{type} );
+
+    my @shared_subnets = @{$argv->{subnets}} if $argv->{subnets};
 
     $class->_objectify_args($argv);
     $class->_assign_name($argv) unless $argv->{name};
@@ -102,6 +107,13 @@ sub insert {
 	if ( my $zone = $argv->{ipblock}->forward_zone ){
 	    # Add the domain-name attribute
 	    $attributes->{'option domain-name'} = $zone->name;
+	}
+    }elsif ( $scope->type->name eq 'shared-network' ){
+	# Shared subnets need to point to the new shared-network scope 
+	foreach my $s ( @shared_subnets ){
+	    my $subnet_scope = $s->dhcp_scopes->first;
+	    $subnet_scope->update({container=>$scope, 
+				   ipblock=>$s});
 	}
     }
     
