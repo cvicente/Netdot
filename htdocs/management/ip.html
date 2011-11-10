@@ -373,37 +373,31 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
         $m->comp('/generic/error.mhtml', error=>"You don't have permission to edit this object");
     }
 
-    if ( $ARGS{dhcp_global_scope} ){
-	my %args = (container=>$ARGS{dhcp_global_scope});
-
-	# Grab all the dhcp options & declarations
-	foreach my $arg ( %ARGS ){
-	    if ( $arg =~ /^dhcp_/ ){
-		next if $arg eq 'dhcp_global_scope';
-		my $value = $ARGS{$arg};
-		if ( $arg =~ /^dhcp_(.*)_(\d+)$/ ){
-		    my $attr = $1;
-		    my $sid  = $2;
-		    $attr =~ s/^option_/option /;
-		    $attr =~ s/_/-/g;
-		    if ( $sid eq $id ){
-			$args{attributes}{$attr} = $value;
-		    }else{
-			$args{shared_nets}{$id}{$attr} = $value;
-		    }
-		};
-	    }
-	}
-	eval {
-	    $o->enable_dhcp(%args);
-	};
-	if ( my $e = $@ ){
-	    $m->comp('/generic/error.mhtml', error=>$e);
-	}else{
-	    $m->comp('.show_message', title=>"Action Message", msg=>"DHCP enabled Successfully");
-	}
-    }else{
+    unless ( $ARGS{dhcp_global_scope} ){
 	$m->comp('/generic/error.mhtml', error=>"You need to specify at least the global scope");
+    }
+    my $container = delete $ARGS{dhcp_global_scope};
+    my %args = (container=>$container);
+    
+    # Grab all the dhcp options & declarations
+    foreach my $arg ( %ARGS ){
+	if ( $arg =~ /^dhcp_/ ){
+	    my $value = $ARGS{$arg};
+	    if ( $arg =~ /^dhcp_(.*)$/ ){
+		my $attr = $1;
+		$attr =~ s/^option_/option /;
+		$attr =~ s/_/-/g;
+		$args{attributes}{$attr} = $value;
+	    };
+	}
+    }
+    eval {
+	$o->enable_dhcp(%args);
+    };
+    if ( my $e = $@ ){
+	$m->comp('/generic/error.mhtml', error=>$e);
+    }else{
+	$m->comp('.show_message', title=>"Action Message", msg=>"DHCP enabled Successfully");
     }
 
 #######################################################################################
@@ -924,21 +918,13 @@ if ( $edit ){
 	$x;
     }});
 
-    my @shared_subs = $o->shared_network_subnets();
-    my @subs = ($o);
-    if ( @shared_subs ){
-	print "<p> (*) It looks like this is a shared network<p>";
-	push @subs, @shared_subs;
-    }
-    foreach my $s ( @subs ){
-	push @fields, "&nbsp;";
-	push @data,   "&nbsp;";
-	push @fields, "Subnet:";
-	push @data,   $s->get_label();
-	push @fields, 'Option routers:';
-	push @data,   '<input type="text" name="dhcp_option_routers_'.$s->id.'" class="txt" value="'.$s->_netaddr->first->addr.'">';
-    }
-
+    push @fields, "&nbsp;";
+    push @data,   "&nbsp;";
+    push @fields, "Subnet:";
+    push @data,   $o->get_label();
+    push @fields, 'Option routers:';
+    push @data,   '<input type="text" name="dhcp_option_routers" class="txt" value="'.$o->_netaddr->first->addr.'">';
+    
 </%perl>	
 
 <& /generic/attribute_table.mhtml, field_headers=>\@fields, data=>\@data,

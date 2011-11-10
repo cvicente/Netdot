@@ -2119,9 +2119,6 @@ sub shared_network_subnets{
   Arguments: 
     Hash containing the following key/value pairs:
       container       - Container (probably global) Scope
-      shared_nets     - Hashref with:
-                          key = ipblock id
-                          value = hashref with attributes
       attributes      - Optional.  This must be a hashref with:
                           key   = attribute name, 
                           value = attribute value
@@ -2142,52 +2139,56 @@ sub enable_dhcp{
     $self->throw_user("Trying to enable DHCP on a non-subnet block")
 	if ( $self->status->name ne 'Subnet' );
     
-    my $scope;
+    my %args = (container => $argv{container},
+		type      =>'subnet', 
+		ipblock   => $self);
+    $args{attributes} = $argv{attributes};
+    my $scope = DhcpScope->insert(\%args);
 
-    if ( $argv{shared_nets} ){
-	# Create a shared-network scope that will contain the other subnet scopes
-
-	$self->throw_fatal("Ipblock::enable_dhcp: Argument shared_nets must be hashref")
-	    unless ( ref($argv{shared_nets}) eq 'HASH' );
+    if ( my @shared = $self->shared_network_subnets ){
+	# Create or update a shared-network scope
 
 	my %shared_subnets;
-	foreach my $id ( keys %{$argv{shared_nets}} ){
-	    my $s = Ipblock->retrieve($id);
-	    $self->throw_user("Ipblock::enable_dhcp: Shared network ".$s->get_label." is not a Subnet")
-		unless $s->status->name eq 'Subnet';
-	    $shared_subnets{$id} = $s;
-	}
-	# Add this subnet in case it wasn't passed in the list
-	$shared_subnets{$self->id} = $self;
-	my @shared_subnets = values %shared_subnets;
-
-	# Create the shared-network scope
-	my $sn_scope;
-	$sn_scope = DhcpScope->insert({type      => 'shared-network',
-				       subnets   => \@shared_subnets,
-				       container => $argv{container}});
-	$scope = $sn_scope;
+	my %to_delete;
+	my %shared_attributes;
 	
-	# Insert a subnet scope for each member subnet
-	foreach my $s ( @shared_subnets ){
-	    my %args = (container => $sn_scope,
-			type      =>'subnet', 
-			ipblock   => $s);
-	    if ( $s->id == $self->id ){
-		$args{attributes} = $argv{attributes};
-	    }elsif ( my $attrs = $argv{shared_nets}->{$s->id} ){
-		$args{attributes} = $attrs;
+	foreach my $s ( @shared ){
+	    if ( my $o_scope = $s->dhcp_scopes->first ){
+		# We'll only deal with the other subnet if dhcp 
+		# is enabled within the same global scope
+		if ( $o_scope->type->name eq 'subnet' && 
+		     $o_scope->get_global->id == $scope->get_global->id ){
+		    $shared_subnets{$s->id} = $s;
+		    my $o_container = $o_scope->container;
+		    if ( $o_container->type->name eq 'shared-network' ){
+			# This subnet is already within a shared-network scope
+			# We'll try to keep its attributes to add to a new scope
+			# then we'll delete the current shared-network
+			map { $shared_attributes{$_->name->name} = 
+				  $_->value } $o_container->attributes;
+			$to_delete{$o_container->id} = $o_container;
+		    }
+		}
 	    }
-	    $scope = DhcpScope->insert(\%args);
 	}
-    }else{
-	my %args = (container => $argv{container},
-		    type      =>'subnet', 
-		    ipblock   => $self);
-	$args{attributes} = $argv{attributes};
-	$scope = DhcpScope->insert(\%args);
+	if ( my @shared_subnets = values(%shared_subnets) ){
+	    
+	    push @shared_subnets, $self;
+	    
+	    # Create the shared-network scope
+	    my $sn_scope;
+	    $sn_scope = DhcpScope->insert({type       => 'shared-network',
+					   subnets    => \@shared_subnets,
+					   attributes => \%shared_attributes,
+					   container  => $argv{container}});
+	    $scope = $sn_scope;
+	    
+	    # Finally, delete the old shared-networks
+	    foreach my $sn ( values %to_delete ){
+		$sn->delete();
+	    }
+	}
     }
-    
     return $scope;
 }
 
