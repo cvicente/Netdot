@@ -102,13 +102,13 @@ if ( $o ){
 	    $m->comp('/generic/error.mhtml', error=>$e);	
 	}	
     }elsif( defined $overwrite_if_descr ){
-	if ( $submit && ($submit eq 'confirm') ){
+	if ( $overwrite_if_descr == 0 || ($submit && ($submit eq 'confirm')) ){
 	    eval { $o->set_overwrite_if_descr($overwrite_if_descr); };
 	    if ( my $e = $@ ){
 	     	$m->comp('/generic/error.mhtml', error=>$e);	
 	    }
 	    undef($submit);
-	}else{
+	}elsif ( $overwrite_if_descr == 1 ){
 	    $m->comp('/generic/confirm.html', 
 		     %ARGS, 
 		     target  =>'../management/device.html', 
