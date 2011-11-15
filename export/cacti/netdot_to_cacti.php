@@ -297,6 +297,12 @@ foreach ($groups as $group => $hosts){
     if ($hostId){
       debug("$description: Updating device id $hostId ($description) template \"" . $hostTemplates[$template_id] . "\" using SNMP v$snmp_ver with community \"$community\"");
     }else{
+
+      /* Do not bother creating device if it is disabled */
+      if ($disable == "on"){
+	continue;
+      }
+      
       echo "$description: Adding device ($description) template \"" . $hostTemplates[$template_id] . "\" using SNMP v$snmp_ver with community \"$community\"\n";
     }
     $hostId = api_device_save($hostId, $template_id, $description, $ip,
