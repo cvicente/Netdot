@@ -409,7 +409,7 @@ sub assign_name {
 		$ip = $i; 
 		last;
 	    }else{
-		$logger->debug(sub{"Device::assign_name: $ip does not resolve"} );
+		$logger->debug(sub{"Device::assign_name: $i does not resolve"} );
 	    }
 	}
     }
