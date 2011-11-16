@@ -990,9 +990,11 @@ sub get_snmp_info {
 	$logger->debug(sub{"$args{host} did not return any interfaces"});
     }
 
+    my $name_src = ( $self->config->get('IFNAME_SHORT') eq '1' )? 'i_name' : 'i_description';
+
     foreach my $iid ( keys %{ $hashes{interfaces} } ){
+	my $name = $hashes{$name_src}->{$iid};
 	# check whether it should be ignored
-	my $name = $hashes{i_description}->{$iid};
 	if ( $name ){
 	    if ( my $ifreserved = $self->config->get('IFRESERVED') ){
 		if ( $name =~ /$ifreserved/i ){
