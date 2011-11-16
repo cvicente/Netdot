@@ -1074,7 +1074,12 @@ sub _adjust_vals{
 	my $mcol = $meta_columns{$field} || $class->throw_fatal("Cannot find $field in metadata");
 	if ( !blessed($args->{$field}) && $mcol->sql_type eq 'varchar' && defined($mcol->length) && $mcol->length =~ /^\d+$/ ) {
             if (length($args->{$field}) > $mcol->length) {
-                $class->throw_user("Value for field '$field' (max " . $mcol->length . ") is too long: '$args->{$field}'");
+		my $msg = "Value for field '$field' (max " . $mcol->length . ") is too long: '$args->{$field}'";
+		if ( $ENV{REMOTE_USER} eq 'netdot' ){
+		    $logger->warn($msg);
+		}else{
+		    $class->throw_user($msg);
+		}
             }
         }
 	if ( !blessed($args->{$field}) && 
