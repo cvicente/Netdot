@@ -563,6 +563,7 @@ sub within{
 
   Modified Arguments:
     status          - name of, id or IpblockStatus object (default: Container)
+    validate(flag)  - Optionally skip validation step
     no_update_tree  - Do not update IP tree
   Returns: 
     New Ipblock object or 0
@@ -1095,110 +1096,76 @@ sub get_maxed_out_subnets {
 ################################################################
 =head2 add_range - Add or update a range of addresses
     
-
   Arguments: 
     Hash with following keys:
       start       - First IP in range
       end         - Last IP in range
       status      - Ipblock status
-      parent      - Parent Ipblock id (optional)
-      gen_dns     - Boolean.  Auto generate A/AAAA and PTR records
-      name_prefix - String to prepend to host part of IP address
-      name_suffix - String to append to host part of IP address
-      fzone       - Forward Zone id for DNS records
+      gen_dns     - Boolean.  Auto generate A/AAAA and PTR records (optional)
+      name_prefix - String to prepend to host part of IP address (optional)
+      name_suffix - String to append to host part of IP address (optional)
+      fzone       - Forward Zone id for DNS records (optional)
   Returns:   
-    Ipblock object of parent block
+    Array of Ipblock objects
   Examples:
 
 =cut
 sub add_range{
-    my ($class, %argv) = @_;
-    $class->isa_class_method('add_range');
+    my ($self, %argv) = @_;
+    $self->isa_object_method('add_range');
 
-    my $ipstart  = NetAddr::IP->new($argv{start});
-    my $ipend    = NetAddr::IP->new($argv{end});
-    unless ( $ipstart <= $ipend ){
-	$class->throw_user("Invalid range: $argv{start} - $argv{end}");
-    }
-    my $version = $ipstart->version;
-    my $prefix  = ($version == 4)? 32 : 128;
+    $self->throw_user("Missing required argument: status")
+	unless $argv{status};
+
+    $self->throw_user("Please enable DHCP on this subnet before " .
+                       "attempting to create dynamic addresses")
+	if ( $argv{status} eq 'Dynamic' && !$self->dhcp_scopes );
     
-    # Validate parent argument
-    if ( $argv{parent} ){
-	my $p;
-	if ( ref($argv{parent}) ){
-	    $p = $argv{parent};
-	}else{
-	    $p = Ipblock->retrieve($argv{parent});
-	}
-	my $np = $p->_netaddr();
-	unless ( $ipstart->within($np) && $ipend->within($np) ){
-	    $class->throw_user("Start and/or end IPs not within given subnet: ".$p->get_label);
-	}
+    my $ipstart  = NetAddr::IP->new($argv{start}, $self->prefix);
+    my $ipend    = NetAddr::IP->new($argv{end},   $self->prefix);
+    unless ( $ipstart && $ipend && ($ipstart <= $ipend) ){
+	$self->throw_user("Invalid range: $argv{start} - $argv{end}");
     }
+    my $np = $self->_netaddr();
+    unless ( $ipstart->within($np) && $ipend->within($np) ){
+	$self->throw_user("Start and/or end IPs not within this subnet: ".$self->get_label);
+    }
+    my $prefix  = ($self->version == 4)? 32 : 128;
 
-    # We want this to happen atomically (all or nothing)
     my @newips;
-    Netdot::Model->do_transaction(sub {
-	for ( my $i = Math::BigInt->new($ipstart->numeric); $i <= Math::BigInt->new($ipend->numeric); $i++ ){
-	    my $ip;
-	    if ( $version == 4 ){
-		$ip = NetAddr::IP->new($i) || $class->throw_fatal("Problem creating NetAddr::IP object from $i");
-	    }elsif ( $version == 6 ){
-		$ip = NetAddr::IP->new6($i) || $class->throw_fatal("Problem creating v6 NetAddr::IP object from $i");
-	    }
-	    my $decimal = $ip->numeric; # Do not remove.  We need the method value as a scalar
-	    my %args = (status      => $argv{status},
-			used_by     => $argv{used_by},
-			description => $argv{description},
-		);
-	    $args{parent} = $argv{parent} if defined $argv{parent};
-	    if ( my $ipb = Ipblock->search(address=>$decimal, prefix=>$prefix)->first ){
-		$ipb->update(\%args);
-		push @newips, $ipb;
-	    }else{
-		$args{address} = $ip->addr;
-		push @newips, Ipblock->insert(\%args);
-	    }
-	}
-
-	#########################################
-	# Call the plugin that generates DNS records
-	if ( $argv{gen_dns} && $argv{fzone} ){
-	    if ( $argv{status} ne 'Dynamic' && $argv{status} ne 'Static' ){
-		$class->throw_user("DNS records can only be auto-generated for Dynamic or Static IPs");
-	    }
-	    my $fzone = Zone->retrieve($argv{fzone});
-	    $logger->info("Ipblock::add_range: Generating DNS records: $argv{start} - $argv{end}");
-	    $range_dns_plugin->generate_records(prefix=>$argv{name_prefix}, 
-						suffix=>$argv{name_suffix}, 
-						start=>$ipstart, end=>$ipend, 
-						fzone=>$fzone);
-	}
-	
-				  }); # end of transaction
-
-    $logger->info("Ipblock::add_range: Did $argv{status} range: $argv{start} - $argv{end}");
-
-    if ( $argv{parent} ){
-	if ( ref($argv{parent}) ){
-	    return $argv{parent};
+    my %args = (status => $argv{status});
+    $args{used_by}        = $argv{used_by}     if $argv{used_by};
+    $args{description}    = $argv{description} if $argv{description};
+    $args{parent}         = $self->id;
+    $args{no_update_tree} = 1; 
+    $args{validate}       = 0; # Make it faster
+    for ( my($ip) = $ipstart->copy; $ip <= $ipend; $ip++ ){
+	my $decimal = $ip->numeric; # Do not remove.  We need the method value as a scalar
+	if ( my $ipb = Ipblock->search(address=>$decimal, prefix=>$prefix)->first ){
+	    $ipb->update(\%args);
+	    push @newips, $ipb;
 	}else{
-	    return Ipblock->retrieve($argv{parent});
-	}
-    }else{
-	# Build hierarchy and return parent block
-	my $version = $newips[0]->version;
-	$class->build_tree($version);
-	if ( my $parent = $newips[0]->parent ){
-	    my $id = $parent->id;
-	    if ( $id != 0 ){
-		return Ipblock->retrieve($id); 
-	    }
+	    $args{address} = $ip->addr;
+	    push @newips, Ipblock->insert(\%args);
 	}
     }
+    #########################################
+    # Call the plugin that generates DNS records
+    if ( $argv{gen_dns} ){
+	if ( $argv{status} ne 'Dynamic' && $argv{status} ne 'Static' ){
+	    $self->throw_user("DNS records can only be auto-generated for Dynamic or Static IPs");
+	}
+	my $fzone = Zone->retrieve($argv{fzone}) || $self->forward_zone;
+	$logger->info("Ipblock::add_range: Generating DNS records: $argv{start} - $argv{end}");
+	$range_dns_plugin->generate_records(prefix=>$argv{name_prefix}, 
+					    suffix=>$argv{name_suffix}, 
+					    ip_list=>\@newips,
+					    fzone=>$fzone);
+    }
+    
+    $logger->info("Ipblock::add_range: Did $argv{status} range: $argv{start} - $argv{end}");    
+    return \@newips;
 }
-
 
 ################################################################
 =head2 remove_range - Remove a range of addresses
@@ -1211,33 +1178,29 @@ sub add_range{
   Returns:   
     True
   Examples:
-    Ipblock->remove_range(start=>$addr1, end=>addr2);
+    $ipb->remove_range(start=>$addr1, end=>addr2);
 =cut
 sub remove_range{
-    my ($class, %argv) = @_;
-    $class->isa_class_method('remove_range');
+    my ($self, %argv) = @_;
+    $self->isa_object_method('remove_range');
 
-    my $ipstart  = NetAddr::IP->new($argv{start});
-    my $ipend    = NetAddr::IP->new($argv{end});
-    unless ( $ipstart <= $ipend ){
-	$class->throw_user("Invalid range: $argv{start} - $argv{end}");
+    my $ipstart  = NetAddr::IP->new($argv{start}, $self->prefix);
+    my $ipend    = NetAddr::IP->new($argv{end},   $self->prefix);
+    unless ( $ipstart && $ipend && ($ipstart <= $ipend) ){
+	$self->throw_user("Invalid range: $argv{start} - $argv{end}");
     }
-    
-    # We want this to happen atomically (all or nothing)
-    eval {
-	Netdot::Model->do_transaction(sub {
-	    for ( my $i=$ipstart->numeric; $i<=$ipend->numeric; $i++ ){
-		my $ip = NetAddr::IP->new($i);
-		my $ipb = Ipblock->search(address=>$ip)->first;
-		$ipb->delete() if $ipb;
-	    }
-				      });
-    };
-    if ( my $e = $@ ){
-	$class->throw_user($e);
+    my $np = $self->_netaddr();
+    unless ( $ipstart->within($np) && $ipend->within($np) ){
+	$self->throw_user("Start and/or end IPs not within this subnet: ".$self->get_label);
+    }
+    my $prefix  = ($self->version == 4)? 32 : 128;
+    for ( my($ip) = $ipstart->copy; $ip <= $ipend; $ip++ ){
+	my $decimal = $ip->numeric;
+	my $ipb = Ipblock->search(address=>$decimal, prefix=>$prefix)->first;
+	$ipb->delete() if $ipb;
     }
     $logger->info("Ipblock::remove_range: done with $argv{start} - $argv{end}");
-    
+    1;    
 }
 
 ##################################################################
@@ -1487,6 +1450,10 @@ sub update {
 	delete $argv->{validate};
     }
 
+    my $no_update_tree = $argv->{no_update_tree};
+    delete $argv->{no_update_tree};
+    $validate = 0 if $no_update_tree;  # updated tree is a requisite for validation
+
     my $recursive = delete $argv->{recursive};
 
     # We need at least these args before proceeding
@@ -1521,9 +1488,8 @@ sub update {
     # This makes sure we have the latest values
     $self = $class->retrieve($self->id);
 
-
     # Only rebuild the tree if address/prefix have changed
-    if ( $self->address ne $bak{address} || $self->prefix ne $bak{prefix} ){
+    if ( !$no_update_tree && ($self->address ne $bak{address} || $self->prefix ne $bak{prefix}) ){
 	$self->_update_tree(old_addr=>$bak{address}, old_prefix=>$bak{prefix});
     }
 

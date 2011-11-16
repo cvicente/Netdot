@@ -50,7 +50,7 @@ sub insert {
 	$logger->debug("Netdot::Model::RRPTR: Figuring out owner for ".$ipb->get_label);
 
 	my $zone = blessed($argv->{zone}) ? $argv->{zone} : Zone->retrieve($argv->{zone});
-	unless ( $zone->name =~ /(?:\.in-addr)|(?:\.ip6)\.arpa$/ ){
+	unless ( $zone->name =~ /(?:\.in-addr)|(?:\.ip6)\.arpa$/o ){
 	    $class->throw_user(sprintf("Zone %s is not a reverse zone", $zone->name));
 	}
 	my $name = $class->get_name(ipblock=>$ipb);

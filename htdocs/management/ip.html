@@ -24,7 +24,6 @@ $range_owner       => undef
 $range_status      => undef
 $range_used_by     => undef
 $range_description => undef
-$range_parent      => undef
 $range_gen_dns     => undef
 $range_fw_zone     => undef
 $name_prefix       => undef
@@ -261,25 +260,28 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
     }
     
     if ( $add_range_start && $add_range_end ){
-	if ( $range_status eq 'Available' ){
+	if ( $range_status eq 'Delete' ){
 	    eval {
-		Ipblock->remove_range(start => $add_range_start, 
-				      end   => $add_range_end);
+		Netdot::Model->do_transaction( sub{ 
+		    $o->remove_range(start => $add_range_start, 
+				     end   => $add_range_end);
+					       });
 	    };
 	}else{
 	    eval {
-		$o = Ipblock->add_range(start       => $add_range_start, 
-					end         => $add_range_end,
-					status      => $range_status,
-					owner       => $range_owner,
-					used_by     => $range_used_by,
-					description => $range_description,
-					parent      => $range_parent,
-					gen_dns     => $range_gen_dns,
-					name_prefix => $name_prefix,
-					name_suffix => $name_suffix,
-					fzone       => $range_fw_zone,
-		    );
+		Netdot::Model->do_transaction( sub{ 
+		    $o->add_range(start       => $add_range_start, 
+				  end         => $add_range_end,
+				  status      => $range_status,
+				  owner       => $range_owner,
+				  used_by     => $range_used_by,
+				  description => $range_description,
+				  gen_dns     => $range_gen_dns,
+				  name_prefix => $name_prefix,
+				  name_suffix => $name_suffix,
+				  fzone       => $range_fw_zone,
+			);
+					       });
 	    };
 	}
 	if ( my $e = $@ ){
@@ -925,7 +927,6 @@ if ( $edit ){
 
     <p><b>Add/Modify Address Range</b>
     <input type="hidden" name="_action" value="EDIT_RANGE">
-    <input type="hidden" name="range_parent" value="<% $id %>">
 
 <%perl>	
     my @fields;
@@ -944,7 +945,7 @@ if ( $edit ){
 	my $x;
 	$x .= '<select name="range_status" id="range_used_by">';
         $x .= '<option value="">-- Select --</option>';
-	my @allstatus = qw( Dynamic Reserved Static Available ); 
+	my @allstatus = qw( Dynamic Reserved Static Delete ); 
 	foreach my $status ( @allstatus ){
 	    $x .= '<option value="'.$status.'">'.$status.'</option>';
 	}
@@ -1546,6 +1547,8 @@ print $tmp{value};
 %                     if ( $BLOCK_VIEW_MAX && ($o->prefix >= $BLOCK_VIEW_MAX) ){
 %                         print '<a href="ip.html?id='.$id.'&view_format=block">[Block View]</a>';
 %                     }
+%                 }elsif ( $o->version == 6 ){
+                      &nbsp;
 %                 } 
 %                 if ( $o->status->name eq 'Container' ){
                       <a href="ip.html?id=<% $id %>&view_format=tree">[Tree View]</a>
@@ -1559,6 +1562,8 @@ print $tmp{value};
 %	  if ( $edit_children ){
                   <input type="button" value="Check All" onclick="setCheckbox('edit_children', '', true);return false;" class="button" />
                   <input type="button" value="Clear All" onclick="setCheckbox('edit_children', '', false);return false;" class="button" />
+ 		  <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+		  <input type="submit" name="submit" value="save">
 %	  }
           </div>
 

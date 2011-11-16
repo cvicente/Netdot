@@ -195,7 +195,9 @@ BEGIN {
 	}elsif ( $table eq 'dhcpattr' ){
 	    $scope = $self->scope->get_global();
 	}elsif ( $table eq 'ipblock' ){
-	    $scope = $self->parent->dhcp_scopes->first->get_global();
+	    if ( $self->parent && $self->parent->dhcp_scopes ){
+		$scope = $self->parent->dhcp_scopes->first->get_global();
+	    }
 	}else{
 	    $self->throw_fatal("Netdot::Model::_host_audit: Invalid table: $table");
 	}
@@ -1073,7 +1075,7 @@ sub _adjust_vals{
     foreach my $field ( keys %$args ){
 	my $mcol = $meta_columns{$field} || $class->throw_fatal("Cannot find $field in metadata");
 	if ( !blessed($args->{$field}) && $mcol->sql_type eq 'varchar' && defined($mcol->length) && $mcol->length =~ /^\d+$/ ) {
-            if (length($args->{$field}) > $mcol->length) {
+            if (defined($args->{$field}) && length($args->{$field}) > $mcol->length) {
 		my $msg = "Value for field '$field' (max " . $mcol->length . ") is too long: '$args->{$field}'";
 		if ( $ENV{REMOTE_USER} eq 'netdot' ){
 		    $logger->warn($msg);

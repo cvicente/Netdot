@@ -34,8 +34,7 @@ sub new{
   Arguments:
     prefix  -  String to prepend to host part of IP address
     suffix  -  String to append to host part of IP address
-    ipstart -  First IP in range (NetAddr::IP object)
-    ipend   -  Last IP in range (NetAddr::IP object)
+    ip_list -  Arrayref of Ipblock objects
     fzone   -  Forward zone (for A records)
   Returns:
     Array of RRADDR objects
@@ -52,38 +51,33 @@ sub new{
 =cut 
 sub generate_records {
     my ($self, %argv) = @_;
-    my($prefix, $suffix, $ipstart, $ipend, $fzone) 
-	= @argv{'prefix', 'suffix', 'start', 'end', 'fzone'};
+    my($prefix, $suffix, $ip_list, $fzone) 
+	= @argv{'prefix', 'suffix', 'ip_list', 'fzone'};
 
-    $self->throw_fatal("Missing required arguments")
-	unless ( $ipstart && $ipend && $fzone );
+    $self->throw_fatal("Missing required argument: ip_list")
+	unless ( $ip_list );
+
+    $self->throw_fatal("ip_list must be an arrayref")
+	unless ( ref($ip_list) eq 'ARRAY' );
+
+    $self->throw_user("Missing required argument: forward zone")
+	unless ( $fzone );
 
     my @rrs;
 
-    my ($ipb, $name, $ptrdname);
-    my $version = $ipstart->version;
+    my ($name, $ptrdname);
+    my $version = $ip_list->[0]->version;
    
-    for ( my $i=Math::BigInt->new($ipstart->numeric); $i<=$ipend->numeric; $i++ ){
+    foreach my $ipb ( @$ip_list ){
 	if ( $version == 4 ){
-	    my $ip = NetAddr::IP->new($i) || $self->throw_fatal("Cannot create v4 NetAddr obj from $i");
-
-	    $ipb = Ipblock->search(address=>$ip->addr)->first
-		|| $self->throw_fatal("Cannot find Ipblock: ".$ip->addr);
-
-	    $name = $ip->addr;
+	    $name = $ipb->address;
 	    $name =~ s/\./-/g;
 
 	}elsif ( $version == 6 ){
-	    my $ip = NetAddr::IP->new6($i) || $self->throw_fatal("Cannot create v6 NetAddr obj from $i");
-
-	    $ipb = Ipblock->search(address=>$ip->addr)->first
-		|| $self->throw_fatal("Cannot find Ipblock: ".$ip->addr);
-
 	    $name = $ipb->full_address;
 	    $name =~ s/:/-/g;
 	    $name =~ s/0{4}/0/g;
 	}
-	
 	$name = $prefix.$name if ( defined $prefix );
 	$name .= $suffix if ( defined $suffix );
 	$ptrdname = "$name.".$fzone->name;
