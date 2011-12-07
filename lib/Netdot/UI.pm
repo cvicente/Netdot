@@ -1609,6 +1609,7 @@ sub build_ip_tree_graph {
 	    push @lbls, $parent->get_label;
 	    push @lbls, $parent->description if $parent->description;
 	    my $lbl = join '\n', @lbls;
+           $lbl = encode('utf8', $lbl);
 	    
 	    if ( !$seen{$parent->id} ){
 		$g->add_node(
