@@ -50,7 +50,7 @@ sub new{
 	'juniper'    => 'juniper',
 	'netscreen'  => 'netscreen',
     };
-    
+
     $self->{EXCLUDE} = Netdot->config->get('RANCID_EXCLUDE') || {};
     
     bless $self, $class;
@@ -71,7 +71,7 @@ sub generate_configs {
     my ($self) = @_;
 
     my $query = $self->{_dbh}->selectall_arrayref("
-                SELECT     rr.name, zone.name, p.name, p.sysobjectid, e.name,
+                SELECT     rr.name, zone.name, p.name, p.sysobjectid, e.name, d.sysdescription,
                            d.monitor_config, d.monitor_config_group, d.down_from, d.down_until
                  FROM      device d, rr, zone, product p, entity e
                 WHERE      d.name=rr.id
@@ -82,7 +82,7 @@ sub generate_configs {
     
     my %groups;
     foreach my $row ( @$query ){
-	my ($rrname, $zone, $product, $oid, $vendor,
+	my ($rrname, $zone, $product, $oid, $vendor, $sysdescr,
 	    $monitor, $group, $down_from, $down_until) = @$row;  
 
 	my $name = $rrname . "." . $zone;
@@ -116,7 +116,7 @@ sub generate_configs {
 	    }
 	}
 
-	my $mfg = $self->_convert_mfg($vendor);
+	my $mfg = $self->_convert_mfg($vendor, $sysdescr);
 	unless ( $mfg ) {
 	    $logger->debug("Netdot::Exporter::Rancid::generate_configs: $name: $vendor has no RANCID device_type mapping");
 	    next;
@@ -150,11 +150,25 @@ sub generate_configs {
 
 ############################################################################
 sub _convert_mfg {
-    my ($self, $vendor) = @_;
+    my ($self, $vendor, $sysdescr) = @_;
     return unless $vendor;
+
+    my $mfg;
+    # vendor
     foreach my $key ( keys %{$self->{MFG_MAP}} ){
 	if ( $vendor =~ /$key/i ){
-	    return $self->{MFG_MAP}{$key};
+	    $mfg = $self->{MFG_MAP}{$key};
+	    last;
 	}
     }
+    # More granularity for some vendors
+    if ( defined($mfg) && $mfg eq 'cisco' ){
+	if ( $sysdescr =~ /IOS-XE/o ){
+	    $mfg = 'cisco-xr';
+	}elsif ( $sysdescr =~ /NX-OS/o ){
+	    $mfg = 'cisco-nx';
+	}
+    }
+    return $mfg;
 }
+  
