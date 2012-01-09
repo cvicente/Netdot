@@ -56,6 +56,7 @@ $ping_port            = 23;
 $ping_timeout         = 500;
 $ping_retries         = 2;
 $max_oids             = 10;
+$device_threads       = 1;
 
 $sortMethods    = array('manual' => 1, 'alpha' => 2, 'natural' => 3, 'numeric' => 4);
 $nodeTypes      = array('header' => 1, 'graph' => 2, 'host' => 3);
