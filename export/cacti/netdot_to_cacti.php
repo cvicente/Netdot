@@ -25,7 +25,7 @@ include_once($config["base_path"]."/lib/api_graph.php");
 include_once($config["base_path"]."/lib/snmp.php");
 include_once($config["base_path"]."/lib/data_query.php");
 include_once($config["base_path"]."/lib/api_device.php");
-include_once($config["base_path"].'/lib/tree.php');
+include_once($config["base_path"]."/lib/api_tree.php");
 
 /* process calling arguments */
 $parms = $_SERVER["argv"];
@@ -310,7 +310,8 @@ foreach ($groups as $group => $hosts){
 			      $snmp_port, $snmp_timeout, $disable, $avail, $ping_method,
 			      $ping_port, $ping_timeout, $ping_retries, $notes,
 			      $snmp_auth_protocol, $snmp_priv_passphrase,
-			      $snmp_priv_protocol, $snmp_context, $max_oids);
+			      $snmp_priv_protocol, $snmp_context, $max_oids, 
+			      $device_threads);
   
     if (is_error_message()) {
       echo "ERROR: $description: Failed device save\n";
