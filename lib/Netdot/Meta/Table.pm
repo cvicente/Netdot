@@ -113,11 +113,11 @@ sub get_column_names{
 =head2 get_column - Get new Column object
 
   Arguments:
-    
+    column name
   Returns:
-
+    Netdot::Meta::Column object
   Example: 
-
+    my $mc = Device->meta_data->get_column('sysdescription');
 =cut
 sub get_column {
     my ($self, $name) = @_;

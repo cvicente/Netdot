@@ -22,42 +22,56 @@ my @statements = ();
 
 if ($netdot_config->get('DB_TYPE') eq "mysql") {
     @statements = (
-    "CREATE TABLE `asset` (
-      `date_purchased` timestamp DEFAULT '1970-01-01 00:00:01',
-      `id` bigint NOT NULL auto_increment,
-      `info` text,
-      `inventory_number` varchar(255),
-      `maint_contract` integer NOT NULL,
-      `maint_from` date,
-      `maint_until` date,
-      `product_id` integer NOT NULL,
-      `serial_number` varchar(255),
-      `custom_serial` varchar(255),
-      UNIQUE INDEX Asset1 (`serial_number`, `product_id`),
-      INDEX Asset2 (`product_id`),
-      INDEX Asset3 (`inventory_number`),
-      PRIMARY KEY (`id`)
-    ) ENGINE=InnoDB;",
+	"CREATE TABLE `asset` (
+        `custom_serial` varchar(255),
+        `date_purchased` date,
+        `description` varchar(255),
+        `id` bigint NOT NULL auto_increment,
+        `info` text,
+        `inventory_number` varchar(255),
+        `maint_contract` bigint,
+        `maint_from` date,
+        `maint_until` date,
+        `physaddr` bigint,
+        `po_number` varchar(255),
+        `reserved_for` varchar(255),
+        `product_id` bigint,
+        `serial_number` varchar(255),
+        UNIQUE INDEX asset1 (`physaddr`),
+        UNIQUE INDEX asset2 (`serial_number`, `product_id`),
+        INDEX Asset3 (`product_id`),
+        INDEX Asset4 (`inventory_number`),
+        INDEX Asset5 (`po_number`),
+        INDEX (`maint_contract`),
+        PRIMARY KEY (`id`)
+      ) ENGINE=InnoDB;",
         );
 } elsif ($netdot_config->get('DB_TYPE') eq "Pg") {
     my $u = $netdot_config->get('DB_NETDOT_USER');
     @statements = (
-    "CREATE TABLE asset (
-      date_purchased timestamp DEFAULT '1970-01-01 00:00:01',
-      id serial PRIMARY KEY,
-      info text,
-      inventory_number varchar(255),
-      maint_contract integer NOT NULL,
-      maint_from date,
-      maint_until date,
-      product_id integer NOT NULL,
-      serial_number varchar(255),
-      custom_serial varchar(255),
-      CONSTRAINT Asset1 UNIQUE (serial_number, product_id)
-    );",
-    "CREATE INDEX Asset2 ON asset (product_id);",
-    "CREATE INDEX Asset3 ON asset (inventory_number);",
-    "GRANT ALL ON asset TO $u;"
+	"CREATE TABLE asset (
+         custom_serial character varying(255),
+         date_purchased date,
+         description character varying(255),
+         id serial NOT NULL,
+         info text,
+         inventory_number character varying(255),
+         maint_contract bigint,
+         maint_from date,
+         maint_until date,
+         physaddr bigint,
+         po_number character varying(255),
+         reserved_for character varying(255),
+         product_id bigint,
+         serial_number character varying(255),
+         CONSTRAINT asset1 UNIQUE (\"physaddr\"),
+         CONSTRAINT asset2 UNIQUE (\"serial_number\", \"product_id\"),
+         CONSTRAINT pk_asset PRIMARY KEY (\"id\")
+        );",
+	"CREATE INDEX Asset3 on asset (\"product_id\");",
+	"CREATE INDEX Asset4 on asset (\"inventory_number\");",
+        "CREATE INDEX Asset5 on asset (\"po_number\");",
+	"GRANT ALL ON asset TO $u;"
         );
 }
 
@@ -66,18 +80,21 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
 # Store assets to be inserted, keyed by serial number
 my %assets;
 
-my $d = $dbh->prepare('SELECT serialnumber,custom_serial,inventorynumber,maint_contract,maint_from,maint_until,product 
+my $d = $dbh->prepare('SELECT serialnumber,custom_serial,physaddr,inventorynumber,
+                              maint_contract,maint_from,maint_until,product 
                        FROM   device
-		       WHERE  serialnumber is not NULL
-    ');
+		       WHERE  serialnumber is not NULL');
 $d->execute();
 my $devices = $d->fetchall_arrayref();
 
 foreach my $row ( @$devices ){
     my $sn = $row->[0];
     $sn =~ s/^\s*(\w+)\s*$/$1/;
+    # Convert foreign keys from 0 to undef
+    $row->[2] = undef if $row->[2] == 0;
+    $row->[7] = undef if $row->[7] == 0;
     my $i = 1;
-    foreach my $v (qw/cs in mc mf mu pr/){
+    foreach my $v (qw/cs ph in mc mf mu pr/){
 	$assets{$sn}{$v} = $row->[$i];
 	$i++;
     }
@@ -85,8 +102,7 @@ foreach my $row ( @$devices ){
 
 my $dm = $dbh->prepare('SELECT serialnumber,inventorynumber,maint_contract,maint_from,maint_until 
                         FROM   devicemodule
-		        WHERE  serialnumber is not NULL
-    ');
+		        WHERE  serialnumber IS NOT NULL');
 $dm->execute();
 my $device_modules = $dm->fetchall_arrayref();
 
@@ -96,19 +112,20 @@ foreach my $row ( @$device_modules ){
     next if exists $assets{$sn};
     my $i = 1;
     foreach my $v (qw/in mc mf mu/){
-	$assets{$sn}{v} = $row->[$i];
+	$assets{$sn}{$v} = $row->[$i];
 	$i++;
     }
 }
 
-my $ia = $dbh->prepare('INSERT INTO asset (serial_number,custom_serial,inventory_number,maint_contract,maint_from,maint_until,product_id)
-        VALUES (?,?,?,?,?,?,?)');
+my $ia = $dbh->prepare('INSERT INTO asset (serial_number,custom_serial,physaddr,
+                                           inventory_number,maint_contract,
+                                           maint_from,maint_until,product_id)
+        VALUES (?,?,?,?,?,?,?,?)');
 
 foreach my $sn ( keys %assets ){
     my %vals = %{$assets{$sn}};
-    my ($cs,$in,$mc,$mf,$mu,$pr) = @vals{'cs','in','mc','mf','mu','pr'};
-    $mc ||= 0; $pr ||= 0;
-    $ia->execute($sn,$cs,$in,$mc,$mf,$mu,$pr);
+    my ($cs,$ph,$in,$mc,$mf,$mu,$pr) = @vals{'cs','ph','in','mc','mf','mu','pr'};
+    $ia->execute($sn,$cs,$ph,$in,$mc,$mf,$mu,$pr);
 }
 
 # Grab hostaudit data before conversion
@@ -126,43 +143,47 @@ foreach my $row ( @$haudits ){
     $haudit{$id}{scope} = $scope;
 }
  
-
-
 if ($netdot_config->get('DB_TYPE') eq "mysql") {
     my $dbname = $netdot_config->get('DB_DATABASE');
     @statements = (
             "ALTER DATABASE $dbname CHARACTER SET utf8 COLLATE utf8_general_ci;",
-            "ALTER TABLE device ADD COLUMN asset_id bigint NOT NULL AFTER aliases;",
-            "ALTER TABLE device ADD COLUMN extension integer NULL AFTER down_until;",
-            "ALTER TABLE device_history ADD COLUMN asset_id bigint NOT NULL AFTER aliases;",
-            "ALTER TABLE device_history ADD COLUMN extension integer NULL AFTER down_until;",
-            "ALTER TABLE devicemodule ADD COLUMN asset_id bigint NOT NULL FIRST;",
+            "ALTER TABLE device ADD COLUMN asset_id bigint AFTER aliases;",
+            "ALTER TABLE device ADD COLUMN extension integer AFTER down_until;",
+            "ALTER TABLE device_history ADD COLUMN asset_id bigint AFTER aliases;",
+            "ALTER TABLE device_history ADD COLUMN extension integer AFTER down_until;",
+            "ALTER TABLE devicemodule ADD COLUMN asset_id bigint FIRST;",
             "UPDATE device,asset SET device.asset_id=asset.id WHERE asset.serial_number=device.serialnumber;",
             "UPDATE devicemodule,asset SET devicemodule.asset_id=asset.id WHERE asset.serial_number=devicemodule.serialnumber;",
-            "UPDATE asset,device,devicemodule SET asset.product_id=device.product WHERE devicemodule.device=device.id AND devicemodule.asset_id=asset.id;",
+            "UPDATE asset,device,devicemodule SET asset.product_id=device.product 
+              WHERE devicemodule.device=device.id AND devicemodule.asset_id=asset.id;",
             "ALTER TABLE device DROP COLUMN serialnumber;",
             "ALTER TABLE device DROP COLUMN inventorynumber;",
             "ALTER TABLE device DROP COLUMN maint_contract;",
             "ALTER TABLE device DROP COLUMN maint_from;",
             "ALTER TABLE device DROP COLUMN maint_until;",
             "ALTER TABLE device DROP COLUMN custom_serial;",
-            "ALTER TABLE device ADD INDEX Device13 (asset_id);",
-            "ALTER TABLE device ADD INDEX Device14 (extension);",
+            "ALTER TABLE device DROP COLUMN physaddr;",
+            "ALTER TABLE device DROP COLUMN product;",
+            "ALTER TABLE device ADD UNIQUE INDEX device2 (asset_id);",
+            "ALTER TABLE device ADD INDEX Device13 (extension);",
             "ALTER TABLE device_history DROP COLUMN serialnumber;",
             "ALTER TABLE device_history DROP COLUMN inventorynumber;",
             "ALTER TABLE device_history DROP COLUMN maint_contract;",
             "ALTER TABLE device_history DROP COLUMN maint_from;",
             "ALTER TABLE device_history DROP COLUMN maint_until;",
             "ALTER TABLE device_history DROP COLUMN custom_serial;",
+            "ALTER TABLE device_history DROP COLUMN physaddr;",
+            "ALTER TABLE device_history DROP COLUMN product;",
             "ALTER TABLE devicemodule DROP COLUMN serialnumber;",
             "ALTER TABLE devicemodule DROP COLUMN inventorynumber;",
             "ALTER TABLE devicemodule DROP COLUMN maint_contract;",
             "ALTER TABLE devicemodule DROP COLUMN maint_from;",
             "ALTER TABLE devicemodule DROP COLUMN maint_until;",
-            "ALTER TABLE devicemodule ADD INDEX devicemodule2 (asset_id);",
+            "ALTER TABLE devicemodule ADD UNIQUE INDEX devicemodule2 (asset_id);",
 	    "ALTER TABLE dhcpscope ADD COLUMN duid varchar(255);",
 	    "ALTER TABLE dhcpscope ADD COLUMN version integer;",
-            "ALTER TABLE product ADD COLUMN mfg_number varchar(255);",
+            "ALTER TABLE product ADD COLUMN part_number varchar(255);",
+            "ALTER TABLE product_history ADD COLUMN part_number varchar(255);",
             "ALTER TABLE datacache MODIFY COLUMN tstamp bigint NOT NULL;",
             "DELETE FROM datacache;",
             "ALTER TABLE device ADD COLUMN snmp_conn_attempts integer AFTER snmp_bulk;",
@@ -194,11 +215,15 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
             );
 } elsif ($netdot_config->get('DB_TYPE') eq "Pg") {
     @statements = (
-            "ALTER TABLE device ADD COLUMN asset_id bigint NOT NULL;",
+            "ALTER TABLE device ADD COLUMN asset_id bigint;",
             "ALTER TABLE device ADD COLUMN extension integer NULL;",
-            "ALTER TABLE device_history ADD COLUMN asset_id bigint NOT NULL;",
+            "ALTER TABLE device DROP COLUMN physaddr;",
+	    "ALTER TABLE device DROP COLUMN product;",
+            "ALTER TABLE device_history ADD COLUMN asset_id bigint;",
             "ALTER TABLE device_history ADD COLUMN extension integer NULL;",
-            "ALTER TABLE devicemodule ADD COLUMN asset_id bigint NOT NULL;",
+            "ALTER TABLE device_history DROP COLUMN physaddr;",
+	    "ALTER TABLE device_history DROP COLUMN product;",
+            "ALTER TABLE devicemodule ADD COLUMN asset_id bigint;",
             "UPDATE device SET asset_id=asset.id FROM asset WHERE asset.serial_number=device.serialnumber;",
             "UPDATE devicemodule SET asset_id=asset.id FROM asset WHERE asset.serial_number=devicemodule.serialnumber;",
             "UPDATE asset SET product_id=device.product FROM device, devicemodule WHERE devicemodule.device=device.id AND devicemodule.asset_id=asset.id;",
@@ -208,7 +233,9 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
             "ALTER TABLE device DROP COLUMN maint_from;",
             "ALTER TABLE device DROP COLUMN maint_until;",
             "ALTER TABLE device DROP COLUMN custom_serial;",
-            "CREATE INDEX Device13 ON device(asset_id);",
+            "ALTER TABLE device DROP COLUMN physaddr;",
+            "ALTER TABLE device DROP COLUMN product;",
+            "CREATE UNIQUE INDEX Device2 ON device(asset_id);",
             "CREATE INDEX Device14 ON device(extension);",
             "ALTER TABLE device_history DROP COLUMN serialnumber;",
             "ALTER TABLE device_history DROP COLUMN inventorynumber;",
@@ -216,6 +243,8 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
             "ALTER TABLE device_history DROP COLUMN maint_from;",
             "ALTER TABLE device_history DROP COLUMN maint_until;",
             "ALTER TABLE device_history DROP COLUMN custom_serial;",
+            "ALTER TABLE device_history DROP COLUMN physaddr;",
+            "ALTER TABLE device_history DROP COLUMN product;",
             "ALTER TABLE devicemodule DROP COLUMN serialnumber;",
             "ALTER TABLE devicemodule DROP COLUMN inventorynumber;",
             "ALTER TABLE devicemodule DROP COLUMN maint_contract;",
@@ -223,8 +252,9 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
             "ALTER TABLE devicemodule DROP COLUMN maint_until;",
 	    "ALTER TABLE dhcpscope ADD COLUMN duid varchar(255);",
 	    "ALTER TABLE dhcpscope ADD COLUMN version integer;",
-            "CREATE INDEX devicemodule2 ON devicemodule(asset_id);",
-            "ALTER TABLE product ADD COLUMN mfg_number varchar(255);",
+            "CREATE UNIQUE INDEX devicemodule2 ON devicemodule(asset_id);",
+            "ALTER TABLE product ADD COLUMN part_number varchar(255);",
+            "ALTER TABLE product_history ADD COLUMN part_number varchar(255);",
             "DELETE FROM datacache;",
             "ALTER TABLE device ADD COLUMN snmp_conn_attempts integer;",
             "ALTER TABLE device ADD COLUMN snmp_down smallint NOT NULL;",
@@ -355,6 +385,7 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
         }   
     }
 }
+
 &processdata(\@statements);
 
 &dbdisconnect();

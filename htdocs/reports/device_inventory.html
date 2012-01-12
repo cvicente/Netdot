@@ -63,8 +63,8 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 	$t{'Unset'}{total}              += $o->{numdevs};
     }
     
-    # Look for devices with no product set
-    my @noprod = Device->search( product => undef );
+    # Look for devices with no asset set
+    my @noprod = Device->search(asset_id=>undef);
     
     if ( my $num = scalar @noprod ){
 	$t{'Unset'}{prod}{'Unset'}{id}   = 0;
@@ -100,7 +100,7 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 	    if ( $t{$pt}{prod}{$product}{id} ){
 		push( @row, '<a href="../generic/view.html?table=Product&id=' . $t{$pt}{prod}{$product}{id} . '">' . $product . '</a>' );
 	    }elsif ( $product eq "Unset" ){
-		push( @row, '<a href="../generic/search_obj.html?table=Device&product=undef&res=1">' . $product . '</a>' );
+		push( @row, '<a href="../generic/search_obj.html?table=Device&asset=undef&res=1">' . $product . '</a>' );
 	    }
 	    push( @row, $t{$pt}{prod}{$product}{num}  );
 	    push( @rows, \@row );
@@ -113,16 +113,17 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 }elsif ( $report_type eq 'site' ){
     my $res = Netdot::Model->raw_sql("
     SELECT     device.site,
-               device.product,
+               asset.product_id,
                site.name AS site_name,
                product.name AS product_name,
                entity.name AS manufacturer,
                count(*) AS count
     FROM       device
     LEFT JOIN  site ON site.id=device.site
-    LEFT JOIN  (product,entity) ON product.id=device.product 
-                 AND entity.id=product.manufacturer 
-    GROUP BY   site,product
+    LEFT JOIN  (asset,product,entity) ON (asset.id=device.asset_id 
+                 AND asset.product_id=product.id
+                 AND entity.id=product.manufacturer) 
+    GROUP BY   device.site,asset.product_id
     ORDER BY   site_name,product_name
     ")->{rows};
 
@@ -223,9 +224,11 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
     
     foreach my $dev (@devices) {
 	my $prod  = ($dev->product) ? $dev->product->id : "Unset";
+	my $p_os  = $dev->product->latest_os; 
 	my $manuf = ($dev->product && $dev->product->manufacturer) ? $dev->product->manufacturer->id : "Unset";
 	my $os    = $dev->os;
 	my $devid = $dev->id;
+	$t{$manuf}{os} = $p_os;
 	$t{$manuf}{total}++;
 	$t{$manuf}{product}{$prod}{total}++;
 	$t{$manuf}{product}{$prod}{os}{$os}{dev}{$devid}{total}++;
@@ -240,7 +243,7 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 	}else{
 	    push( @row, $m );
 	}
-	push ( @row, " ", " ", " " );
+	push ( @row, " ", " ", $t{$m}{os} );
 	push ( @rows, \@row );
 	foreach my $prod (keys %{$t{$m}{product}} ){
 	    my @row = ();

@@ -81,8 +81,8 @@ sub gather_data{
 	my $address = $ip->address;
 	my ($type, $site, $entity);
 	if ( my $device = Netdot::Model::Device->retrieve($deviceid) ){
-	    if ( $device->product && $device->product->type ){
-		$type = $device->product->type->name;
+	    if ( my $product = $device->product ){
+		$type = $product->type->name;
 		$type =~ s/\s+/_/g;
 	    }else{
 		$type = 'Unknown';

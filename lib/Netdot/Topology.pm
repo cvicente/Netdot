@@ -586,8 +586,9 @@ sub get_fdb_links {
     # Build a hash with device base macs for faster lookups later
     my $base_macs_q = $dbh->selectall_arrayref("
        SELECT  device.id, physaddr.address 
-       FROM    device, physaddr
-       WHERE   device.physaddr=physaddr.id");
+       FROM    device, physaddr, asset
+       WHERE   asset.physaddr=physaddr.id
+          AND  device.asset_id=asset.id");
     my %base_macs;
     foreach my $row ( @$base_macs_q ) {
 	my ($id, $address) = @$row;
@@ -632,7 +633,10 @@ sub get_fdb_links {
 	    $mac = PhysAddr->format_address($mac);
 	    my $addr = PhysAddr->search(address=>$mac)->first;
 	    next unless $addr;
-	    my $device = Device->search(physaddr=>$addr)->first;
+	    my $device;
+	    if ( my $asset = Asset->search(physaddr=>$addr)->first ){
+		$device = $asset->devices->first if $asset->devices;
+	    }
 	    next unless $device;
 	    $excluded_devices{$device->id} = 1 if $device;
 	}    

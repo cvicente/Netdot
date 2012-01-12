@@ -49,6 +49,13 @@ __PACKAGE__->set_sql(by_type_unknown => qq{
 	OR a.product_id IS NULL
     });
 
+__PACKAGE__->set_sql(by_device => qq{
+    SELECT a.id
+         FROM  asset a, device d, devicemodule m 
+        WHERE  d.id = ?
+          AND  ( d.asset_id = a.id
+          OR   (m.device=d.id AND m.asset_id=a.id) )
+    });
 
 
 1;

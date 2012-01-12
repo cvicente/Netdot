@@ -346,8 +346,9 @@ sub from_devices {
     my $dbh = $class->db_Main;
     eval {
 	my $sth = $dbh->prepare_cached("SELECT p.id,p.address 
-                                        FROM physaddr p, device d
-                                        WHERE d.physaddr=p.id");
+                                        FROM   physaddr p, device d, asset a
+                                        WHERE  a.physaddr=p.id 
+                                           AND d.asset_id=a.id");
 	$sth->execute();
 	$mac_aref = $sth->fetchall_arrayref;
     };
@@ -680,6 +681,20 @@ sub get_last_n_arp {
               ORDER BY arp.tstamp DESC";
 
     return $dbh->selectall_arrayref($q2);
+}
+
+################################################################
+=head2 devices - Return devices whose base mac is this one
+
+  Arguments: None
+  Returns:   Array of Device objects
+  Examples:
+    my @devs = $physaddr->devices;
+
+=cut
+sub devices { 
+    my ($self) = @_;
+    map { $_->devices if ($_->devices) } $self->assets;
 }
 
 ################################################################

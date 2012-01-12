@@ -91,7 +91,7 @@ if (!$netdot_db) {
 $q = $netdot_db->Execute("
                 SELECT     rr.name, zone.name, ipblock.address, site.name, p.name, p.sysobjectid, pt.name, 
                            d.id, d.snmp_managed, d.snmp_polling, d.community, d.snmp_version, e.name, m.name 
-                FROM      rr, zone, producttype pt, device d
+                FROM      asset a, rr, zone, producttype pt, device d
                 LEFT JOIN (site) ON (d.site=site.id)
                 LEFT JOIN (ipblock) ON (d.snmp_target=ipblock.id)
                 LEFT JOIN (entity e) ON (d.used_by=e.id),
@@ -99,7 +99,8 @@ $q = $netdot_db->Execute("
                 LEFT JOIN (entity m) ON (p.manufacturer=m.id)
                 WHERE      d.name=rr.id
                   AND      rr.zone=zone.id
-                  AND      d.product=p.id
+                  AND      a.product_id=p.id
+                  AND      d.asset_id=a.id
                   AND      p.type=pt.id
                 ORDER BY   rr.name;
 ");

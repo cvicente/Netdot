@@ -68,10 +68,10 @@ sub gather_data{
 
     my $dbh = Netdot::Model->db_Main();
     $q1 = $dbh->selectall_arrayref("
-                SELECT     d.serialnumber, d.rack, d.info, site.name, dr.name, rr.name, zone.name, 
+                SELECT     a.serial_number, d.rack, d.info, site.name, dr.name, rr.name, zone.name, 
                            i.id, i.name, i.number, i.description, i.neighbor, i.room_char, i.jack_char, 
                            hc.jackid, p.name, pt.name, e.name, ir.name
-                 FROM      rr, zone, product p, producttype pt, entity e, interface i 
+                 FROM      asset a, rr, zone, product p, producttype pt, entity e, interface i
                  LEFT JOIN (horizontalcable hc, room ir) ON (hc.id=i.jack AND hc.room=ir.id), 
                            device d 
                  LEFT JOIN (site) ON (d.site=site.id)
@@ -79,7 +79,8 @@ sub gather_data{
                 WHERE      i.device=d.id
                   AND      d.name=rr.id
                   AND      rr.zone=zone.id
-                  AND      d.product=p.id
+                  AND      a.product_id=p.id
+                  AND      d.asset_id=a.id
                   AND      p.type=pt.id
                   AND      p.manufacturer=e.id
          ");
