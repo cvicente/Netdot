@@ -6,13 +6,15 @@ use Getopt::Long qw(:config no_ignore_case bundling);
 use strict;
 
 
-my ($HELP, $ENTITY, $NEIG, $DUPLEX, $SITE, $DEBUG, $EMAIL);
+my ($HELP, $ENTITY, $NEIG, $DUPLEX, $SITE, $NEW, $DEBUG, $EMAIL);
 my $FROM    = Netdot->config->get('ADMINEMAIL');
 my $TO      = Netdot->config->get('NOCEMAIL');
+my $DAYS    = 1;
 my $SUBJECT = 'Netdot Device Checks';
 
 my $usage = <<EOF;
- usage: $0  -e|--entity | -d|--dependencies | -s|--site | -d|--duplex
+ usage: $0  -e|--entity | -d|--dependencies | -s|--site | -d|--duplex 
+            -n|--new | -D|--days
            [-m|--send_mail] [-f|--from] | [-t|--to] | [-S|--subject]
 
     
@@ -20,6 +22,8 @@ my $usage = <<EOF;
     -n, --neighbors                report devices with no neighbors
     -s, --site                     report devices with no site
     -d, --duplex                   report duplex mismatches
+    -n, --new                      report devices discovered within D days
+    -D, --days                     (default: $DAYS)
     -h, --help                     print help (this message)
     -m, --send_mail                send output via e-mail
     -f, --from                     e-mail From line (default: $FROM)
@@ -33,11 +37,13 @@ my $result = GetOptions( "e|entity"       => \$ENTITY,
 			 "n|neighbors"    => \$NEIG,
 			 "s|site"         => \$SITE,
 			 "d|duplex"       => \$DUPLEX,
-			 "h|help"         => \$HELP,
+			 "n|new"          => \$NEW,
+			 "D|days:s"       => \$DAYS,
 			 "m|send_mail"    => \$EMAIL,
 			 "f|from:s"       => \$FROM,
 			 "t|to:s"         => \$TO,
 			 "S|subject:s"    => \$SUBJECT,
+			 "h|help"         => \$HELP,
 			 );
 
 if( ! $result ) {
@@ -48,16 +54,16 @@ if( $HELP ) {
     print $usage;
     exit;
 }
-unless ( $ENTITY || $NEIG || $SITE || $DUPLEX ){
+unless ( $ENTITY || $NEIG || $SITE || $DUPLEX || $NEW ){
     print $usage;
-    die "Error: Must specify either -e, -n, -s or -d\n";
+    die "Error: Must specify either -e, -n, -s, -d or -n\n";
 }
 
 # This will be reflected in the history tables
 $ENV{REMOTE_USER} = "netdot";
-my (@nameless, @lost, @orphans, @homeless, $output);
+my (@nameless, @lost, @orphans, @homeless, @new, $output);
 
-if ( $ENTITY || $NEIG || $SITE ){
+if ( $ENTITY || $NEIG || $SITE || $NEW ){
     my $it = Device->retrieve_all;
     while ( my $dev = $it->next ){
 	unless ( $dev->name && $dev->name->name ){
@@ -77,8 +83,22 @@ if ( $ENTITY || $NEIG || $SITE ){
 	    }
 	    push @orphans, $dev unless $found;
 	}
+	if ( $NEW && $DAYS ){
+	    my $idate = $dev->date_installed;
+	    if ( $idate ne '0000-00-00 00:00:00' ){
+		my $now = time;
+		my $days_ago_sql = Netdot::Model->sqldate_days_ago($DAYS);
+		my $t1 = Netdot::Model->sqldate2time($days_ago_sql);
+		my $t2 = Netdot::Model->sqldate2time($idate);
+		push @new, $dev if ( $t2 >= $t1 );
+	    }
+	}
     }
     
+    if ( @new ){
+	$output .= sprintf("\nThe following devices have been discovered within the last $DAYS days:\n");
+	map { $output.= sprintf(" %s\n", $_->fqdn) } @new;
+    }
     if ( @nameless ){
 	$output .= sprintf("\nThe following devices have no name defined:\n");
 	map { $output.= sprintf(" ID: %s\n", $_->id) } @nameless;
@@ -86,17 +106,17 @@ if ( $ENTITY || $NEIG || $SITE ){
     if ( @lost ){
 	@lost = sort { $a->name->name cmp $b->name->name } @lost;
 	$output .= sprintf("\nThe following devices have no Entity defined:\n");
-	map { $output .= sprintf("  %s\n", $_->name->name) } @lost;
+	map { $output .= sprintf("  %s\n", $_->fqdn) } @lost;
     }
     if ( @homeless ){
 	@homeless = sort { $a->name->name cmp $b->name->name } @homeless;
 	$output .= sprintf("\nThe following devices have no Site defined:\n");
-	map { $output .= sprintf("  %s\n", $_->name->name) } @homeless;
+	map { $output .= sprintf("  %s\n", $_->fqdn) } @homeless;
     }
     if ( @orphans ){
 	@orphans = sort { $a->name->name cmp $b->name->name } @orphans;
 	$output .= sprintf("\nThe following devices have no neighbors:\n");
-	map { $output .= sprintf(" %s\n", $_->name->name) } @orphans;
+	map { $output .= sprintf(" %s\n", $_->fqdn) } @orphans;
     }
 }elsif ( $DUPLEX ){
     my $list = Interface->find_duplex_mismatches();

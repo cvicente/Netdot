@@ -1024,12 +1024,12 @@ sub get_tree_stp_links {
     my (%far, %near);
     foreach my $ivid ( keys %ivs ){
 	my $iv = $ivs{$ivid};
-	if ( defined $iv->stp_state && $iv->stp_state =~ /^forwarding|blocking$/ ){
-	    if ( $iv->stp_des_bridge && $iv->interface->device ){
-		my $des_b     = $iv->stp_des_bridge;
-		my $des_p     = $iv->stp_des_port;
+	if ( defined $iv->stp_state && $iv->stp_state =~ /^forwarding|blocking$/o ){
+	    if ( (my $des_b = $iv->stp_des_bridge) &&
+		 (my $des_p = $iv->stp_des_port) &&
+		 (my $dev   = $iv->interface->device) ){
 		my $int       = $iv->interface->id;
-		my $device_id = $iv->interface->device->id;
+		my $device_id = $dev->id;
 		# Now, the trick is to determine if the MAC in the designated
 		# bridge value belongs to this same switch
 		# It can either be the base bridge MAC, or the MAC of one of the
@@ -1141,22 +1141,22 @@ sub _cmp_des_p {
     my ($class, $a, $b) = @_;
     my ($aa, $ab, $ba, $bb, $x, $y);
     if ( $a =~ /(\w{2})(\w{2})/ ){
-	( $aa, $ab ) = ($1, $2);
+	($aa, $ab) = ($1, $2);
     }
     if ( $b =~ /(\w{2})(\w{2})/ ){
-	( $ba, $bb ) = ($1, $2);
+	($ba, $bb) = ($1, $2);
     }
-    if ( $aa eq '00' || $aa eq '80' || $aa eq '40' ){
+    if ( defined($aa) && ($aa eq '00' || $aa eq '80' || $aa eq '40') ){
 	$x = $ab;
     }else{
 	$x = $aa;
     }
-    if ( $ba eq '00' || $ba eq '80' || $ba eq '40' ){
+    if ( defined($ba) && ($ba eq '00' || $ba eq '80' || $ba eq '40') ){
 	$y = $bb;
     }else{
 	$y = $ba;
     }
-    if ( $x eq $y ){
+    if ( defined($x) && defined($y) && ($x eq $y) ){
 	return 1;
     }
     return 0;

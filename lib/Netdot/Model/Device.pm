@@ -433,7 +433,7 @@ sub assign_name {
 		$ip = $i; 
 		last;
 	    }else{
-		$logger->debug(sub{"Device::assign_name: $ip does not resolve"} );
+		$logger->debug(sub{"Device::assign_name: $i does not resolve"} );
 	    }
 	}
     }
@@ -855,28 +855,6 @@ sub get_snmp_info {
 	}
     }
 
-    ################################################################
-    # Try to guess product type based on name
-    if ( my $NAME2TYPE = $self->config->get('DEV_NAME2TYPE') ){
-	foreach my $str ( keys %$NAME2TYPE ){
-	    if ( $args{host} =~ /$str/ ){
-		$dev{type} = $NAME2TYPE->{$str};
-		last;
-	    }
-	}
-    }
-
-    # If not, assign type based on layers
-    unless ( $dev{type} ){
-	$dev{type}  = "Server"  if ( $sinfo->class =~ /Layer7/ );
-	$dev{type}  = "Router"  if ( $sinfo->class =~ /Layer3/ && $dev{ipforwarding} );
-	$dev{type}  = "Switch"  if ( $sinfo->class =~ /Layer2/ );
-	$dev{type}  = "Hub"     if ( $sinfo->class =~ /Layer1/ );
-	$dev{type}  = "Unknown" unless defined $dev{type};
-    }
-    
-    $logger->debug(sub{"$args{host} type is $dev{type}"});
-
     # Set some defaults specific to device types
     if ( $dev{ipforwarding} ){
 	$dev{bgplocalas}  =  $sinfo->bgp_local_as();
@@ -1037,9 +1015,11 @@ sub get_snmp_info {
 	$logger->debug(sub{"$args{host} did not return any interfaces"});
     }
 
+    my $name_src = ( $self->config->get('IFNAME_SHORT') eq '1' )? 'i_name' : 'i_description';
+
     foreach my $iid ( keys %{ $hashes{interfaces} } ){
+	my $name = $hashes{$name_src}->{$iid};
 	# check whether it should be ignored
-	my $name = $hashes{i_description}->{$iid};
 	if ( $name ){
 	    if ( my $ifreserved = $self->config->get('IFRESERVED') ){
 		if ( $name =~ /$ifreserved/i ){
@@ -1396,6 +1376,7 @@ sub discover {
 	my $main_ip = $argv{main_ip} || $class->_get_main_ip($info);
 	my $host    = $main_ip || $name;
 	my $newname = $class->assign_name(host=>$host, sysname=>$info->{sysname});
+
 	my %devtmp = (snmp_managed  => 1,
 		      snmp_polling  => 1,
 		      canautoupdate => 1,
@@ -1418,6 +1399,26 @@ sub discover {
 		$devtmp{$arg2field{$arg}} = $argv{$arg} if defined $argv{$arg};
 	    }
 	}
+
+	################################################################
+	# Try to guess product type based on name
+	if ( my $NAME2TYPE = $class->config->get('DEV_NAME2TYPE') ){
+	    foreach my $str ( keys %$NAME2TYPE ){
+		if ( $newname->get_label =~ /$str/ ){
+		    $info->{type} = $NAME2TYPE->{$str};
+		    last;
+		}
+	    }
+	}
+	# If not, assign type based on layers
+	if ( !$info->{type} && $info->{layers} ){
+	    $info->{type}  = "Hub"     if ( $class->_layer_active($info->{layers}, 1) );
+	    $info->{type}  = "Switch"  if ( $class->_layer_active($info->{layers}, 2) );
+	    $info->{type}  = "Router"  if ( $class->_layer_active($info->{layers}, 3) && $info->{ipforwarding} );
+	    $info->{type}  = "Server"  if ( $class->_layer_active($info->{layers}, 7) );
+	    $info->{type}  = "Unknown" unless defined $info->{type};
+	}
+	$logger->debug(sub{sprintf("%s type is: %s", $newname->get_label, $info->{type})});
 
 	if ( $info->{layers} ){
 	    # We collect rptrAddrTrackNewLastSrcAddress from hubs
@@ -2596,7 +2597,9 @@ sub info_update {
     
     ##############################################################
     if ( $asset && $asset->product_id && $argv{device_is_new} ){
-	$devtmp{monitored} = $self->_assign_device_monitored($asset->product_id);
+	my $val = $self->_assign_device_monitored($asset->product_id);
+	$devtmp{monitored}    = $val;
+	$devtmp{snmp_polling} = $val;
     }
 
     ##############################################################
@@ -4310,7 +4313,7 @@ sub _get_v6_nd_from_snmp {
 #   Returns:
 #     Hash ref.
 #   Examples:
-#     $self->_get_v6_nd_from_snmp();
+#     $self->_validate_arp(\%cache, 6);
 #
 #
 sub _validate_arp {
@@ -4873,7 +4876,7 @@ sub _assign_base_mac {
     
     my $host = $self->fqdn;
     my $address = delete $info->{physaddr}; 
-    if ( $address && ($address = PhysAddr->validate($info->{physaddr})) ) {
+    if ( $address && ($address = PhysAddr->validate($address)) ) {
 	# Look it up
 	my $mac;
 	if ( $mac = PhysAddr->search(address=>$address)->first ){
@@ -5553,7 +5556,7 @@ sub _netdot_rebless {
     foreach my $pat ( keys %OID2CLASSMAP ){
 	if ( $obj =~ /$pat/ ){
 	    my $subclass = $OID2CLASSMAP{$pat};
-	    $new_class .= "::$subclass";
+	    $new_class .= "::CLI::$subclass";
 	    $logger->debug("Device::_netdot_rebless: $host: changed class to $new_class"); 
 	    bless $self, $new_class;
 	    return $self;
@@ -5633,4 +5636,5 @@ Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 #Be sure to return 1
 1;
+
 

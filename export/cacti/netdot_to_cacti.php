@@ -25,7 +25,7 @@ include_once($config["base_path"]."/lib/api_graph.php");
 include_once($config["base_path"]."/lib/snmp.php");
 include_once($config["base_path"]."/lib/data_query.php");
 include_once($config["base_path"]."/lib/api_device.php");
-include_once($config["base_path"].'/lib/tree.php');
+include_once($config["base_path"]."/lib/api_tree.php");
 
 /* process calling arguments */
 $parms = $_SERVER["argv"];
@@ -147,7 +147,7 @@ while ($row = $q->FetchRow()) {
   if (!$community){
     $community = "public";
   }
-  $disabled = ($enabled)? 0 : 1;
+  $disable = ($enabled)? 0 : 1;
   
   // Try to assign a template
   $template_id = "";
@@ -298,6 +298,12 @@ foreach ($groups as $group => $hosts){
     if ($hostId){
       debug("$description: Updating device id $hostId ($description) template \"" . $hostTemplates[$template_id] . "\" using SNMP v$snmp_ver with community \"$community\"");
     }else{
+
+      /* Do not bother creating device if it is disabled */
+      if ($disable == "on"){
+	continue;
+      }
+      
       echo "$description: Adding device ($description) template \"" . $hostTemplates[$template_id] . "\" using SNMP v$snmp_ver with community \"$community\"\n";
     }
     $hostId = api_device_save($hostId, $template_id, $description, $ip,
@@ -305,7 +311,8 @@ foreach ($groups as $group => $hosts){
 			      $snmp_port, $snmp_timeout, $disable, $avail, $ping_method,
 			      $ping_port, $ping_timeout, $ping_retries, $notes,
 			      $snmp_auth_protocol, $snmp_priv_passphrase,
-			      $snmp_priv_protocol, $snmp_context, $max_oids);
+			      $snmp_priv_protocol, $snmp_context, $max_oids, 
+			      $device_threads);
   
     if (is_error_message()) {
       echo "ERROR: $description: Failed device save\n";

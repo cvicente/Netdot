@@ -198,8 +198,11 @@ sub generate_configs {
 	if ( my $subnet = $device_info->{$devid}->{subnet} ){
 	    $group = $subnet_info{$subnet}->{entity} || 
 		$subnet_info{$subnet}->{description};
-	}elsif ( my $entity = $device_info->{$devid}->{used_by} ){
-	    $group = $entity;
+	}
+	unless ( $group ){ 
+	    if ( my $entity = $device_info->{$devid}->{used_by} ){
+		$group = $entity;
+	    }
 	}
  	unless ( $group ){
  	    $logger->warn("Device $hostname in unknown group");

@@ -102,9 +102,19 @@ if ( $o ){
 	    $m->comp('/generic/error.mhtml', error=>$e);	
 	}	
     }elsif( defined $overwrite_if_descr ){
-	eval { $o->set_overwrite_if_descr($overwrite_if_descr); };
-	if ( my $e = $@ ){
-	    $m->comp('/generic/error.mhtml', error=>$e);	
+	if ( $overwrite_if_descr == 0 || ($submit && ($submit eq 'confirm')) ){
+	    eval { $o->set_overwrite_if_descr($overwrite_if_descr); };
+	    if ( my $e = $@ ){
+	     	$m->comp('/generic/error.mhtml', error=>$e);	
+	    }
+	    undef($submit);
+	}elsif ( $overwrite_if_descr == 1 ){
+	    $m->comp('/generic/confirm.html', 
+		     %ARGS, 
+		     target  =>'../management/device.html', 
+		     message =>'Any currently saved interface descriptions will be overwritten by '. 
+		     'SNMP-fetched data the next time the device is discovered. Are you sure?',
+		     );
 	}
     }elsif ( defined $if_auto_dns ){
 	eval { $o->set_interfaces_auto_dns($if_auto_dns); };
@@ -112,7 +122,6 @@ if ( $o ){
 	    $m->comp('/generic/error.mhtml', error=>$e);	
 	}
     }
-    
 }
 
 if( $deviceadd && $newhost ){
@@ -1522,3 +1531,5 @@ if ( $ipeers ){
   </div> <!-- close containerbodyoutside --> 
  </div> <!-- close containeroutside -->
 </div> <!-- close sectiondetail -->
+
+

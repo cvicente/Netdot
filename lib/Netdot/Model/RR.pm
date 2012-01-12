@@ -150,8 +150,17 @@ sub insert {
 	unless ( defined $argv->{name} || defined $argv->{rr} );
 
     # Set default zone if needed
-    $argv->{zone} = $class->config->get('DEFAULT_DNSDOMAIN') || 'localdomain'
-	unless ($argv->{zone});
+    if ( defined($argv->{type}) && $argv->{type} eq 'CNAME' && 
+	 defined($argv->{name}) && $argv->{name} =~ /\.$/ ){
+	# In this particular case, the user specified a dot at the end, which indicates
+	# that the label should not get the zone name appended
+	if ( my $z = (Zone->search(name=>$argv->{name}))[0] ){
+	    $argv->{zone} = $z;
+	}
+    }else{
+	$argv->{zone} = $class->config->get('DEFAULT_DNSDOMAIN') || 'localdomain'
+	    unless ($argv->{zone});
+    }
     
     # Insert zone if necessary;
     my $zone;
@@ -168,8 +177,8 @@ sub insert {
     # If the RR name contains the zone name, let's assume that it was a mistake
     # and remove it
     my $domain = $zone->name;
-    if ( $argv->{name} =~ /\.$domain$/i ){
-	$argv->{name} =~ s/\.$domain$//i;
+    if ( $argv->{name} =~ /\.$domain\.?$/i ){
+	$argv->{name} =~ s/\.$domain\.?$//i;
     }
 
     my $rr;

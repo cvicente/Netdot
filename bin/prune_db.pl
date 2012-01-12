@@ -163,7 +163,7 @@ if ( $self{IPS} ){
     # Note: This will also delete A/AAAA records, ArpCache entries, DhcpScopes, etc.
     my $q = $dbh->prepare("SELECT ipblock.id 
                            FROM   ipblock, ipblockstatus
-                           WHERE  (ipblockstatus.name='Dicovered'
+                           WHERE  (ipblockstatus.name='Discovered'
                               OR  ipblockstatus.name='Static')
                              AND  ipblock.status=ipblockstatus.id
                              AND  ipblock.last_seen < ?");

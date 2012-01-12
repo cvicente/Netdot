@@ -195,7 +195,9 @@ BEGIN {
 	}elsif ( $table eq 'dhcpattr' ){
 	    $scope = $self->scope->get_global();
 	}elsif ( $table eq 'ipblock' ){
-	    $scope = $self->parent->dhcp_scopes->first->get_global();
+	    if ( $self->parent && $self->parent->dhcp_scopes ){
+		$scope = $self->parent->dhcp_scopes->first->get_global();
+	    }
 	}else{
 	    $self->throw_fatal("Netdot::Model::_host_audit: Invalid table: $table");
 	}
@@ -333,10 +335,12 @@ BEGIN {
     }
     # Do the same as above for these special derived classes
     my %dc = __PACKAGE__->meta->get_derived_classes();
-    while ( my($pa,$ba) = each %dc ){
-	my $package = 'Netdot::Model::'.$ba.'::'.$pa;
-	eval "use $package"; 
-	my $cmd = "package $pa; use base '$package';";
+    while ( my($key,$val) = each %dc ){
+	my $short = $key;
+	my $pack  = $val->[0];
+	my $base  = $val->[1];
+	eval "use $pack";
+	my $cmd = "package $short; use base '$pack';";
 	eval $cmd;
 	if ( my $e = $@ ){
 	    die $e; 
@@ -412,16 +416,20 @@ sub insert {
 
 =cut
 sub search_like {
-    my ($class, %argv) = @_;
+    my ($class, @args) = @_;
     $class->isa_class_method('search_like');
-    
+
+    @args = %{ $args[0] } if ref $args[0] eq "HASH";
+    my $opts = @args % 2 ? pop @args : {};
+    my %argv = @args;
+
     foreach my $key ( keys %argv ){
 	# Don't do it for foreign key fields
 	unless ( $class->meta_data->get_column($key)->links_to() ){
 	    $argv{$key} = $class->_convert_search_keyword($argv{$key});
 	}
     }
-    return $class->SUPER::search_like(%argv);
+    return $class->SUPER::search_like(%argv, $opts);
 }
 
 ############################################################################
@@ -958,28 +966,31 @@ sub search_all_tables {
 
 
 ############################################################################
-=head2 sqldate2time
+=head2 sqldate2time - Convert SQL date or timestamp into epoch value
 
   Arguments:  
-    SQL date string (YYYY-MM-DD)
+    SQL date or timestamp string ('YYYY-MM-DD' or 'YYYY-MM-DD HH:MM:SS')
   Returns:    
     Seconds since epoch (compatible with Perls time function)
 
 =cut
 sub sqldate2time {
     my ($self, $date) = @_;
-    if ( $date =~ /^(\d{4})-(\d{2})-(\d{2})$/ ){
-	my ($y, $m, $d) = ($1, $2, $3);
+    if ( $date =~ /^(\d{4})-(\d{2})-(\d{2})(?: (\d{2}):(\d{2}):(\d{2}))?$/ ){
+	my ($y, $m, $d)  = ($1, $2, $3);
+	my ($h, $mn, $s) = ($4, $5, $6);
 	$self->throw_fatal("Netdot::Model::sqldate2time: Invalid date string: $date.")
-	    unless ($y && $m > 0 && $m <= 12 && $d > 0 && $d <= 31);
-	return timelocal(0,0,0,$d,$m-1,$y);
+	    unless ($y >= 0 && $m >= 0 && $m <= 12 && $d > 0 && $d <= 31 && 
+		    $h >= 0 && $h < 24 && $mn >= 0 && $m < 60 && $s >= 0 && $s < 60);
+	return timelocal($s,$mn,$h,$d,$m-1,$y);
     }else{
-	$self->throw_fatal("Netdot::Model::sqldate2time: Invalid SQL date format: $d. Should be (YYYY-MM-DD).");
+	$self->throw_fatal("Netdot::Model::sqldate2time: Invalid SQL date format: $date. ".
+			   "Should be 'YYYY-MM-DD' or 'YYYY-MM-DD HH:MM:SS'.");
     }
 }
 
 ############################################################################
-=head2 sqldate_days_ago
+=head2 sqldate_days_ago - N days ago in SQL date format
 
   Arguments:  
     number of days (integer)
@@ -996,7 +1007,7 @@ sub sqldate_days_ago {
 }
 
 ############################################################################
-=head2 sqldate_today
+=head2 sqldate_today - Today's date in SQL date format
 
   Arguments:  
     None
@@ -1042,6 +1053,7 @@ sub time2sqldate {
 #    - Make sure to set integer and bool fields to 0 instead of the empty string.
 #    - Make sure non-nullable fields are inserted as 0 if not passed
 #    - Ignore the empty string when inserting/updating date fields.
+#    - Check the length of the varchar fields.
 #
 # Arguments:
 #   hash with following keys:
@@ -1059,6 +1071,16 @@ sub _adjust_vals{
     map { $meta_columns{$_->name} = $_ } $class->meta_data->get_columns;
     foreach my $field ( keys %$args ){
 	my $mcol = $meta_columns{$field} || $class->throw_fatal("Cannot find $field in metadata");
+	if ( !blessed($args->{$field}) && $mcol->sql_type eq 'varchar' && defined($mcol->length) && $mcol->length =~ /^\d+$/ ) {
+            if (defined($args->{$field}) && length($args->{$field}) > $mcol->length) {
+		my $msg = "Value for field '$field' (max " . $mcol->length . ") is too long: '$args->{$field}'";
+		if ( $ENV{REMOTE_USER} eq 'netdot' ){
+		    $logger->warn($msg);
+		}else{
+		    $class->throw_user($msg);
+		}
+            }
+        }
 	if ( !blessed($args->{$field}) && 
 	     (!defined($args->{$field}) || $args->{$field} eq '' || 
 	      $args->{$field} eq 'null' || $args->{$field} eq 'NULL' ) ){

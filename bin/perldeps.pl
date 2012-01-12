@@ -30,6 +30,7 @@ my @DEPS = (
     {cpan=>'Module::Build' , apt=> 'libmodule-build-perl', rpm=>'perl-Module-Build'},
     {cpan=>'CGI 3.20' , apt=> 'libcgi-pm-perl', rpm=>''},
     {cpan=>'DBD::mysql', apt=> 'libdbd-mysql-perl', rpm=>'perl-DBD-MySQL'},
+    {cpan=>'DBD::Pg', apt=> 'libdbd-pg-perl', rpm=>'perl-DBD-Pg'},
     {cpan=>'Class::DBI 3.0.17', apt=> 'libclass-dbi-perl', rpm=>'perl-Class-DBI'},
     {cpan=>'Class::DBI::AbstractSearch', apt=> 'libclass-dbi-abstractsearch-perl', rpm=> 'perl-Class-DBI-AbstractSearch'},
     {cpan=>'Apache2::Request', apt=>'libapache2-request-perl', rpm=>'libapreq2 libapreq2-devel perl-libapreq2'},
@@ -53,7 +54,7 @@ my @DEPS = (
     {cpan=>'Net::IRR', apt=> '', rpm=>''},
     {cpan=>'Time::Local', apt=> 'libtime-local-perl', rpm=>''},
     {cpan=>'File::Spec',apt=> 'libfile-spec-perl', rpm=>''},
-    {cpan=>'Net::Appliance::Session 3.111690',apt=> '', rpm=>''},
+    {cpan=>'Net::Appliance::Session 3.112510',apt=> '', rpm=>''},
     {cpan=>'BIND::Config::Parser', apt=>'libbind-confparser-perl', rpm=>''},
     {cpan=>'Net::DNS', apt=> 'libnet-dns-perl', rpm=>'perl-Net-DNS'},
     {cpan=>'Text::ParseWords', apt=>'', rpm=>''},
@@ -152,8 +153,11 @@ elsif ( $action eq 'install' || $action eq 'apt-get-install' || $action eq 'rpm-
 }
 
 sub install_modules_cpan{
-    $CPAN::Config->{prerequisites_policy} = 'follow';
-    $ENV{FTP_PASSIVE} = 1;
+
+    $CPAN::Config->{prerequisites_policy}          = 'follow';
+    $CPAN::Config->{ftp_passive}                   = '1';
+    $CPAN::Config->{build_requires_install_policy} = 'yes';
+    
     foreach my $anon_hash (@DEPS){
 	my $module = $anon_hash->{'cpan'};
 	next unless $module;

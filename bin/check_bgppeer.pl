@@ -23,6 +23,7 @@
 # Report bugs to: cvicente(at)ns.uoregon.edu
 #
 # 08/05/2009 Version 1.1
+# 09/29/2011 Version 1.2 - Fixed incorrect return values
 #
 
 use SNMP;
@@ -36,11 +37,12 @@ my $whoisfield = "ASName";
 my $TIMEOUT    = 30;
 my %self;
 
-my %ERRORS = ('UNKNOWN'  => '-1',
-              'OK'       => '0',
-              'WARNING'  => '1',
-              'CRITICAL' => '2');
-
+my %ERRORS = (
+    'OK'       => 0,
+    'WARNING'  => 1,
+    'CRITICAL' => 2,
+    'UNKNOWN'  => 3,
+    );
 
 my %PEERSTATE = (1 => "idle",
 		 2 => "connect",
@@ -153,7 +155,7 @@ if ( $stateval ){
     exit $ERRORS{$state};        
 }
 
-if ( $bgp_state eq 'established' ) { 
+if ( $bgp_state eq 'established' || $bgp_state eq 'idle' ) { 
     $state = 'OK';
     print "$state\n";
 }else { 

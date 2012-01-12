@@ -8,6 +8,7 @@ use NetAddr::IP;
 use Net::IPTrie;
 use Storable qw(nfreeze thaw);
 use Scalar::Util qw(blessed);
+use DBI qw(:sql_types);
 
 =head1 NAME
 
@@ -151,35 +152,37 @@ sub search {
 	    my ($address, $prefix) = split /\//, $args{address};
 	    $args{address} = $class->ip2int($address);
 	    $args{prefix}  = $prefix;
-	}else{
-	    # Ony convert to integer if address is human-readable
+	}elsif ( $args{address} =~ /\D/ ){
+	    # Address contains non-digits
 	    if ( $class->matches_ip($args{address}) ){
+		# Ony convert to integer if address matches valid IP formats
 		$args{address} = $class->ip2int($args{address});
+	    }else{
+		$class->throw_user(sprintf("Address %s does not match valid IP v4/v6 formats", $args{address}));
 	    }
 	}
 	if ( $class->config->get('DB_TYPE') eq 'mysql' ){
 	    # Deal with mysql bug 
 	    # http://bugs.mysql.com/bug.php?id=60213
 	    # We have to build our own query
-	    my @q; my @vals;
-	    while ( my($key,$val) = each(%args) ){
-		if ( $key eq 'address' ){
-		    push @q, "$key=CONVERT(?, DECIMAL(40,0))";
-		}else{
-		    push @q, "$key=?";
-		}
-		push @vals, $val;
-	    }
-	    my $q = join ' AND ', @q;
+	    my @keys = keys %args;
+	    my @vals = values %args;
+	    my $q = join(' AND ', map { "$_=?" } @keys);
 	    my @cols = ('id');
-	    my %co = $class->meta_data->get_column_order_brief();
-	    foreach my $c ( keys %co ){
-		push @cols, $c;
-	    } 
+	    my %essential = $class->meta_data->get_column_order_brief;
+	    push @cols, keys %essential;
 	    my $cols = join ',', @cols;
 	    my $dbh = $class->db_Main();
-	    my $sth = $dbh->prepare("SELECT $cols FROM ipblock WHERE $q;");
-	    $sth->execute(@vals);
+	    my $sth = $dbh->prepare_cached("SELECT $cols FROM ipblock WHERE $q;");
+	    for my $i (1..scalar(@keys)){
+		if ( $keys[$i-1] eq 'address' ){
+		    # Notice that we force the value to be a string
+		    $sth->bind_param($i, "".$vals[$i-1], SQL_INTEGER);
+		}else{
+		    $sth->bind_param($i, $vals[$i-1]);		    
+		}
+	    }
+	    $sth->execute;
 	    return $class->sth_to_objects($sth);
 	}
     }
@@ -560,6 +563,7 @@ sub within{
 
   Modified Arguments:
     status          - name of, id or IpblockStatus object (default: Container)
+    validate(flag)  - Optionally skip validation step
     no_update_tree  - Do not update IP tree
   Returns: 
     New Ipblock object or 0
@@ -1092,110 +1096,76 @@ sub get_maxed_out_subnets {
 ################################################################
 =head2 add_range - Add or update a range of addresses
     
-
   Arguments: 
     Hash with following keys:
       start       - First IP in range
       end         - Last IP in range
       status      - Ipblock status
-      parent      - Parent Ipblock id (optional)
-      gen_dns     - Boolean.  Auto generate A/AAAA and PTR records
-      name_prefix - String to prepend to host part of IP address
-      name_suffix - String to append to host part of IP address
-      fzone       - Forward Zone id for DNS records
+      gen_dns     - Boolean.  Auto generate A/AAAA and PTR records (optional)
+      name_prefix - String to prepend to host part of IP address (optional)
+      name_suffix - String to append to host part of IP address (optional)
+      fzone       - Forward Zone id for DNS records (optional)
   Returns:   
-
+    Array of Ipblock objects
   Examples:
 
 =cut
 sub add_range{
-    my ($class, %argv) = @_;
-    $class->isa_class_method('add_range');
+    my ($self, %argv) = @_;
+    $self->isa_object_method('add_range');
 
-    my $ipstart  = NetAddr::IP->new($argv{start});
-    my $ipend    = NetAddr::IP->new($argv{end});
-    unless ( $ipstart <= $ipend ){
-	$class->throw_user("Invalid range: $argv{start} - $argv{end}");
-    }
-    my $version = $ipstart->version;
-    my $prefix  = ($version == 4)? 32 : 128;
+    $self->throw_user("Missing required argument: status")
+	unless $argv{status};
+
+    $self->throw_user("Please enable DHCP on this subnet before " .
+                       "attempting to create dynamic addresses")
+	if ( $argv{status} eq 'Dynamic' && !$self->dhcp_scopes );
     
-    # Validate parent argument
-    if ( $argv{parent} ){
-	my $p;
-	if ( ref($argv{parent}) ){
-	    $p = $argv{parent};
-	}else{
-	    $p = Ipblock->retrieve($argv{parent});
-	}
-	my $np = $p->_netaddr();
-	unless ( $ipstart->within($np) && $ipend->within($np) ){
-	    $class->throw_user("Start and/or end IPs not within given subnet: ".$p->get_label);
-	}
+    my $ipstart  = NetAddr::IP->new($argv{start}, $self->prefix);
+    my $ipend    = NetAddr::IP->new($argv{end},   $self->prefix);
+    unless ( $ipstart && $ipend && ($ipstart <= $ipend) ){
+	$self->throw_user("Invalid range: $argv{start} - $argv{end}");
     }
+    my $np = $self->_netaddr();
+    unless ( $ipstart->within($np) && $ipend->within($np) ){
+	$self->throw_user("Start and/or end IPs not within this subnet: ".$self->get_label);
+    }
+    my $prefix  = ($self->version == 4)? 32 : 128;
 
-    # We want this to happen atomically (all or nothing)
     my @newips;
-    Netdot::Model->do_transaction(sub {
-	for ( my $i = Math::BigInt->new($ipstart->numeric); $i <= Math::BigInt->new($ipend->numeric); $i++ ){
-	    my $ip;
-	    if ( $version == 4 ){
-		$ip = NetAddr::IP->new($i) || $class->throw_fatal("Problem creating NetAddr::IP object from $i");
-	    }elsif ( $version == 6 ){
-		$ip = NetAddr::IP->new6($i) || $class->throw_fatal("Problem creating v6 NetAddr::IP object from $i");
-	    }
-	    my $decimal = $ip->numeric; # Do not remove.  We need the method value as a scalar
-	    my %args = (status      => $argv{status},
-			used_by     => $argv{used_by},
-			description => $argv{description},
-		);
-	    $args{parent} = $argv{parent} if defined $argv{parent};
-	    if ( my $ipb = Ipblock->search(address=>$decimal, prefix=>$prefix)->first ){
-		$ipb->update(\%args);
-		push @newips, $ipb;
-	    }else{
-		$args{address} = $ip->addr;
-		push @newips, Ipblock->insert(\%args);
-	    }
-	}
-
-	#########################################
-	# Call the plugin that generates DNS records
-	if ( $argv{gen_dns} && $argv{fzone} ){
-	    if ( $argv{status} ne 'Dynamic' && $argv{status} ne 'Static' ){
-		$class->throw_user("DNS records can only be auto-generated for Dynamic or Static IPs");
-	    }
-	    my $fzone = Zone->retrieve($argv{fzone});
-	    $logger->info("Ipblock::add_range: Generating DNS records: $argv{start} - $argv{end}");
-	    $range_dns_plugin->generate_records(prefix=>$argv{name_prefix}, 
-						suffix=>$argv{name_suffix}, 
-						start=>$ipstart, end=>$ipend, 
-						fzone=>$fzone);
-	}
-	
-				  }); # end of transaction
-
-    $logger->info("Ipblock::add_range: Did $argv{status} range: $argv{start} - $argv{end}");
-
-    if ( $argv{parent} ){
-	if ( ref($argv{parent}) ){
-	    return $argv{parent};
+    my %args = (status => $argv{status});
+    $args{used_by}        = $argv{used_by}     if $argv{used_by};
+    $args{description}    = $argv{description} if $argv{description};
+    $args{parent}         = $self->id;
+    $args{no_update_tree} = 1; 
+    $args{validate}       = 0; # Make it faster
+    for ( my($ip) = $ipstart->copy; $ip <= $ipend; $ip++ ){
+	my $decimal = $ip->numeric; # Do not remove.  We need the method value as a scalar
+	if ( my $ipb = Ipblock->search(address=>$decimal, prefix=>$prefix)->first ){
+	    $ipb->update(\%args);
+	    push @newips, $ipb;
 	}else{
-	    return Ipblock->retrieve($argv{parent});
-	}
-    }else{
-	# Build hierarchy and return parent block
-	my $version = $newips[0]->version;
-	$class->build_tree($version);
-	if ( my $parent = $newips[0]->parent ){
-	    my $id = $parent->id;
-	    if ( $id != 0 ){
-		return Ipblock->retrieve($id); 
-	    }
+	    $args{address} = $ip->addr;
+	    push @newips, Ipblock->insert(\%args);
 	}
     }
+    #########################################
+    # Call the plugin that generates DNS records
+    if ( $argv{gen_dns} ){
+	if ( $argv{status} ne 'Dynamic' && $argv{status} ne 'Static' ){
+	    $self->throw_user("DNS records can only be auto-generated for Dynamic or Static IPs");
+	}
+	my $fzone = Zone->retrieve($argv{fzone}) || $self->forward_zone;
+	$logger->info("Ipblock::add_range: Generating DNS records: $argv{start} - $argv{end}");
+	$range_dns_plugin->generate_records(prefix=>$argv{name_prefix}, 
+					    suffix=>$argv{name_suffix}, 
+					    ip_list=>\@newips,
+					    fzone=>$fzone);
+    }
+    
+    $logger->info("Ipblock::add_range: Did $argv{status} range: $argv{start} - $argv{end}");    
+    return \@newips;
 }
-
 
 ################################################################
 =head2 remove_range - Remove a range of addresses
@@ -1208,33 +1178,29 @@ sub add_range{
   Returns:   
     True
   Examples:
-    Ipblock->remove_range(start=>$addr1, end=>addr2);
+    $ipb->remove_range(start=>$addr1, end=>addr2);
 =cut
 sub remove_range{
-    my ($class, %argv) = @_;
-    $class->isa_class_method('remove_range');
+    my ($self, %argv) = @_;
+    $self->isa_object_method('remove_range');
 
-    my $ipstart  = NetAddr::IP->new($argv{start});
-    my $ipend    = NetAddr::IP->new($argv{end});
-    unless ( $ipstart <= $ipend ){
-	$class->throw_user("Invalid range: $argv{start} - $argv{end}");
+    my $ipstart  = NetAddr::IP->new($argv{start}, $self->prefix);
+    my $ipend    = NetAddr::IP->new($argv{end},   $self->prefix);
+    unless ( $ipstart && $ipend && ($ipstart <= $ipend) ){
+	$self->throw_user("Invalid range: $argv{start} - $argv{end}");
     }
-    
-    # We want this to happen atomically (all or nothing)
-    eval {
-	Netdot::Model->do_transaction(sub {
-	    for ( my $i=$ipstart->numeric; $i<=$ipend->numeric; $i++ ){
-		my $ip = NetAddr::IP->new($i);
-		my $ipb = Ipblock->search(address=>$ip)->first;
-		$ipb->delete() if $ipb;
-	    }
-				      });
-    };
-    if ( my $e = $@ ){
-	$class->throw_user($e);
+    my $np = $self->_netaddr();
+    unless ( $ipstart->within($np) && $ipend->within($np) ){
+	$self->throw_user("Start and/or end IPs not within this subnet: ".$self->get_label);
+    }
+    my $prefix  = ($self->version == 4)? 32 : 128;
+    for ( my($ip) = $ipstart->copy; $ip <= $ipend; $ip++ ){
+	my $decimal = $ip->numeric;
+	my $ipb = Ipblock->search(address=>$decimal, prefix=>$prefix)->first;
+	$ipb->delete() if $ipb;
     }
     $logger->info("Ipblock::remove_range: done with $argv{start} - $argv{end}");
-    
+    1;    
 }
 
 ##################################################################
@@ -1484,6 +1450,10 @@ sub update {
 	delete $argv->{validate};
     }
 
+    my $no_update_tree = $argv->{no_update_tree};
+    delete $argv->{no_update_tree};
+    $validate = 0 if $no_update_tree;  # updated tree is a requisite for validation
+
     my $recursive = delete $argv->{recursive};
 
     # We need at least these args before proceeding
@@ -1519,8 +1489,8 @@ sub update {
     $self = $class->retrieve($self->id);
 
     # Only rebuild the tree if address/prefix have changed
-    if ( $self->address ne $bak{address} || $self->prefix ne $bak{prefix} ){
-	$self->_update_tree();
+    if ( !$no_update_tree && ($self->address ne $bak{address} || $self->prefix ne $bak{prefix}) ){
+	$self->_update_tree(old_addr=>$bak{address}, old_prefix=>$bak{prefix});
     }
 
     # Now check for rules
@@ -2223,19 +2193,25 @@ sub shared_network_subnets{
     my $dbh = $self->db_Main();
     
     my $query = 'SELECT  other.id 
-                 FROM    ipblock me, ipblock other, ipblock myaddr, ipblock otheraddr 
-                 WHERE   me.id=? AND myaddr.parent=? AND otheraddr.parent=other.id 
+                 FROM    ipblock me, ipblock other, ipblock myaddr, ipblock otheraddr, 
+                         ipblockstatus otherstatus
+                 WHERE   me.id=? AND myaddr.parent=me.id AND otheraddr.parent=other.id 
                      AND me.version = other.version
+                     AND myaddr.interface IS NOT NULL 
+	             AND myaddr.interface != 0
                      AND myaddr.interface=otheraddr.interface 
-                     AND myaddr.interface IS NOT NULL AND other.id!=me.id';
+                     AND other.id!=me.id
+                     AND other.status=otherstatus.id
+                     AND otherstatus.name=\'Subnet\'
+                GROUP BY other.id';
 
     my $sth = $dbh->prepare_cached($query);
-    $sth->execute($self->id, $self->id);
+    $sth->execute($self->id);
     my $rows = $sth->fetchall_arrayref();
     my @subnets;
     foreach my $row ( @$rows ){
 	my $b = Ipblock->retrieve($row->[0]);
-	push @subnets, $b if $b->status->name eq 'Subnet';
+	push @subnets, $b;
     }
     
     return @subnets if scalar @subnets;
@@ -2251,9 +2227,6 @@ sub shared_network_subnets{
   Arguments: 
     Hash containing the following key/value pairs:
       container       - Container (probably global) Scope
-      shared_nets     - Hashref with:
-                          key = ipblock id
-                          value = hashref with attributes
       attributes      - Optional.  This must be a hashref with:
                           key   = attribute name, 
                           value = attribute value
@@ -2274,52 +2247,56 @@ sub enable_dhcp{
     $self->throw_user("Trying to enable DHCP on a non-subnet block")
 	if ( $self->status->name ne 'Subnet' );
     
-    my $scope;
+    my %args = (container => $argv{container},
+		type      =>'subnet', 
+		ipblock   => $self);
+    $args{attributes} = $argv{attributes};
+    my $scope = DhcpScope->insert(\%args);
 
-    if ( $argv{shared_nets} ){
-	# Create a shared-network scope that will contain the other subnet scopes
-
-	$self->throw_fatal("Ipblock::enable_dhcp: Argument shared_nets must be hashref")
-	    unless ( ref($argv{shared_nets}) eq 'HASH' );
+    if ( my @shared = $self->shared_network_subnets ){
+	# Create or update a shared-network scope
 
 	my %shared_subnets;
-	foreach my $id ( keys %{$argv{shared_nets}} ){
-	    my $s = Ipblock->retrieve($id);
-	    $self->throw_user("Ipblock::enable_dhcp: Shared network ".$s->get_label." is not a Subnet")
-		unless $s->status->name eq 'Subnet';
-	    $shared_subnets{$id} = $s;
-	}
-	# Add this subnet in case it wasn't passed in the list
-	$shared_subnets{$self->id} = $self;
-	my @shared_subnets = values %shared_subnets;
-
-	# Create the shared-network scope
-	my $sn_scope;
-	$sn_scope = DhcpScope->insert({type      => 'shared-network',
-				       subnets   => \@shared_subnets,
-				       container => $argv{container}});
-	$scope = $sn_scope;
+	my %to_delete;
+	my %shared_attributes;
 	
-	# Insert a subnet scope for each member subnet
-	foreach my $s ( @shared_subnets ){
-	    my %args = (container => $sn_scope,
-			type      =>'subnet', 
-			ipblock   => $s);
-	    if ( $s->id == $self->id ){
-		$args{attributes} = $argv{attributes};
-	    }elsif ( my $attrs = $argv{shared_nets}->{$s->id} ){
-		$args{attributes} = $attrs;
+	foreach my $s ( @shared ){
+	    if ( my $o_scope = $s->dhcp_scopes->first ){
+		# We'll only deal with the other subnet if dhcp 
+		# is enabled within the same global scope
+		if ( $o_scope->type->name eq 'subnet' && 
+		     $o_scope->get_global->id == $scope->get_global->id ){
+		    $shared_subnets{$s->id} = $s;
+		    my $o_container = $o_scope->container;
+		    if ( $o_container->type->name eq 'shared-network' ){
+			# This subnet is already within a shared-network scope
+			# We'll try to keep its attributes to add to a new scope
+			# then we'll delete the current shared-network
+			map { $shared_attributes{$_->name->name} = 
+				  $_->value } $o_container->attributes;
+			$to_delete{$o_container->id} = $o_container;
+		    }
+		}
 	    }
-	    $scope = DhcpScope->insert(\%args);
 	}
-    }else{
-	my %args = (container => $argv{container},
-		    type      =>'subnet', 
-		    ipblock   => $self);
-	$args{attributes} = $argv{attributes};
-	$scope = DhcpScope->insert(\%args);
+	if ( my @shared_subnets = values(%shared_subnets) ){
+	    
+	    push @shared_subnets, $self;
+	    
+	    # Create the shared-network scope
+	    my $sn_scope;
+	    $sn_scope = DhcpScope->insert({type       => 'shared-network',
+					   subnets    => \@shared_subnets,
+					   attributes => \%shared_attributes,
+					   container  => $argv{container}});
+	    $scope = $sn_scope;
+	    
+	    # Finally, delete the old shared-networks
+	    foreach my $sn ( values %to_delete ){
+		$sn->delete();
+	    }
+	}
     }
-    
     return $scope;
 }
 
@@ -2906,64 +2883,77 @@ sub _build_tree_mem {
 #     $newblock->_update_tree();
 #
 sub _update_tree{
-    my ($self) = @_;
+    my ($self, %argv) = @_;
     $self->isa_object_method('_update_tree');
     my $class = ref($self);
     my $version = $self->version;
     my $tree = $self->_tree_get();
-    
+
     $logger->debug('Ipblock::_update_tree: Updating tree for '. $self->get_label);
-    
+
     if ( $self->is_address ){
-	
-	# Search the tree.  
-	my $n = $class->_tree_find(address => $self->address_numeric,
-				   prefix  => $self->prefix,
-				   tree    => $tree,
-	    );
-	
-	# Get parent id
-	if ( $n ){
-	    my $parent;
-	    if ( $n->data == $self->id ) {
-		$parent = $n->parent->data if ( $n && $n->parent );
-		$logger->debug("Ipblock::_update_tree: ". $self->get_label ." is in tree");
-	    }else{
-		$parent = $n->data if ( $n->data );
-		$logger->debug("Ipblock::_update_tree: ". $self->get_label ." not in tree");
-	    }
-	    $self->SUPER::update({parent=>$parent}) if $parent;
-	}
+        # Search the tree.  
+        my $n = $class->_tree_find(address => $self->address_numeric,
+                prefix  => $self->prefix,
+                tree    => $tree,
+                );
+
+        # Get parent id
+        if ( $n ){
+            my $parent;
+            if ( $n->data == $self->id ) {
+                $parent = $n->parent->data if ( $n && $n->parent );
+                $logger->debug("Ipblock::_update_tree: ". $self->get_label ." is in tree");
+            }else{
+                $parent = $n->data if ( $n->data );
+                $logger->debug("Ipblock::_update_tree: ". $self->get_label ." not in tree");
+            }
+            $self->SUPER::update({parent=>$parent}) if $parent;
+        }
     }else{
-	# This is a new block (subnet, container, etc)
-	# Insert it in the tree
-	my $n =  $class->_tree_insert(address => $self->address_numeric,
-				      prefix  => $self->prefix, 
-				      data    => $self->id,
-				      tree    => $tree,
-	    );
-	
-	if ( defined $n && $n->parent && $n->parent->data ){
-	    my $parent_id = $n->parent->data;
-	    if ( $parent_id == $self->id ){
-		$logger->debug("Ipblock::_update_tree: mask probably changed. Deleting parent node.");
-		if ( $n->parent->parent ){
-		    $parent_id = $n->parent->parent->data;
-		}else{ 
-		    $parent_id = undef;
-		}
-		$n->parent->delete();
-	    }
-	    
-	    $logger->debug("Ipblock::_update_tree: ". $self->get_label ." within: $parent_id");
-	    my %parents;
-	    $parents{$self->id} = $parent_id;
-	    
-	    # Now, deal with my children and my parent's children
-	    # They could be my children or my siblings, so
-	    # we need to rebuild this section of the tree
-	    
-	    my $dbh = $class->db_Main;
+        # Search by id, and get a list back of matching nodes
+        #  then, iterate through them and delete any where the
+        #  address doesn't match the current address
+        if ($argv{old_addr}) {
+            $logger->debug("Ipblock::_update_tree: deleting old address at " . $argv{old_addr} . "/". $argv{old_prefix});
+            my $n = $class->_tree_find(str_address => $argv{old_addr}, 
+                                       prefix=> $argv{old_prefix},
+                                       tree=> $tree);
+
+            if ($n) {
+                $n->delete();
+            }
+        }
+
+    # This is a new block (subnet, container, etc)
+    # Insert it in the tree
+    my $n = $class->_tree_insert(address => $self->address_numeric,
+            prefix  => $self->prefix, 
+            data    => $self->id,
+            tree    => $tree,
+            );
+
+    if ( defined $n && $n->parent && $n->parent->data ){
+        my $parent_id = $n->parent->data;
+        if ( $parent_id == $self->id ){
+            $logger->debug("Ipblock::_update_tree: mask probably changed. Deleting parent node.");
+            if ( $n->parent->parent ){
+                $parent_id = $n->parent->parent->data;
+            }else{ 
+                $parent_id = undef;
+            }
+            $n->parent->delete();
+        }
+
+        $logger->debug("Ipblock::_update_tree: ". $self->get_label ." within: $parent_id");
+        my %parents;
+        $parents{$self->id} = $parent_id;
+
+# Now, deal with my children and my parent's children
+# They could be my children or my siblings, so
+# we need to rebuild this section of the tree
+
+        my $dbh = $class->db_Main;
 	    my $sth1 = $dbh->prepare_cached("SELECT   id,address,prefix,parent 
                                             FROM     ipblock 
                                             WHERE    parent=?
@@ -3085,11 +3075,14 @@ sub _tree_insert{
 # Find a node in the memory tree
 #
 #   Arguments:
-#     address (numeric)
+#     address (optoinal - numeric)
+#     data (optional - either address or data must be defined)
 #     prefix (optional - defaults to host mask)
 #     tree - Net::IPTrie object
 #   Returns:
 #     Tree node
+#     Or
+#     Arrayref of tree nodes
 #   Examples:
 #    
 #
@@ -3097,16 +3090,49 @@ sub _tree_find{
     my ($class, %argv) = @_;
     $class->isa_class_method('_tree_find');
     $class->throw_fatal("Ipblock::_tree_find: Missing required arguments")
-	unless ( $argv{address} && $argv{tree} );
-
-    my $n;
-    my %args = ( iaddress=>$argv{address} );
-    $args{prefix} = $argv{prefix} if defined $argv{prefix};
+	unless ( (($argv{address} || $argv{str_address}) || $argv{data}) && $argv{tree} );
 
     my $tree = $argv{tree};
-    $n = $tree->find(%args);
+
+    my $n;
+    my $l = ();
+
+    if ($argv{address} || $argv{str_address}) {
+      my %args = ();
+      if ($argv{address}) {
+        $args{iaddress} = $argv{address};
+      } else {
+        $args{address} = $argv{str_address};
+      }
+      $args{prefix} = $argv{prefix} if defined $argv{prefix};
+
+      $n = $tree->find(%args);
+    } elsif ($argv{data}) {
+      # create code to iterate through the tree, and push all nodes
+      #  on to the list we return
+      my $code = sub {
+        my $node = $_[0];
+        if ($argv{data} == $node->data) {
+	  push @$l, $node;
+        }
+      };
+
+      $tree->traverse(code=>$code);
+    }
+
+    # if we dont have data defined, we must have had an address
+    #  so return the single node
+    if (!$argv{data}) {
+      return $n;
+    }
+
+    # if we have $n and data defined, join them
+    if ($n && $argv{data}) {
+      push @$l, $n;
+    }
+
+    return $l;
     
-    return $n;
 }
 
 ##################################################################
@@ -3167,7 +3193,7 @@ sub _tree_get {
 			    " arg: 'version' when called as class method")
 	    unless ($version);
     }
-    
+
     my $tree;
     my $name = 'iptree'.$version;
     my $TTL = $self->config->get('IP_TREE_TTL');

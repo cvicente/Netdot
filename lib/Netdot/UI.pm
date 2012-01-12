@@ -1543,7 +1543,7 @@ sub build_backbone_graph_html {
     
     my $g = $self->build_backbone_graph(%argv);
 
-    return "<img src=\"$img\" usemap=\"#test\" border=\"0\">" . $g->as_cmapx;
+    return "<img alt=\"Backbone Graph\" width=\"100%\" src=\"$img\" usemap=\"#test\" border=\"0\">" . $g->as_cmapx;
 }
 
 ############################################################################
@@ -1590,7 +1590,11 @@ sub build_ip_tree_graph {
 	push @lbls, $ip->get_label;
 	push @lbls, $ip->description if $ip->description;
 	my $lbl = join '\n', @lbls;
-	
+
+	# Graph will not work if description contains non-ascii characters
+	use Encode;
+	$lbl = encode('utf8', $lbl);
+
 	$g->add_node(
 	    name      => $ip->get_label,
 	    label     => $lbl,
@@ -1605,6 +1609,7 @@ sub build_ip_tree_graph {
 	    push @lbls, $parent->get_label;
 	    push @lbls, $parent->description if $parent->description;
 	    my $lbl = join '\n', @lbls;
+           $lbl = encode('utf8', $lbl);
 	    
 	    if ( !$seen{$parent->id} ){
 		$g->add_node(

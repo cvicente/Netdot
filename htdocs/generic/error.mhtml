@@ -13,39 +13,57 @@ $showplainerror => 0
 
 <%init>
 my $caller = $m->caller->name;
+my $err_msg;
+my $trace;
+#
+# Try to customize the error message depending on the nature of the error.
+#
+# Fatal errors could be caused by bugs in the code, or by invalid user input
+# we want to hide the stack trace, but if the user believes it is a bug
+# we want the user to report it to their netdot administrator, who may submit a bug
+# report to us.  This may be either a Netdot Fatal exception or a Mason Exception
+
+if ( ref($error) =~ /Netdot::Util::Exception/ ){
+    if ( $error->isa_netdot_exception('Fatal') ){
+	# Let's separate the error message from the stack trace
+	$trace = $error->trace->as_string;
+    }
+    $err_msg = $error->error;
+}else{
+    $err_msg = $error;
+}
+
 </%init>
 
-% if( $showplainerror ) {
-    <strong><% $caller %></strong> produced the following error:
-% } else {
+% if ( !$showplainerror ) {
     <div id="sectiondetail">
         <div class="container">
             <div class="containerhead">Error</div>
             <div class="containerbody">
 % }
 
-            <p>
-            <strong><% $caller %></strong> produced the following error:
-            <p>
-            <pre><% $error %></pre>
-%#
-%# Try to customize the error message depending on the nature of the error.
-%#
-%# Fatal errors are supposedly caused by bugs in the code, so we want the
-%# user to report it to their netdot administrator, who may submit a bug
-%# report to us.  This may be either a Netdot Fatal exception or a Mason Exception
+<p>
+<strong><% $caller %></strong> produced the following error:
+<p>
+<pre>
 
-% if ( ref($error) =~ /Netdot::Util::Exception/ && $error->isa_netdot_exception('Fatal') ){
-            <p>
-                This looks like a bug. Please copy the message above and send it to 
-                <a href="mailto:<% Netdot->config->get('ADMINEMAIL') %>"><% Netdot->config->get('ADMINEMAIL') %></a>
-            </p>
-% }
-% else{
-            <p>
-		Please <a class="hand" onClick="history.go(-1);">go back</a> and try again.
-            </p>
+<% $err_msg %>
 
+</pre>
+
+% if ( $trace ){
+
+      <p>
+      This may be the result of invalid user input. However, if you believe this is a bug, please <a href="#" onClick="toggleLayer('stacktrace');">click here</a>, then copy the full error message and send it to 
+      <a href="mailto:<% Netdot->config->get('ADMINEMAIL') %>"><% Netdot->config->get('ADMINEMAIL') %></a>
+      </p>
+
+      <div id="stacktrace" style="display:none"><% $trace %></div>
+
+% }else{
+      <p>
+      Please <a class="hand" onClick="history.go(-1);">go back</a> and try again.
+      </p>
 % }
 
 % if( !$showplainerror ) {
