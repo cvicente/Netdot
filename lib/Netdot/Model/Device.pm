@@ -2569,17 +2569,18 @@ sub info_update {
     # Asset
     
     my %asset_args = (
+	product_id    => $self->_assign_product($info),
 	serial_number => $info->{serial_number},
 	physaddr      => $self->_assign_base_mac($info) || undef,
-	product_id    => $self->_assign_product($info)  || undef,
+	reserved_for  => "", # needs to be cleared when device gets installed
 	);
     
     # This is an OR (notice the arrayref)
     my @where;
-    push(@where, { physaddr      => $asset_args{physaddr} }) 
-	if $asset_args{physaddr};
     push(@where, { serial_number => $asset_args{serial_number} }) 
 	if $asset_args{serial_number};
+    push(@where, { physaddr => $asset_args{physaddr} }) 
+	if $asset_args{physaddr};
     my $asset = Asset->search_where(\@where)->first if @where;
     if ( $asset ){
 	# Make sure that the data is complete with the latest info we got
@@ -5126,8 +5127,7 @@ sub _update_stp_info {
 # Arguments
 #   modules hashref from SNMP
 # Returns
-#   Nothing
-#
+#   True
 #
 sub _update_modules {
     my ($self, $modules) = @_;
@@ -5146,6 +5146,8 @@ sub _update_modules {
 	# find or create asset object for given serial number and product
 	if ( my $serial = delete $args{serial_number} ){
 	    if ( my $asset = Asset->find_or_create({serial_number => $serial}) ){
+		# clear reservation comment as soon as hardware gets installed
+		$asset->update({reserved_for=>""}); 
 		$args{asset_id} = $asset->id;
 	    }
 	}
@@ -5168,6 +5170,7 @@ sub _update_modules {
 	$logger->info("$host: Module no longer exists: $number.  Removing.");
 	$module->delete();
     }
+    1;
 }
 
 ##############################################
