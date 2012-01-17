@@ -2046,7 +2046,7 @@ sub delete {
 	$rr->delete() unless $rr->arecords;
     }
     
-    # This trires to avoid deleting an already deleted asset
+    # This tries to avoid deleting an already deleted asset
     # in case one of the modules was pointing to it
     if ( $asset_id && (my $asset = Asset->search(id=>$asset_id)->first) ){
 	$asset->delete();
@@ -2585,14 +2585,8 @@ sub info_update {
     if ( $asset ){
 	# Make sure that the data is complete with the latest info we got
 	$asset->update(\%asset_args);
-    }else{
-	eval {
+    }elsif ( $asset_args{serial_number} || $asset_args{physaddr} ){
 	    $asset = Asset->insert(\%asset_args);
-	};
-	if ( my $e = $@ ){
-	    # Probably not enough asset info. Don't break execution here
-	    $logger->debug(sub{"$host: problem inserting asset: $e" });
-	}
     }
     $devtmp{asset_id} = $asset->id if $asset;
     

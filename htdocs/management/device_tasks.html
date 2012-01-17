@@ -53,35 +53,35 @@ $ARGS{show_tasks} = $show_tasks;
 <%perl>
 
 if ( $device_search ){
-	# Get rid of spaces
-	$device_search =~ s/\s+//g;
-	if ( $device_search =~ /$MAC/ ){
-	    $m->comp('.show_tasks', %ARGS, user=>$user);
-	    $m->comp('/management/mac.html', search=>$device_search, dowindow=>1 );
-	}elsif ( Ipblock->matches_ip($device_search) ){
-	    if ( scalar(@list = Device->search(name=>$device_search)) == 1 ){
-		my $o  = $list[0];
-		my $id = $o->id;
-		$m->comp('/management/device.html', id => $id, user=>$user );
-	    }else{
-		$m->comp('/management/address_tasks.html', submit=>1, search_address=>$device_search, user=>$user, dowindow=>1 );
-	    }
+    # Get rid of spaces
+    $device_search =~ s/\s+//g;
+    if ( $device_search =~ /$MAC/ ){
+	$m->comp('.show_tasks', %ARGS, user=>$user);
+	$m->comp('/management/mac.html', search=>$device_search, dowindow=>1 );
+    }elsif ( Ipblock->matches_ip($device_search) ){
+	if ( scalar(@list = Device->search(name=>$device_search)) == 1 ){
+	    my $o  = $list[0];
+	    my $id = $o->id;
+	    $m->comp('/management/device.html', id => $id, user=>$user );
 	}else{
-	    $m->comp('.show_tasks', %ARGS, user=>$user);
-	    my %args = (name=>$device_search);
-	    $args{zone} = $zone_id if $zone_id;
-	    unless ( (@list = Device->search_like(%args)) ){
-		$m->comp('/generic/no_search_results.html', search=>$device_search);
-	    }
-	    if ( scalar(@list) == 1 ){
-		# Don't offer list.  Just display device
-		my $o  = $list[0];
-		my $id = $o->id;
-		$m->comp('/management/device.html', id => $id, user=>$user );
-	    }else{
-		$m->comp('/generic/show_search_results.mhtml', search=>$device_search, list=>\@list, dowindow=>1 );
-	    }
+	    $m->comp('/management/address_tasks.html', submit=>1, search_address=>$device_search, user=>$user, dowindow=>1 );
 	}
+    }else{
+	$m->comp('.show_tasks', %ARGS, user=>$user);
+	my %args = (name=>$device_search);
+	$args{zone} = $zone_id if $zone_id;
+	unless ( (@list = Device->search_like(%args)) ){
+	    $m->comp('/generic/no_search_results.html', search=>$device_search);
+	}
+	if ( scalar(@list) == 1 ){
+	    # Don't offer list.  Just display device
+	    my $o  = $list[0];
+	    my $id = $o->id;
+	    $m->comp('/management/device.html', id => $id, user=>$user );
+	}else{
+	    $m->comp('/generic/show_search_results.mhtml', search=>$device_search, list=>\@list, dowindow=>1 );
+	}
+    }
 }else{
     $m->comp('.show_tasks', %ARGS, user=>$user);
 }

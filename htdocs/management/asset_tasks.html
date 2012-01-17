@@ -32,12 +32,77 @@ if ( $show_tasks eq "" ) {
 }
 *print_showtaskslink = $m->comp('SELF:.sub_print_showtaskslink'); 
 my $hideheader = 'style="display:none"' if ( !$showheader );
-
 my @list;
+</%init>
 
+<div id="sectiontools" <% $hideheader %>>
+  <div class="container">
+    <div class="containerheadleft">
+        Asset Tasks
+    </div>
+    <div class="containerheadright">
+%   if ( $view eq 'search' ){ 
+	<a href="asset_tasks.html?view=import">[import]</a>
+%   }elsif ( $view eq 'import' ){
+        <a href="asset_tasks.html?view=search">[search]</a>
+%   }
+%       print_showtaskslink($show_tasks);
+    </div>
+    <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
+        <table><tr><td>
+%    if ( $view eq 'import' ){
+          <fieldset class="large">
+            <legend>Bulk Import</legend>
+            <p>This form allows you to import multiple hardware assets. For example, you can use a bar code scanner to scan the information from vendor boxes as you receive your equipment. Create a text file composed of part Number, serial number, and optionally other fields. The part number must match the value from an existing product in Netdot. The order of fields in each line must match the list of fields in the select menu.
+            <p>
+            <form name="asset_entry" method='POST'>
+             <p>
+             <label>Purchase Date:</label>
+             <input type="text" size="10" id="date_purchased" name="date_purchased"> <img src="../img/calendar.gif" onclick="showChooser(this, 'date_purchased', 'chooserSpan', 1990, 2050, 'Y-m-d', false);"/><div id="chooserSpan" class="dateChooser select-free" style="display: none; visibility: hidden; width: 160px;"></div>
+             </p>
+             <p>
+             <label>Fields for import:</label>
+             <select name="import_fields" id="import_fields" multiple>
+               <option value='part_number' SELECTED >Part Number</option>
+               <option value='serial_number' SELECTED >S/N</option>
+%              my @a_cols = qw(physaddr po_number);
+%              foreach my $mc ( @a_cols ){
+%                  my $tag = Asset->meta_data->get_column($mc)->tag;
+                   <option value='<% $mc %>'><% $tag %></option> 
+%              }
+             </select>
+             </p>
+             <p>
+             <label>Comma-separated Data:</label> 
+             <textarea name="asset_rows" rows="7" cols="80"></textarea>
+             </p>
+             <p>
+             <input type="submit" name="submit" class="btn" value="Import">
+             </p>
+            </form>     
+          </fieldset>
+
+%       }elsif ( $view eq 'search' ){
+        <fieldset class="medium">
+             <legend>Search</legend>
+             <form action="asset_tasks.html" method="POST">
+                <p>
+                <label for="Find">Keywords:</label>
+                <input type="text" name="search" class="txt" value="<% $search %>"> 
+                <input name="submit" value="Search" class="btn" type="submit">
+                </p>
+            </form>
+        </fieldset>
+%       }
+        </td></tr></table>
+    </div>
+  </div>
+</div>
+
+
+<%perl>
 if ( $submit ){
     if ( $submit eq 'Import' ){
-
 	$m->comp('/generic/error.mhtml', error=>"Please select fields for import")
 	    unless @import_fields;
 
@@ -119,7 +184,6 @@ if ( $submit ){
 	if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>"$e");
 	}
-	
 	my $msg = '<p>'.scalar(@new_assets).' assets inserted</p>';
 
 	if ( $dups{serial} ){
@@ -158,91 +222,16 @@ if ( $submit ){
 	my @assets = Asset->search_where(\@where);
 	for ( @assets ) { $res->{$_->id} = $_ };
 	@list = values %$res;
+
+	if ( @list ){
+	    $m->comp('/generic/show_search_results.mhtml', search=>$search, list=>\@list, dowindow=>1 );
+	}else{
+	    $m->comp('/generic/no_search_results.html', search=>$search);
+	}
     }
 }
-</%init>
+</%perl>
 
-% if ( $submit && $search ){
-%     if ( @list ){
-	 <div class="container">
-           <div class="containerhead">
-              Query <em><% $search %></em> returned: <% scalar(@list) %> matches
-           </div>
-           <div class="containerbody">
-               <& /generic/sortresults.mhtml, object=>\@list, page=>'view.html', withedit=>0  &>
-          </div>
-       </div>
-%     }else{
-%         $m->comp('/generic/no_search_results.html', search=>$search);
-%     }
-% }
-
-% if ( !$submit ){
-
-<div id="sectiontools" <% $hideheader %>>
-  <div class="container">
-    <div class="containerheadleft">
-        Asset Tasks
-    </div>
-    <div class="containerheadright">
-%   if ( $view eq 'search' ){ 
-	<a href="asset_tasks.html?view=import">[import]</a>
-%   }elsif ( $view eq 'import' ){
-        <a href="asset_tasks.html?view=search">[search]</a>
-%   }
-%       print_showtaskslink($show_tasks);
-    </div>
-    <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
-        <table><tr><td>
-%    if ( $view eq 'import' ){
-          <fieldset class="large">
-            <legend>Bulk Import</legend>
-            <p>This form allows you to import multiple hardware assets. For example, you can use a bar code scanner to scan the information from vendor boxes as you receive your equipment. Create a text file composed of part Number, serial number, and optionally other fields. The part number must match the value from an existing product in Netdot. The order of fields in each line must match the list of fields in the select menu.
-            <p>
-            <form name="asset_entry" method='POST'>
-             <p>
-             <label>Purchase Date:</label>
-             <input type="text" size="10" id="date_purchased" name="date_purchased"> <img src="../img/calendar.gif" onclick="showChooser(this, 'date_purchased', 'chooserSpan', 1990, 2050, 'Y-m-d', false);"/><div id="chooserSpan" class="dateChooser select-free" style="display: none; visibility: hidden; width: 160px;"></div>
-             </p>
-             <p>
-             <label>Fields for import:</label>
-             <select name="import_fields" id="import_fields" multiple>
-               <option value='part_number' SELECTED >Part Number</option>
-               <option value='serial_number' SELECTED >S/N</option>
-%              my @a_cols = qw(physaddr po_number);
-%              foreach my $mc ( @a_cols ){
-%                  my $tag = Asset->meta_data->get_column($mc)->tag;
-                   <option value='<% $mc %>'><% $tag %></option> 
-%              }
-             </select>
-             </p>
-             <p>
-             <label>Comma-separated Data:</label> 
-             <textarea name="asset_rows" rows="7" cols="80"></textarea>
-             </p>
-             <p>
-             <input type="submit" name="submit" class="btn" value="Import">
-             </p>
-            </form>     
-          </fieldset>
-
-%       }elsif ( $view eq 'search' ){
-        <fieldset class="medium">
-             <legend>Search</legend>
-             <form action="asset_tasks.html" method="POST">
-                <p>
-                <label for="Find">Keywords:</label>
-                <input type="text" name="search" class="txt" value="<% $search %>"> 
-                <input name="submit" value="Search" class="btn" type="submit">
-                </p>
-            </form>
-        </fieldset>
-%       }
-        </td></tr></table>
-    </div>
-  </div>
-</div>
-% } #else
 
 <%def .show_message>
 <%args>
@@ -258,3 +247,4 @@ $msg   => undef
     </div>
 </div>
 </%def>
+
