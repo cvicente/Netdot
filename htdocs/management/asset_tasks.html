@@ -145,11 +145,19 @@ if ( $submit ){
     }elsif ( $submit eq 'Search' ){
 	$m->comp('/generic/no_search_criteria.html')
 	    unless $search;
-	my %assets;
-	map { $assets{$_->id} = $_ } Asset->search_like(serial_number=>$search);
-	map { $assets{$_->id} = $_ } Asset->search_like(custom_serial=>$search);
-	map { $assets{$_->id} = $_ } Asset->search_like(inventory_number=>$search);
-	@list = values %assets;
+
+	# Search for labels in Asset table and foreign objects recursively
+	my $res = $ui->select_query(table=>'Asset', terms=>[$search]);
+
+	# Search for other fields in Asset table
+	my @where;
+	foreach my $field ( qw/custom_serial inventory_number reserved_for 
+                               description info po_number maint_contract/ ){
+	    push @where, { $field => { '-like' => '%'.$search.'%' } };
+	}
+	my @assets = Asset->search_where(\@where);
+	for ( @assets ) { $res->{$_->id} = $_ };
+	@list = values %$res;
     }
 }
 </%init>
@@ -223,7 +231,7 @@ if ( $submit ){
              <legend>Search</legend>
              <form action="asset_tasks.html" method="POST">
                 <p>
-                <label for="Find">Serial/Inventory:</label>
+                <label for="Find">Keywords:</label>
                 <input type="text" name="search" class="txt" value="<% $search %>"> 
                 <input name="submit" value="Search" class="btn" type="submit">
                 </p>
