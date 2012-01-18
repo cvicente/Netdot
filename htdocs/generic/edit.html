@@ -107,23 +107,23 @@ if ( $table ){
 
     # Special cases
     if ( $table =~ /Picture/ ){
-	    if ( $args{upload} ){
-	        eval {
-		    use Apache2::Upload;
-		    my $bindata;
-		    my $upload      = $r->upload("upload");
-		    my $upload_fh   = $upload->fh;
-		    my $size        = $upload->slurp($bindata);
-		    $args{bindata}  = $bindata;
-		    $args{filename} = $args{filename} || $upload->filename;
-		    delete $args{upload};
-		    delete $args{filetype} unless $args{filetype};
-	        };
-	        if ( my $e = $@ ){
-		    $m->comp('error.mhtml', error=>$e);
-	        }
+	if ( $args{upload} ){
+	    eval {
+		use Apache2::Upload;
+		my $bindata;
+		my $upload      = $r->upload("upload");
+		my $upload_fh   = $upload->fh;
+		my $size        = $upload->slurp($bindata);
+		$args{bindata}  = $bindata;
+		$args{filename} = $args{filename} || $upload->filename;
+		delete $args{upload};
+		delete $args{filetype} unless $args{filetype};
+	    };
+	    if ( my $e = $@ ){
+		$m->comp('error.mhtml', error=>$e);
 	    }
-	    delete $args{upload}; # It's a fake column
+	}
+	delete $args{upload}; # It's a fake column
     }
 
     if ( $id ){
@@ -133,6 +133,7 @@ if ( $table ){
 	}
 	
 	if ( $submit eq "Update" ){
+	    $ui->localize_newlines($table, \%args);
 	    my $new_digest = $obj->get_digest();
 	    eval {
 		Netdot::Model->do_transaction( sub{
@@ -147,40 +148,40 @@ if ( $table ){
 	    }
 	    
 	    $m->comp($page, table=>$table, id=>$id, dowindow=>$dowindow );
-        
+	    
         }else{
             $m->comp('.show_form', table=>$table, id=>$id, view=>$view,
-                 showheader=>$showheader, select_id=>$select_id, selected=>$selected, dowindow=>$dowindow );
+		     showheader=>$showheader, select_id=>$select_id, selected=>$selected, dowindow=>$dowindow );
         }
-    }
-    else{
-	    if ( $submit eq "Insert" ){
-	        my $new;
-	        eval{
-		        $new = $table->insert(\%args);
-	        };
-	        if ( my $e = $@ ){
-		        $m->comp('error.mhtml', error=>$e);
-	        }
-	        if ( $dowindow ){
-		        $m->comp('.show_inserted', table=>$table, id=>$new->id,
-			        showheader=>$showheader, select_id=>$select_id, selected=>$selected, dowindow=>$dowindow );
-	        }
+    }else{
+	if ( $submit eq "Insert" ){
+	    $ui->localize_newlines($table, \%args);
+	    my $new;
+	    eval{
+		$new = $table->insert(\%args);
+	    };
+	    if ( my $e = $@ ){
+		$m->comp('error.mhtml', error=>$e);
+	    }
+	    if ( $dowindow ){
+		$m->comp('.show_inserted', table=>$table, id=>$new->id,
+			 showheader=>$showheader, select_id=>$select_id, selected=>$selected, dowindow=>$dowindow );
+	    }
             else{
-		        $m->comp($page, table=>$table, id=>$new->id, dowindow=>$dowindow );
-	        }
+		$m->comp($page, table=>$table, id=>$new->id, dowindow=>$dowindow );
+	    }
 
-	    }
+	}
         else{
-	        $m->comp('.show_form', table=>$table, 
-		         showheader=>$showheader, select_id=>$select_id, selected=>$selected, dowindow=>$dowindow, args=>\%args);
-	    }
+	    $m->comp('.show_form', table=>$table, 
+		     showheader=>$showheader, select_id=>$select_id, selected=>$selected, dowindow=>$dowindow, args=>\%args);
+	}
     }
     
-}
-else{
+}else{
     $m->comp('table.mhtml', width=>2, link=>"edit.html", title => "Please select an object to create:");
 }
+
 
 </%init>
 
