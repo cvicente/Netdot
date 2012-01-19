@@ -365,7 +365,7 @@ sub get_dp_links {
     my $dbh = Netdot::Model->db_Main;
     my $results;
 
-    my $sql = "SELECT device, id, dp_remote_ip, dp_remote_id, dp_remote_port FROM interface WHERE (dp_remote_ip IS NOT NULL OR dp_remote_id IS NOT NULL) AND dp_remote_port IS NOT NULL AND (dp_remote_ip != \"\" OR dp_remote_id != \"\") AND dp_remote_port != \"\"".$sql_query_modifier;
+    my $sql = "SELECT device, id, dp_remote_ip, dp_remote_id, dp_remote_port FROM interface WHERE (dp_remote_ip IS NOT NULL OR dp_remote_id IS NOT NULL) AND dp_remote_port IS NOT NULL AND (dp_remote_ip != '' OR dp_remote_id != '') AND dp_remote_port != ''".$sql_query_modifier;
 
     my $sth = $dbh->prepare($sql);
 
