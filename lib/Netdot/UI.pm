@@ -222,7 +222,9 @@ sub form_to_db{
 	    # Do a regex to allow sending many NEW groups for the same table
 	    if ( $id =~ /NEW/i ){
 		my $newid;
-		$newid = $table->insert(\%{ $objs{$table}{$id} });
+		my $args = \%{ $objs{$table}{$id} };
+		$self->localize_newlines($table, $args);
+		$newid = $table->insert($args);
 		$ret{$table}{id}{$newid}{action} = "INSERTED";
 		$act = 1;
 	    }else{
@@ -246,9 +248,11 @@ sub form_to_db{
 		# Now update this object
 		if ( ! $act ) {
 		    if ( my $o = $table->retrieve($id) ){
-			$o->update(\%{ $objs{$table}{$id} });
+			my $args = \%{ $objs{$table}{$id} };
+			$self->localize_newlines($table, $args);
+			$o->update($args);
 			$ret{$table}{id}{$id}{action}  = "UPDATED";
-			$ret{$table}{id}{$id}{columns} = \%{ $objs{$table}{$id} };
+			$ret{$table}{id}{$id}{columns} = $args;
 		    }
 		}
 	    }
@@ -1965,7 +1969,7 @@ sub build_device_stp_graph {
 	#add 'from' device to graph
 	if ( !exists $seen->{'NODE'}{$from_dev->id} && defined($from_stp_inst) ) {
 	    my $from_label = $from_dev->short_name
-	 	             . "|Mac:\\ ".$from_dev->physaddr->address
+	 	             . "|Mac:\\ ".$from_dev->asset_id->physaddr->address
 	                     . "|Priority:\\ ".$from_stp_inst->bridge_priority
 	                     . "|<port".$links{$key}."> Int:\\ ".$from_int->name;
 	    $seen->{'NODE'}{$from_dev->id} = $from_label;
@@ -1976,7 +1980,7 @@ sub build_device_stp_graph {
 	#add 'to' device to graph
 	if ( !exists $seen->{'NODE'}{$to_dev->id} ) {
 	    my $to_label = $to_dev->short_name
-   		           . "|Mac:\\ ".$to_dev->physaddr->address
+   		           . "|Mac:\\ ".$to_dev->asset_id->physaddr->address
 		           . "|Priority:\\ ".$to_stp_inst->bridge_priority
 	                   . "|<port".$key."> Int:\\ ".$to_int->name;
 	    $seen->{'NODE'}{$to_dev->id} = $to_label;
@@ -2338,6 +2342,25 @@ sub url_decode {
     return $url;
 }
 
+############################################################################
+=head2 localize_newlines - On text input, convert CRLF and CR into just LF
+
+  Arguments: table, args hashref
+  Returns: True
+  Examples: $ui->localize_newlines($table,\%args);
+
+=cut
+sub localize_newlines {
+    my($self, $table, $args) = @_;
+    foreach my $c ( keys %$args ){
+	my $type = $table->meta_data->get_column($c)->sql_type;
+	if ( $type eq 'blob' || $type eq 'text' ){
+	    $args->{$c} =~ s/\r\n/\n/g;
+	    $args->{$c} =~ s/\r/\n/g;
+	}
+    }
+    1;
+}
 
 =head1 AUTHORS
 

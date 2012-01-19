@@ -12,9 +12,8 @@ section => "Management"
 $user               => $ui->get_current_user($r)
 $submit             => undef
 $date_purchased     => undef
-$maint_contract     => undef
-$product            => undef
-$serial_numbers     => undef
+@import_fields      => undef
+$asset_rows         => undef
 $view               => 'search'
 $show_tasks         => undef
 $showheader         => 1
@@ -33,90 +32,8 @@ if ( $show_tasks eq "" ) {
 }
 *print_showtaskslink = $m->comp('SELF:.sub_print_showtaskslink'); 
 my $hideheader = 'style="display:none"' if ( !$showheader );
-
-my %a_serial;
-map { $a_serial{$_->serial_number} = 1 } Asset->retrieve_all();
-
 my @list;
-
-if ( $submit ){
-    if ( $submit eq 'Import' ){
-
-	$m->comp('/generic/error.mhtml', error=>"Please provide a list of serial numbers")
-	    unless $serial_numbers;
-	
-	$m->comp('/generic/error.mhtml', error=>"Please select a product")
-	    unless $product;
-
-	my @s_numbers = split(/[\n\r]+/, $serial_numbers);
-
-	# Deal with duplicate or existing serial numbers
-	my %tmp;
-	my %dups;
-	foreach my $s ( @s_numbers ){
-	    next if $s eq "";
-	    # Remove leading and trailing spaces
-	    $s = $ui->rem_lt_sp($s);
-	    if ( exists $tmp{$s} || exists $a_serial{$s} ){
-		$dups{$s} = 1;
-	    }else{
-		$tmp{$s} = 1;
-	    }
-	}
-	
-	# Arguments for insert
-	my %args = (product_id=>$product);
-	# These are optional
-	$args{date_purchased} = $date_purchased if defined $date_purchased;
-	$args{maint_contract} = $maint_contract if defined $maint_contract;
-
-	# Insert new assets
-	my $count = 0;
-	eval { 
-	    foreach my $s ( keys %tmp ){
-		$args{serial_number} = $s;
-		Asset->insert(\%args);
-		$count++;
-	    }
-	};
-	if ( my $e = $@ ){
-	    $m->comp('/generic/error.mhtml', error=>"Problem inserting assets: $e");
-	}
-
-	my $msg = "<p>$count assets inserted</p>";
-	if ( %dups ){
-	    $msg .= "<p>Note: The following serial numbers were duplicated or already existed in the DB: <br>";
-	    $msg .=  join (' ', keys %dups);
-	    $msg .= "</p>";
-	}
-	$m->comp('.show_message', title=>"Action Message", msg=>$msg);
-
-    }elsif ( $submit eq 'Search' ){
-	$m->comp('/generic/no_search_criteria.html')
-	    unless $search;
-	my %assets;
-	map { $assets{$_->id} = $_ } Asset->search_like(serial_number=>$search);
-	map { $assets{$_->id} = $_ } Asset->search_like(custom_serial=>$search);
-	map { $assets{$_->id} = $_ } Asset->search_like(inventory_number=>$search);
-	@list = values %assets;
-    }
-}
 </%init>
-
-% if ( $submit && $search ){
-%     if ( @list ){
-	 <div class="container">
-           <div class="containerhead">
-              Query <em><% $search %></em> returned: <% scalar(@list) %> matches
-           </div>
-           <div class="containerbody">
-               <& /generic/sortresults.mhtml, object=>\@list, page=>'view.html', withedit=>0  &>
-          </div>
-       </div>
-%     }else{
-%         $m->comp('/generic/no_search_results.html', search=>$search);
-%     }
-% }else{
 
 <div id="sectiontools" <% $hideheader %>>
   <div class="container">
@@ -135,49 +52,42 @@ if ( $submit ){
         <table><tr><td>
 %    if ( $view eq 'import' ){
           <fieldset class="large">
-            <legend>Import Bulk</legend>
+            <legend>Bulk Import</legend>
+            <p>This form allows you to import multiple hardware assets. For example, you can use a bar code scanner to scan the information from vendor boxes as you receive your equipment. Create a text file composed of part Number, serial number, and optionally other fields. The part number must match the value from an existing product in Netdot. The order of fields in each line must match the list of fields in the select menu.
+            <p>
             <form name="asset_entry" method='POST'>
              <p>
              <label>Purchase Date:</label>
              <input type="text" size="10" id="date_purchased" name="date_purchased"> <img src="../img/calendar.gif" onclick="showChooser(this, 'date_purchased', 'chooserSpan', 1990, 2050, 'Y-m-d', false);"/><div id="chooserSpan" class="dateChooser select-free" style="display: none; visibility: hidden; width: 160px;"></div>
              </p>
              <p>
-             <label>Maintenance Contract Number (optional):</label>
-             <select name="maint_contract" id="maint_contract">
-               <option value="">Select Contract</option>
-%              my @contracts = MaintContract->retrieve_all();
-%              foreach my $mc ( sort { $a->number <=> $b->number } @contracts ){
-                   <option value='<% $mc->id %>'><% $mc->get_label %></option>	
+             <label>Fields for import:</label>
+             <select name="import_fields" id="import_fields" multiple>
+               <option value='part_number' SELECTED >Part Number</option>
+               <option value='serial_number' SELECTED >S/N</option>
+%              my @a_cols = qw(physaddr po_number);
+%              foreach my $mc ( @a_cols ){
+%                  my $tag = Asset->meta_data->get_column($mc)->tag;
+                   <option value='<% $mc %>'><% $tag %></option> 
 %              }
              </select>
-             <a href="#" onClick="openinsertwindow('table=MaintContract&select_id=maint_contract&selected=1&dowindow=1')">[new]</a>
              </p>
              <p>
-             <label>Product:</label>
-             <select name="product" id="product">
-               <option value="">Select product</option>
-%              my @products  = Product->retrieve_all();
-%              foreach my $prod ( sort { $a->name cmp $b->name } @products ){
-                   <option value='<% $prod->id %>'><% $prod->get_label %></option>	
-%              }
-             </select>
-             <a href="#" onClick="openinsertwindow('table=Product&select_id=product&selected=1&dowindow=1')">[new]</a>
-             </p>
-             <p>
-             <label>Serial Numbers (one per line):</label> 
-             <textarea name="serial_numbers" rows="7" cols="60"></textarea>
+             <label>Comma-separated Data:</label> 
+             <textarea name="asset_rows" rows="7" cols="80"></textarea>
              </p>
              <p>
              <input type="submit" name="submit" class="btn" value="Import">
              </p>
             </form>     
           </fieldset>
+
 %       }elsif ( $view eq 'search' ){
         <fieldset class="medium">
              <legend>Search</legend>
              <form action="asset_tasks.html" method="POST">
                 <p>
-                <label for="Find">Serial/Inventory:</label>
+                <label for="Find">Keywords:</label>
                 <input type="text" name="search" class="txt" value="<% $search %>"> 
                 <input name="submit" value="Search" class="btn" type="submit">
                 </p>
@@ -188,7 +98,140 @@ if ( $submit ){
     </div>
   </div>
 </div>
-% } #else
+
+
+<%perl>
+if ( $submit ){
+    if ( $submit eq 'Import' ){
+	$m->comp('/generic/error.mhtml', error=>"Please select fields for import")
+	    unless @import_fields;
+
+	$m->comp('/generic/error.mhtml', 
+		 error=>"Please provide a comma-separated list of asset data")
+	    unless $asset_rows;
+	
+	my @rows = split(/[\n\r]+/, $asset_rows);
+
+	# Cache products by part number
+	my %products;
+
+	# for dup detection
+	my %assets; 
+	for ( Asset->retrieve_all() ){ $assets{$_->serial_number}  = 1 }
+	my %macs;
+	for ( PhysAddr->retrieve_all() ){ $macs{$_->address}  = 1 }
+	my %dups;
+
+	my @new_assets;
+	eval {
+	    Netdot::Model->do_transaction(sub{ 
+		foreach my $line ( @rows ){
+		    next if $line eq "";
+		    # Remove leading and trailing spaces
+		    $line = $ui->rem_lt_sp($line);
+		    my @data = split /,/, $line;
+		    if ( scalar(@import_fields) != scalar(@data) ){
+			Netdot->throw_user("Number of import fields does not match number of data columns");
+		    }
+		    my %d; my $i = 0;
+		    for ( @import_fields ){ $d{$_} = $data[$i]; $i++; }
+		    
+		    unless ( $d{serial_number} && $d{part_number} ){
+			Netdot->throw_user("Part Number and S/N are required");
+		    }
+		    
+		    # Check for dups
+		    if ( exists($assets{$d{serial_number}}) ){
+			$dups{serial}{$d{serial_number}} = 1;
+			next;
+		    }
+		    $assets{$d{serial_number}} = 1;
+
+		    # fill up data for insert
+		    my %args;
+
+		    # MAC
+		    if ( $d{physaddr} ){
+			my $mac = PhysAddr->validate($d{physaddr});
+			Netdot->throw_user("Invalid MAC: $d{physaddr}")
+			    unless $mac;
+			if ( exists($macs{$mac}) ){
+			    $dups{macs}{$mac} = 1;
+			    next;
+			}
+			$macs{$mac} = 1;
+			$args{physaddr} = PhysAddr->insert({address=>$mac})->id;
+		    }
+		    
+		    $args{date_purchased} = $date_purchased if $date_purchased;
+		    $args{serial_number}  = $d{serial_number};
+
+		    # Product
+		    my $product_id;
+		    unless ( $product_id = $products{$d{part_number}} ){
+			my $product = Product->search(part_number=>$d{part_number})->first ||
+			    Netdot->throw_user("Product with part number $d{part_number} not found in DB");
+			$products{$d{part_number}} = $product->id;
+			$product_id = $product->id;
+		    }
+		    $args{product_id} = $product_id;
+
+		    $args{po_number} = $d{po_number} if $d{po_number};
+		    push @new_assets, Asset->insert(\%args);
+		}
+					  });
+	};
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>"$e");
+	}
+	my $msg = '<p>'.scalar(@new_assets).' assets inserted</p>';
+
+	if ( $dups{serial} ){
+	    $msg .= "<p>Note: The following serial numbers were duplicated or already existed in the DB: <br>";
+	    $msg .=  join (' ', keys %{$dups{serial}});
+	    $msg .= "</p>";
+	}
+	if ( $dups{macs} ){
+	    $msg .= "<p>Note: The following MAC addresses were duplicated or already existed in the DB: <br>";
+	    $msg .=  join (' ', keys %{$dups{macs}});
+	    $msg .= "</p>";
+	}
+	$m->comp('.show_message', title=>"Action Message", msg=>$msg);
+
+	print '<div class="containerhead"><b>New Assets</b></div>';
+	print '<div class="containerbody">';
+	$m->comp('/generic/sortresults.mhtml', object=>\@new_assets);
+	print '</div>';
+	print '</div>';
+	print '</div>';
+	
+
+    }elsif ( $submit eq 'Search' ){
+	$m->comp('/generic/no_search_criteria.html')
+	    unless $search;
+
+	# Search for labels in Asset table and foreign objects recursively
+	my $res = $ui->select_query(table=>'Asset', terms=>[$search]);
+
+	# Search for other fields in Asset table
+	my @where;
+	foreach my $field ( qw/custom_serial inventory_number reserved_for 
+                               description info po_number maint_contract/ ){
+	    push @where, { $field => { '-like' => '%'.$search.'%' } };
+	}
+	my @assets = Asset->search_where(\@where);
+	for ( @assets ) { $res->{$_->id} = $_ };
+	@list = values %$res;
+
+	if ( @list ){
+	    $m->comp('/generic/show_search_results.mhtml', search=>$search, list=>\@list, dowindow=>1 );
+	}else{
+	    $m->comp('/generic/no_search_results.html', search=>$search);
+	}
+    }
+}
+</%perl>
+
 
 <%def .show_message>
 <%args>
@@ -204,3 +247,4 @@ $msg   => undef
     </div>
 </div>
 </%def>
+

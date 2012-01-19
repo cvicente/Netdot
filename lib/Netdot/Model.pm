@@ -548,13 +548,11 @@ sub raw_sql {
     	    $st = $dbh->prepare_cached( $sql );
     	    $st->execute();
     	};
-    	if ( $@ ){
+    	if ( my $e = $@ ){
             # parse out SQL error message from the entire error
-            my ($errormsg) = $@ =~ m{execute[ ]failed:[ ](.*)[ ]at[ ]/};
-    	    $self->throw_user("SQL Error: $errormsg");
-    	    return;
+            $e =~ s/execute failed:(.*)\"] at/$1/io;
+    	    $self->throw_user("SQL Error: $e");
     	}
-
         $result{headers} = $st->{"NAME_lc"};
         $result{rows}    = $st->fetchall_arrayref;
 
@@ -563,9 +561,8 @@ sub raw_sql {
     	eval {
     	    $rows = $dbh->do( $sql );
     	};
-    	if ( $@ ){
-    	    $self->throw_fatal("raw_sql Error: $@");
-    	    return;
+    	if ( my $e = $@ ){
+    	    $self->throw_fatal("raw_sql Error: $e");
     	}
     	$rows = 0 if ( $rows eq "0E0" );  # See DBI's documentation for 'do'
 

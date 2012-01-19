@@ -364,23 +364,39 @@ my (@field_headers, @cell_data);
 $ui->add_to_fields(o=>$o, edit=>$editgen, fields=>['name', 'aliases'], field_headers=>\@field_headers, 
 		   cell_data=>\@cell_data, linkpages=>['host.html', '']);
 
-# The type field is special because it does not belong to the Device table, but to the
-# Product table
-push( @field_headers, $ui->col_descr_link('Product', 'type', 'Type:') );
-push( @cell_data, 
-      &{sub{	
-	  if (($o->product) && ($o->product->type)){	 
-      '<a href="view.html?table=Product&id='.$o->product->id.'">'.$o->product->type->name."</a>";
-	  }
-      }}
-);
+$ui->add_to_fields(o=>$o, edit=>$editgen, 
+		   fields=>['asset_id',], 
+		   linkpages=>['view.html'],
+		   field_headers=>\@field_headers, cell_data=>\@cell_data);
+
+if ( my $asset = $o->asset_id ){
+    push( @field_headers, $ui->col_descr_link('Product', 'type', 'Type:') );
+    push( @cell_data, 
+	  &{sub{	
+	      if ( my $pr = $asset->product_id ){
+		  '<a href="view.html?table=ProductType&id='.$pr->type->id.'">'.$pr->type->name."</a>";
+	      }
+	    }}
+	);
+    push( @field_headers, $ui->col_descr_link('Asset', 'physaddr', 'Base MAC:') );
+    push( @cell_data, 
+	  &{sub{	
+	      if ( my $phy = $asset->physaddr ){
+		  '<a href="view.html?table=PhysAddr&id='.$phy->id.'">'.$phy->address."</a>";
+	      }
+	    }}
+	);
+    push( @field_headers, $ui->col_descr_link('Asset', 'custom_serial', 'Custom S/N:') );
+    push( @cell_data, $asset->custom_serial);
+
+    push( @field_headers, $ui->col_descr_link('Asset', 'inventory_number', 'Inventory:') );
+    push( @cell_data, $asset->inventory_number);
+}
 
 $ui->add_to_fields(o=>$o, edit=>$editgen, 
-		   fields=>['physaddr', 'os', 'product'], 
+		   fields=>['os'], 
 		   field_headers=>\@field_headers, cell_data=>\@cell_data, 
-		   linkpages=>['mac.html', '', 'view.html']
     );
-
 my $os_used = pop @cell_data;
 my $latest_os = $o->product->latest_os if $o->product;
 if ( !$editgen && $latest_os && ($os_used ne $latest_os) ){
@@ -390,10 +406,9 @@ if ( !$editgen && $latest_os && ($os_used ne $latest_os) ){
 }
 
 $ui->add_to_fields(o=>$o, edit=>$editgen, 
-		   fields=>['asset_id', 'extension'], 
-		   linkpages=>['view.html', ''],
-		   field_headers=>\@field_headers, cell_data=>\@cell_data);
-
+		   fields=>['extension'], 
+		   field_headers=>\@field_headers, cell_data=>\@cell_data, 
+    );
 
 </%perl>
 
@@ -1272,15 +1287,18 @@ if ( $ipeers ){
 %     my (@field_headers, @cell_data);
 
 %     # General info
-%     my @fields = ('physaddr', 'stp_enabled', 'stp_type');
-%     my @linkpages = ('mac.html', '', '' );
-%
+%     if ( my $asset = $o->asset_id ){
+%         $ui->add_to_fields(o=>$asset, edit=>0, fields=>['physaddr'], 
+%                            field_headers=>\@field_headers, cell_data=>\@cell_data, 
+%                            linkpages=>['mac.html']);
+%     }
+%     my @fields = ('stp_enabled', 'stp_type');
 %     if ( $o->stp_type eq 'mst' ){
 %         # MST info
 %         push @fields, ('stp_mst_region', 'stp_mst_rev', 'stp_mst_digest');
 %     }
 %     $ui->add_to_fields(o=>$o, edit=>0, fields=>\@fields, field_headers=>\@field_headers, 
-%    	 	         cell_data=>\@cell_data, linkpages=>\@linkpages);
+%    	 	         cell_data=>\@cell_data);
 
 <div class="container">
    <div class="containerheadleft">Spanning Tree Info</div>

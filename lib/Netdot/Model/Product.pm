@@ -38,6 +38,7 @@ Netdot::Model::Product - Netdot Device Product Class
      sysobjectid   - (required) The value of SNMP's SysObjectID
      type          - Can be a ProductType object, id or name
      manufacturer  - An entity
+     part_number   - Manufacturer's part number
      hostname      - (optional) for guessing product type based on device name
   Returns:    
     Product object or undef if error
@@ -52,8 +53,8 @@ sub find_or_create {
 
     my %argv = ref $_[0] eq "HASH" ? %{$_[0]} : @_;
 
-    my ($name, $description, $sysobjectid, $type, $manufacturer, $hostname) 
-	= @argv{"name", "description", "sysobjectid", "type", "manufacturer", "hostname"};
+    my ($name, $description, $sysobjectid, $type, $manufacturer, $part_number, $hostname) 
+	= @argv{"name", "description", "sysobjectid", "type", "manufacturer", "part_number", "hostname"};
  
     $class->throw_fatal("Model::Product::find_or_create: Missing required arguments")
 	unless defined( $sysobjectid || $name );
@@ -158,6 +159,7 @@ sub find_or_create {
 					   sysobjectid  => $sysobjectid,
 					   type         => $ptype,
 					   manufacturer => $ent,
+					   part_number  => $part_number,
 					 });
 	
 	$logger->info(sprintf("Inserted new product: %s", $newproduct->name));
@@ -169,8 +171,9 @@ sub find_or_create {
 # Get lists of products, counting the number of devices
 __PACKAGE__->set_sql(by_type => qq{
         SELECT p.name, p.id, COUNT(d.id) AS numdevs
-        FROM   device d, product p, producttype t
-        WHERE  d.product = p.id 
+        FROM   device d, product p, producttype t, asset a
+        WHERE  a.product_id = p.id 
+           AND d.asset_id = a.id
            AND p.type = t.id 
            AND t.id = ?
         GROUP BY p.name, p.id
@@ -181,8 +184,9 @@ __PACKAGE__->set_sql(by_type => qq{
 # Get lists of products, counting the number of devices that are monitored
 __PACKAGE__->set_sql(monitored_by_type => qq{
         SELECT p.name, p.id, COUNT(d.id) AS numdevs
-        FROM   device d, product p, producttype t
-	WHERE  d.product = p.id 
+        FROM   device d, product p, producttype t, asset a
+	WHERE  a.product_id = p.id
+           AND d.asset_id = a.id 
            AND p.type = t.id 
            AND d.monitored='1'
            AND t.id = ?
@@ -190,9 +194,39 @@ __PACKAGE__->set_sql(monitored_by_type => qq{
         ORDER BY numdevs DESC
     });
 
+
+############################################################################
+# Get product given Device id
+__PACKAGE__->set_sql(by_device => qq{
+   SELECT  p.id, p.name, p.type, p.description, p.manufacturer, p.latest_os
+     FROM  device d, asset a, product p
+    WHERE  d.asset_id = a.id
+      AND  a.product_id = p.id
+      AND  d.id = ?
+   });
+
 =head1 INSTANCE METHODS
 
 =cut
+
+############################################################################
+=head2 get_label - Overrides label method
+   
+  Arguments:
+    None
+  Returns:
+    Slightly prettier label
+  Examples:
+   print $product->get_label(), "\n";
+
+=cut
+
+sub get_label {
+    my $self = shift;
+    $self->isa_object_method('get_label');
+    my @fields = ($self->manufacturer->get_label, $self->name);
+    return join(" ", @fields);
+}
 
 =head1 AUTHOR
 

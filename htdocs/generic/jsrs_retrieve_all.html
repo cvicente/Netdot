@@ -41,7 +41,7 @@ sub retrieve_all {
     my ( $table, $form_field ) = @_;
     my $response = $form_field."&";
     my $MAX   = $ui->config->get('DEFAULT_SELECTMAX');
-    $response .= "0=-- Select --&";
+    $response .= "null=-- Select --&";
 
     if ( $table eq 'Ipblock' ){
 	my $dbh = Netdot::Model->db_Main();
@@ -60,11 +60,11 @@ sub retrieve_all {
 		    $response .= $id."=".$ui->url_encode($lbl)."&";
 	        }
             }else{
-                $response .= "0=".$ui->url_encode("More than ".$MAX." matches.")."&";
-                $response .= "0=".$ui->url_encode("Refine search."); 
+                $response .= "null=".$ui->url_encode("More than ".$MAX." matches.")."&";
+                $response .= "null=".$ui->url_encode("Refine search."); 
             }
 	}else{
-	    $response .= "0=".$ui->url_encode("No matches");
+	    $response .= "null=".$ui->url_encode("No matches");
 	}
     }else{
 	my @rows = $table->retrieve_all();
@@ -78,11 +78,11 @@ sub retrieve_all {
 		    $response .= $o->id."=".$ui->url_encode($lbl)."&";
 	        }
             }else{
-                $response .= "0=".$ui->url_encode("More than ".$MAX." matches.")."&";
-                $response .= "0=".$ui->url_encode("Refine search."); 
+                $response .= "null=".$ui->url_encode("More than ".$MAX." matches.")."&";
+                $response .= "null=".$ui->url_encode("Refine search."); 
             }
 	}else{
-	    $response .= "0=".$ui->url_encode("No matches");
+	    $response .= "null=".$ui->url_encode("No matches");
 	}
     }
 

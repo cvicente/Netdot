@@ -81,12 +81,8 @@ sub delete {
     $self->isa_object_method('delete');
 
     my $asset = $self->asset_id;
-
     $self->SUPER::delete();
-
-    if ( $asset && !($asset->devices || $asset->device_modules) ){
-	$asset->delete();
-    }
+    $asset->delete() if $asset;
 
     return 1;
 }

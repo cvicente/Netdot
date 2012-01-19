@@ -17,13 +17,13 @@ my $TIMEOUT = Netdot->config->get('SNMP_QUERY_TIMEOUT');
 $SIG{ALRM} = sub{ die "timeout" };
 
 # Some regular expressions
-my $IPV4        = Netdot->get_ipv4_regex();
+my $IPV4 = Netdot->get_ipv4_regex();
 
 # Other fixed variables
-my $MAXPROCS    = Netdot->config->get('SNMP_MAX_PROCS');
+my $MAXPROCS = Netdot->config->get('SNMP_MAX_PROCS');
 
 # Objects we need here
-my $logger      = Netdot->log->get_logger('Netdot::Model::Device');
+my $logger = Netdot->log->get_logger('Netdot::Model::Device');
 
 my %IGNOREDVLANS;
 map { $IGNOREDVLANS{$_}++ } @{ Netdot->config->get('IGNOREVLANS') };
@@ -311,7 +311,7 @@ sub search_address_live {
   Returns: 
     Array of Device objects or iterator
 
-  Exampless:
+  Examples:
     my @switches = Device->search_like(name=>'-sw');
 
 =cut
@@ -329,8 +329,33 @@ sub search_like {
 	}
 	$logger->debug(sub{"Device::search_like: $argv{name} not found"});
 	return;
+
     }elsif ( exists $argv{producttype} ){
 	return $class->search_by_type($argv{producttype});
+
+    }elsif ( exists $argv{product} ){
+	my $dbh = $class->db_Main;
+	my $p_bind = defined($argv{product})? "= $argv{product}" : 'IS NULL';
+	my $crit;
+	if ( exists $argv{site} ){
+	    my $s_bind = defined($argv{site})? "= ".$dbh->quote($argv{site}) : 'IS NULL';
+	    $crit = " AND d.site $s_bind";
+	}elsif ( exists $argv{os} ){
+	    my $o_bind = defined($argv{os})? "= ".$dbh->quote($argv{os}) : 'IS NULL';
+	    $crit = " AND d.os $o_bind";
+	}
+	my @objs;
+	my $rows = Netdot::Model->raw_sql("
+        SELECT d.id
+         FROM  device d, asset a, product p, site s
+        WHERE  d.asset_id = a.id
+          AND  a.product_id $p_bind
+          $crit
+     GROUP BY  d.id
+        ")->{rows};
+	map { push(@objs, $class->retrieve($_->[0])) } @$rows;
+	return @objs;
+
     }else{
 	return $class->SUPER::search_like(%argv);
     }
@@ -484,7 +509,7 @@ sub insert {
     my $config_owner  = Netdot->config->get('DEFAULT_DEV_OWNER');
     my $default_owner = Entity->search(name=>$config_owner)->first || Entity->search(name=>'Unknown')->first;
 
-    # Assign defaults
+    # Assin defaults
     # These will be overridden by the given arguments
 
     my %devtmp = (
@@ -689,16 +714,16 @@ sub get_snmp_info {
     $dev{router_id}      = $sinfo->root_ip();
     $dev{sysdescription} = $sinfo->description();
     $dev{syscontact}     = $sinfo->contact();
-    $dev{productname}    = $hashes{'e_descr'}->{1};
+    my $first_idx = (sort { $a <=>$b } keys %{$hashes{'e_descr'}})[0];
+    $dev{productname}    = $hashes{'e_descr'}->{$first_idx};
+    $dev{part_number}    = $hashes{'e_model'}->{$first_idx};
     $dev{manufacturer}   = $sinfo->vendor();
     $dev{serial_number}  = $sinfo->serial();
 
     $dev{syslocation}    = $sinfo->location();
-    # Remove leading and trailing white space
-    if ( $dev{syslocation} ){
-	$dev{syslocation} =~ s/(\w+)\s+$/$1/;
-	$dev{syslocation} =~ s/^\s+(\w+)/$1/;
-    }
+    $dev{syslocation} = $class->rem_lt_sp($dev{syslocation}) # Remove white space
+	if ( $dev{syslocation} );
+
     ################################################################
     # Get STP (Spanning Tree Protocol) stuff
 
@@ -1510,8 +1535,9 @@ sub get_macs_from_all {
 
     my $dbh = $class->db_Main;
     my $aref1 = $dbh->selectall_arrayref("SELECT p.address, d.id
-                                          FROM physaddr p, device d
-                                          WHERE d.physaddr=p.id
+                                          FROM physaddr p, device d, asset a
+                                          WHERE a.physaddr=p.id
+                                            AND d.asset_id=a.id
                                          ");
     my $aref2 = $dbh->selectall_arrayref("SELECT p.address, d.id
                                           FROM physaddr p, device d, interface i
@@ -1998,8 +2024,8 @@ sub get_fwt {
 sub delete {
     my ($self) = @_;
     $self->isa_object_method('delete');
-    
-    my $asset = $self->asset_id;
+
+    my $asset_id = $self->asset_id->id if $self->asset_id;;
     
     # We don't want to delete dynamic addresses
     if ( my $ips = $self->get_ips ){
@@ -2020,7 +2046,9 @@ sub delete {
 	$rr->delete() unless $rr->arecords;
     }
     
-    if ( $asset && !($asset->devices || $asset->device_modules) ){
+    # This tries to avoid deleting an already deleted asset
+    # in case one of the modules was pointing to it
+    if ( $asset_id && (my $asset = Asset->search(id=>$asset_id)->first) ){
 	$asset->delete();
     }
     
@@ -2055,22 +2083,22 @@ sub short_name {
 }
 
 ############################################################################
-=head2 product_type - Get Device type
+=head2 product - Get Device Product
    
   Arguments:
     None
   Returns:
-    ProductType object name
+    Product object
   Examples:
-    $device->product_type();
+    my $product_object = $device->product;
 
 =cut
-sub product_type {
+sub product {
     my ($self) = @_;
-    $self->isa_object_method('product_type');
-    if (($self->product) && ($self->product->type)){	 
-	return $self->product->type->name;
-    }
+    $self->isa_object_method('product');
+
+    my $p = Product->search_by_device($self->id)->first;
+    return $p
 }
 
 ############################################################################
@@ -2141,7 +2169,6 @@ sub is_in_downtime {
     We override the update method for extra functionality:
       - Update 'last_updated' field with current timestamp
       - snmp_managed flag turns off all other snmp access flags
-      - Update asset product if necessary
 
   Arguments:
     Hash ref with Device fields
@@ -2167,10 +2194,6 @@ sub update {
 	$argv->{collect_fwt}   = 0;
     }
     $self->_validate_args($argv);
-
-    if ( $argv->{product} && $self->asset_id ){
-	$self->asset_id->update({product_id=>$argv->{product}});
-    }
 
     return $self->SUPER::update($argv);
 }
@@ -2531,11 +2554,6 @@ sub info_update {
     my %devtmp;
 
     ##############################################################
-    if ( my $bm = $self->_assign_base_mac($info) ){
-	$devtmp{physaddr} = $bm;
-    }
-
-    ##############################################################
     # Fill in some basic device info
     foreach my $field ( qw( community snmp_version layers ipforwarding sysname 
                             sysdescription syslocation os collect_arp collect_fwt ) ){
@@ -2548,23 +2566,33 @@ sub info_update {
     }
 
     ##############################################################
-    $devtmp{product} = $self->_assign_product($info);
-    
-    ##############################################################
     # Asset
-    my $sn   = $info->{serial_number};
-    my $prod = $devtmp{product};
-    if ( $sn && $prod){
-	$devtmp{asset_id} = Asset->find_or_create({serial_number=>$sn, product_id=>$prod});
-    }elsif ( $sn ){
-	$devtmp{asset_id} = Asset->find_or_create({serial_number=>$sn});	
-    }else{
-    	$logger->debug(sub{"$host did not return serial number" });
+    
+    my %asset_args = (
+	product_id    => $self->_assign_product($info),
+	serial_number => $info->{serial_number},
+	physaddr      => $self->_assign_base_mac($info) || undef,
+	reserved_for  => "", # needs to be cleared when device gets installed
+	);
+    
+    # This is an OR (notice the arrayref)
+    my @where;
+    push(@where, { serial_number => $asset_args{serial_number} }) 
+	if $asset_args{serial_number};
+    push(@where, { physaddr => $asset_args{physaddr} }) 
+	if $asset_args{physaddr};
+    my $asset = Asset->search_where(\@where)->first if @where;
+    if ( $asset ){
+	# Make sure that the data is complete with the latest info we got
+	$asset->update(\%asset_args);
+    }elsif ( $asset_args{serial_number} || $asset_args{physaddr} ){
+	    $asset = Asset->insert(\%asset_args);
     }
+    $devtmp{asset_id} = $asset->id if $asset;
     
     ##############################################################
-    if ( $devtmp{product} && $argv{device_is_new} ){
-	my $val = $self->_assign_device_monitored($devtmp{product});
+    if ( $asset && $asset->product_id && $argv{device_is_new} ){
+	my $val = $self->_assign_device_monitored($asset->product_id);
 	$devtmp{monitored}    = $val;
 	$devtmp{snmp_polling} = $val;
     }
@@ -2580,7 +2608,7 @@ sub info_update {
     $self->_update_stp_info($info, \%devtmp);
     
     ##############################################################
-    $self->_update_modules($info);
+    $self->_update_modules($info->{module});
 
     ##############################################
     $self->_update_interfaces(info            => $info, 
@@ -2686,7 +2714,7 @@ sub info_update {
 sub add_ip {
     my ($self, $address) = @_;
     $self->isa_object_method('add_ip');
-    my $int = ($self->interfaces)[0];
+    my $int = $self->interfaces->first;
     my $n = Ipblock->insert({address=>$address, interface=>$int, status=>'Static'});
     return $n;
 }
@@ -3347,12 +3375,13 @@ sub _validate_args {
 
     # Asset
     if ( $args->{asset_id} && (my $asset = Asset->retrieve(int($args->{asset_id}))) ){
-	# is there a device associated with this asset number we're given?
-	if ( my $otherdev = ($asset->devices)[0] ){
+	# is there a device associated with this asset we're given?
+	if ( my $otherdev = $asset->devices->first ){
 	    if ( defined $self ){
 		if ( $self->id != $otherdev->id ){
-		    my $msg = sprintf("%s: S/N %s belongs to existing device: %s", 
-				      $self->fqdn, $asset->serial_number, $otherdev->fqdn);
+		    my $msg = sprintf("%s: Existing device: %s uses S/N %s, MAC %s", 
+				      $self->fqdn, $asset->serial_number, $asset->physaddr, 
+				      $otherdev->fqdn);
 		    if ( Netdot->config->get('ENFORCE_DEVICE_UNIQUENESS') ){
 			$self->throw_user($msg); 
 		    }else{
@@ -3360,8 +3389,8 @@ sub _validate_args {
 		    }
 		}
 	    }else{
-		my $msg = sprintf("S/N %s belongs to existing device: %s",
-				  $asset->serial_number, $otherdev->fqdn);
+		my $msg = sprintf("Existing device: %s uses S/N %s, MAC %s ",
+				  $asset->serial_number, $asset->physaddr, $otherdev->fqdn);
 		if ( Netdot->config->get('ENFORCE_DEVICE_UNIQUENESS') ){
 		    $class->throw_user($msg);
 		}else{
@@ -3371,35 +3400,6 @@ sub _validate_args {
 	}
     }
     
-    # Base bridge MAC
-    if ( defined $args->{physaddr} ){
-	# Notice we use int() to stringify the object if it is one
-	if ( my $mac = PhysAddr->retrieve(int($args->{physaddr})) ){
-	    my $address = $mac->address;
-	    if ( my $otherdev = ($mac->devices)[0] ){
-		if ( defined $self ){
-		    if ( $self->id != $otherdev->id ){
-			# Another device has this address!
-			my $msg = sprintf("%s: At least one other device with this base MAC: %s already exists: %s", 
-					  $self->fqdn, $address, $otherdev->fqdn);
-			if ( Netdot->config->get('ENFORCE_DEVICE_UNIQUENESS') ){
-			    $class->throw_user($msg); 
-			}else{
-			    $logger->warn($msg);
-			}
-		    }
-		}else{
-		    my $msg = sprintf("At least one other device with this base MAC: %s already exists: %s", 
-				      $address, $otherdev->fqdn);
-		    if ( $class->config->get('ENFORCE_DEVICE_UNIQUENESS') ){
-			$class->throw_user($msg); 
-		    }else{
-			$logger->warn($msg);
-		    }
-		}
-	    }
-	}
-    }
     return 1;
 }
 
@@ -4145,8 +4145,9 @@ sub _get_poll_stats {
     my $num_int_macs = $sth3->fetchrow_array() || 0;
 
     my $sth4 = $dbh->prepare('SELECT COUNT(p.id)
-                              FROM   physaddr p, device d
-                              WHERE  d.physaddr=p.id AND
+                              FROM   physaddr p, device d, asset a
+                              WHERE  a.physaddr=p.id AND
+                                     a.id=d.asset_id AND
                                      p.last_seen=?
                              ');
     $sth4->execute($timestamp);
@@ -4280,7 +4281,8 @@ sub _get_v6_nd_from_snmp {
     my $n2p_addr  = $sinfo->ipv6_n2p_addr();
     my $n2p_if    = $sinfo->ipv6_n2p_if();
 
-    unless ( ($n2p_mac && $n2p_addr && $n2p_if) && (%$n2p_mac && %$n2p_addr && %$n2p_if) ){
+    unless ( $n2p_mac && $n2p_addr && $n2p_if && 
+             %$n2p_mac && %$n2p_addr && %$n2p_if ){
 	$logger->debug(sub{"Device::_get_v6_nd_from_snmp: $host: No IPv6 ND information" });
 	return;
     }
@@ -4868,7 +4870,8 @@ sub _assign_base_mac {
     my ($self, $info) = @_;
     
     my $host = $self->fqdn;
-    if ( $info->{physaddr} && (my $address = PhysAddr->validate($info->{physaddr})) ) {
+    my $address = delete $info->{physaddr}; 
+    if ( $address && ($address = PhysAddr->validate($address)) ) {
 	# Look it up
 	my $mac;
 	if ( $mac = PhysAddr->search(address=>$address)->first ){
@@ -4892,7 +4895,6 @@ sub _assign_base_mac {
 	}
     }else{
 	$logger->debug(sub{"$host did not return base MAC"});
-	delete $info->{physaddr};
 	return;
     }
 }
@@ -4954,6 +4956,7 @@ sub _assign_product {
     }
     $args{type}          = $info->{type}         if defined $info->{type};
     $args{manufacturer}  = $info->{manufacturer} if defined $info->{manufacturer}; 
+    $args{part_number}   = $info->{part_number}  if defined $info->{part_number};     
     $args{hostname}      = $self->fqdn;
     
     return Product->find_or_create(%args);
@@ -5116,13 +5119,12 @@ sub _update_stp_info {
 # Add/Update Modules
 #
 # Arguments
-#   snmp info hashref
+#   modules hashref from SNMP
 # Returns
-#   Nothing
-#
+#   True
 #
 sub _update_modules {
-    my ($self, $info) = @_;
+    my ($self, $modules) = @_;
 
     my $host = $self->fqdn;
 
@@ -5130,14 +5132,16 @@ sub _update_modules {
     my %oldmodules;
     map { $oldmodules{$_->number} = $_ } $self->modules();
 
-    foreach my $number ( sort { $a <=> $b } keys %{ $info->{module} } ){
-	my %args = %{$info->{module}->{$number}};
+    foreach my $number ( sort { $a <=> $b } keys %{$modules} ){
+	my %args = %{$modules->{$number}};
 	$args{device} = $self->id;
 	my $name = $args{name} || $args{description};
 
 	# find or create asset object for given serial number and product
 	if ( my $serial = delete $args{serial_number} ){
-	    if ( my $asset = Asset->find_or_create({serial_number=>$serial, product_id=>$self->product}) ){
+	    if ( my $asset = Asset->find_or_create({serial_number => $serial}) ){
+		# clear reservation comment as soon as hardware gets installed
+		$asset->update({reserved_for=>""}); 
 		$args{asset_id} = $asset->id;
 	    }
 	}
@@ -5157,9 +5161,10 @@ sub _update_modules {
     # Remove modules that no longer exist
     foreach my $number ( keys %oldmodules ){
 	my $module = $oldmodules{$number};
-	$logger->info("$host:  Module no longer exists: $number.  Removing.");
+	$logger->info("$host: Module no longer exists: $number.  Removing.");
 	$module->delete();
     }
+    1;
 }
 
 ##############################################
@@ -5531,7 +5536,8 @@ sub _netdot_rebless {
     # the config file.
 
     my $oid = $sysobjectid;
-    $oid  ||= $self->product->sysobjectid if $self->product;
+    $oid  ||= $self->asset_id->product_id->sysobjectid 
+	if ( $self->asset_id && $self->asset_id->product_id );
     
     unless ( $oid ){
 	$logger->debug("Device::_netdot_rebless: $host: sysObjectID not available");
@@ -5561,40 +5567,44 @@ sub _netdot_rebless {
 #
 #
 __PACKAGE__->set_sql(by_type => qq{
-    SELECT d.id
-	FROM device d, product p, producttype t, rr
-	WHERE d.product = p.id AND
-	p.type = t.id AND
-	rr.id = d.name AND
-	t.id = ?
-	ORDER BY rr.name
+      SELECT  d.id
+	FROM  device d, product p, producttype t, rr, asset a
+	WHERE a.product_id = p.id 
+          AND d.asset_id = a.id
+	  AND p.type = t.id
+	  AND rr.id = d.name
+	  AND t.id = ?
+     ORDER BY rr.name
     });
 
 __PACKAGE__->set_sql(no_type => qq{
-    SELECT p.name, p.id, COUNT(d.id) AS numdevs
-        FROM device d, product p
-        WHERE d.product = p.id AND
-        p.type IS NULL
-        GROUP BY p.name, p.id
-        ORDER BY numdevs DESC
+      SELECT  p.name, p.id, COUNT(d.id) AS numdevs
+        FROM  device d, product p, asset a
+        WHERE a.product_id = p.id
+          AND d.asset_id = a.id
+          AND p.type IS NULL
+     GROUP BY p.name, p.id
+     ORDER BY numdevs DESC
     });
 
 __PACKAGE__->set_sql(by_product_os => qq{
-    SELECT id,product,os
-        FROM device
-        WHERE os is NOT NULL 
-        AND os != '0'
-        ORDER BY product,os
+       SELECT d.id, a.product_id, d.os
+         FROM device d, asset a
+        WHERE d.asset_id = a.id
+          AND d.os is NOT NULL 
+          AND d.os != '0'
+     ORDER BY a.product_id,d.os
     });
 
 __PACKAGE__->set_sql(for_os_mismatches => qq{
-    SELECT device.id,device.product,device.os,device.name
-        FROM   device,product
-        WHERE  device.product=product.id
-        AND device.os IS NOT NULL
-        AND product.latest_os IS NOT NULL
-        AND device.os!=product.latest_os
-        ORDER BY device.product,device.os
+       SELECT  d.id,a.product_id,d.os,d.name
+         FROM  device d, product p, asset a
+        WHERE  a.product_id=p.id
+          AND  d.asset_id = a.id
+          AND  d.os IS NOT NULL
+          AND  p.latest_os IS NOT NULL
+          AND  d.os != p.latest_os
+     ORDER BY  a.product_id,d.os
     });
 
 =head1 AUTHOR

@@ -481,8 +481,9 @@ sub is_loopback{
 	$class->throw_user("Invalid IP: $str");
     }
 
-    if ( $ip->within(new NetAddr::IP "127.0.0.0", "255.0.0.0") 
-	 || $ip eq '::1' ) {
+    my $ipv4_lb = new NetAddr::IP "127.0.0.0", "255.0.0.0";
+    my $ipv6_lb = new NetAddr::IP "::1"; 
+    if ( $ip->within($ipv4_lb) || $ip == $ipv6_lb ) {
 	return 1;	
     }
     return;
