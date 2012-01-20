@@ -10,28 +10,39 @@ $report_type => 'type_product'
 my $DEBUG = 0;
 my (@headers, @rows, @assets) = ();
 
-my $query;
-if ( $report_type eq 'type_product' || $report_type eq 'type_product_detail' ){
-    $query = "SELECT asset.id, asset.serial_number, asset.inventory_number, asset.reserved_for,
-              product.id, product.name, producttype.name
+my $dbh = Netdot::Model->db_Main;
+
+my $assets = $dbh->selectall_arrayref("
+              SELECT asset.id, asset.serial_number, asset.inventory_number, asset.reserved_for,
+                     product.id, product.name, producttype.name
               FROM   asset, product, producttype 
               WHERE  asset.product_id=product.id
-                 AND product.type=producttype.id 
-                 AND asset.id NOT IN (SELECT asset_id FROM device WHERE asset_id IS NOT NULL) 
-                 AND asset.id NOT IN (SELECT asset_id FROM devicemodule WHERE asset_id IS NOT NULL);";
+                 AND product.type=producttype.id");
 
+my $iassets = $dbh->selectall_arrayref("
+               SELECT device.asset_id, devicemodule.asset_id 
+                 FROM device,devicemodule 
+                WHERE device.asset_id IS NOT NULL 
+                  AND devicemodule.asset_id IS NOT NULL
+                  AND device.asset_id < devicemodule.asset_id
+");
+
+
+my %installed;
+foreach my $row ( @$iassets ){
+    $installed{$row->[0]} = 1;
+    $installed{$row->[1]} = 1;
 }
-my $dbh = Netdot::Model->db_Main;
-my $rows = $dbh->selectall_arrayref($query);
 
 my %t;
 my $grandtotal = 0;
-foreach my $row ( @$rows ){
+foreach my $row ( @$assets ){
     my ($id, $sn, $inv, $res, $pid, $pname, $ptype) = @$row;
     $t{$ptype}{total}++;
     $t{$ptype}{prod}{$pname}{total}++;
     $t{$ptype}{prod}{$pname}{id}  = $pid;
     $t{$ptype}{prod}{$pname}{assets}{$sn}{id}  = $id;
+    $t{$ptype}{prod}{$pname}{assets}{$sn}{installed} = (exists($installed{$id}))? 1 : 0;
     $t{$ptype}{prod}{$pname}{assets}{$sn}{inv} = $inv;
     $t{$ptype}{prod}{$pname}{assets}{$sn}{res} = $res;
     $grandtotal++;
@@ -40,6 +51,7 @@ if ( $DEBUG ){
     use Data::Dumper;
     print '<pre>';
     print Dumper(%t);
+    print Dumper(%installed);
     print '</pre>';
 }
 </%init>
@@ -47,8 +59,6 @@ if ( $DEBUG ){
 <div class="container">
   <div class="containerhead">Asset Inventory</div>
     <div class="containerbody"
-    <p>These reports show assets (devices or device modules) that are not yet installed
-    <p>For installed assets, please use the Devices reports
     <p>
       <form name="report_form" action="asset_inventory.html" method="POST">
          By <select name="report_type" onChange="document.report_form.submit()">
@@ -85,9 +95,10 @@ if ( $report_type eq 'type_product' ){
     }
 
 }elsif ( $report_type eq 'type_product_detail' ){
-    @headers = ( 'Type', 'Model', 'S/N', 'Inventory', 'Reserved For', 'Count' );
+    @headers = ( 'Type', 'Model', 'S/N', 'Inventory', 'Installed?', 'Reserved For', 'Count' );
     my @row = ();
     push( @row, "Total Assets:" );
+    push( @row, "&nbsp;" );
     push( @row, "&nbsp;" );
     push( @row, "&nbsp;" );
     push( @row, "&nbsp;" );
@@ -102,6 +113,7 @@ if ( $report_type eq 'type_product' ){
 	push( @row, "&nbsp;" );
 	push( @row, "&nbsp;" );
 	push( @row, "&nbsp;" );
+	push( @row, "&nbsp;" );
 	push( @row, '<strong>' . $t{$ptype}{total} . '</strong>' );
 	push( @rows, \@row );
 
@@ -109,6 +121,7 @@ if ( $report_type eq 'type_product' ){
 	    my @row = ();
 	    push( @row, "&nbsp;" );
 	    push( @row, $pname );
+	    push( @row, "&nbsp;" );
 	    push( @row, "&nbsp;" );
 	    push( @row, "&nbsp;" );
 	    push( @row, "&nbsp;" );
@@ -122,6 +135,7 @@ if ( $report_type eq 'type_product' ){
 		my $id  = $t{$ptype}{prod}{$pname}{assets}{$sn}{id};
 		push( @row, "<a href=\"../generic/view.html?table=Asset&id=$id\">$sn</a>" );
 		push( @row, $t{$ptype}{prod}{$pname}{assets}{$sn}{inv} );
+		push( @row, ($t{$ptype}{prod}{$pname}{assets}{$sn}{installed})? 'yes' : 'no');
 		push( @row, $t{$ptype}{prod}{$pname}{assets}{$sn}{res} );
 		push( @row, "&nbsp;" );
 		push( @rows, \@row );

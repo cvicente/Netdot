@@ -373,7 +373,8 @@ if ( my $asset = $o->asset_id ){
     push( @field_headers, $ui->col_descr_link('Product', 'type', 'Type:') );
     push( @cell_data, 
 	  &{sub{	
-	      if ( my $pr = $asset->product_id ){
+	      my $pr;
+	      if ( ($pr = $asset->product_id) && $pr->type ){
 		  '<a href="view.html?table=ProductType&id='.$pr->type->id.'">'.$pr->type->name."</a>";
 	      }
 	    }}

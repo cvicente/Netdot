@@ -65,7 +65,7 @@ if ( $manager && $manager->can($user, "access_section", 'management') ){
 	$m->comp('zone_tasks.html', user=>$user, showheader=>$showheader);
     } elsif ($page eq "DHCP" && $m->request_comp->name ne "dhcp_tasks.html" ) {
 	$m->comp('dhcp_tasks.html', user=>$user, showheader=>$showheader);
-    } elsif ($page eq "ASSET" && $m->request_comp->name ne "asset_tasks.html"){
+    } elsif ($page eq "ASSETS" && $m->request_comp->name ne "asset_tasks.html"){
         $m->comp('asset_tasks.html', user=>$user, showheader=>$showheader, %ARGS);	
     }
 }else{
@@ -99,12 +99,12 @@ if ( my $next = $m->fetch_next ){
 	    attribute    => $PAGE_ATTRIBUTE,
 	    sub_sections => [
 		{ section => 'DEVICE',   title => 'Devices' },
+                { section => 'ASSETS',    title => 'Assets' },
 		{ section => 'VLANS',    title => 'VLANs' },
 		{ section => 'ADDRESS',  title => 'Address Space' },
 		{ section => 'HOSTS',    title => 'DNS Records' },
 		{ section => 'ZONES',    title => 'DNS Zones' },
 		{ section => 'DHCP',     title => 'DHCP' },
-                { section => 'ASSET',    title => 'Assets' }
 	    ]
         };
     </%init>
