@@ -32,6 +32,9 @@ $meta_refresh = $m->base_comp->attr_if_exists('meta_refresh');
 print "base comp: ", $m->base_comp->name, "<br>"  if $DEBUG;
 print "req comp: ", $m->request_comp->name, "<br>"  if $DEBUG;
 
+if ($onload eq 'focus-ipblock') {
+	$onload = 'document.ipblock.add_block_prefix.focus();';
+}
 
 my $rest_page = 0;
 if($m->request_comp->dir_path eq '/rest'){
