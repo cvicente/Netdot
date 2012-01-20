@@ -461,7 +461,8 @@ sub print_formatted {
 		);
 	}
 	my $xml = $self->{xs}->XMLout($data);
-	$self->{request}->content_type('text/xml');
+	$self->{request}->content_type(q{text/xml; charset=utf-8});
+
 	print $xml;
     }
 }
