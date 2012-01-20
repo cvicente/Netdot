@@ -158,9 +158,6 @@ sub handle_resource {
 		    if ( $http_args{depth} ){
 			$get_args{depth} = $http_args{depth};
 		    }
-		    if ( $http_args{no_linked_from} ){
-			$get_args{no_linked_from} = $http_args{no_linked_from};
-		    }
 		    my $o = $self->get(%get_args);
 		    $self->print_formatted($o);
 
@@ -188,15 +185,10 @@ sub handle_resource {
 		# A lack of id means we're working in plural
 		my $results;
 		my $depth;
-		my $no_linked_from;
 		if ( %http_args ){
 		    # We were given a query hash
 		    # Remove non-fields
 		    $depth = delete $http_args{depth};
-		    $no_linked_from = delete $http_args{no_linked_from};
-		}
-		if ( %http_args ){
-		    # If there are any args left do a search with them
 		    $results = $table->search(%http_args);
 		}else{
 		    $results = $table->retrieve_all();
@@ -206,7 +198,6 @@ sub handle_resource {
 		    while ( my $o = $results->next ){
 			my %get_args = (obj=>$o);
 			$get_args{depth} = $depth if ( $depth );
-			$get_args{no_linked_from} = $no_linked_from if ( $no_linked_from );
 			push @objs, $self->get(%get_args);
 		    }
 		    $self->print_formatted({$table=>\@objs});
@@ -243,15 +234,13 @@ sub handle_resource {
     In the case of objects linking to the given record, the returned hashref
     will include a key called "linked_from" containing arrays of resources
     which can be used to obtain those records using the REST interface.
-    You can omit these resources by using the 'no_linked_from' parameter
 
     Arguments:
        Hash containing the following keys:
-       obj             Object
-       table	       Object class
-       id	       The id of the object
-       depth           How many levels of foreign objects to return (default: 0)    
-       no_linked_from  Do not return foreign objects referencing this object
+       obj        Object
+       table	  Object class
+       id	  The id of the object
+       depth      How many levels of foreign objects to return (default: 0)    
     Returns:
        hashref containing object information
     Examples:
@@ -272,29 +261,22 @@ sub get{
     }
     $argv{depth} ||= 0;
     $argv{depth} = 0 if ( $argv{depth} < 0 );
-
+	
     my %ret;
     $ret{id} = $obj->id;
 
     my %order   = $obj->meta_data->get_column_order;
     my %linksto = $obj->meta_data->get_links_to;
+      
+    $ret{linked_from} = $self->_get_linked_from(obj=>$obj, depth=>$argv{depth});
 
-    unless($argv{no_linked_from}){
-	$ret{linked_from} = $self->_get_linked_from(obj=>$obj, depth=>$argv{depth});
-    }
-    
     foreach my $col ( keys(%order) ){
 	if ( grep {$_ eq $col} keys(%linksto) ){
 	    # this piece of data is a foreign key
-	    if ( my $fid = $obj->$col."" ){
+	    if ( my $fid = $obj->$col ){
 		my $fclass = $linksto{$col};
 		if ( $argv{depth} ){
-		    $ret{$col} = $self->get(
-			table          => $fclass, 
-			id             => $fid, 
-			depth          => $argv{depth}-1,
-			no_linked_from => $argv{no_linked_from},
-			);
+		    $ret{$col} = $self->get(table=>$fclass, id=>$fid, depth=>$argv{depth}-1);
 		}else{
 		    my $fobj = $obj->$col;
 		    $ret{$col} = $fobj->get_label;
@@ -308,7 +290,6 @@ sub get{
 	    $ret{$col} = $obj->$col;
 	}
     }
-
     return \%ret;
 }
 
