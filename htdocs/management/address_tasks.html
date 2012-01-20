@@ -65,7 +65,8 @@ my $manager = $ui->get_permission_manager($r);
 %        my @views = qw(search new tree);
 %        foreach my $v ( @views ){
 %	     next if $v eq $view;
-             <a href="address_tasks.html?view=<% $v %>">[<% $v %>]</a>
+%		 my $arg = "&onload=focus-ipblock" if $v eq "new";
+             <a href="address_tasks.html?view=<% $v.$arg %>">[<% $v %>]</a>
 %        }
 %   }
 %       print_showtaskslink($show_tasks);
