@@ -520,7 +520,7 @@ sub select_lookup{
     } else {
 	$name = $table . "__" . $id . "__" . $column;
     }
-    if( $args{edit} && $args{default} ) { 
+    if( $args{edit} && $args{defaults} && $args{default} ) { 
 	# If there is a default element specified, then we don't actually want a list of choices.
 	# So, don't show a select box, but instead, make a hidden form element with the id,
 	# and print out the name of the default element. 
@@ -2353,7 +2353,12 @@ sub url_decode {
 sub localize_newlines {
     my($self, $table, $args) = @_;
     foreach my $c ( keys %$args ){
-	my $type = $table->meta_data->get_column($c)->sql_type;
+	my $mcol;
+	eval {
+	    $mcol = $table->meta_data->get_column($c);
+	};
+	next if ( $@ =~ /does not exist/ );
+	my $type = $mcol->sql_type;
 	if ( $type eq 'blob' || $type eq 'text' ){
 	    $args->{$c} =~ s/\r\n/\n/g;
 	    $args->{$c} =~ s/\r/\n/g;

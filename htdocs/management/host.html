@@ -215,18 +215,11 @@ if ($action eq 'new') {
 	$zone = $ipblock->forward_zone();
     }
     
-    if ( $zone ){
-	print '<input type="hidden" name="RR__NEW__zone" value="'.$zone.'">';
-	push @field_headers, 'Zone:';
-	push @cell_data, $zone->get_label;
-
-    }else{
-	my %args = (edit=>1, table=>'RR', fields=>['zone'],
-		    field_headers=>\@field_headers, cell_data=>\@cell_data,
-		    linkpages=>['zone.html']);
-	
-	$ui->add_to_fields(%args);
-    }
+    my %ffargs = (table=>'RR', column=>'zone', edit=>1, linkPage=>'zone.html');
+    $ffargs{default} = $zone->id if $zone;
+    my %tmp = $ui->form_field(%ffargs);
+    push( @field_headers, $tmp{label} );
+    push( @cell_data, $tmp{value} );
 
     $m->comp('/generic/attribute_table.mhtml', %comphash);
     (@field_headers, @cell_data) = ((),());
@@ -756,6 +749,7 @@ foreach my $o ( values %rrs ) {
 	    }
 	    my $zone_select = '<select name="RR__NEW__zone">';
 	    foreach my $z ( sort { $a->name cmp $b->name } Zone->retrieve_all ){
+		next unless $z->is_dot_arpa;
 		if ( $rzone && $rzone->id == $z->id ){
 		    $zone_select .= '<option value="'.$z.'" SELECTED>'.$z->get_label.'</option>';
 		}else{
