@@ -40,7 +40,7 @@ Netdot::Model::Device - Network Device Class
 =head1 SYNOPSIS
 
 =head1 CLASS METHODS
-=cuts
+=cut
 
 
 ############################################################################
@@ -4146,7 +4146,7 @@ sub _get_poll_stats {
 
     my $sth4 = $dbh->prepare('SELECT COUNT(p.id)
                               FROM   physaddr p, device d, asset a
-                              WHERE  a.physaddr=p.id AND
+                              WHERE  d.physaddr=p.id AND
                                      a.id=d.asset_id AND
                                      p.last_seen=?
                              ');
