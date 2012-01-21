@@ -714,9 +714,11 @@ sub get_snmp_info {
     $dev{router_id}      = $sinfo->root_ip();
     $dev{sysdescription} = $sinfo->description();
     $dev{syscontact}     = $sinfo->contact();
-    my $first_idx = (sort { $a <=>$b } keys %{$hashes{'e_descr'}})[0];
-    $dev{productname}    = $hashes{'e_descr'}->{$first_idx};
-    $dev{part_number}    = $hashes{'e_model'}->{$first_idx};
+    if ($hashes{'e_descr'} ){
+	my $first_idx = (sort { $a <=>$b } keys %{$hashes{'e_descr'}})[0];
+	$dev{productname}  = $hashes{'e_descr'}->{$first_idx} ;
+	$dev{part_number}  = $hashes{'e_model'}->{$first_idx};
+    }
     $dev{manufacturer}   = $sinfo->vendor();
     $dev{serial_number}  = $sinfo->serial();
 
@@ -2567,9 +2569,9 @@ sub info_update {
 
     ##############################################################
     # Asset
-    
+    my $dev_product = $self->_assign_product($info);
     my %asset_args = (
-	product_id    => $self->_assign_product($info),
+	product_id    => $dev_product->id,
 	serial_number => $info->{serial_number},
 	physaddr      => $self->_assign_base_mac($info) || undef,
 	reserved_for  => "", # needs to be cleared when device gets installed
@@ -2608,7 +2610,10 @@ sub info_update {
     $self->_update_stp_info($info, \%devtmp);
     
     ##############################################################
-    $self->_update_modules($info->{module});
+     $self->_update_modules(
+     	info => $info->{module},
+     	manufacturer => $dev_product->manufacturer,
+     	);
 
     ##############################################
     $self->_update_interfaces(info            => $info, 
@@ -5119,12 +5124,16 @@ sub _update_stp_info {
 # Add/Update Modules
 #
 # Arguments
-#   modules hashref from SNMP
+#   Hashref with following keys:
+#   info =>  modules hashref from SNMP
+#   manufacturer => (Entity) from Device Product
 # Returns
 #   True
 #
 sub _update_modules {
-    my ($self, $modules) = @_;
+    my ($self, %argv) = @_;
+
+    my ($modules, $mf) = @argv{'info', 'manufacturer'};
 
     my $host = $self->fqdn;
 
@@ -5136,12 +5145,43 @@ sub _update_modules {
 	my %args = %{$modules->{$number}};
 	$args{device} = $self->id;
 	my $name = $args{name} || $args{description};
-
+	
 	# find or create asset object for given serial number and product
 	if ( my $serial = delete $args{serial_number} ){
 	    if ( my $asset = Asset->find_or_create({serial_number => $serial}) ){
+
 		# clear reservation comment as soon as hardware gets installed
-		$asset->update({reserved_for=>""}); 
+		my %asset_args = (reserved_for => "");
+
+		# and assign product in case it didn't have it
+		unless ( $asset->product_id ){
+		    # find or create product
+		    my $model = $args{model};
+		    my $product;
+		    my $type = ProductType->find_or_create({name=>'Module'});
+		    if ( $model && $mf ){ 
+			if ($product = Product->search(
+				name         => $model,
+				manufacturer => $mf,
+			    )->first ){
+			    $product->update({
+				part_number  => $model,
+				description  => $args{description},
+					     });
+			}else{
+			    # Create it
+			    $product = Product->insert({
+				name         => $model,
+				type         => $type,
+				part_number  => $model,
+				manufacturer => $mf,
+				description  => $args{description},
+						       });
+			}
+		    }
+		    $asset_args{product_id} = $product->id;
+		}
+		$asset->update(\%asset_args); 
 		$args{asset_id} = $asset->id;
 	    }
 	}
@@ -5191,7 +5231,7 @@ sub _update_interfaces {
     my %IGNORED;
     map { $IGNORED{$_}++ } @{ $self->config->get('IGNOREPORTS') };
     if ( defined $info->{sysobjectid} && exists $IGNORED{$info->{sysobjectid}} ){
-	$logger->debug(sub{"Device::info_update: $host ports ignored per configuration option (IGNOREPORTS)"});
+	$logger->debug(sub{"Device::_update_interfaces: $host ports ignored per configuration option (IGNOREPORTS)"});
 	return;
     }
     
@@ -5333,7 +5373,7 @@ sub _update_interfaces {
 	    
 	}
 	
-	$self->throw_fatal("Model::Device::info_update: $host: Could not find or create interface: $newnumber")
+	$self->throw_fatal("Model::Device::_update_interfaces: $host: Could not find or create interface: $newnumber")
 	    unless $if;
 	
 	# Now update it with snmp info
@@ -5399,7 +5439,7 @@ sub _update_interfaces {
 	# Get addresses that the main Device name resolves to
 	my @hostnameips;
 	if ( @hostnameips = Netdot->dns->resolve_name($host) ){
-	    $logger->debug(sub{ sprintf("Device::info_update: %s resolves to: %s",
+	    $logger->debug(sub{ sprintf("Device::_update_interfaces: %s resolves to: %s",
 					$host, (join ", ", @hostnameips))});
 	}
 	
