@@ -13,7 +13,7 @@ my $USAGE = <<EOF;
          [ -s|--scopes <scope1, scope2>]
          [ -d|--debug ] [ -h|--help ]
 
-    Available types:  Nagios, Sysmon, Rancid, BIND, DHCPD
+    Available types:  Nagios, Sysmon, Rancid, Smokeping, BIND, DHCPD
 
     BIND exporter Options:
        zones  - Comma-separated list of zone names.  If not 

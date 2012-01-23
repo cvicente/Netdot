@@ -10,11 +10,12 @@ use Fcntl qw(:DEFAULT :flock);
 my $logger = Netdot->log->get_logger('Netdot::Exporter');
 
 my %types = (
-    'Nagios' => 'Netdot::Exporter::Nagios',
-    'Sysmon' => 'Netdot::Exporter::Sysmon',
-    'Rancid' => 'Netdot::Exporter::Rancid',
-    'BIND'   => 'Netdot::Exporter::BIND',
-    'DHCPD'  => 'Netdot::Exporter::DHCPD',
+    'Nagios'    => 'Netdot::Exporter::Nagios',
+    'Sysmon'    => 'Netdot::Exporter::Sysmon',
+    'Rancid'    => 'Netdot::Exporter::Rancid',
+    'BIND'      => 'Netdot::Exporter::BIND',
+    'DHCPD'     => 'Netdot::Exporter::DHCPD',
+    'Smokeping' => 'Netdot::Exporter::Smokeping',
     );
 
 my %_class_data;
@@ -81,20 +82,20 @@ sub get_device_info {
     my %device_info;
     $logger->debug("Netdot::Exporter::get_device_info: querying database");
     my $rows = $self->{_dbh}->selectall_arrayref("
-                SELECT    device.id, device.snmp_managed, device.community,
-                          device.down_from, device.down_until, entity.name, contactlist.id,
+                SELECT    d.id, d.snmp_managed, d.community,
+                          d.down_from, d.down_until, entity.name, contactlist.id,
                           target.id, target.address, target.version, target.parent, rr.name, zone.name,
-                          interface.id, interface.number, interface.admin_status, interface.monitored, interface.contactlist,
+                          i.id, i.number, i.admin_status, i.monitored, i.contactlist,
                           bgppeering.bgppeeraddr, bgppeering.monitored
-                FROM      rr, zone, interface, device
-                LEFT JOIN ipblock target ON device.snmp_target=target.id
-                LEFT JOIN entity ON device.used_by=entity.id
-                LEFT JOIN devicecontacts ON device.id=devicecontacts.device
+                FROM      rr, zone, interface i, device d
+                LEFT JOIN ipblock target ON d.snmp_target=target.id
+                LEFT JOIN entity ON d.used_by=entity.id
+                LEFT JOIN devicecontacts ON d.id=devicecontacts.device
                 LEFT JOIN contactlist ON contactlist.id=devicecontacts.contactlist
-                LEFT JOIN bgppeering ON device.id=bgppeering.device
-                WHERE     device.monitored=1
-                     AND  interface.device=device.id                  
-                     AND  device.name=rr.id 
+                LEFT JOIN bgppeering ON d.id=bgppeering.device
+                WHERE     d.monitored=1
+                     AND  i.device=d.id                  
+                     AND  d.name=rr.id 
                      AND  rr.zone=zone.id
          ");
     
