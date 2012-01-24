@@ -73,10 +73,11 @@ sub generate_configs {
     my $query = $self->{_dbh}->selectall_arrayref("
                 SELECT     rr.name, zone.name, p.name, p.sysobjectid, e.name,
                            d.monitor_config, d.monitor_config_group, d.down_from, d.down_until
-                 FROM      device d, rr, zone, product p, entity e
+                 FROM      device d, rr, zone, product p, entity e, asset a
                 WHERE      d.name=rr.id
                   AND      rr.zone=zone.id
-                  AND      d.product=p.id
+                  AND      a.product_id=p.id
+                  AND      d.asset_id=a.id
                   AND      p.manufacturer=e.id
          ");
     
