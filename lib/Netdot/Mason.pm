@@ -18,6 +18,10 @@ my $ah =
 				     data_dir    => "<<Make:PREFIX>>/htdocs/masondata",
 				     error_mode  => 'output',
 				     );
+
+# Do not die for certain Perl warnings
+$ah->interp->ignore_warnings_expr("(?i-xsm:Subroutine .*redefined|as parentheses is deprecated)");
+
 sub handler
 {
     my ($r) = @_;
