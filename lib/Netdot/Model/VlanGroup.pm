@@ -107,7 +107,7 @@ sub assign_vlans{
     # Assing vlans to this new group
     foreach my $vlan ( Vlan->retrieve_all ){
 	if ( $vlan->vid >= $self->start_vid && $vlan->vid <= $self->end_vid ){
-	    unless ( $vlan->vlangroup == $self->id ){
+	    if ( defined $vlan->vlangroup && !($vlan->vlangroup == $self->id) ){
 		$vlan->update({vlangroup=>$self->id});
 		$logger->debug(sub{ sprintf("VlanGroup: %s: Vlan %s within my range. Updating.", 
 					    $self->name, $vlan->vid) });

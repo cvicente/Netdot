@@ -8,8 +8,8 @@ BEGIN { use_ok('Netdot::Model::Vlan');
 
 my $group  = VlanGroup->insert({name        =>'Data', 
 				description =>'Data Vlans',
-				start       =>'100',
-				end         =>'300',
+				start_vid   =>'100',
+				end_vid     =>'300',
 			    });
 isa_ok($group, 'Netdot::Model::VlanGroup', 'insert');
 is(VlanGroup->search(name=>'Data')->first, $group, 'search' );
@@ -27,3 +27,17 @@ isa_ok($vlan, 'Class::DBI::Object::Has::Been::Deleted', 'delete');
 $group->delete;
 isa_ok($group, 'Class::DBI::Object::Has::Been::Deleted', 'delete');
 
+my ($min, $max) = @{Netdot->config->get('VALID_VLAN_ID_RANGE')};
+my $inv1 = $min - 1;
+eval {
+    my $invalid = Vlan->insert({vid=>$inv1});
+};
+my $e = $@;
+ok($e->isa_netdot_exception, 'Invalid Vlan #1');
+
+my $inv2 = $max + 1;
+eval {
+    my $invalid = Vlan->insert({vid=>$inv2});
+};
+my $e = $@;
+ok($e->isa_netdot_exception, 'Invalid Vlan #2');

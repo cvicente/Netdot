@@ -40,7 +40,7 @@ sub insert{
 
     $class->throw_user("Missing required arguments: vlan id")
 	unless (exists $argv->{vid});
-    _validate_vid($argv->{vid});
+    $class->_validate_vid($argv->{vid});
 
     $argv->{vlangroup} = $class->_find_group($argv->{vid}) || undef;
     
@@ -60,7 +60,7 @@ sub search {
     my %args = @nargs;
 
     if (defined $args{vid}) {
-        _validate_vid($args{vid});
+        $class->_validate_vid($args{vid});
     }
     return $class->SUPER::search(@args);
 }
@@ -85,6 +85,8 @@ sub update{
     my ($self, $argv) = @_;
     $self->isa_object_method('update');
     
+    $self->_validate_vid($argv->{vid}) if exists $argv->{vid};
+
     return $self->SUPER::update($argv);
 
     # We'll reassign only if vid changed and if vlangroup is not the same
@@ -117,10 +119,20 @@ sub _find_group{
     return;
 }
 
+
+#########################################################################################
+# Make sure VLAN ID is within valid range (configureable)
+# Arguments:  vlan id
+# Returns:    1 if successful
+#
 sub _validate_vid {
-    my $vid = shift;
-    __PACKAGE__->throw_user("VLAN id '$vid' is invalid")
-        unless ($vid =~ /^\d+$/) && ($vid >= 1) && ($vid <= 4094);
+    my ($self, $vid) = @_;
+    $self->throw_fatal("Missing required parameter: VLAN ID")
+	unless $vid;
+    my ($min, $max) = @{Netdot->config->get('VALID_VLAN_ID_RANGE')};
+    $self->throw_user("VLAN id '$vid' is invalid. Valid range is $min - $max")
+        unless ( ($vid =~ /^\d+$/) && ($vid >= $min) && ($vid <= $max) );
+    1;
 }
 
 =head1 AUTHOR
