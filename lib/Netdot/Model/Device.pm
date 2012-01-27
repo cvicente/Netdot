@@ -3513,10 +3513,6 @@ sub _get_snmp_session {
 	    unless $argv{host};
     }
 
-    # If we still don't have any communities, get defaults from config file
-    $argv{communities} = $self->config->get('DEFAULT_SNMPCOMMUNITIES')
-	unless defined $argv{communities};
-    
     $sclass ||= 'SNMP::Info';
     
     # Set defaults
@@ -3592,6 +3588,10 @@ sub _get_snmp_session {
 	}
    
     }else{
+	# If we still don't have any communities, get defaults from config file
+	$argv{communities} = $self->config->get('DEFAULT_SNMPCOMMUNITIES')
+	    unless defined $argv{communities};
+
 	# Try each community
 	foreach my $community ( @{$argv{communities}} ){
 
@@ -3653,12 +3653,18 @@ sub _get_snmp_session {
 	$uargs{snmp_bulk}    = $sinfoargs{BulkWalk}  if ( !$self->snmp_bulk    || $self->snmp_bulk    ne $sinfoargs{BulkWalk} );
 	if ( $sinfoargs{Version} == 3 ){
 	    # Store v3 parameters
-	    $uargs{snmp_securityname}  = $sinfoargs{SecName}   if (!$self->snmp_securityname  || $self->snmp_securityname  ne $sinfoargs{SecName});
-	    $uargs{snmp_securitylevel} = $sinfoargs{SecLevel}  if (!$self->snmp_securitylevel || $self->snmp_securitylevel ne $sinfoargs{SecLevel});
-	    $uargs{snmp_authprotocol}  = $sinfoargs{AuthProto} if (!$self->snmp_authprotocol  || $self->snmp_authprotocol  ne $sinfoargs{AuthProto});
-	    $uargs{snmp_authkey}       = $sinfoargs{AuthPass}  if (!$self->snmp_authkey       || $self->snmp_authkey       ne $sinfoargs{AuthPass});
-	    $uargs{snmp_privprotocol}  = $sinfoargs{PrivProto} if (!$self->snmp_privprotocol  || $self->snmp_privprotocol  ne $sinfoargs{PrivProto});
-	    $uargs{snmp_privkey}       = $sinfoargs{PrivPass}  if (!$self->snmp_privkey       || $self->snmp_privkey       ne $sinfoargs{PrivPass});
+	    $uargs{snmp_securityname}  = $sinfoargs{SecName}   if (!$self->snmp_securityname  || 
+								   $self->snmp_securityname  ne $sinfoargs{SecName});
+	    $uargs{snmp_securitylevel} = $sinfoargs{SecLevel}  if (!$self->snmp_securitylevel || 
+								   $self->snmp_securitylevel ne $sinfoargs{SecLevel});
+	    $uargs{snmp_authprotocol}  = $sinfoargs{AuthProto} if (!$self->snmp_authprotocol  || 
+								   $self->snmp_authprotocol  ne $sinfoargs{AuthProto});
+	    $uargs{snmp_authkey}       = $sinfoargs{AuthPass}  if (!$self->snmp_authkey       || 
+								   $self->snmp_authkey       ne $sinfoargs{AuthPass});
+	    $uargs{snmp_privprotocol}  = $sinfoargs{PrivProto} if (!$self->snmp_privprotocol  || 
+								   $self->snmp_privprotocol  ne $sinfoargs{PrivProto});
+	    $uargs{snmp_privkey}       = $sinfoargs{PrivPass}  if (!$self->snmp_privkey       || 
+								   $self->snmp_privkey       ne $sinfoargs{PrivPass});
 	}else{
 	    $uargs{community} = $sinfoargs{Community} if (!$self->community || $self->community ne $sinfoargs{Community});
 	}
