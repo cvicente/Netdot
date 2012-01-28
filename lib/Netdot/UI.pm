@@ -1461,7 +1461,7 @@ sub build_backbone_graph {
     my ($self, %argv) = @_;
     my ($filename) = @argv{'filename'};
     
-    my $g = GraphViz->new(layout=>'dot', truecolor=>1, bgcolor=>"#ffffff00",ranksep=>2.0, rankdir=>"0", 
+    my $g = GraphViz->new(layout=>'dot', truecolor=>1, bgcolor=>"#ffffff00",ranksep=>2.0, rankdir=>1, 
 			  node=>{shape=>"house", fillcolor=>'#ffffff88', style=>'filled', fontsize=>10},
 			  edge=>{dir=>'none', fontsize=>10, labelfontsize=>8, arrowhead=>'none', 
 				 arrowtail=>'none', color=>'black'});
@@ -1548,7 +1548,7 @@ sub build_backbone_graph_html {
     
     my $g = $self->build_backbone_graph(%argv);
 
-    return "<img alt=\"Backbone Graph\" src=\"$img\" usemap=\"#test\" border=\"0\">" . $g->as_cmapx;
+    return "<img alt=\"Backbone Graph\" style=\"max-width:100%;\" src=\"$img\" usemap=\"#test\" border=\"0\">" . $g->as_cmapx;
 }
 
 ############################################################################
