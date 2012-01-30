@@ -2487,13 +2487,6 @@ sub info_update {
     
     my $class = ref $self;
     my $start = time;
-    my $dbh = $class->db_Main;
-    my $sql = "SELECT id, dp_remote_id, dp_remote_ip, dp_remote_port, dp_remote_type FROM interface WHERE device = $self";
-    my $before_stmt = $dbh->prepare($sql);
-    my $after_stmt = $dbh->prepare($sql);
-    #running this sql query so we can compare the interfaces on this device before the update, with the interfaces
-    #after the update, so we'll know which links to update in the topography graph
-    $before_stmt->execute();
     
     # Show full name in output
     my $host = $self->fqdn;
@@ -2653,54 +2646,6 @@ sub info_update {
 	    $self->throw_fatal("Model::Device::info_update: Unable to set AutoCommit on");
 	}
     }
-
-
-    #now that the updates have been done, lets take the "after" shot
-    $after_stmt->execute();
-
-    my @interfaces_to_check = ();
-    #lets build two hashes to store before and after information in, the key of the hash will be the interface
-    #id, the value will be a concatenation of all the data
-    my %before_hash;
-    my %after_hash;
-    while( my @row = $before_stmt->fetchrow_array() ){
-	my $i;
-	for ($i=1; $i<5; $i++){
-	    $row[$i] ||= 0; # Avoid warnings about concatenation of uninitialized values
-	}
-	$before_hash{$row[0]} = $row[1].$row[2].$row[3].$row[4];
-    }
-    while( my @row = $after_stmt->fetchrow_array() ){
-	my $i;
-	for ($i=1; $i<5; $i++){
-	    $row[$i] ||= 0; # Avoid warnings about concatenation of uninitialized values
-	}
-        $after_hash{$row[0]} = $row[1].$row[2].$row[3].$row[4];
-    }
-
-    #we will have to loop through each hash, since before_hash might have some keys that after_hash doesn't, and visa versa
-    #these checking operations should be very efficient however
-    foreach( keys %before_hash ){
-        if ( exists $before_hash{$_} && exists $after_hash{$_} && $before_hash{$_} ne $after_hash{$_} ){
-            push(@interfaces_to_check, $_);
-        }
-    }
-    foreach( keys %after_hash ){
-        if ( exists $before_hash{$_} && exists $after_hash{$_} && $before_hash{$_} ne $after_hash{$_} ){
-            push(@interfaces_to_check, $_);
-        }
-    }
-    #now we'll put our findings in a hash to pass to Topology->discover.  We want to exclude all protocols except dp
-    #print "So we're going to look at @interfaces_to_check <br/>";
-    my %topo_argv = ();
-    if( ( scalar @interfaces_to_check) && !$argv{pretend} ){
-    	$topo_argv{'interfaces'} = (\@interfaces_to_check);
-    	$topo_argv{'exclude_stp'} = 1;
-    	$topo_argv{'exclude_fdb'} = 1;
-    	$topo_argv{'exclude_p2p'} = 1;
-    	Netdot::Topology->discover(%topo_argv);
-    }	
-    
 
     return $self;
 }
@@ -5185,7 +5130,7 @@ sub _update_modules {
 						       });
 			}
 		    }
-		    $asset_args{product_id} = $product->id;
+		    $asset_args{product_id} = $product->id if $product;
 		}
 		$asset->update(\%asset_args); 
 		$args{asset_id} = $asset->id;
