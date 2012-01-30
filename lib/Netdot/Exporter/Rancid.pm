@@ -71,8 +71,8 @@ sub generate_configs {
     my ($self) = @_;
 
     my $query = $self->{_dbh}->selectall_arrayref("
-                SELECT     rr.name, zone.name, p.name, p.sysobjectid, e.name, d.sysdescription,
-                           d.monitor_config, d.monitor_config_group, d.down_from, d.down_until
+                SELECT     rr.name, zone.name, p.name, p.sysobjectid, p.config_type, e.name, e.config_type,
+                           d.sysdescription, d.monitor_config, d.monitor_config_group, d.down_from, d.down_until
                  FROM      device d, rr, zone, product p, entity e, asset a
                 WHERE      d.name=rr.id
                   AND      rr.zone=zone.id
@@ -83,8 +83,8 @@ sub generate_configs {
     
     my %groups;
     foreach my $row ( @$query ){
-	my ($rrname, $zone, $product, $oid, $vendor, $sysdescr,
-	    $monitor, $group, $down_from, $down_until) = @$row;  
+	my ($rrname, $zone, $product, $oid, $p_ctype, $vendor, $v_ctype, 
+	    $sysdescr, $monitor, $group, $down_from, $down_until) = @$row;  
 
 	my $name = $rrname . "." . $zone;
 
@@ -117,7 +117,11 @@ sub generate_configs {
 	    }
 	}
 
-	my $mfg = $self->_convert_mfg($vendor, $sysdescr);
+	my $mfg = $self->_convert_mfg(vendor   => $vendor, 
+				      v_ctype  => $v_ctype, 
+				      p_ctype  => $p_ctype,
+				      sysdescr => $sysdescr,
+	    );
 	unless ( $mfg ) {
 	    $logger->debug("Netdot::Exporter::Rancid::generate_configs: $name: $vendor has no RANCID device_type mapping");
 	    next;
@@ -150,16 +154,25 @@ sub generate_configs {
 
 
 ############################################################################
+# Choose the RANCID device type
 sub _convert_mfg {
-    my ($self, $vendor, $sysdescr) = @_;
+    my ($self, %argv) = @_;
+    my ($vendor, $v_ctype, $p_ctype, $sysdescr) = 
+	@argv{'vendor', 'v_ctype', 'p_ctype', 'sysdescr'};
+
     return unless $vendor;
 
     my $mfg;
-    # vendor
-    foreach my $key ( keys %{$self->{MFG_MAP}} ){
-	if ( $vendor =~ /$key/i ){
-	    $mfg = $self->{MFG_MAP}{$key};
-	    last;
+    if ( $p_ctype ){
+	$mfg = $p_ctype;
+    }elsif ( $v_ctype ){
+	$mfg = $v_ctype;
+    }else{
+	foreach my $key ( keys %{$self->{MFG_MAP}} ){
+	    if ( $vendor =~ /$key/i ){
+		$mfg = $self->{MFG_MAP}{$key};
+		last;
+	    }
 	}
     }
     # More granularity for some vendors

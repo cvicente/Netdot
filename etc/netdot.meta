@@ -3252,6 +3252,14 @@ $meta = {
         tag => 'Availability',
         type => 'bigint'
       },
+      config_type => {
+        default => '',
+        description => 'Device type to use when monitoring configuration with tools such as RANCID',
+        length => '255',
+        nullable => 1,
+        type => 'varchar',
+        tag => 'Config Type',
+      },
       contactlist => {
         default => '',
         description => '',
@@ -3349,6 +3357,7 @@ $meta = {
         'asname',
         'asnumber',
         'oid',
+	'config_type',
         'info'
       ],
       brief => [
@@ -3362,6 +3371,7 @@ $meta = {
         'type',
         'contactlist',
         'oid',
+	'config_type',
         'info'
       ],
       peer => [
@@ -5637,6 +5647,14 @@ $meta = {
   Product => {
     table_db_name => 'product',
     columns => {
+      config_type => {
+        default => '',
+        description => 'Device type to use when monitoring configuration with tools such as RANCID',
+        length => '255',
+        nullable => 1,
+        type => 'varchar',
+        tag => 'Config Type',
+      },
       description => {
         default => '',
         description => 'A short description for this Product',
@@ -5749,6 +5767,7 @@ $meta = {
         'description',
         'sysobjectid',
         'manufacturer',
+	'config_type',
         'part_number',
         'latest_os',
         'info'
