@@ -509,8 +509,8 @@ sub insert {
     my $config_owner  = Netdot->config->get('DEFAULT_DEV_OWNER');
     my $default_owner = Entity->search(name=>$config_owner)->first || Entity->search(name=>'Unknown')->first;
 
-    # Assin defaults
-    # These will be overridden by the given arguments
+    # Assign defaults
+    # These will be overridden by given arguments
 
     my %devtmp = (
 	community          => 'public',
