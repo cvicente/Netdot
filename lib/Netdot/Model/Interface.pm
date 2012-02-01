@@ -496,14 +496,19 @@ sub update_ip {
 	return;
     }
     
+    $logger->debug(sprintf("%s: Subnet configured in interface is %s", $label, $args{subnet}));
+		   
     # We might have to add a subnet
-    if ( $self->device->ipforwarding && $args{add_subnets} && (my $subnet = $args{subnet}) ){
+    if ( $args{add_subnets} && (my $subnet = $args{subnet}) ){
 	my ($subnetaddr, $subnetprefix);
 	if ( $subnet =~ /^(.+)\/(\d+)$/ ){
 	    ($subnetaddr, $subnetprefix) = ($1, $2);
 	}else{
 	    $self->throw_fatal("Model::Interface::update_ip: Invalid subnet: $subnet");
 	}
+
+	$logger->debug(sprintf("%s: Adding or updating subnet %s/%d", 
+			       $label, $subnetaddr, $subnetprefix));
 	
 	if ( ($version == 4 && $subnetprefix == 31) || $subnetaddr ne $address ){
 	    my %iargs;

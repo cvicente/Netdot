@@ -38,7 +38,7 @@ my $USAGE = <<EOF;
 
     Optional args:
         [c, --community] [r, --retries] [o, --timeout] [v, --version] [d, --debug]
-        [--add-subnets] [--subs-inherit] [--with-bgp-peers] [--pretend] [--atomic]
+        [--add-subnets <0|1>] [--subs-inherit <0|1>] [--with-bgp-peers <0|1>] [--pretend] [--atomic]
         
     Argument Detail: 
     -H, --host <hostname|address>        Update given host only.
@@ -60,9 +60,9 @@ my $USAGE = <<EOF;
     -T, --topology                       Update Topology
     -A, --arp                            Get ARP tables
     --atomic                             Make updates atomic (enable transactions)
-    --add-subnets                        When discovering routers, add subnets to database if they do not exist
-    --subs-inherit                       When adding subnets, have them inherit information from the Device
-    --with-bgp-peers                     When discovering routers, maintain their BGP Peers
+    --add-subnets <0|1>                  Enable/Disable trying to add subnets from routing devices
+    --subs-inherit <0|1>                 Enable/Disable having new subnets inherit information from device 
+    --with-bgp-peers <0|1>               Enable/Disable maintaining BGP peer information
     --pretend                            Do not commit changes to the database
     --recursive                          Recursively discover unknown neighbors (with -T)
     -h, --help                           Print help (this message)
@@ -92,9 +92,9 @@ my $result = GetOptions( "H|host=s"          => \$host,
 			 "priv-proto:s"      => \$priv_proto,
 			 "priv-pass:s"       => \$priv_pass,
 			 "atomic"            => \$ATOMIC,
-			 "add-subnets"       => \$ADDSUBNETS,
-			 "subs-inherit"      => \$SUBSINHERIT,
-			 "with-bgp-peers"    => \$BGPPEERS,
+			 "add-subnets:s"     => \$ADDSUBNETS,
+			 "subs-inherit:s"    => \$SUBSINHERIT,
+			 "with-bgp-peers:s"  => \$BGPPEERS,
 			 "pretend"           => \$PRETEND,
 			 "recursive"         => \$RECURSIVE,
 			 "h|help"            => \$HELP,
@@ -116,6 +116,13 @@ if ( ($host && $db) || ($host && $blocks) || ($host && $file ) || ($db && $block
 unless ( $INFO || $FWT || $ARP || $TOPO ){
     print $USAGE;
     die "Error: You need to specify at least one of -I, -F, -A or -T\n";
+}
+
+foreach my $flagref ( \$ADDSUBNETS, \$SUBSINHERIT, \$BGPPEERS ){
+    if ( defined $$flagref && !($$flagref =~ /^(:?0|1)$/o) ){
+	print $USAGE;
+	die "Error: Invalid value for boolean parameter";
+    }
 }
 
 my @communities = split ',', $commstrs if defined $commstrs;

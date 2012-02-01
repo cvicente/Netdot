@@ -255,6 +255,11 @@ sub _validate_arp {
 	    }
 	}
     }
+    if ( Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET') ){
+	$logger->warn("We have no subnet information. ARP validation will fail except for link-local addresses")
+	    unless %devsubnets;
+    }
+
     my %valid;
     foreach my $key ( keys %{$cache} ){
 	my $iname = $self->_reduce_iname($key);
@@ -276,7 +281,7 @@ sub _validate_arp {
 	    }
 	    $mac = $validmac;
 	    if ( Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET') ){
-		if ( !Netdot->config->get('IGNORE_IPV6_LINK_LOCAL') ){
+		if ( $version == 6 && !Netdot->config->get('IGNORE_IPV6_LINK_LOCAL') ){
 		    # This check does not work with link-local, so if user wants those
 		    # just validate them
 		    if ( Ipblock->is_link_local($ip) ){

@@ -5196,16 +5196,16 @@ sub _update_interfaces {
     }
     
     # How to deal with new subnets
-    # First grab defaults from config file
-    my $add_subnets_default  = $self->config->get('ADDSUBNETS');
-    my $subs_inherit_default = $self->config->get('SUBNET_INHERIT_DEV_INFO');
-    
-    # Then check what was passed
-    my $add_subnets   = ( defined($info->{type}) && $info->{ipforwarding} && defined($argv{add_subnets}) ) ? 
-	$argv{add_subnets} : $add_subnets_default;
-    my $subs_inherit = ( $add_subnets && defined($argv{subs_inherit}) ) ? 
-	$argv{subs_inherit} : $subs_inherit_default;
-    
+    # We'll only do this for stuff that routes packets
+    my ($add_subnets, $subs_inherit);
+    if ( $info->{ipforwarding} ){
+	# Given arguments take precedence over configuration
+	$add_subnets = (defined($argv{add_subnets}))? 
+	    $argv{add_subnets} : $self->config->get('ADDSUBNETS');
+	$subs_inherit = ( $add_subnets && defined($argv{subs_inherit}) ) ? 
+	    $argv{subs_inherit} : $self->config->get('SUBNET_INHERIT_DEV_INFO');
+    }
+
     # Get old IPs (if any)
     my %old_ips;
     if ( my $devips = $self->get_ips ){
