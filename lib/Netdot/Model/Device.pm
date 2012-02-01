@@ -5146,7 +5146,8 @@ sub _update_modules {
 	}else{
 	    # Create new object
 	    # Make sure that asset is not used by some other module
-	    if ( my $other = $asset->device_modules->first ){
+	    my $other;
+	    if ( $asset && ($other = $asset->device_modules->first) ){
 		$logger->warn(sprintf("%s: Cannot insert module %d (%s). ".
 				      "Another module exists (%s) with same S/N: %s",
 				      $host, $number, $name, $other->name, $asset->serial_number));
