@@ -5097,9 +5097,10 @@ sub _update_modules {
 	$args{device} = $self->id;
 	my $name = $args{name} || $args{description};
 	
+	my $asset;
 	# find or create asset object for given serial number and product
 	if ( my $serial = delete $args{serial_number} ){
-	    if ( my $asset = Asset->find_or_create({serial_number => $serial}) ){
+	    if ( $asset = Asset->find_or_create({serial_number => $serial}) ){
 
 		# clear reservation comment as soon as hardware gets installed
 		my %asset_args = (reserved_for => "");
@@ -5132,7 +5133,7 @@ sub _update_modules {
 		    }
 		    $asset_args{product_id} = $product->id if $product;
 		}
-		$asset->update(\%asset_args); 
+		$asset->update(\%asset_args);
 		$args{asset_id} = $asset->id;
 	    }
 	}
@@ -5144,6 +5145,13 @@ sub _update_modules {
 	    $module->update(\%args);
 	}else{
 	    # Create new object
+	    # Make sure that asset is not used by some other module
+	    if ( my $other = $asset->device_modules->first ){
+		$logger->warn(sprintf("%s: Cannot insert module %d (%s). ".
+				      "Another module exists (%s) with same S/N: %s",
+				      $host, $number, $name, $other->name, $asset->serial_number));
+		return;
+	    }
 	    $logger->info("$host: New module $number ($name) found. Inserting.");
 	    $module = DeviceModule->insert(\%args);
 	}
