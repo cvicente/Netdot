@@ -2234,7 +2234,7 @@ sub get_user_person {
     }elsif ( my $default_user_type = $self->config->get('DEFAULT_REMOTE_AUTHED_USER_TYPE') ){
 
 	# If it's "none", do not attempt to create a Person
-	$self->throw_user("Username $username not found in Person table")
+	$self->throw_user("Username $username not found")
 	    if ( $default_user_type =~ /^none$/i );
 
 	if ( $default_user_type =~ /^User|Operator|Admin$/i ){
