@@ -57,7 +57,7 @@ my $USAGE = <<EOF;
     --priv-pass <string>                 SNMP privacy key
     -I, --info                           Get device info
     -F, --fwt                            Get forwarding tables
-    -T, --topology                       Update Topology
+    -T, --topology                       Update Topology (set communities first in Site.conf)
     -A, --arp                            Get ARP tables
     --atomic                             Make updates atomic (enable transactions)
     --add-subnets <0|1>                  Enable/Disable trying to add subnets from routing devices
