@@ -116,6 +116,45 @@ sub find_duplex_mismatches {
     }
 }
 
+#################################################################
+=head2 - dev_name_number - Hash all interfaces by device, name and number
+
+  Arguments: 
+    None
+  Returns:   
+    Hash ref of hash refs
+  Examples:
+    my $map = Interface->dev_name_number();
+
+=cut
+sub dev_name_number {
+    my ($class) = @_;
+    $class->isa_class_method('dev_name_number');
+
+    # Build the SQL query
+    $logger->debug(sub{ "Interface::dev_name_number: Retrieving all interfaces" });
+
+    my $dbh = $class->db_Main;
+    my $sth = $dbh->prepare_cached("SELECT i.id, i.number, i.name, d.id 
+                                      FROM device d, interface i 
+                                     WHERE i.device=i.id");	
+    $sth->execute();
+    my $aref = $sth->fetchall_arrayref;
+
+    # Build the hash
+    my %map;
+    foreach my $row ( @$aref ){
+	my ($iid, $inum, $iname, $did) = @$row;
+	$map{$did}{number}{$inum} = $did;
+	$map{$did}{name}{$iname}  = $did;
+    }
+    $logger->debug(sub{ "Interface::dev_name_number ...done" });
+
+    return \%map;
+    
+}
+
+
 =head1 OBJECT METHODS
 =cut
 ################################################################

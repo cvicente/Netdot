@@ -1516,6 +1516,71 @@ sub get_all_from_block {
 }
 
 #################################################################
+=head2 get_base_macs_from_all - Retrieve base MACs from all devices
+
+  Arguments: 
+    None
+  Returns:   
+    Hashref with key=address, value=device
+  Examples:
+   my $devmacs = Device->get_base_macs_from_all();
+
+=cut
+sub get_base_macs_from_all {
+    my ($class) = @_;
+    $class->isa_class_method('get_base_macs_from_all');
+
+    # Build the SQL query
+    $logger->debug(sub{ "Device::get_base_macs_from_all: Retrieving all Device MACs..." });
+
+    my $dbh = $class->db_Main;
+    my $aref = $dbh->selectall_arrayref("SELECT p.address, d.id
+                                           FROM physaddr p, device d, asset a
+                                          WHERE a.physaddr=p.id
+                                            AND d.asset_id=a.id
+                                         ");
+    # Build a hash of mac addresses to device ids
+    my %dev_macs;
+    foreach my $row ( @$aref ){
+	my ($address, $id) = @$row;
+	$dev_macs{$address} = $id;
+    }
+    return \%dev_macs;
+}
+
+#################################################################
+=head2 get_if_macs_from_all - Retrieve MACs from all device interfaces
+
+  Arguments: 
+    None
+  Returns:   
+    Hashref with key=address, value=device
+  Examples:
+   my $devmacs = Device->get_if_macs_from_all();
+
+=cut
+sub get_if_macs_from_all {
+    my ($class) = @_;
+    $class->isa_class_method('get_if_macs_from_all');
+
+    # Build the SQL query
+    $logger->debug(sub{ "Device::get_if_macs_from_all: Retrieving all Interface MACs..." });
+
+    my $dbh = $class->db_Main;
+    my $aref = $dbh->selectall_arrayref("SELECT p.address, d.id
+                                          FROM physaddr p, device d, interface i
+                                          WHERE i.device=d.id AND i.physaddr=p.id
+                                         ");
+    # Build a hash of mac addresses to device ids
+    my %dev_macs;
+    foreach my $row ( @$aref ){
+	my ($address, $id) = @$row;
+	$dev_macs{$address} = $id;
+    }
+    return \%dev_macs;
+}
+
+#################################################################
 =head2 get_macs_from_all
     
     Retrieve all MAC addresses that belong to Devices
@@ -1532,32 +1597,15 @@ sub get_macs_from_all {
     my ($class) = @_;
     $class->isa_class_method('get_macs_from_all');
 
-    # Build the SQL query
-    $logger->debug(sub{ "Device::get_macs_from_all: Retrieving all Device MACs..." });
-
-    my $dbh = $class->db_Main;
-    my $aref1 = $dbh->selectall_arrayref("SELECT p.address, d.id
-                                          FROM physaddr p, device d, asset a
-                                          WHERE a.physaddr=p.id
-                                            AND d.asset_id=a.id
-                                         ");
-    my $aref2 = $dbh->selectall_arrayref("SELECT p.address, d.id
-                                          FROM physaddr p, device d, interface i
-                                          WHERE i.device=d.id AND i.physaddr=p.id
-                                         ");
-    # Build a hash of mac addresses to device ids
-    my %dev_macs;
-    foreach my $row ( @$aref1 ){
-	my ($address, $id) = @$row;
-	$dev_macs{$address} = $id;
-    }
-    foreach my $row ( @$aref2 ){
-	my ($address, $id) = @$row;
-	$dev_macs{$address} = $id;
-    }
-    return \%dev_macs;
+    my $dev_macs = $class->get_base_macs_from_all();
+    my $if_macs  = $class->get_if_macs_from_all();
     
+    while ( my($k, $v) = each %$if_macs ){
+	$dev_macs->{$k} = $v;
+    }
+    return $dev_macs;
 }
+
 #################################################################
 =head2 get_within_downtime
     

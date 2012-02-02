@@ -73,7 +73,7 @@ sub discover {
     
         my @i = @{ $argv{'interfaces'} };
         $sql_query_modifier .= " AND ";
-        $sql_query_modifier .= return_sql_filter(@i);
+        $sql_query_modifier .= _return_sql_filter(@i);
     }
     # Get all existing links, or if there is anything in $sql_query_modifier, only the links specified
     my %old_links;
@@ -356,7 +356,7 @@ sub get_dp_links {
     if($argv{'interfaces'}){
 	$sql_query_modifier = " AND ";
         my @interfaces = @{ $argv{'interfaces'} };
-	$sql_query_modifier .= return_sql_filter(@interfaces);
+	$sql_query_modifier .= _return_sql_filter(@interfaces);
     }
     my $excluded_blocks = $class->config->get('EXCLUDE_UNKNOWN_DP_DEVS_FROM_BLOCKS') || {};
 
@@ -365,7 +365,12 @@ sub get_dp_links {
     my $dbh = Netdot::Model->db_Main;
     my $results;
 
-    my $sql = "SELECT device, id, dp_remote_ip, dp_remote_id, dp_remote_port FROM interface WHERE (dp_remote_ip IS NOT NULL OR dp_remote_id IS NOT NULL) AND dp_remote_port IS NOT NULL AND (dp_remote_ip != '' OR dp_remote_id != '') AND dp_remote_port != ''".$sql_query_modifier;
+    my $sql = "SELECT  device, id, dp_remote_ip, dp_remote_id, dp_remote_port 
+                 FROM  interface 
+                WHERE (dp_remote_ip IS NOT NULL OR dp_remote_id IS NOT NULL) 
+                  AND  dp_remote_port IS NOT NULL 
+                  AND (dp_remote_ip != '' OR dp_remote_id != '') 
+                  AND  dp_remote_port != ''".$sql_query_modifier;
 
     my $sth = $dbh->prepare($sql);
 
@@ -374,9 +379,11 @@ sub get_dp_links {
 
     # Now go through everything looking for results
     my %links = ();
-    my $allmacs        = Device->get_macs_from_all();
-    my $interface_macs = PhysAddr->from_interfaces();
-    my $allips         = Device->get_ips_from_all();
+    my $allmacs   = Device->get_macs_from_all();
+    my $base_macs = Device->get_base_macs_from_all();
+    my $macs2ints = PhysAddr->map_all_to_ints();
+    my $allips    = Device->get_ips_from_all();
+    my $intsmap   = Interface->dev_name_number();
     my %ips2discover;
 
     foreach my $row ( @$results ){
@@ -391,20 +398,18 @@ sub get_dp_links {
 
         if ( $r_id ) {  
             foreach my $rem_id (split ';', $r_id){
-                if ( $rem_id =~ /($MAC)/i ){
+                if ( $rem_id =~ /($MAC)/io ){
                     my $mac = PhysAddr->format_address($1);
-                    if ( my $mac_id = $interface_macs->{$mac} ){
-			my @ints = Interface->search(physaddr=>$mac_id);
-			if ( !@ints ){
-			    $logger->debug("Topology::get_dp_links: Cannot find Interface using $mac");
-			}elsif ( scalar(@ints) > 1 ){
+		    my ($h, @ints);
+                    if ( ($h = $macs2ints->{$mac}) && (ref($h) eq 'HASH') && (@ints = keys %$h) ){
+			if ( scalar(@ints) > 1 ){
 			    $logger->debug("Topology::get_dp_links: There are multiple interfaces using $mac. Ignoring.");
-			}elsif ( my $dev = Device->search(physaddr=>$mac_id)->first ){
+			}elsif ( my $dev = $base_macs->{$mac} ){
 			    # this means that this mac is also a base_mac 
 			    # don't set rem_int because it would most likely be wrong
 			    $rem_dev = $dev;
 			}elsif ( $ints[0]->type eq 'propVirtual' || $ints[0]->type eq 'l2vlan' ){
-			    # Ignore virtual interfaces
+			    # Ignore virtual interfaces, but do set the remote device
 			    $rem_dev = $ints[0]->device;
 			}else{
 			    $rem_int = $ints[0];
@@ -415,6 +420,8 @@ sub get_dp_links {
 					       $iid, $rem_int));
 			    last;
 			}
+		    }else{
+			$logger->debug("Topology::get_dp_links: Cannot find Interfaces using $mac");
 		    }
 		    if ( !$rem_dev ){
 			if ( $rem_dev = $allmacs->{$mac} ){
@@ -427,8 +434,7 @@ sub get_dp_links {
 		}elsif ( $rem_id =~ /($IP)/ ){
 		    # Turns out that some devices send IP addresses as IDs
 		    my $decimalip = Ipblock->ip2int($1);
-		    $rem_dev = $allips->{$decimalip};
-		    if ( $rem_dev ){
+		    if ( $rem_dev = $allips->{$decimalip} ){
 			last;
 		    }else {
 			$logger->debug("Topology::get_dp_links: Interface id $iid: ".
@@ -436,6 +442,7 @@ sub get_dp_links {
 		    }
 		}else{
 		    # Try to find the device name
+		    $rem_id = _sanitize_name($rem_id);
 		    $rem_dev = Device->search(sysname=>$rem_id)->first 
 			|| Device->search(name=>$rem_id)->first;
 		    if ( $rem_dev ) {
@@ -502,9 +509,10 @@ sub get_dp_links {
 	unless ( $rem_int ){
 	    if ( $r_port ) {
 		foreach my $rem_port ( split ';', $r_port ) {
-		    $rem_int = Interface->search(device=>$rem_dev, number=>$rem_port)->first;
-		    unless ( $rem_int ){
-			$rem_int = Interface->search(device=>$rem_dev, name=>$rem_port)->first;
+		    if ( exists $intsmap->{$rem_dev} ){
+			my $rem_int_id = $intsmap->{$rem_dev}{number}{$rem_port} ||
+			    $intsmap->{$rem_dev}{name}{$rem_port};
+			$rem_int = Interface->retrieve($rem_int_id) if $rem_int_id;
 		    }
 		    unless ( $rem_int ){
 			# If interface name has a slot/sub-slot number
@@ -1163,7 +1171,7 @@ sub _cmp_des_p {
 }
 
 #takes a list of interface ids and builds the sql needed to limit a query on interface to only use those interfaces
-sub return_sql_filter{
+sub _return_sql_filter{
     my @interfaces = @_;
     my $sql_query_modifier = "(";
         for(my $i = 0; $i < (scalar @interfaces); $i++){
@@ -1174,6 +1182,18 @@ sub return_sql_filter{
         }
     $sql_query_modifier .= ")";
     return $sql_query_modifier;
+}
+
+#####################################################################################
+# Sanitze name from dp_remote_id values
+# Vendors sometimes like to add crap to the device name
+sub _sanitize_name{
+    my $name = shift;
+
+    # Cisco Nexus adds (S/N) at the end
+    $name =~ s/\(.+\)$//o;
+
+    return $name;
 }
 
 =head1 AUTHORS

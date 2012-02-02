@@ -285,7 +285,6 @@ sub validate {
 #################################################################
 =head2 from_interfaces - Get addresses that belong to interfaces
 
-
   Arguments: 
     None
   Returns:   
@@ -321,6 +320,45 @@ sub from_interfaces {
     $logger->debug(sub{ "Physaddr::from_interfaces: ...done" });
 
     return \%int_macs;
+    
+}
+
+#################################################################
+=head2 map_all_to_ints - Map all MAC addresses to their interfaces
+
+  Arguments: 
+    None
+  Returns:   
+    Hash ref of hash refs
+     key => address
+     value => hashref with key => int id, value => mac id
+  Examples:
+    my $macs_to_ints = PhysAddr->map_all_to_ints();
+
+=cut
+sub map_all_to_ints {
+    my ($class) = @_;
+    $class->isa_class_method('map_all_to_ints');
+
+    # Build the SQL query
+    $logger->debug(sub{ "PhysAddr::map_all_to_ints: Retrieving all Interface MACs..." });
+
+    my $dbh = $class->db_Main;
+    my $sth = $dbh->prepare_cached("SELECT p.id, p.address, i.id 
+                                      FROM physaddr p, interface i 
+                                     WHERE i.physaddr=p.id");	
+    $sth->execute();
+    my $mac_aref = $sth->fetchall_arrayref;
+
+    # Build the hash
+    my %map;
+    foreach my $row ( @$mac_aref ){
+	my ($mid, $address, $iid) = @$row;
+	$map{$address}{$iid} = $mid;
+    }
+    $logger->debug(sub{ "Physaddr::map_all_to_ints: ...done" });
+
+    return \%map;
     
 }
 
