@@ -562,10 +562,9 @@ sub get_dp_links {
 	    } 		
 	}
 	$logger->info("Topology::get_dp_links: Discovering unknown neighbor: $ip");
-    my $communities = Netdot->config->get('DEFAULT_SNMPCOMMUNITIES');
-    eval {
-        push @new_devs, Device->discover(name=>$ip, do_info=>1, communities=>$communities);
-    };
+	eval {
+	    push @new_devs, Device->discover(name=>$ip);
+	};
     }
     if ( @new_devs && $argv{recursive} ){
 	$logger->info("Netdot::Topology::get_dp_links: Recursively discovering unknown neighbors");
