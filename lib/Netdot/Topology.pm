@@ -408,17 +408,20 @@ sub get_dp_links {
 			    # this means that this mac is also a base_mac 
 			    # don't set rem_int because it would most likely be wrong
 			    $rem_dev = $dev;
-			}elsif ( $ints[0]->type eq 'propVirtual' || $ints[0]->type eq 'l2vlan' ){
-			    # Ignore virtual interfaces, but do set the remote device
-			    $rem_dev = $ints[0]->device;
 			}else{
-			    $rem_int = $ints[0];
-			    $rem_dev = $rem_int->device;
-			    $links{$iid} = $rem_int->id;
-			    $links{$rem_int->id} = $iid;
-			    $logger->debug(sprintf("Topology::get_dp_links: Found link: %d -> %d", 
-					       $iid, $rem_int));
-			    last;
+			    my $iface = Interface->retrieve($ints[0]);
+			    if ( $iface->type eq 'propVirtual' || $iface->type eq 'l2vlan' ){
+				# Ignore virtual interfaces, but do set the remote device
+				$rem_dev = $ints[0]->device;
+			    }else{
+				$rem_int = $ints[0];
+				$rem_dev = $rem_int->device;
+				$links{$iid} = $rem_int->id;
+				$links{$rem_int->id} = $iid;
+				$logger->debug(sprintf("Topology::get_dp_links: Found link: %d -> %d", 
+						       $iid, $rem_int));
+				last;
+			    }
 			}
 		    }else{
 			$logger->debug("Topology::get_dp_links: Cannot find Interfaces using $mac");
