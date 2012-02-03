@@ -412,9 +412,9 @@ sub get_dp_links {
 			    my $iface = Interface->retrieve($ints[0]);
 			    if ( $iface->type eq 'propVirtual' || $iface->type eq 'l2vlan' ){
 				# Ignore virtual interfaces, but do set the remote device
-				$rem_dev = $ints[0]->device;
+				$rem_dev = $iface->device;
 			    }else{
-				$rem_int = $ints[0];
+				$rem_int = $iface;
 				$rem_dev = $rem_int->device;
 				$links{$iid} = $rem_int->id;
 				$links{$rem_int->id} = $iid;
