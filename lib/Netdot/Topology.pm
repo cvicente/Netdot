@@ -34,6 +34,7 @@ Netdot Device Topology Class
     exclude_p2p - optional, set to true to exclude P2P
     interfaces  - optional, interfaces to preform topology update on
     recursive   - optional, recursively discover unknown neighbors
+    communities - Array of communities to try when discovering unknown neighbors
   Returns:
     True
   Examples:
@@ -59,8 +60,6 @@ sub discover {
     my $stp_links = $class->get_stp_links() if ( $SOURCES{STP} );
     my $fdb_links = $class->get_fdb_links() if ( $SOURCES{FDB} );
     
-    #get_dp_links uses the optional argument 'devices' since its called when 
-    #we do updatedevices.pl -I. 
     my $dp_links  = $class->get_dp_links(%argv)  if ( $SOURCES{DP}  );
     
     my $p2p_links = $class->get_p2p_links() if ( $SOURCES{P2P} );
@@ -338,21 +337,22 @@ sub update_links {
 =head2 get_dp_links - Get links between devices based on Discovery Protocol (CDP/LLDP) Info 
 
   Arguments:  
-    interfaces - Optional interfaces to get dp links from
-    recursive  - Recursively discover unknown neighbors
+    interfaces  - Optional interfaces to get dp links from
+    recursive   - Recursively discover unknown neighbors
+    communities - Array of communities to try when discovering unknown neighbors
   Returns:    
     Hashref with link info
   Example:
-    my $links = Netdot::Topology->get_dp_links(\@devices);
+    my $links = Netdot::Topology->get_dp_links(\@interfaces);
 
 =cut
 sub get_dp_links {
     my ($class, %argv) = @_;
     $class->isa_class_method('get_dp_links');
  
-    #if the optional argument device is present, we have to modify our sql query to 
+    #if the optional argument interfaces is present, we have to modify our sql query to 
     #only select interface objects where the device id is present
-    my $sql_query_modifier = ""; #will be null and won't affect the statement if %argv{'device'} is null
+    my $sql_query_modifier = ""; #will be null and won't affect the statement if %argv{'interfaces'} is null
     if($argv{'interfaces'}){
 	$sql_query_modifier = " AND ";
         my @interfaces = @{ $argv{'interfaces'} };
@@ -563,7 +563,7 @@ sub get_dp_links {
 	}
 	$logger->info("Topology::get_dp_links: Discovering unknown neighbor: $ip");
 	eval {
-	    push @new_devs, Device->discover(name=>$ip);
+	    push @new_devs, Device->discover(name=>$ip, communities=>$argv{communities});
 	};
     }
     if ( @new_devs && $argv{recursive} ){

@@ -212,11 +212,9 @@ if ( $TOPO ){
     $logger->level($DEBUG) if ( $_DEBUG ); # Notice that $DEBUG is imported from Log::Log4perl
     $logger->add_appender($logscr);
     my %uargs;
-    $uargs{recursive} = 1 if $RECURSIVE;
-    eval {
-	Netdot::Topology->discover(%uargs);
-    };
-    die "ERROR: $@\n" if $@;
+    $uargs{recursive}   = 1 if $RECURSIVE;
+    $uargs{communities} = \@communities if @communities;
+    Netdot::Topology->discover(%uargs);
 }
 
 $logger->info(sprintf("$0 total runtime: %s\n", Netdot->sec2dhms(time-$start)));
