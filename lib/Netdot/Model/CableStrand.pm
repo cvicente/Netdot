@@ -17,15 +17,15 @@ Netdot::Model::CableStrand
 =cut
 
 ##################################################################
-=head2 findsequences - Fetch available sequences between sites
+=head2 find_sequences - Fetch available sequences between sites
 
   Arguments:
     - start: id of starting Site.
     - end:   id of ending Site.
   Returns:
-      Hash
+      Arrayref
   Examples:
-    %sequences = CableStrand->find_sequences($start, $end);
+    $sequences = CableStrand->find_sequences($start, $end);
 
 =cut
 sub find_sequences{
@@ -34,29 +34,20 @@ sub find_sequences{
     $class->throw_user("Missing required arguments: start/end") 
 	unless (defined $start && defined $end);
     
-    my %sequences = ();
+    my @sequences;
     my $dbh = $class->db_Main;
     eval{
-	my $st = $dbh->prepare_cached("SELECT DISTINCT closet.id  
-                                       FROM   closet, room, floor, site
-                                       WHERE  closet.room=room.id
-                                         AND  room.floor=floor.id
-                                         AND  floor.site=site.id
-                                         AND  site.id=?");
-	$st->execute($start);
-	my $closet_ids = join(",", $st->fetchrow_array());
 	
-	return unless ($closet_ids);
-
-	my $bb_st = $dbh->prepare_cached("SELECT backbonecable.id 
-                                          FROM   backbonecable 
-                                          WHERE  start_closet IN ($closet_ids) 
-                                              OR end_closet IN ($closet_ids)");
-	
-	my $splice_st = $dbh->prepare_cached("SELECT cablestrand.id 
-                                              FROM   cablestrand 
-                                              WHERE  circuit_id = 0 
-                                                 AND cable = ?");
+	# Get strands that either start or end in given sites
+	my $strands_st = $dbh->prepare_cached("SELECT DISTINCT cs.id
+                                                        FROM   cablestrand cs, backbonecable bc, closet c,
+                                                               room r, floor f, site s
+                                                        WHERE  cs.circuit_id IS NULL AND cs.cable=bc.id  
+                                                          AND  site IN (?,?)
+                                                          AND  c.room=r.id
+                                                          AND  r.floor=f.id
+                                                          AND  f.site=s.id
+                                                          AND (bc.start_closet=c.id OR bc.end_closet=c.id)");
 	
 	my $site_st1 = $dbh->prepare_cached("SELECT COUNT(*) 
                                              FROM   cablestrand, backbonecable, closet, room, floor
@@ -76,41 +67,32 @@ sub find_sequences{
                                                 AND room.floor = floor.id
                                                 AND floor.site = ?");
 	
+	$strands_st->execute($start, $end);
 	my $i = 0;
-	$bb_st->execute();
-	while ( my ($id) = $bb_st->fetchrow_array() ) {
-	    $splice_st->execute($id);
-	    while ( my ($strand_id) = $splice_st->fetchrow_array() ){
-		my $strand = CableStrand->retrieve($strand_id);
-		my @seq = $strand->get_sequence_path();
-		my $end_strand;
-		if ($seq[0] == $strand_id) {
-		    $end_strand = $seq[scalar(@seq) - 1];
-		} elsif ($seq[scalar(@seq) - 1] == $strand_id) {
-		    $end_strand = $seq[0];
-		} else {
-		    next;
-		}
-		
-		if (($site_st1->execute($end_strand, $end) && ($site_st1->fetchrow_array())[0] != 0) ||
-		    ($site_st2->execute($end_strand, $end) && ($site_st2->fetchrow_array())[0] != 0)) {
-		    my $end_strand_obj = CableStrand->retrieve($end_strand);
-		    $sequences{++$i} = $end_strand_obj->get_sequence();
-		}
+	while ( my ($strand_id) = $strands_st->fetchrow_array() ){
+	    my $strand = CableStrand->retrieve($strand_id);
+	    my @seq = $strand->get_sequence_path();
+	    my $end_strand;
+	    if ($seq[0] == $strand_id) {
+		$end_strand = $seq[scalar(@seq) - 1];
+	    } elsif ($seq[scalar(@seq) - 1] == $strand_id) {
+		$end_strand = $seq[0];
+	    } else {
+		next;
+	    }
+	    
+	    if (($site_st1->execute($end_strand, $end) && ($site_st1->fetchrow_array())[0] != 0) ||
+		($site_st2->execute($end_strand, $end) && ($site_st2->fetchrow_array())[0] != 0)) {
+		my $end_strand_obj = CableStrand->retrieve($end_strand);
+		push @sequences, $end_strand_obj->get_sequence();
 	    }
 	}
-	
-	$st->finish();
-	$bb_st->finish();
-	$splice_st->finish();
-	$site_st1->finish();
-	$site_st2->finish();
     };
     if ( my $e = $@ ){
 	$class->throw_fatal("$e");
     }
 
-    return %sequences;
+    return \@sequences;
 }
 
 =head1 INSTANCE METHODS

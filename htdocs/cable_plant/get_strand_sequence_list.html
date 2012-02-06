@@ -11,10 +11,10 @@ Arguments;
 </%doc>
 
 <%args>
-$start_id   => $ARGS{"start"};
-$end_id     => $ARGS{"end"};
-$field_name => $ARGS{"field_name"};
-$form_name  => $ARGS{"form_name"};
+$start_id
+$end_id
+$field_name
+$form_name
 </%args>
 
 
@@ -34,12 +34,12 @@ my $MAX_RESULTS = 1000;
 printf("opener.document.forms[\'%s\'][\'%s\'].options.length = 0;\n", $form_name, $field_name);
 
 my $i = 0;
-my %sequences = CableStrand->find_sequences($start_id, $end_id);
-foreach my $seq ( keys(%sequences) ){
+my $sequences = CableStrand->find_sequences($start_id, $end_id);
+foreach my $seq ( @$sequences ){
     my (@names, @ids);
-    foreach my $row ( @{$sequences{$seq}} ){
-        push(@ids, @$row[0]);
-        push(@names, @$row[1]);
+    foreach my $row ( @$seq ){
+	push(@ids, $row->[0]);
+        push(@names, $row->[1]);
     }
 
     printf("opener.document.forms[\'%s\'][\'%s\'].options[%d] = new Option();\n", $form_name, $field_name, $i);

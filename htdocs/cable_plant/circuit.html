@@ -11,6 +11,7 @@ $strand_sort   => undef;
 $search        => undef;
 $_action       => undef;
 $sequence_list => undef;
+$add_interfaces => undef;
 $user          => $ui->get_current_user($r)
 </%args>
 
@@ -37,10 +38,8 @@ my $manager = $ui->get_permission_manager($r);
     
 if ( $_action ){
     if ( $_action eq "SEARCH" ) {
-
 	if ( length($search) ){
-	    # remove spaces at beginning and end
-	    $search =~ s/^\s*(.*)\s*$/$1/;
+	    $search = Netdot->rem_lt_sp($search);
 	    unless ( @list = Circuit->search_by_keyword($search) ){
 		print  "<p><b>No results</b>";
 		$m->abort;
@@ -62,15 +61,18 @@ if ( $_action ){
     }elsif( $_action eq "UPDATE_CIRCUIT" ){
 	my %update_info = ();
 	print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
-	if (!(%update_info = $ui->form_to_db(%ARGS))) {
-	    $m->comp("error.mhtml", $ui->error());
+	eval {
+	    Netdot::Model->do_transaction( sub{ 
+		%update_info = $ui->form_to_db(%ARGS);
+					   });
+	};
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);
 	}
-	
 	if ($update_info{Circuit}{id}) {
 	    $id = (keys %{$update_info{Circuit}{id}})[0];
 	    $editCircuit = 0;
 	}
-	
 	# Do this to 'flush' the values associated with the object
 	# before redisplaying
 	$o = undef;
@@ -101,7 +103,7 @@ if ( $_action ){
 	    my @strands = split(/,/o, $ARGS{"__sequence_" . $1});
 	    foreach my $strandid ( @strands ){
 		my $strand = CableStrand->retrieve($strandid);
-		$strand->update({circuit_id=>0});
+		$strand->update({circuit_id=>""});
 	    }	    
 	}
     }
@@ -133,7 +135,7 @@ if ( $_action ){
 %    if ( $o->linkid ){
         Circuit for Site Link: <a href="view.html?table=SiteLink&id=<% $o->linkid %>"><% $o->linkid->name %></a>
 %    }else{
-        Circuit ID: <% $o->cid %>
+        Circuit ID: <a href="circuit.html?id=<% $o->id %>"><% $o->cid %></a>
 %    }
     </div>
     <div class="containerbodyoutside">
@@ -162,23 +164,25 @@ if ( $_action ){
 <!-- End Circuit Table -->
 
 <!-- Display list of interfaces -->
+<div class="container">
 %     my @interfaces = $o->interfaces;
-      <div class="container">
         <div class="containerheadleft">Interfaces</div>
 %       if ( $edit eq 'interfaces' ){
 	  <div class="containerheadright">&nbsp;</div>
 %       }else{
 	  <div class="containerheadright">
 	    &nbsp;
-%           if ( $manager && $manager->can($user, 'edit', $o) ){
+%           if ( @interfaces && ($manager && $manager->can($user, 'edit', $o)) ){
 	      <a href="circuit.html?id=<% $id %>&edit=interfaces">[edit]</a>
-%           }
-%           if ( $manager && $manager->can($user, 'access_admin_section', 'circuit:add_interface') ){
-              <a href="edit.html?table=Interface&circuit=<% $id %>">[add]</a>
+%           }else{
 %           }
 	  </div>
 %       }
-        <& /generic/sortresults.mhtml, object=>\@interfaces, withedit=>($edit eq 'interfaces')? 1 : 0  &>
+%       if ( @interfaces ){
+            <& /generic/sortresults.mhtml, object=>\@interfaces, withedit=>($edit eq 'interfaces')? 1 : 0  &>
+%       }else{
+            You can assign this circuit to a pair of existing device interfaces.
+%       }
       </div>
 
 <!-- Begin Cable Strand Sequence Table -->
@@ -215,8 +219,8 @@ if ( $_action ){
                 return false;
             }
 
-            var url = "get_strand_sequence_list.html?start=";
-            url += start_id + "&end=" + end_id;
+            var url = "get_strand_sequence_list.html?start_id=";
+            url += start_id + "&end_id=" + end_id;
             url += "&field_name=sequence_list";
             url += "&form_name=add_strand_form";
             var wind = window.open(url, "tmp", "width=1,height=1");
@@ -233,39 +237,35 @@ if ( $_action ){
         <form name="add_strand_form" action="circuit.html" method="POST">
         <input type="hidden" name="id" value="<% $id %>">
         <input type="hidden" name="_action" value="ADD_STRANDS">
+	
+<%perl>
+    my @sites = sort { $a->name cmp $b->name }  Site->retrieve_all();
+    </%perl>
+	<br>
+	<input type="hidden" name="page_type" value="BACKBONE">
+	Backbones from
+	<select name="start_id" style="width: 225px">
+	<option value="">-- Select --</option>
+	<%perl>
+	foreach my $site (@sites) {
+	    printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
+    }
+</%perl>
+	</select> to
+	<select name="end_id" style="width: 225px;">
+	<option value="">-- Select --</option>
+<%perl>
+	foreach my $site (@sites) {
+	    printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
+    }
+</%perl>
+	</select>
+	<input type="button" name="get_bb_list" value="Get Strand List" onClick="getStrandList();">
 
-        <div class="left">
-            <%perl>
-            my @sites = Site->retrieve_all();
-            @sites = sort { $a->name cmp $b->name } @sites;
-            </%perl>
-            <input type="hidden" name="page_type" value="BACKBONE">
-            Backbones connected from:<br>
-            <select name="start_id" style="width: 225px">
-                <option value="">-- Make your selection --</option>
-                <%perl>
-                foreach my $site (@sites) {
-                    printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
-                }
-                </%perl>
-            </select> <br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<B>- TO -</B><br>
-   
-            <select name="end_id" style="width: 225px;">
-                <option value="">-- Make your selection --</option>
-                <%perl>
-                foreach my $site (@sites) {
-                    printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
-                }
-                </%perl>
-            </select> <br />
-            <input type="button" name="get_bb_list" value="Get Strand List" onClick="getStrandList();">
-
-        </div>
-        <div class="right">
-            Available Strand Sequence(s):<br />
-            <select name="sequence_list" style="width: 500px;" multiple size="4"></select>
-    	        <br />&nbsp;<input type="submit" name="strand_add" value="Add">&nbsp;
-        </div><div class="clear"></div>
+	<p><br>
+        Available Strand Sequence(s):<br>
+         <select name="sequence_list" style="width: 500px;" multiple size="10"></select>
+         <input type="submit" name="strand_add" value="Add">&nbsp;
         </form>
 
         </div> <!-- close containerbody -->
