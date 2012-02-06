@@ -631,7 +631,7 @@ HERE
       <form action="cable_backbone.html" method="POST">
 	<input type="hidden" name="id" value="<% $id %>" />
 	<input type="hidden" name="_action" value="EDIT_RANGE" />
-	Range (i.e., strands 1-12)&nbsp; <input type="text" name="strand_range" value="" size="5" />
+	Range (i.e. 1-12)&nbsp; <input type="text" name="strand_range" value="" size="5" />
       Type:
 	<select name="fiber_type">
 	  <option value="null" selected>Select Type</option>
@@ -666,13 +666,12 @@ HERE
       <form action="cable_backbone.html" method="POST">
 	<input type="hidden" name="id" value="<% $id %>" />
 	<input type="hidden" name="_action" value="ADD_STRANDS" />
-	Manually 
-	&nbsp;<input type="submit" name="strand_add" value="Add" />&nbsp;
-	<input type="text" name="number_strands" value="0" size="3" /> strands of type 
+	Add <input type="text" name="number_strands" value="0" size="3" /> strands of type 
 	<select name="fiber_type">
 	  <option value="1">Multimode</option>
 	  <option value="2">Singlemode</option>
         </select>
+	&nbsp;<input type="submit" name="strand_add" value="Go" />&nbsp;
       </form>
     </div>
   </div>
@@ -689,20 +688,18 @@ HERE
 % if ( $o->strands && @bbones ){
   <div class="container">
     <div class="containerhead">
-      Manually Add Splice Range
+      Manually Splice Strand Range
     </div>
     
     <div class="containerbody">
       <form action="cable_backbone.html" method="POST">
 	<input type="hidden" name="id" value="<% $id %>" />
 	<input type="hidden" name="_action" value="ADD_SPLICE_RANGE" />
-	Manually 
-	&nbsp;<input type="submit" name="splice_add" value="Add Splice Range"> (i.e., strands 1-12)&nbsp; strands &nbsp;
+	Splice strands (i.e. 1-12)
 	<input type="text" name="range1" value="" size="4">&nbsp;from this backbone, to strands &nbsp;
 	<input type="text" name="range2" value="" size="4">&nbsp;from 
 	<SELECT NAME="splice_bb_end">
 	  <OPTION VALUE="">Backbone...</OPTION>
-	  
 	  <%perl>
 	  my %stored = ();
           foreach my $bb (sort { $a->name cmp $b->name } @bbones) {
@@ -711,8 +708,8 @@ HERE
 	      printf("<OPTION VALUE=\"%s\">%s, %s</OPTION>\n", $bb->id, $bb->name, $bb->end_closet->get_label());
 	  }
 	  </%perl>
-
 	</SELECT>
+	&nbsp;<input type="submit" name="splice_add" value="Go">
       </form>
     </div>
   </div>
