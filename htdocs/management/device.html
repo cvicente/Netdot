@@ -316,24 +316,6 @@ my $refresh_url = "device.html?id=$id&view=$view";
 
 % if ( $view eq "Basics" || $view eq "All" ){
 
-<script language="javascript">
-<!--
-
-// Chooses the 0 valued option in a select box.  Used to enforce the
-// mutual exclusivity of the room and closet options in the
-// group/location form below.
-function setNull(select){
-    for (var i = 0; i < select.options.length || alert("No null in list.  This means nathan screwed up dynamic_list.js"); ++i){
-	if (select.options[i].value == 0) {
-	    select.options[i].selected = true;
-	    break;
-	}
-    }
-}
-
--->
-</script>
-
 % if ( $editgen || $editloc || $editcomments || $editmgmt ) {
         <form name="netdotform" action="device.html" method="POST">
 	    <input type="hidden" name="id" value="<% $id %>">
