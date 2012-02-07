@@ -87,6 +87,32 @@ if ( $submit ){
   <body class="bodytag">
 %}
 
+<script language="javascript">
+<!--
+/* 
+ * Set the permissions list based on the value of Object Class
+ * 
+*/
+function setPerms(){
+    classSel = document.getElementById('object_class');
+    permsSel = document.getElementById('access');
+    permsSel.options.length = 0;
+    if ( classSel.value == 'Ipblock' ){
+	permsSel.options[0] = new Option('View',      'view');
+	permsSel.options[1] = new Option('Edit',      'edit');
+	permsSel.options[2] = new Option('Delete',    'delete');
+	permsSel.options[3] = new Option('Choose IP', 'choose_ip');
+	permsSel.options[4] = new Option('None',      'none');
+    }else{
+	permsSel.options[0] = new Option('View',      'view');
+	permsSel.options[1] = new Option('Edit',      'edit');
+	permsSel.options[2] = new Option('Delete',    'delete');
+	permsSel.options[3] = new Option('None',      'none');
+    }
+}
+
+-->
+</script>
 
 <div class="container">
     <div class="containerhead">
@@ -122,7 +148,7 @@ if ( $submit ){
 	 push @cell_data, 
 	 &{sub{
 	     my $out;
-	     $out .= "<select name=\"object_class\" id=\"object_class\" onChange=\"jsrsSendqueryRA(this.options[selectedIndex].text, 'object_id');\">";
+	     $out .= "<select name=\"object_class\" id=\"object_class\" onChange=\"jsrsSendqueryRA(this.options[selectedIndex].text, 'object_id');setPerms()\">";
 	     $out .= "<option value=\"0\">-- Select --</option SELECTED>";
 	     foreach my $class ( @classes ){
 		 $out .= "<option name=\"$class\" >$class</option>";
@@ -141,15 +167,7 @@ if ( $submit ){
          }};
 
 	 push @field_headers, 'Permissions:';
-	 push @cell_data, 
-	 &{sub{
-	      my $out;
-	      $out .= "<select name=\"access\" MULTIPLE>";
-	      foreach my $perm ( qw(view edit delete none) ){
-	 	 $out .= "<option name=\"\">$perm</option>";
-	      }
-	      $out .= "</select>";
-	 }};
+         push @cell_data, "<select id=\"access\" name=\"access\" MULTIPLE></select>";
 	 
 </%perl>
 	  <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data, 
