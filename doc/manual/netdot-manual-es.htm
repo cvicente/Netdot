@@ -47,8 +47,8 @@ code.sourceCode span.er { color: red; font-weight: bold; }
 <li><a href="#operaci&#243;n"><span class="toc-section-number">4</span> Operación</a><ul>
 <li><a href="#gesti&#243;n-de-dispositivos"><span class="toc-section-number">4.1</span> Gestión de Dispositivos</a><ul>
 <li><a href="#descubrimiento-de-dispositivos-utilizando-la-interfaz-web"><span class="toc-section-number">4.1.1</span> Descubrimiento de Dispositivos utilizando la interfaz web</a></li>
-<li><a href="#interfaz-de-l&#237;nea-de-comando-para-el-descrubrimiento-de-los"><span class="toc-section-number">4.1.2</span> Interfaz de línea de comando para el descrubrimiento de los</a></li>
-<li><a href="#documentacion-de-dispositivos"><span class="toc-section-number">4.1.3</span> Documentacion de dispositivos</a></li>
+<li><a href="#interfaz-de-l&#237;nea-de-comandos-para-el-descrubrimiento-de-los"><span class="toc-section-number">4.1.2</span> Interfaz de línea de comandos para el descrubrimiento de los</a></li>
+<li><a href="#documentaci&#243;n-de-dispositivos"><span class="toc-section-number">4.1.3</span> Documentación de dispositivos</a></li>
 </ul></li>
 <li><a href="#gesti&#243;n-del-espacio-de-direcciones-ip"><span class="toc-section-number">4.2</span> Gestión del espacio de direcciones IP</a><ul>
 <li><a href="#bloques-ip"><span class="toc-section-number">4.2.1</span> Bloques IP</a><ul>
@@ -72,10 +72,10 @@ code.sourceCode span.er { color: red; font-weight: bold; }
 <li><a href="#por-tipomodelo"><span class="toc-section-number">4.8.1.1</span> Por Tipo/Modelo</a></li>
 <li><a href="#por-modeloos"><span class="toc-section-number">4.8.1.2</span> Por Modelo/OS</a></li>
 <li><a href="#dispositivos-con-tiempo-de-inactividad-programado"><span class="toc-section-number">4.8.1.3</span> Dispositivos con tiempo de inactividad programado</a></li>
-<li><a href="#conexiones-duplex-no-coincidentes"><span class="toc-section-number">4.8.1.4</span> Conexiones duplex no coincidentes</a></li>
-<li><a href="#so-no-coincidentes"><span class="toc-section-number">4.8.1.5</span> SO no coincidentes</a></li>
+<li><a href="#conexiones-duplex-discordantes-duplex-mismatches"><span class="toc-section-number">4.8.1.4</span> Conexiones duplex discordantes (Duplex Mismatches)</a></li>
+<li><a href="#versiones-de-sistemas-operativos-discordantes-os-mismatches"><span class="toc-section-number">4.8.1.5</span> Versiones de sistemas operativos discordantes (OS Mismatches)</a></li>
 </ul></li>
-<li><a href="#reportes-ipip-reports"><span class="toc-section-number">4.8.2</span> Reportes IP/IP Reports</a><ul>
+<li><a href="#reportes-ip-ip-reports"><span class="toc-section-number">4.8.2</span> Reportes IP (IP Reports)</a><ul>
 <li><a href="#subredes-no-utilizadasunused-subnets"><span class="toc-section-number">4.8.2.1</span> Subredes no utilizadas/Unused Subnets</a></li>
 <li><a href="#subredes-congestionadasmaxed-out-subnets"><span class="toc-section-number">4.8.2.2</span> Subredes congestionadas/Maxed out Subnets</a></li>
 <li><a href="#direcciones-est&#225;ticas-en-desusounused-static-addresses"><span class="toc-section-number">4.8.2.3</span> Direcciones estáticas en desuso/Unused Static Addresses</a></li>
@@ -83,11 +83,17 @@ code.sourceCode span.er { color: red; font-weight: bold; }
 <li><a href="#direcciones-macmac-addresses"><span class="toc-section-number">4.8.3</span> Direcciones MAC/MAC Addresses</a></li>
 </ul></li>
 </ul></li>
-<li><a href="#exportar-configuraciones-para-programas-externos"><span class="toc-section-number">5</span> Exportar configuraciones para programas externos</a></li>
+<li><a href="#exportar-configuraciones-para-programas-externos"><span class="toc-section-number">5</span> Exportar configuraciones para programas externos</a><ul>
+<li><a href="#integraci&#243;n-con-herramienta-cacti"><span class="toc-section-number">5.1</span> Integración con herramienta Cacti</a></li>
+</ul></li>
 <li><a href="#control-de-acceso"><span class="toc-section-number">6</span> Control de Acceso</a><ul>
 <li><a href="#asignar-permisos-a-los-usuarios"><span class="toc-section-number">6.1</span> Asignar permisos a los usuarios</a></li>
 </ul></li>
-<li><a href="#preguntas-frecuentes"><span class="toc-section-number">7</span> Preguntas Frecuentes</a></li>
+<li><a href="#restful-interface"><span class="toc-section-number">7</span> RESTful Interface</a><ul>
+<li><a href="#recursos-tipo-rest"><span class="toc-section-number">7.1</span> Recursos tipo REST</a></li>
+<li><a href="#m&#243;dulo-perl-para-programas-cliente-en-cpan"><span class="toc-section-number">7.2</span> Módulo Perl para programas cliente en CPAN</a></li>
+</ul></li>
+<li><a href="#preguntas-frecuentes"><span class="toc-section-number">8</span> Preguntas Frecuentes</a></li>
 </ul>
 </div>
 <p></p>
@@ -109,9 +115,9 @@ code.sourceCode span.er { color: red; font-weight: bold; }
 <li><p>Descubrimiento y visualización de topología de capa/nivel 2, utilizando las siguientes fuentes de información: CDP+LLDP, Spanning Tree Protocol, tablas de reenvío de los switches y subredes punto a punto de enrutadores.</p></li>
 <li><p>Gestión del espacio de direcciones IPv4 e IPv6 (también conocido como IPAM), incluyendo organizacion jerárquica, visualización de direcciones en bloques y seguimiento de direcciones IP y MAC.</p></li>
 <li><p>Información del cableado de planta: sitios/edificios, habitaciones/cuartos, tomas de red, closets/armarios, enlaces entre edificios o dentro de los mismos, circuitos dedicados, etc.</p></li>
-<li><p>Información de contacto para las diferentes entidades que se documentan: departmentos, proveedores, fabricantes, BGP peers, etc.</p></li>
+<li><p>Información de contacto para las diferentes entidades que se documentan: departmentos, proveedores, fabricantes, peers BGP, etc.</p></li>
 <li><p>Netdot puede generar ficheros de configuración para un conjunto de herramientas de gestión y administración de redes: <a href="http://www.nagios.org">Nagios</a>, <a href="http://www.sysmon.org">Sysmon</a>, <a href="http://www.shrubbery.net/rancid">RANCID</a>, <a href="http://www.cacti.net">Cacti</a>. Con la version 0.9, Netdot puede generar ficheros de configuración de zona para ISC BIND (DNS) y DHCP ISC (DHCPD).</p></li>
-<li><p>Con la version 0.9, Netdot implementa control de acceso por usuarios y roles, lo cual permite que tareas como la gestión de direcciones IP, documentar los puertos de switch/conmutadores y la actualización de la información de contacto puede ser delegada a grupos específicos con acceso limitado a la interfaz web.</p></li>
+<li><p>A partir de la version 0.9, Netdot implementa control de acceso por usuarios y roles, lo cual permite que tareas como la gestión de direcciones IP, documentar los puertos de switch/conmutadores y la actualización de la información de contacto puede ser delegada a grupos específicos con acceso limitado a la interfaz web.</p></li>
 </ul>
 <h2 id="estructura"><a href="#TOC"><span class="header-section-number">2.1</span> Estructura</a></h2>
 <p>Netdot está compuesto por los siguiente componentes:</p>
@@ -121,14 +127,14 @@ code.sourceCode span.er { color: red; font-weight: bold; }
 <li><p>Las librerías</p>
 <p>El código principal está compuesto por clases de Perl orientadas a objeto, lo cual puede funcionar como interfaz de programación (API). Una ventaja de este modelo es que la presentación, captura de datos y base de datos puede distribuirse sin importar las diferentes arquitecturas.</p></li>
 <li><p>Interfaz de Usuario (IU)</p>
-<p>La interfaz de usuarios esta desarrollada para la web y es el medio de interacción principal con la herramienta.</p></li>
+<p>La interfaz de usuarios web esta basada en un sistema de plantillas llamado HTML::Mason</p></li>
 <li><p>Scripts de la interfaz de comandos (CLI)</p>
 <p>Algunas tareas como descubrimiento de dispositivos, mantenimiento de la BD, scripts de exportación de configuraciones, etc., pueden ser ejecutados desde la interfaz de comandos. También estas tareas pueden ser automatizadas ejecutándolas periódicamente a través de CRON.</p></li>
 </ol>
 <h1 id="instalaci&#243;n"><a href="#TOC"><span class="header-section-number">3</span> Instalación</a></h1>
 <h2 id="obtener-y-desempaquetar-el-archivo-de-distribuci&#243;n"><a href="#TOC"><span class="header-section-number">3.1</span> Obtener y desempaquetar el archivo de distribución</a></h2>
 <p>Descargar el paquete de Netdot más reciente desde el sitio web</p>
-<pre><code>https://netdot.uoregon.edu/trac/wiki/DownLoad
+<pre><code>https://osl.uoregon.edu/redmine/projects/netdot/wiki/DownLoad
 </code></pre>
 <p>Desempaquetar el archivo en un directorio diferente del aquél en que se desea instalar Netdot, por ejemplo:</p>
 <pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">tar</span> xzvf netdot.tar.gz -C /usr/local/src/</code></pre>
@@ -137,60 +143,75 @@ code.sourceCode span.er { color: red; font-weight: bold; }
 <li><p>Perl 5.6.1 o superior</p></li>
 <li><p>Apache2 con <code>mod_perl2</code></p></li>
 <li><p>MySQL (5.x recomendado) o PostgreSQL (soporte parcial/limitado)</p></li>
-<li><p>Servidor de autenticación (opcional). Netdot implementa autenticacion local y también a través de Radius y LDAP.</p>
+<li><p>Servidor de autenticación (opcional). Netdot implementa autenticacion local y también a través de RADIUS y LDAP.</p>
 <ul>
-<li><p>Para Radius, recomendamos FreeRadius, disponible en: <a href="http://www.freeradius.org/"><code class="url">http://www.freeradius.org/</code></a></p></li>
+<li><p>Para RADIUS, recomendamos FreeRadius, disponible en: <a href="http://www.freeradius.org/"><code class="url">http://www.freeradius.org/</code></a></p></li>
 <li><p>Para LDAP, puede optar por OpenLdap, disponible en: <a href="http://www.openldap.org/"><code class="url">http://www.openldap.org/</code></a></p></li>
 </ul></li>
 <li><p>El paquete RRDtool, incluyendo sus módulos Perl, disponible en: <a href="http://oss.oetiker.ch/rrdtool/"><code class="url">http://oss.oetiker.ch/rrdtool/</code></a></p></li>
 <li><p>el paquete GraphViz, disponible en: <a href="http://www.graphviz.org/"><code class="url">http://www.graphviz.org/</code></a></p></li>
-<li><p>Un conjunto de módulos Perl específicos. Para comprobar los módulos necesarios y su estado en el sistema ejecute:</p>
-<pre class="sourceCode"><code class="sourceCode bash">~% <span class="kw">make</span> testdeps</code></pre></li>
+</ul>
+<p>*<br />* Un conjunto de módulos Perl específicos. Para comprobar los módulos necesarios y su estado en el sistema ejecute:</p>
+<pre><code>~~~~ {.bash}
+~% make testdeps
+~~~~
+</code></pre>
+<ul>
 <li><p>Existen dos formas para instalar los módulos necesarios: La primera forma (recomendada) es mediante los gestores de paquetes de la distribución que se está utilizando.</p>
 <p>Para sistemas con APT (ej. Debian o sistemas basados en Debian como Ubuntu), ejecutar:</p>
 <pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">make</span> installdeps-apt-get</code></pre>
 <p>Para sistemas con RPM (ej. Red Hat, Centos, Fedora), ejecute:</p>
 <pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">make</span> installdeps-rpm</code></pre>
 <blockquote>
-<p><strong>Tip</strong> Si después de ejecutar los pasos anteriores siguen faltando módulos, se puede completar el proceso ejecutando el siguiente paso.</p>
+<p><strong>Pista</strong> Si después de ejecutar los pasos anteriores siguen faltando módulos, se puede completar el proceso ejecutando el siguiente paso.</p>
 </blockquote></li>
 <li><p>Se puede instalar cualquier módulo que falte, utilizando CPAN, ejecutando:</p>
 <pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">make</span> installdeps</code></pre>
 <p>Si desea instalar los módulos individualmente, puede ejecutar lo siguiente:</p>
 <pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">perl</span> -MCPAN -e shell<br /><span class="kw">&gt;</span><span class="kw">install</span> Module::Blah</code></pre>
 <blockquote>
-<p><strong>Tip</strong> Si tiene problemas para instalar el módulo <code>Net::IRR</code>, es posible que el módulo <code>Net::TCP</code> no haya sido instalado. Existe un falla (&quot;bug&quot;) y el parche está disponible en: <a href="http://rt.cpan.org/Public/Bug/Display.html?id=43071"><code class="url">http://rt.cpan.org/Public/Bug/Display.html?id=43071</code></a></p>
+<p><strong>Pista</strong> Si tiene problemas para instalar el módulo <code>Net::IRR</code>, es posible que el módulo <code>Net::TCP</code> no haya sido instalado. Existe un falla (&quot;bug&quot;) y el parche está disponible en: <a href="http://rt.cpan.org/Public/Bug/Display.html?id=43071"><code class="url">http://rt.cpan.org/Public/Bug/Display.html?id=43071</code></a></p>
 </blockquote></li>
 </ul>
 <h2 id="configuraci&#243;n"><a href="#TOC"><span class="header-section-number">3.3</span> Configuración</a></h2>
 <p>Netdot tiene un fichero de configuración que se necesita actualizar en función de las necesidades de la instalación. Se necesita crear una copia de <code>Default.conf</code> con el nombre <code>Site.conf</code></p>
 <pre class="sourceCode"><code class="sourceCode bash">~% <span class="kw">cp</span> etc/Default.conf etc/Site.conf</code></pre>
 <p>Realizado esto, se procede a modificar <code>Site.conf</code> en función de la configuración de instalación. En el fichero aparece cada una de las opciones con su descripción correspondiente.</p>
-<p><strong>Netdot procedera a leer primero Default.conf y luego Site.conf</strong></p>
-<p>La razón para tener dos ficheros de configuración es que cuando se realice una actualización del sistema, el fichero <code>Default.conf</code> será modificado (para adicionar nuevas variables, etc.) y así no será necesario sobreescribir el fichero <code>Site.conf</code> con las definiciones de la instalación anterior.</p>
+<p><strong>Netdot leerá primero Default.conf y luego Site.conf</strong></p>
+<p>La razón para tener dos ficheros de configuración es que cuando se realice una actualización del sistema, el fichero <code>Default.conf</code> será modificado (para agregar nuevas variables, etc.) y así no será necesario sobreescribir el fichero <code>Site.conf</code> con las definiciones de la instalación anterior.</p>
+<blockquote>
+<p><strong>Pista</strong> Tenga en cuenta que cada vez que actualice el fichero etc/Site.conf, es necesario reiniciar Apache para que los cambios surjan efecto en la interfaz web.</p>
+</blockquote>
 <h2 id="actualizaci&#243;n-a-nuevas-versiones"><a href="#TOC"><span class="header-section-number">3.4</span> Actualización a nuevas versiones</a></h2>
-<p>El esquema de la base de datos de Netdot sólo tiene cambios importantes entre versiones de diferentes ramas de desarrollo. Por ejemplo, si se actualiza de la version 0.8.x a 0.9.x, se necesita ejecutar un script de actualización para cambiar la base de datos actual al nuevo esquema. Esto se puede realizar ejecutando el comando:</p>
+<p>Debe verificar si la versión que está instalando tiene nuevos requerimientos:</p>
+<pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">make</span> testdeps<br />~# <span class="kw">make</span> installdeps <span class="kw">(</span>or installdeps-rpm, installdeps-apt-get<span class="kw">)</span></code></pre>
+<p>El esquema de la base de datos de Netdot <strong>generalmente</strong> sólo tiene cambios importantes entre revisiones mayores. Por ejemplo, si se actualiza de la version 0.8.x a 0.9.x, se necesita ejecutar un script de actualización para cambiar la base de datos actual al nuevo esquema.</p>
+<p>Si en su caso fuera necesario efectuar una actualización, puede hacerlo con el siguiente comando:</p>
 <pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">make</span> upgrade</code></pre>
-<p>Sin embargo, se se actualiza de la version 0.8.X a 0.8.Y, sólo sera necesario ejecutar make install y reiniciar el servidor web Apache.</p>
+<p>Finalmente, instale Netdot y reinicie Apache:</p>
+<pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">make</span> <span class="kw">install</span><br />~# /etc/init.d/httpd restart</code></pre>
 <h2 id="instalando-netdot-por-primera-vez"><a href="#TOC"><span class="header-section-number">3.5</span> Instalando Netdot por primera vez</a></h2>
 <ul>
 <li><p>Compruebe que se ha creado el fichero etc/Site.conf, en el paquete de instalación, con las opciones de configuración en función de sus necesidades (Está explicado anteriormente).</p></li>
 <li><p>Ubicándose en el directorio raíz del paquete de instalación de Netdot, ejecute:</p>
 <pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">make</span> <span class="kw">install</span> [par&#225;metros]</code></pre>
-<p>Las opciones para definir los parámetros son las siguientes:</p>
-<pre class="sourceCode"><code class="sourceCode bash"><span class="ot">PREFIX=</span>DIRECTORIO-DE-INSTALACION <span class="kw">(</span>/usr/local/netdot<span class="kw">)</span> <br /><span class="ot">APACHEUSER=</span>USUARIO-QUE-EJECUTA-APACHE <span class="kw">(</span>apache<span class="kw">)</span><br /><span class="ot">APACHEGROUP=</span>GRUPO-QUE-EJECUTA-APACHE <span class="kw">(</span>apache<span class="kw">)</span></code></pre></li>
+<p>Opcionalmente, incluya los siguientes parámetros:</p>
+<pre class="sourceCode"><code class="sourceCode bash"><span class="ot">PREFIX=</span>DIRECTORIO-DE-INSTALACION <span class="kw">(</span>/usr/local/netdot<span class="kw">)</span> <br /><span class="ot">APACHEUSER=</span>USUARIO-QUE-EJECUTA-APACHE <span class="kw">(</span>apache<span class="kw">)</span><br /><span class="ot">APACHEGROUP=</span>GRUPO-QUE-EJECUTA-APACHE <span class="kw">(</span>apache<span class="kw">)</span></code></pre>
+<blockquote>
+<p><strong>Pista</strong> Usuarios de Debian/Ubuntu: Probablemente tendrá que especificar las variables APACHEUSER y APACHEGROUP con el valor &quot;www-data&quot;, el cual es el usuario con el que el servidor Apache se ejecuta.</p>
+</blockquote></li>
 <li><p>Terminado el proceso anterior, se procede a crear la base de datos.</p>
 <pre class="sourceCode"><code class="sourceCode bash">~% <span class="kw">make</span> installdb [parametros]</code></pre>
 <p>Recuerde que necesita definir <code>DB_DBA</code> y <code>DB_DBA_PASSWORD</code> con el usuario y contraseña de administración de la base de datos en el fichero etc/Site.conf antes de ejecutar el comando. Alternativamente, se puede especificar <code>DB_DBA</code> y <code>DB_DBA_PASSWORD</code> como parámetros en la línea de comandos (como estos datos son usados frecuentemente por Netdot, necesita definirlos finalmente en el fichero etc/Site.conf</p>
 <pre class="sourceCode"><code class="sourceCode bash"><span class="ot">DB_DBA=</span>CUENTA-ADMIN-BASE-DE-DATOS<br /><span class="ot">DB_DBA_PASSWORD=</span>CONTRASE&#209;A-CUENTA-ADMIN-BASE-DE-DATOS</code></pre></li>
 </ul>
 <h2 id="configuraci&#243;n-del-servidor-web-apache"><a href="#TOC"><span class="header-section-number">3.6</span> Configuración del Servidor Web Apache</a></h2>
-<p>Edite el fichero (<em>conf/netdot_apache2_<local|radius|ldap\>.conf</em>) que viene con el paquete para establecer la autenticación Local, Radius o LDAP, se copia para el directorio de configuracion de Apache y se incluye en el fichero de configuracion de Apache (httpd.conf), por ejemplo:</p>
+<p>Edite el fichero (<em>conf/netdot_apache2_<local|radius|ldap\>.conf</em>) que viene con el paquete para establecer la autenticación Local, RADIUS o LDAP. Cópielo en el directorio de configuracion de Apache e inclúyalo en el fichero de configuracion de Apache (httpd.conf), por ejemplo:</p>
 <pre class="sourceCode"><code class="sourceCode apache">Include<span class="st"> conf/netdot_apache2_&lt;local|radius|ldap&gt;.conf</span></code></pre>
-<p>Algunas configuraciones de Apache definen un directorio (<em>/etc/apache2/conf.d</em>) donde todos los ficheros guardados ahí son incluidos automáticamente cuando Apache se inicia. Copiando el fichero de configuración a ese directorio resuelve la situación, en el caso de RADIUS, por ejemplo:</p>
+<p>Algunas configuraciones de Apache definen un directorio (<em>/etc/apache2/conf.d</em>) desde el cual se incluyen ficheros automáticamente cuando Apache se inicia. Copiando el fichero de configuración a ese directorio resuelve la situación, en el caso de RADIUS, por ejemplo:</p>
 <pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">cp</span> /usr/local/netdot/etc/netdot_apache2_radius.conf /etc/apache2/conf.d/</code></pre>
 <blockquote>
-<p><strong>Tip</strong> Asegúrese de utilizar la versión del fichero que se copia en el directorio de instalación (<code>/usr/local/netdot/etc/netdot_apache2_&lt;local|radius|ldap&gt;.conf</code>) al ejecutar make install. No utilice el fichero que está en los directorios del paquete de instalación. Al ejecutar el comando de instalación, este fichero de configuración de Apache cambia dinámicamente en función de las rutas de carpetas definidas.</p>
+<p><strong>Pista</strong> Asegúrese de utilizar la versión del fichero que se copia en el directorio de instalación (<code>/usr/local/netdot/etc/netdot_apache2_&lt;local|radius|ldap&gt;.conf</code>) al ejecutar make install. No utilice el fichero que está en el directorio fuente del paquete. Al ejecutar el comando de instalación, este fichero de configuración de Apache cambia dinámicamente en función de las rutas de carpetas definidas.</p>
 </blockquote>
 <p>Terminando todo lo anterior, reinicie Apache2. Si utiliza las opciones por defecto, cargue en su navegador la siguiente direccion:</p>
 <pre><code>http://nombreservidor.midominio/netdot/
@@ -200,20 +221,20 @@ code.sourceCode span.er { color: red; font-weight: bold; }
 password: &quot;admin&quot;
 </code></pre>
 <blockquote>
-<p><strong>Tip</strong> Si está utilizando las opciones de autenticación de Radius o LDAP, debe configurar en <code>/usr/local/netdot/etc/netdot_apache2_&lt;radius|ldap&gt;.conf</code> * la opción &quot;NetdotRadiusFailToLocal&quot; o &quot;NetdotLDAPFailToLocal&quot; con el valor &quot;yes&quot; según corresponda. Así se garantiza autenticación local mínimamente.</p>
+<p><strong>Pista</strong> Si está utilizando las opciones de autenticación de RADIUS o LDAP, debe configurar en <code>/usr/local/netdot/etc/netdot_apache2_&lt;radius|ldap&gt;.conf</code> * la opción &quot;NetdotRadiusFailToLocal&quot; o &quot;NetdotLDAPFailToLocal&quot; con el valor &quot;yes&quot; según corresponda. Así se garantiza autenticación local mínimamente.</p>
 </blockquote>
 <blockquote>
-<p><strong>Warning</strong> Recuerde cambiar la contraseña del usuario &quot;admin&quot; ! Vaya a <code>Contacts -&gt; People</code>, busque 'Admin', haga click en [edit] e introduzca una contraseña nueva. Luego haga click el botón Update.</p>
+<p><strong>Advertencia</strong> Recuerde cambiar la contraseña del usuario &quot;admin&quot; ! Vaya a <code>Contacts -&gt; People</code>, busque 'Admin', haga click en [edit] e introduzca una contraseña nueva. Luego haga click en Update.</p>
 </blockquote>
 <h2 id="tareas-programadas-utilizando-cron"><a href="#TOC"><span class="header-section-number">3.7</span> Tareas programadas utilizando CRON</a></h2>
 <p>Netdot utiliza una serie de <em>scripts</em> que deben ser ejecutados periódicamente como tareas programadas utilizando cron.</p>
 <ul>
-<li><p>Captura de las tablas de reenvío y caché ARP para seguimiento de las direcciones IP/MAC</p></li>
+<li><p>Captura de las tablas de reenvío y ARP para seguimiento de las direcciones IP/MAC</p></li>
 <li><p>Los dispositivos de la red deben ser redescubiertos utilizando SNMP de forma periódica para mantener una lista de puertos, direcciones ip, etc.</p></li>
-<li><p>Creación de la topologia de la Red</p></li>
+<li><p>Descubrimiento de la topología de la Red</p></li>
 <li><p>Netdot mantiene un historial de registros para algunos objetos cada vez que son actualizados. Con el tiempo, los registros más antiguos son borrados de la base de datos para ahorrar espacio.</p></li>
-<li><p>Netdot genera documentación que es fácil de manejar utilizando comandos de filtrado, por ejemplo: información sobre personas, localidades, asignaciones de puertos en dispositivos, etc. Esta documentación se mantiene actualizada si se exporta frecuentemente.</p></li>
-<li><p>Configuraciones para otros programas pueden generarse utilizando la información de Netdot. Actualmente se exportan configuraciones para: Nagios, Sysmon, ISC DNS, ISC DHCP y Rancid.</p></li>
+<li><p>Netdot genera documentación que es fácil de manejar utilizando comandos de filtrado (grep), por ejemplo: información sobre personas, localidades, asignaciones de puertos en dispositivos, etc. Esta documentación debería actualizarse exportándola frecuentemente.</p></li>
+<li><p>Pueden generarse configuraciones para otros programas utilizando la información de Netdot. Actualmente se exportan configuraciones para: Nagios, Sysmon, ISC DNS, ISC DHCP y Rancid.</p></li>
 <li><p>El fichero netdot.cron incluido en este paquete es un ejemplo de fichero de tareas programadas de cron para netdot. Se puede actualizar en función de las necesidades de instalación y copiarlo al directorio cron para su ejecución, por ejemplo:</p>
 <pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">cp</span> etc/netdot.cron /etc/cron.d/netdot</code></pre></li>
 </ul>
@@ -224,9 +245,9 @@ password: &quot;admin&quot;
 <p>Ir a <code>Management -&gt; Devices</code>. En las seccion &quot;Device Tasks&quot;, se hace click en [new] y se escribe el nombre o la direccián IP del dispositivo que se desea adicionar, además se selecciona la comunidad SNMP y la version, luego se hace click en [discover]. Netdot entonces consulta al dispositivo utilizando SNMP y muestra una ventana donde se puede asignar un entidad propietaria (por ejemplo, la organización) y la entidad que utiliza el dispositivo (por ejemplo, los clientes), tambien la ubicación y la lista de contactos.</p>
 <p>Si se está descubriendo un dispositivo de nivel 3 con reenvio IP activado (enrutador o cortafuegos), Netdot preguntará si se desea crear automáticamente las subredes que atiende ese dispositivo, basado en la configuracion IP de sus interfaces. Esta es una via efectiva para adicionar las subredes a Netdot.</p>
 <p>Otra opción es definir si Netdot debe asignar a cualquier nueva subred las mismas entidades de propietario y usuario configuradas en el dispositivo.</p>
-<p>Una vez que se hace click en el botón [update], Netdot muestra la información del proceso de descubrimiento y un enlace a la pagina del dispositivo.</p>
+<p>Una vez que se hace click en el botón [update], Netdot muestra la información del proceso de descubrimiento y un enlace a la página del dispositivo.</p>
 <p>Siempre se puede hacer una actualización del dispositivo a través de SNMP manualmente, haciendo click en el botón [snmp-update] en la esquina superior derecha de la página de dispositivos. Por ejemplo, si se ha adicionado un nuevo puerto, o tarjetas de interfaz u otra actualizacion física del dispositivo.</p>
-<h3 id="interfaz-de-l&#237;nea-de-comando-para-el-descrubrimiento-de-los"><a href="#TOC"><span class="header-section-number">4.1.2</span> Interfaz de línea de comando para el descrubrimiento de los</a></h3>
+<h3 id="interfaz-de-l&#237;nea-de-comandos-para-el-descrubrimiento-de-los"><a href="#TOC"><span class="header-section-number">4.1.2</span> Interfaz de línea de comandos para el descrubrimiento de los</a></h3>
 <p>dispositivos</p>
 <p>Asumiendo que está ubicado en la carpeta de instalación de Netdot (/usr/local/netdot).</p>
 <p>Se puede descubrir un dispositivo específico ejecutando:</p>
@@ -252,14 +273,14 @@ dispositivo3 comunidad3
 <pre><code>0 * * * * root /usr/local/netdot/bin/updatedevices.pl -DIFAT
 </code></pre>
 <p>Se pueden encontrar ejemplos de configuraciones para cron en etc/netdot.cron</p>
-<h3 id="documentacion-de-dispositivos"><a href="#TOC"><span class="header-section-number">4.1.3</span> Documentacion de dispositivos</a></h3>
+<h3 id="documentaci&#243;n-de-dispositivos"><a href="#TOC"><span class="header-section-number">4.1.3</span> Documentación de dispositivos</a></h3>
 <p>Una vez que se ha adicionado un dispositivo, se puede completar su documentación con más información.</p>
 <p>Ir a <code>Management -&gt; Devices</code> para realizar un búsqueda del dispositivo por nombre, dirección IP o MAC.</p>
 <p>Desde la página del dispositivo, se puede navegar a diferentes sub-secciones o pestañas, en función de la información que se desee editar.</p>
 <p>Interfaces: Aquí se pueden editar las descripciones de las interfaces, asignar los conectores de red, etc, haciendo click en el boton [edit]. Se puede editar una interfaz específica haciendo click en su número o nombre. Si se ha ejecutado un descubrimiento de la topología, se puede ver la información de los dispositivos adyacentes. Si por alguna razón el proceso de descubrimiento de la topología no detecta los dispositivos adyacentes, estos se pueden adicionar manualmente haciendo click en el botón [add] de la columna &quot;neighbor&quot;.</p>
 <p>Cuando se adiciona un vecino de forma manual, se activa el marcador &quot;Neighbor Fixed&quot; en el objeto Interface. Este marcador evita que el proceso de descubrimiento de la topología de la red elimine esa conexión.</p>
 <blockquote>
-<p><strong>Tip</strong> Las conexiones entre dispositivos adyacentes tienden a cambiar a medida que se reemplaza el hardware y se cambian las conexiones. Es por eso que las definiciones de conexiones fijas (Neighbor Fixed) pueden quedar obsoletas con facilidad. Es recomandable dejar al proceso de descubrimiento de la topología actualizar la conexiones entre dispositivos.</p>
+<p><strong>Pista</strong> Las conexiones entre dispositivos adyacentes tienden a cambiar a medida que se reemplaza el hardware y se cambian las conexiones. Es por eso que las definiciones de conexiones fijas (Neighbor Fixed) pueden quedar obsoletas con facilidad. Es recomandable dejar al proceso de descubrimiento de la topología actualizar la conexiones entre dispositivos.</p>
 </blockquote>
 <h2 id="gesti&#243;n-del-espacio-de-direcciones-ip"><a href="#TOC"><span class="header-section-number">4.2</span> Gestión del espacio de direcciones IP</a></h2>
 <p>Netdot es una herramienta muy útil para la gestión del espacio de direcciones IP (cononcido como IPAM -- IP Address Management). Las principales características son:</p>
@@ -298,7 +319,7 @@ dispositivo3 comunidad3
 <h2 id="dns"><a href="#TOC"><span class="header-section-number">4.3</span> DNS</a></h2>
 <p>Netdot puede gestionar los datos de zona de DNS. Las zonas son exportadas como ficheros de texto para ser utilizados por el servidor DNS. Actualmente, sólo está implementada la exportación de ficheros de zona para ISC BIND.</p>
 <blockquote>
-<p><strong>Tip</strong> El mecanismo por el cual los ficheros de zona son transferidos y cargados al servidor de DNS se deja en manos de los administradores. Una vía para realizar esto es instalar un servidor DNS de forma local en el servidor que ejecuta netdot y guardar los ficheros de zona en un lugar donde el software dns pueda cargarlos periódicamente. Una configuración más compleja implicaría guardar los ficheros en sistemas de control de versiones (CVS, SVN, etc), los cuales pueden ser usados por sistemas de automatizacion de configuraciones como Puppet o CfEngine, que permiten ejecutar chequeos de sintaxis y cargarlos en los servidores DNS apropiados.</p>
+<p><strong>Pista</strong> El mecanismo por el cual los ficheros de zona son transferidos y cargados al servidor de DNS se deja en manos de los administradores. Una vía para realizar esto es instalar un servidor DNS de forma local en el servidor que ejecuta netdot y guardar los ficheros de zona en un lugar donde el software dns pueda cargarlos periódicamente. Una configuración más compleja implicaría guardar los ficheros en sistemas de control de versiones (CVS, SVN, etc), los cuales pueden ser usados por sistemas de automatizacion de configuraciones como Puppet o CfEngine, que permiten ejecutar chequeos de sintaxis y cargarlos en los servidores DNS apropiados.</p>
 </blockquote>
 <p>Netdot soporta los siguientes registros DNS: A, AAAA, CNAME, DS, HINFO, LOC, MX, NAPTR, SRV, y TXT.</p>
 <p>Se pueden importar los ficheros de zona existentes hacia Netdot con la ayuda de la herramienta <code>import_bind_zones.pl</code> que está en la carpeta import</p>
@@ -315,7 +336,7 @@ dispositivo3 comunidad3
   -g, --debug           Print debugging output    
   -h, --help            Print help
 </code></pre>
-<p>Para adicionar una nueva zona manualmente, ir a <code>Management -&gt; DNS Zones</code>. Opcionalmente puede seleccionar una zona para utilizar como plantilla (template). Esto indicará a Netdot que copie la zona de plantilla, incluyendo todos sus récords, y la guarde con otro nombre. Esto es útil cuando se deben crear múltiples zonas que comparten las mismas propiedades (récords NS, MX, etc.) Haga un click en [add]. Se mostrará una nueva zona creada a partir de la plantilla, o con los valores por defecto extraídos del fichero de configuración.</p>
+<p>Para adicionar una nueva zona manualmente, vaya a <code>Management -&gt; DNS Zones</code>. Opcionalmente puede seleccionar una zona para utilizar como plantilla (template). Esto indicará a Netdot que copie la zona de plantilla, incluyendo todos sus récords, y la guarde con otro nombre. Esto es útil cuando se deben crear múltiples zonas que comparten las mismas propiedades (récords NS, MX, etc.) Haga un click en [add]. Se mostrará una nueva zona creada a partir de la plantilla, o con los valores por defecto extraídos del fichero de configuración.</p>
 <p>Una vez que la zona es creada, debe ser asignada a un bloque IP (Subnet o Container). Esto se realiza haciendo click en el boton [add] de la sección de bloques IP en la página de definición de zonas.</p>
 <p>La forma más conveniente de crear zonas inversas (in-addr.arpa ó ip6.arpa) es yendo a la página del bloque IP correspondiente, sección DNS Zones, y hacer click en [add]. Si la zona inversa correspondiente no existe, Netdot le presentará el nombre de zona apropiado y la opción de crearla. Esto es especialmente últi con bloques IPv6, los cuales suelen requerir nombres de zona muy largos.</p>
 <p>Alcanzado este punto, se pueden adicionar nuevos registros, haciendo click en el boton [add] de la sección <em>Records</em>. Los registros puede ser adicionados desde otras páginas de la interfaz web, por ejemplo, la página de direcciones IP o la página de DNS Records.</p>
@@ -365,11 +386,11 @@ dispositivo3 comunidad3
 <p>Muestra los dispositivos por fabricante, luego por modelo, mostrando la versión de OS (sistema operativo) recomendada para cada modelo (este atributo debe ser definido anteriormente) y todas las versiones de ese OS que se encuentran en la red, con los totales correspondientes.</p>
 <h4 id="dispositivos-con-tiempo-de-inactividad-programado"><a href="#TOC"><span class="header-section-number">4.8.1.3</span> Dispositivos con tiempo de inactividad programado</a></h4>
 <p>Netdot exporta configuraciones para herramientas de monitoreo de redes como Nagios. Algunos dispositivos puede que tengan un tiempo de inactividad planificado, lo cual los excluye del procesion de monitoreo durante el tiempo establecido. Este reporte muestra los dispositivos que tengan un tiempo de inactividad (Downtime) establecido.</p>
-<h4 id="conexiones-duplex-no-coincidentes"><a href="#TOC"><span class="header-section-number">4.8.1.4</span> Conexiones duplex no coincidentes</a></h4>
+<h4 id="conexiones-duplex-discordantes-duplex-mismatches"><a href="#TOC"><span class="header-section-number">4.8.1.4</span> Conexiones duplex discordantes (Duplex Mismatches)</a></h4>
 <p>Este reporte muestra una lista de interfaces adyacentes que tienen configuraciones dúplex de Ethernet incongruentes.</p>
-<h4 id="so-no-coincidentes"><a href="#TOC"><span class="header-section-number">4.8.1.5</span> SO no coincidentes</a></h4>
+<h4 id="versiones-de-sistemas-operativos-discordantes-os-mismatches"><a href="#TOC"><span class="header-section-number">4.8.1.5</span> Versiones de sistemas operativos discordantes (OS Mismatches)</a></h4>
 <p>Este reporte muestra una lista de dispositivos que tienen una versión de sistema operativo que difiere de la recomendada. La lista está agrupada por fabricante, modelo, tipo de dispositivos y version actual del SO.</p>
-<h3 id="reportes-ipip-reports"><a href="#TOC"><span class="header-section-number">4.8.2</span> Reportes IP/IP Reports</a></h3>
+<h3 id="reportes-ip-ip-reports"><a href="#TOC"><span class="header-section-number">4.8.2</span> Reportes IP (IP Reports)</a></h3>
 <h4 id="subredes-no-utilizadasunused-subnets"><a href="#TOC"><span class="header-section-number">4.8.2.1</span> Subredes no utilizadas/Unused Subnets</a></h4>
 <p>Se muestra una lista de subredes que no tienen direcciones IP de nodos asignadas. Sólo se pueden seleccionar subredes IPv4 o IPv6.</p>
 <h4 id="subredes-congestionadasmaxed-out-subnets"><a href="#TOC"><span class="header-section-number">4.8.2.2</span> Subredes congestionadas/Maxed out Subnets</a></h4>
@@ -381,11 +402,13 @@ dispositivo3 comunidad3
 <h1 id="exportar-configuraciones-para-programas-externos"><a href="#TOC"><span class="header-section-number">5</span> Exportar configuraciones para programas externos</a></h1>
 <p>Se puede utilizar la herramienta de exportación para generar los ficheros texto que serán utilizados por las aplicaciones externas.</p>
 <p>La herramienta de exportacion está disponible en la interfaz web, en la opción Export . Se selecciona el programa hacia el cual se desea exportar la configuracion y se hace click en el botón [submit]. Netdot mostrará algunos mensajes de la herramienta de exportación y las rutas donde están los ficheros que fueron creados.</p>
-<p>Adicionalmente, la herramienta de exportación puede ser ejecutada desde la línea de comandos. Por ejemplo, paa generar la configuración de Nagios:</p>
+<p>Además, la herramienta de exportación puede ser ejecutada desde la línea de comandos. Por ejemplo, paa generar la configuración de Nagios:</p>
 <pre class="sourceCode"><code class="sourceCode bash">~# bin/exporter.pl -t Nagios</code></pre>
 <p>Para exportar varias configuraciones en una sola ejecución:</p>
 <pre class="sourceCode"><code class="sourceCode bash">~# bin/exporter.pl -t Nagios,Sysmon,Rancid,BIND,DHCPD</code></pre>
 <p>Existen varios parámetros para cada configuración que se pueden definir en el fichero <code>Site.conf</code>.</p>
+<h2 id="integraci&#243;n-con-herramienta-cacti"><a href="#TOC"><span class="header-section-number">5.1</span> Integración con herramienta Cacti</a></h2>
+<p>La integración de Cacti se hace de manera diferente (es más bien una &quot;importación&quot; que una &quot;exportación&quot;). Existe un script llamado 'netdot_to_cacti.php' dentro del directorio export/cacti del paquete Netdot. Este script debe colocarse, junto con su fichero de configuración, en el directorio &quot;cli&quot; de su instalación Cacti (no es necesario que sea en el mismo servidor que aloja a Netdot, pero sí debe asegurarse de que el script pueda conectarse a la base de datos de Netdot). Deberá ejecutar este script periódicamente, por ejemplo, una vez al día.</p>
 <h1 id="control-de-acceso"><a href="#TOC"><span class="header-section-number">6</span> Control de Acceso</a></h1>
 <p>A partir de la version 0.9, netdot soporta control de acceso por niveles.</p>
 <p>Existen tres tipos de usuarios que definen los niveles de acceso en Netdot:</p>
@@ -406,11 +429,44 @@ dispositivo3 comunidad3
 <p>Para asignar permisos para usuarios específicos, se realiza lo siguiente:</p>
 <ul>
 <li><p>Asegurarse de que existe un objeto Person para el usuario. Esto se comprueba realizando una búsqueda en <code>Contacts -&gt; People</code> a partir del nombre de la persona. Si el objeto no existe, se puede crear uno nuevo haciendo click en el botón [new] en la esquina superior derecha de la página.</p></li>
-<li><p>Asegúrese que la persona tiene los atributos Username y User Type definidos. Si se ha configurado Netdot para utilizar autenticación con Radius o LDAP es necesario que el Usuario/Username coincida con el que se ha definido en esos sistema de autenticación. Si está utilizando autenticación local, es necesario que se defina una contraseña local en el atributo Password.</p></li>
+<li><p>Asegúrese que la persona tiene los atributos Username y User Type definidos. Si se ha configurado Netdot para utilizar autenticación con RADIUS o LDAP es necesario que el Usuario/Username coincida con el que se ha definido en esos sistema de autenticación. Si está utilizando autenticación local, es necesario que se defina una contraseña local en el atributo Password.</p></li>
 <li><p>En la página de Usuario/Person, se pueden adicionar permisos haciendo click en el botón [access_rights]. Se monstrarán los permisos actuales y la posibilidad de adicionar nuevos con el botón [add] a la derecha.</p></li>
 <li><p>En la ventana de Permisos/UserRight, seleccione la clase de objeto/Object Class, los objetos específicos y los permisos (ver, editar, borrar). Sólo seleccione el permiso 'none' para revocar todos los permisos heredados de un grupo. Finalmente realice click en 'Insert'.</p></li>
 </ul>
-<h1 id="preguntas-frecuentes"><a href="#TOC"><span class="header-section-number">7</span> Preguntas Frecuentes</a></h1>
+<h1 id="restful-interface"><a href="#TOC"><span class="header-section-number">7</span> RESTful Interface</a></h1>
+<p>La interfaz REST permite acceso remoto a Netdot mediante el protocolo HTTP/HTTPS. Actualmente, los objectos se formatean en código XML usando el módulo Perl XML::Simple. En el futuro, Netdot podría soportar otros formatos como YAML.</p>
+<h2 id="recursos-tipo-rest"><a href="#TOC"><span class="header-section-number">7.1</span> Recursos tipo REST</a></h2>
+<p>La interfaz REST está disponible a través del siguiente URL (o similar, dependiendo de su configuración de Apache):</p>
+<pre><code>https://myserver.mydomain.com/netdot/rest/
+</code></pre>
+<p>Esto debe cargar la clase Netdot::REST y mostrar algo como lo siguiente en su navegador:</p>
+<pre><code>Netdot/0.9 REST OK. 
+</code></pre>
+<p>Los recursos REST a procesar representan objetos Netdot y son parte del URI de la petición HTTP. Por ejemplo, en este URI:</p>
+<pre><code>http://myserver.mydomain.com/netdot/rest/device/1
+</code></pre>
+<p>el recurso es &quot;device/1&quot;, el cual, en una petición tipo &quot;GET&quot;, retornará el contenido del objeto Device con ID &quot;1&quot;.</p>
+<p>Usando el siguiente URI en la petición tipo &quot;GET&quot;:</p>
+<pre><code>http://myserver.mydomain.com/netdot/rest/device
+</code></pre>
+<p>esta interfaz devolverá los contenidos de todos los objetos tipo &quot;Device&quot; existentes. Es posible especificar ciertos filtros para limitar el alcance de los resultados:</p>
+<pre><code>http://myserver.mydomain.com/netdot/rest/device?sysname=host1
+</code></pre>
+<p>Esto realizará una búsqueda de todos los &quot;devices&quot; cuyo campo &quot;sysname&quot; tenga el valor &quot;host1&quot;.</p>
+<p>La palabra clave &quot;meta_data&quot;, en lugar de un ID de objeto, proveerá información acerca de la clase de objeto:</p>
+<pre><code>http://myserver.mydomain.com/netdot/rest/device/meta_data
+</code></pre>
+<p>Un recurso existente podrá actualizarse utilizando el método &quot;POST&quot; con parámetros relevantes. Por ejemplo, una petición tipo &quot;POST&quot; con el siguiente URI:</p>
+<pre><code>http://netdot.localdomain/rest/device/1?sysname=newhostname
+</code></pre>
+<p>actualizará el campo 'sysname' del objeto &quot;Device&quot; con ID &quot;1&quot; y le asignará el valor &quot;newhostname&quot;. De manera similar, puede crearse un nuevo objeto con una petición tipo &quot;POST&quot;. Sin embargo, en este caso el ID del objeto no debe incluirse:</p>
+<pre><code>http://netdot.localdomain/rest/person/?firstname=John&amp;lastname=Doe
+</code></pre>
+<p>Finalmente, un objeto en específico se puede eliminar utilizando el método &quot;DELETE&quot; de HTTP.</p>
+<h2 id="m&#243;dulo-perl-para-programas-cliente-en-cpan"><a href="#TOC"><span class="header-section-number">7.2</span> Módulo Perl para programas cliente en CPAN</a></h2>
+<p>Se provee un módulo conveniente a través de CPAN para ser utilizado en programas que necesiten acceso a la interfaz REST de Netdot. El nombre del módulo es &quot;Netdot::Client::REST&quot;. Puede instalarse con algo similar a:</p>
+<pre class="sourceCode"><code class="sourceCode bash">~# cpan<br /><span class="kw">&gt;</span><span class="kw">install</span> Netdot::Client::REST</code></pre>
+<h1 id="preguntas-frecuentes"><a href="#TOC"><span class="header-section-number">8</span> Preguntas Frecuentes</a></h1>
 <ul>
 <li><p>P: Por qué Netdot no puede descubrir mi dispositivo via SNMP? Puedo verificar que el mismo responde utilizando snmpwalk</p>
 <p>R: Si su equipo es un servidor Linux o cualquier otro dispositivo que utiliza el agente SNMP del paquete Net-SNMP, entonces es necesario agregar lo siguiente en el archivo de configuración /etc/snmp.conf (o donde quiera que se encuentre):</p>
