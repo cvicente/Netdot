@@ -30,7 +30,7 @@ map { $IGNOREDVLANS{$_}++ } @{ Netdot->config->get('IGNOREVLANS') };
 
 my @MIBDIRS;
 foreach my $md ( @{ Netdot->config->get('SNMP_MIB_DIRS') } ){
-    push @MIBDIRS, Netdot->config->get('NETDOT_PATH')."/".$md;
+    push @MIBDIRS, Netdot->config->get('SNMP_MIBS_PATH')."/".$md;
 }
 
 =head1 NAME
