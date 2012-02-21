@@ -62,6 +62,7 @@ sub search {
  Argsuments: 
     Hashref with following keys:
       name
+      active      - Whether the scope should be exported or not
       type        - DhcpScopeType name, id or object
       attributes  - A hash ref with attribute key/value pairs
       subnets     - Arrayref of Ipblock objects
@@ -76,6 +77,9 @@ sub insert {
     $class->isa_class_method('insert');
     $class->throw_fatal('DhcpScope::insert: Missing required parameters')
 	unless ( defined $argv->{type} );
+
+    # Make it active unless told otherwise
+    $argv->{active} = 1 unless defined $argv->{active};
 
     my @shared_subnets = @{$argv->{subnets}} if $argv->{subnets};
 
@@ -269,6 +273,12 @@ sub print_to_file{
     $self->isa_object_method('print_to_file');
     my $class = ref($self);
     my $filename;
+
+    unless ( $self->active ){
+	$logger->info(sprintf("DhcpScope::print_to_file: Scope %s is marked ".
+			      "as not active. Aborting", $self->get_label));
+	return;
+    }
     
     my $start = time;
     my $dir = Netdot->config->get('DHCPD_EXPORT_DIR') 
@@ -628,6 +638,12 @@ sub _print {
 	$class->throw_fatal("Data missing or invalid");
     }
 
+    unless ( $data->{$id}->{active} ){
+	$logger->debug(sprintf("DhcpScope::print_to_file: Scope %d is marked ".
+                               "as not active. Aborting", $id));
+	return;
+    }
+
     my $type;
     unless ( $type = $data->{$id}->{type} ){
 	$class->throw_fatal("Scope id $id missing type");
@@ -747,7 +763,8 @@ sub _get_all_data {
 
     $logger->debug("DhcpScope::_get_all_data: Querying database");
 
-    my $q = "SELECT          dhcpscope.id, dhcpscope.name, dhcpscope.text, dhcpscopetype.name, dhcpscope.container,
+    my $q = "SELECT          dhcpscope.id, dhcpscope.name, dhcpscope.active, dhcpscope.text, 
+                             dhcpscopetype.name, dhcpscope.container,
                              dhcpattr.id, dhcpattrname.name, dhcpattr.value, dhcpattrname.code, dhcpattrname.format,
                              physaddr.address, ipblock.address, ipblock.version, dhcpscope.duid, dhcpscope.version
              FROM            dhcpscopetype, dhcpscope
@@ -764,11 +781,13 @@ sub _get_all_data {
     $logger->debug("DhcpScope::_get_all_data: Building data structure");
 
     foreach my $r ( @$rows ){
-	my ($scope_id, $scope_name, $scope_text, $scope_type, $scope_container, 
+	my ($scope_id, $scope_name, $scope_active, $scope_text, 
+	    $scope_type, $scope_container, 
 	    $attr_id, $attr_name, $attr_value, $attr_code, $attr_format,
 	    $mac, $ip, $ipversion, $scope_duid, $scope_version) = @$r;
 	$data{$scope_id}{name}      = $scope_name;
 	$data{$scope_id}{type}      = $scope_type;
+	$data{$scope_id}{active}    = $scope_active;
 	$data{$scope_id}{container} = $scope_container;
 	$data{$scope_id}{text}      = $scope_text;
 	$data{$scope_id}{duid}      = $scope_duid;
