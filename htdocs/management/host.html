@@ -92,11 +92,11 @@ if ( $submit ){
 		my $user_type = $user->getAttribute('USER_TYPE');
 		# For unprivileged users, we apply restrictions
 		# on RR names
-		if ( $user_type eq 'user' ){
+		if ( $user_type eq 'User' ){
 		    foreach my $key ( %ARGS ){
-			if ( $key =~ /RR__(?:NEW|\d+)__(.*)$/ ){
-			    my $name = $1;
-			    RR->validate_name($name);
+			if ( $key =~ /^RR__(?:NEW|\d+)__name$/ ){
+			    RR->validate_name($ARGS{$key});
+			    last;
 			}
 		    }
 		}
