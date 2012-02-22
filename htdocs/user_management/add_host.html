@@ -146,53 +146,55 @@ if ( $submit ){
     $args{block}   = $block;
     $args{address} = $address;
 
-    my @text_records;
-
     # Hardware Info
     $args{cpu} = $cpu || $other_cpu;
     $args{os}  = $os  || $other_os;
 
+    # Lines to go in the info field
+    my @info;
+
     # Location
-    if ( $room_id || $site_id || $site_name ){
-	my $txtdata;
+    if ( $room_id || $room_number || $site_id || $site_name ){
+	my $info;
 	if ( my $room = Room->retrieve($room_id) ){
-	    $txtdata = "LOC: ".$room->get_label if $room;
+	    $info = "LOC: ".$room->get_label;
 	    # the room label includes the site name
 	}elsif ( $room_number ){
-	    $txtdata = "LOC: ".$room_number;
+	    $info = "LOC: ".$room_number;
 	    if ( my $site = Site->retrieve($site_id) ){
-		$txtdata .=  " ".$site->get_label;
+		$info .=  " ".$site->get_label;
 	    }elsif ( $site_name ){
-		$txtdata .=  " ".$site_name;
+		$info .=  " ".$site_name;
 	    }
 	}else{
 	    if ( my $site = Site->retrieve($site_id) ){
-		$txtdata =  $site->get_label;
+		$info =  $site->get_label;
 	    }elsif ( $site_name ){
-		$txtdata =  $site_name;
+		$info =  $site_name;
 	    }
 	}
-	push @text_records, $txtdata if ( $txtdata );
+	push @info, $info if ( $info );
     }
     
     # Contacts
     if ( $person ){
 	# Add the current user as a contact
-	my $txtdata = "CON: ".$person->get_label;
-	$txtdata .= " (".$person->email.")" if $person->email; 
-	$txtdata .= ", ".$person->office if $person->office;
-	push @text_records, $txtdata if ( $txtdata );
+	my $info = "CON: ".$person->get_label;
+	$info .= " (".$person->email.")" if $person->email; 
+	$info .= ", ".$person->office if $person->office;
+	push @info, $info if ( $info );
     }
     
     # Add additional contact info
     if ( $contact_name ){
-	my $txtdata = "";
-	$txtdata =  "CON: ".$contact_name;
-	$txtdata .= " (".$contact_email.")" if $contact_email; 
-	$txtdata .= ", ".$contact_phone if $contact_phone; 
-	push @text_records, $txtdata if ( $txtdata );
+	my $info = "";
+	$info =  "CON: ".$contact_name;
+	$info .= " (".$contact_email.")" if $contact_email; 
+	$info .= ", ".$contact_phone if $contact_phone; 
+	push @info, $info if ( $info );
     }
-    $args{text_records} = \@text_records if @text_records;
+    my $info_text = join "\n", @info;
+    $args{info} = $info_text if ( $info_text );
     
     my $rr;
     eval {

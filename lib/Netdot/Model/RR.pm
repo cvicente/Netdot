@@ -129,6 +129,7 @@ sub search_like {
                 'DEFAULT_DNSDOMAIN' from config file
                 If defined, will create if necessary.
     expiration  Expiration date
+    info        Comments
     type        <A|AAAA|TXT|HINFO|CNAME|NS|MX|NAPTR|SRV|PTR|LOC> 
                 Create records for these types 
                 (need to pass their specific arguments)
@@ -201,6 +202,7 @@ sub insert {
 		     active      => defined($argv->{active})? $argv->{active} : 1,
 		     auto_update => $auto_update,
 		     expiration  => $argv->{expiration},
+		     info        => $argv->{info},
 	    );
 
 	$class->_validate_args(\%state);
@@ -217,10 +219,9 @@ sub insert {
     $args{rr} = $rr;
 
     # Remove arguments specific to RR
-    delete $args{type};
-    delete $args{name};
-    delete $args{zone};
-    delete $args{expiration};
+    foreach my $arg (qw/type name zone expiration info/){
+	delete $args{$arg};
+    }
 
     if ( $argv->{type} eq 'A' || $argv->{type} eq 'AAAA' ){
 	return RRADDR->insert(\%args);
@@ -415,7 +416,8 @@ sub as_text {
     ethernet     MAC address string 
     cpu          cpu string for HINFO
     os           os string for HINFO
-    text_records Array of strings for TXT records
+    text_records Arrayref of strings for TXT records
+    info         Informational text
   Returns:
     RR id
   Examples:
@@ -440,6 +442,7 @@ sub add_host {
 				     zone       => $argv{zone},
 				     expiration => $argv{expiration},
 				     update_ptr => 1,
+				     info       => $argv{info},
 				    });
 	    
 	    $rr = $rraddr->rr;
@@ -475,7 +478,7 @@ sub add_host {
 			       });
 		}
 	    }
-	    
+
 	    # DHCP
 	    if ( $argv{ethernet} ){
 		my $physaddr = PhysAddr->find_or_create({address=>$argv{ethernet}});
