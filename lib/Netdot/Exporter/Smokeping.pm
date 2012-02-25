@@ -113,8 +113,6 @@ sub generate_configs {
 	print $smokeping "
 ################################################
 #
-# STOP!! DON'T EDIT THIS YOU MORON!!
-#
 # Automatically generated from Netdot
 # Do not edit - contents will be overwritten
 #
@@ -141,7 +139,7 @@ host = $device
 					   "$file_path did not close nicely");
 	
 	$logger->info("Netdot::Exporter::Smokeping::generate_configs:".
-		      " Smokeping configuration for group '$type' written to: '$dir_path'");
+		      " Smokeping configuration for group '$type' written to: '$file_path'");
     }
 }
 

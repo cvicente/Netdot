@@ -39,7 +39,7 @@ $bind_no_priv   => undef
 use Netdot::Exporter;
 my $DEBUG = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
-my @types = qw /Nagios Sysmon Rancid BIND DHCPD/;
+my @types = qw /Nagios Sysmon Rancid Smokeping BIND DHCPD/;
 my $logstr;
 my $manager = $ui->get_permission_manager($r);
 </%init>
@@ -63,7 +63,7 @@ my $manager = $ui->get_permission_manager($r);
             <legend>Export Classes</legend>
                 <p>
                 <label>Select one or more of:</label>
-                <select name="config_types" MULTIPLE>
+                <select name="config_types" size="6" MULTIPLE>
 %               foreach my $type ( @types ){
         	    <option value="<% $type %>"><% $type %></option> 
 %               } 

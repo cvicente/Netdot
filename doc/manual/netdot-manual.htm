@@ -134,8 +134,16 @@ code.sourceCode span.er { color: red; font-weight: bold; }
 <li><p>IPv4 and IPv6 address space management (also referred to as IPAM), including hierarchical organization, address block visualization and IP and MAC address location and tracking.</p></li>
 <li><p>Cable plant information including: sites, rooms, jacks, closets, inter and intra-building wiring, circuits, etc.</p></li>
 <li><p>Contact information for related entities: departments, providers, vendors, etc.</p></li>
-<li><p>Netdot can generate configuration files for various other tools, including: <a href="http://www.nagios.org">Nagios</a>, <a href="http://www.sysmon.org">Sysmon</a>, <a href="http://www.shrubbery.net/rancid">RANCID</a>, <a href="http://www.cacti.net">Cacti</a>. Starting with version 0.9, Netdot also generates configurations for ISC BIND and ISC DHCPD.</p></li>
-<li><p>From version 0.9, Netdot implements access control for users and roles, allowing tasks such as IP address management, documentation of switch/router ports and updating of contact information to be delegated to specific groups with limited access to the web interface.</p></li>
+<li>Netdot can generate configuration files for various other tools, including:
+<ul>
+<li><a href="http://www.nagios.org">Nagios</a>,</li>
+<li><a href="http://www.sysmon.org">Sysmon</a>,</li>
+<li><a href="http://www.shrubbery.net/rancid">RANCID</a>,</li>
+<li><a href="http://www.cacti.net">Cacti</a>.</li>
+<li><a href="http://www.isc.org">ISC BIND and ISC DHCPD</a></li>
+<li><a href="http://oss.oetiker.ch/smokeping/">Smokeping</a></li>
+</ul></li>
+<li><p>Netdot implements role-based access control, allowing tasks such as IP address management, documentation of switch/router ports and updating of contact information to be delegated to specific groups with limited access to the web interface.</p></li>
 </ul>
 <h2 id="structure"><a href="#TOC"><span class="header-section-number">2.1</span> Structure</a></h2>
 <p>Netdot consists of several components:</p>
@@ -416,11 +424,11 @@ device3 community2
 <p>This report shows a list of MAC address OUIs, sorted by number of addresses. You have the option to include all addresses, only MAC addresses belonging to infrastructure devices or only MAC addresses found in ARP caches and forwarding tables.</p>
 <h1 id="exporting-configurations-for-external-programs"><a href="#TOC"><span class="header-section-number">5</span> Exporting Configurations for External Programs</a></h1>
 <p>You can use the exporter tool to generate text files that can be used as configurations for third-party tools and programs.</p>
-<p>The exporter tool is available in the web UI, under the Export tab. Simply select one or more programs and click on the [submit] button. Netdot will show some output from the exporter tool, including the paths to the new files.</p>
+<p>The exporter tool is available in the web UI, under the Export tab. Simply select one or more programs and click on the [submit] button. Netdot will show output from the exporter tool, including the paths to the new files.</p>
 <p>Additionally, the exporter can be called from the command line. For example, to generate Nagios configurations:</p>
 <pre class="sourceCode"><code class="sourceCode bash">~# bin/exporter.pl -t Nagios</code></pre>
 <p>Or you can export several in one call:</p>
-<pre class="sourceCode"><code class="sourceCode bash">~# bin/exporter.pl -t Nagios,Sysmon,Rancid,BIND,DHCPD</code></pre>
+<pre class="sourceCode"><code class="sourceCode bash">~# bin/exporter.pl -t Nagios,Sysmon,Rancid,Smokeping,BIND,DHCPD</code></pre>
 <p>There are specific export parameters for each of these which you can customize by editing your <code>Site.conf</code> file.</p>
 <h2 id="cacti-integration"><a href="#TOC"><span class="header-section-number">5.1</span> Cacti Integration</a></h2>
 <p>Cacti integration is done a little differently (it's more of an &quot;import&quot; than an &quot;export&quot;). You will find a script called <code>netdot_to_cacti.php</code> under export/cacti in the Netdot package. This script should be placed(together with its configuration file) in your Cacti's cli directory(it doesn't need to be the same machine running Netdot, but you need to make sure that the script can connect to Mysql on the Netdot machine).You will then need to run it periodically via CRON, say, once a day.</p>
