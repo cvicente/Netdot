@@ -1287,6 +1287,29 @@ sub matches_v6 {
     return 0;
 }
 
+############################################################################
+=head2 - objectify - Convert to object as needed
+
+  Args: 
+    id, address or object
+  Returns: 
+    Ipblock object
+  Examples:
+    my $ipb = Ipblock->objectify($zonestr);
+
+=cut
+sub objectify{
+    my ($class, $b) = @_;
+    if ( (ref($b) =~ /Ipblock/) ){
+	return $b;
+    }elsif ( $b =~ /\D/ ){
+	return Ipblock->search(address=>$b)->first;
+    }else{
+	# Must be an ID
+	return Ipblock->retrieve($b);
+    }
+}
+
 =head1 INSTANCE METHODS
 =cut
 

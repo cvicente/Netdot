@@ -168,13 +168,13 @@ desea instalar Netdot, por ejemplo:
     Ubuntu), ejecutar:
 
     ~~~~ {.bash}
-    ~# make installdeps-apt-get
+    ~# make apt-install
     ~~~~
 
     Para sistemas con RPM (ej. Red Hat, Centos, Fedora), ejecute:
 
     ~~~~ {.bash}
-    ~# make installdeps-rpm
+    ~# make rpm-install
     ~~~~
 
     >**Pista**
@@ -235,7 +235,7 @@ Debe verificar si la versión que está instalando tiene nuevos requerimientos:
 
 ~~~~ {.bash}
 ~# make testdeps
-~# make installdeps (or installdeps-rpm, installdeps-apt-get)
+~# make installdeps (or rpm-install, apt-install)
 ~~~~
 
 El esquema de la base de datos de Netdot **generalmente** sólo tiene 
@@ -1029,31 +1029,28 @@ siguiente:
     todos los permisos heredados de un grupo. Finalmente realice click
     en 'Insert'.
 
-# RESTful Interface
+# Interfaz REST
 
 La interfaz REST permite acceso remoto a Netdot mediante el protocolo
 HTTP/HTTPS. Actualmente, los objectos se formatean en código XML usando
 el módulo Perl XML::Simple. En el futuro, Netdot podría soportar otros
 formatos como YAML.
 
-## Recursos tipo REST
+## Recursos tipo REST Genéricos
 
-La interfaz REST está disponible a través del siguiente URL (o similar,
-dependiendo de su configuración de Apache):
+### La interfaz REST está disponible a través del siguiente URL (o similar, dependiendo de su configuración de Apache):
 
 ~~~~
 https://myserver.mydomain.com/netdot/rest/
 ~~~~
 
-Esto debe cargar la clase Netdot::REST y mostrar algo como lo siguiente
-en su navegador:
+Esto debe cargar la clase Netdot::REST y mostrar algo como lo siguiente en su navegador:
 
 ~~~~
-Netdot/0.9 REST OK. 
+Netdot/1.0 REST OK. 
 ~~~~
 
-Los recursos REST a procesar representan objetos Netdot y son parte
-del URI de la petición HTTP. Por ejemplo, en este URI:
+### Los recursos REST a procesar representan objetos Netdot y son parte del URI de la petición HTTP. Por ejemplo, en este URI:
 
 ~~~~
 http://myserver.mydomain.com/netdot/rest/device/1
@@ -1062,31 +1059,30 @@ http://myserver.mydomain.com/netdot/rest/device/1
 el recurso es "device/1", el cual, en una petición tipo "GET", 
 retornará el contenido del objeto Device con ID "1".
 
-Usando el siguiente URI en la petición tipo "GET":
+### Usando el siguiente URI en la petición tipo "GET":
 
 ~~~~
 http://myserver.mydomain.com/netdot/rest/device
 ~~~~
 
-esta interfaz devolverá los contenidos de todos los objetos tipo
-"Device" existentes. Es posible especificar ciertos filtros para
+esta interfaz devolverá los contenidos de todos los objetos tipo "Device" existentes. 
+
+### Es posible especificar ciertos filtros para
 limitar el alcance de los resultados:
 
 ~~~~
 http://myserver.mydomain.com/netdot/rest/device?sysname=host1
 ~~~~
 
-Esto realizará una búsqueda de todos los "devices" cuyo campo
-"sysname" tenga el valor "host1".
+Esto realizará una búsqueda de todos los "devices" cuyo campo "sysname" tenga el valor "host1".
 
-La palabra clave "meta_data", en lugar de un ID de objeto, proveerá
-información acerca de la clase de objeto:
+### La palabra clave "meta_data", en lugar de un ID de objeto, proveerá información acerca de la clase de objeto:
 
 ~~~~
 http://myserver.mydomain.com/netdot/rest/device/meta_data
 ~~~~
 
-Un recurso existente podrá actualizarse utilizando el método
+### Un recurso existente podrá actualizarse utilizando el método
 "POST" con parámetros relevantes. Por ejemplo, una petición
 tipo "POST" con el siguiente URI:
 
@@ -1094,17 +1090,95 @@ tipo "POST" con el siguiente URI:
 http://netdot.localdomain/rest/device/1?sysname=newhostname
 ~~~~
 
-actualizará el campo 'sysname' del objeto "Device" con ID "1"
-y le asignará el valor "newhostname". De manera similar, puede crearse
-un nuevo objeto con una petición tipo "POST". Sin embargo, en este
-caso el ID del objeto no debe incluirse:
+actualizará el campo 'sysname' del objeto "Device" con ID "1" y le asignará el valor "newhostname". De manera similar, puede crearse un nuevo objeto con una petición tipo "POST". Sin embargo, en este caso el ID del objeto no debe incluirse:
 
 ~~~~
 http://netdot.localdomain/rest/person/?firstname=John&lastname=Doe
 ~~~~
 
-Finalmente, un objeto en específico se puede eliminar utilizando
+### Finalmente, un objeto en específico se puede eliminar utilizando
 el método "DELETE" de HTTP.
+
+## Recursos tipo REST de propósito específico
+
+### El recurso especial '/rest/host' provee una interfaz simplificada
+para manipular los récords DNS y DHCP. Vamos a ilustrar su uso
+con los siguientes ejemplos:
+
+#### Obtener datos de hosts (HTTP GET)
+
+Obtener todos los objetos RR (DNS)
+
+~~~~
+http://netdot.localdomain/netdot/rest/host
+~~~~
+
+Obtener todos los objetos DNS de una zona
+
+~~~~
+http://netdot.localdomain/netdot/rest/host?zone=localdomain
+~~~~
+
+Recuperar el RR con nombre 'foo'
+
+~~~~
+http://netdot.localdomain/netdot/rest/host?name=foo
+~~~~
+     
+Recuperar el RR con id 1
+
+~~~~
+http://netdot.localdomain/netdot/rest/host?rrid=1
+~~~~
+
+Obtener todos los objetos IP de una subred
+
+~~~~
+http://netdot.localdomain/netdot/rest/host?subnet=192.168.1.0/24
+~~~~
+
+#### Crear nuevos records (HTTP POST). Ojo: No especificar el Id
+
+Crear un récord tipo A llamado 'host1' y asignar la primera dirección IP disponible:
+
+~~~~
+URL:  http://netdot.localdomain/netdot/rest/host?name=host1
+POST: {subnet=>'192.168.1.0/24'}
+~~~~
+
+#### Actualizar récords existentes (HTTP POST). Requiere rrid o ipid
+
+Cambiar el nombre al host con RR Id 2
+
+~~~~
+URL:  http://netdot.localdomain/netdot/rest/host?rrid=2
+POST: {name=>'nombre-nuevo'}
+~~~~
+
+Actualizar la dirección MAC del host DHCP con Ipblock Id 3
+
+~~~~
+URL:  http://netdot.localdomain/netdot/rest/host?ipid=2
+POST: {ethernet=>'DEADDEADBEEF'}
+~~~~
+
+#### Borrar records (HTTP DELETE)
+
+* Borrar el nombre de host con RR Id 3 (también libera la IP)
+ 
+~~~~
+http://netdot.localdomain/netdot/rest/host?rrid=3
+~~~~
+
+## Autorización en la interfaz REST
+
+Todos los tipos de usuario pueden interactuar con la interfaz REST
+siempre que se le hayan asignado permisos. Sin embargo, sólo los
+usuarios tipo Admin pueden editar o borrar objetos utilizando los
+recursos genéricos REST. Los usuarios tipo 'Operator' y tipo 'User'
+pueden 'ver' los recursos genéricos pero sólo pueden editar o borrar
+algunas cosas utilizando los recursos de propósito específico como
+'rest/host'.
 
 ## Módulo Perl para programas cliente en CPAN
 
@@ -1112,6 +1186,14 @@ Se provee un módulo conveniente a través de CPAN para ser utilizado
 en programas que necesiten acceso a la interfaz REST de Netdot. El 
 nombre del módulo es "Netdot::Client::REST". Puede instalarse con algo
 similar a:
+
+Si está en un sistema basado en Debian (ej. Ubuntu):
+
+~~~~ {.bash}
+~# sudo apt-get install libnetdot-client-rest-perl
+~~~~
+
+o sino:
 
 ~~~~ {.bash}
 ~# cpan

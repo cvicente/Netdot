@@ -230,6 +230,31 @@ sub insert {
     return $newzone;
 }
 
+############################################################################
+=head2 - objectify - Convert to object as needed
+
+  Args: 
+    id, name or object
+  Returns: 
+    Zone object
+  Examples:
+    my $zone = Zone->objectify($zonestr);
+
+=cut
+sub objectify {
+    my ($class, $z) = @_;
+    $class->isa_class_method('objectify');
+
+    if ( (ref($z) =~ /Zone/) ){
+	return $z;
+    }elsif ( $z =~ /\D/ ){
+	return $class->search(name=>$z)->first;
+    }else{
+	# Must be an ID
+	return $class->retrieve($z);
+    }
+}
+
 
 =head1 INSTANCE METHODS
 =cut

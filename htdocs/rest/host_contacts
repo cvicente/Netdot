@@ -3,6 +3,8 @@ Fetch DNS and contact information for a given IP address
 </%doc>
 
 <%args>
+$user
+$manager
 $ip       => undef
 $dns      => undef
 $contacts => undef
@@ -10,9 +12,10 @@ $contacts => undef
 
 <%init>
 use Netdot::REST;
-my $rest = Netdot::REST->new();
+my $rest = Netdot::REST->new(user=>$user, manager=>$manager);
 $rest->request($r);
-use Apache2::Const -compile => qw(FORBIDDEN HTTP_UNAUTHORIZED OK NOT_FOUND HTTP_BAD_REQUEST HTTP_NOT_ACCEPTABLE);
+use Apache2::Const -compile => qw(HTTP_UNAUTHORIZED OK NOT_FOUND 
+                                  HTTP_BAD_REQUEST HTTP_NOT_ACCEPTABLE);
 my %res;
 </%init>
 
@@ -21,17 +24,22 @@ my %res;
 if ( $ip ){
     my $ipb = Ipblock->search(address=>$ip)->first;
     unless ( $ipb ) {
-	Netdot->throw_rest(code=>Apache2::Const::NOT_FOUND, msg=>"/rest/host: $ip not found"); 
+	Netdot->throw_rest(code=>Apache2::Const::NOT_FOUND, msg=>"/rest/host_contacts: $ip not found"); 
+    }
+    unless ( $manager->can($user, 'view', $ipb) ){
+	$rest->throw(code=>Apache2::Const::HTTP_FORBIDDEN, 
+		     msg=>"User not allowed to view this IP");
     }
     $res{address} = $ipb->address;
 
     if ( $dns ){
 	foreach my $ar ( $ipb->arecords ){
-	    my $fqdn = $ar->rr->get_label;
-	    if ( $ar->rr->txt_records ){
-		push @{$res{name}{$fqdn}{txt}}, map { $_->txtdata } $ar->rr->txt_records;
+	    my $rr = $ar->rr;
+	    my $fqdn = $rr->get_label;
+	    if ( $rr->txt_records ){
+		push @{$res{name}{$fqdn}{txt}}, map { $_->txtdata } $rr->txt_records;
 	    }
-	    if ( my $hinfo = $ar->rr->hinfo_records->first ){
+	    if ( my $hinfo = $rr->hinfo_records->first ){
 		$res{name}{$fqdn}{hinfo}{cpu} = $hinfo->cpu;
 		$res{name}{$fqdn}{hinfo}{os}  = $hinfo->os;
 	    }
@@ -40,6 +48,7 @@ if ( $ip ){
 		    push @{$res{name}{$fqdn}{cname}}, $cname->rr->get_label;
 		}
 	    }
+	    $res{name}{$fqdn}{info} = $rr->info;
 	}
 	if ( my $dhcp = $ipb->dhcp_scopes->first ){
 	    $res{ether}     = $dhcp->physaddr->address;
@@ -78,11 +87,13 @@ if ( $ip ){
 		$res{contact_list}{$cl->id}{name} = $cl->name;
 		foreach my $con ( $cl->contacts ){
 		    my $person = $con->person;
-		    foreach my $key ( qw(lastname firstname aliases position email office cell home pager ) ){
+		    foreach my $key ( qw(lastname firstname aliases position email 
+                                         office cell home pager ) ){
 			$res{contact_list}{$cl->id}{contacts}{$con->id}{$key} = $person->$key;
 		    }
 		    $res{contact_list}{$cl->id}{contacts}{$con->id}{type} = $con->contacttype->name;
-		    $res{contact_list}{$cl->id}{contacts}{$con->id}{employer} = $person->entity->name if $person->entity;
+		    $res{contact_list}{$cl->id}{contacts}{$con->id}{employer} = $person->entity->name 
+			if $person->entity;
 		}
 	    }
 	}

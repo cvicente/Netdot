@@ -406,40 +406,70 @@ sub as_text {
     Combine RR, RRADDR, RRCNAME, RRHINFO and DHCP scope creation
 
   Arguments:
-    Hash with following keys:
-    address      (required) Ipblock id or object
-    hostname     (required) RR name
-    zone         (required) Zone id or object
-    block        (required) subnet Ipblock object
-    expiration   Expiration date for RR
-    aliases      Array of strings for CNAMEs
-    ethernet     MAC address string 
-    cpu          cpu string for HINFO
-    os           os string for HINFO
-    text_records Arrayref of strings for TXT records
-    info         Informational text
+    Hash with following keys:  (O=optional, R=required)
+    name         (R) RR name
+    zone         (R) Zone id, object or name
+    subnet       (O) Ipblock id, object or address. Necessary if no address.
+    address      (O) Ipblock id, object or address. Will get next 
+                     available if not specified
+    expiration   (O) Expiration date for RR
+    aliases      (O) Comma-separated list of strings for CNAMEs
+    ethernet     (O) MAC address string for DHCP host
+    duid         (O) DUID for DHCPv6 host
+    cpu          (O) CPU string for HINFO
+    os           (O) OS string for HINFO
+    text_records (O) Arrayref of strings for TXT records
+    info         (O) Informational text
   Returns:
-    RR id
+    RR object
   Examples:
-    print RR->add_host(%args);
+    my $rr = RR->add_host(%args);
 
 =cut
 
 sub add_host {
     my ($class, %argv) = @_;
-    
-    if (!($argv{address} && $argv{hostname} && $argv{zone} && $argv{block})) {
-	$class->throw_fatal("Missing required arguments.");
+
+    foreach my $arg ( qw/name zone/ ){
+	$class->throw_fatal("Missing required argument: $arg")
+	    unless $argv{$arg};
     }
     
+    if ( !$argv{address} ){
+	if ( $argv{subnet} ){
+	    my $subnet = Ipblock->objectify($argv{subnet});    
+	    $class->throw_user("Invalid subnet: $argv{subnet}") 
+		unless $subnet;
+	    $class->throw_user("$argv{subnet} is not a subnet!")
+		unless ( $subnet->status->name eq 'Subnet' );
+	    
+	    # Obtain next available address
+	    my $ip_strategy = Netdot->config->get("IP_ALLOCATION_STRATEGY");
+	    $argv{address} = $subnet->get_next_free(strategy=>$ip_strategy);
+	}else{
+	    $class->throw_user("I need either a subnet or an IP address") 
+	}
+    }
+  
+    # Convert to object if needed
+    my $zone = Zone->objectify($argv{zone});
+    $class->throw_user("Invalid zone: $argv{zone}") 
+	unless $zone;
+
+    # Hostname validation
+    RR->validate_name($argv{name});
+    if ( my $h = RR->search(name=>$argv{name}, zone=>$zone)->first ){
+	$class->throw_user($h->get_label." is already taken");
+    }
+
     # We want this to be atomic
     my $rr;
     Netdot::Model->do_transaction(
 	sub{
 	    my $rraddr = RR->insert({type       => 'A', # The RR class would do the right thing if it's v6
-				     ipblock    => $argv{address}, 
-				     name       => $argv{hostname}, 
-				     zone       => $argv{zone},
+				     ipblock    => $argv{address}, # RRADDR will convert to object 
+				     name       => $argv{name}, 
+				     zone       => $zone,
 				     expiration => $argv{expiration},
 				     update_ptr => 1,
 				     info       => $argv{info},
@@ -449,11 +479,23 @@ sub add_host {
 	    
 	    # CNAMES
 	    if ( $argv{aliases} ){
-		$logger->debug("RR::add_host: aliases passed");
-		foreach my $alias ( @{$argv{aliases}} ){
-		    $logger->debug("RR::add_host: Creating Alias $alias");
+		my @cnames;
+		my @aliases = split ',', $argv{aliases};
+		foreach my $alias ( @aliases ){
+		    $alias =~ s/\s+//g;
+		    # In case they included the domain part in the alias
+		    my $domain = $zone->name;
+		    $alias =~ s/\.$domain$//;
+		    if ( my $h = RR->search(name=>$alias, zone=>$zone)->first ){
+			$class->throw_user($h->get_label." from your aliases list is already taken");
+		    }
+		    RR->validate_name($alias);
+		    push @cnames, $alias;
+		}
+
+		foreach my $alias ( @cnames ){
 		    RR->insert({name  => $alias,
-				zone  => $argv{zone},
+				zone  => $zone,
 				type  => 'CNAME',
 				cname => $rr->get_label,
 			       });
@@ -481,25 +523,18 @@ sub add_host {
 
 	    # DHCP
 	    if ( $argv{ethernet} ){
-		my $physaddr = PhysAddr->find_or_create({address=>$argv{ethernet}});
-		
 		# Create host scope
-		my ($subnet, $global);
-		unless ( $subnet = ($argv{block}->dhcp_scopes)[0] ){
-		    $class->throw_user("Subnet ".$argv{block}->get_label." not dhcp-enabled (no Subnet scope found).");
-		}
-		$global = $subnet->get_global;
-		my $host;
-		if ( $host = DhcpScope->search(name=>$argv{address})->first ){
-		    $class->throw_user("A DHCP scope for host $argv{address} already exists!");
-		}else{
-		    $host = DhcpScope->insert({type      => 'host',
-					       ipblock   => $rraddr->ipblock,
-					       physaddr  => $physaddr,
-					       container => $global});
-		}
+		DhcpScope->insert({type      => 'host',
+				   ipblock   => $rraddr->ipblock,
+				   physaddr  => $argv{ethernet},
+				  });
+	    }elsif ( $argv{duid} ){
+		# Create host scope
+		DhcpScope->insert({type      => 'host',
+				   ipblock   => $rraddr->ipblock,
+				   duid      => $argv{duid},
+				  });
 	    }
-	    
 	});
     return $rr;
 }

@@ -89,9 +89,26 @@ code.sourceCode span.er { color: red; font-weight: bold; }
 <li><a href="#control-de-acceso"><span class="toc-section-number">6</span> Control de Acceso</a><ul>
 <li><a href="#asignar-permisos-a-los-usuarios"><span class="toc-section-number">6.1</span> Asignar permisos a los usuarios</a></li>
 </ul></li>
-<li><a href="#restful-interface"><span class="toc-section-number">7</span> RESTful Interface</a><ul>
-<li><a href="#recursos-tipo-rest"><span class="toc-section-number">7.1</span> Recursos tipo REST</a></li>
-<li><a href="#m&#243;dulo-perl-para-programas-cliente-en-cpan"><span class="toc-section-number">7.2</span> Módulo Perl para programas cliente en CPAN</a></li>
+<li><a href="#interfaz-rest"><span class="toc-section-number">7</span> Interfaz REST</a><ul>
+<li><a href="#recursos-tipo-rest-gen&#233;ricos"><span class="toc-section-number">7.1</span> Recursos tipo REST Genéricos</a><ul>
+<li><a href="#la-interfaz-rest-est&#225;-disponible-a-trav&#233;s-del-siguiente-url-o-similar-dependiendo-de-su-configuraci&#243;n-de-apache"><span class="toc-section-number">7.1.1</span> La interfaz REST está disponible a través del siguiente URL (o similar, dependiendo de su configuración de Apache):</a></li>
+<li><a href="#los-recursos-rest-a-procesar-representan-objetos-netdot-y-son-parte-del-uri-de-la-petici&#243;n-http.-por-ejemplo-en-este-uri"><span class="toc-section-number">7.1.2</span> Los recursos REST a procesar representan objetos Netdot y son parte del URI de la petición HTTP. Por ejemplo, en este URI:</a></li>
+<li><a href="#usando-el-siguiente-uri-en-la-petici&#243;n-tipo-get"><span class="toc-section-number">7.1.3</span> Usando el siguiente URI en la petición tipo &quot;GET&quot;:</a></li>
+<li><a href="#es-posible-especificar-ciertos-filtros-para"><span class="toc-section-number">7.1.4</span> Es posible especificar ciertos filtros para</a></li>
+<li><a href="#la-palabra-clave-meta_data-en-lugar-de-un-id-de-objeto-proveer&#225;-informaci&#243;n-acerca-de-la-clase-de-objeto"><span class="toc-section-number">7.1.5</span> La palabra clave &quot;meta_data&quot;, en lugar de un ID de objeto, proveerá información acerca de la clase de objeto:</a></li>
+<li><a href="#un-recurso-existente-podr&#225;-actualizarse-utilizando-el-m&#233;todo"><span class="toc-section-number">7.1.6</span> Un recurso existente podrá actualizarse utilizando el método</a></li>
+<li><a href="#finalmente-un-objeto-en-espec&#237;fico-se-puede-eliminar-utilizando"><span class="toc-section-number">7.1.7</span> Finalmente, un objeto en específico se puede eliminar utilizando</a></li>
+</ul></li>
+<li><a href="#recursos-tipo-rest-de-prop&#243;sito-espec&#237;fico"><span class="toc-section-number">7.2</span> Recursos tipo REST de propósito específico</a><ul>
+<li><a href="#el-recurso-especial-resthost-provee-una-interfaz-simplificada"><span class="toc-section-number">7.2.1</span> El recurso especial '/rest/host' provee una interfaz simplificada</a><ul>
+<li><a href="#obtener-datos-de-hosts-http-get"><span class="toc-section-number">7.2.1.1</span> Obtener datos de hosts (HTTP GET)</a></li>
+<li><a href="#crear-nuevos-records-http-post.-ojo-no-especificar-el-id"><span class="toc-section-number">7.2.1.2</span> Crear nuevos records (HTTP POST). Ojo: No especificar el Id</a></li>
+<li><a href="#actualizar-r&#233;cords-existentes-http-post.-requiere-rrid-o-ipid"><span class="toc-section-number">7.2.1.3</span> Actualizar récords existentes (HTTP POST). Requiere rrid o ipid</a></li>
+<li><a href="#borrar-records-http-delete"><span class="toc-section-number">7.2.1.4</span> Borrar records (HTTP DELETE)</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#autorizaci&#243;n-en-la-interfaz-rest"><span class="toc-section-number">7.3</span> Autorización en la interfaz REST</a></li>
+<li><a href="#m&#243;dulo-perl-para-programas-cliente-en-cpan"><span class="toc-section-number">7.4</span> Módulo Perl para programas cliente en CPAN</a></li>
 </ul></li>
 <li><a href="#preguntas-frecuentes"><span class="toc-section-number">8</span> Preguntas Frecuentes</a></li>
 </ul>
@@ -155,9 +172,9 @@ code.sourceCode span.er { color: red; font-weight: bold; }
 <pre class="sourceCode"><code class="sourceCode bash">~% <span class="kw">make</span> testdeps</code></pre></li>
 <li><p>Existen dos formas para instalar los módulos necesarios: La primera forma (recomendada) es mediante los gestores de paquetes de la distribución que se está utilizando.</p>
 <p>Para sistemas con APT (ej. Debian o sistemas basados en Debian como Ubuntu), ejecutar:</p>
-<pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">make</span> installdeps-apt-get</code></pre>
+<pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">make</span> apt-install</code></pre>
 <p>Para sistemas con RPM (ej. Red Hat, Centos, Fedora), ejecute:</p>
-<pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">make</span> installdeps-rpm</code></pre>
+<pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">make</span> rpm-install</code></pre>
 <blockquote>
 <p><strong>Pista</strong> Si después de ejecutar los pasos anteriores siguen faltando módulos, se puede completar el proceso ejecutando el siguiente paso.</p>
 </blockquote></li>
@@ -180,7 +197,7 @@ code.sourceCode span.er { color: red; font-weight: bold; }
 </blockquote>
 <h2 id="actualizaci&#243;n-a-nuevas-versiones"><a href="#TOC"><span class="header-section-number">3.4</span> Actualización a nuevas versiones</a></h2>
 <p>Debe verificar si la versión que está instalando tiene nuevos requerimientos:</p>
-<pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">make</span> testdeps<br />~# <span class="kw">make</span> installdeps <span class="kw">(</span>or installdeps-rpm, installdeps-apt-get<span class="kw">)</span></code></pre>
+<pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">make</span> testdeps<br />~# <span class="kw">make</span> installdeps <span class="kw">(</span>or rpm-install, apt-install<span class="kw">)</span></code></pre>
 <p>El esquema de la base de datos de Netdot <strong>generalmente</strong> sólo tiene cambios importantes entre revisiones mayores. Por ejemplo, si se actualiza de la version 0.8.x a 0.9.x, se necesita ejecutar un script de actualización para cambiar la base de datos actual al nuevo esquema.</p>
 <p>Si en su caso fuera necesario efectuar una actualización, puede hacerlo con el siguiente comando:</p>
 <pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">make</span> upgrade</code></pre>
@@ -429,38 +446,86 @@ dispositivo3 comunidad3
 <li><p>En la página de Usuario/Person, se pueden adicionar permisos haciendo click en el botón [access_rights]. Se monstrarán los permisos actuales y la posibilidad de adicionar nuevos con el botón [add] a la derecha.</p></li>
 <li><p>En la ventana de Permisos/UserRight, seleccione la clase de objeto/Object Class, los objetos específicos y los permisos (ver, editar, borrar). Sólo seleccione el permiso 'none' para revocar todos los permisos heredados de un grupo. Finalmente realice click en 'Insert'.</p></li>
 </ul>
-<h1 id="restful-interface"><a href="#TOC"><span class="header-section-number">7</span> RESTful Interface</a></h1>
+<h1 id="interfaz-rest"><a href="#TOC"><span class="header-section-number">7</span> Interfaz REST</a></h1>
 <p>La interfaz REST permite acceso remoto a Netdot mediante el protocolo HTTP/HTTPS. Actualmente, los objectos se formatean en código XML usando el módulo Perl XML::Simple. En el futuro, Netdot podría soportar otros formatos como YAML.</p>
-<h2 id="recursos-tipo-rest"><a href="#TOC"><span class="header-section-number">7.1</span> Recursos tipo REST</a></h2>
-<p>La interfaz REST está disponible a través del siguiente URL (o similar, dependiendo de su configuración de Apache):</p>
+<h2 id="recursos-tipo-rest-gen&#233;ricos"><a href="#TOC"><span class="header-section-number">7.1</span> Recursos tipo REST Genéricos</a></h2>
+<h3 id="la-interfaz-rest-est&#225;-disponible-a-trav&#233;s-del-siguiente-url-o-similar-dependiendo-de-su-configuraci&#243;n-de-apache"><a href="#TOC"><span class="header-section-number">7.1.1</span> La interfaz REST está disponible a través del siguiente URL (o similar, dependiendo de su configuración de Apache):</a></h3>
 <pre><code>https://myserver.mydomain.com/netdot/rest/
 </code></pre>
 <p>Esto debe cargar la clase Netdot::REST y mostrar algo como lo siguiente en su navegador:</p>
-<pre><code>Netdot/0.9 REST OK. 
+<pre><code>Netdot/1.0 REST OK. 
 </code></pre>
-<p>Los recursos REST a procesar representan objetos Netdot y son parte del URI de la petición HTTP. Por ejemplo, en este URI:</p>
+<h3 id="los-recursos-rest-a-procesar-representan-objetos-netdot-y-son-parte-del-uri-de-la-petici&#243;n-http.-por-ejemplo-en-este-uri"><a href="#TOC"><span class="header-section-number">7.1.2</span> Los recursos REST a procesar representan objetos Netdot y son parte del URI de la petición HTTP. Por ejemplo, en este URI:</a></h3>
 <pre><code>http://myserver.mydomain.com/netdot/rest/device/1
 </code></pre>
 <p>el recurso es &quot;device/1&quot;, el cual, en una petición tipo &quot;GET&quot;, retornará el contenido del objeto Device con ID &quot;1&quot;.</p>
-<p>Usando el siguiente URI en la petición tipo &quot;GET&quot;:</p>
+<h3 id="usando-el-siguiente-uri-en-la-petici&#243;n-tipo-get"><a href="#TOC"><span class="header-section-number">7.1.3</span> Usando el siguiente URI en la petición tipo &quot;GET&quot;:</a></h3>
 <pre><code>http://myserver.mydomain.com/netdot/rest/device
 </code></pre>
-<p>esta interfaz devolverá los contenidos de todos los objetos tipo &quot;Device&quot; existentes. Es posible especificar ciertos filtros para limitar el alcance de los resultados:</p>
+<p>esta interfaz devolverá los contenidos de todos los objetos tipo &quot;Device&quot; existentes.</p>
+<h3 id="es-posible-especificar-ciertos-filtros-para"><a href="#TOC"><span class="header-section-number">7.1.4</span> Es posible especificar ciertos filtros para</a></h3>
+<p>limitar el alcance de los resultados:</p>
 <pre><code>http://myserver.mydomain.com/netdot/rest/device?sysname=host1
 </code></pre>
 <p>Esto realizará una búsqueda de todos los &quot;devices&quot; cuyo campo &quot;sysname&quot; tenga el valor &quot;host1&quot;.</p>
-<p>La palabra clave &quot;meta_data&quot;, en lugar de un ID de objeto, proveerá información acerca de la clase de objeto:</p>
+<h3 id="la-palabra-clave-meta_data-en-lugar-de-un-id-de-objeto-proveer&#225;-informaci&#243;n-acerca-de-la-clase-de-objeto"><a href="#TOC"><span class="header-section-number">7.1.5</span> La palabra clave &quot;meta_data&quot;, en lugar de un ID de objeto, proveerá información acerca de la clase de objeto:</a></h3>
 <pre><code>http://myserver.mydomain.com/netdot/rest/device/meta_data
 </code></pre>
-<p>Un recurso existente podrá actualizarse utilizando el método &quot;POST&quot; con parámetros relevantes. Por ejemplo, una petición tipo &quot;POST&quot; con el siguiente URI:</p>
+<h3 id="un-recurso-existente-podr&#225;-actualizarse-utilizando-el-m&#233;todo"><a href="#TOC"><span class="header-section-number">7.1.6</span> Un recurso existente podrá actualizarse utilizando el método</a></h3>
+<p>&quot;POST&quot; con parámetros relevantes. Por ejemplo, una petición tipo &quot;POST&quot; con el siguiente URI:</p>
 <pre><code>http://netdot.localdomain/rest/device/1?sysname=newhostname
 </code></pre>
 <p>actualizará el campo 'sysname' del objeto &quot;Device&quot; con ID &quot;1&quot; y le asignará el valor &quot;newhostname&quot;. De manera similar, puede crearse un nuevo objeto con una petición tipo &quot;POST&quot;. Sin embargo, en este caso el ID del objeto no debe incluirse:</p>
 <pre><code>http://netdot.localdomain/rest/person/?firstname=John&amp;lastname=Doe
 </code></pre>
-<p>Finalmente, un objeto en específico se puede eliminar utilizando el método &quot;DELETE&quot; de HTTP.</p>
-<h2 id="m&#243;dulo-perl-para-programas-cliente-en-cpan"><a href="#TOC"><span class="header-section-number">7.2</span> Módulo Perl para programas cliente en CPAN</a></h2>
+<h3 id="finalmente-un-objeto-en-espec&#237;fico-se-puede-eliminar-utilizando"><a href="#TOC"><span class="header-section-number">7.1.7</span> Finalmente, un objeto en específico se puede eliminar utilizando</a></h3>
+<p>el método &quot;DELETE&quot; de HTTP.</p>
+<h2 id="recursos-tipo-rest-de-prop&#243;sito-espec&#237;fico"><a href="#TOC"><span class="header-section-number">7.2</span> Recursos tipo REST de propósito específico</a></h2>
+<h3 id="el-recurso-especial-resthost-provee-una-interfaz-simplificada"><a href="#TOC"><span class="header-section-number">7.2.1</span> El recurso especial '/rest/host' provee una interfaz simplificada</a></h3>
+<p>para manipular los récords DNS y DHCP. Vamos a ilustrar su uso con los siguientes ejemplos:</p>
+<h4 id="obtener-datos-de-hosts-http-get"><a href="#TOC"><span class="header-section-number">7.2.1.1</span> Obtener datos de hosts (HTTP GET)</a></h4>
+<p>Obtener todos los objetos RR (DNS)</p>
+<pre><code>http://netdot.localdomain/netdot/rest/host
+</code></pre>
+<p>Obtener todos los objetos DNS de una zona</p>
+<pre><code>http://netdot.localdomain/netdot/rest/host?zone=localdomain
+</code></pre>
+<p>Recuperar el RR con nombre 'foo'</p>
+<pre><code>http://netdot.localdomain/netdot/rest/host?name=foo
+</code></pre>
+<p>Recuperar el RR con id 1</p>
+<pre><code>http://netdot.localdomain/netdot/rest/host?rrid=1
+</code></pre>
+<p>Obtener todos los objetos IP de una subred</p>
+<pre><code>http://netdot.localdomain/netdot/rest/host?subnet=192.168.1.0/24
+</code></pre>
+<h4 id="crear-nuevos-records-http-post.-ojo-no-especificar-el-id"><a href="#TOC"><span class="header-section-number">7.2.1.2</span> Crear nuevos records (HTTP POST). Ojo: No especificar el Id</a></h4>
+<p>Crear un récord tipo A llamado 'host1' y asignar la primera dirección IP disponible:</p>
+<pre><code>URL:  http://netdot.localdomain/netdot/rest/host?name=host1
+POST: {subnet=&gt;'192.168.1.0/24'}
+</code></pre>
+<h4 id="actualizar-r&#233;cords-existentes-http-post.-requiere-rrid-o-ipid"><a href="#TOC"><span class="header-section-number">7.2.1.3</span> Actualizar récords existentes (HTTP POST). Requiere rrid o ipid</a></h4>
+<p>Cambiar el nombre al host con RR Id 2</p>
+<pre><code>URL:  http://netdot.localdomain/netdot/rest/host?rrid=2
+POST: {name=&gt;'nombre-nuevo'}
+</code></pre>
+<p>Actualizar la dirección MAC del host DHCP con Ipblock Id 3</p>
+<pre><code>URL:  http://netdot.localdomain/netdot/rest/host?ipid=2
+POST: {ethernet=&gt;'DEADDEADBEEF'}
+</code></pre>
+<h4 id="borrar-records-http-delete"><a href="#TOC"><span class="header-section-number">7.2.1.4</span> Borrar records (HTTP DELETE)</a></h4>
+<ul>
+<li>Borrar el nombre de host con RR Id 3 (también libera la IP)</li>
+</ul>
+<pre><code>http://netdot.localdomain/netdot/rest/host?rrid=3
+</code></pre>
+<h2 id="autorizaci&#243;n-en-la-interfaz-rest"><a href="#TOC"><span class="header-section-number">7.3</span> Autorización en la interfaz REST</a></h2>
+<p>Todos los tipos de usuario pueden interactuar con la interfaz REST siempre que se le hayan asignado permisos. Sin embargo, sólo los usuarios tipo Admin pueden editar o borrar objetos utilizando los recursos genéricos REST. Los usuarios tipo 'Operator' y tipo 'User' pueden 'ver' los recursos genéricos pero sólo pueden editar o borrar algunas cosas utilizando los recursos de propósito específico como 'rest/host'.</p>
+<h2 id="m&#243;dulo-perl-para-programas-cliente-en-cpan"><a href="#TOC"><span class="header-section-number">7.4</span> Módulo Perl para programas cliente en CPAN</a></h2>
 <p>Se provee un módulo conveniente a través de CPAN para ser utilizado en programas que necesiten acceso a la interfaz REST de Netdot. El nombre del módulo es &quot;Netdot::Client::REST&quot;. Puede instalarse con algo similar a:</p>
+<p>Si está en un sistema basado en Debian (ej. Ubuntu):</p>
+<pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">sudo</span> apt-get <span class="kw">install</span> libnetdot-client-rest-perl</code></pre>
+<p>o sino:</p>
 <pre class="sourceCode"><code class="sourceCode bash">~# cpan<br /><span class="kw">&gt;</span><span class="kw">install</span> Netdot::Client::REST</code></pre>
 <h1 id="preguntas-frecuentes"><a href="#TOC"><span class="header-section-number">8</span> Preguntas Frecuentes</a></h1>
 <ul>

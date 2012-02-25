@@ -50,15 +50,9 @@ sub denies(){
 	    return 1;
 	}
 	if ( exists $access->{$otype} && exists $access->{$otype}->{$oid} ){
-	    if ( $otype eq 'Zone' ){
-		# Users cannot delete Zones
+	    if ( $otype eq 'Zone' || $otype eq 'Ipblock' ){
+		# Users cannot delete these
 		# These persmissions will only apply to records in the zone
-		if ( $user_type eq 'User' && $action eq 'delete' ){
-		    $logger->debug("ObjectAccessRule::denies: '$action' $otype id $oid denied to $username ($user_type)");
-		    return 1;
-		}
-	    }elsif ( $otype eq 'Ipblock' ){
-		# Users cannot delete subnets
 		if ( $user_type eq 'User' && $action eq 'delete' ){
 		    $logger->debug("ObjectAccessRule::denies: '$action' $otype id $oid denied to $username ($user_type)");
 		    return 1;
@@ -136,7 +130,8 @@ sub denies(){
 			if ( $parent = $ipblock->parent ){
 			    if ( exists $access->{'Ipblock'} && 
 				 exists $access->{'Ipblock'}->{$parent->id} ){
-				return 0 if ( !&_deny_action_access($action, $access->{'Ipblock'}->{$parent->id}) );
+				return 0 if ( !&_deny_action_access($action, 
+								    $access->{'Ipblock'}->{$parent->id}) );
 			    }
 			}
 		    }
@@ -152,18 +147,19 @@ sub denies(){
 	    }
 	    $zone = $rr->zone;
 	    
-	    # Users cannot edit RRs for Devices or Device IPs
-	    if ( my $dev = ($rr->devices)[0] ) {
-		$logger->debug("ObjectAccessRule::_denies: ".$rr->get_label." linked to a Device. Denying access.");
-		return 1;
+	    # Users cannot edit or delete RRs for Devices or Device IPs
+	    if ( $action ne 'view' ){
+		if ( $rr->devices ) {
+		    $logger->debug("ObjectAccessRule::_denies: ".$rr->get_label.
+				   " linked to a Device. Denying access.");
+		    return 1;
+		}
+		my $ret = 0;
+		foreach my $arecord ( $rr->arecords ){
+		    my $ip = $arecord->ipblock;
+		    return 1 if ($ip->interface || $ip->snmp_devices);
+		}
 	    }
- 	    foreach my $arecord ( $rr->arecords ){
- 		my $ip = $arecord->ipblock;
- 		if ( $ip->interface ){
- 		    $logger->debug("ObjectAccessRule::_denies: ".$rr->get_label." linked to Device interface. Denying access.");
- 		    return 1;
- 		}
- 	    }
 
 	    # If user has rights on the zone, they have the same rights over records
 	    if ( exists $access->{'Zone'}->{$zone->id} ){
@@ -215,23 +211,8 @@ sub denies(){
 #
 sub _get_rr_ips {
     my ($rr) = @_;
-
-    Netdot->throw_fatal("Missing arguments")
-	unless ( $rr );
-
-    if ( my @rraddrs = $rr->arecords ){
-	my @ipblist;        
-	foreach my $rraddr ( @rraddrs ){
-	    my $ipb = $rraddr->ipblock;
-	    push @ipblist, $ipb;
-	}
-	if ( @ipblist ){
-	    return @ipblist;
-	}else{
-	    $logger->debug("ObjectAccessRule::_get_rr_ips: no IPs found for RR: ".$rr->id);
-	    return;
-	}
-    }	    
+    Netdot->throw_fatal("Missing arguments") unless ( $rr );
+    return map { $_->ipblock } $rr->arecords;
 }
 
 ##################################################################################
@@ -261,8 +242,9 @@ sub _deny_action_access {
 # ip addresses inherit subnet permissions, but users cannot edit or delete them
 sub _deny_ip_access {
     my ($action, $access, $ipblock) = @_;
-    if ( $ipblock->interface ){
-	$logger->debug("ObjectAccessRule::_deny_ip_access: ".$ipblock->get_label." linked to Device interface. Denying access.");
+    if ( $action ne 'view' && ($ipblock->interface || $ipblock->snmp_devices) ){
+	$logger->debug("ObjectAccessRule::_deny_ip_access: ".$ipblock->get_label.
+		       " linked to Device. Denying access.");
 	return 1;
     }
     my $parent = $ipblock->parent;

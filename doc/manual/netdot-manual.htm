@@ -90,8 +90,26 @@ code.sourceCode span.er { color: red; font-weight: bold; }
 <li><a href="#assigning-permissions-to-users"><span class="toc-section-number">6.1</span> Assigning permissions to users</a></li>
 </ul></li>
 <li><a href="#restful-interface"><span class="toc-section-number">7</span> RESTful Interface</a><ul>
-<li><a href="#restful-resources"><span class="toc-section-number">7.1</span> RESTful resources</a></li>
-<li><a href="#client-module-on-cpan"><span class="toc-section-number">7.2</span> Client module on CPAN</a></li>
+<li><a href="#generic-restful-resources"><span class="toc-section-number">7.1</span> Generic RESTful resources</a><ul>
+<li><a href="#the-rest-interface-is-available-using-the-following-url-or-similar-depending-on-your-apache-configuration"><span class="toc-section-number">7.1.1</span> The REST interface is available using the following URL (or similar, depending on your Apache configuration):</a></li>
+<li><a href="#generic-restful-resources-to-be-acted-upon-represent-netdot-objects-and-are-part-of-the-request-uri.-for-example-in-this-uri"><span class="toc-section-number">7.1.2</span> Generic RESTful resources to be acted upon represent Netdot objects and are part of the request URI. For example, in this URI:</a></li>
+<li><a href="#using-the-following-uri-with-a-get-request"><span class="toc-section-number">7.1.3</span> Using the following URI with a GET request:</a></li>
+<li><a href="#you-can-also-specify-certain-search-filters-to-limit-the-scope"><span class="toc-section-number">7.1.4</span> You can also specify certain search filters to limit the scope</a></li>
+<li><a href="#the-special-keyword-meta_data-instead-of-an-object-id-will-provide-information-about-the-objects-class"><span class="toc-section-number">7.1.5</span> The special keyword <code>meta_data</code> instead of an object ID will provide information about the object's class:</a></li>
+<li><a href="#an-existing-resource-can-be-updated-by-using-the-post-method-with-relevant-parameters.-for-example-a-post-request-to-the-following-uri"><span class="toc-section-number">7.1.6</span> An existing resource can be updated by using the 'POST' method with relevant parameters. For example, a POST request to the following URI:</a></li>
+<li><a href="#similarly-a-new-object-can-be-created-with-a-post-request.-however-in-this-case-the-object-id-must-be-left-out"><span class="toc-section-number">7.1.7</span> Similarly, a new object can be created with a POST request. However, in this case the object id must be left out:</a></li>
+<li><a href="#specific-objects-can-be-deleted-by-using-the-delete-http-method."><span class="toc-section-number">7.1.8</span> Specific objects can be deleted by using the 'DELETE' HTTP method.</a></li>
+</ul></li>
+<li><a href="#special-purpose-rest-resources"><span class="toc-section-number">7.2</span> Special-purpose REST resources</a><ul>
+<li><a href="#the-special-resource-resthost-provides-a-simplified-interface-for-manipulating-dns-and-dhcp-records.-we-will-illustrate-its-usage-with-the-following-examples"><span class="toc-section-number">7.2.1</span> The special resource '/rest/host' provides a simplified interface for manipulating DNS and DHCP records. We will illustrate its usage with the following examples:</a><ul>
+<li><a href="#retrieving-host-data-http-get"><span class="toc-section-number">7.2.1.1</span> Retrieving host data (HTTP GET)</a></li>
+<li><a href="#creating-new-records-http-post.-here-the-trick-is-to-not-specify-an-object-id"><span class="toc-section-number">7.2.1.2</span> Creating new records (HTTP POST). Here the trick is to not specify an object id</a></li>
+<li><a href="#updating-existing-records-http-post-requires-passing-rrid-or-ipid."><span class="toc-section-number">7.2.1.3</span> Updating existing records (HTTP POST) Requires passing rrid or ipid.</a></li>
+<li><a href="#deleting-records-http-delete"><span class="toc-section-number">7.2.1.4</span> Deleting records (HTTP DELETE)</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#restful-interface-authorization"><span class="toc-section-number">7.3</span> RESTful Interface Authorization</a></li>
+<li><a href="#client-module-on-cpan"><span class="toc-section-number">7.4</span> Client module on CPAN</a></li>
 </ul></li>
 <li><a href="#faq"><span class="toc-section-number">8</span> FAQ</a></li>
 </ul>
@@ -155,9 +173,9 @@ code.sourceCode span.er { color: red; font-weight: bold; }
 <pre class="sourceCode"><code class="sourceCode bash">~% <span class="kw">make</span> testdeps</code></pre></li>
 <li><p>There are two ways to install the missing modules: The first (and the recommended) way is through package managers of your distribution.</p>
 <p>For systems with APT (e.g. Debian-based systems), run:</p>
-<pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">make</span> installdeps-apt-get</code></pre>
+<pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">make</span> apt-install</code></pre>
 <p>For systems with RPM (e.g. Red Hat), run:</p>
-<pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">make</span> installdeps-rpm</code></pre>
+<pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">make</span> rpm-install</code></pre>
 <blockquote>
 <p><strong>Tip</strong> If you are still missing modules after running this step, you can complete the process by running the next step.</p>
 </blockquote></li>
@@ -430,37 +448,83 @@ device3 community2
 <li><p>On the UserRight window, select the Object Class, the specific object or objects, and one or more access rights (view, edit, delete). Only select the 'none' right to revoke all permissions inherited from a group. Click on <code>Insert</code>.</p></li>
 </ul>
 <h1 id="restful-interface"><a href="#TOC"><span class="header-section-number">7</span> RESTful Interface</a></h1>
-<p>The RESTful interface allows programmatic access to the Netdot database over the HTTP/HTTPS protocol. At this moment, all objects are formatted in XML using the XML::Simple Perl module. In the future, Netdot may support other formats, such as YAML.</p>
-<h2 id="restful-resources"><a href="#TOC"><span class="header-section-number">7.1</span> RESTful resources</a></h2>
-<p>The REST interface is available using the following URL (or similar, depending on your Apache configuration):</p>
+<p>The RESTful interface allows programmatic access to the Netdot database over the HTTP/HTTPS protocol. At this moment, all objects are formatted in XML using the XML::Simple Perl module. In the future, Netdot may support other formats, such as YAML or JSON.</p>
+<h2 id="generic-restful-resources"><a href="#TOC"><span class="header-section-number">7.1</span> Generic RESTful resources</a></h2>
+<h3 id="the-rest-interface-is-available-using-the-following-url-or-similar-depending-on-your-apache-configuration"><a href="#TOC"><span class="header-section-number">7.1.1</span> The REST interface is available using the following URL (or similar, depending on your Apache configuration):</a></h3>
 <pre><code>https://myserver.mydomain.com/netdot/rest/
 </code></pre>
 <p>This should load the Netdot::REST class and return something like:</p>
-<pre><code>Netdot/0.9 REST OK. 
+<pre><code>Netdot/1.0 REST OK. 
 </code></pre>
-<p>RESTful resources to be acted upon represent Netdot objects and are part of the request URI. For example, in this URI:</p>
+<h3 id="generic-restful-resources-to-be-acted-upon-represent-netdot-objects-and-are-part-of-the-request-uri.-for-example-in-this-uri"><a href="#TOC"><span class="header-section-number">7.1.2</span> Generic RESTful resources to be acted upon represent Netdot objects and are part of the request URI. For example, in this URI:</a></h3>
 <pre><code>http://myserver.mydomain.com/netdot/rest/device/1
 </code></pre>
 <p>the resource is &quot;device/1&quot;, which for a GET request, will return the contents of Device id 1.</p>
-<p>Using the following URI with a GET request:</p>
+<h3 id="using-the-following-uri-with-a-get-request"><a href="#TOC"><span class="header-section-number">7.1.3</span> Using the following URI with a GET request:</a></h3>
 <pre><code>http://myserver.mydomain.com/netdot/rest/device
 </code></pre>
-<p>this interface will return the contents of all Device objects in the database. You can also specify certain search filters to limit the scope of a GET request:</p>
+<p>this interface will return the contents of all Device objects in the database.</p>
+<h3 id="you-can-also-specify-certain-search-filters-to-limit-the-scope"><a href="#TOC"><span class="header-section-number">7.1.4</span> You can also specify certain search filters to limit the scope</a></h3>
+<p>of a GET request:</p>
 <pre><code>http://myserver.mydomain.com/netdot/rest/device?sysname=host1
 </code></pre>
 <p>This will perform a search and return all devices whose sysname field is 'host1'.</p>
-<p>The special keyword <code>meta_data</code> instead of an object ID will provide information about the object's class:</p>
+<h3 id="the-special-keyword-meta_data-instead-of-an-object-id-will-provide-information-about-the-objects-class"><a href="#TOC"><span class="header-section-number">7.1.5</span> The special keyword <code>meta_data</code> instead of an object ID will provide information about the object's class:</a></h3>
 <pre><code>http://myserver.mydomain.com/netdot/rest/device/meta_data
 </code></pre>
-<p>An existing resource can be updated by using the 'POST' method with relevant parameters. For example, a POST request to the following URI:</p>
-<pre><code>http://netdot.localdomain/rest/device/1?sysname=newhostname
+<h3 id="an-existing-resource-can-be-updated-by-using-the-post-method-with-relevant-parameters.-for-example-a-post-request-to-the-following-uri"><a href="#TOC"><span class="header-section-number">7.1.6</span> An existing resource can be updated by using the 'POST' method with relevant parameters. For example, a POST request to the following URI:</a></h3>
+<pre><code>URL: http://netdot.localdomain/rest/device/1
+POST: {sysname=&gt;'newhostname'}
 </code></pre>
-<p>will update the 'sysname' field of the Device object with id 1 to be &quot;newhostname&quot;. Similarly, a new object can be created with a POST request. However, in this case the object id must be left out:</p>
-<pre><code>http://netdot.localdomain/rest/person/?firstname=John&amp;lastname=Doe
+<p>will update the 'sysname' field of the Device object with id 1 to be &quot;newhostname&quot;.</p>
+<h3 id="similarly-a-new-object-can-be-created-with-a-post-request.-however-in-this-case-the-object-id-must-be-left-out"><a href="#TOC"><span class="header-section-number">7.1.7</span> Similarly, a new object can be created with a POST request. However, in this case the object id must be left out:</a></h3>
+<pre><code>URL: http://netdot.localdomain/rest/person
+POST: {firstname=&gt;'John', lastname=&gt;'Doe'}
 </code></pre>
-<p>Lastly, specific objects can be deleted by using the 'DELETE' HTTP method.</p>
-<h2 id="client-module-on-cpan"><a href="#TOC"><span class="header-section-number">7.2</span> Client module on CPAN</a></h2>
+<h3 id="specific-objects-can-be-deleted-by-using-the-delete-http-method."><a href="#TOC"><span class="header-section-number">7.1.8</span> Specific objects can be deleted by using the 'DELETE' HTTP method.</a></h3>
+<h2 id="special-purpose-rest-resources"><a href="#TOC"><span class="header-section-number">7.2</span> Special-purpose REST resources</a></h2>
+<h3 id="the-special-resource-resthost-provides-a-simplified-interface-for-manipulating-dns-and-dhcp-records.-we-will-illustrate-its-usage-with-the-following-examples"><a href="#TOC"><span class="header-section-number">7.2.1</span> The special resource '/rest/host' provides a simplified interface for manipulating DNS and DHCP records. We will illustrate its usage with the following examples:</a></h3>
+<h4 id="retrieving-host-data-http-get"><a href="#TOC"><span class="header-section-number">7.2.1.1</span> Retrieving host data (HTTP GET)</a></h4>
+<p>Retrieve all RR (DNS) objects</p>
+<pre><code>http://netdot.localdomain/netdot/rest/host
+</code></pre>
+<p>Retrieve all RR objects within given zone</p>
+<pre><code>http://netdot.localdomain/netdot/rest/host?zone=localdomain
+</code></pre>
+<p>Retrieve RR name &quot;foo&quot; and its related records</p>
+<pre><code>http://netdot.localdomain/netdot/rest/host?name=foo
+</code></pre>
+<p>Retrieve RR id 1 and all related records</p>
+<pre><code>http://netdot.localdomain/netdot/rest/host?rrid=1
+</code></pre>
+<p>Retrieve all Ipblock objects within given subnet</p>
+<pre><code>http://netdot.localdomain/netdot/rest/host?subnet=192.168.1.0/24
+</code></pre>
+<h4 id="creating-new-records-http-post.-here-the-trick-is-to-not-specify-an-object-id"><a href="#TOC"><span class="header-section-number">7.2.1.2</span> Creating new records (HTTP POST). Here the trick is to not specify an object id</a></h4>
+<p>Create new A record named 'host1' using next available address in given subnet:</p>
+<pre><code>URL:  http://netdot.localdomain/netdot/rest/host?name=host1
+POST: {subnet=&gt;'192.168.1.0/24'}
+</code></pre>
+<h4 id="updating-existing-records-http-post-requires-passing-rrid-or-ipid."><a href="#TOC"><span class="header-section-number">7.2.1.3</span> Updating existing records (HTTP POST) Requires passing rrid or ipid.</a></h4>
+<p>Rename host with RR id=2</p>
+<pre><code>URL:  http://netdot.localdomain/netdot/rest/host?rrid=2
+POST: {name=&gt;'newname'}
+</code></pre>
+<p>Update DHCP scope ethernet for Ipblock with id=3</p>
+<pre><code>URL:  http://netdot.localdomain/netdot/rest/host?ipid=2
+POST: {ethernet=&gt;'DEADDEADBEEF'}
+</code></pre>
+<h4 id="deleting-records-http-delete"><a href="#TOC"><span class="header-section-number">7.2.1.4</span> Deleting records (HTTP DELETE)</a></h4>
+<p>Delete hostname with RR id 3 (also frees IP)</p>
+<pre><code>http://netdot.localdomain/netdot/rest/host?rrid=3
+</code></pre>
+<h2 id="restful-interface-authorization"><a href="#TOC"><span class="header-section-number">7.3</span> RESTful Interface Authorization</a></h2>
+<p>All user types can interact with the RESTful interface as long as they are granted permissions to do so. However only Admin users can edit or delete objects using generic REST resources. Operators and regular users can view generic resources but can only edit or delete them using specific-purpose resources such as 'rest/host'.</p>
+<h2 id="client-module-on-cpan"><a href="#TOC"><span class="header-section-number">7.4</span> Client module on CPAN</a></h2>
 <p>A convenient module is provided via CPAN for use in Perl scripts that need to access Netdot's REST interface. The module name is Netdot::Client::REST. It can be installed by doing something like this:</p>
+<p>If you are on a Debian-based system:</p>
+<pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">sudo</span> apt-get <span class="kw">install</span> libnetdot-client-rest-perl</code></pre>
+<p>or</p>
 <pre class="sourceCode"><code class="sourceCode bash">~# cpan<br /><span class="kw">&gt;</span><span class="kw">install</span> Netdot::Client::REST</code></pre>
 <h1 id="faq"><a href="#TOC"><span class="header-section-number">8</span> FAQ</a></h1>
 <ul>

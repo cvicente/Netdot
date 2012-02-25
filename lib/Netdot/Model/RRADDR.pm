@@ -24,7 +24,8 @@ RRADDR represent either A or AAAA records.
     - Validate TTL
     - Check for conflicting record types
     - Create or update the corresponding RRPTR object
-    
+    - Sanitize ipblock argument
+
   Arguments:
     Hashref with key/value pairs, plus:
       update_ptr - Update corresponding RRPTR object (default: ON)
@@ -253,7 +254,7 @@ sub _net_dns {
 
 
 ##################################################################
-# check if IP is an address string, if so then convert into object
+# check if IP is an address string
 sub _convert_ipblock {
     my ($self, $ip) = @_;
     if (!(ref $ip) && ($ip =~ /\D/)) {
@@ -263,7 +264,8 @@ sub _convert_ipblock {
 	    $ipblock = Ipblock->insert({address=>$ip, status=>'Static'});
 	}
 	# Make sure it's set to static
-	$ipblock->update({status=>'Static'});
+	$ipblock->update({status=>'Static'})
+	    if ( $ipblock->status->name ne 'Static' );
 	return $ipblock;
     } else {
 	return $ip;

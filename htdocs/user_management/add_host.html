@@ -16,10 +16,10 @@ title  => 'Add Host'
 %#######################################################################
 <%args>
 $add_host_block
-$address       => undef # Can be passed optionally. Otherwise we'll get next one.
+$address       => undef # Can be passed optionally
 $user          => $ui->get_current_user($r)
 $zone_id       => undef
-$hostname      => undef
+$name          => undef
 $aliases       => undef
 $expiration    => undef
 $cpu           => undef
@@ -67,84 +67,22 @@ if ( $zone_id ){
 }
 
 if ( $submit ){
-
-    unless ( $address ){
-	# Obtain next available address
-	my $ip_strategy = Netdot->config->get("IP_ALLOCATION_STRATEGY");
-	eval {
-	    $address = $block->get_next_free(strategy=>$ip_strategy);
-	};
-	if ( my $e = $@ ){
-	    $m->comp('/generic/error.mhtml', error=>"$e");	
-	}
-	unless ( $address ){
-	    $m->comp('/generic/error.mhtml', error=>"Could not get an available address from ".$block->get_label);
-	}
-    }
-    
     unless ( $zone ){
 	$m->comp('/generic/error.mhtml', error=>"A DNS Domain (Zone) is required");
     }
-    
-    unless ( $hostname ){
+    unless ( $name ){
 	$m->comp('/generic/error.mhtml', error=>"A hostname is required");
     }
     
-    eval {
-	RR->validate_name($hostname);
-    };
-    if ( my $e = $@ ){
-	$m->comp('/generic/error.mhtml', error=>$e);
-    }
-
-    if ( my $h = RR->search(name=>$hostname, zone=>$zone)->first ){
-	$m->comp('/generic/error.mhtml', error=>$h->get_label." is already taken");
-    }
-
-    # We do not want two host scopes with the same physical address in the same subnet
-    if ( $ethernet ){
-	if ( my $physaddr = PhysAddr->search(address=>$ethernet)->first ){
-	    if ( my @host_scopes = $physaddr->dhcp_hosts ){
-		foreach my $host ( @host_scopes ){
-		    if ( $host->ipblock->parent && $host->ipblock->parent->id == $block->id ){
-			my $hname = $host->ipblock->address;
-			my $ipid  = $host->ipblock->id;
-			$m->comp('/generic/error.mhtml', error=>"Host <strong><a href=\"../management/host.html?ipblock=$ipid\">$hname</a></strong> is already registered with Ethernet: $ethernet in this subnet");
-		    }
-		}
-	    }
-	}
-    }
-    my $person = $ui->get_user_person($user);
-
-    my %args;
-    if ( $aliases ){
-	my @aliases = split ',', $aliases;
-	foreach my $alias ( @aliases ){
-	    $alias =~ s/\s+//g;
-	    # In case they included the domain part in the alias
-	    my $domain = $zone->name;
-	    $alias =~ s/\.$domain$//;
-	    if ( my $h = RR->search(name=>$alias, zone=>$zone)->first ){
-		$m->comp('/generic/error.mhtml', error=>$h->get_label." from your aliases list is already taken");
-	    }
-	    eval {
-		RR->validate_name($alias);
-	    };
-	    if ( my $e = $@ ){
-		$m->comp('/generic/error.mhtml', error=>"Invalid Alias $alias: $e");
-	    }
-	    push @{$args{aliases}}, $alias;
-	}
-    }
-    
-    foreach my $key ( qw(hostname expiration ethernet) ){
+    my %args; # For RR->add_host()
+    foreach my $key ( qw(name expiration ethernet aliases) ){
 	$args{$key} = $ARGS{$key};
     }
-    $args{zone}    = $zone;
+    my $person = $ui->get_user_person($user);
     $args{person}  = $person;
-    $args{block}   = $block;
-    $args{address} = $address;
+    $args{zone}    = $zone;
+    $args{subnet}  = $block;
+    $args{address} = $address if $address;
 
     # Hardware Info
     $args{cpu} = $cpu || $other_cpu;
@@ -272,7 +210,7 @@ if ( $submit ){
         </p>
         <p>
         <label for="name"><% $ui->help_link('../user_help/hosts.html#Hostname', '', '', 'Host Name') %> <font color="red">*</font></label>
-        <input type="text" name="hostname" class="longtxt" value="">
+        <input type="text" name="name" class="longtxt" value="">
         </p>
         <p>
         <label for="ethernet"><% $ui->help_link('../user_help/hosts.html#Ethernet', '', '', 'Ethernet Address') %></label>

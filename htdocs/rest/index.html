@@ -1,10 +1,12 @@
 <%doc>
 Load the REST class to verify that it is operational
 </%doc>
-
+<%args>
+$user    
+$manager 
+</%args>
 <%init>
 use Netdot::REST;
-my $rest = Netdot::REST->new();
+my $rest = Netdot::REST->new(user=>$user, manager=>$manager);
 print "Netdot/$Netdot::VERSION REST OK.  " if defined $rest;
 </%init>
-

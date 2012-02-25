@@ -159,13 +159,13 @@ Netdot, i.e.
     For systems with APT (e.g. Debian-based systems), run:
 
     ~~~~ {.bash}
-    ~# make installdeps-apt-get
+    ~# make apt-install
     ~~~~
 
     For systems with RPM (e.g. Red Hat), run:
 
     ~~~~ {.bash}
-    ~# make installdeps-rpm
+    ~# make rpm-install
     ~~~~
 
     > **Tip**
@@ -962,74 +962,148 @@ tasks:
 The RESTful interface allows programmatic access to the Netdot database
 over the HTTP/HTTPS protocol. At this moment, all objects are formatted
 in XML using the XML::Simple Perl module. In the future, Netdot may
-support other formats, such as YAML.
+support other formats, such as YAML or JSON.
 
-## RESTful resources
+## Generic RESTful resources
 
-The REST interface is available using the following URL (or similar,
-depending on your Apache configuration):
+### The REST interface is available using the following URL (or similar, depending on your Apache configuration):
 
 ~~~~
 https://myserver.mydomain.com/netdot/rest/
 ~~~~
 
-This should load the Netdot::REST class and return something like:
+ This should load the Netdot::REST class and return something like:
 
 ~~~~
-Netdot/0.9 REST OK. 
+Netdot/1.0 REST OK. 
 ~~~~
 
-RESTful resources to be acted upon represent Netdot objects and are part
-of the request URI. For example, in this URI:
+### Generic RESTful resources to be acted upon represent Netdot objects and are part of the request URI. For example, in this URI:
 
 ~~~~
 http://myserver.mydomain.com/netdot/rest/device/1
 ~~~~
 
-the resource is "device/1", which for a GET request, will return the
-contents of Device id 1.
+ the resource is "device/1", which for a GET request, will return the contents of Device id 1.
 
-Using the following URI with a GET request:
+### Using the following URI with a GET request:
 
 ~~~~
 http://myserver.mydomain.com/netdot/rest/device
 ~~~~
 
-this interface will return the contents of all Device objects in the
-database. You can also specify certain search filters to limit the scope
+ this interface will return the contents of all Device objects in the database. 
+
+### You can also specify certain search filters to limit the scope
 of a GET request:
 
 ~~~~
 http://myserver.mydomain.com/netdot/rest/device?sysname=host1
 ~~~~
 
-This will perform a search and return all devices whose sysname field is
-'host1'.
+ This will perform a search and return all devices whose sysname field is 'host1'.
 
-The special keyword `meta_data` instead of an object ID will provide
-information about the object's class:
+### The special keyword `meta_data` instead of an object ID will provide information about the object's class:
 
 ~~~~
 http://myserver.mydomain.com/netdot/rest/device/meta_data
 ~~~~
 
-An existing resource can be updated by using the 'POST' method with
-relevant parameters. For example, a POST request to the following URI:
+### An existing resource can be updated by using the 'POST' method with relevant parameters. For example, a POST request to the following URI:
 
 ~~~~
-http://netdot.localdomain/rest/device/1?sysname=newhostname
+URL: http://netdot.localdomain/rest/device/1
+POST: {sysname=>'newhostname'}
 ~~~~
 
-will update the 'sysname' field of the Device object with id 1 to be
-"newhostname". Similarly, a new object can be created with a POST
-request. However, in this case the object id must be left out:
+ will update the 'sysname' field of the Device object with id 1 to be "newhostname". 
+
+
+### Similarly, a new object can be created with a POST request. However, in this case the object id must be left out:
 
 ~~~~
-http://netdot.localdomain/rest/person/?firstname=John&lastname=Doe
+URL: http://netdot.localdomain/rest/person
+POST: {firstname=>'John', lastname=>'Doe'}
 ~~~~
 
-Lastly, specific objects can be deleted by using the 'DELETE' HTTP
-method.
+### Specific objects can be deleted by using the 'DELETE' HTTP method.
+
+## Special-purpose REST resources
+
+### The special resource '/rest/host' provides a simplified interface for manipulating DNS and DHCP records. We will illustrate its usage with the following examples:
+
+#### Retrieving host data (HTTP GET)
+
+Retrieve all RR (DNS) objects
+
+~~~~
+http://netdot.localdomain/netdot/rest/host
+~~~~
+
+Retrieve all RR objects within given zone
+
+~~~~
+http://netdot.localdomain/netdot/rest/host?zone=localdomain
+~~~~
+
+Retrieve RR name "foo" and its related records
+
+~~~~
+http://netdot.localdomain/netdot/rest/host?name=foo
+~~~~
+     
+Retrieve RR id 1 and all related records
+
+~~~~
+http://netdot.localdomain/netdot/rest/host?rrid=1
+~~~~
+
+Retrieve all Ipblock objects within given subnet
+
+~~~~
+http://netdot.localdomain/netdot/rest/host?subnet=192.168.1.0/24
+~~~~
+
+#### Creating new records (HTTP POST). Here the trick is to not specify an object id
+
+Create new A record named 'host1' using next available address in given subnet:
+
+~~~~
+URL:  http://netdot.localdomain/netdot/rest/host?name=host1
+POST: {subnet=>'192.168.1.0/24'}
+~~~~
+
+#### Updating existing records (HTTP POST) Requires passing rrid or ipid. 
+
+Rename host with RR id=2
+
+~~~~
+URL:  http://netdot.localdomain/netdot/rest/host?rrid=2
+POST: {name=>'newname'}
+~~~~
+
+Update DHCP scope ethernet for Ipblock with id=3
+
+~~~~
+URL:  http://netdot.localdomain/netdot/rest/host?ipid=2
+POST: {ethernet=>'DEADDEADBEEF'}
+~~~~
+
+#### Deleting records (HTTP DELETE)
+
+Delete hostname with RR id 3 (also frees IP)
+ 
+~~~~
+http://netdot.localdomain/netdot/rest/host?rrid=3
+~~~~
+
+## RESTful Interface Authorization
+
+All user types can interact with the RESTful interface as long as they
+are granted permissions to do so. However only Admin users can edit
+or delete objects using generic REST resources. Operators and regular
+users can view generic resources but can only edit or delete them 
+using specific-purpose resources such as 'rest/host'.
 
 ## Client module on CPAN
 
@@ -1037,10 +1111,19 @@ A convenient module is provided via CPAN for use in Perl scripts that
 need to access Netdot's REST interface. The module name is
 Netdot::Client::REST. It can be installed by doing something like this:
 
+If you are on a Debian-based system:
+
+~~~~ {.bash}
+~# sudo apt-get install libnetdot-client-rest-perl
+~~~~
+
+or
+
 ~~~~ {.bash}
 ~# cpan
 >install Netdot::Client::REST
 ~~~~
+
 
 # FAQ
 

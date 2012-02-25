@@ -13,14 +13,15 @@ The RESTful interface provides access to the Netdot database over the HTTP/HTTPS
 
     use Netdot::REST
     my $rest = Netdot::REST->new();
-    $rest->handle_resource(resource=>$resource, r=>$r, args=>\%ARGS);
+    $rest->handle_resource(resource=>$resource, r=>$r, %ARGS);
 
 =cut
 use base qw( Netdot );
 use Netdot::Model;
 use XML::Simple;
 use Data::Dumper;
-use Apache2::Const -compile => qw(FORBIDDEN HTTP_UNAUTHORIZED OK NOT_FOUND HTTP_BAD_REQUEST HTTP_NOT_ACCEPTABLE);
+use Apache2::Const -compile => qw(FORBIDDEN HTTP_UNAUTHORIZED OK NOT_FOUND 
+                                  HTTP_BAD_REQUEST HTTP_NOT_ACCEPTABLE);
 use strict;
 
 my $logger = Netdot->log->get_logger("Netdot::REST");
@@ -31,17 +32,23 @@ my $logger = Netdot->log->get_logger("Netdot::REST");
 =head2 new - Constructor
 
   Arguments:
-    None
+    user     (R) Netdot user object
+    manager  (R) Permission manager object
   Returns:
     Netdot::REST object
   Examples:
-    $nr = Netot::REST->new();
+    $rest = Netot::REST->new(user=>$user, manager=>$manager);
 
 =cut
 sub new { 
     my ($proto, %argv) = @_;
     my $class = ref( $proto ) || $proto;
     my $self = {};
+
+    foreach my $arg ( qw/user manager/ ){
+	$self->{$arg} = $argv{$arg} ||
+	    Netdot->throw_fatal("Missing required argument: $arg");
+    }
 
     bless $self, $class;
     wantarray ? ( $self, '' ) : $self; 
@@ -54,90 +61,73 @@ sub new {
     A resource is the part of the URI between the Netdot URL and any arguments.
     For example, in this URI:
 
-        http://netdot.localdomain/rest/device/1
+        http://host.localdomain/netdot/device/1
 
     the resource is "device/1", which for a GET request, will return the contents of Device id 1.
 
     Also, using this URI with a GET request:
 
-            http://netdot.localdomain/rest/device
+            http://host.localdomain/netdot/device
 
     this interface will return the contents of all device objects in the DB.
 
     Moreover, you can specify certain search filters to limit the scope of a GET request:
 
-            http://netdot.localdomain/rest/device?sysname=host1
+            http://host.localdomain/netdot/device?sysname=host1
 
     This will perform a search and return all devices whose sysname field is 'host1'.
 
     The special keyword 'meta_data' used instead of an object ID will provide information
     about the object's class:
 
-            http://netdot.localdomain/rest/device/meta_data
+            http://host.localdomain/netdot/device/meta_data
 
     An existing resource can be updated by using the 'POST' method with relevant parameters.  
-    For example, a POST request to the following URI:
+    For example, a POST request to the following URI and POST data:
 
-            http://netdot.localdomain/rest/device/1?sysname=newhostname
+            http://host.localdomain/netdot/device/1    {sysname=>'newhostname'}
 
-    will update the 'sysname' field of the Device object with id 1.  Similarly, a new object
-    can be created with a POST request.  However, in this case the object id must be left out:
+    will update the 'sysname' field of the Device object with id 1.  
 
-            http://netdot.localdomain/rest/person/?firstname=John&lastname=Doe
+    Similarly, a new object can be created with a POST request.  However, in this case 
+    the object id must be left out:
 
-    Lastly, objects can be deleted by using the 'DELETE' HTTP method.  
+            http://host.localdomain/netdot/person      {firstname=>'John', lastname=>'Doe'}
+
+    Lastly, objects can be deleted by using the 'DELETE' HTTP method.
 
   Arguments:
     Hash with following keys:
        resource    - resource string from URI
        r           - Apache request object
-       args        - hashref with URI arguments
+       rest of HTTP args
   Returns:
-    True if successful.  Sends content (e.g. XML-formatted) to STDOUT.
+    Sends content (e.g. XML-formatted) to STDOUT.
   Examples:
     $nr->handle_resource(resource=>'Device/1', r=>$r);
-    $nr->handle_resource(resource=>'Device', r=>$r, args=>{sysname=host1,site=2});
+    $nr->handle_resource(resource=>'Device', r=>$r, sysname=>host1, site=>2);
 
 =cut
 sub handle_resource {
     my ($self, %argv) = @_;
     
-    my $resource = $argv{resource} || $self->throw_fatal("You need to pass resource");
-    my $r = $argv{r}               || $self->throw_fatal("You need to pass request object");
+    my $resource = delete $argv{resource} || $self->throw_fatal("You need to pass resource");
+    my $r = delete $argv{r}               || $self->throw_fatal("You need to pass request object");
     $self->{request} = $argv{r};
-    my %http_args = %{$argv{args}} if $argv{args};
 
     # Get relevant HTTP headers from request object
     my $headers = $self->{request}->headers_in;
     
-    $logger->info(sprintf("Netdot::REST::handle_resource: %s request for %s from %s (%s)", 
-			  $self->{request}->method, $resource, $self->{request}->connection->remote_ip, $headers->{'User-Agent'}
+    $logger->info(sprintf("Netdot::REST::handle_resource: %s request for %s?%s from %s (%s)", 
+			  $self->{request}->method, 
+			  $resource, 
+			  $self->{request}->args,
+			  $self->{request}->connection->remote_ip, 
+			  $headers->{'User-Agent'}
 		  ));
 
     # Deal with Accept header
-    if ( $headers->{Accept} ){
-	$logger->debug(sprintf("Netdot::REST::handle_resource: %s, Accept: %s", 
-			       $self->{request}->connection->remote_ip, $headers->{'Accept'}
-		       ));
-	
-	my @headers = split m/,(\s+)?/, $headers->{Accept};
-	foreach my $header ( @headers ){
-	    my ($mtype, $parameters) = split m/;(\s+)?/, $header;
-	    if ( $mtype eq 'text/xml' || $mtype eq 'application/xml' ){
-		$self->{media_type} = 'xml';
-		if ( $parameters =~ /version=(\w+)/ ){
-		    # This will be used in future versions of this API for backwards compatibility
-		    $self->{version} = $1;
-		}
-		last;
-	    }
-	}
-	# At this point, if we haven't found any supported media types, give up
-	unless ( $self->{media_type} ){
-	    $self->throw_rest(code=>Apache2::Const::HTTP_NOT_ACCEPTABLE, 
-			      msg=>'Netdot::REST::handle_resource: no acceptable media type found'); 
-	}
-    }
+    $self->check_accept_header($headers->{Accept}) if ( $headers->{Accept} );
 
     # Get our valid netdot objects
     my %objects;
@@ -155,17 +145,17 @@ sub handle_resource {
 		# We have an object ID
 		if ( $self->{request}->method eq 'GET' ){
 		    my %get_args = (table=>$table, id=>$id);
-		    if ( $http_args{depth} ){
-			$get_args{depth} = $http_args{depth};
+		    if ( $argv{depth} ){
+			$get_args{depth} = $argv{depth};
 		    }
-		    if ( $http_args{no_linked_from} ){
-			$get_args{no_linked_from} = $http_args{no_linked_from};
+		    if ( $argv{no_linked_from} ){
+			$get_args{no_linked_from} = $argv{no_linked_from};
 		    }
 		    my $o = $self->get(%get_args);
 		    $self->print_formatted($o);
 
 		}elsif ( $self->{request}->method eq 'POST' ){
-		    my $o = $self->post(table=>$table, id=>$id, data=>\%http_args);
+		    my $o = $self->post(table=>$table, id=>$id, %argv);
 		    $self->print_formatted($o);
 
 		}elsif ( $self->{request}->method eq 'DELETE' ){
@@ -181,7 +171,8 @@ sub handle_resource {
 		}
 	    }else{
 		# Invalid ID
-		$self->throw_rest(code=>Apache2::Const::HTTP_BAD_REQUEST, msg=>'Netdot::REST::handle_resource: Bad request'); 
+		$self->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
+				  msg=>'Netdot::REST::handle_resource: Bad request: Invalid ID'); 
 	    }
 	}else{
 	    if ( $self->{request}->method eq 'GET' ){
@@ -189,15 +180,15 @@ sub handle_resource {
 		my $results;
 		my $depth;
 		my $no_linked_from;
-		if ( %http_args ){
+		if ( %argv ){
 		    # We were given a query hash
 		    # Remove non-fields
-		    $depth = delete $http_args{depth};
-		    $no_linked_from = delete $http_args{no_linked_from};
+		    $depth = delete $argv{depth};
+		    $no_linked_from = delete $argv{no_linked_from};
 		}
-		if ( %http_args ){
+		if ( %argv ){
 		    # If there are any args left do a search with them
-		    $results = $table->search(%http_args);
+		    $results = $table->search(%argv);
 		}else{
 		    $results = $table->retrieve_all();
 		}
@@ -211,17 +202,17 @@ sub handle_resource {
 		    }
 		    $self->print_formatted({$table=>\@objs});
 		}else{
-		    $self->throw_rest(code=>Apache2::Const::NOT_FOUND, msg=>"Not found"); 
+		    $self->throw(code=>Apache2::Const::NOT_FOUND, msg=>"Not found"); 
 		}
 
 	    }elsif ( $self->{request}->method eq 'POST' ){
 		# A lack of id means we're inserting a new object
-		my $o = $self->post(table=>$table, data=>\%http_args);
+		my $o = $self->post(table=>$table, %argv);
 		$self->print_formatted($o);
 	    }
 	}
     }else{
-	$self->throw_rest(code=>Apache2::Const::HTTP_BAD_REQUEST, msg=>'Netdot::REST::handle_resource: Bad request'); 
+	$self->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, msg=>'Netdot::REST::handle_resource: Bad request'); 
     }
 }
 
@@ -234,11 +225,11 @@ sub handle_resource {
     "column_name_xlink"  containing a resource name useful to obtain the foreign
                          object using the REST interface.
 
-    For example, while retrieving a Device object, the base_mac field will
+    For example, while retrieving a Device object, the snmp_target field will
     result in:
 
-    physaddr       => "0030C1FCBF01"
-    physaddr_xlink => "PhysAddr/1"
+    snmp_target       => "192.168.1.1"
+    snmp_target_xlink => "Ipblock/1"
 
     In the case of objects linking to the given record, the returned hashref
     will include a key called "linked_from" containing arrays of resources
@@ -249,6 +240,7 @@ sub handle_resource {
        Hash containing the following keys:
        obj             Object
        table	       Object class
+       xlink           xlink string (see above)
        id	       The id of the object
        depth           How many levels of foreign objects to return (default: 0)    
        no_linked_from  Do not return foreign objects referencing this object
@@ -261,15 +253,24 @@ sub get{
     my ($self, %argv) = @_;
     $self->isa_object_method('get');
 
-    unless ( $argv{obj} || ($argv{table} && $argv{id}) ){
+    unless ( $argv{obj} || ($argv{table} && $argv{id}) || $argv{xlink} ){
 	$self->throw_fatal("Missing required arguments");
+    }
+
+    if ( $argv{xlink} ){
+	($argv{table}, $argv{id}) = split(/\//, "$argv{xlink}");
     }
 
     my $obj = $argv{obj} || $argv{table}->retrieve($argv{id});
     unless ( $obj ) {
 	my $msg = sprintf("Netdot::REST::get: %s/%s not found", $argv{table}, $argv{id});
-	$self->throw_rest(code=>Apache2::Const::NOT_FOUND, msg=>$msg); 
+	$self->throw(code=>Apache2::Const::NOT_FOUND, msg=>$msg); 
     }
+    unless ( $self->{manager}->can($self->{user}, 'view', $obj) ){
+	$self->throw(code=>Apache2::Const::HTTP_FORBIDDEN, 
+			  msg=>"Netdot::REST::get: User not allowed to view this object");	    
+    }
+
     $argv{depth} ||= 0;
     $argv{depth} = 0 if ( $argv{depth} < 0 );
 
@@ -318,48 +319,61 @@ sub get{
 
   Arguments:
     Hash containing the following keys:
+    obj               Object
     table	      Object class
     id	              The id of the object (required if updating)
-    data              hashref containing object key/value pairs
+    rest of key/value pairs
   Returns:
     hashref containing object information
   Examples:
-    my $o = $rest->post(table=>'device', id=>1, data=>\%data);
+    my $o = $rest->post(table=>'device', id=>1, field1=>value1, field2=>value2);
 =cut
 sub post{
     my ($self, %argv) = @_;
     $self->isa_object_method('post');
     
-    unless ( $argv{table} ){
-	$self->throw_fatal("Missing required arguments: table");
+    unless ( $argv{obj} || ($argv{table} && $argv{id}) ){
+	$self->throw_fatal("Missing required arguments");
     }
     unless ( $argv{data} ){
 	$self->throw_fatal("Missing required arguments: data");
     }
     
-    my $obj;
-    if ( $argv{id} ){
+    my $obj = $argv{obj} || $argv{table}->retrieve($argv{id});
+    unless ( $obj ) {
+	my $msg = sprintf("Netdot::REST::post: %s/%s not found", $argv{table}, $argv{id});
+	$self->throw(code=>Apache2::Const::NOT_FOUND, msg=>$msg); 
+    }
+    # These are not part of the data. Remove them.
+    foreach my $f ( qw/obj table id/ ){
+	delete $argv{$f};
+    }
+    if ( $obj ){
 	# We are updating an existing object
-	$obj = $argv{table}->retrieve($argv{id});
-	unless ( $obj ) {
-	    my $msg = sprintf("Netdot::REST::post: %s/%s not found", $argv{table}, $argv{id});
-	    $self->throw_rest(code=>Apache2::Const::NOT_FOUND, msg=>$msg); 
+	# Only admins can edit things this way
+	my $user_type = $self->{user}->getAttribute('USER_TYPE');
+	unless ( $user_type && ($user_type eq 'Admin') ){
+ 	    $self->throw(code=>Apache2::Const::HTTP_FORBIDDEN, 
+			      msg=>"Netdot::REST::post: User not allowed to edit objects this way");
 	}
+	
 	eval {
-	    $obj->update($argv{data});
+	    $obj->update(\%argv);
 	};
 	if ( my $e = $@ ){
-	    $self->throw_rest(code=>Apache2::Const::HTTP_BAD_REQUEST, msg=>'Netdot::REST::post Bad request');
+	    $self->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
+			 msg=>'Netdot::REST::post: Bad request: $e');
 	}
 	return $self->get(obj=>$obj);
     }else{
 	# We are inserting a new object
 	my $obj;
 	eval {
-	    $obj = $argv{table}->insert($argv{data});
+	    $obj = $argv{table}->insert(\%argv);
 	};
 	if ( my $e = $@ ){
-	    $self->throw_rest(code=>Apache2::Const::HTTP_BAD_REQUEST, msg=>'Bad request');
+	    $self->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
+			 msg=>'Netdot::REST::post: Bad request: $e');
 	}
 	return $self->get(obj=>$obj);
     }
@@ -388,13 +402,20 @@ sub delete{
 
     my $obj = $argv{obj} || $argv{table}->retrieve($argv{id});
     unless ( $obj ) {
-	$self->throw_rest(code=>Apache2::Const::NOT_FOUND, msg=>"Not found"); 
+	$self->throw(code=>Apache2::Const::NOT_FOUND, msg=>"Not found"); 
     }
+    # Only admins can delete things this way
+    my $user_type = $self->{user}->getAttribute('USER_TYPE');
+    unless ( $user_type && ($user_type eq 'Admin') ){
+	$self->throw(code=>Apache2::Const::HTTP_FORBIDDEN, 
+			  msg=>"Netdot::REST::delete: User not allowed to delete objects this way");
+    }
+	
     eval {
 	$obj->delete();
     };
     if ( my $e = $@ ){
-	$self->throw_rest(code=>Apache2::Const::HTTP_BAD_REQUEST, msg=>'Bad request');
+	$self->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, msg=>'Bad request');
     }
 
 }
@@ -468,6 +489,59 @@ sub print_formatted {
 }
 
 ##################################################################
+=head2 check_accept_header - Sets and validates media_type and version
+
+  Arguments: 
+    Accept header string
+  Returns:
+    True if OK
+  Examples:
+    $rest->check_accept_header($headers->{Accept});
+=cut
+sub check_accept_header{
+    my ($self, $accept) = @_;
+    $logger->debug(sprintf("Netdot::REST::handle_resource: %s, Accept: %s", 
+			   $self->{request}->connection->remote_ip, $accept
+		   ));
+    
+    my @headers = split m/,(\s+)?/, $accept;
+    foreach my $header ( @headers ){
+	my ($mtype, $parameters) = split m/;(\s+)?/, $header;
+	if ( $mtype eq 'text/xml' || $mtype eq 'application/xml' ){
+	    $self->{media_type} = 'xml';
+	    if ( $parameters =~ /version=(\w+)/ ){
+		# This will be used in future versions of this API for backwards compatibility
+		$self->{version} = $1;
+	    }
+	    last;
+	}
+    }
+    # At this point, if we haven't found any supported media types, give up
+    unless ( $self->{media_type} ){
+	$self->throw(code=>Apache2::Const::HTTP_NOT_ACCEPTABLE, 
+			  msg=>'Netdot::REST::handle_resource: no acceptable media type found'); 
+    }
+    1;
+}
+
+##################################################################
+=head2 throw - Call SUPER::throw_rest
+
+    Prettier than calling $rest->throw_rest :-)
+
+  Arguments: 
+    See Netdot.pm
+  Returns:
+    exception
+  Examples:
+    $rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, msg=>"Bad request: $e"); 
+=cut
+sub throw {
+    my ($self, %args) = @_;
+    return $self->SUPER::throw_rest(@_);
+}
+
+##################################################################
 #
 # Private Methods
 #
@@ -503,7 +577,7 @@ sub _get_linked_from{
 	    map { push @{$results{$i}}, $rtable.'/'.$_->id } @robjs;
 	}
     }
-    return \%results;
+    return \%results if %results;
 }
 
 
@@ -513,7 +587,7 @@ Carlos Vicente & Clayton Parker Coleman
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2010 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

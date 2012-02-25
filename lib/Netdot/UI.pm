@@ -2251,7 +2251,7 @@ sub get_user_person {
 }
 
 ############################################################################
-=head2 set_user_rights - Set user permissions 
+=head2 set_user_type
 
     Store user type as an attribute of Apache2::SiteControl::User
     objects, which are then evaluated by the various SiteControl rules that

@@ -20,14 +20,16 @@ $view           =>'search'
 $action         => undef
 $search         => undef
 $submit         => undef
-$hostname       => undef
+$name           => undef
 $show_tasks     => undef
 $showheader     => 1
 $ipblock_id     => undef
 $ip             => undef
 $add_host_block => undef
+$add_host_address => undef
 $add_host_zone  => undef
 $ethernet       => undef
+$duid           => undef
 $zone_id        => undef
 </%args>
 %
@@ -106,38 +108,63 @@ my $manager = $ui->get_permission_manager($r);
             <legend>Add New Host</legend>
             <form action="host_tasks.html" method="POST">
                 <p>
-                <label for="Name">Name:</label>
-                <input name="hostname" type="text" class="longtxt" value="">
+                <label for="Name">Name<font color="red">*</font>:</label>
+                <input name="name" type="text" class="longtxt" value="">
                 </p>
-
                 <p>
-                <label for="Name">Ethernet:</label>
-                <input name="ethernet" type="text" class="txt" value=""> (optional)
-                </p>
-
-                <p>
-                <label for="Subnet">Subnet:</label>
-                <select name="add_host_block" id="add_host_block" onChange="jsrsSendquerySZ(add_host_zone, add_host_block.value);">
-                <option value="">- Select Block -</option>
-%               my @subnets = grep { $_->forward_zone } Ipblock->search(status=>"Subnet");
-%               foreach my $o ( sort { $a->address_numeric cmp $b->address_numeric } @subnets ){
-%                   my $subnet_label = $o->get_label();
-%                   if ( $o->description ){
-%                       $subnet_label .= " (".$o->description.")"; 
+                <label for="Zone">Zone<font color="red">*</font>:</label>
+%               my $default_zone = Netdot->config->get('DEFAULT_DNSDOMAIN');
+%		my $zone_select = '<select name="add_host_zone" id="add_host_zone">';
+%   	        foreach my $z ( sort { $a->name cmp $b->name } @all_zones ){
+%		    next if $z->is_dot_arpa;
+%                   if ( $z->get_label eq $default_zone ){
+%		        $zone_select .= '<option value="'.$z->id.'" SELECTED>'.$z->get_label.'</option>';
+%                   }else{
+%		        $zone_select .= '<option value="'.$z->id.'">'.$z->get_label.'</option>';
 %                   }
-                    <option value="<% $o %>"><% $subnet_label %></option>
-%               }
-                </select>
+%	        }
+%	        $zone_select .= "</select>";
+%               print $zone_select;
                 </p>
-
+		<br>
+                <fieldset class="large">
+                    <legend>A/AAAA records</legend>
+    		    <p>You need to provide either a Subnet or an IP address.</p>
+		    <p>Selecting a Subnet will tell Netdot to use the next available address</p>
+                    <p>
+                    <label for="Subnet">Subnet:</label>
+                    <select name="add_host_block" id="add_host_block">
+                    <option value="">- Select Block -</option>
+%                   my @subnets = grep { $_->forward_zone } Ipblock->search(status=>"Subnet");
+%                   foreach my $o ( sort { $a->address_numeric cmp $b->address_numeric } @subnets ){
+%                       my $subnet_label = $o->get_label();
+%                       if ( $o->description ){
+%                           $subnet_label .= " (".$o->description.")"; 
+%                       }
+                        <option value="<% $o %>"><% $subnet_label %></option>
+%                   }
+                    </select> 
+                    </p>
+		    <p>
+                    <label for="Address">Address:</label>
+	            <input name="add_host_address" type="text" class="longtxt" value="">
+                    </p>
+		</fieldset>
+		<p><br>
+                <fieldset class="large">
+                    <legend>DHCP host</legend>
+                    <p>
+                    <label for="Name">Ethernet:</label>
+                    <input name="ethernet" type="text" class="txt" value="">
+                    </p>
+                    <p>
+                    <label for="Name">DUID:</label>
+                    <input name="duid" type="text" class="longtxt" value=""> (IPv6 only)
+                    </p>
+		</fieldset>
+		<p>(<font color="red">*</font>) Field is required</p>
                 <p>
-                <label for="Zone">Zone:</label>
-                <select name="add_host_zone" id="add_host_zone">
-                <option value="">- Select Zone -</option>
-                </select>
-                </p>
-
-                <p>
+		<br>
                 <input name="submit" value="Add" class="btn" type="submit">
                 </p>
                 <input type="hidden" name="action" value="new">
@@ -216,42 +243,43 @@ if ( $action eq "search" && $submit ){
 #######################################################################################
 
 } elsif ( $action eq "new" ) {
-    if ( !defined $add_host_block || $add_host_block == 0 ) {
-	$m->comp('/generic/error.mhtml', error=>"You need to specify a subnet");
-    }
     if ( !defined $add_host_zone || $add_host_zone == 0 ) {
 	$m->comp('/generic/error.mhtml', error=>"You need to specify a zone");
     }
-    if ( !(defined $hostname) ) {
+    if ( !(defined $name) ) {
 	$m->comp('/generic/error.mhtml', error=>"You need to specify a hostname");
     }
-    my $block = Ipblock->retrieve($add_host_block);
-    unless ( $block ){
-	$m->comp('/generic/error.mhtml', error=>"Could not retrieve Ipblock: $add_host_block");
-    }
 
-    my $ip_strategy = Netdot->config->get("IP_ALLOCATION_STRATEGY");
-    my $address;
-    unless ( $address = $block->get_next_free(strategy=>$ip_strategy) ){
-	$m->comp('/generic/error.mhtml', error=>"Could not get an available address from ".$block->get_label);
+    my %args;
+    if ( $add_host_block && !$add_host_address ){
+	my $block = Ipblock->retrieve($add_host_block);
+	unless ( $block ){
+	    $m->comp('/generic/error.mhtml', error=>"Could not retrieve Ipblock: $add_host_block");
+	}
+	$args{subnet} = $block;
+    }else{
+	$args{address}  = $add_host_address;
     }
-
     my $zone = Zone->retrieve($add_host_zone);
     unless ( $zone ){
 	$m->comp('/generic/error.mhtml', error=>"Could not retrieve Zone: $add_host_zone");
     }
-
-    my %args;
-    $args{block}    = $block;
-    $args{zone}     = $zone;
-    $args{address}  = $address;
-    $args{hostname} = $hostname;
-    $args{ethernet} = $ethernet;
-    
+    $args{name} = $name;
+    $args{zone} = $zone;
     my $rr;
-    eval {
-	$rr = RR->add_host(%args);
-    };
+    if ( $args{subnet} || $args{address} ){
+	$args{ethernet} = $ethernet;
+	$args{duid}     = $duid if ($duid && !$ethernet);
+	eval {
+	    $rr = RR->add_host(%args);
+	};
+    }elsif ( $ethernet || $duid ){
+	$m->comp('/generic/error.mhtml', error=>"DHCP host requires an A/AAAA record!");
+    }else{
+	eval {
+	    $rr = RR->insert(\%args);
+	};
+    }
     if ( my $e = $@ ){
 	$m->comp("/generic/error.mhtml", error=>$e);
     }else{

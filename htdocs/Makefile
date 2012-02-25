@@ -5,7 +5,7 @@ include $(SRCROOT)/etc/utility-Makefile
 
 NDIR =  cable_plant css generic help img img/graphs java_script management contacts operations reports export user_management user_help masondata/obj masondata/cache rest
 
-FILES := `find . -name "*" | egrep ".*(host|handler|\.?html|\.css|\.png|\.gif|\.js|\.ico)$$" | sed -e 's/\.\///'`
+FILES := `find . -name "*" | egrep ".*(host.*|handler|\.?html|\.css|\.png|\.gif|\.js|\.ico)$$" | sed -e 's/\.\///'`
 
 all: wipedir dir
 	$(substitute)

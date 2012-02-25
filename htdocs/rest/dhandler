@@ -1,7 +1,10 @@
 <%doc>
 This Mason default handler component handles requests for RESTful resources
 </%doc>
-
+<%args>
+$user
+$manager
+</%args>
 <%init>
 
 delete $ARGS{user};
@@ -21,24 +24,21 @@ if ( $DEBUG ){
     $m->abort;
 }
 
+# Handle generic requests
+# Remember that we'll only hit this code if there isn't a 
+# specific component for the given request
+#
+use Netdot::REST;
+my $rest = Netdot::REST->new(user=>$user, manager=>$manager);
+eval {
+    $rest->handle_resource(resource=>$resource, r=>$r, %ARGS);
+};
 
-if ( $m->comp_exists($resource) ){
-    # If there is a specific component with this name, call it
-    $m->comp( $resource, %ARGS );
-
-}else{
-    # Otherwise, use the request to determine what to do
-    use Netdot::REST;
-    my $nr = Netdot::REST->new();
-    eval {
-	$nr->handle_resource(resource=>$resource, r=>$r, args=>\%ARGS);
-    };
-    
-    my $e;
-    if ( $e = Netdot::Util::Exception->caught('Netdot::Util::Exception::REST') ){
- 	$m->clear_and_abort($e->code);
-    }elsif ( $e = $@ ){
- 	die $e;
-    }
+my $e;
+if ( $e = Netdot::Util::Exception->caught('Netdot::Util::Exception::REST') ){
+    $m->clear_and_abort($e->code);
+}elsif ( $e = $@ ){
+    die $e;
 }
+
 </%init>

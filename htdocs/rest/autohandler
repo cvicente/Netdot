@@ -1,22 +1,11 @@
 <%doc>
 /rest autohandler - Deals with the different nature of the REST interface
 </%doc>
-
-<%attr>
-</%attr>
-
 <%args>
-$user => $ui->get_current_user($r);
+$user    => $ui->get_current_user($r);
+$manager => $ui->get_permission_manager($r);
 </%args>
-
 <%init>
-
-# Only admin users can access this directory
-use Apache2::Const -compile => qw(HTTP_FORBIDDEN);
-my $manager = $ui->get_permission_manager($r);
-unless ( $manager && $manager->can($user, "access_section", 'management') ){
-    $m->clear_and_abort(Apache2::Const::HTTP_FORBIDDEN);
-}
 
 # Remove unnecessary headers
 $m->clear_buffer;
@@ -27,7 +16,9 @@ if ( $DEBUG ){
     print "req comp: ", $m->request_comp->name, "<br>";
     print "URI: ", $r->uri, "<br>";
     print "content_type : ", $r->content_type, "<br>";
+    print "user: ", $user, "<br>";
+    print "manager: ", $manager, "<br>";
 }
-$m->call_next;
+$m->call_next(user=>$user, manager=>$manager);
 
 </%init>
