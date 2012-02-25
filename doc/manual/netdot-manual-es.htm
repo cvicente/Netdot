@@ -86,7 +86,7 @@ code.sourceCode span.er { color: red; font-weight: bold; }
 <li><a href="#exportar-configuraciones-para-programas-externos"><span class="toc-section-number">5</span> Exportar configuraciones para programas externos</a><ul>
 <li><a href="#integraci&#243;n-con-herramienta-cacti"><span class="toc-section-number">5.1</span> Integración con herramienta Cacti</a></li>
 </ul></li>
-<li><a href="#control-de-acceso"><span class="toc-section-number">6</span> Control de Acceso</a><ul>
+<li><a href="#autorizaci&#243;n"><span class="toc-section-number">6</span> Autorización</a><ul>
 <li><a href="#asignar-permisos-a-los-usuarios"><span class="toc-section-number">6.1</span> Asignar permisos a los usuarios</a></li>
 </ul></li>
 <li><a href="#interfaz-rest"><span class="toc-section-number">7</span> Interfaz REST</a><ul>
@@ -422,8 +422,8 @@ dispositivo3 comunidad3
 <p>Existen varios parámetros para cada configuración que se pueden definir en el fichero <code>Site.conf</code>.</p>
 <h2 id="integraci&#243;n-con-herramienta-cacti"><a href="#TOC"><span class="header-section-number">5.1</span> Integración con herramienta Cacti</a></h2>
 <p>La integración de Cacti se hace de manera diferente (es más bien una &quot;importación&quot; que una &quot;exportación&quot;). Existe un script llamado 'netdot_to_cacti.php' dentro del directorio export/cacti del paquete Netdot. Este script debe colocarse, junto con su fichero de configuración, en el directorio &quot;cli&quot; de su instalación Cacti (no es necesario que sea en el mismo servidor que aloja a Netdot, pero sí debe asegurarse de que el script pueda conectarse a la base de datos de Netdot). Deberá ejecutar este script periódicamente, por ejemplo, una vez al día.</p>
-<h1 id="control-de-acceso"><a href="#TOC"><span class="header-section-number">6</span> Control de Acceso</a></h1>
-<p>A partir de la version 0.9, netdot soporta control de acceso por niveles.</p>
+<h1 id="autorizaci&#243;n"><a href="#TOC"><span class="header-section-number">6</span> Autorización</a></h1>
+<p>A partir de la version 0.9, netdot soporta autorización basada en roles.</p>
 <p>Existen tres tipos de usuarios que definen los niveles de acceso en Netdot:</p>
 <ul>
 <li><p>Admin: Acceso completo a la interfaz web, operaciones y objetos.</p></li>
@@ -434,8 +434,8 @@ dispositivo3 comunidad3
 <p>Los permisos pueden ser asignados a usuarios o grupos. Los usuarios son agrupados en listas de contacto/Contact Lists. Si un usuario es miembro de una lista de contacto, hereda los permisos de esa lista. Sin embargo, el usuario puede tener permisos más específicos (o ninguno) si fuera necesario.</p>
 <p>Existe un limitado número de objetos a los cuales pueden acceder usuarios restringidos:</p>
 <ul>
-<li><p>Registros DNS: Los usuarios pueden crear, modificar y borrar registros de cierta zona. Los permisos puden definirse para la zona completa o partes de ella, basándose en bloques IP.</p>
-<p>Por ejemplo, si un usuario tiene permisos para ver, editar y borrar registros de mizona.com, entonces puede ver, editar y borrar cualquier registro de esa zona. Por otro lado, si la zona contiene registros de la supered 10.0.0.0/16 y el usuario sólo tiene control sobre registros de una subred específica 10.0.0.0/24, entonces no se asignan permisos de acceso a la zona mizona.com, sino a la subred específicamente.</p></li>
+<li><p>Registros DNS: Los usuarios pueden crear, modificar y borrar registros de cierta zona. Los permisos puden definirse para la zona completa o partes de ella, basándose en bloques IP. Por ejemplo, si un usuario tiene permisos para ver, editar y borrar registros de mizona.com, entonces puede ver, editar y borrar cualquier registro de esa zona. Por otro lado, si la zona contiene registros de la supered 10.0.0.0/16 y el usuario sólo tiene control sobre registros de una subred específica 10.0.0.0/24, entonces no se asignan permisos de acceso a la zona mizona.com, sino a la subred específicamente.</p></li>
+<li><p>Los usuarios con permiso para editar una subred no tienen la opción de asignar direcciones IP específicas. Esto ayuda a mantener las direcciones en rangos contiguos de modo que sea más fácil cambiar el tamaño de las subredes si esto fuera necesario. Si el administrador de Netdot desea otorgar tal permiso a un usuario o grupo, puede utilizar el permiso &quot;Choose IP&quot; para tal motivo.</p></li>
 <li><p>Interfaces de dispositivos: Los usuarios pueden ver detalles de los puertos como: número, nombre, VLAN, habitación, toma de red, descripción y dispositivo adyacente. El usuario sólo puede editar los atributos: habitación, toma de red y descripción. Para asignar permisos a varios dispositivos seleccione el tipo de dispositivo y luego aquellos que serán accesibles por el usuario.</p></li>
 <li><p>Listas de Contacto: Un usuario puede adicionar, modificar y borrar contactos de una lista de contacto.</p></li>
 </ul>

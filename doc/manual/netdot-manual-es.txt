@@ -953,10 +953,10 @@ pero sí debe asegurarse de que el script pueda conectarse a la base
 de datos de Netdot). Deberá ejecutar este script periódicamente, por
 ejemplo, una vez al día.
 
-# Control de Acceso
+# Autorización
 
-A partir de la version 0.9, netdot soporta control de acceso por
-niveles.
+A partir de la version 0.9, netdot soporta autorización basada en
+roles.
 
 Existen tres tipos de usuarios que definen los niveles de acceso en
 Netdot:
@@ -982,15 +982,20 @@ usuarios restringidos:
 
 *   Registros DNS: Los usuarios pueden crear, modificar y borrar
     registros de cierta zona. Los permisos puden definirse para la zona
-    completa o partes de ella, basándose en bloques IP.
+    completa o partes de ella, basándose en bloques IP. Por ejemplo, si 
+    un usuario tiene permisos para ver, editar y borrar registros de 
+    mizona.com, entonces puede ver, editar y borrar cualquier registro 
+    de esa zona. Por otro lado, si la zona contiene registros de la supered 
+    10.0.0.0/16 y el usuario sólo tiene control sobre registros de una 
+    subred específica 10.0.0.0/24, entonces no se asignan permisos de acceso 
+    a la zona mizona.com, sino a la subred específicamente.
 
-    Por ejemplo, si un usuario tiene permisos para ver, editar y borrar
-    registros de mizona.com, entonces puede ver, editar y borrar
-    cualquier registro de esa zona. Por otro lado, si la zona contiene
-    registros de la supered 10.0.0.0/16 y el usuario sólo tiene control
-    sobre registros de una subred específica 10.0.0.0/24, entonces no se
-    asignan permisos de acceso a la zona mizona.com, sino a la subred
-    específicamente.
+*   Los usuarios con permiso para editar una subred no tienen la opción
+    de asignar direcciones IP específicas. Esto ayuda a mantener las
+    direcciones en rangos contiguos de modo que sea más fácil cambiar
+    el tamaño de las subredes si esto fuera necesario. Si el administrador
+    de Netdot desea otorgar tal permiso a un usuario o grupo, puede utilizar
+    el permiso "Choose IP" para tal motivo.
 
 *   Interfaces de dispositivos: Los usuarios pueden ver detalles de los
     puertos como: número, nombre, VLAN, habitación, toma de red,

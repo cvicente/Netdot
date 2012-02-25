@@ -890,7 +890,7 @@ CRON, say, once a day.
 
 # Authorization
 
-Starting with version 0.9, netdot supports multi-level user access.
+Starting with version 0.9, netdot supports role-based authorization.
 
 There are three types of users that correspond with levels of access in
 Netdot:
@@ -923,6 +923,13 @@ access to:
     the administrator can assign view, edit and delete permissions on
     that particular subnet.
 
+*   When creating new DNS records, users with 'edit' rights on a subnet
+    do not have the option to choose specific IP addresses. This helps
+    keep ranges of IP addresses together so that Subnets can be resized
+    more easily if necessary. If the Netdot administrator wishes to 
+    grant such rights to a user or group, there is a right called
+    'Choose IP' which allows that.
+  
 *   Device interfaces: Users can view port details such as number, name,
     vlan, room, jack, description and neighbor. A user can only edit the
     room, jack and description fields. To assign permissions to a user

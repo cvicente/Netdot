@@ -425,7 +425,7 @@ device3 community2
 <h2 id="cacti-integration"><a href="#TOC"><span class="header-section-number">5.1</span> Cacti Integration</a></h2>
 <p>Cacti integration is done a little differently (it's more of an &quot;import&quot; than an &quot;export&quot;). You will find a script called <code>netdot_to_cacti.php</code> under export/cacti in the Netdot package. This script should be placed(together with its configuration file) in your Cacti's cli directory(it doesn't need to be the same machine running Netdot, but you need to make sure that the script can connect to Mysql on the Netdot machine).You will then need to run it periodically via CRON, say, once a day.</p>
 <h1 id="authorization"><a href="#TOC"><span class="header-section-number">6</span> Authorization</a></h1>
-<p>Starting with version 0.9, netdot supports multi-level user access.</p>
+<p>Starting with version 0.9, netdot supports role-based authorization.</p>
 <p>There are three types of users that correspond with levels of access in Netdot:</p>
 <ul>
 <li><p>Admin: Full access to the UI and operations on objects.</p></li>
@@ -437,6 +437,7 @@ device3 community2
 <p>There is a limited number of objects which unprivileged users can gain access to:</p>
 <ul>
 <li><p>DNS records: Users can create, modify and delete records from a certain zone. Permissions can be given for the entire zone or for subsets of it, based on IP blocks. For example, if a user is given view, edit and delete permissions to myzone.com, he or she can view, modify and remove any record from that zone. On the other hand, if the zone covers hosts from a supernet, i.e. 10.0.0.0/16, and the user should only have control on records within a particular subnet, i.e. 10.0.0.0/24, instead of assigning permissions on myzone.com, the administrator can assign view, edit and delete permissions on that particular subnet.</p></li>
+<li><p>When creating new DNS records, users with 'edit' rights on a subnet do not have the option to choose specific IP addresses. This helps keep ranges of IP addresses together so that Subnets can be resized more easily if necessary. If the Netdot administrator wishes to grant such rights to a user or group, there is a right called 'Choose IP' which allows that.</p></li>
 <li><p>Device interfaces: Users can view port details such as number, name, vlan, room, jack, description and neighbor. A user can only edit the room, jack and description fields. To assign permissions to a user on a list of devices, select the Device class and then select one or more devices to which the user can have access.</p></li>
 <li><p>Contact Lists: A user can add, modify and delete contacts from given contact lists.</p></li>
 </ul>
