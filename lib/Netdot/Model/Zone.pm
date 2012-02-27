@@ -141,7 +141,7 @@ sub search_like {
     refresh   time before the zone should be refreshed
     retry     time before a failed refresh should be retried
     expire    max time before zone no longer authoritative
-    minimum   default TTL that should be exported with any RR from this zone
+    minimum   negative caching TTL (RFC 2308)
     template  (optional) Name or ID of another zone to clone from
   Returns: 
     Zone object
