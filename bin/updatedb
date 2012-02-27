@@ -294,6 +294,9 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
 
 # Change all table IDs and foreign keys to bigint (Ticket #737)
 # Also, set them to NULLable and replace 0s with NULL values
+# This allows us to apply foreign_key constraints and allow 
+# user to fix their data before applying the NOT NULL constraints,
+# which can be done later (see below)
 my $meta = Netdot::Meta->new();
 my @tables = $meta->get_tables(with_history=>1);
 
@@ -303,13 +306,14 @@ foreach my $mtable ( sort { $a->name cmp $b->name } @tables ){
         my $cname = $mcol->name;
         if ( $cname eq 'id' ){
             if ($netdot_config->get('DB_TYPE') eq "mysql") {
-                push @statements, "ALTER TABLE $tname MODIFY COLUMN $cname bigint NOT NULL auto_increment;"
+                push @statements, "ALTER TABLE $tname MODIFY COLUMN $cname bigint NOT NULL auto_increment;";
             } elsif ($netdot_config->get('DB_TYPE') eq "Pg") {
                 push @statements, "ALTER TABLE $tname ALTER COLUMN $cname TYPE bigint;";
+                push @statements, "ALTER TABLE $tname ALTER COLUMN $cname SET NOT NULL;";
             }
         } elsif ($cname eq 'info') {
             if ($netdot_config->get('DB_TYPE') eq "mysql") {
-                push @statements, "ALTER TABLE $tname MODIFY COLUMN $cname text;"
+                push @statements, "ALTER TABLE $tname MODIFY COLUMN $cname text;";
             } elsif ($netdot_config->get('DB_TYPE') eq "Pg") {
                 push @statements, "ALTER TABLE $tname ALTER COLUMN $cname TYPE text;";
             }
@@ -332,9 +336,10 @@ foreach my $mtable ( sort { $a->name cmp $b->name } @tables ){
 
 # Exceptions
 if ($netdot_config->get('DB_TYPE') eq "mysql") {
-    push @statements, "ALTER TABLE accessright MODIFY COLUMN object_id bigint NOT NULL;"
+    push @statements, "ALTER TABLE accessright MODIFY COLUMN object_id bigint NOT NULL;";
 } elsif ($netdot_config->get('DB_TYPE') eq "Pg") {
-    push @statements, "ALTER TABLE accessright ALTER COLUMN object_id TYPE bigint;"
+    push @statements, "ALTER TABLE accessright ALTER COLUMN object_id TYPE bigint;";
+    push @statements, "ALTER TABLE accessright ALTER COLUMN object_id SET NOT NULL;";
 }
 
 
@@ -368,6 +373,7 @@ push @statements, "INSERT INTO dhcpattrname (name) VALUES ('prefix6');",
 
 &processdata(\@statements);
 
+
 ##################   THIS HAS TO BE THE LAST THING   #######################
 # Add FK constraints. 
 my @schema = &generate_schema_from_metadata();
@@ -394,6 +400,24 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
 }
 
 &processdata(\@statements);
+
+# Fix NOT NULL constraints
+print "\n\n";
+print '
+This new version of Netdot fixes a number of lax database constraints. 
+This means that table columns were previously defined in such a way that 
+their values could be undefined (NULL) or zero when they should not. 
+
+It is very likely that applying these constraints to your current schema now 
+will fail because there are cases where columns were set to "NULL" or zero. 
+You should try to apply these constraints now, and if they fail, you should 
+fix your data and apply them again later.
+
+Would you like to try applying these new "NOT NULL" constraints now? [y/N] ';
+my $ans = <STDIN>;
+if ( $ans =~ /^Y|y/ ){
+    system('perl fix_not_null.pl');
+}
 
 &dbdisconnect();
 
