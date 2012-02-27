@@ -1,0 +1,318 @@
+<%doc>
+Manipulate DNS/DHCP records using REST
+</%doc>
+<%args>
+$user                    # Should be assigned by autohandler
+$manager                 # Should be assigned by autohandler
+$rrid           => undef # Id of RR
+$ipid           => undef # Id of Ipblock
+$name           => undef # Name for RR
+$zone           => undef # Zone name
+$subnet         => undef # Subnet address
+$address        => undef # IP string. Will get next available if not specified
+$expiration     => undef # Expiration date for RR
+$aliases        => undef # Comma-separated list of strings for CNAMEs
+$ethernet       => undef # MAC address string for DHCP host
+$duid           => undef # DUID string for IPv6 DHCP host
+$cpu            => undef # CPU string for HINFO
+$os             => undef # OS string for HINFO
+$info           => undef # Informational text
+</%args>
+<%init>
+my $DEBUG = 0;
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+
+use Apache2::Const -compile => qw(FORBIDDEN OK NOT_FOUND HTTP_BAD_REQUEST);
+
+use Netdot::REST;
+my $rest = Netdot::REST->new(user=>$user, manager=>$manager);
+$rest->request($r);
+
+# Get relevant HTTP headers from request object
+my $headers = $rest->{request}->headers_in;
+
+# Deal with Accept header
+$rest->check_accept_header($headers->{Accept}) if ( $headers->{Accept} );
+
+my $logger = Netdot->log->get_logger("Netdot::REST");
+$logger->info(sprintf("/rest/host: %s request with args: %s from %s (%s)", 
+ 		      $rest->{request}->method, 
+		      $rest->{request}->args,
+ 		      $rest->{request}->connection->remote_ip, 
+ 		      $headers->{'User-Agent'}
+ 	      ));
+my %rrs;
+my %ips;
+
+</%init>
+<%perl>
+    
+if ( $rest->{request}->method eq 'GET' ){
+    if ( $rrid ){
+	my $rr = RR->retrieve($rrid);
+	$rest->throw(code=>Apache2::Const::NOT_FOUND, msg=>"RR not found")
+	    unless $rr;
+	$rrs{$rr->id} = $rr;
+    }elsif ( $ipid ){
+	my $ipb = Ipblock->retrieve($ipid);
+	$rest->throw(code=>Apache2::Const::NOT_FOUND, msg=>"IP not found")
+	    unless $ipb;
+	$ips{$ipb->id} = $ipb;
+    }elsif ( $name ){
+	my $rr = RR->search(name=>$name)->first;
+	$rest->throw(code=>Apache2::Const::NOT_FOUND, msg=>"Name not found")
+	    unless $rr;
+	$rrs{$rr->id} = $rr;
+    }elsif ( $address ){
+	my $ipb;
+	if ( Ipblock->matches_v4($address) ){
+	    $ipb = Ipblock->search(address=>$address, version=>4, prefix=>32)->first;
+	}elsif  ( Ipblock->matches_v6($address) ){
+	    $ipb = Ipblock->search(address=>$address, version=>6, prefix=>128)->first;
+	}else{
+	    $rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
+			 msg=>'Bad request: invalid address'); 
+	}
+	if ( $ipb ){
+	    $ips{$ipb->id} = $ipb;
+	}else{
+	    $rest->throw(code=>Apache2::Const::NOT_FOUND, msg=>"Address not found"); 
+	}
+    }elsif ( $ethernet ){
+	if ( my $phy = Physaddr->search(address=>$ethernet)->first ){
+	    foreach my $host ( $phy->dhcp_hosts ){
+		my $ip = $host->ipblock;
+		$ips{$ip->id} = $ip if $ip;
+	    }
+	}else{
+	    $rest->throw(code=>Apache2::Const::NOT_FOUND, msg=>"MAC not found"); 
+	}
+    }elsif ( $duid ){
+	if ( my $host = DhcpScope->search(duid=>$duid)->first ){
+	    my $ip = $host->ipblock;
+	    $ips{$ip->id} = $ip if $ip;
+	}
+
+    }elsif ( $zone ){
+	# All RRs within given zone
+	my $zoneobj = Zone->objectify($zone) ||
+	    $rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
+			 msg=>'Bad request: invalid zone'); 
+	unless ( $manager->can($user, 'view', $zoneobj) ){
+	    $rest->throw(code=>Apache2::Const::HTTP_FORBIDDEN, 
+			 msg=>"User not allowed to view this zone");
+	}
+	# Get all records in this zone
+	map { $rrs{$_->id} = $_ } $zoneobj->records;
+
+    }elsif ( $subnet ){
+	my $subnetobj = Ipblock->objectify($subnet) ||
+	    $rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
+			 msg=>'Bad request: invalid subnet'); 
+	unless ( $manager->can($user, 'view', $subnetobj) ){
+	    $rest->throw(code=>Apache2::Const::HTTP_FORBIDDEN, 
+			 msg=>"User not allowed to view this subnet");
+	}
+	# Get all ips in this subnet
+	map { $ips{$_->id} = $_ } $subnetobj->children;
+    }else{
+	# No other criteria. Return all RR objects if they have permissions for that
+	if ( $manager->can($user, 'access_section', 'rest/host:get_all') ){
+	    if ( my @allrrs = RR->retrieve_all() ){
+		map { $rrs{$_->id} = $_ } @allrrs;
+	    }else{
+		$rest->throw_rest(code=>Apache2::Const::NOT_FOUND, msg=>"No records"); 
+	    }
+	}else{
+	    $rest->throw(code=>Apache2::Const::HTTP_FORBIDDEN, 
+			 msg=>"User not allowed to view all records");
+	}
+    }
+
+    # Get all related IPs and names from A records
+    foreach my $rr ( values %rrs ){
+	foreach my $ar ( $rr->arecords ){
+	    my $ip = $ar->ipblock;
+	    $ips{$ip->id} = $ip;
+	} 
+    }
+    foreach my $ipb ( values %ips ){
+	foreach my $ar ( $ipb->arecords ){
+	    my $rr = $ar->rr;
+	    $rrs{$rr->id} = $rr;
+	}
+    }
+
+    my %ret;  # Return hash
+
+    foreach my $rr ( values %rrs ){
+	my $o = $rest->get(obj=>$rr, depth=>0);
+	push @{$ret{RR}}, $o;
+    }
+
+    foreach my $ip ( values %ips ){
+	# Return Ipblock data
+	my $o = $rest->get(obj=>$ip, depth=>0);
+	push @{$ret{Ipblock}}, $o;
+    }	
+
+    $rest->print_formatted(\%ret);
+
+}elsif ( $rest->{request}->method eq 'POST' ){
+    if ( $rrid ){
+	# We're updating
+	my $rr = RR->retrieve($rrid);
+	$rest->throw(code=>Apache2::Const::NOT_FOUND, msg=>"RR not found")
+	    unless $rr;
+	
+	unless ( $manager->can($user, 'edit', $rr) ){
+	    $rest->throw_rest(code=>Apache2::Const::HTTP_FORBIDDEN, 
+			      msg=>"User not allowed to edit this object");	    
+	}
+	my %args; # For update method
+	# These are the only records we allow changing
+	foreach my $rarg ( qw/name expiration info/ ){
+	    $args{$rarg} = $ARGS{$rarg};
+	}
+	eval {
+	    $rr->update(\%args);
+	};
+	if ( my $e = $@ ){
+	    $rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
+			 msg=>'Bad request: $e'); 
+	}
+	$rest->print_formatted($rest->get(obj=>$rr, depth=>0));
+
+    }elsif ( $ipid ){
+	# We're updating
+	# We only allow user to edit end-node addresses
+	# if they have permissions for it
+	my $ipb = Ipblock->retrieve($ipid);
+	$rest->throw(code=>Apache2::Const::NOT_FOUND, msg=>"IP not found")
+	    unless $ipb;
+	unless ( $manager->can($user, 'edit', $ipb) ){
+	    $rest->throw_rest(code=>Apache2::Const::HTTP_FORBIDDEN, 
+			      msg=>"User not allowed to edit this object");	    
+	}
+	unless ( $ipb->status->name eq 'Static' ){
+	    $rest->throw_rest(code=>Apache2::Const::HTTP_FORBIDDEN, 
+			      msg=>"User not allowed to edit this object");	    
+	}
+	# The only thing they can change here is the DHCP host ethernet or DUID
+	if ( $ethernet || $duid ){
+	    my %args;
+	    $args{duid} = $duid if $duid;
+	    $args{ethernet} = $ethernet if ( $ethernet && !$args{duid} );
+	    
+	    if ( my $host = $ipb->dhcp_scopes->first ){
+		# Edit the MAC on this existing scope
+		eval{
+		    $host->update(\%args);
+		};
+		if ( my $e = $@ ){
+		    $rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
+				 msg=>'Bad request: $e'); 
+		}
+	    }else{
+		# Create host scope with this info
+		eval{
+		    DhcpScope->insert({type     => 'host',
+				       ipblock  => $ipb,
+				       %args,
+				      });
+		};
+		if ( my $e = $@ ){
+		    $rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
+				 msg=>'Bad request: $e'); 
+		}
+		
+	    }
+	}
+	$rest->print_formatted($rest->get(obj=>$ipb, depth=>0));
+
+    }else{
+	# No rrid or ipid means We're adding a new host
+	my %add_args;
+	$add_args{name} = $name;
+	foreach my $arg (qw/subnet expiration aliases cpu os info/ ){
+	    $add_args{$arg} = $ARGS{$arg};
+	}
+	# Choose either ethernet or duid, not both
+	$add_args{duid} = $duid if $duid;
+	$add_args{ethernet} = $ethernet if ( $ethernet && !$add_args{duid} );
+
+	my $subnetobj = Ipblock->objectify($subnet) ||
+	    $rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
+			 msg=>'Bad request: invalid subnet'); 
+	
+	unless ( $manager->can($user, 'edit', $subnetobj) ){
+	    $rest->throw(code=>Apache2::Const::HTTP_FORBIDDEN, 
+			 msg=>"User not allowed to edit this subnet");
+	}
+
+	# Zone that corresponds to this subnet
+	my $zoneobj = $subnetobj->forward_zone();
+
+	if ( $zone ){
+	    # user gave us a zone
+	    my $givenzone = Zone->objectify($zone) ||
+		$rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
+			     msg=>'Bad request: invalid zone'); 
+	    # Normally, unprivileged users are not given permissions
+	    # to a whole zone, so only fail if it doesn't match
+	    # the zone that corresponds to this subnet
+	    if ( !$zoneobj || ($zoneobj->id != $givenzone->id) ){
+		# We don't have a default zone, or they don't match, so we need to 
+		# make sure that this user has permissions to edit the given zone
+		if ( $manager->can($user, 'edit', $givenzone) ){
+		    $add_args{zone} = $givenzone;
+		}else{
+		    $rest->throw(code=>Apache2::Const::HTTP_FORBIDDEN, 
+				 msg=>"User not allowed to edit this zone");
+		}
+	    }
+	}
+	$add_args{zone} ||= $zoneobj; # If there's no default, it  will fail
+	if ( $address ){
+	    # User gave us an address
+	    if ($manager->can($user, 'choose_ip', $subnetobj)){
+		$add_args{address} = $address;
+	    }else{
+		$rest->throw(code=>Apache2::Const::HTTP_FORBIDDEN, 
+			     msg=>"User not allowed to choose an address");
+	    }
+	}
+	my $rr;
+	eval {
+	    $rr = RR->add_host(%add_args);
+	};
+	if ( my $e = $@ ){
+	    $rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
+			 msg=>"Bad request: $e"); 
+	}
+	$rest->print_formatted($rest->get(obj=>$rr, depth=>0));
+    }
+}elsif ( $rest->{request}->method eq 'DELETE' ){
+    if ( $rrid ){
+	my $rr = RR->retrieve($rrid);
+	$rest->throw(code=>Apache2::Const::NOT_FOUND, msg=>"RR not found")
+	    unless $rr;
+	
+	unless ( $manager->can($user, 'delete', $rr) ){
+	    $rest->throw_rest(code=>Apache2::Const::HTTP_FORBIDDEN, 
+			      msg=>"User not allowed to delete this object");
+	}
+	eval {
+	    $rr->delete();
+	};
+	if ( my $e = $@ ){
+	    $rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
+			 msg=>"Bad request: $e"); 
+	}
+    }elsif ( $ipid ){
+	$rest->throw_rest(code=>Apache2::Const::HTTP_FORBIDDEN, 
+			  msg=>"You are not allowed to delete IPs this way");
+    }
+
+}
+</%perl>
