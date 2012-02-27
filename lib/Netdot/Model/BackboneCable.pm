@@ -67,10 +67,7 @@ sub insert_strands {
     if ( $number <= 0 ) {
         $self->throw_user("Cannot insert $number strands.");
     }
-    
-    $self->throw_user("Strand type is required")
-	unless $type;
-
+    $type   ||= FiberType->search(name=>'Multimode Fiber')->first;
     $status ||= StrandStatus->search(name=>'Not Terminated')->first;
     
     my $backbone_name = $self->name;
@@ -79,7 +76,7 @@ sub insert_strands {
     my %tmp_strands;
    
     $tmp_strands{cable}      = $self->id;
-    $tmp_strands{fiber_type} = $type if defined $type;
+    $tmp_strands{fiber_type} = $type;
     $tmp_strands{status}     = $status;
 
     for (my $i = 0; $i < $number; ++$i) {
