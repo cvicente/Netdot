@@ -1495,8 +1495,13 @@ sub build_backbone_graph {
 		    $site_closets{$site->id}{$sclosets[$i]} = $i;
 		}
 
+		# This avoids the GraphViz problem of showing multiple nodes
+		# per word in the name
+		my $name = $site->get_label;
+		$name =~ s/\s+/_/g;
+		
 		$g->add_node(
-		    name     => $site->get_label,
+		    name     => $name,
 		    label    => $site->get_label,
 		    URL      => "view.html?table=Site&id=".$site->id,
 		    );
@@ -1507,9 +1512,13 @@ sub build_backbone_graph {
 	# Create an edge for each cable
 	if ( defined $esites[0] && defined $esites[1] && 
 	     defined $eclosets[0] && defined $eclosets[1] ){
+	    my $site1 = $esites[0]->get_label;
+	    my $site2 = $esites[1]->get_label;
+	    $site1 =~ s/\s+/_/g;
+	    $site2 =~ s/\s+/_/g;
 	    
-	    $g->add_edge($esites[0]->get_label => $esites[1]->get_label,
-			 label     => $bb->name." (".$used_strands."/".$num_strands.")",
+	    $g->add_edge($site1 => $site2,
+			 label     => $bb_name,
 			 labelURL  => "cable_backbone.html?id=".$bb->id,
 			 edgeURL  => "cable_backbone.html?id=".$bb->id,
                          from_port => $site_closets{$esites[0]->id}{$eclosets[0]->name},
