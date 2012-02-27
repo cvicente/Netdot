@@ -52,8 +52,9 @@ sub insert {
     
     Insert N number of CableStrands for a given Backbone.
   Arguments:
-    - number:  number of strands to insert.
+    - number:  Number of strands to insert.
     - type:    Type of fiber (multimode/singlemode)
+    - status:  Strand Status (default: 'Not Terminated')
   Returns:
     Number of strands inserted    
   Examples:
@@ -61,11 +62,16 @@ sub insert {
 
 =cut
 sub insert_strands {
-    my ($self, $number, $type) = @_;
+    my ($self, $number, $type, $status) = @_;
 
     if ( $number <= 0 ) {
         $self->throw_user("Cannot insert $number strands.");
     }
+    
+    $self->throw_user("Strand type is required")
+	unless $type;
+
+    $status ||= StrandStatus->search(name=>'Not Terminated')->first;
     
     my $backbone_name = $self->name;
     my @cables = CableStrand->search_like(name=>$backbone_name . "%");
@@ -74,6 +80,7 @@ sub insert_strands {
    
     $tmp_strands{cable}      = $self->id;
     $tmp_strands{fiber_type} = $type if defined $type;
+    $tmp_strands{status}     = $status;
 
     for (my $i = 0; $i < $number; ++$i) {
         $tmp_strands{name} = $backbone_name . "." . (++$strand_count);
