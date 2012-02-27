@@ -1518,9 +1518,9 @@ sub build_backbone_graph {
 	    $site2 =~ s/\s+/_/g;
 	    
 	    $g->add_edge($site1 => $site2,
-			 label     => $bb_name,
+			 label     => $bb->name." (".$used_strands."/".$num_strands.")",
 			 labelURL  => "cable_backbone.html?id=".$bb->id,
-			 edgeURL  => "cable_backbone.html?id=".$bb->id,
+			 edgeURL   => "cable_backbone.html?id=".$bb->id,
                          from_port => $site_closets{$esites[0]->id}{$eclosets[0]->name},
                          to_port   => $site_closets{$esites[1]->id}{$eclosets[1]->name},
 			 
