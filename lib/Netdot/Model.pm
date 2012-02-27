@@ -436,43 +436,51 @@ sub search_like {
 	    $argv{$key} = $class->_convert_search_keyword($argv{$key});
 	}
     }
-    # Fix some Pg nonsense.
-    if (Netdot->config->get('DB_TYPE') eq "Pg") {
-        @args = %{ $args[0] } if ref $args[0] eq "HASH";
-        my $opts = @args % 2 ? pop @args : {};
-        # search for 
-        my %sf;
-        while (my ($col, $val) = splice @args, 0, 2) {
-            my $column = $class->find_column($col)
-                || (List::Util::first { $_->accessor eq $col } $class->columns)
-                || $class->_croak("$col is not a column of $class");
-            $search_for{$column} = $class->_deflated_column($column, $val);
-        }
-        # qual, qual_bind
-        my $search_for = \$sf;
-        my (@qual, @bind);
-        for my $column (sort keys %$search_for) {    # sort for prepare_cached
-            if (defined(my $value = $search_for->{$column})) {
-                push @qual, "TYPECAST($column AS text) LIKE ?";
-                push @bind, $value;
-            } else {
-
-                # perhaps _carp if $type ne "="
-                push @qual, "$column IS NULL";
-            }
-        }
-        my $qual_ret = [ \@qual, \@bind ];
-        # fragment
-        my $frag = join " AND ", $qual_ret->[0];
-        if (my $order = $opt->{'order_by'}) {
-            $frag .= " ORDER BY $order";
-        }
-        # sql
-        my $sql = $class->sql_Retrieve($frag);
-        return $class->SUPER::sth_to_objects($sql, $qual_ret->[1]);
-    } else {
-        return $class->SUPER::search_like(%argv, $opts);
+    # code is ripped from Class::DBI::Search::Basic
+    # comments reference reimplementation of methods
+    @args = %{ $args[0] } if ref $args[0] eq "HASH";
+    my $opts = @args % 2 ? pop @args : {};
+    # search for 
+    my %search_for;
+    while (my ($col, $val) = splice @args, 0, 2) {
+        my $column = $class->find_column($col)
+            || (List::Util::first { $_->accessor eq $col } $class->columns)
+            || $class->_croak("$col is not a column of $class");
+        $search_for{$column} = $class->_deflated_column($column, $val);
     }
+    # qual, qual_bind
+    my (@qual, @bind);
+    for my $column (sort keys %search_for) {    # sort for prepare_cached
+        if (defined(my $value = $search_for{$column})) {
+            # If were a foreign key, dont search_like
+            if ($class->meta_data->get_column($column)->links_to()) {
+                push @qual, "$column = ?";
+                push @bind, $value;
+            # Not a foreign key, regex this sucker
+            } else {
+                # Fix lack of typecast introduced in Pg 8.x
+                if (Netdot->config->get('DB_TYPE') eq "Pg") {
+                    push @qual, "TYPECAST($column AS text) LIKE ?";
+                    push @bind, $value;
+                } else {
+                    push @qual, "$column LIKE ?";
+                    push @bind, $value;
+                }
+            }
+        } else {
+            # perhaps _carp if $type ne "="
+            push @qual, "$column IS NULL";
+        }
+    }
+    # fragment
+    my $frag = join " AND ", @qual;
+    if (my $order = $opt->{'order_by'}) {
+        $frag .= " ORDER BY $order";
+    }
+    print "!!!$frag!!!";
+    # sql
+    my $sql = $class->sql_Retrieve($frag);
+    return $class->SUPER::sth_to_objects($sql, \@bind);
 }
 
 ############################################################################
