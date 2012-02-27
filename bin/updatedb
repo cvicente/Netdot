@@ -43,10 +43,7 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
             INDEX Asset4 (`inventory_number`),
             INDEX Asset5 (`po_number`),
             INDEX (`maint_contract`),
-            PRIMARY KEY (`id`),
-            CONSTRAINT `fk_maint_contract` FOREIGN KEY (`maint_contract`) REFERENCES `maintcontract` (`id`),
-            CONSTRAINT `fk_physaddr_1` FOREIGN KEY (`physaddr`) REFERENCES `physaddr` (`id`),
-            CONSTRAINT `fk_product_id` FOREIGN KEY (`product_id`) REFERENCES `product` (`id`)
+            PRIMARY KEY (`id`)
          ) ENGINE=InnoDB;",
         );
 } elsif ($netdot_config->get('DB_TYPE') eq "Pg") {
@@ -66,10 +63,7 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
              po_number character varying(255),
              reserved_for character varying(255),
              product_id bigint,
-             serial_number character varying(255),
-             CONSTRAINT asset1 UNIQUE (\"physaddr\"),
-             CONSTRAINT asset2 UNIQUE (\"serial_number\"),
-             CONSTRAINT pk_asset PRIMARY KEY (\"id\")
+             serial_number character varying(255)
         );",
 	"CREATE INDEX Asset3 on asset (\"product_id\");",
 	"CREATE INDEX Asset4 on asset (\"inventory_number\");",
