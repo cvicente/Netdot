@@ -53,36 +53,21 @@ XMOD ?= 0744
 # which makes them available in children makefiles
 export
 
-
-# This adds all previously defined variables to the shell environment
-# which makes them available in children makefiles
-export
-
 # If mason ever decides to use different directories in its data_dir there will
 # be trouble.
-DIR = bin doc htdocs tmp tmp/sessions /tmp/sessions/locks lib etc var import export mibs
+DIR = bin doc htdocs tmp tmp/sessions /tmp/sessions/locks lib etc var import export
 
-.PHONY: bin doc htdocs lib etc var
+.PHONY: bin doc htdocs lib etc var upgrade
 
-install: dir doc htdocs lib var _mibs bin etc _import _export
+install: dir doc htdocs lib var bin etc _import _export
 	@echo
 	@echo "Netdot is installed. "
 	@echo "Please read the available documentation before proceeding."
 	@echo "If you are installing Netdot for the first time, you need to"
 	@echo "  'make installdb'"
 
-upgrade: updatedb
-	@echo
-	@echo "Netdot has been upgraded. Now you should:"
-	@echo 
-	@echo "  1) 'make install'"
-	@echo "  2) Stop and start Apache"
-	@echo 
-
-updatedb:
-	@echo
-	@echo "Upgrading schema and data..."
-	cd bin ; $(MAKE) updatedb
+upgrade:
+	cd $@; $(MAKE) all DIR=$@
 
 testdeps:
 	@echo "Testing for required Perl modules"
@@ -128,9 +113,6 @@ lib:
 
 var:
 	cd $@ ; $(MAKE) all DIR=$@
-
-_mibs:
-	cd mibs ; $(MAKE) all DIR=mibs
 
 bin:
 	cd $@; $(MAKE) install DIR=$@

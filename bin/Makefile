@@ -21,12 +21,6 @@ installdb: _installdb oui
 _installdb:
 	$(PERL) initdb initdb
 
-updatedb: _updatedb
-
-_updatedb:
-	$(PERL) pre_updatedb # Remove after 1.0
-	$(PERL) updatedb 
-
 genschema:
 	$(PERL) initdb generate
 

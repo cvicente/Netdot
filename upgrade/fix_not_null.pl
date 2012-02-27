@@ -35,7 +35,7 @@ eval {
 if ( my $e = $@ ){
     print "Applying constraints failed: $e\n".
 	"You might want to fix your data and apply these constraints again like this:\n".
-	" cd bin/\n".
+	" cd upgrade/\n".
 	" perl $0\n";
 }else{
     print "\nNew 'NOT NULL' constraints applied successfully!\n";
