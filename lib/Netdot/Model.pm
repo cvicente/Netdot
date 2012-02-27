@@ -375,19 +375,26 @@ sub insert {
 	$obj = $class->SUPER::insert($argv);
     };
     if ( my $e = $@ ){
-	my $msg = "Error while inserting $class: ";
-	# Class::DBI shows a full stack trace
 	# Try to make it less frightening for the user
+	# This object seems to include a stack trace
+	# in the message itself. We try to remove it
+	# in several ways.
+	$e->show_trace(0);
+	$error = $e->error;
+	$error =~ s/Stack:.*//sg;
+	my $msg = "Error while inserting $class: ";
 	if ( $e =~ /Duplicate entry/i ){
-	    $msg .= "Some values are duplicated. Full error: $e";
+	    $msg .= "Some values are duplicated\n\n";
+	    $msg .= "Error details: ".$error;
 	}elsif ( $e =~ /cannot be null|not-null constraint/i ){
-	    $msg .= "Some fields cannot be null. Full error: $e";
+	    $msg .= "Some fields cannot be null\n\n";
+	    $msg .= "Error details: ".$error;
 	}elsif ( $e =~ /invalid input syntax/i ){
 	    $msg .= "Some fields have invalid input syntax.";
 	}elsif ( $e =~ /out of range/i ){
 	    $msg .= "Some values are out of valid range.";
 	}else{
-	    $msg .= $e;
+	    $msg .= $error;
 	}
 	$class->throw_user("$msg");
     }
