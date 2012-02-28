@@ -436,10 +436,10 @@ sub search_like {
 	    $argv{$key} = $class->_convert_search_keyword($argv{$key});
 	}
     }
+    @args = %argv;
+
     # code is ripped from Class::DBI::Search::Basic
     # comments reference reimplementation of methods
-    @args = %{ $args[0] } if ref $args[0] eq "HASH";
-    my $opts = @args % 2 ? pop @args : {};
     # search for 
     my %search_for;
     while (my ($col, $val) = splice @args, 0, 2) {
@@ -452,7 +452,7 @@ sub search_like {
     my (@qual, @bind);
     for my $column (sort keys %search_for) {    # sort for prepare_cached
         if (defined(my $value = $search_for{$column})) {
-            # If were a foreign key, dont search_like
+            # If we're a foreign key, dont search_like
             if ($class->meta_data->get_column($column)->links_to()) {
                 push @qual, "$column = ?";
                 push @bind, $value;
@@ -477,7 +477,6 @@ sub search_like {
     if (my $order = $opt->{'order_by'}) {
         $frag .= " ORDER BY $order";
     }
-    print "!!!$frag!!!";
     # sql
     my $sql = $class->sql_Retrieve($frag);
     return $class->SUPER::sth_to_objects($sql, \@bind);
