@@ -374,11 +374,15 @@ jobs.
 
 ## Device Management
 
+In Netdot, devices are network infrastructure equipment: switches,
+routers, firewalls, access points, servers, etc. End nodes such as 
+desktop computers, laptops and printers are not devices.
+
 Netdot can discover and maintain an extensive amount of information
 about network devices. The easiest way to gather and store this
 information is by querying the devices using the Simple Network
 Management Protocol (SNMP). Devices can be discovered individually, by
-subnet, or by providing a text file with a list of devices.
+subnet, or by providing a text file with a list of device addresses.
 
 ### Device Discovery using the web UI
 
@@ -398,8 +402,8 @@ Netdot.
 Another option is to specify whether Netdot should assign any newly
 created subnets the same owner and user entities assigned to the device.
 
-Once you click the on [update] button, Netdot will show the discovery
-information and a link to the device page at the button.
+Once you click on the [update] button, Netdot will show the discovery
+information and a link to the device page at the bottom.
 
 You can always re-discover a device manually by using the [snmp-update]
 button on the top right corner of the device page. For example, if you
@@ -430,8 +434,9 @@ like to discover:
 ~# bin/updatedevices.pl -E <text-file> -I 
 ~~~~
 
-The file should contain a list of devices and their communities,
-separated by spaces, one device/community per line, for example:
+The file should contain a list of device names, or IP addresses 
+and their communities, separated by spaces, one device/community 
+per line, for example:
 
 ~~~~
 device1 community1
@@ -440,7 +445,7 @@ device3 community2
 ...
 ~~~~
 
-Netdot can retrieve ARP caches and bridge forwarding tables. You will
+Netdot can retrieve ARP and bridge forwarding tables. You will
 probably want to fetch ARP caches from your layer 3 devices (i.e.
 routers and firewalls), and forwarding tables from your layer 2 devices
 (switches). Examples:
@@ -490,10 +495,15 @@ Going to `Management -> Devices` you can search for a device by name, IP
 or MAC address.
 
 From the device page, you can navigate to the different sub-sections
-depending on the information you want to edit.
+depending on the information you want to edit. Notice that clicking on
+any field name will open a browser window with a description of that field.
 
-Interfaces: Here you can edit interface descriptions, assign network
-jacks, etc. by clicking on the [edit] button. You can also edit a
+#### Basics Tab: In this section you can view and edit general information
+about the device, including its location, contact information, and 
+management details.
+
+#### Interfaces Tab: Here you can edit interface descriptions, assign 
+network jacks, etc. by clicking on the [edit] button. You can also edit a
 specific interface by clicking on its number or on its name. If you are
 running topology discovery, you will probably see neighbor information.
 If for some reason the topology discovery process cannot dectect a
@@ -510,22 +520,95 @@ and connections are moved. Therefore, fixed neighbor settings can become
 out of date pretty soon. It is preferable to let the topology discovery
 process maintain neighbor relationships.
 
+#### Modules Tab: If the device provides module information via SNMP,
+Netdot will show it in this tab. Modules are shown hierarchically.
+If the information for a particular module includes a serial number,
+Netdot creates an Asset object for it (or associates an existing asset
+object if it was created before).
+
+#### IP Info Tab: This section lists all the IP addresses found in the 
+device, together with the subnets they belong in, the device interface 
+where they were found, and optionally, their DNS names.
+
+At the bottom of this section, you will find an option to set the "Auto
+DNS" flag on all interfaces with IP addresses. The purpose of this flag
+is to tell Netdot whether it should generate DNS names for each IP 
+address based on the interface name and the device name. 
+
+The logic of this operation is handed off to a plugin module, which means 
+that you can write your own plugin to generate DNS names based on your own 
+naming scheme (see configuration file for more details). The included 
+plugin generates names such as "ge-0-1.router1.mydomain.com", assuming 
+that the device name is router1 and that the interface is GigabitEthernet0/1.
+For this to work you need the following:
+
+* The device has to have its "Auto DNS" flag set (Basics section of the
+device page).
+* Each interface with an IP address on the device has to have the "Auto
+DNS flag on"
+* The IP address must exist within an IP block which has been assigned
+a DNS zone (Management -> Address Space).
+* For PTR records to be generated as well, the IP block must have a
+reverse zone (in-addr.arpa or ip6.arpa) associated with it.
+
+#### BGP Peers Tab: If the device is a router with BGP peering sessions,
+and those are seen via SNMP, Netdot will show that information in this
+tab. Information includes the remote IP address, the BGP ID and the AS.
+The BGPPeering record also includes fields to document things such as
+the maximum number of allowed IPv4 and IPv6 prefixes, whether the peering
+should be monitored (e.g. with Nagios), etc.
+
+For each AS discovered, Netdot tries to look up its information using
+WHOIS. If the information is found, an entity record is created with
+the AS number, AS name, etc. You can expand this record to include
+contact information, comments, etc.
+
+#### Topology Tab: Netdot can use the neighbor relationships from the
+device interface to draw a graph of this device and its neighbors.
+By default, Netdot only shows directly connected neighbors. However,
+you can expand the graph to include neighbors of neighbors by 
+specifying a larger "Search Depth" value.
+
+## Assets 
+
+An asset in Netdot is a record which contains common information about 
+device hardware. For example, serial number, base MAC address, product 
+name, etc. Assets also represent device modules, such as line cards, 
+port adapters, etc. In addition to storing common information from devices 
+and modules discovered, asset records can be used to document items that 
+are not yet installed. Once the asset is discovered in the network, it is 
+referenced by the new device or module record.
+
+### Importing Assets
+
+Go to Management -> Assets -> [import]
+This form allows you to import multiple hardware assets. For example, you 
+can use a bar code scanner to scan the information from vendor boxes as you 
+receive your equipment. 
+
+Create a text file composed of part number, serial number, and optionally 
+other fields. The part number must match the value from an existing product 
+in Netdot. The order of fields in each line must match the list of fields in 
+the "Fields for import" select menu. 
+
+Once imported, you can view a report of your assets in the Reports section.
+
 ## IP Address Space Management
 
-Netdot is a useful tool for IP address space management (referred to as
-IPAM these days). Some key features are:
+Netdot can be helpful in managing IPv4 and IPv6 address spaces. Some of
+its key features are:
 
 *   Address space is hierarchically organized through the use of a fast
     binary tree algorithm, which is the same technique used by routers
     when doing prefix lookups.
 
-*   IPv4 and IPv6 support
-
 *   New subnets can be automatically created based on the interface
-    information retrieved from routers and firewalls.
+    configuration retrieved from routers and firewalls.
 
-*   Easy visualization of used vs. available address space for easier
-    allocations
+*   Visualization of used vs. available address space for easier
+    block and address allocations
+
+*   DNS and DHCP configuration management
 
 ### IP blocks
 
@@ -557,6 +640,9 @@ The status of an end-node address can be one of:
 
 *   *Reserved*: Addresses that should not be assigned
 
+*   *Available*: Addresses that were previously used, but have been 
+    freed.
+
 On the other hand, the status of an IP block can be one of:
 
 *   *Container*: This kind of block is meant to group or contain other
@@ -583,6 +669,16 @@ On the other hand, the status of an IP block can be one of:
 
 *   *Reserved*: Similarly to reserved addresses, reserved blocks are not
     supposed to be allocated for whatever reason.
+
+#### Associating IP blocks with other objects
+
+IP blocks can be linked to sites in a many-to-many relationship. A site
+can use one or more IP blocks and one IP block can be in use at one or
+more sites.
+
+Similarly, IP blocks can be linked to DNS zones. This helps Netdot
+determine which domain a new DNS A, AAAA or PTR record should belong
+to.
 
 ## DNS
 
@@ -656,14 +752,6 @@ when a zone needs to be exported. Zones can be exported manually via the
 UI by going to the Export menu, or via cron jobs. When a zone is
 exported, its serial number is increased and its list of pending changes
 is flushed.
-
-Netdot can auto-generate and maintain DNS records for IP addresses
-belonging to device interfaces, for example, routers. The logic of how
-these names are generated is handed off to a plugin. In order to have
-Netdot generate DNS names for device IPs, set the "Auto DNS" option to
-"yes" in the management section of the Device page. From here, go to the
-IP Info tab for the same device and for each IP address, make sure that
-the interface it belongs to has the "Auto DNS" option set to "yes".
 
 ### The '@' record
 
@@ -779,6 +867,115 @@ going to the Contacts section.
 Netdot allows you to document inter-building and intra-building fiber
 and copper wiring, closets, jacks, etc.
 
+### Sites
+Sites are usually buildings with one or more floors, closets and rooms.
+Sites can be associated with other things, such as people, departments, 
+subnets, etc.
+
+To create a new Site, go to Cable Plant -> Sites and click on [new].
+You will need to enter a name and a City. The "Site ID" is a value
+that can represent the (shorter) unique identification of that building
+within the organization.
+
+You can also insert pictures of Sites in the database.
+
+### Closets
+Communications closets house network equipment and cable terminations.
+A Closet is located in a Room, which is located in a Floor, wich is
+located in a Site.
+
+To create a new Closet, go to Cable Plant -> Closets and click on [new].
+It is also possible to include pictures of closets in the database. This
+is useful for technicians that might want to review the physical
+characteristics of the closet space without visiting it in person.
+
+### Backbone Cables
+Backbone cables exist between two closets. 
+
+* If a physical cable traverses closets in various sites, for the purpose 
+  of documentation,those sections of cable should be represented as 
+  different backbone cables. 
+
+* Backbone cables can interconnect closets within the same site (risers).
+
+New backbone cables can be created by going to Cable Plant -> Backbone Cables
+and clicking on [new]. You will be asked to provide the origin and destination
+closets, the type of cable (Copper Bundle, Fiber, etc), and a cable ID.
+Netdot can suggest a cable ID value, which will be composed of the endpoint
+Site IDs and a sequence number, for example "123/456-1". 
+
+The field "Number of Strands" will tell Netdot to create that many strands
+associated with the new cable.
+
+### Fiber Strands
+Backbone cables contain strands. These have several attributes, including:
+
+* Sequence number
+* Status - Not Terminated, Available, Damaged, In Use
+* Fiber Type - Multimode or Single Mode
+* Circuit - An end-to-end circuit composed of sequences of strands
+
+You can modify ranges of strands from a backbone as a group. For example,
+if you have a new hybrid fiber cable with 24 strands, of which 12 are single
+mode and the other 12 are multi-mode, at the the backbone page, after the 
+list of strands, type Range: 1-12, then select Type: "Single Mode", 
+Status: "Not Terminated". Do similarly for range 13-24.
+
+Fiber strands from diferent backbone cables can be spliced together
+to form a sequence. To splice a range of strands, go to the bottom of
+the Backbone Cable page, in the section "Manually Splice Strand Range",
+then type the range of strands that are spliced to another backbone,
+for example, "1-12", and the corresponding strands from the next backbone,
+say "1-12" or "13-24", then select the other backbone cable, and click "Go"
+You should now see the contiguous strands in the "Spliced With" column,
+and the whole sequence in "Part of Sequence".
+
+### Circuits
+After you have created sequences of strands from origin A to destination
+B, you can now create a circuit to group those strands and assign it to 
+existing device interfaces. 
+
+To create a new circuit, go to Cable Plant -> Circuits and click on [new].
+You will need to give it a unique identifier, and specify a provider. In 
+this case, the provider might be your own organization. Circuits can also
+be used to document links provided by other parties. In those cases the
+circuit would probably not be associated with fiber strands that you own.
+
+Circuits have these attributes, among others:
+
+* Site Link: A record that ties two sites that are linked by this circuit
+* Status: Active, Disabled, Disconnected, Pending
+* Type: DS3, Ethernet, Frame Relay, etc.
+* Speed: 45Mbps, 100Mbps, etc.
+* Loss: Last measured loss on the circuit
+
+Once you have created the circuit, you will have the option of associating
+a list of strand sequences. Simply select the origin and destination sites, 
+then select a pair of sequences that compose this circuit (a pair, assuming
+that it's a fiber circuit).
+
+You can associate existing device interfaces to this circuit. 
+
+### Horizontal Cables
+A horizontal cable represents cabling that starts in a closet and terminates
+in a wall jack, usually Cat5 or similar. These are some of their attributes:
+
+* Jack ID: The unique identifier of the jack in the organization. For example,
+  a jack located in Site #123, terminated in closet "A" and whose sequence 
+  is 456, could be labeled uniquely with something like "123-A-456".
+* Faceplate ID: Normally, faceplates contain more than one jack. This is the
+  unique identifier of the faceplate, not the jack. 
+* Type: Cat5, Cat6, etc.
+* Closet: The closet where the cable is terminated (one end)
+* Room: The room where the cable is terminated (the other end)
+
+Once created, you can assign this horizontal cable to a device interface
+by going to the Device page, selecting "Interfaces" and [edit]. You should
+see a list of existing cables in the "Jack(cable)" column. Notice that 
+there are also free-form fields in the "Room" and "Jack" columns. These
+are available in case you don't need to document the cable, but just
+the interface-to-jack relationship.
+
 ## Advanced DB operations
 
 The Advanced section of the top menu shows basic Browse, Search and Add
@@ -825,6 +1022,21 @@ settings are mismatched.
 This report lists devices whose operating system version differs from
 the recommended version. The list is grouped by manufacturer, then
 model, then device name and it shows the current OS version.
+
+### Asset Reports
+
+Asset reports are most useful for identifying device hardware that
+is in stock (not yet installed). 
+
+#### By Type/Model
+
+Gives a summary of device hardware by type and model, and shows
+quantities of each
+
+#### By Type/Model (detailed)
+
+Shows a list of assets by type and model, showing each asset's serial
+number, inventory number, whether it has been installed or not, etc.
 
 ### IP Reports
 
