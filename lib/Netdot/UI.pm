@@ -386,7 +386,7 @@ sub form_field {
 	unless ( $args{no_help} ){
 	    $label = $self->col_descr_link($table, $column, $label);
 	}
-	if ( $args{edit} && ($mcol->is_unique || !$mcol->is_nullable) ){  
+	if ( $args{edit} && !$mcol->is_nullable ){
 	    $label .= "<font color=\"red\">*</font>" 
 	}
         $returnhash{label} = $label . ':';
