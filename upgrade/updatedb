@@ -80,7 +80,8 @@ my %assets;
 my $d = $dbh->prepare('SELECT serialnumber,custom_serial,physaddr,inventorynumber,
                               maint_contract,maint_from,maint_until,product 
                        FROM   device
-		       WHERE  serialnumber is not NULL');
+		       WHERE  serialnumber is not NULL
+                          AND serialnumber !="" ');
 $d->execute();
 my $devices = $d->fetchall_arrayref();
 
@@ -99,7 +100,8 @@ foreach my $row ( @$devices ){
 
 my $dm = $dbh->prepare('SELECT serialnumber,inventorynumber,maint_contract,maint_from,maint_until 
                         FROM   devicemodule
-		        WHERE  serialnumber IS NOT NULL');
+		        WHERE  serialnumber IS NOT NULL
+                          AND  serialnumber !="" ');
 $dm->execute();
 my $device_modules = $dm->fetchall_arrayref();
 
@@ -149,8 +151,11 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
             "ALTER TABLE device_history ADD COLUMN asset_id bigint AFTER aliases;",
             "ALTER TABLE device_history ADD COLUMN extension integer AFTER down_until;",
             "ALTER TABLE devicemodule ADD COLUMN asset_id bigint FIRST;",
-            "UPDATE device,asset SET device.asset_id=asset.id WHERE asset.serial_number=device.serialnumber;",
-            "UPDATE devicemodule,asset SET devicemodule.asset_id=asset.id WHERE asset.serial_number=devicemodule.serialnumber;",
+            "UPDATE device,asset SET device.asset_id=asset.id 
+              WHERE asset.serial_number=device.serialnumber;",
+            "UPDATE devicemodule,asset 
+                SET devicemodule.asset_id=asset.id 
+              WHERE asset.serial_number=devicemodule.serialnumber;",
             "UPDATE asset,device,devicemodule SET asset.product_id=device.product 
               WHERE devicemodule.device=device.id AND devicemodule.asset_id=asset.id;",
             "ALTER TABLE device DROP COLUMN serialnumber;",
