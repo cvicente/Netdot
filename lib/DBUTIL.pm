@@ -72,9 +72,8 @@ sub dbconnect {
 	print "DEBUG: Connected successfully\n" if $CONFIG{DEBUG};
 	return $dbh;
     } else {
-	print "Unable to connect to $db_args{DB_TYPE} $db_args{DB_DATABASE} db:" 
+	die "Unable to connect to $db_args{DB_TYPE} $db_args{DB_DATABASE} db:" 
 	    . " $DBI::errstr\n"; 
-	return 0;
     }
 }
 
