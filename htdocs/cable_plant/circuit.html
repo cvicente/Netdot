@@ -1,41 +1,31 @@
 <%doc>
-
 Circuit Interface
-
 </%doc>
 
 <%args>
-$id            => undef;
-$edit          => undef;
-$strand_sort   => undef;
-$search        => undef;
-$_action       => undef;
-$sequence_list => undef;
-$add_interfaces => undef;
-$user          => $ui->get_current_user($r)
+$id             => undef
+$edit           => undef
+$strand_sort    => undef
+$search         => undef
+$_action        => undef
+$sequence_list  => undef
+$add_interfaces => undef
+$new_interface  => undef
+$add_strands    => undef
+$user           => $ui->get_current_user($r)
 </%args>
-
 <%attr>
 title   => 'Circuit' 
-section => 'Plant'
 </%attr>
 
 <%init>
-
-my $DEBUG       = 0;
-my $o           = undef;
-my $editCircuit = 0;
-my $editStrand  = 0;
-my @list;
-
+my $DEBUG = 0;
 print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
-$o              = Circuit->retrieve($id) if ($id && $id ne "NEW");
-$editCircuit    = 1 if ($id eq "NEW" || $edit eq "circuitinfo");
-$editStrand     = 1 if ($edit eq "strandinfo");
-
+my $o = Circuit->retrieve($id) if ($id && $id ne "NEW");
 my $manager = $ui->get_permission_manager($r);
-    
+my @list;
+
 if ( $_action ){
     if ( $_action eq "SEARCH" ) {
 	if ( length($search) ){
@@ -55,30 +45,7 @@ if ( $_action ){
 	    print "<p><b>No search criteria</b>";   
 	    $m->abort;
 	}
-	
-	# code for inserting/updating
-	# -----------------------------------------------------------------------------
-    }elsif( $_action eq "UPDATE_CIRCUIT" ){
-	my %update_info = ();
-	print "ARGS is  <pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
-	eval {
-	    Netdot::Model->do_transaction( sub{ 
-		%update_info = $ui->form_to_db(%ARGS);
-					   });
-	};
-	if ( my $e = $@ ){
-	    $m->comp('/generic/error.mhtml', error=>$e);
-	}
-	if ($update_info{Circuit}{id}) {
-	    $id = (keys %{$update_info{Circuit}{id}})[0];
-	    $editCircuit = 0;
-	}
-	# Do this to 'flush' the values associated with the object
-	# before redisplaying
-	$o = undef;
-	if ($id && $id ne "NEW") {
-	    $o = Circuit->retrieve($id);
-	}
+
     }elsif( $_action eq "ADD_STRANDS" && $sequence_list ){
 	my @sequences;
 	if ( ref($sequence_list) eq "ARRAY" ) {
@@ -102,20 +69,49 @@ if ( $_action ){
 	    next if ($key !~ /^__unassign_(\d+)/o);
 	    my @strands = split(/,/o, $ARGS{"__sequence_" . $1});
 	    foreach my $strandid ( @strands ){
-		my $strand = CableStrand->retrieve($strandid);
-		$strand->update({circuit_id=>""});
+		eval {
+		    my $strand = CableStrand->retrieve($strandid);
+		    $strand->update({circuit_id=>""});
+		};
+		if ( my $e = $@ ){
+		    $m->comp("error.mhtml", error=>"Problem updating strand: $e");
+		}
 	    }	    
+	}
+    }elsif( $_action eq "ADD_INTERFACE" ){
+	if ( $new_interface && $new_interface !~ /\D/o){
+	    eval {
+		my $i = Interface->retrieve($new_interface);
+		$i->update({circuit=>$o});
+	    };
+	    if ( my $e = $@ ){
+		$m->comp("error.mhtml", error=>"Problem updating interface: $e");
+	    }
+	}else{
+	    $m->comp("error.mhtml", error=>"No interface selected, or invalid value");
+	}
+    }elsif( $_action eq "UPDATE_INTERFACES" ){
+	my @ints;
+	foreach my $key  ( keys %ARGS ){
+	    my $id;
+	    if ( $key =~ /^_un_interface_(\d+)$/og ){
+		$id = $1;
+	    }else{
+		next;
+	    }
+	    eval {
+		my $i = Interface->retrieve($id);
+		$i->update({circuit=>''});
+	    };
+	    if ( my $e = $@ ){
+		$m->comp("/generic/error.mhtml", error=>"Problem unassigning interface: $e");
+	    }
 	}
     }
 }
-
-# end insertion/update code
-# -----------------------------------------------------------------------------
-
 </%init>
 
 % if ( $search && @list ){
-
 <div class="container">
   <div class="containerhead">
     <% scalar(@list) %> results for <i><% $search %></i>
@@ -145,15 +141,16 @@ if ( $_action ){
 <div class="container">
     <div class="containerheadleft"><strong>Circuit</strong></div>
     <div class="containerheadright">
-%         if ( $manager && $manager->can($user, 'access_admin_section', 'circuit:new') ){
-              <a href="edit.html?table=Circuit">[new]</a>
-%         }
-%         if ( $manager && $manager->can($user, 'edit', $o) ){
-              <a href="edit.html?table=Circuit&id=<% $o->id %>">[edit]</a>
-%         }
-%         if ( $manager && $manager->can($user, 'delete', $o) ){
-    	      <a href="delete.html?table=Circuit&id=<% $o->id %>">[delete]</a>
-%         }
+        <a href="circuit.html?id=<% $o->id %>">[refresh]</a>
+%   if ( $manager && $manager->can($user, 'access_admin_section', 'circuit:new') ){
+        <a href="edit.html?table=Circuit">[new]</a>
+%   }
+%   if ( $manager && $manager->can($user, 'edit', $o) ){
+        <a href="edit.html?table=Circuit&id=<% $o->id %>">[edit]</a>
+%   }
+%   if ( $manager && $manager->can($user, 'delete', $o) ){
+        <a href="delete.html?table=Circuit&id=<% $o->id %>">[delete]</a>
+%   }
           <a href="#" onClick="opentextwindow(jspopoutstring,'js','');">[text]</a>
     </div>
     <div class="containerbodyoutside">
@@ -163,118 +160,15 @@ if ( $_action ){
 </form>
 <!-- End Circuit Table -->
 
-<!-- Display list of interfaces -->
-<div class="container">
-%     my @interfaces = $o->interfaces;
-        <div class="containerheadleft">Interfaces</div>
-%       if ( $edit eq 'interfaces' ){
-	  <div class="containerheadright">&nbsp;</div>
-%       }else{
-	  <div class="containerheadright">
-	    &nbsp;
-%           if ( @interfaces && ($manager && $manager->can($user, 'edit', $o)) ){
-	      <a href="circuit.html?id=<% $id %>&edit=interfaces">[edit]</a>
-%           }else{
-%           }
-	  </div>
-%       }
-%       if ( @interfaces ){
-            <& /generic/sortresults.mhtml, object=>\@interfaces, withedit=>($edit eq 'interfaces')? 1 : 0  &>
-%       }else{
-            You can assign this circuit to a pair of existing device interfaces.
-%       }
-      </div>
+%# Interfaces
+<& circuit_interfaces.mhtml, interfaces=>[$o->interfaces], id=>$id, add=>$add_interfaces &>
 
-<!-- Begin Cable Strand Sequence Table -->
-    <form name="sequence_form" action="circuit.html" method="POST">
-    <input type="hidden" name="_action" value="UPDATE_SEQUENCES">
-    <input type="hidden" name="id" value="<% $id %>">
-    <& display_sequence.mhtml, strands=>[$o->strands], table_view=>1 &>
-%   if ( scalar($o->strands) ) {
-      <div align="left"><input type="submit" name="submit_seq" value="Unassign"></div>
-%   }    
-    </form>
-    <P>
+%#  Strand Sequences
+<p>
+<& display_sequence.mhtml, strands=>[$o->strands], id=>$id, add=>$add_strands, table_view=>1 &>
+<p>
 
-%   # Allow the user to add strands to this circuit by backbone.
-%   # First select a start site, then an end site, and then a backbone
-%   # from the populated list. Hit submit and all strands for that backbone
-%   # are associated with this circuit.
-% if ( $edit ne "strandinfo" ) {
-    <script language="JavaScript">
-    <!--
-        /* getStrandList()
-         *
-         * Displays list of available strand sequences.
-         *
-        */
-        function getStrandList()
-        {
-            var start_id = document.add_strand_form.start_id.value;
-            var end_id = document.add_strand_form.end_id.value;
-
-            if (!start_id || !end_id)
-            {
-                alert("You must select a start and end site.");
-                return false;
-            }
-
-            var url = "get_strand_sequence_list.html?start_id=";
-            url += start_id + "&end_id=" + end_id;
-            url += "&field_name=sequence_list";
-            url += "&form_name=add_strand_form";
-            var wind = window.open(url, "tmp", "width=1,height=1");
-            wind.blur();
-        }   
-    -->
-    </script>
-
-%   if ( $manager && $manager->can($user, 'access_admin_section', 'circuit:add_strand_sequences') ){
-    <div class="container">
-        <div class="containerhead">Add</div>
-        <div class="containerbody">
-
-        <form name="add_strand_form" action="circuit.html" method="POST">
-        <input type="hidden" name="id" value="<% $id %>">
-        <input type="hidden" name="_action" value="ADD_STRANDS">
-	
-<%perl>
-    my @sites = sort { $a->name cmp $b->name }  Site->retrieve_all();
-    </%perl>
-	<br>
-	<input type="hidden" name="page_type" value="BACKBONE">
-	Backbones from
-	<select name="start_id" style="width: 225px">
-	<option value="">-- Select --</option>
-	<%perl>
-	foreach my $site (@sites) {
-	    printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
-    }
-</%perl>
-	</select> to
-	<select name="end_id" style="width: 225px;">
-	<option value="">-- Select --</option>
-<%perl>
-	foreach my $site (@sites) {
-	    printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
-    }
-</%perl>
-	</select>
-	<input type="button" name="get_bb_list" value="Get Strand List" onClick="getStrandList();">
-
-	<p><br>
-        Available Strand Sequence(s):<br>
-         <select name="sequence_list" style="width: 500px;" multiple size="10"></select>
-         <input type="submit" name="strand_add" value="Add">&nbsp;
-        </form>
-
-        </div> <!-- close containerbody -->
-    </div> <!-- close container -->
-%   }
-% }
-<!-- End Cable Strand Table -->
-
-
+%#  Contacts
 % my $cl;
 % if ( $o->vendor && int($cl = $o->vendor->contactlist) && $cl->contacts ){
 <!-- Contacts Table -->

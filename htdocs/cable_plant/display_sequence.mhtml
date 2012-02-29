@@ -7,8 +7,11 @@ Arguments:
 </%doc>
 
 <%args>
-$strands    => undef;
-$table_view => undef;
+$id
+$add        => undef
+$strands    => undef
+$table_view => undef
+$user       => $ui->get_current_user($r)
 </%args>
 
 <%init>
@@ -16,14 +19,29 @@ my %cssitem   = ( 0 => "formtablec1", 1 => "formtablec2" );
 my %used      = ();
 my %sequences = ();
 my $delimiter = '--';
+my $manager   = $ui->get_permission_manager($r);
 </%init>
 
+<!-- Begin Cable Strand Sequence Table -->
+<form name="sequence_form" action="circuit.html" method="POST">
+  <input type="hidden" name="_action" value="UPDATE_SEQUENCES">
+  <input type="hidden" name="id" value="<% $id %>">
 % if ( $table_view ){
 <div class="container">
-    <div class="containerhead">Cable Strand Sequences</div>
+    <div class="containerheadleft">Cable Strand Sequences</div>
+    <div class="containerheadright">
+%    if ( $add ){
+         &nbsp;
+%    }else{
+%       if ( $manager && $manager->can($user, 'access_admin_section', 'circuit:add_strand_sequences') ){
+             <a href="circuit.html?id=<% $id %>&add_strands=1">[add]</a>
+%       }else{
+             &nbsp;
+%       }
+%    }
+    </div>
     <div class="containerbody">
 %   if ( $strands && @$strands ){
-    
     <table border="0" width="90%">
 %   my $j = 0;
 %   my $i = 0;
@@ -50,10 +68,7 @@ my $delimiter = '--';
 %   }
     </table>
 %   }else{
-    <p>If this circuit is built using your cable plant, you can associate sequences of spliced backbone strands
-    to it. 
-    <br>Simply select the origin and destination sites, then select a pair of sequences that compose this circuit.
-    <p><br>
+    <p>If this circuit is built using your cable plant, you can associate sequences of spliced backbone strands to it. 
 %   }
     </div> <!-- close containerbody -->
 </div> <!-- close container -->
@@ -68,7 +83,87 @@ my $delimiter = '--';
 	    }
 	}
     }
-
     printf("%s\n", join($delimiter, @links));
 </%perl>
 % }
+%if ( $strands && @$strands ) {
+     <div align="left"><input type="submit" name="submit_seq" value="Unassign"></div>
+%}    
+</form>
+
+%# Allow the user to add strands to this circuit by backbone.
+%# First select a start site, then an end site, and then a backbone
+%# from the populated list. Hit submit and all strands for that backbone
+%# are associated with this circuit.
+<script language="JavaScript">
+<!--
+/* getStrandList()
+*
+* Displays list of available strand sequences.
+*
+*/
+function getStrandList()
+{
+    var start_id = document.add_strand_form.start_id.value;
+    var end_id = document.add_strand_form.end_id.value;
+    
+    if (!start_id || !end_id)
+    {
+	alert("You must select a start and end site.");
+	return false;
+    }
+    
+    var url = "get_strand_sequence_list.html?start_id=";
+    url += start_id + "&end_id=" + end_id;
+    url += "&field_name=sequence_list";
+    url += "&form_name=add_strand_form";
+    var wind = window.open(url, "tmp", "width=1,height=1");
+    wind.blur();
+}   
+-->
+</script>
+
+%   if ( $add ){
+%       if ( $manager && $manager->can($user, 'access_admin_section', 'circuit:add_strand_sequences') ){
+            <p>
+            <div class="container">
+            <div class="containerhead">Add Strand Sequences</div>
+            <div class="containerbody">
+            <form name="add_strand_form" action="circuit.html" method="POST">
+            <input type="hidden" name="id" value="<% $id %>">
+            <input type="hidden" name="_action" value="ADD_STRANDS">
+	
+<%perl>
+            my @sites = sort { $a->name cmp $b->name }  Site->retrieve_all();
+</%perl>
+            <br>Select the origin and destination sites, then select a pair of strand sequences that are usedfor this circuit.
+            <p>
+            <input type="hidden" name="page_type" value="BACKBONE">
+            Backbones from
+            <select name="start_id" style="width: 225px">
+            <option value="">-- Select --</option>
+<%perl>
+	    foreach my $site (@sites) {
+	        printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
+            }
+</%perl>
+            </select> to
+            <select name="end_id" style="width: 225px;">
+            <option value="">-- Select --</option>
+<%perl>
+            foreach my $site (@sites) {
+                printf("<option value=\"%s\">%s</option>\n", $site->id, $site->name);
+            }
+</%perl>
+            </select>
+            <input type="button" name="get_bb_list" value="Get Strand List" onClick="getStrandList();">
+            <p><br>
+            Available Strand Sequence(s):<br>
+            <select name="sequence_list" style="width: 500px;" multiple size="10"></select>
+            <input type="submit" name="strand_add" value="Add">&nbsp;
+            </form>
+        </div> <!-- close containerbody -->
+    </div> <!-- close container -->
+%       }
+%    }
+<!-- End Cable Strand Table -->

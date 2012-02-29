@@ -1,0 +1,103 @@
+<%doc>
+Display and manipulate interfaces assigned to a circuit
+</%doc>
+<%args>
+$id
+$interfaces => undef
+$add        => undef
+$user       => $ui->get_current_user($r)
+</%args>
+<%init>
+my %cssitem   = ( 0 => "formtablec1", 1 => "formtablec2" );
+my $manager   = $ui->get_permission_manager($r);
+</%init>
+
+<!-- Display list of interfaces -->
+
+<form name="update_interfaces_form" action="circuit.html" method="POST">
+<input type="hidden" name="id" value="<% $id %>">
+<input type="hidden" name="_action" value="UPDATE_INTERFACES">
+<div class="container">
+      <div class="containerheadleft">Interfaces</div>
+      <div class="containerheadright">
+      &nbsp;
+%     if ( $manager && $manager->can($user, 'access_admin_section', 'circuit:add_interfaces') ){
+          <a href="circuit.html?id=<% $id %>&add_interfaces=1">[add]</a>
+%     }else{
+          &nbsp;
+%     }
+      </div>
+      <div class="containerbody">
+%     if ( $interfaces && @$interfaces ){
+          <table border="0" width="90%">
+%         my %cssitem   = ( 0 => "formtablec1", 1 => "formtablec2" );
+%         my $j = 0;
+%         foreach my $i ( @$interfaces ){
+%             $j = ($j + 1) % 2;
+	      <tr align="left" class="<% $cssitem{$j} %>">
+		  <td align="left">
+		      <input type="checkbox" name="_un_interface_<% $i->id %>">
+		      <a href="../management/interface.html?id=<% $i->id %>"><% $i->get_label %></a>
+		  </td>
+	      </tr>
+%         }
+          </table>
+%     }else{
+          <p>You can assign this circuit to a pair of existing device interfaces.
+%     }
+      </div>
+</div>
+
+% if ( $interfaces && @$interfaces ){
+      <div align="left"><input type="submit" name="unassign_ints" value="Unassign"></div>
+% }
+</form>
+
+%     if ( $add ){
+          <p>
+          <div class="container">
+          <div class="containerhead">Add Interfaces</div>
+          <div class="containerbody">
+          <form name="add_interfaces_form" action="circuit.html" method="POST">
+          <input type="hidden" name="id" value="<% $id %>">
+          <input type="hidden" name="_action" value="ADD_INTERFACE">
+          New Interface:&nbsp; 
+<%perl>
+	  my $count = Interface->count_all;
+	  my $max_count= Netdot->config->get('DEFAULT_SELECTMAX');
+	  if ( $count <= $max_count ){
+	      my @all = sort { $a->get_label cmp 
+				   $b->get_label } Interface->retrieve_all;
+	      print '<select>';
+	      foreach my $i ( @all ){
+		  printf('<option value="%d">%s</option>', $i->id, $i->get_label);
+	      }
+	      print '</select>';
+	  }else{
+	       # Too many. Provide a search box to narrow down
+	      my $srchf = '_interface_srch';
+	      print '<nobr>';   # forces the text field and button to be on the same line
+	      printf('<input type="text" name="%s" id="%s" value="Keywords" '.
+		     'onFocus="if (this.value == \'Keywords\') { this.value = \'\'; } '.
+		     'return true;">', $srchf, $srchf);
+	      printf('<input type="button" name="List" value="List" '.
+		     'onClick="jsrsSendquery(\'%s\', \'%s\', %s.value);">', 
+		     'Interface', 'new_interface', $srchf );
+	      print '</nobr>';
+	      print '<nobr>';   # forces the select box and "new" link to be on the same line
+	      print '<select name="new_interface" id="new_interface">';
+	      print '<option value="" selected>-- Select --</option>';
+	      print '<option value="">[null]</option>';
+	      print '</select>';
+	      print '&nbsp;<input type="submit" name="add_button" value="Add">';
+	      print '</nobr>';
+	      print '<p><input type="button" name="cancel_button" value="cancel" '.
+		  'onClick="history.go(-1);">';
+	  }
+</%perl>
+          </form>
+          </div>
+          </div>
+%     }
+
+<!-- End of interfaces -->
