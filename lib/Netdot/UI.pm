@@ -386,9 +386,7 @@ sub form_field {
 	unless ( $args{no_help} ){
 	    $label = $self->col_descr_link($table, $column, $label);
 	}
-	if ( $args{edit} && 
-	     ($mcol->is_unique || ($mcol->sql_type =~ /^varchar|timestamp|date|blob$/ 
-				   && !$mcol->is_nullable)) ){  
+	if ( $args{edit} && ($mcol->is_unique || !$mcol->is_nullable) ){  
 	    $label .= "<font color=\"red\">*</font>" 
 	}
         $returnhash{label} = $label . ':';
@@ -509,16 +507,16 @@ sub select_lookup{
 
     my $output;
     
-    $args{htmlExtra} = "" if ( !defined $args{htmlExtra} );
+    $args{htmlExtra} = '' if ( !defined $args{htmlExtra} );
     $args{maxCount} ||= $self->config->get('DEFAULT_SELECTMAX');
     $args{new_button} = 1 unless defined $args{new_button};
 
     my $name;
-    my $id = ($o ? $o->id : "NEW");
+    my $id = ($o ? $o->id : 'NEW');
     if( $args{shortFieldName} ) {
 	$name = $column;
     } else {
-	$name = $table . "__" . $id . "__" . $column;
+	$name = $table . '__' . $id . '__' . $column;
     }
     if( $args{edit} && $args{defaults} && $args{default} ) { 
 	# If there is a default element specified, then we don't actually want a list of choices.
@@ -554,10 +552,11 @@ sub select_lookup{
             # if an object was passed we use it to obtain table name, id, etc
             # as well as add an initial element to the selection list.
             if ( $o ){
-                $output .= sprintf("<select name=\"%s\" id=\"%s\" %s>\n", $name, $name, $args{htmlExtra});
-		$output .= sprintf("<option value=\"\" selected>-- Select --</option>\n");
+                $output .= sprintf('<select name="%s" id="%s" %s>', 
+				   $name, $name, $args{htmlExtra});
+		$output .= sprintf('<option value="" selected>-- Select --</option>');
                 if ( $o->$column ){
-                    $output .= sprintf("<option value=\"%s\" selected>%s</option>\n", 
+                    $output .= sprintf('<option value="%s" selected>%s</option>', 
 				       $o->$column->id, $o->$column->get_label);
                 }
             }
@@ -567,56 +566,65 @@ sub select_lookup{
             #      "table" argument to create the fieldname, and do so with the
             #      id of "NEW" in order to force insertion when the user hits submit.
             elsif ( $table ){
-                $output .= sprintf("<select name=\"%s\" id=\"%s\" %s>\n", $name, $name, $args{htmlExtra});
-                $output .= "<option value=\"\" ".($args{default} ? "" :"selected").">-- Select --</option>\n";
+                $output .= sprintf('<select name="%s" id="%s" %s>\n', 
+				   $name, $name, $args{htmlExtra});
+		my $selected = ($args{default})? '' : 'selected';
+                $output .= sprintf('<option value="" %s>-- Select --</option>', $selected);
             }else{
-                $self->throw_fatal("Unable to determine table name. Please pass valid object and/or table name.\n");
+                $self->throw_fatal('Unable to determine table name. Please pass valid object '.
+				   'and/or table name');
             }
 
             foreach my $fo ( @fo ){
 		next unless ( ref($fo) && $fo );
                 next if ( $o && $o->$column && ($fo->id == $o->$column->id) );
-		my $selected = ($fo->id == $args{default} ? "selected" : "");
-                $output .= sprintf("<option value=\"%s\" %s>%s</option>\n", $fo->id, $selected, $fo->get_label);
+		my $selected = ($fo->id == $args{default} ? 'selected' : '');
+                $output .= sprintf('<option value="%s" %s>%s</option>', 
+				   $fo->id, $selected, $fo->get_label);
             }
-	    $output .= sprintf("<option value=\"\">[null]</option>\n");
-            $output .= sprintf("</select>\n");
+	    $output .= sprintf('<option value="">[null]</option>');
+            $output .= sprintf('</select>');
         }else{
 	    # ...otherwise provide tools to narrow the selection to a managable size.
-            my $srchf = "_" . $id . "_" . $column . "_srch";
-            $output .= "<nobr>";   # forces the text field and button to be on the same line
-            $output .= sprintf("<input type=\"text\" name=\"%s\" id=\"%s\" value=\"Keywords\" %s onFocus=\"if (this.value == 'Keywords') { this.value = ''; } return true;\">", $srchf, $srchf);
-	    $output .= sprintf("<input type=\"button\" name=\"__%s\" value=\"List\" onClick=\"jsrsSendquery(\'%s\', \'%s\', %s.value);\">\n", time(), $args{lookup}, $name, $srchf );
-            $output .= "</nobr>";
-            $output .= "<nobr>";   # forces the select box and "new" link to be on the same line
-            $output .= sprintf("<select name=\"%s\" id=\"%s\" %s>\n", $name, $name, $args{htmlExtra});
-            $output .= sprintf("<option value=\"\" selected>-- Select --</option>\n");
+            my $srchf = '_' . $id . '_' . $column . '_srch';
+            $output .= '<nobr>';   # forces the text field and button to be on the same line
+            $output .= sprintf('<input type="text" name="%s" id="%s" value="Keywords" '.
+                               'onFocus="if (this.value == \'Keywords\') { this.value = \'\'; } '.
+			       'return true;">', $srchf, $srchf);
+	    $output .= sprintf('<input type="button" name="__%s" value="List" '.
+			       'onClick="jsrsSendquery(\'%s\', \'%s\', %s.value);">', 
+			       time(), $args{lookup}, $name, $srchf );
+            $output .= '</nobr>';
+            $output .= '<nobr>';   # forces the select box and "new" link to be on the same line
+            $output .= sprintf('<select name="%s" id="%s" %s>', $name, $name, $args{htmlExtra});
+            $output .= sprintf('<option value="" selected>-- Select --</option>');
             if ( $o && $o->$column ){
-                $output .= sprintf("<option value=\"%s\" selected>%s</option>\n", 
+                $output .= sprintf('<option value="%s" selected>%s</option>', 
 				   $o->$column->id, $o->$column->get_label);
             }
-    	    $output .= sprintf("<option value=\"\">[null]</option>\n");
-            $output .= sprintf("</select>\n");
+    	    $output .= sprintf('<option value="">[null]</option>');
+            $output .= sprintf('</select>');
         }
 
 	if ( $args{new_button} ){
 	    # show link to add new item to this table
-	    $output .= sprintf("<a class=\"hand\" onClick=\"openinsertwindow('table=%s&select_id=%s&selected=1&dowindow=1');\">[new]</a>", 
+	    $output .= sprintf('<a class="hand" onClick="openinsertwindow(\'table=%s'.
+			       '&select_id=%s&selected=1&dowindow=1\');">[new]</a>', 
 			       $args{lookup}, $name);
-	    $output .= "</nobr>";
+	    $output .= '</nobr>';
 	}
 	
     }elsif ( $args{linkPage} && $o->$column ){
-	if ( $args{linkPage} eq "1" || $args{linkPage} eq "view.html" ){
+	if ( $args{linkPage} eq '1' || $args{linkPage} eq 'view.html' ){
 	    my $rtable = $o->$column->short_class;
-	    $output .= sprintf("<a href=\"view.html?table=%s&id=%s\"> %s </a>\n", 
+	    $output .= sprintf('<a href="view.html?table=%s&id=%d"> %s </a>', 
 			       $rtable, $o->$column->id, $o->$column->get_label);
 	}else{
-	    $output .= sprintf("<a href=\"$args{linkPage}?id=%s\"> %s </a>\n", 
-			       $o->$column->id, $o->$column->get_label);
+	    $output .= sprintf('<a href="%s?id=%d"> %s </a>', 
+			       $args{linkPage}, $o->$column->id, $o->$column->get_label);
 	}
     }else{
-        $output .= sprintf("%s\n", ($o->$column ? $o->$column->get_label : ""));
+        $output .= sprintf('%s', ($o->$column ? $o->$column->get_label : ''));
     }
 
     if ( $args{returnAsVar} == 1 ) {
