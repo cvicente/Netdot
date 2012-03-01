@@ -82,7 +82,7 @@ my $sndevs = $dbh->selectall_arrayref('SELECT serialnumber,custom_serial,physadd
                                               inventorynumber,maint_contract,maint_from,
                                               maint_until,product 
                                          FROM device
-		                        WHERE serialnumber is not NULL
+		                        WHERE serialnumber IS NOT NULL
                                           AND serialnumber != "" ');
 foreach my $row ( @$sndevs ){
     my $sn = $row->[0];
@@ -99,24 +99,23 @@ foreach my $row ( @$sndevs ){
     }
 }
 
-# Grab devices with base MAC
-my $macdevs = $dbh->selectall_arrayref('SELECT physaddr,serialnumber,custom_serial,
-                                               inventorynumber,maint_contract,maint_from,
-                                               maint_until,product 
+# Grab devices with base MAC but no serial number
+my $macdevs = $dbh->selectall_arrayref('SELECT physaddr,custom_serial,inventorynumber,
+                                               maint_contract,maint_from,maint_until,product 
                                           FROM device
 		                         WHERE physaddr is not NULL
-                                           AND physaddr != 0');
+                                           AND physaddr != 0
+                                           AND (serialnumber IS NULL
+                                             OR serialnumber = "")');
 foreach my $row ( @$macdevs ){
     my $ph = $row->[0];
     $ph =~ s/^\s+|\s+$//g;
     next unless $ph;
-    $row->[1] =~ s/^\s+|\s+$//g; #serialnumber
-    next if ( $row->[1] && exists $assets{sn}{$row->[1]} );
     # Convert foreign keys from 0 to undef
-    $row->[4] = undef if $row->[4] == 0;
-    $row->[7] = undef if $row->[7] == 0;
+    $row->[3] = undef if $row->[3] == 0;
+    $row->[6] = undef if $row->[6] == 0;
     my $i = 1;
-    foreach my $v (qw/sn cs in mc mf mu pr/){
+    foreach my $v (qw/cs in mc mf mu pr/){
 	$assets{ph}{$ph}{$v} = $row->[$i];
 	$i++;
     }
@@ -135,7 +134,8 @@ foreach my $sn ( keys %{$assets{sn}} ){
 
 foreach my $ph ( keys %{$assets{ph}} ){
     my %vals = %{$assets{ph}{$ph}};
-    my ($sn,$cs,$in,$mc,$mf,$mu,$pr) = @vals{'sn','cs','in','mc','mf','mu','pr'};
+    my ($cs,$in,$mc,$mf,$mu,$pr) = @vals{'cs','in','mc','mf','mu','pr'};
+    my $sn = undef;
     $ia->execute($sn,$cs,$ph,$in,$mc,$mf,$mu,$pr);
 }
 
