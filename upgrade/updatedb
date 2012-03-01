@@ -126,15 +126,18 @@ my $ia = $dbh->prepare('INSERT INTO asset (serial_number,custom_serial,physaddr,
                                            inventory_number,maint_contract,
                                            maint_from,maint_until,product_id)
                                            VALUES (?,?,?,?,?,?,?,?)');
+my %newassets;
 foreach my $sn ( keys %{$assets{sn}} ){
     my %vals = %{$assets{sn}{$sn}};
     my ($cs,$ph,$in,$mc,$mf,$mu,$pr) = @vals{'cs','ph','in','mc','mf','mu','pr'};
     $ia->execute($sn,$cs,$ph,$in,$mc,$mf,$mu,$pr);
+    $newassets{$ph} = 1 if $ph;
 }
 
 foreach my $ph ( keys %{$assets{ph}} ){
     my %vals = %{$assets{ph}{$ph}};
     my ($cs,$in,$mc,$mf,$mu,$pr) = @vals{'cs','in','mc','mf','mu','pr'};
+    next if ( exists $newassets{$ph} );
     my $sn = undef;
     $ia->execute($sn,$cs,$ph,$in,$mc,$mf,$mu,$pr);
 }
