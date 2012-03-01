@@ -2097,7 +2097,6 @@ sub delete {
     }
     
     # This tries to avoid deleting an already deleted asset
-    # in case one of the modules was pointing to it
     if ( $asset_id && (my $asset = Asset->search(id=>$asset_id)->first) ){
 	$asset->delete();
     }
@@ -2651,10 +2650,8 @@ sub info_update {
     $self->_update_stp_info($info, \%devtmp);
     
     ##############################################################
-     $self->_update_modules(
-     	info => $info->{module},
-     	manufacturer => $dev_product->manufacturer,
-     	);
+    # Modules
+    $self->_update_modules(info=>$info->{module});
 
     ##############################################
     $self->_update_interfaces(info            => $info, 
@@ -5125,15 +5122,12 @@ sub _update_stp_info {
 # Arguments
 #   Hashref with following keys:
 #   info =>  modules hashref from SNMP
-#   manufacturer => (Entity) from Device Product
 # Returns
 #   True
 #
 sub _update_modules {
     my ($self, %argv) = @_;
-
-    my ($modules, $mf) = @argv{'info', 'manufacturer'};
-
+    my $modules = $argv{info};
     my $host = $self->fqdn;
 
     # Get old modules (if any)
@@ -5144,47 +5138,6 @@ sub _update_modules {
 	my %args = %{$modules->{$number}};
 	$args{device} = $self->id;
 	my $name = $args{name} || $args{description};
-	
-	my $asset;
-	# find or create asset object for given serial number and product
-	if ( my $serial = delete $args{serial_number} ){
-	    if ( $asset = Asset->find_or_create({serial_number => $serial}) ){
-
-		# clear reservation comment as soon as hardware gets installed
-		my %asset_args = (reserved_for => "");
-
-		# and assign product in case it didn't have it
-		unless ( $asset->product_id ){
-		    # find or create product
-		    my $model = $args{model};
-		    my $product;
-		    my $type = ProductType->find_or_create({name=>'Module'});
-		    if ( $model && $mf ){ 
-			if ($product = Product->search(
-				name         => $model,
-				manufacturer => $mf,
-			    )->first ){
-			    $product->update({
-				part_number  => $model,
-				description  => $args{description},
-					     });
-			}else{
-			    # Create it
-			    $product = Product->insert({
-				name         => $model,
-				type         => $type,
-				part_number  => $model,
-				manufacturer => $mf,
-				description  => $args{description},
-						       });
-			}
-		    }
-		    $asset_args{product_id} = $product->id if $product;
-		}
-		$asset->update(\%asset_args);
-		$args{asset_id} = $asset->id;
-	    }
-	}
 	# See if it exists
 	my $module;
 	if ( exists $oldmodules{$number} ){
@@ -5193,14 +5146,6 @@ sub _update_modules {
 	    $module->update(\%args);
 	}else{
 	    # Create new object
-	    # Make sure that asset is not used by some other module
-	    my $other;
-	    if ( $asset && ($other = $asset->device_modules->first) ){
-		$logger->warn(sprintf("%s: Cannot insert module %d (%s). ".
-				      "Another module exists (%s) with same S/N: %s",
-				      $host, $number, $name, $other->name, $asset->serial_number));
-		return;
-	    }
 	    $logger->info("$host: New module $number ($name) found. Inserting.");
 	    $module = DeviceModule->insert(\%args);
 	}

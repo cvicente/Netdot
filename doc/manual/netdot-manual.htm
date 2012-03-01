@@ -2,31 +2,35 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
   <meta name="generator" content="pandoc" />
   <meta name="author" content="Carlos Vicente" />
   <title>The Netdot Manual</title>
   <style type="text/css">
-table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode, table.sourceCode pre 
-   { margin: 0; padding: 0; border: 0; vertical-align: baseline; border: none; }
-td.lineNumbers { border-right: 1px solid #AAAAAA; text-align: right; color: #AAAAAA; padding-right: 5px; padding-left: 5px; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
 td.sourceCode { padding-left: 5px; }
-code.sourceCode span.kw { color: #007020; font-weight: bold; } 
-code.sourceCode span.dt { color: #902000; }
-code.sourceCode span.dv { color: #40a070; }
-code.sourceCode span.bn { color: #40a070; }
-code.sourceCode span.fl { color: #40a070; }
-code.sourceCode span.ch { color: #4070a0; }
-code.sourceCode span.st { color: #4070a0; }
-code.sourceCode span.co { color: #60a0b0; font-style: italic; }
-code.sourceCode span.ot { color: #007020; }
-code.sourceCode span.al { color: red; font-weight: bold; }
-code.sourceCode span.fu { color: #06287e; }
-code.sourceCode span.re { }
-code.sourceCode span.er { color: red; font-weight: bold; }
+code > span.kw { color: #007020; font-weight: bold; }
+code > span.dt { color: #902000; }
+code > span.dv { color: #40a070; }
+code > span.bn { color: #40a070; }
+code > span.fl { color: #40a070; }
+code > span.ch { color: #4070a0; }
+code > span.st { color: #4070a0; }
+code > span.co { color: #60a0b0; font-style: italic; }
+code > span.ot { color: #007020; }
+code > span.al { color: #ff0000; font-weight: bold; }
+code > span.fu { color: #06287e; }
+code > span.er { color: #ff0000; font-weight: bold; }
   </style>
 </head>
 <body>
+<div id="header">
 <h1 class="title">The Netdot Manual</h1>
+<h2 class="author">Carlos Vicente</h2>
+</div>
 <div id="TOC">
 <ul>
 <li><a href="#copyright"><span class="toc-section-number">1</span> Copyright</a><ul>
@@ -48,39 +52,61 @@ code.sourceCode span.er { color: red; font-weight: bold; }
 <li><a href="#device-management"><span class="toc-section-number">4.1</span> Device Management</a><ul>
 <li><a href="#device-discovery-using-the-web-ui"><span class="toc-section-number">4.1.1</span> Device Discovery using the web UI</a></li>
 <li><a href="#device-discovery-using-the-command-line-interface-cli"><span class="toc-section-number">4.1.2</span> Device discovery using the command line interface (CLI)</a></li>
-<li><a href="#device-documentation"><span class="toc-section-number">4.1.3</span> Device Documentation</a></li>
+<li><a href="#device-documentation"><span class="toc-section-number">4.1.3</span> Device Documentation</a><ul>
+<li><a href="#basics-tab-in-this-section-you-can-view-and-edit-general-information"><span class="toc-section-number">4.1.3.1</span> Basics Tab: In this section you can view and edit general information</a></li>
+<li><a href="#interfaces-tab-here-you-can-edit-interface-descriptions-assign"><span class="toc-section-number">4.1.3.2</span> Interfaces Tab: Here you can edit interface descriptions, assign</a></li>
+<li><a href="#modules-tab-if-the-device-provides-module-information-via-snmp"><span class="toc-section-number">4.1.3.3</span> Modules Tab: If the device provides module information via SNMP,</a></li>
+<li><a href="#ip-info-tab-this-section-lists-all-the-ip-addresses-found-in-the"><span class="toc-section-number">4.1.3.4</span> IP Info Tab: This section lists all the IP addresses found in the</a></li>
+<li><a href="#bgp-peers-tab-if-the-device-is-a-router-with-bgp-peering-sessions"><span class="toc-section-number">4.1.3.5</span> BGP Peers Tab: If the device is a router with BGP peering sessions,</a></li>
+<li><a href="#topology-tab-netdot-can-use-the-neighbor-relationships-from-the"><span class="toc-section-number">4.1.3.6</span> Topology Tab: Netdot can use the neighbor relationships from the</a></li>
 </ul></li>
-<li><a href="#ip-address-space-management"><span class="toc-section-number">4.2</span> IP Address Space Management</a><ul>
-<li><a href="#ip-blocks"><span class="toc-section-number">4.2.1</span> IP blocks</a><ul>
-<li><a href="#ip-block-status"><span class="toc-section-number">4.2.1.1</span> IP block Status</a></li>
+</ul></li>
+<li><a href="#assets"><span class="toc-section-number">4.2</span> Assets</a><ul>
+<li><a href="#importing-assets"><span class="toc-section-number">4.2.1</span> Importing Assets</a></li>
+</ul></li>
+<li><a href="#ip-address-space-management"><span class="toc-section-number">4.3</span> IP Address Space Management</a><ul>
+<li><a href="#ip-blocks"><span class="toc-section-number">4.3.1</span> IP blocks</a><ul>
+<li><a href="#ip-block-status"><span class="toc-section-number">4.3.1.1</span> IP block Status</a></li>
+<li><a href="#associating-ip-blocks-with-other-objects"><span class="toc-section-number">4.3.1.2</span> Associating IP blocks with other objects</a></li>
 </ul></li>
 </ul></li>
-<li><a href="#dns"><span class="toc-section-number">4.3</span> DNS</a><ul>
-<li><a href="#the-record"><span class="toc-section-number">4.3.1</span> The '@' record</a></li>
+<li><a href="#dns"><span class="toc-section-number">4.4</span> DNS</a><ul>
+<li><a href="#the-record"><span class="toc-section-number">4.4.1</span> The '@' record</a></li>
 </ul></li>
-<li><a href="#dhcp"><span class="toc-section-number">4.4</span> DHCP</a><ul>
-<li><a href="#global-scopes"><span class="toc-section-number">4.4.1</span> Global Scopes</a></li>
-<li><a href="#subnet-scopes"><span class="toc-section-number">4.4.2</span> Subnet Scopes</a></li>
-<li><a href="#host-scopes"><span class="toc-section-number">4.4.3</span> Host Scopes</a></li>
-<li><a href="#template-scopes"><span class="toc-section-number">4.4.4</span> Template Scopes</a></li>
+<li><a href="#dhcp"><span class="toc-section-number">4.5</span> DHCP</a><ul>
+<li><a href="#global-scopes"><span class="toc-section-number">4.5.1</span> Global Scopes</a></li>
+<li><a href="#subnet-scopes"><span class="toc-section-number">4.5.2</span> Subnet Scopes</a></li>
+<li><a href="#host-scopes"><span class="toc-section-number">4.5.3</span> Host Scopes</a></li>
+<li><a href="#template-scopes"><span class="toc-section-number">4.5.4</span> Template Scopes</a></li>
 </ul></li>
-<li><a href="#contact-information"><span class="toc-section-number">4.5</span> Contact Information</a></li>
-<li><a href="#cable-plant"><span class="toc-section-number">4.6</span> Cable Plant</a></li>
-<li><a href="#advanced-db-operations"><span class="toc-section-number">4.7</span> Advanced DB operations</a></li>
-<li><a href="#reports"><span class="toc-section-number">4.8</span> Reports</a><ul>
-<li><a href="#device-reports"><span class="toc-section-number">4.8.1</span> Device Reports</a><ul>
-<li><a href="#by-typemodel"><span class="toc-section-number">4.8.1.1</span> By Type/Model</a></li>
-<li><a href="#by-modelos"><span class="toc-section-number">4.8.1.2</span> By Model/OS</a></li>
-<li><a href="#device-in-downtime"><span class="toc-section-number">4.8.1.3</span> Device in Downtime</a></li>
-<li><a href="#duplex-mismatches"><span class="toc-section-number">4.8.1.4</span> Duplex Mismatches</a></li>
-<li><a href="#os-mismatches"><span class="toc-section-number">4.8.1.5</span> OS mismatches</a></li>
+<li><a href="#contact-information"><span class="toc-section-number">4.6</span> Contact Information</a></li>
+<li><a href="#cable-plant"><span class="toc-section-number">4.7</span> Cable Plant</a><ul>
+<li><a href="#sites"><span class="toc-section-number">4.7.1</span> Sites</a></li>
+<li><a href="#closets"><span class="toc-section-number">4.7.2</span> Closets</a></li>
+<li><a href="#backbone-cables"><span class="toc-section-number">4.7.3</span> Backbone Cables</a></li>
+<li><a href="#fiber-strands"><span class="toc-section-number">4.7.4</span> Fiber Strands</a></li>
+<li><a href="#circuits"><span class="toc-section-number">4.7.5</span> Circuits</a></li>
+<li><a href="#horizontal-cables"><span class="toc-section-number">4.7.6</span> Horizontal Cables</a></li>
 </ul></li>
-<li><a href="#ip-reports"><span class="toc-section-number">4.8.2</span> IP Reports</a><ul>
-<li><a href="#unused-subnets"><span class="toc-section-number">4.8.2.1</span> Unused Subnets</a></li>
-<li><a href="#maxed-out-subnets"><span class="toc-section-number">4.8.2.2</span> Maxed out Subnets</a></li>
-<li><a href="#unused-static-addresses"><span class="toc-section-number">4.8.2.3</span> Unused Static Addresses</a></li>
+<li><a href="#advanced-db-operations"><span class="toc-section-number">4.8</span> Advanced DB operations</a></li>
+<li><a href="#reports"><span class="toc-section-number">4.9</span> Reports</a><ul>
+<li><a href="#device-reports"><span class="toc-section-number">4.9.1</span> Device Reports</a><ul>
+<li><a href="#by-typemodel"><span class="toc-section-number">4.9.1.1</span> By Type/Model</a></li>
+<li><a href="#by-modelos"><span class="toc-section-number">4.9.1.2</span> By Model/OS</a></li>
+<li><a href="#device-in-downtime"><span class="toc-section-number">4.9.1.3</span> Device in Downtime</a></li>
+<li><a href="#duplex-mismatches"><span class="toc-section-number">4.9.1.4</span> Duplex Mismatches</a></li>
+<li><a href="#os-mismatches"><span class="toc-section-number">4.9.1.5</span> OS mismatches</a></li>
 </ul></li>
-<li><a href="#mac-addresses"><span class="toc-section-number">4.8.3</span> MAC Addresses</a></li>
+<li><a href="#asset-reports"><span class="toc-section-number">4.9.2</span> Asset Reports</a><ul>
+<li><a href="#by-typemodel-1"><span class="toc-section-number">4.9.2.1</span> By Type/Model</a></li>
+<li><a href="#by-typemodel-detailed"><span class="toc-section-number">4.9.2.2</span> By Type/Model (detailed)</a></li>
+</ul></li>
+<li><a href="#ip-reports"><span class="toc-section-number">4.9.3</span> IP Reports</a><ul>
+<li><a href="#unused-subnets"><span class="toc-section-number">4.9.3.1</span> Unused Subnets</a></li>
+<li><a href="#maxed-out-subnets"><span class="toc-section-number">4.9.3.2</span> Maxed out Subnets</a></li>
+<li><a href="#unused-static-addresses"><span class="toc-section-number">4.9.3.3</span> Unused Static Addresses</a></li>
+</ul></li>
+<li><a href="#mac-addresses"><span class="toc-section-number">4.9.4</span> MAC Addresses</a></li>
 </ul></li>
 </ul></li>
 <li><a href="#exporting-configurations-for-external-programs"><span class="toc-section-number">5</span> Exporting Configurations for External Programs</a><ul>
@@ -160,10 +186,9 @@ code.sourceCode span.er { color: red; font-weight: bold; }
 <h1 id="installation"><a href="#TOC"><span class="header-section-number">3</span> Installation</a></h1>
 <h2 id="obtaining-and-unpacking-the-packaged-distribution-file"><a href="#TOC"><span class="header-section-number">3.1</span> Obtaining and unpacking the packaged distribution file</a></h2>
 <p>Download the latest Netdot package from the netdot website</p>
-<pre><code>https://osl.uoregon.edu/redmine/projects/netdot/wiki/DownLoad
-</code></pre>
+<pre><code>https://osl.uoregon.edu/redmine/projects/netdot/wiki/DownLoad</code></pre>
 <p>Unpack the file in a directory other than where you want to install Netdot, i.e.</p>
-<pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">tar</span> xzvf netdot.tar.gz -C /usr/local/src/</code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">tar</span> xzvf netdot.tar.gz -C /usr/local/src/</code></pre>
 <h2 id="requirements"><a href="#TOC"><span class="header-section-number">3.2</span> Requirements</a></h2>
 <ul>
 <li><p>Perl 5.6.1 or later</p></li>
@@ -178,26 +203,27 @@ code.sourceCode span.er { color: red; font-weight: bold; }
 <li><p>The GraphViz package, available at: <a href="http://www.graphviz.org/"><code class="url">http://www.graphviz.org/</code></a></p></li>
 <li><p>The latest Netdisco MIBs. <a href="http://sourceforge.net/projects/netdisco/files/netdisco-mibs/"><code class="url">http://sourceforge.net/projects/netdisco/files/netdisco-mibs/</code></a></p></li>
 <li><p>Various Perl modules. To test for missing modules in your system, run:</p>
-<pre class="sourceCode"><code class="sourceCode bash">~% <span class="kw">make</span> testdeps</code></pre></li>
+<pre class="sourceCode bash"><code class="sourceCode bash">~% <span class="kw">make</span> testdeps</code></pre></li>
 <li><p>There are two ways to install the missing modules: The first (and the recommended) way is through package managers of your distribution.</p>
 <p>For systems with APT (e.g. Debian-based systems), run:</p>
-<pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">make</span> apt-install</code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> apt-install</code></pre>
 <p>For systems with RPM (e.g. Red Hat), run:</p>
-<pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">make</span> rpm-install</code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> rpm-install</code></pre>
 <blockquote>
 <p><strong>Tip</strong> If you are still missing modules after running this step, you can complete the process by running the next step.</p>
 </blockquote></li>
 <li><p>Alternatively, you can install any missing modules automatically using the CPAN, by running:</p>
-<pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">make</span> installdeps</code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> installdeps</code></pre>
 <p>If you want to install modules individually, you can do this instead:</p>
-<pre class="sourceCode"><code class="sourceCode bash">~# cpan<br /><span class="kw">&gt;</span><span class="kw">install</span> Module::Blah</code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# cpan
+<span class="kw">&gt;install</span> Module::Blah</code></pre>
 <blockquote>
 <p><strong>Tip</strong> If you have problems installing module <code>Net::IRR</code>, it is possible that module <code>Net::TCP</code> has not been installed. There is a bug, and the patch is available at: <a href="http://rt.cpan.org/Public/Bug/Display.html?id=43071"><code class="url">http://rt.cpan.org/Public/Bug/Display.html?id=43071</code></a></p>
 </blockquote></li>
 </ul>
 <h2 id="configuration"><a href="#TOC"><span class="header-section-number">3.3</span> Configuration</a></h2>
 <p>Netdot comes with a configuration file that you need to customize to your needs. You need to create a copy of <code>Default.conf</code> with the name <code>Site.conf</code></p>
-<pre class="sourceCode"><code class="sourceCode bash">~% <span class="kw">cp</span> etc/Default.conf etc/Site.conf</code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash">~% <span class="kw">cp</span> etc/Default.conf etc/Site.conf</code></pre>
 <p>Then, modify <code>Site.conf</code> to reflect your specific options. The original file contains descriptions of each configuration item.</p>
 <p><strong>Netdot will first read Default.conf and then Site.conf</strong></p>
 <p>The reason for keeping two files is that when an upgrade is performed, the <code>Default.conf</code> file can be re-written (to add new variables, etc.), without overwriting your site-specific configuration.</p>
@@ -206,44 +232,45 @@ code.sourceCode span.er { color: red; font-weight: bold; }
 </blockquote>
 <h2 id="upgrading"><a href="#TOC"><span class="header-section-number">3.4</span> Upgrading</a></h2>
 <p>You should check if the version you are installing has any new requirements that need to be satisfied:</p>
-<pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">make</span> testdeps<br />~# <span class="kw">make</span> installdeps <span class="kw">(</span>or installdeps-rpm, installdeps-apt-get<span class="kw">)</span></code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> testdeps
+~# <span class="kw">make</span> installdeps <span class="kw">(</span>or installdeps-rpm, installdeps-apt-get<span class="kw">)</span></code></pre>
 <p>Netdot's database schema <strong>usually</strong> only changes between major versions. For example, if upgrading from 0.8.x to 0.9.x, you will need to run an upgrade script to adapt your current database to the new schema. Look for a file called doc/UPGRADE for upgrade notes in a particular distribution.</p>
 <p>If you are supposed to upgrade, this can be accomplished by running this command:</p>
-<pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">make</span> upgrade</code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> upgrade</code></pre>
 <p>Finally, install the Netdot code and restart Apache:</p>
-<pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">make</span> <span class="kw">install</span><br />~# /etc/init.d/httpd restart</code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> <span class="kw">install</span>
+~# /etc/init.d/httpd restart</code></pre>
 <h2 id="installing-the-package-for-the-first-time"><a href="#TOC"><span class="header-section-number">3.5</span> Installing the package for the first time</a></h2>
 <ul>
 <li><p>Make sure you have created the file etc/Site.conf with your configurations (See above).</p></li>
 <li><p>From the top directory in the package, do:</p>
-<pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">make</span> <span class="kw">install</span> [parameters]</code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> <span class="kw">install</span> [parameters]</code></pre>
 <p>Possible parameters include:</p>
-<pre class="sourceCode"><code class="sourceCode bash"><span class="ot">PREFIX=</span>YOUR-PREFIX <span class="kw">(</span>default: /usr/local/netdot<span class="kw">)</span> <br /><span class="ot">APACHEUSER=</span>USER-YOUR-APACHE-RUNS-AS <span class="kw">(</span>default: apache<span class="kw">)</span><br /><span class="ot">APACHEGROUP=</span>GROUP-YOUR-APACHE-RUNS-AS <span class="kw">(</span>default: apache<span class="kw">)</span></code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="ot">PREFIX=</span>YOUR-PREFIX <span class="ot">(</span>default: /usr/local/netdot<span class="ot">)</span> 
+<span class="ot">APACHEUSER=</span>USER-YOUR-APACHE-RUNS-AS <span class="ot">(</span>default: apache<span class="ot">)</span>
+<span class="ot">APACHEGROUP=</span>GROUP-YOUR-APACHE-RUNS-AS <span class="ot">(</span>default: apache<span class="ot">)</span></code></pre>
 <blockquote>
 <p><strong>Tip</strong> Ubuntu users: will probably need to set the APACHEUSER and APACHEGROUP variables to &quot;www-data&quot;, which is the user that Apache runs as.</p>
 </blockquote></li>
 <li><p>You will then be ready to initialize the database.</p>
-<pre class="sourceCode"><code class="sourceCode bash">~% <span class="kw">make</span> installdb [parameters]</code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash">~% <span class="kw">make</span> installdb [parameters]</code></pre>
 <p>Remember you need to set <code>DB_DBA</code> and <code>DB_DBA_PASSWORD</code> to your database's admin username/password in etc/Site.conf before running this command. Or if you prefer, you can specify the <code>DB_DBA</code> and <code>DB_DBA_PASSWORD</code> values as parameters (however, these are used by many functions in Netdot, they will need to be set to the correct value in etc/Site.conf eventually)</p>
 <pre><code>DB_DBA=DATABASE-ADMIN-ACCOUNT
-DB_DBA_PASSWORD=DATABASE-ADMIN-PASSWORD
-</code></pre></li>
+DB_DBA_PASSWORD=DATABASE-ADMIN-PASSWORD</code></pre></li>
 </ul>
 <h2 id="apache-configuration"><a href="#TOC"><span class="header-section-number">3.6</span> Apache Configuration</a></h2>
 <p>Edit the supplied Apache config template for either Local, RADIUS or LDAP authentication, copy it to your Apache config directory and include it somewhere in your Apache configuration file (httpd.conf) (e.g.):</p>
-<pre class="sourceCode"><code class="sourceCode apache">Include<span class="st"> conf/netdot_apache2_&lt;local|radius|ldap&gt;.conf</span></code></pre>
+<pre class="sourceCode apache"><code class="sourceCode apache">Include<span class="st"> conf/netdot_apache2_&lt;local|radius|ldap&gt;.conf</span></code></pre>
 <p>Alternatively, some Apache environments provide a directory from which files are included automatically when Apache starts. In that case, it's sufficient to copy the file into that directory, for example:</p>
-<pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">cp</span> /usr/local/netdot/etc/netdot_apache2_radius.conf /etc/apache2/conf.d/</code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">cp</span> /usr/local/netdot/etc/netdot_apache2_radius.conf /etc/apache2/conf.d/</code></pre>
 <blockquote>
 <p><strong>Tip</strong> Make sure you use the version of the file that gets copied into your install directory by make install, not from the source directory. This file contains relevant path substitutions based on your chosen install prefix.</p>
 </blockquote>
 <p>Once this is done, you can restart Apache2. If you used the default settings, point your browser to:</p>
-<pre><code>http://servername.mydomain/netdot/
-</code></pre>
+<pre><code>http://servername.mydomain/netdot/</code></pre>
 <p>You should be able to log in with:</p>
 <pre><code>username: &quot;admin&quot;
-password: &quot;admin&quot;
-</code></pre>
+password: &quot;admin&quot;</code></pre>
 <blockquote>
 <p><strong>Tip</strong> If you are using the RADIUS or LDAP authentication options, you should have NetdotRadiusFailToLocal or NetdotRadiusFailToLocal set to &quot;yes&quot; in your <code>netdot_apache2_x.conf</code> file.</p>
 </blockquote>
@@ -260,63 +287,88 @@ password: &quot;admin&quot;
 <li><p>Netdot can generate text documentation that is easy to find using simple grepping commands, for example, information about people, locations, device port assignments, etc. This documentation should be kept up to date by exporting it frequently.</p></li>
 <li><p>Configurations for external programs can be generated using Netdot data. Current supported programs include: Nagios, Sysmon and Rancid.</p></li>
 <li><p>The netdot.cron file included in the package is a sample crontab containing recommended periodic jobs. You should customize it to your liking and copy it to your cron directory, for example:</p>
-<pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">cp</span> etc/netdot.cron /etc/cron.d/netdot</code></pre></li>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">cp</span> etc/netdot.cron /etc/cron.d/netdot</code></pre></li>
 </ul>
 <h1 id="operation"><a href="#TOC"><span class="header-section-number">4</span> Operation</a></h1>
 <h2 id="device-management"><a href="#TOC"><span class="header-section-number">4.1</span> Device Management</a></h2>
-<p>Netdot can discover and maintain an extensive amount of information about network devices. The easiest way to gather and store this information is by querying the devices using the Simple Network Management Protocol (SNMP). Devices can be discovered individually, by subnet, or by providing a text file with a list of devices.</p>
+<p>In Netdot, devices are network infrastructure equipment: switches, routers, firewalls, access points, servers, etc. End nodes such as desktop computers, laptops and printers are not devices.</p>
+<p>Netdot can discover and maintain an extensive amount of information about network devices. The easiest way to gather and store this information is by querying the devices using the Simple Network Management Protocol (SNMP). Devices can be discovered individually, by subnet, or by providing a text file with a list of device addresses.</p>
 <h3 id="device-discovery-using-the-web-ui"><a href="#TOC"><span class="header-section-number">4.1.1</span> Device Discovery using the web UI</a></h3>
 <p>Go to <code>Management -&gt; Devices</code>. In the Tasks section, click on [new] and type the hostname or IP address of the device in question, along with the SNMP community and click [discover]. Netdot will then query the device using SNMP and present a window where you can assign an owner entity (for example, your organization), the entity that uses the device (for example, your customer), the location and a contact list.</p>
 <p>If you are discovering a layer 3 device with IP forwarding turned on (such as a router or firewall), Netdot will ask you if you would like to automatically create subnets, based on the IP configuration of the device interfaces. This is a convenient way to add all your subnets into Netdot.</p>
 <p>Another option is to specify whether Netdot should assign any newly created subnets the same owner and user entities assigned to the device.</p>
-<p>Once you click the on [update] button, Netdot will show the discovery information and a link to the device page at the button.</p>
+<p>Once you click on the [update] button, Netdot will show the discovery information and a link to the device page at the bottom.</p>
 <p>You can always re-discover a device manually by using the [snmp-update] button on the top right corner of the device page. For example, if you have added a new port adapter, new interface cards, or if the device has been replaced with a different unit.</p>
 <h3 id="device-discovery-using-the-command-line-interface-cli"><a href="#TOC"><span class="header-section-number">4.1.2</span> Device discovery using the command line interface (CLI)</a></h3>
 <p>For brevity, let's assume you are located at the Netdot installation prefix, for example, /usr/local/netdot.</p>
 <p>You can discover a single device by executing:</p>
-<pre class="sourceCode"><code class="sourceCode bash">~# bin/updatedevices.pl -H <span class="kw">&lt;</span>device-name<span class="kw">&gt;</span> -I -c <span class="kw">&lt;</span>community<span class="kw">&gt;</span></code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# bin/updatedevices.pl -H <span class="kw">&lt;</span>device-name<span class="kw">&gt;</span> -I -c <span class="kw">&lt;</span>community<span class="kw">&gt;</span></code></pre>
 <p>You can also try discovering a whole subnet like this:</p>
-<pre class="sourceCode"><code class="sourceCode bash">~# bin/updatedevices.pl -B 192.168.1.0/24 -I -c <span class="kw">&lt;</span>community<span class="kw">&gt;</span></code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# bin/updatedevices.pl -B 192.168.1.0/24 -I -c <span class="kw">&lt;</span>community<span class="kw">&gt;</span></code></pre>
 <p>In addition, you can give Netdot a specific list of devices you would like to discover:</p>
-<pre class="sourceCode"><code class="sourceCode bash">~# bin/updatedevices.pl -E <span class="kw">&lt;</span>text-file<span class="kw">&gt;</span> -I </code></pre>
-<p>The file should contain a list of devices and their communities, separated by spaces, one device/community per line, for example:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# bin/updatedevices.pl -E <span class="kw">&lt;</span>text-file<span class="kw">&gt;</span> -I </code></pre>
+<p>The file should contain a list of device names, or IP addresses and their communities, separated by spaces, one device/community per line, for example:</p>
 <pre><code>device1 community1
 device2 community1
 device3 community2
-...
-</code></pre>
-<p>Netdot can retrieve ARP caches and bridge forwarding tables. You will probably want to fetch ARP caches from your layer 3 devices (i.e. routers and firewalls), and forwarding tables from your layer 2 devices (switches). Examples:</p>
-<pre class="sourceCode"><code class="sourceCode bash">~# bin/updatedevices.pl -H <span class="kw">&lt;</span>router<span class="kw">&gt;</span> -A -c <span class="kw">&lt;</span>community<span class="kw">&gt;</span></code></pre>
-<pre class="sourceCode"><code class="sourceCode bash">~# bin/updatedevices.pl -H <span class="kw">&lt;</span>switch<span class="kw">&gt;</span> -F -c <span class="kw">&lt;</span>community<span class="kw">&gt;</span></code></pre>
+...</code></pre>
+<p>Netdot can retrieve ARP and bridge forwarding tables. You will probably want to fetch ARP caches from your layer 3 devices (i.e. routers and firewalls), and forwarding tables from your layer 2 devices (switches). Examples:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# bin/updatedevices.pl -H <span class="kw">&lt;</span>router<span class="kw">&gt;</span> -A -c <span class="kw">&lt;</span>community<span class="kw">&gt;</span></code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# bin/updatedevices.pl -H <span class="kw">&lt;</span>switch<span class="kw">&gt;</span> -F -c <span class="kw">&lt;</span>community<span class="kw">&gt;</span></code></pre>
 <p>Netdot can also try to discover the network topology. For that, you need to run:</p>
-<pre class="sourceCode"><code class="sourceCode bash">~# bin/updatedevices.pl -T</code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# bin/updatedevices.pl -T</code></pre>
 <p>If the configuration option <code>ADD_UNKNOWN_DP_DEVS</code> is set to 1 (true), then Netdot will attempt to discover any devices seen (via CDP/LLDP) on existing device interfaces. With the previous command, Netdot will only try to discover directly connected devices. In order to attempt to discover all unknown neighbors, and the neighbors of those neighbors, use the following parameter:</p>
-<pre class="sourceCode"><code class="sourceCode bash">~# bin/updatedevices.pl -T --recursive</code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# bin/updatedevices.pl -T --recursive</code></pre>
 <p>Ideally, once you have discovered all your devices, you should combine all this functionality and have it run periodically (e.g. every hour) via CRON. A sample crontab entry would be:</p>
-<pre><code>0 * * * * root /usr/local/netdot/bin/updatedevices.pl -DIFAT
-</code></pre>
+<pre><code>0 * * * * root /usr/local/netdot/bin/updatedevices.pl -DIFAT</code></pre>
 <p>You will find some examples of cron jobs in the file named netdot.cron</p>
 <h3 id="device-documentation"><a href="#TOC"><span class="header-section-number">4.1.3</span> Device Documentation</a></h3>
 <p>Once you have created a device, you can go ahead and add more information about it.</p>
 <p>Going to <code>Management -&gt; Devices</code> you can search for a device by name, IP or MAC address.</p>
-<p>From the device page, you can navigate to the different sub-sections depending on the information you want to edit.</p>
-<p>Interfaces: Here you can edit interface descriptions, assign network jacks, etc. by clicking on the [edit] button. You can also edit a specific interface by clicking on its number or on its name. If you are running topology discovery, you will probably see neighbor information. If for some reason the topology discovery process cannot dectect a neighbor, you can add it manually by clicking on the [add] button in the neighbor column.</p>
+<p>From the device page, you can navigate to the different sub-sections depending on the information you want to edit. Notice that clicking on any field name will open a browser window with a description of that field.</p>
+<h4 id="basics-tab-in-this-section-you-can-view-and-edit-general-information"><a href="#TOC"><span class="header-section-number">4.1.3.1</span> Basics Tab: In this section you can view and edit general information</a></h4>
+<p>about the device, including its location, contact information, and management details.</p>
+<h4 id="interfaces-tab-here-you-can-edit-interface-descriptions-assign"><a href="#TOC"><span class="header-section-number">4.1.3.2</span> Interfaces Tab: Here you can edit interface descriptions, assign</a></h4>
+<p>network jacks, etc. by clicking on the [edit] button. You can also edit a specific interface by clicking on its number or on its name. If you are running topology discovery, you will probably see neighbor information. If for some reason the topology discovery process cannot dectect a neighbor, you can add it manually by clicking on the [add] button in the neighbor column.</p>
 <p>Manually adding a neighbor sets the &quot;Neighbor Fixed&quot; flag in the Interface object. This flag prevents the topology discovery process from removing the neighbor relationship.</p>
 <blockquote>
 <p><strong>Tip</strong> Neighbor relationships tend to change frequently as hardware is replaced and connections are moved. Therefore, fixed neighbor settings can become out of date pretty soon. It is preferable to let the topology discovery process maintain neighbor relationships.</p>
 </blockquote>
-<h2 id="ip-address-space-management"><a href="#TOC"><span class="header-section-number">4.2</span> IP Address Space Management</a></h2>
-<p>Netdot is a useful tool for IP address space management (referred to as IPAM these days). Some key features are:</p>
+<h4 id="modules-tab-if-the-device-provides-module-information-via-snmp"><a href="#TOC"><span class="header-section-number">4.1.3.3</span> Modules Tab: If the device provides module information via SNMP,</a></h4>
+<p>Netdot will show it in this tab. Modules are shown hierarchically based on how they are contained within each other.</p>
+<h4 id="ip-info-tab-this-section-lists-all-the-ip-addresses-found-in-the"><a href="#TOC"><span class="header-section-number">4.1.3.4</span> IP Info Tab: This section lists all the IP addresses found in the</a></h4>
+<p>device, together with the subnets they belong in, the device interface where they were found, and optionally, their DNS names.</p>
+<p>At the bottom of this section, you will find an option to set the &quot;Auto DNS&quot; flag on all interfaces with IP addresses. The purpose of this flag is to tell Netdot whether it should generate DNS names for each IP address based on the interface name and the device name.</p>
+<p>The logic of this operation is handed off to a plugin module, which means that you can write your own plugin to generate DNS names based on your own naming scheme (see configuration file for more details). The included plugin generates names such as &quot;ge-0-1.router1.mydomain.com&quot;, assuming that the device name is router1 and that the interface is GigabitEthernet0/1. For this to work you need the following:</p>
+<ul>
+<li>The device has to have its &quot;Auto DNS&quot; flag set (Basics section of the device page).</li>
+<li>Each interface with an IP address on the device has to have the &quot;Auto DNS flag on&quot;</li>
+<li>The IP address must exist within an IP block which has been assigned a DNS zone (Management -&gt; Address Space).</li>
+<li>For PTR records to be generated as well, the IP block must have a reverse zone (in-addr.arpa or ip6.arpa) associated with it.</li>
+</ul>
+<h4 id="bgp-peers-tab-if-the-device-is-a-router-with-bgp-peering-sessions"><a href="#TOC"><span class="header-section-number">4.1.3.5</span> BGP Peers Tab: If the device is a router with BGP peering sessions,</a></h4>
+<p>and those are seen via SNMP, Netdot will show that information in this tab. Information includes the remote IP address, the BGP ID and the AS. The BGPPeering record also includes fields to document things such as the maximum number of allowed IPv4 and IPv6 prefixes, whether the peering should be monitored (e.g. with Nagios), etc.</p>
+<p>For each AS discovered, Netdot tries to look up its information using WHOIS. If the information is found, an entity record is created with the AS number, AS name, etc. You can expand this record to include contact information, comments, etc.</p>
+<h4 id="topology-tab-netdot-can-use-the-neighbor-relationships-from-the"><a href="#TOC"><span class="header-section-number">4.1.3.6</span> Topology Tab: Netdot can use the neighbor relationships from the</a></h4>
+<p>device interface to draw a graph of this device and its neighbors. By default, Netdot only shows directly connected neighbors. However, you can expand the graph to include neighbors of neighbors by specifying a larger &quot;Search Depth&quot; value.</p>
+<h2 id="assets"><a href="#TOC"><span class="header-section-number">4.2</span> Assets</a></h2>
+<p>An asset in Netdot is a record which contains common information about device hardware. For example, serial number, base MAC address, product name, etc. In addition to storing common information from devices discovered, asset records can be used to document items that are not yet installed. Once the asset is discovered in the network, it is referenced by the new device record.</p>
+<h3 id="importing-assets"><a href="#TOC"><span class="header-section-number">4.2.1</span> Importing Assets</a></h3>
+<p>Go to Management -&gt; Assets -&gt; [import] This form allows you to import multiple hardware assets. For example, you can use a bar code scanner to scan the information from vendor boxes as you receive your equipment.</p>
+<p>Create a text file composed of part number, serial number, and optionally other fields. The part number must match the value from an existing product in Netdot. The order of fields in each line must match the list of fields in the &quot;Fields for import&quot; select menu.</p>
+<p>Once imported, you can view a report of your assets in the Reports section.</p>
+<h2 id="ip-address-space-management"><a href="#TOC"><span class="header-section-number">4.3</span> IP Address Space Management</a></h2>
+<p>Netdot can be helpful in managing IPv4 and IPv6 address spaces. Some of its key features are:</p>
 <ul>
 <li><p>Address space is hierarchically organized through the use of a fast binary tree algorithm, which is the same technique used by routers when doing prefix lookups.</p></li>
-<li><p>IPv4 and IPv6 support</p></li>
-<li><p>New subnets can be automatically created based on the interface information retrieved from routers and firewalls.</p></li>
-<li><p>Easy visualization of used vs. available address space for easier allocations</p></li>
+<li><p>New subnets can be automatically created based on the interface configuration retrieved from routers and firewalls.</p></li>
+<li><p>Visualization of used vs. available address space for easier block and address allocations</p></li>
+<li><p>DNS and DHCP configuration management</p></li>
 </ul>
-<h3 id="ip-blocks"><a href="#TOC"><span class="header-section-number">4.2.1</span> IP blocks</a></h3>
+<h3 id="ip-blocks"><a href="#TOC"><span class="header-section-number">4.3.1</span> IP blocks</a></h3>
 <p>IP objects are called IP blocks. These objects can represent individual end-node addresses, as well as groups of addresses. The distinguishing characteristic is the prefix attribute. For example, an IPv4 block with a 32 bit prefix is an end-node address, while a block with a 24 prefix represents a group of 254 end-node addresses.</p>
 <p>Each address or block has a corresponding status. Let's see those in detail.</p>
-<h4 id="ip-block-status"><a href="#TOC"><span class="header-section-number">4.2.1.1</span> IP block Status</a></h4>
+<h4 id="ip-block-status"><a href="#TOC"><span class="header-section-number">4.3.1.1</span> IP block Status</a></h4>
 <p>IP objects are assigned a status to better represent their nature. Depending on whether the IP is an end address or a block, different status values can be assigned.</p>
 <p>The status of an end-node address can be one of:</p>
 <ul>
@@ -324,6 +376,7 @@ device3 community2
 <li><p><em>Dynamic</em>: Addresses that belong to a DHCP pool</p></li>
 <li><p><em>Discovered</em>: Addresses that have not been assigned as static or dynamic, but have been seen on the network (as part of ARP entries, for example).</p></li>
 <li><p><em>Reserved</em>: Addresses that should not be assigned</p></li>
+<li><p><em>Available</em>: Addresses that were previously used, but have been freed.</p></li>
 </ul>
 <p>On the other hand, the status of an IP block can be one of:</p>
 <ul>
@@ -334,12 +387,14 @@ device3 community2
         192.168.0.2/24 -&gt; Subnet
     192.168.128.0/17 -&gt; Container
         192.168.128.10/24 -&gt; Subnet
-        192.168.128.20/24 -&gt; Subnet
-</code></pre></li>
+        192.168.128.20/24 -&gt; Subnet</code></pre></li>
 <li><p><em>Subnet</em>: This kind of block is meant to represent actual subnets that are configured on the interfaces of your layer 3 devices such as routers or firewalls. Subnets usually contain the end-node addresses that you assign to your users.</p></li>
 <li><p><em>Reserved</em>: Similarly to reserved addresses, reserved blocks are not supposed to be allocated for whatever reason.</p></li>
 </ul>
-<h2 id="dns"><a href="#TOC"><span class="header-section-number">4.3</span> DNS</a></h2>
+<h4 id="associating-ip-blocks-with-other-objects"><a href="#TOC"><span class="header-section-number">4.3.1.2</span> Associating IP blocks with other objects</a></h4>
+<p>IP blocks can be linked to sites in a many-to-many relationship. A site can use one or more IP blocks and one IP block can be in use at one or more sites.</p>
+<p>Similarly, IP blocks can be linked to DNS zones. This helps Netdot determine which domain a new DNS A, AAAA or PTR record should belong to.</p>
+<h2 id="dns"><a href="#TOC"><span class="header-section-number">4.4</span> DNS</a></h2>
 <p>Netdot can maintain DNS zone data. Zones can be exported as text files to be used by DNS server software. Currently, only ISC BIND zone file exporting is supported.</p>
 <blockquote>
 <p><strong>Tip</strong> The mechanisms by which zone files are transferred to and loaded by authoritative name servers are left to the administrator. A simple way to do this is by running a name server locally in the machine that runs Netdot, and saving those zone files in the location where the software can load them periodically. A more complex setup could involve saving these files into revision control systems (CVS, SVN, etc), which could then be used by system configuration engines like Puppet or CfEngine to run syntax checks and load them into the appropriate name servers.</p>
@@ -357,29 +412,27 @@ device3 community2
   -f, --zonefile &lt;path&gt; Zone file    
   -w, --wipe            Wipe out existing zone data
   -g, --debug           Print debugging output    
-  -h, --help            Print help
-</code></pre>
+  -h, --help            Print help</code></pre>
 <p>To add a new zone manually, go to <code>Management -&gt; DNS Zones</code> and provide a name for the zone. Optionally, select an existing zone which you would like to use as a template. This will tell Netdot to basically clone this template zone and all its records, but saving it with the name you provide. This is useful in cases when multiple zones share the same information, such as NS records, MX records, etc. Click on [add]. You will see a new zone created using the values from the template zone, or with default values extracted from the configuration file.</p>
 <p>Once a zone is created, it should be linked to an IP block (Subnet or Container). You can do this by clicking on the [add] button of the IP blocks section in the zone page.</p>
 <p>The most convenient way to create reverse zones (in-addr.arpa or ip6.arpa) is to go to the corresponding IP block page, DNS Zones section, and click on [add]. If the corresponding reverse zone does not exist, Netdot will present the user with the appropriate zone name and an option to create it. This is especially useful with IPv6 blocks, which tend to require very long reverse zone names.</p>
 <p>At this point, you can add new records by clicking on the [add] button on the Records section. Records can also be added from other parts of the user interface, for example, from the IP address page, or the DNS Records page.</p>
 <p>Records can also be imported in bulk into the zone by going to the Zone page, clicking on the [import] button of the Records section and pasting the text from a BIND zone file into the text box.</p>
 <p>Each time the zone or its contents are modified, the transaction is added to a list of &quot;pending changes&quot;. This list is used to determine when a zone needs to be exported. Zones can be exported manually via the UI by going to the Export menu, or via cron jobs. When a zone is exported, its serial number is increased and its list of pending changes is flushed.</p>
-<p>Netdot can auto-generate and maintain DNS records for IP addresses belonging to device interfaces, for example, routers. The logic of how these names are generated is handed off to a plugin. In order to have Netdot generate DNS names for device IPs, set the &quot;Auto DNS&quot; option to &quot;yes&quot; in the management section of the Device page. From here, go to the IP Info tab for the same device and for each IP address, make sure that the interface it belongs to has the &quot;Auto DNS&quot; option set to &quot;yes&quot;.</p>
-<h3 id="the-record"><a href="#TOC"><span class="header-section-number">4.3.1</span> The '@' record</a></h3>
+<h3 id="the-record"><a href="#TOC"><span class="header-section-number">4.4.1</span> The '@' record</a></h3>
 <p>In Netdot, as in BIND, the '@' record symbolizes the domain (a.k.a &quot;zone apex&quot;). In order to add records that apply to the domain itself, such as NS records, MX records, A records, etc. this record must exist. At zone creation time, Netdot automatically adds this record, together with two NS records for the zone, with the names (ns1.zone.name and ns2.zone.name).</p>
-<h2 id="dhcp"><a href="#TOC"><span class="header-section-number">4.4</span> DHCP</a></h2>
+<h2 id="dhcp"><a href="#TOC"><span class="header-section-number">4.5</span> DHCP</a></h2>
 <p>Netdot can maintain DHCP information and generate configurations for ISC DHCPD.</p>
 <p>DHCP information is organized hierarchically around the DHCP Scope object. Netdot supports scopes of the following types: global, subnet, shared-subnet, group, and host. Each of these scopes can be assigned one or more attributes.</p>
-<h3 id="global-scopes"><a href="#TOC"><span class="header-section-number">4.4.1</span> Global Scopes</a></h3>
+<h3 id="global-scopes"><a href="#TOC"><span class="header-section-number">4.5.1</span> Global Scopes</a></h3>
 <p>A global scope will represent a DHCP server (or a pair of failover servers). Attributes in this scope are the default attributes inherited by all other scopes. Attributes in more specific scopes override the global scope attributes.</p>
 <p>To create a new global scope, go to <code>Management-&gt;DHCP</code>. Click on the [new] button. Assign the scope a name (for example, the host name of your DHCP server) and select type &quot;global&quot;. Global scopes are not contained by any other scope, so leave the Container field unselected.</p>
 <p>Once a scope is created, you can add attributes to it. For example, click on the [attributes] button and then [add]. You will see a new page where you can create a new attribute. Let's say, for example, that you want to add a list of name servers. Type &quot;name-servers&quot; in the Name search box and click on &quot;List&quot;. Select the &quot;domain-name-servers&quot; attribute name from the list and add a list of values. Then click Insert.</p>
-<h3 id="subnet-scopes"><a href="#TOC"><span class="header-section-number">4.4.2</span> Subnet Scopes</a></h3>
+<h3 id="subnet-scopes"><a href="#TOC"><span class="header-section-number">4.5.2</span> Subnet Scopes</a></h3>
 <p>Subnet scopes contain attributes that apply to all hosts within a subnet. Subnet scopes are contained by a global scope.</p>
 <p>The easiest way to enable DHCP for a particular subnet is from within the Subnet page. First, make sure that the subnet exists (you can create it manually or by discovering the router that serves that subnet). You can view the subnet by going to <code>Management -&gt; Address Space</code> and navigating to where the subnet is, or by simply searching for its address.</p>
 <p>Once in the subnet page, look for the Dhcp Scope section and click on [enable]. This will bring an input section where you can select the global scope and the routers option. By default, Netdot shows the first address of the subnet as the routers option value. You can change this value if your router interface has a different address. Click Save. You will now see the subnet scope listed in the Subnet page. You can click on the scope name and that will take you to the DHCP Scope page, from which you can add any other necessary attributes.</p>
-<h3 id="host-scopes"><a href="#TOC"><span class="header-section-number">4.4.3</span> Host Scopes</a></h3>
+<h3 id="host-scopes"><a href="#TOC"><span class="header-section-number">4.5.3</span> Host Scopes</a></h3>
 <p>Host scopes allow you to assign attributes that apply to particular hosts. Host scopes also link a host's Ethernet address with its IP address.</p>
 <p>You can create a new host scope from the host page.</p>
 <ul>
@@ -388,47 +441,101 @@ device3 community2
 <li><p>Once you provide a name for the A record, you will be redirected to the host page. Here, find the <code>DHCP for &lt;IP address&gt;</code> section and click on [add]. Type the Ethernet address and save your changes.</p></li>
 <li><p>When you click on the Ethernet address, you'll go to the MAC address page, which has a &quot;DHCP Scopes&quot; section. Clicking on the IP address will take you to the DHCP scope page. Here, you can add any specific attributes for that specific host.</p></li>
 </ul>
-<h3 id="template-scopes"><a href="#TOC"><span class="header-section-number">4.4.4</span> Template Scopes</a></h3>
+<h3 id="template-scopes"><a href="#TOC"><span class="header-section-number">4.5.4</span> Template Scopes</a></h3>
 <p>A template scope is not a real scope, but only a collection of attributes that you want to apply to things as a group. For example, the DHCP host scope for an IP phone may have one or more attributes that define where it should get its configuration from and other things. You can create a template containing these attributes and then use that template each time you create a host scope for IP phones.</p>
-<h2 id="contact-information"><a href="#TOC"><span class="header-section-number">4.5</span> Contact Information</a></h2>
+<h2 id="contact-information"><a href="#TOC"><span class="header-section-number">4.6</span> Contact Information</a></h2>
 <p>Netdot uses the concept of &quot;Contact Lists&quot; to show contact information for different objects, for example devices, sites, entities (departments, providers, etc.).</p>
 <p>A Person object in Netdot contains a person's information, including location, e-mail address, phone numbers, pager numbers, etc.</p>
 <p>Since a given person often times is the point of contact for different things, a person can have many &quot;roles&quot;, which link that person with a particular Contact List.</p>
 <p>You can create new Person, Entity, Site and Contact List objects by going to the Contacts section.</p>
-<h2 id="cable-plant"><a href="#TOC"><span class="header-section-number">4.6</span> Cable Plant</a></h2>
+<h2 id="cable-plant"><a href="#TOC"><span class="header-section-number">4.7</span> Cable Plant</a></h2>
 <p>Netdot allows you to document inter-building and intra-building fiber and copper wiring, closets, jacks, etc.</p>
-<h2 id="advanced-db-operations"><a href="#TOC"><span class="header-section-number">4.7</span> Advanced DB operations</a></h2>
+<h3 id="sites"><a href="#TOC"><span class="header-section-number">4.7.1</span> Sites</a></h3>
+<p>Sites are usually buildings with one or more floors, closets and rooms. Sites can be associated with other things, such as people, departments, subnets, etc.</p>
+<p>To create a new Site, go to Cable Plant -&gt; Sites and click on [new]. You will need to enter a name and a City. The &quot;Site ID&quot; is a value that can represent the (shorter) unique identification of that building within the organization.</p>
+<p>You can also insert pictures of Sites in the database.</p>
+<h3 id="closets"><a href="#TOC"><span class="header-section-number">4.7.2</span> Closets</a></h3>
+<p>Communications closets house network equipment and cable terminations. A Closet is located in a Room, which is located in a Floor, wich is located in a Site.</p>
+<p>To create a new Closet, go to Cable Plant -&gt; Closets and click on [new]. It is also possible to include pictures of closets in the database. This is useful for technicians that might want to review the physical characteristics of the closet space without visiting it in person.</p>
+<h3 id="backbone-cables"><a href="#TOC"><span class="header-section-number">4.7.3</span> Backbone Cables</a></h3>
+<p>Backbone cables exist between two closets.</p>
+<ul>
+<li><p>If a physical cable traverses closets in various sites, for the purpose of documentation,those sections of cable should be represented as different backbone cables.</p></li>
+<li><p>Backbone cables can interconnect closets within the same site (risers).</p></li>
+</ul>
+<p>New backbone cables can be created by going to Cable Plant -&gt; Backbone Cables and clicking on [new]. You will be asked to provide the origin and destination closets, the type of cable (Copper Bundle, Fiber, etc), and a cable ID. Netdot can suggest a cable ID value, which will be composed of the endpoint Site IDs and a sequence number, for example &quot;123/456-1&quot;.</p>
+<p>The field &quot;Number of Strands&quot; will tell Netdot to create that many strands associated with the new cable.</p>
+<h3 id="fiber-strands"><a href="#TOC"><span class="header-section-number">4.7.4</span> Fiber Strands</a></h3>
+<p>Backbone cables contain strands. These have several attributes, including:</p>
+<ul>
+<li>Sequence number</li>
+<li>Status - Not Terminated, Available, Damaged, In Use</li>
+<li>Fiber Type - Multimode or Single Mode</li>
+<li>Circuit - An end-to-end circuit composed of sequences of strands</li>
+</ul>
+<p>You can modify ranges of strands from a backbone as a group. For example, if you have a new hybrid fiber cable with 24 strands, of which 12 are single mode and the other 12 are multi-mode, at the the backbone page, after the list of strands, type Range: 1-12, then select Type: &quot;Single Mode&quot;, Status: &quot;Not Terminated&quot;. Do similarly for range 13-24.</p>
+<p>Fiber strands from diferent backbone cables can be spliced together to form a sequence. To splice a range of strands, go to the bottom of the Backbone Cable page, in the section &quot;Manually Splice Strand Range&quot;, then type the range of strands that are spliced to another backbone, for example, &quot;1-12&quot;, and the corresponding strands from the next backbone, say &quot;1-12&quot; or &quot;13-24&quot;, then select the other backbone cable, and click &quot;Go&quot; You should now see the contiguous strands in the &quot;Spliced With&quot; column, and the whole sequence in &quot;Part of Sequence&quot;.</p>
+<h3 id="circuits"><a href="#TOC"><span class="header-section-number">4.7.5</span> Circuits</a></h3>
+<p>After you have created sequences of strands from origin A to destination B, you can now create a circuit to group those strands and assign it to existing device interfaces.</p>
+<p>To create a new circuit, go to Cable Plant -&gt; Circuits and click on [new]. You will need to give it a unique identifier, and specify a provider. In this case, the provider might be your own organization. Circuits can also be used to document links provided by other parties. In those cases the circuit would probably not be associated with fiber strands that you own.</p>
+<p>Circuits have these attributes, among others:</p>
+<ul>
+<li>Site Link: A record that ties two sites that are linked by this circuit</li>
+<li>Status: Active, Disabled, Disconnected, Pending</li>
+<li>Type: DS3, Ethernet, Frame Relay, etc.</li>
+<li>Speed: 45Mbps, 100Mbps, etc.</li>
+<li>Loss: Last measured loss on the circuit</li>
+</ul>
+<p>Once you have created the circuit, you will have the option of associating a list of strand sequences. Simply select the origin and destination sites, then select a pair of sequences that compose this circuit (a pair, assuming that it's a fiber circuit).</p>
+<p>You can associate existing device interfaces to this circuit.</p>
+<h3 id="horizontal-cables"><a href="#TOC"><span class="header-section-number">4.7.6</span> Horizontal Cables</a></h3>
+<p>A horizontal cable represents cabling that starts in a closet and terminates in a wall jack, usually Cat5 or similar. These are some of their attributes:</p>
+<ul>
+<li>Jack ID: The unique identifier of the jack in the organization. For example, a jack located in Site #123, terminated in closet &quot;A&quot; and whose sequence is 456, could be labeled uniquely with something like &quot;123-A-456&quot;.</li>
+<li>Faceplate ID: Normally, faceplates contain more than one jack. This is the unique identifier of the faceplate, not the jack.</li>
+<li>Type: Cat5, Cat6, etc.</li>
+<li>Closet: The closet where the cable is terminated (one end)</li>
+<li>Room: The room where the cable is terminated (the other end)</li>
+</ul>
+<p>Once created, you can assign this horizontal cable to a device interface by going to the Device page, selecting &quot;Interfaces&quot; and [edit]. You should see a list of existing cables in the &quot;Jack(cable)&quot; column. Notice that there are also free-form fields in the &quot;Room&quot; and &quot;Jack&quot; columns. These are available in case you don't need to document the cable, but just the interface-to-jack relationship.</p>
+<h2 id="advanced-db-operations"><a href="#TOC"><span class="header-section-number">4.8</span> Advanced DB operations</a></h2>
 <p>The Advanced section of the top menu shows basic Browse, Search and Add operations on particular tables of the database. This often requires certain familiarity with the database schema.</p>
 <p>In this section you can also write your own SQL queries, which can be saved for future use. SQL query output can also be saved in comma-separated (CSV) format.</p>
-<h2 id="reports"><a href="#TOC"><span class="header-section-number">4.8</span> Reports</a></h2>
+<h2 id="reports"><a href="#TOC"><span class="header-section-number">4.9</span> Reports</a></h2>
 <p>The Reports section provides a number of useful types of reports.</p>
-<h3 id="device-reports"><a href="#TOC"><span class="header-section-number">4.8.1</span> Device Reports</a></h3>
-<h4 id="by-typemodel"><a href="#TOC"><span class="header-section-number">4.8.1.1</span> By Type/Model</a></h4>
+<h3 id="device-reports"><a href="#TOC"><span class="header-section-number">4.9.1</span> Device Reports</a></h3>
+<h4 id="by-typemodel"><a href="#TOC"><span class="header-section-number">4.9.1.1</span> By Type/Model</a></h4>
 <p>Lists devices grouped by type (switches, routers, servers, etc), then by model, and gives a total count per type and model.</p>
-<h4 id="by-modelos"><a href="#TOC"><span class="header-section-number">4.8.1.2</span> By Model/OS</a></h4>
+<h4 id="by-modelos"><a href="#TOC"><span class="header-section-number">4.9.1.2</span> By Model/OS</a></h4>
 <p>Lists devices by manufacturer, then model, showing each model's recommended OS version (which you would have had to previously specify) and all the other existing versions of that OS in your network, with counts.</p>
-<h4 id="device-in-downtime"><a href="#TOC"><span class="header-section-number">4.8.1.3</span> Device in Downtime</a></h4>
+<h4 id="device-in-downtime"><a href="#TOC"><span class="header-section-number">4.9.1.3</span> Device in Downtime</a></h4>
 <p>Since Netdot can be used to export configurations for monitoring tools (e.g. Nagios), particular devices can be assigned a downtime period, which will exclude them from the monitoring tool during the time frame specified. This report shows you all the devices that are within a downtime period.</p>
-<h4 id="duplex-mismatches"><a href="#TOC"><span class="header-section-number">4.8.1.4</span> Duplex Mismatches</a></h4>
+<h4 id="duplex-mismatches"><a href="#TOC"><span class="header-section-number">4.9.1.4</span> Duplex Mismatches</a></h4>
 <p>This report shows a list of neighboring device interfaces whose duplex settings are mismatched.</p>
-<h4 id="os-mismatches"><a href="#TOC"><span class="header-section-number">4.8.1.5</span> OS mismatches</a></h4>
+<h4 id="os-mismatches"><a href="#TOC"><span class="header-section-number">4.9.1.5</span> OS mismatches</a></h4>
 <p>This report lists devices whose operating system version differs from the recommended version. The list is grouped by manufacturer, then model, then device name and it shows the current OS version.</p>
-<h3 id="ip-reports"><a href="#TOC"><span class="header-section-number">4.8.2</span> IP Reports</a></h3>
-<h4 id="unused-subnets"><a href="#TOC"><span class="header-section-number">4.8.2.1</span> Unused Subnets</a></h4>
+<h3 id="asset-reports"><a href="#TOC"><span class="header-section-number">4.9.2</span> Asset Reports</a></h3>
+<p>Asset reports are most useful for identifying device hardware that is in stock (not yet installed).</p>
+<h4 id="by-typemodel-1"><a href="#TOC"><span class="header-section-number">4.9.2.1</span> By Type/Model</a></h4>
+<p>Gives a summary of device hardware by type and model, and shows quantities of each</p>
+<h4 id="by-typemodel-detailed"><a href="#TOC"><span class="header-section-number">4.9.2.2</span> By Type/Model (detailed)</a></h4>
+<p>Shows a list of assets by type and model, showing each asset's serial number, inventory number, whether it has been installed or not, etc.</p>
+<h3 id="ip-reports"><a href="#TOC"><span class="header-section-number">4.9.3</span> IP Reports</a></h3>
+<h4 id="unused-subnets"><a href="#TOC"><span class="header-section-number">4.9.3.1</span> Unused Subnets</a></h4>
 <p>Here you will see a list of subnets that have no IP addresses. You can select only IPv4 subnets or IPv6 subnets.</p>
-<h4 id="maxed-out-subnets"><a href="#TOC"><span class="header-section-number">4.8.2.2</span> Maxed out Subnets</a></h4>
+<h4 id="maxed-out-subnets"><a href="#TOC"><span class="header-section-number">4.9.3.2</span> Maxed out Subnets</a></h4>
 <p>This report lists subnets that are used beyond a given threshold. This threshold is configurable by modifying the <code>SUBNET_USAGE_MINPERCENT</code> item in the <code>etc/Site.conf</code> file</p>
-<h4 id="unused-static-addresses"><a href="#TOC"><span class="header-section-number">4.8.2.3</span> Unused Static Addresses</a></h4>
+<h4 id="unused-static-addresses"><a href="#TOC"><span class="header-section-number">4.9.3.3</span> Unused Static Addresses</a></h4>
 <p>This report shows static addresses that have not been seen in the network for a given time. This makes it easy to free up subnet address space.</p>
-<h3 id="mac-addresses"><a href="#TOC"><span class="header-section-number">4.8.3</span> MAC Addresses</a></h3>
+<h3 id="mac-addresses"><a href="#TOC"><span class="header-section-number">4.9.4</span> MAC Addresses</a></h3>
 <p>This report shows a list of MAC address OUIs, sorted by number of addresses. You have the option to include all addresses, only MAC addresses belonging to infrastructure devices or only MAC addresses found in ARP caches and forwarding tables.</p>
 <h1 id="exporting-configurations-for-external-programs"><a href="#TOC"><span class="header-section-number">5</span> Exporting Configurations for External Programs</a></h1>
 <p>You can use the exporter tool to generate text files that can be used as configurations for third-party tools and programs.</p>
 <p>The exporter tool is available in the web UI, under the Export tab. Simply select one or more programs and click on the [submit] button. Netdot will show output from the exporter tool, including the paths to the new files.</p>
 <p>Additionally, the exporter can be called from the command line. For example, to generate Nagios configurations:</p>
-<pre class="sourceCode"><code class="sourceCode bash">~# bin/exporter.pl -t Nagios</code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# bin/exporter.pl -t Nagios</code></pre>
 <p>Or you can export several in one call:</p>
-<pre class="sourceCode"><code class="sourceCode bash">~# bin/exporter.pl -t Nagios,Sysmon,Rancid,Smokeping,BIND,DHCPD</code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# bin/exporter.pl -t Nagios,Sysmon,Rancid,Smokeping,BIND,DHCPD</code></pre>
 <p>There are specific export parameters for each of these which you can customize by editing your <code>Site.conf</code> file.</p>
 <h2 id="cacti-integration"><a href="#TOC"><span class="header-section-number">5.1</span> Cacti Integration</a></h2>
 <p>Cacti integration is done a little differently (it's more of an &quot;import&quot; than an &quot;export&quot;). You will find a script called <code>netdot_to_cacti.php</code> under export/cacti in the Netdot package. This script should be placed(together with its configuration file) in your Cacti's cli directory(it doesn't need to be the same machine running Netdot, but you need to make sure that the script can connect to Mysql on the Netdot machine).You will then need to run it periodically via CRON, say, once a day.</p>
@@ -460,87 +567,70 @@ device3 community2
 <p>The RESTful interface allows programmatic access to the Netdot database over the HTTP/HTTPS protocol. At this moment, all objects are formatted in XML using the XML::Simple Perl module. In the future, Netdot may support other formats, such as YAML or JSON.</p>
 <h2 id="generic-restful-resources"><a href="#TOC"><span class="header-section-number">7.1</span> Generic RESTful resources</a></h2>
 <h3 id="the-rest-interface-is-available-using-the-following-url-or-similar-depending-on-your-apache-configuration"><a href="#TOC"><span class="header-section-number">7.1.1</span> The REST interface is available using the following URL (or similar, depending on your Apache configuration):</a></h3>
-<pre><code>https://myserver.mydomain.com/netdot/rest/
-</code></pre>
+<pre><code>https://myserver.mydomain.com/netdot/rest/</code></pre>
 <p>This should load the Netdot::REST class and return something like:</p>
-<pre><code>Netdot/1.0 REST OK. 
-</code></pre>
+<pre><code>Netdot/1.0 REST OK. </code></pre>
 <h3 id="generic-restful-resources-to-be-acted-upon-represent-netdot-objects-and-are-part-of-the-request-uri.-for-example-in-this-uri"><a href="#TOC"><span class="header-section-number">7.1.2</span> Generic RESTful resources to be acted upon represent Netdot objects and are part of the request URI. For example, in this URI:</a></h3>
-<pre><code>http://myserver.mydomain.com/netdot/rest/device/1
-</code></pre>
+<pre><code>http://myserver.mydomain.com/netdot/rest/device/1</code></pre>
 <p>the resource is &quot;device/1&quot;, which for a GET request, will return the contents of Device id 1.</p>
 <h3 id="using-the-following-uri-with-a-get-request"><a href="#TOC"><span class="header-section-number">7.1.3</span> Using the following URI with a GET request:</a></h3>
-<pre><code>http://myserver.mydomain.com/netdot/rest/device
-</code></pre>
+<pre><code>http://myserver.mydomain.com/netdot/rest/device</code></pre>
 <p>this interface will return the contents of all Device objects in the database.</p>
 <h3 id="you-can-also-specify-certain-search-filters-to-limit-the-scope"><a href="#TOC"><span class="header-section-number">7.1.4</span> You can also specify certain search filters to limit the scope</a></h3>
 <p>of a GET request:</p>
-<pre><code>http://myserver.mydomain.com/netdot/rest/device?sysname=host1
-</code></pre>
+<pre><code>http://myserver.mydomain.com/netdot/rest/device?sysname=host1</code></pre>
 <p>This will perform a search and return all devices whose sysname field is 'host1'.</p>
 <h3 id="the-special-keyword-meta_data-instead-of-an-object-id-will-provide-information-about-the-objects-class"><a href="#TOC"><span class="header-section-number">7.1.5</span> The special keyword <code>meta_data</code> instead of an object ID will provide information about the object's class:</a></h3>
-<pre><code>http://myserver.mydomain.com/netdot/rest/device/meta_data
-</code></pre>
+<pre><code>http://myserver.mydomain.com/netdot/rest/device/meta_data</code></pre>
 <h3 id="an-existing-resource-can-be-updated-by-using-the-post-method-with-relevant-parameters.-for-example-a-post-request-to-the-following-uri"><a href="#TOC"><span class="header-section-number">7.1.6</span> An existing resource can be updated by using the 'POST' method with relevant parameters. For example, a POST request to the following URI:</a></h3>
 <pre><code>URL: http://netdot.localdomain/rest/device/1
-POST: {sysname=&gt;'newhostname'}
-</code></pre>
+POST: {sysname=&gt;&#39;newhostname&#39;}</code></pre>
 <p>will update the 'sysname' field of the Device object with id 1 to be &quot;newhostname&quot;.</p>
 <h3 id="similarly-a-new-object-can-be-created-with-a-post-request.-however-in-this-case-the-object-id-must-be-left-out"><a href="#TOC"><span class="header-section-number">7.1.7</span> Similarly, a new object can be created with a POST request. However, in this case the object id must be left out:</a></h3>
 <pre><code>URL: http://netdot.localdomain/rest/person
-POST: {firstname=&gt;'John', lastname=&gt;'Doe'}
-</code></pre>
+POST: {firstname=&gt;&#39;John&#39;, lastname=&gt;&#39;Doe&#39;}</code></pre>
 <h3 id="specific-objects-can-be-deleted-by-using-the-delete-http-method."><a href="#TOC"><span class="header-section-number">7.1.8</span> Specific objects can be deleted by using the 'DELETE' HTTP method.</a></h3>
 <h2 id="special-purpose-rest-resources"><a href="#TOC"><span class="header-section-number">7.2</span> Special-purpose REST resources</a></h2>
 <h3 id="the-special-resource-resthost-provides-a-simplified-interface-for-manipulating-dns-and-dhcp-records.-we-will-illustrate-its-usage-with-the-following-examples"><a href="#TOC"><span class="header-section-number">7.2.1</span> The special resource '/rest/host' provides a simplified interface for manipulating DNS and DHCP records. We will illustrate its usage with the following examples:</a></h3>
 <h4 id="retrieving-host-data-http-get"><a href="#TOC"><span class="header-section-number">7.2.1.1</span> Retrieving host data (HTTP GET)</a></h4>
 <p>Retrieve all RR (DNS) objects</p>
-<pre><code>http://netdot.localdomain/netdot/rest/host
-</code></pre>
+<pre><code>http://netdot.localdomain/netdot/rest/host</code></pre>
 <p>Retrieve all RR objects within given zone</p>
-<pre><code>http://netdot.localdomain/netdot/rest/host?zone=localdomain
-</code></pre>
+<pre><code>http://netdot.localdomain/netdot/rest/host?zone=localdomain</code></pre>
 <p>Retrieve RR name &quot;foo&quot; and its related records</p>
-<pre><code>http://netdot.localdomain/netdot/rest/host?name=foo
-</code></pre>
+<pre><code>http://netdot.localdomain/netdot/rest/host?name=foo</code></pre>
 <p>Retrieve RR id 1 and all related records</p>
-<pre><code>http://netdot.localdomain/netdot/rest/host?rrid=1
-</code></pre>
+<pre><code>http://netdot.localdomain/netdot/rest/host?rrid=1</code></pre>
 <p>Retrieve all Ipblock objects within given subnet</p>
-<pre><code>http://netdot.localdomain/netdot/rest/host?subnet=192.168.1.0/24
-</code></pre>
+<pre><code>http://netdot.localdomain/netdot/rest/host?subnet=192.168.1.0/24</code></pre>
 <h4 id="creating-new-records-http-post.-here-the-trick-is-to-not-specify-an-object-id"><a href="#TOC"><span class="header-section-number">7.2.1.2</span> Creating new records (HTTP POST). Here the trick is to not specify an object id</a></h4>
 <p>Create new A record named 'host1' using next available address in given subnet:</p>
 <pre><code>URL:  http://netdot.localdomain/netdot/rest/host?name=host1
-POST: {subnet=&gt;'192.168.1.0/24'}
-</code></pre>
+POST: {subnet=&gt;&#39;192.168.1.0/24&#39;}</code></pre>
 <h4 id="updating-existing-records-http-post-requires-passing-rrid-or-ipid."><a href="#TOC"><span class="header-section-number">7.2.1.3</span> Updating existing records (HTTP POST) Requires passing rrid or ipid.</a></h4>
 <p>Rename host with RR id=2</p>
 <pre><code>URL:  http://netdot.localdomain/netdot/rest/host?rrid=2
-POST: {name=&gt;'newname'}
-</code></pre>
+POST: {name=&gt;&#39;newname&#39;}</code></pre>
 <p>Update DHCP scope ethernet for Ipblock with id=3</p>
 <pre><code>URL:  http://netdot.localdomain/netdot/rest/host?ipid=2
-POST: {ethernet=&gt;'DEADDEADBEEF'}
-</code></pre>
+POST: {ethernet=&gt;&#39;DEADDEADBEEF&#39;}</code></pre>
 <h4 id="deleting-records-http-delete"><a href="#TOC"><span class="header-section-number">7.2.1.4</span> Deleting records (HTTP DELETE)</a></h4>
 <p>Delete hostname with RR id 3 (also frees IP)</p>
-<pre><code>http://netdot.localdomain/netdot/rest/host?rrid=3
-</code></pre>
+<pre><code>http://netdot.localdomain/netdot/rest/host?rrid=3</code></pre>
 <h2 id="restful-interface-authorization"><a href="#TOC"><span class="header-section-number">7.3</span> RESTful Interface Authorization</a></h2>
 <p>All user types can interact with the RESTful interface as long as they are granted permissions to do so. However only Admin users can edit or delete objects using generic REST resources. Operators and regular users can view generic resources but can only edit or delete them using specific-purpose resources such as 'rest/host'.</p>
 <h2 id="client-module-on-cpan"><a href="#TOC"><span class="header-section-number">7.4</span> Client module on CPAN</a></h2>
 <p>A convenient module is provided via CPAN for use in Perl scripts that need to access Netdot's REST interface. The module name is Netdot::Client::REST. It can be installed by doing something like this:</p>
 <p>If you are on a Debian-based system:</p>
-<pre class="sourceCode"><code class="sourceCode bash">~# <span class="kw">sudo</span> apt-get <span class="kw">install</span> libnetdot-client-rest-perl</code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">sudo</span> apt-get <span class="kw">install</span> libnetdot-client-rest-perl</code></pre>
 <p>or</p>
-<pre class="sourceCode"><code class="sourceCode bash">~# cpan<br /><span class="kw">&gt;</span><span class="kw">install</span> Netdot::Client::REST</code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# cpan
+<span class="kw">&gt;install</span> Netdot::Client::REST</code></pre>
 <h1 id="faq"><a href="#TOC"><span class="header-section-number">8</span> FAQ</a></h1>
 <ul>
 <li><p>Q: Why can't Netdot discover my device using SNMP? I can see it responds when using snmpwalk.</p>
 <p>A: If your device is a Linux server or any other device using the SNMP agent from Net-SNMP, you need to add the following to /etc/snmpd.conf (or wherever it exists):</p>
-<pre><code>sysservices 72
-</code></pre>
+<pre><code>sysservices 72</code></pre>
 <p>Then, restart your snmpd process.</p>
 <p>The reason for this is that sysservices is essential to Netdot's device discovery. Most network devices implement this OID in their SNMP agents.</p></li>
 </ul>

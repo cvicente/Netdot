@@ -51,10 +51,9 @@ __PACKAGE__->set_sql(by_type_unknown => qq{
 
 __PACKAGE__->set_sql(by_device => qq{
     SELECT a.id
-         FROM  asset a, device d, devicemodule m 
+         FROM  asset a, device d
         WHERE  d.id = ?
-          AND  ( d.asset_id = a.id
-          OR   (m.device=d.id AND m.asset_id=a.id) )
+          AND  d.asset_id = a.id
     });
 
 

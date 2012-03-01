@@ -61,32 +61,6 @@ sub update {
     return $self->SUPER::update( $argv );
 }
 
-############################################################################
-=head2 delete - Delete DeviceModule object
-    
-    We override the insert method for extra functionality:
-     - Remove orphaned Asset records if necessary
-
-  Arguments:
-    None
-  Returns:
-    True if successful
-
-  Examples:
-    $devicemodule->delete();
-
-=cut
-sub delete {
-    my ($self) = @_;
-    $self->isa_object_method('delete');
-
-    my $asset = $self->asset_id;
-    $self->SUPER::delete();
-    $asset->delete() if $asset;
-
-    return 1;
-}
-
 =head1 AUTHOR
 
 Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>

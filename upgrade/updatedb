@@ -77,65 +77,75 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
 # Store assets to be inserted, keyed by serial number
 my %assets;
 
-my $d = $dbh->prepare('SELECT serialnumber,custom_serial,physaddr,inventorynumber,
-                              maint_contract,maint_from,maint_until,product 
-                       FROM   device
-		       WHERE  serialnumber is not NULL
-                          AND serialnumber !="" ');
-$d->execute();
-my $devices = $d->fetchall_arrayref();
-
-foreach my $row ( @$devices ){
+# Grab devices with serial number
+my $sndevs = $dbh->selectall_arrayref('SELECT serialnumber,custom_serial,physaddr,
+                                              inventorynumber,maint_contract,maint_from,
+                                              maint_until,product 
+                                         FROM device
+		                        WHERE serialnumber is not NULL
+                                          AND serialnumber != "" ');
+foreach my $row ( @$sndevs ){
     my $sn = $row->[0];
-    $sn =~ s/^\s*(\w+)\s*$/$1/;
+    $sn =~ s/^\s+|\s+$//g;
+    next unless $sn;
     # Convert foreign keys from 0 to undef
     $row->[2] = undef if $row->[2] == 0;
+    $row->[4] = undef if $row->[4] == 0;
     $row->[7] = undef if $row->[7] == 0;
     my $i = 1;
     foreach my $v (qw/cs ph in mc mf mu pr/){
-	$assets{$sn}{$v} = $row->[$i];
+	$assets{sn}{$sn}{$v} = $row->[$i];
 	$i++;
     }
 }
 
-my $dm = $dbh->prepare('SELECT serialnumber,inventorynumber,maint_contract,maint_from,maint_until 
-                        FROM   devicemodule
-		        WHERE  serialnumber IS NOT NULL
-                          AND  serialnumber !="" ');
-$dm->execute();
-my $device_modules = $dm->fetchall_arrayref();
-
-foreach my $row ( @$device_modules ){
-    my $sn = $row->[0];
-    $sn =~ s/^\s*(\w+)\s*$/$1/;
-    next if exists $assets{$sn};
+# Grab devices with base MAC
+my $macdevs = $dbh->selectall_arrayref('SELECT physaddr,serialnumber,custom_serial,
+                                               inventorynumber,maint_contract,maint_from,
+                                               maint_until,product 
+                                          FROM device
+		                         WHERE physaddr is not NULL
+                                           AND physaddr != 0');
+foreach my $row ( @$macdevs ){
+    my $ph = $row->[0];
+    $ph =~ s/^\s+|\s+$//g;
+    next unless $ph;
+    $row->[1] =~ s/^\s+|\s+$//g; #serialnumber
+    next if ( $row->[1] && exists $assets{sn}{$row->[1]} );
+    # Convert foreign keys from 0 to undef
+    $row->[4] = undef if $row->[4] == 0;
+    $row->[7] = undef if $row->[7] == 0;
     my $i = 1;
-    foreach my $v (qw/in mc mf mu/){
-	$assets{$sn}{$v} = $row->[$i];
+    foreach my $v (qw/sn cs in mc mf mu pr/){
+	$assets{ph}{$ph}{$v} = $row->[$i];
 	$i++;
     }
 }
 
+# Create asset records with information from devices
 my $ia = $dbh->prepare('INSERT INTO asset (serial_number,custom_serial,physaddr,
                                            inventory_number,maint_contract,
                                            maint_from,maint_until,product_id)
-        VALUES (?,?,?,?,?,?,?,?)');
-
-foreach my $sn ( keys %assets ){
-    my %vals = %{$assets{$sn}};
+                                           VALUES (?,?,?,?,?,?,?,?)');
+foreach my $sn ( keys %{$assets{sn}} ){
+    my %vals = %{$assets{sn}{$sn}};
     my ($cs,$ph,$in,$mc,$mf,$mu,$pr) = @vals{'cs','ph','in','mc','mf','mu','pr'};
     $ia->execute($sn,$cs,$ph,$in,$mc,$mf,$mu,$pr);
 }
 
-# Grab hostaudit data before conversion
-my %haudit;
-my $hq = $dbh->prepare('SELECT          ha.id,zone.name,dhcpscope.name  
-                        FROM            hostaudit ha 
-                        LEFT OUTER JOIN zone ON ha.zone=zone.id 
-                        LEFT OUTER JOIN dhcpscope ON ha.scope=dhcpscope.id');
-$hq->execute();
-my $haudits = $hq->fetchall_arrayref();
+foreach my $ph ( keys %{$assets{ph}} ){
+    my %vals = %{$assets{ph}{$ph}};
+    my ($sn,$cs,$in,$mc,$mf,$mu,$pr) = @vals{'sn','cs','in','mc','mf','mu','pr'};
+    $ia->execute($sn,$cs,$ph,$in,$mc,$mf,$mu,$pr);
+}
 
+
+# Grab hostaudit data before conversion
+my $haudits = $dbh->selectall_arrayref('SELECT          ha.id,zone.name,dhcpscope.name  
+                                        FROM            hostaudit ha 
+                                        LEFT OUTER JOIN zone ON ha.zone=zone.id 
+                                        LEFT OUTER JOIN dhcpscope ON ha.scope=dhcpscope.id');
+my %haudit;
 foreach my $row ( @$haudits ){
     my ($id, $zone, $scope) = @$row;
     $haudit{$id}{zone}  = $zone;
@@ -150,37 +160,11 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
             "ALTER TABLE device ADD COLUMN extension integer AFTER down_until;",
             "ALTER TABLE device_history ADD COLUMN asset_id bigint AFTER aliases;",
             "ALTER TABLE device_history ADD COLUMN extension integer AFTER down_until;",
-            "ALTER TABLE devicemodule ADD COLUMN asset_id bigint FIRST;",
-
-	# This is an attempt to remove duplicate devices without removing them
-	# just in case the user has some important information in there
-	# Basically, we remove the serialnumber from the device that was last updated
-	# the least recent
-	    "UPDATE device a, device b 
-                SET a.serialnumber=NULL, 
-                    a.info='this device was a duplicate during a netdot upgrade' 
-              WHERE a.serialnumber=b.serialnumber 
-                AND a.serialnumber IS NOT NULL 
-                AND a.serialnumber != '' 
-                AND a.id != b.id 
-                AND a.last_updated<b.last_updated;",
-
-	# Similar thing for devicemodules, but these we'll delete
-	    "DELETE devicemodule a
-               FROM devicemodule a, devicemodule b
-              WHERE a.serialnumber=b.serialnumber 
-                AND a.serialnumber IS NOT NULL 
-                AND a.serialnumber != '' 
-                AND a.id != b.id 
-                AND a.last_updated<b.last_updated;",
 
             "UPDATE device,asset SET device.asset_id=asset.id 
-              WHERE asset.serial_number=device.serialnumber;",
-            "UPDATE devicemodule,asset 
-                SET devicemodule.asset_id=asset.id 
-              WHERE asset.serial_number=devicemodule.serialnumber;",
-            "UPDATE asset,device,devicemodule SET asset.product_id=device.product 
-              WHERE devicemodule.device=device.id AND devicemodule.asset_id=asset.id;",
+              WHERE asset.serial_number=device.serialnumber
+                OR  asset.physaddr=device.physaddr;",
+
             "ALTER TABLE device DROP COLUMN serialnumber;",
             "ALTER TABLE device DROP COLUMN inventorynumber;",
             "ALTER TABLE device DROP COLUMN maint_contract;",
@@ -189,7 +173,6 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
             "ALTER TABLE device DROP COLUMN custom_serial;",
             "ALTER TABLE device DROP COLUMN physaddr;",
             "ALTER TABLE device DROP COLUMN product;",
-            "ALTER TABLE device ADD UNIQUE INDEX device2 (asset_id);",
             "ALTER TABLE device ADD INDEX Device13 (extension);",
             "ALTER TABLE device_history DROP COLUMN serialnumber;",
             "ALTER TABLE device_history DROP COLUMN inventorynumber;",
@@ -199,12 +182,10 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
             "ALTER TABLE device_history DROP COLUMN custom_serial;",
             "ALTER TABLE device_history DROP COLUMN physaddr;",
             "ALTER TABLE device_history DROP COLUMN product;",
-            "ALTER TABLE devicemodule DROP COLUMN serialnumber;",
-            "ALTER TABLE devicemodule DROP COLUMN inventorynumber;",
-            "ALTER TABLE devicemodule DROP COLUMN maint_contract;",
-            "ALTER TABLE devicemodule DROP COLUMN maint_from;",
-            "ALTER TABLE devicemodule DROP COLUMN maint_until;",
-            "ALTER TABLE devicemodule ADD UNIQUE INDEX devicemodule2 (asset_id);",
+            "ALTER TABLE devicemodule CHANGE COLUMN serialnumber serial_number varchar(128);",
+            "ALTER TABLE devicemodule CHANGE COLUMN inventorynumber inventory_number varchar(64);",
+            "ALTER TABLE devicemodule ADD INDEX devicemodule2 (serial_number);",
+            "ALTER TABLE devicemodule ADD INDEX devicemodule3 (inventory_number);",
             "ALTER TABLE dhcpscope ADD COLUMN active tinyint(1) NOT NULL;",
             "UPDATE dhcpscope SET active=1;",
             "ALTER TABLE dhcpscope ADD COLUMN duid varchar(255);",
@@ -255,42 +236,11 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
             "ALTER TABLE device_history ADD COLUMN extension integer NULL;",
             "ALTER TABLE device_history DROP COLUMN physaddr;",
 	    "ALTER TABLE device_history DROP COLUMN product;",
-            "ALTER TABLE devicemodule ADD COLUMN asset_id bigint;",
-
-	# This is an attempt to remove duplicate devices without removing them
-	# just in case the user has some important information in there
-	# Basically, we remove the serialnumber from the device that was last updated
-	# the least recent
-	    "UPDATE device a, device b 
-                SET a.serialnumber=NULL, 
-                    a.info='this device was a duplicate during a netdot upgrade' 
-              WHERE a.serialnumber=b.serialnumber 
-                AND a.serialnumber IS NOT NULL 
-                AND a.serialnumber != '' 
-                AND a.id != b.id 
-                AND a.last_updated<b.last_updated",
-
-	# Similar thing for devicemodules, but these we'll delete
-	    "DELETE devicemodule a
-               FROM devicemodule a, devicemodule b
-              WHERE a.serialnumber=b.serialnumber 
-                AND a.serialnumber IS NOT NULL 
-                AND a.serialnumber != '' 
-                AND a.id != b.id 
-                AND a.last_updated<b.last_updated;",
 
             "UPDATE device SET asset_id=asset.id 
-               FROM asset WHERE asset.serial_number=device.serialnumber;",
-
-            "UPDATE devicemodule 
-                SET asset_id=asset.id 
                FROM asset 
-              WHERE asset.serial_number=devicemodule.serialnumber;",
-
-            "UPDATE asset SET product_id=device.product 
-               FROM device, devicemodule 
-              WHERE devicemodule.device=device.id 
-                AND devicemodule.asset_id=asset.id;",
+              WHERE asset.serial_number=device.serialnumber
+                 OR asset.physaddr=device.physaddr;",
 
             "ALTER TABLE device DROP COLUMN serialnumber;",
             "ALTER TABLE device DROP COLUMN inventorynumber;",
@@ -310,16 +260,14 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
             "ALTER TABLE device_history DROP COLUMN custom_serial;",
             "ALTER TABLE device_history DROP COLUMN physaddr;",
             "ALTER TABLE device_history DROP COLUMN product;",
-            "ALTER TABLE devicemodule DROP COLUMN serialnumber;",
-            "ALTER TABLE devicemodule DROP COLUMN inventorynumber;",
-            "ALTER TABLE devicemodule DROP COLUMN maint_contract;",
-            "ALTER TABLE devicemodule DROP COLUMN maint_from;",
-            "ALTER TABLE devicemodule DROP COLUMN maint_until;",
+            "ALTER TABLE devicemodule RENAME COLUMN serialnumber TO serial_number;",
+            "ALTER TABLE devicemodule RENAME COLUMN inventorynumber TO inventory_number;",
+            "CREATE INDEX devicemodule2 ON devicemodule(serial_number);",
+            "CREATE INDEX devicemodule3 ON devicemodule(inventory_number);",
             "ALTER TABLE dhcpscope ADD COLUMN active smallint NOT NULL;",
             "UPDATE dhcpscope SET active=1;",
             "ALTER TABLE dhcpscope ADD COLUMN duid varchar(255);",
             "ALTER TABLE dhcpscope ADD COLUMN version integer;",
-            "CREATE UNIQUE INDEX devicemodule2 ON devicemodule(asset_id);",
             "ALTER TABLE entity ADD COLUMN config_type varchar(255);",
             "ALTER TABLE entity_history ADD COLUMN config_type varchar(255);",
             "ALTER TABLE product ADD COLUMN part_number varchar(255);",
