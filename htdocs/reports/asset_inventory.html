@@ -4,6 +4,7 @@ Produces a report of Assets which are not associated to any devices
 
 <%args>
 $report_type => 'type_product'
+$sort        => 'type'
 </%args>
 
 <%init>
@@ -58,8 +59,8 @@ if ( $DEBUG ){
     <p>
       <form name="report_form" action="asset_inventory.html" method="POST">
          By <select name="report_type" onChange="document.report_form.submit()">
-         <option value="type_product" <% ($report_type eq "type_product")?"SELECTED":"" %>>Type/Model</option>
-         <option value="type_product_detail" <% ($report_type eq "type_product_detail")?"SELECTED":"" %>>Type/Model (detailed)</option>
+         <option value="type_product" <% ($report_type eq "type_product")?"SELECTED":"" %>>Type/Model Summary</option>
+         <option value="detailed" <% ($report_type eq "detailed")?"SELECTED":"" %>>Detailed</option>
          </select>
       </form>
 
@@ -90,54 +91,32 @@ if ( $report_type eq 'type_product' ){
 	}
     }
 
-}elsif ( $report_type eq 'type_product_detail' ){
-    @headers = ( 'Type', 'Model', 'S/N', 'Inventory', 'Installed?', 'Reserved For', 'Count' );
-    my @row = ();
-    push( @row, "Total Assets:" );
-    push( @row, "&nbsp;" );
-    push( @row, "&nbsp;" );
-    push( @row, "&nbsp;" );
-    push( @row, "&nbsp;" );
-    push( @row, "&nbsp;" );
-    push( @row, $grandtotal );
-    push( @rows, \@row );
-
+}elsif ( $report_type eq 'detailed' ){
+    my %sortpos;
+    my $i = 0;
+    foreach my $header ('Type', 'Model', 'S/N', 'Inventory', 'Installed?', 'Reserved For'){
+	$sortpos{$header} = $i++;
+	push @headers, "<a href=\"asset_inventory.html?report_type=detailed&sort=$header\">$header</a>";
+    }
     foreach my $ptype ( sort keys %t ){
-	my @row = ();
-	push( @row, "<strong>$ptype</strong>" );
-	push( @row, "&nbsp;" );
-	push( @row, "&nbsp;" );
-	push( @row, "&nbsp;" );
-	push( @row, "&nbsp;" );
-	push( @row, "&nbsp;" );
-	push( @row, '<strong>' . $t{$ptype}{total} . '</strong>' );
-	push( @rows, \@row );
-
-	foreach my $pname ( sort keys %{ $t{$ptype}{prod} } ){
-	    my @row = ();
-	    push( @row, "&nbsp;" );
-	    push( @row, $pname );
-	    push( @row, "&nbsp;" );
-	    push( @row, "&nbsp;" );
-	    push( @row, "&nbsp;" );
-	    push( @row, "&nbsp;" );
-	    push( @row, $t{$ptype}{prod}{$pname}{total}  );
-	    push( @rows, \@row );
-	    
-	    foreach my $sn ( sort keys %{ $t{$ptype}{prod}{$pname}{assets} } ){
+	foreach my $pname ( keys %{ $t{$ptype}{prod} } ){
+	    foreach my $sn ( keys %{ $t{$ptype}{prod}{$pname}{assets} } ){
 		my @row = ();
-		push( @row, "&nbsp;" );
-		push( @row, "&nbsp;" );
+		push( @row, $ptype );
+		push( @row, $pname );
 		my $id  = $t{$ptype}{prod}{$pname}{assets}{$sn}{id};
 		push( @row, "<a href=\"../generic/view.html?table=Asset&id=$id\">$sn</a>" );
 		push( @row, $t{$ptype}{prod}{$pname}{assets}{$sn}{inv} );
 		push( @row, ($t{$ptype}{prod}{$pname}{assets}{$sn}{installed})? 'yes' : 'no');
 		push( @row, $t{$ptype}{prod}{$pname}{assets}{$sn}{res} );
-		push( @row, "&nbsp;" );
 		push( @rows, \@row );
 	    }
 	}
     }
+
+    # Sort the thing
+    my $pos = $sortpos{$sort};
+    @rows = sort { $a->[$pos] cmp $b->[$pos] } @rows;
 }
 
 $m->comp('/generic/data_table.mhtml', field_headers=>\@headers, data=>\@rows);
