@@ -137,7 +137,7 @@ sub dev_name_number {
     my $dbh = $class->db_Main;
     my $sth = $dbh->prepare_cached("SELECT i.id, i.number, i.name, d.id 
                                       FROM device d, interface i 
-                                     WHERE i.device=i.id");	
+                                     WHERE i.device=d.id");	
     $sth->execute();
     my $aref = $sth->fetchall_arrayref;
 
@@ -145,8 +145,8 @@ sub dev_name_number {
     my %map;
     foreach my $row ( @$aref ){
 	my ($iid, $inum, $iname, $did) = @$row;
-	$map{$did}{number}{$inum} = $did;
-	$map{$did}{name}{$iname}  = $did;
+	$map{$did}{number}{$inum} = $iid;
+	$map{$did}{name}{$iname}  = $iid;
     }
     $logger->debug(sub{ "Interface::dev_name_number ...done" });
 
