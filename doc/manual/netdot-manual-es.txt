@@ -1,4 +1,4 @@
-% The Netdot Manual
+% Manual de Netdot
 % Carlos Vicente
 
 \pagebreak
@@ -36,42 +36,43 @@ administración y operación de Netdot.
 diseñada para ayudar a los administradores de red a obtener, organizar y
 mantener la documentación de la red.
 
-Netdot está desarrollado principalmente por el grupo de [Servicios de
+Netdot se desarrolla de manera activa por el grupo de [Servicios de
 Redes y Telecomunicaciones](http://ns.uoregon.edu) de la [Universidad de
-Oregon](http://www.uoregon.edu).
+Oregón](http://www.uoregon.edu).
 
 Las características principales de Netdot son:
 
 *   Descubrimiento de dispositivos a través de SNMP
 
 *   Descubrimiento y visualización de topología de capa/nivel 2,
-    utilizando las siguientes fuentes de información: CDP+LLDP, Spanning
-    Tree Protocol, tablas de reenvío de los switches y subredes punto a
+    utilizando las siguientes fuentes de información: CDP+LLDP, Protocolo 
+    Spanning Tree, tablas de reenvío de los switches y subredes punto a
     punto de enrutadores.
 
 *   Gestión del espacio de direcciones IPv4 e IPv6 (también conocido
     como IPAM), incluyendo organizacion jerárquica, visualización de
     direcciones en bloques y seguimiento de direcciones IP y MAC.
 
-*   Información del cableado de planta: sitios/edificios,
-    habitaciones/cuartos, tomas de red, closets/armarios, enlaces entre
-    edificios o dentro de los mismos, circuitos dedicados, etc.
+*   Información del cableado de planta: edificios, oficinas, tomas de red, 
+    closets/armarios, enlaces entre edificios o dentro de los mismos, 
+    circuitos dedicados, etc.
 
 *   Información de contacto para las diferentes entidades que se
     documentan: departmentos, proveedores, fabricantes, peers BGP, etc.
 
 *   Netdot puede generar ficheros de configuración para un conjunto de
     herramientas de gestión y administración de redes:
-    [Nagios](http://www.nagios.org), [Sysmon](http://www.sysmon.org),
-    [RANCID](http://www.shrubbery.net/rancid),
-    [Cacti](http://www.cacti.net). Con la version 0.9, Netdot puede
-    generar ficheros de configuración de zona para ISC BIND (DNS) y DHCP
-    ISC (DHCPD).
 
-*   A partir de la version 0.9, Netdot implementa control de acceso por usuarios
-    y roles, lo cual permite que tareas como la gestión de direcciones
-    IP, documentar los puertos de switch/conmutadores y la actualización
-    de la información de contacto puede ser delegada a grupos
+    * [Nagios](http://www.nagios.org), 
+    * [Sysmon](http://www.sysmon.org),
+    * [RANCID](http://www.shrubbery.net/rancid)
+    * [Cacti](http://www.cacti.net) 
+    * [BIND y DHCPD de ISC](http://www.isc.org)
+    * [Smokeping](http://oss.oetiker.ch/smokeping/)
+
+*   Netdot implementa control de acceso por usuarios y roles, lo cual permite que 
+    tareas como la gestión de direcciones IP, la documentación de puertos de switches
+    y la actualización de la información de contacto puede ser delegada a grupos
     específicos con acceso limitado a la interfaz web.
 
 ## Estructura
@@ -153,14 +154,14 @@ desea instalar Netdot, por ejemplo:
 *   La última versión de las MIBs de Netdisco
     <http://sourceforge.net/projects/netdisco/files/netdisco-mibs/>
 
-*   Un conjunto de módulos Perl específicos. Para comprobar los módulos
-    necesarios y su estado en el sistema ejecute:
+*   Varios módulos Perl. Para comprobar los módulosnecesarios y su 
+    estado en el sistema ejecute:
 
     ~~~~ {.bash}
     ~% make testdeps
     ~~~~
 
-*   Existen dos formas para instalar los módulos necesarios: La primera
+*   Existen dos formas para instalar las dependencias: La primera
     forma (recomendada) es mediante los gestores de paquetes de la
     distribución que se está utilizando.
 
@@ -178,11 +179,11 @@ desea instalar Netdot, por ejemplo:
     ~~~~
 
     >**Pista**
-    Si después de ejecutar los pasos anteriores siguen faltando módulos,
-    se puede completar el proceso ejecutando el siguiente paso.
+    Si después de ejecutar los pasos anteriores siguen faltando módulos
+    Perl, se puede completar el proceso ejecutando el siguiente paso.
 
-*   Se puede instalar cualquier módulo que falte, utilizando CPAN,
-    ejecutando:
+*   La otra alternativa para instalar módulos Perl es utilizando la 
+    herramienta CPAN:
 
     ~~~~ {.bash}
     ~# make installdeps
@@ -195,12 +196,6 @@ desea instalar Netdot, por ejemplo:
     ~# perl -MCPAN -e shell
     >install Module::Blah
     ~~~~
-
-    >**Pista**
-    Si tiene problemas para instalar el módulo `Net::IRR`, es posible que
-    el módulo `Net::TCP` no haya sido instalado. Existe un falla ("bug") y
-    el parche está disponible en:
-    <http://rt.cpan.org/Public/Bug/Display.html?id=43071>
 
 ## Configuración
 
@@ -239,9 +234,10 @@ Debe verificar si la versión que está instalando tiene nuevos requerimientos:
 ~~~~
 
 El esquema de la base de datos de Netdot **generalmente** sólo tiene 
-cambios importantes entre revisiones mayores. Por ejemplo, si se
-actualiza de la version 0.8.x a 0.9.x, se necesita ejecutar un script de
-actualización para cambiar la base de datos actual al nuevo esquema.
+cambios entre revisiones mayores. Por ejemplo, si se actualiza de la version 
+0.8.x a 0.9.x, se necesita ejecutar un script de actualización para adaptar
+la base de datos actual al nuevo esquema. Busque un fichero llamado doc/UPGRADE
+y allí encontrará instrucciones detalladas en una distribución particular.
 
 Si en su caso fuera necesario efectuar una actualización, puede hacerlo
 con el siguiente comando:
@@ -304,33 +300,39 @@ Finalmente, instale Netdot y reinicie Apache:
 
 ## Configuración del Servidor Web Apache
 
-Edite el fichero (*conf/netdot\_apache2\_<local|radius|ldap\>.conf*) que
-viene con el paquete para establecer la autenticación Local, RADIUS o
-LDAP. Cópielo en el directorio de configuracion de Apache e inclúyalo
-en el fichero de configuracion de Apache (httpd.conf), por ejemplo:
+Edite el fichero plantilla de Apache que viene con Netdot para establecer 
+la autenticación Local, RADIUS o LDAP. Cópielo en el directorio de 
+configuración de Apache e inclúyalo en el fichero de configuración de 
+Apache (httpd.conf), por ejemplo:
 
 ~~~~ {.apache}
 Include conf/netdot_apache2_<local|radius|ldap>.conf
 ~~~~
 
 Algunas configuraciones de Apache definen un directorio
-(*/etc/apache2/conf.d*) desde el cual se incluyen ficheros
-automáticamente cuando Apache se inicia. Copiando el fichero
-de configuración a ese directorio resuelve la situación, en el caso de
-RADIUS, por ejemplo:
+desde el cual se incluyen ficheros automáticamente cuando Apache se inicia. 
+En ese caso, puede crear un enlace al fichero de Netdot desde ese directorio:
+
+For example, in Debian or Ubuntu, it's a two-step process:
 
 ~~~~ {.bash}
-~# cp /usr/local/netdot/etc/netdot_apache2_radius.conf /etc/apache2/conf.d/
+~# cd /etc/apache2
+~# sudo ln -s /usr/local/netdot/etc/netdot_apache2_local.conf sites-available/netdot
+~# sudo ln -s sites-available/netdot sites-enabled/netdot
+~~~~
+
+O en otras distribuciones con sólo un directorio:
+
+~~~~ {.bash}
+~# ln -s /usr/local/netdot/etc/netdot_apache2_radius.conf /etc/apache2/conf.d/netdot
 ~~~~
 
 > **Pista**
 Asegúrese de utilizar la versión del fichero que se copia en el
-directorio de instalación
-(`/usr/local/netdot/etc/netdot_apache2_<local|radius|ldap>.conf`) al
-ejecutar make install. No utilice el fichero que está en el directorio
-fuente del paquete. Al ejecutar el comando de instalación, este
-fichero de configuración de Apache cambia dinámicamente en función de
-las rutas de carpetas definidas.
+directorio de instalación al ejecutar make install. No utilice el 
+fichero que está en el directorio fuente del paquete. Al ejecutar el 
+comando de instalación, este fichero de configuración de Apache cambia 
+dinámicamente en función de las rutas de carpetas definidas.
 
 Terminando todo lo anterior, reinicie Apache2. Si utiliza las opciones
 por defecto, cargue en su navegador la siguiente direccion:
@@ -383,8 +385,7 @@ periódicamente como tareas programadas utilizando cron.
     documentación debería actualizarse exportándola frecuentemente.
 
 *   Pueden generarse configuraciones para otros programas utilizando la
-    información de Netdot. Actualmente se exportan configuraciones para:
-    Nagios, Sysmon, ISC DNS, ISC DHCP y Rancid.
+    información de Netdot. Ver detalles más adelante.
 
 *   El fichero netdot.cron incluido en este paquete es un ejemplo de
     fichero de tareas programadas de cron para netdot. Se puede
@@ -398,6 +399,11 @@ periódicamente como tareas programadas utilizando cron.
 # Operación
 
 ## Gestión de Dispositivos
+
+En Netdot, los dispositivos (devices) representan equipos de infra-
+estructura de red: switches, enrutadores, cortafuegos, puntos de
+acceso inalámbrico, servidores, etc. Los nodos finales tales como
+computadores de sobremesa, laptops o printers no son 'devices'.
 
 Netdot puede descubrir y gestionar un gran número de dispositivos de
 red. La vía más simple para obtener y almacenar esta información es
@@ -527,7 +533,11 @@ Desde la página del dispositivo, se puede navegar a diferentes
 sub-secciones o pestañas, en función de la información que se desee
 editar.
 
-Interfaces: Aquí se pueden editar las descripciones de las interfaces,
+#### Pestaña Basics: En esta sección puede ver y editar información
+general sobre el dispositivo, por ejemplo su ubicación, la información
+de contacto y otros detalles de gestión.
+
+#### Interfaces: Aquí se pueden editar las descripciones de las interfaces,
 asignar los conectores de red, etc, haciendo click en el boton [edit].
 Se puede editar una interfaz específica haciendo click en su número o
 nombre. Si se ha ejecutado un descubrimiento de la topología, se puede
@@ -549,17 +559,85 @@ obsoletas con facilidad. Es recomandable dejar al proceso de
 descubrimiento de la topología actualizar la conexiones entre
 dispositivos.
 
+#### Pestaña Módulos: Si el dispositivo provee información de módulos
+de hardware via SNMP, Netdot la mostrará en esta sección. Los módulos
+se muestran organizados jerárquicamente dependiendo de cómo los módulos
+están incluidos dentro de otros.
+
+#### Pestaña IP: Esta sección lista todas las direcciones IP utilizadas
+por el dispositivo, junto con las subredes a las que pertenecen, las 
+interfaces donde están configuradas, y de manera opcional, su nombre
+DNS.
+
+Al final de esta sección, encontrará un diálogo para marcar la opción
+"Auto DNS" en todas las interfaces con direcciones IP. La finalidad
+de esta opción es hacer que Netdot genere nombres de DNS para cada
+dirección IP basándose en el nombre de la interfaz y del dispositivo.
+
+La lógica de esta operación se delega a un módulo "plugin", lo que
+significa que usted puede escribir su propio plugin para generar
+nombres DNS basado en su propio esquema (vea el fichero de configuración
+para más detalles). El plugin incluido con Netdot genera nombres como
+"ge-0-1.router1.mydomain.com", asumiendo que el nombre del dispositivo
+fuera 'router1' y la interfaz GigabitEthernet0/1. Esto es súmamente
+útil para cuando se está utilizando la herramienta 'traceroute'.
+
+Para que este mecanismo funcione, necesita lo siguiente:
+
+* El dispositivo ha de tener la opción 'Auto DNS' activada globalmente
+  (pestaña Basics) de la página de dispositivos.
+* Cada interfaz con una IP address debe tener la opción 'Auto DNS' activada
+* La dirección IP debe pertenecer a un bloque IP al cual se le haya
+  asignado un dominio (Zone) de DNS (Management -> Address Space)
+* Para que se generen también los récords tipo PTR, el bloque IP debe
+  tener una zona inversa asignada (in-addr.arpa o ip6.arpa).
+
+#### Pestaña BGP: Si el dispositivo es un enrutador con sesiones BGP,
+y la información se puede capturar con SNMP, Netdot mostrará esta 
+información en esta pestaña. Entre los campos mostrados están la 
+dirección IP del vecino BGP, el ID y el AS. El récord BGPPeering
+también incluye campos opcionales para indicar el número máximo de
+prefijos IPv4 o de IPv6 que se han de permitir, o si la sesión se
+ha de monitorizar (con Nagios), etc.
+
+Para cada AS descubierto, Netdot intenta encontrar más información
+utilizando la herramienta WHOIS. Si la información existe, se crea
+un récord tipo "entity" incluyendo el número y nombre del AS. Usted
+puede completar dicho record con más información de contacto, 
+comentarios, etc.
+
+## Assets (activos):
+
+Un asset en Netdot es un récord que contiene información común acerca
+del hardware red, por ejemplo, número de serie, dirección MAC, nombre
+del producto, etc. Además, los récords asset pueden usarse para documentar
+unidades adquiridas que aún no se han instalado. Una vez que el hardware
+haya sido instalado y descubierto con Netdot, el récord asset permanece
+y es referenciado por el nuevo dispositivo. 
+
+### Importar Assets
+
+Vaya a Management -> Assets -> [import]
+Este formulario le permite importar múltiples assets. Por ejemplo, puede
+utilizar un escaneador de códigos de barras para capturar la información
+desde las cajas de los equipos a medida que los recibe.
+
+Cree un fichero de texto compuesto de número de pieza, número de serie y 
+otros campos opcionales. El número de pieza debe coincidir con un récord
+tipo "product" en Netdot. El orden de los campos en cada línea debe
+coincidir con la lista de campos en el menú "Fields for import".
+
+Una vez importados, puede ver un reporte de sus assets en la sección de
+reportes.
+
 ## Gestión del espacio de direcciones IP
 
 Netdot es una herramienta muy útil para la gestión del espacio de
-direcciones IP (cononcido como IPAM -- IP Address Management). Las
-principales características son:
+direcciones IPv4 e IPv6. Las principales características son:
 
 *   El espacio de direciones es organizado jerárquicamente utilizando un
     algoritmo de árbol binario, la misma técnica utilizada por los
     enrutadores para realizar búsquedas de prefijos.
-
-*   Soporte para IPv4 e IPv6
 
 *   Nuevas subredes pueden ser creadas automáticamente a partir de la
     información obtenida de los enrutadores y cortafuegos.
@@ -567,6 +645,8 @@ principales características son:
 *   Interfaz muy intuitiva para visualizar el espacio usado y
     disponible, lo cual permite realizar las asignaciones con mayor
     claridad
+
+*   Gestión de configuraciones de DNS y DHCP
 
 ### Bloques IP
 
@@ -598,6 +678,9 @@ Los estados de una dirección de nodo son los siguientes:
     partir de registros ARP.
 
 *   *Reserved*: Direcciones que no deben ser asignadas.
+
+*   *Available*: Direcciones que han sido utilizadas anteriormente pero
+    que están disponibles para ser utilizadas en otra cosa.
 
 Por otro lado, los estados de un bloque IP son los siguientes:
 
@@ -698,7 +781,7 @@ zona, haciendo click en el botón [import] de la sección *Records* y
 pegando el texto del fichero de zona BIND en la caja de texto de la
 interfaz web.
 
-Cada vez que la zona o su contenido es modifcado, la operación es
+Cada vez que la zona o su contenido es modificado, la operación es
 adicionada a la lista de "cambios pendientes"/"pending changes". Esta
 lista es utilizada para determinar cuándo una zona necesita ser
 exportada. Las zonas pueden ser exportadas de forma manual a través de
@@ -716,7 +799,7 @@ página de dispositivos. Después, se debe acceder a la pestaña *IP Info*
 del dispositivo y para cada interfaz con direccion IP establezca que la
 opción "Auto DNS" tiene el valor "yes".
 
-### The '@' record
+### El registro '@'
 
 En Netdot, igual que en BIND, el registro '@' representa el dominio en
 cuestión (también llamado el ápice de la zona). Para adicionar registros
@@ -814,6 +897,14 @@ atributos que definan de dónde puede obtener su configuración. Se puede
 crear una plantilla que contenga estos atributos y utilizarla cada vez
 que sea necesario crear un ambito de dispositivos para teléfonos IP.
 
+### Ambitos Activos e Inactivos
+
+La opción 'active' en el objeto Scope determina si éste ha de ser
+incluído cuando se exporta la configuración de DHCP. Por ejemplo,
+si usted quisiera documentar la asignación de direcciones IP a
+direcciones MAC en una subred, pero no desea usar DHCP en tal subred,
+puede definir un ámbito de subred y marcarlo como inactivo.
+
 ## Información de Contacto
 
 Netdot utiliza el concepto de "Contact Lists" para mostrar la
@@ -834,6 +925,125 @@ Contacto en la sección *Contacts*.
 
 Netdot permite documentar el cableado entre edificios y del interior de
 los edificios, los armarios, conectores, etc.
+
+### Sites
+Los Sites son generalmente edificios con uno o más niveles (floors),
+closets y habitaciones. Los Sites se pueden asociar a otras cosas como
+gente, departamentos, subredes, etc.
+
+Para crear un Site nuevo, vaya a Cable Plant -> Sites -> [new].
+Necesitará asignar al menos un nombre único. También el 'Site ID' es
+un valor (más corto) que representará a este Site de manera única
+dentro de su organización. Es posible incluir fotos de los Sites en la 
+base de datos.
+
+### Closets
+Los closets de comunicaciones alojan equipos de red y terminaciones de
+cableado. Un closet se ubica en una habitación (room), la cual se ubica
+en un nivel (floor), el cual se ubica en un edificio (Site).
+
+Para crear un nuevo closet, vaya a Cable Plant -> Closets -> [new]. 
+También es posible incluir fotos de los closets en la base de datos.
+Esto es útil para cuando los técnicos necesitan verificar las caracte-
+rísticas físicas del espacio del closet antes de visitarlo.
+
+### Cables dorsales (Backbone Cables)
+Estos cables conectan dos closets entre sí.
+
+* Si un cable físico atraviesa closets en varios Sites, para fines de
+  representación en Netdot, estas secciones de cable se deberán repre-
+  sentar como cables dorsales separados
+
+* Los cables dorsales pueden interconectar closets dentro del mismo edificio.
+
+Pueden crearse nuevos cables dorsales yendo a Cable Plant -> Backbone Cables
+-> [new]. Se le pedirá que provea un closet de origen y uno de destino, el
+tipo de cable (cobre, fibra, etc.) y un identificador único (ID). Netdot
+puede sugerir un ID, el cual estará compuesto de los IDs de los sitios
+donde están ubicados los closets, seguido de un número de secuencia, por
+ejemplo: "123/456-1".
+
+El campo de número de filamento (Number of Strands), indicará a Netdot
+que deberá crear tal número de filamentos asociados a este cable.
+
+### Filamentos de cable (Cable Strands)
+Estos tienen varios atributos, incluyendo:
+
+* Número de secuencia
+* Estado - No terminado, disponible, dañado o en uso
+* Tipo de Fibra - Multi-modo o mono-modo
+* Circuito - Un circuito extremo a extremo compuesto de una secuencia
+  de filamentos empalmados (spliced strands)
+
+Puede hacer modificaciones de rangos de filamentos en grupo. Por ejemplo,
+si tuviese un nuevo cable de fibra híbrido de 24 fibras, de las cuales
+12 son mono-modo y 12 son multi-modo, en la página del cable dorsal,
+al final de la lista de filamentos, escriba "1-12", y luego seleccione
+el tipo "Single Mode", y el estado "Not Terminated". Y luego haga algo
+similar con el rango "13-24".
+
+Los filamentos de distintos cables dorsales pueden empalmarse unos con
+otros para formar una secuencia. Para empalmar un rango de filamentos,
+vaya al final de la página de Backbone Cable, en la sección "Manually
+Splice Strand Range", escriba el rango de filamentos que están empalmados
+con otro dorsal, por ejemplo, "1-12", y los filamentos correspondientes
+del otro dorsal, por ejemplo "1-12" o "13-24", y entonces seleccione
+el otro dorsal, y haga click on "Go". Ahora debería ver los filamentos
+contiguos en la columna "Spliced With", y la secuencia completa en la
+sección "Part of Sequence".
+
+### Circuitos
+Luego de haber creado secuencias de filamentos desde un origen A hasta
+un destino B, puede crear un circuito para agrupar esos filamentos y 
+asignarlos a un par de interfaces de dispositivos.
+
+Para crear un circuito, vaya a Cable Plant -> Circuits -> [new]. Será
+necesario proporcionar un identificador único, y luego un proveedor.
+En este caso, el proveedor podría ser su propia organización. También
+puede utilizar los circuitos en Netdot para documentar enlaces provistos
+por otros proveedores. En tales casos, el circuito probablemente no 
+estará asociado a filamentos de cable de su propiedad.
+
+Los circuitos tiene las siguientes propiedades, entre otras:
+
+* Site Link: Registra la asociación entre dos Sites que están conectados
+  por este circuito. El enlace entre dos Sites puede estar conformado
+  por más de un circuito.
+* Status: Activo, Inabilitado, Desconectado, Pendiente
+* Type: DS3, Ethernet, Frame Relay, etc.
+* Loss: Los últimos valores de pérdida medidos en el circuito
+
+Una vez creado un circuito, tendrá la opción de asociarlo a una lista de
+secuencias de filamentos. Simplemente seleccione los sitios de origen y
+destino, y luego seleccione un par de secuencias de filamentos que 
+compondrán este circuito (asumiendo que es un circuito de fibra).
+
+También encontrará la opción de asociar un par de interfaces de dispositivos
+a este circuito.
+
+### Cables Horizontales
+Un cable horizontal representa cableado que comienza en un closet y termina
+en una toma de red en alguna oficina o habitación, generalmente cable de
+par de cobre categoría 5 o similar. Describiremos algunos de sus atributos:
+
+* Jack ID: Un identificador único de la toma en toda la organización. Por
+  ejemplo, una toma ubicada en el sitio #123, terminada en el closet "A", 
+  y cuyo número de secuencia es "456" podría identificarse de manera única
+  con algo similar a "123-A-456".
+* Faceplate ID: Identificador de placa. Generalmente varias tomas de red se
+  agrupan en una placa única que se encaja en la pared. Este campo aloja
+  la identificación única de la placa, no de la toma de red.
+* Type: Cat5, Cat6, etc.
+* Closet: El armario o closet the comunicaciones donde se inicia el cable
+* Room: La oficina o habitación donde termina el cable.
+
+Una vez creado, puede asignar este cable a una interfaz de dispositivo
+yendo a la página de dispositivos, seleccionando la pestaña "Interfaces"
+y luego [edit]. Debería ver una lista de los cables existentes en la
+columna "Jack(cable)". Note que también existen los campos de texto sin
+formato opcionales "Room" y "Jack". Estos están disponibles por si usted
+no tuviera necesidad de documentar los cables horizontales, pero sí las
+asignaciones de puerto a tomas de red.
 
 ## Operaciones avanzadas de BD
 
@@ -885,7 +1095,22 @@ Este reporte muestra una lista de dispositivos que tienen una versión de
 sistema operativo que difiere de la recomendada. La lista está agrupada
 por fabricante, modelo, tipo de dispositivos y version actual del SO.
 
-### Reportes IP (IP Reports)
+### Reportes de activos (Assets)
+
+Los reportes de assets son principalmente útiles para la identificación
+de hardware, ya sea instalado o sin instalar.
+
+#### Por tipo/modelo (Type/Model)
+
+Muestra un resumen del hardware por tipo y modelo, y muestra las cantidades
+de cada uno. 
+
+#### Detallado (Detailed)
+
+Muestra una lista de activos incluyendo su tipo, modelo, número de serie,
+número de inventario, si está instalado o no, comentarios, etc.
+
+### Reportes de IP (IP Reports)
 
 #### Subredes no utilizadas/Unused Subnets
 
@@ -1043,7 +1268,7 @@ formatos como YAML.
 
 ## Recursos tipo REST Genéricos
 
-### La interfaz REST está disponible a través del siguiente URL (o similar, dependiendo de su configuración de Apache):
+* La interfaz REST está disponible a través del siguiente URL (o similar, dependiendo de su configuración de Apache):
 
 ~~~~
 https://myserver.mydomain.com/netdot/rest/
@@ -1055,7 +1280,7 @@ Esto debe cargar la clase Netdot::REST y mostrar algo como lo siguiente en su na
 Netdot/1.0 REST OK. 
 ~~~~
 
-### Los recursos REST a procesar representan objetos Netdot y son parte del URI de la petición HTTP. Por ejemplo, en este URI:
+* Los recursos REST a procesar representan objetos Netdot y son parte del URI de la petición HTTP. Por ejemplo, en este URI:
 
 ~~~~
 http://myserver.mydomain.com/netdot/rest/device/1
@@ -1064,7 +1289,7 @@ http://myserver.mydomain.com/netdot/rest/device/1
 el recurso es "device/1", el cual, en una petición tipo "GET", 
 retornará el contenido del objeto Device con ID "1".
 
-### Usando el siguiente URI en la petición tipo "GET":
+* Usando el siguiente URI en la petición tipo "GET":
 
 ~~~~
 http://myserver.mydomain.com/netdot/rest/device
@@ -1072,7 +1297,7 @@ http://myserver.mydomain.com/netdot/rest/device
 
 esta interfaz devolverá los contenidos de todos los objetos tipo "Device" existentes. 
 
-### Es posible especificar ciertos filtros para
+* Es posible especificar ciertos filtros para
 limitar el alcance de los resultados:
 
 ~~~~
@@ -1081,13 +1306,13 @@ http://myserver.mydomain.com/netdot/rest/device?sysname=host1
 
 Esto realizará una búsqueda de todos los "devices" cuyo campo "sysname" tenga el valor "host1".
 
-### La palabra clave "meta_data", en lugar de un ID de objeto, proveerá información acerca de la clase de objeto:
+* La palabra clave "meta_data", en lugar de un ID de objeto, proveerá información acerca de la clase de objeto:
 
 ~~~~
 http://myserver.mydomain.com/netdot/rest/device/meta_data
 ~~~~
 
-### Un recurso existente podrá actualizarse utilizando el método
+* Un recurso existente podrá actualizarse utilizando el método
 "POST" con parámetros relevantes. Por ejemplo, una petición
 tipo "POST" con el siguiente URI:
 
@@ -1101,66 +1326,69 @@ actualizará el campo 'sysname' del objeto "Device" con ID "1" y le asignará el
 http://netdot.localdomain/rest/person/?firstname=John&lastname=Doe
 ~~~~
 
-### Finalmente, un objeto en específico se puede eliminar utilizando
+* Finalmente, un objeto en específico se puede eliminar utilizando
 el método "DELETE" de HTTP.
 
 ## Recursos tipo REST de propósito específico
 
-### El recurso especial '/rest/host' provee una interfaz simplificada
+### /rest/host
+
+El recurso especial '/rest/host' provee una interfaz simplificada
 para manipular los récords DNS y DHCP. Vamos a ilustrar su uso
 con los siguientes ejemplos:
 
 #### Obtener datos de hosts (HTTP GET)
 
-Obtener todos los objetos RR (DNS)
+* Obtener todos los objetos RR (DNS)
 
 ~~~~
 http://netdot.localdomain/netdot/rest/host
 ~~~~
 
-Obtener todos los objetos DNS de una zona
+* Obtener todos los objetos DNS de una zona
 
 ~~~~
 http://netdot.localdomain/netdot/rest/host?zone=localdomain
 ~~~~
 
-Recuperar el RR con nombre 'foo'
+* Recuperar el RR con nombre 'foo'
 
 ~~~~
 http://netdot.localdomain/netdot/rest/host?name=foo
 ~~~~
      
-Recuperar el RR con id 1
+* Recuperar el RR con id 1
 
 ~~~~
 http://netdot.localdomain/netdot/rest/host?rrid=1
 ~~~~
 
-Obtener todos los objetos IP de una subred
+* Obtener todos los objetos IP de una subred
 
 ~~~~
 http://netdot.localdomain/netdot/rest/host?subnet=192.168.1.0/24
 ~~~~
 
-#### Crear nuevos records (HTTP POST). Ojo: No especificar el Id
+#### Crear nuevos records (HTTP POST). 
 
-Crear un récord tipo A llamado 'host1' y asignar la primera dirección IP disponible:
+* Crear un récord tipo A llamado 'host1' y asignar la primera dirección IP disponible
+(Ojo: No especificar el Id):
 
 ~~~~
 URL:  http://netdot.localdomain/netdot/rest/host?name=host1
 POST: {subnet=>'192.168.1.0/24'}
 ~~~~
 
-#### Actualizar récords existentes (HTTP POST). Requiere rrid o ipid
+#### Actualizar récords existentes (HTTP POST). 
 
-Cambiar el nombre al host con RR Id 2
+* Cambiar el nombre al host con RR Id 2. Requiere rrid o ipid:
 
 ~~~~
 URL:  http://netdot.localdomain/netdot/rest/host?rrid=2
 POST: {name=>'nombre-nuevo'}
 ~~~~
 
-Actualizar la dirección MAC del host DHCP con Ipblock Id 3
+* Actualizar la dirección MAC del host DHCP con Ipblock Id 3
 
 ~~~~
 URL:  http://netdot.localdomain/netdot/rest/host?ipid=2

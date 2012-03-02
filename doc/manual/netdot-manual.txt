@@ -60,6 +60,7 @@ Netdot features include:
 
 *   Netdot can generate configuration files for various other tools,
     including: 
+
     * [Nagios](http://www.nagios.org),
     * [Sysmon](http://www.sysmon.org),
     * [RANCID](http://www.shrubbery.net/rancid),
@@ -153,7 +154,7 @@ Netdot, i.e.
     ~% make testdeps
     ~~~~
 
-*   There are two ways to install the missing modules: The first (and
+*   There are two ways to install dependencies: The first (and
     the recommended) way is through package managers of your
     distribution.
 
@@ -170,8 +171,8 @@ Netdot, i.e.
     ~~~~
 
     > **Tip**
-    If you are still missing modules after running this step, you can
-    complete the process by running the next step.
+    If you are still missing Perl modules after running this step, 
+    you can complete the process in the next step.
 
 *   Alternatively, you can install any missing modules automatically
     using the CPAN, by running:
@@ -187,12 +188,6 @@ Netdot, i.e.
     ~# cpan
     >install Module::Blah
     ~~~~
-
-    > **Tip**
-    If you have problems installing module `Net::IRR`, it is possible that
-    module `Net::TCP` has not been installed. There is a bug, and
-    the patch is available at:
-    <http://rt.cpan.org/Public/Bug/Display.html?id=43071>
 
 ## Configuration
 
@@ -224,7 +219,7 @@ requirements that need to be satisfied:
 
 ~~~~ {.bash}
 ~# make testdeps
-~# make installdeps (or installdeps-rpm, installdeps-apt-get)
+~# make installdeps (or rpm-install, apt-install)
 ~~~~
 
 Netdot's database schema **usually** only changes between major
@@ -300,11 +295,21 @@ Include conf/netdot_apache2_<local|radius|ldap>.conf
 ~~~~
 
 Alternatively, some Apache environments provide a directory from which
-files are included automatically when Apache starts. In that case, it's
-sufficient to copy the file into that directory, for example:
+files are included automatically when Apache starts. In that case, you
+can create a link to the file in said directory. 
+
+For example, in Debian or Ubuntu, it's a two-step process:
 
 ~~~~ {.bash}
-~# cp /usr/local/netdot/etc/netdot_apache2_radius.conf /etc/apache2/conf.d/
+~# cd /etc/apache2
+~# sudo ln -s /usr/local/netdot/etc/netdot_apache2_local.conf sites-available/netdot
+~# sudo ln -s sites-available/netdot sites-enabled/netdot
+~~~~
+
+Or, in other distributions with just one directory:
+
+~~~~ {.bash}
+~# ln -s /usr/local/netdot/etc/netdot_apache2_radius.conf /etc/apache2/conf.d/netdot
 ~~~~
 
 > **Tip**
@@ -360,7 +365,7 @@ jobs.
     be kept up to date by exporting it frequently.
 
 *   Configurations for external programs can be generated using Netdot
-    data. Current supported programs include: Nagios, Sysmon and Rancid.
+    data. See details later in this document.
 
 *   The netdot.cron file included in the package is a sample crontab
     containing recommended periodic jobs. You should customize it to
@@ -538,16 +543,18 @@ that you can write your own plugin to generate DNS names based on your own
 naming scheme (see configuration file for more details). The included 
 plugin generates names such as "ge-0-1.router1.mydomain.com", assuming 
 that the device name is router1 and that the interface is GigabitEthernet0/1.
+This is very useful for when you are using the traceroute utility.
+
 For this to work you need the following:
 
 * The device has to have its "Auto DNS" flag set (Basics section of the
-device page).
+  device page).
 * Each interface with an IP address on the device has to have the "Auto
-DNS flag on"
+  DNS flag on"
 * The IP address must exist within an IP block which has been assigned
-a DNS zone (Management -> Address Space).
+  a DNS zone (Management -> Address Space).
 * For PTR records to be generated as well, the IP block must have a
-reverse zone (in-addr.arpa or ip6.arpa) associated with it.
+  reverse zone (in-addr.arpa or ip6.arpa) associated with it.
 
 #### BGP Peers Tab: If the device is a router with BGP peering sessions,
 and those are seen via SNMP, Netdot will show that information in this
@@ -843,6 +850,14 @@ define where it should get its configuration from and other things. You
 can create a template containing these attributes and then use that
 template each time you create a host scope for IP phones.
 
+### Active and Inactive Scopes
+
+The 'active' flag in the scope object determines whether this scope
+will be used while exporting DHCP configurations. For example, if you
+wish to document the assignment of IP addresses to MAC addresses in
+a given subnet, but you do not want to run DHCP on that subnet, you
+can create a Subnet scope and make it inactive.
+
 ## Contact Information
 
 Netdot uses the concept of "Contact Lists" to show contact information
@@ -870,9 +885,8 @@ Sites can be associated with other things, such as people, departments,
 subnets, etc.
 
 To create a new Site, go to Cable Plant -> Sites and click on [new].
-You will need to enter a name and a City. The "Site ID" is a value
-that can represent the (shorter) unique identification of that building
-within the organization.
+You will need to enter a name. The "Site ID" is a value that can represent 
+the (shorter) unique identification of that building within the organization.
 
 You can also insert pictures of Sites in the database.
 
@@ -899,7 +913,7 @@ New backbone cables can be created by going to Cable Plant -> Backbone Cables
 and clicking on [new]. You will be asked to provide the origin and destination
 closets, the type of cable (Copper Bundle, Fiber, etc), and a cable ID.
 Netdot can suggest a cable ID value, which will be composed of the endpoint
-Site IDs and a sequence number, for example "123/456-1". 
+Site IDs and a sequence number, for example "123/456-1".
 
 The field "Number of Strands" will tell Netdot to create that many strands
 associated with the new cable.
@@ -920,8 +934,8 @@ Status: "Not Terminated". Do similarly for range 13-24.
 
 Fiber strands from diferent backbone cables can be spliced together
 to form a sequence. To splice a range of strands, go to the bottom of
-the Backbone Cable page, in the section "Manually Splice Strand Range",
-then type the range of strands that are spliced to another backbone,
+the Backbone Cable page, and in the section "Manually Splice Strand Range",
+type the range of strands that are spliced to another backbone,
 for example, "1-12", and the corresponding strands from the next backbone,
 say "1-12" or "13-24", then select the other backbone cable, and click "Go"
 You should now see the contiguous strands in the "Spliced With" column,
@@ -940,7 +954,8 @@ circuit would probably not be associated with fiber strands that you own.
 
 Circuits have these attributes, among others:
 
-* Site Link: A record that ties two sites that are linked by this circuit
+* Site Link: A record that ties two sites that are linked by this circuit.
+  A link betwen two sites can use more than one circuit.
 * Status: Active, Disabled, Disconnected, Pending
 * Type: DS3, Ethernet, Frame Relay, etc.
 * Speed: 45Mbps, 100Mbps, etc.
@@ -1022,18 +1037,18 @@ model, then device name and it shows the current OS version.
 
 ### Asset Reports
 
-Asset reports are most useful for identifying device hardware that
-is in stock (not yet installed). 
+Asset reports are most useful for identifying existing device hardware,
+be it installed or not installed.
 
 #### By Type/Model
 
 Gives a summary of device hardware by type and model, and shows
-quantities of each
+quantities of each. 
 
-#### By Type/Model (detailed)
+#### Detailed
 
-Shows a list of assets by type and model, showing each asset's serial
-number, inventory number, whether it has been installed or not, etc.
+Shows a list of assets including their type, model serial number, inventory 
+number, whether it has been installed or not, comments, etc.
 
 ### IP Reports
 
@@ -1183,7 +1198,7 @@ support other formats, such as YAML or JSON.
 
 ## Generic RESTful resources
 
-### The REST interface is available using the following URL (or similar, depending on your Apache configuration):
+* The REST interface is available using the following URL (or similar, depending on your Apache configuration):
 
 ~~~~
 https://myserver.mydomain.com/netdot/rest/
@@ -1195,7 +1210,7 @@ https://myserver.mydomain.com/netdot/rest/
 Netdot/1.0 REST OK. 
 ~~~~
 
-### Generic RESTful resources to be acted upon represent Netdot objects and are part of the request URI. For example, in this URI:
+* Generic RESTful resources to be acted upon represent Netdot objects and are part of the request URI. For example, in this URI:
 
 ~~~~
 http://myserver.mydomain.com/netdot/rest/device/1
@@ -1203,7 +1218,7 @@ http://myserver.mydomain.com/netdot/rest/device/1
 
  the resource is "device/1", which for a GET request, will return the contents of Device id 1.
 
-### Using the following URI with a GET request:
+* Using the following URI with a GET request:
 
 ~~~~
 http://myserver.mydomain.com/netdot/rest/device
@@ -1211,7 +1226,7 @@ http://myserver.mydomain.com/netdot/rest/device
 
  this interface will return the contents of all Device objects in the database. 
 
-### You can also specify certain search filters to limit the scope
+* You can also specify certain search filters to limit the scope
 of a GET request:
 
 ~~~~
@@ -1220,13 +1235,13 @@ http://myserver.mydomain.com/netdot/rest/device?sysname=host1
 
  This will perform a search and return all devices whose sysname field is 'host1'.
 
-### The special keyword `meta_data` instead of an object ID will provide information about the object's class:
+* The special keyword `meta_data` instead of an object ID will provide information about the object's class:
 
 ~~~~
 http://myserver.mydomain.com/netdot/rest/device/meta_data
 ~~~~
 
-### An existing resource can be updated by using the 'POST' method with relevant parameters. For example, a POST request to the following URI:
+* An existing resource can be updated by using the 'POST' method with relevant parameters. For example, a POST request to the following URI:
 
 ~~~~
 URL: http://netdot.localdomain/rest/device/1
@@ -1236,70 +1251,73 @@ POST: {sysname=>'newhostname'}
  will update the 'sysname' field of the Device object with id 1 to be "newhostname". 
 
 
-### Similarly, a new object can be created with a POST request. However, in this case the object id must be left out:
+* Similarly, a new object can be created with a POST request. However, in this case the object id must be left out:
 
 ~~~~
 URL: http://netdot.localdomain/rest/person
 POST: {firstname=>'John', lastname=>'Doe'}
 ~~~~
 
-### Specific objects can be deleted by using the 'DELETE' HTTP method.
+* Specific objects can be deleted by using the 'DELETE' HTTP method.
 
 ## Special-purpose REST resources
 
-### The special resource '/rest/host' provides a simplified interface for manipulating DNS and DHCP records. We will illustrate its usage with the following examples:
+### /rest/host
+
+The special resource '/rest/host' provides a simplified interface for manipulating DNS and DHCP records. We will illustrate its usage with the following examples:
 
 #### Retrieving host data (HTTP GET)
 
-Retrieve all RR (DNS) objects
+* Retrieve all RR (DNS) objects
 
 ~~~~
 http://netdot.localdomain/netdot/rest/host
 ~~~~
 
-Retrieve all RR objects within given zone
+* Retrieve all RR objects within given zone
 
 ~~~~
 http://netdot.localdomain/netdot/rest/host?zone=localdomain
 ~~~~
 
-Retrieve RR name "foo" and its related records
+* Retrieve RR name "foo" and its related records
 
 ~~~~
 http://netdot.localdomain/netdot/rest/host?name=foo
 ~~~~
      
-Retrieve RR id 1 and all related records
+* Retrieve RR id 1 and all related records
 
 ~~~~
 http://netdot.localdomain/netdot/rest/host?rrid=1
 ~~~~
 
-Retrieve all Ipblock objects within given subnet
+* Retrieve all Ipblock objects within given subnet
 
 ~~~~
 http://netdot.localdomain/netdot/rest/host?subnet=192.168.1.0/24
 ~~~~
 
-#### Creating new records (HTTP POST). Here the trick is to not specify an object id
+#### Creating new records (HTTP POST). 
 
-Create new A record named 'host1' using next available address in given subnet:
+* Create new A record named 'host1' using next available address in given subnet
+(note: do not specify an object ID):
 
 ~~~~
 URL:  http://netdot.localdomain/netdot/rest/host?name=host1
 POST: {subnet=>'192.168.1.0/24'}
 ~~~~
 
-#### Updating existing records (HTTP POST) Requires passing rrid or ipid. 
+#### Updating existing records (HTTP POST) 
 
-Rename host with RR id=2
+* Requires passing rrid or ipid. Rename host with RR id=2
 
 ~~~~
 URL:  http://netdot.localdomain/netdot/rest/host?rrid=2
 POST: {name=>'newname'}
 ~~~~
 
-Update DHCP scope ethernet for Ipblock with id=3
+* Update DHCP scope ethernet for Ipblock with id=3
 
 ~~~~
 URL:  http://netdot.localdomain/netdot/rest/host?ipid=2
@@ -1308,7 +1326,7 @@ POST: {ethernet=>'DEADDEADBEEF'}
 
 #### Deleting records (HTTP DELETE)
 
-Delete hostname with RR id 3 (also frees IP)
+* Delete hostname with RR id 3 (also frees IP)
  
 ~~~~
 http://netdot.localdomain/netdot/rest/host?rrid=3
