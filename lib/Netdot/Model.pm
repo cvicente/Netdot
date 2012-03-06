@@ -379,9 +379,13 @@ sub insert {
 	# This object seems to include a stack trace
 	# in the message itself. We try to remove it
 	# in several ways.
-	$e->show_trace(0);
-	$error = $e->error;
-	$error =~ s/Stack:.*//sg;
+	if ( ref($e) =~ /Exception/ ){
+	    $e->show_trace(0);
+	    $error = $e->error;
+	    $error =~ s/Stack:.*//sg;
+	}else{
+	    $error = $e;
+	}
 	my $msg = "Error while inserting $class: ";
 	if ( $e =~ /Duplicate entry/i ){
 	    $msg .= "Some values are duplicated\n\n";

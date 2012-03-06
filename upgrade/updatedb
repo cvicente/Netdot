@@ -77,13 +77,15 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
 # Store assets to be inserted, keyed by serial number
 my %assets;
 
-# Grab devices with serial number
+# Grab devices with serial number and product
 my $sndevs = $dbh->selectall_arrayref('SELECT serialnumber,custom_serial,physaddr,
                                               inventorynumber,maint_contract,maint_from,
                                               maint_until,product 
                                          FROM device
 		                        WHERE serialnumber IS NOT NULL
-                                          AND serialnumber != "" ');
+                                          AND serialnumber != "" 
+                                          AND product IS NOT NULL
+                                          AND product != "" ');
 foreach my $row ( @$sndevs ){
     my $sn = $row->[0];
     $sn =~ s/^\s+|\s+$//g;
@@ -99,12 +101,87 @@ foreach my $row ( @$sndevs ){
     }
 }
 
-# Grab devices with base MAC but no serial number
+########################################################
+# Grab devicemodules with serial number and model.
+# Migrating stuff from modules takes a bit more work
+# because the new products need to be created
+my $snmods = $dbh->selectall_arrayref('SELECT dm.serialnumber,dm.inventorynumber,dm.maint_contract,
+                                              dm.maint_from,dm.maint_until,dm.model,e.id
+                                         FROM devicemodule dm, device d, product p, entity e
+                                        WHERE dm.device=d.id AND d.product=p.id 
+                                          AND p.manufacturer=e.id
+		                          AND dm.serialnumber IS NOT NULL
+                                          AND dm.serialnumber != "" 
+                                          AND dm.model IS NOT NULL 
+                                          AND dm.model != "" ');
+
+my %products;
+foreach my $row ( @$snmods ){
+    my $sn = $row->[0];
+    $sn =~ s/^\s+|\s+$//g;
+    next unless $sn;
+    my $model = $row->[6];
+    my $mf    = $row->[7];
+    next unless $model && $mf;
+    my $i = 1;
+    foreach my $v (qw/in mc mf mu/){
+	$assets{sn}{$sn}{$v} = $row->[$i];
+	$i++;
+    }
+    # Associate model/mf with each S/N
+    push(@{$products{$mf}{$model}}, $sn);
+}
+
+# Insert products
+my $np = $dbh->prepare('INSERT INTO product (name, manufacturer) VALUES(?,?)');
+foreach my $mf ( keys %products ){
+    foreach my $model ( %{$products{$mf}} ){
+	next if ($model =~ /Fill in/io );
+	eval {
+	    $np->execute($model, $mf);
+	};
+	if ( my $e = $@ ){
+	    if ( $e =~ /duplicate/i ){
+		next;
+	    }else{
+		die $e;
+	    }
+	}
+	print "DEBUG: Inserted product ($mf, $model)\n" if $CONFIG{debug};
+    }
+}
+# Get product IDs
+print "DEBUG: Retrieving all products from DB\n" if $CONFIG{debug};
+my $prodq = $dbh->selectall_arrayref('SELECT id,name,manufacturer FROM product');
+my %allprods;
+foreach my $row ( @$prodq ){
+    my($id,$name,$mf) = @$row;
+    $allprods{$mf}{$name} = $id;
+}
+
+# Complete the Asset hash with product IDs
+foreach my $mf ( keys %products ){
+    foreach my $model ( keys %{$products{$mf}} ){
+	my $product_id;
+	if ( exists $allprods{$mf}{$model} ){
+	    $product_id = $allprods{$mf}{$model};
+	    print "DEBUG: Product ($mf,$model) found: $product_id\n" if $CONFIG{debug};
+	    foreach my $sn ( @{$products{$mf}{$model}} ){
+		print "DEBUG: Assigning prod ID: $product_id to module S/N: $sn\n" if $CONFIG{debug};
+		$assets{sn}{$sn}{pr} = $product_id;
+	    }
+	}
+    }
+}
+
+# Grab devices with base MAC and product but no serial number
 my $macdevs = $dbh->selectall_arrayref('SELECT physaddr,custom_serial,inventorynumber,
                                                maint_contract,maint_from,maint_until,product 
                                           FROM device
 		                         WHERE physaddr is not NULL
-                                           AND physaddr != 0
+                                           AND physaddr != 0 
+                                           AND product IS NOT NULL
+                                           AND product != "" 
                                            AND (serialnumber IS NULL
                                              OR serialnumber = "")');
 foreach my $row ( @$macdevs ){
@@ -121,7 +198,7 @@ foreach my $row ( @$macdevs ){
     }
 }
 
-# Create asset records with information from devices
+# Create asset records with information from devices and modules
 my $ia = $dbh->prepare('INSERT INTO asset (serial_number,custom_serial,physaddr,
                                            inventory_number,maint_contract,
                                            maint_from,maint_until,product_id)
@@ -131,6 +208,7 @@ foreach my $sn ( keys %{$assets{sn}} ){
     my %vals = %{$assets{sn}{$sn}};
     my ($cs,$ph,$in,$mc,$mf,$mu,$pr) = @vals{'cs','ph','in','mc','mf','mu','pr'};
     $ia->execute($sn,$cs,$ph,$in,$mc,$mf,$mu,$pr);
+    print "DEBUG: Created asset: S/N: $sn, product: $pr\n" if $CONFIG{debug};
     $newassets{$ph} = 1 if $ph;
 }
 
@@ -140,8 +218,8 @@ foreach my $ph ( keys %{$assets{ph}} ){
     next if ( exists $newassets{$ph} );
     my $sn = undef;
     $ia->execute($sn,$cs,$ph,$in,$mc,$mf,$mu,$pr);
+    print "DEBUG: Created asset: Mac: $ph, product: $pr\n" if $CONFIG{debug};
 }
-
 
 # Grab hostaudit data before conversion
 my $haudits = $dbh->selectall_arrayref('SELECT          ha.id,zone.name,dhcpscope.name  
@@ -159,14 +237,20 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
     my $dbname = $netdot_config->get('DB_DATABASE');
     @statements = (
             "ALTER DATABASE $dbname CHARACTER SET utf8 COLLATE utf8_general_ci;",
-            "ALTER TABLE device ADD COLUMN asset_id bigint AFTER aliases;",
-            "ALTER TABLE device ADD COLUMN extension integer AFTER down_until;",
-            "ALTER TABLE device_history ADD COLUMN asset_id bigint AFTER aliases;",
-            "ALTER TABLE device_history ADD COLUMN extension integer AFTER down_until;",
+            "ALTER TABLE device ADD COLUMN asset_id bigint;",
+            "ALTER TABLE device ADD COLUMN extension integer;",
+            "ALTER TABLE device_history ADD COLUMN asset_id bigint;",
+            "ALTER TABLE device_history ADD COLUMN extension integer;",
 
             "UPDATE device,asset SET device.asset_id=asset.id 
-              WHERE asset.serial_number=device.serialnumber
+              WHERE (asset.serial_number=device.serialnumber
+                AND asset.product_id=device.product)
                 OR  asset.physaddr=device.physaddr;",
+
+            "ALTER TABLE devicemodule ADD COLUMN asset_id bigint;",
+
+            "UPDATE devicemodule,asset SET devicemodule.asset_id=asset.id 
+              WHERE asset.serial_number=devicemodule.serialnumber;",
 
             "ALTER TABLE device DROP COLUMN serialnumber;",
             "ALTER TABLE device DROP COLUMN inventorynumber;",
@@ -185,16 +269,18 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
             "ALTER TABLE device_history DROP COLUMN custom_serial;",
             "ALTER TABLE device_history DROP COLUMN physaddr;",
             "ALTER TABLE device_history DROP COLUMN product;",
-            "ALTER TABLE devicemodule CHANGE COLUMN serialnumber serial_number varchar(128);",
-            "ALTER TABLE devicemodule CHANGE COLUMN inventorynumber inventory_number varchar(64);",
-            "ALTER TABLE devicemodule ADD INDEX devicemodule2 (serial_number);",
-            "ALTER TABLE devicemodule ADD INDEX devicemodule3 (inventory_number);",
+            "ALTER TABLE devicemodule DROP COLUMN serialnumber;",
+            "ALTER TABLE devicemodule DROP COLUMN inventorynumber;",
+            "ALTER TABLE devicemodule DROP COLUMN maint_contract;",
+            "ALTER TABLE devicemodule DROP COLUMN maint_from;",
+            "ALTER TABLE devicemodule DROP COLUMN maint_until;",
             "ALTER TABLE dhcpscope ADD COLUMN active tinyint(1) NOT NULL;",
             "UPDATE dhcpscope SET active=1;",
             "ALTER TABLE dhcpscope ADD COLUMN duid varchar(255);",
             "ALTER TABLE dhcpscope ADD COLUMN version integer;",
             "ALTER TABLE entity ADD COLUMN config_type varchar(255);",
             "ALTER TABLE entity_history ADD COLUMN config_type varchar(255);",
+            "ALTER TABLE entity ADD UNIQUE INDEX Entity5 (oid);",
             "ALTER TABLE product ADD COLUMN part_number varchar(255);",
             "ALTER TABLE product ADD COLUMN config_type varchar(255);",
             "ALTER TABLE product_history ADD COLUMN part_number varchar(255);",
@@ -202,15 +288,15 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
             "ALTER TABLE interface MODIFY COLUMN speed bigint;",
             "ALTER TABLE datacache MODIFY COLUMN tstamp bigint NOT NULL;",
             "DELETE FROM datacache;",
-            "ALTER TABLE device ADD COLUMN snmp_conn_attempts integer AFTER snmp_bulk;",
-            "ALTER TABLE device ADD COLUMN snmp_down tinyint(1) NOT NULL AFTER snmp_conn_attempts;",
-            "ALTER TABLE device_history ADD COLUMN snmp_conn_attempts integer AFTER snmp_bulk;",
-            "ALTER TABLE device_history ADD COLUMN snmp_down tinyint(1) NOT NULL AFTER snmp_conn_attempts;",
-            "ALTER TABLE rr ADD COLUMN created timestamp AFTER auto_update;",
-            "ALTER TABLE rr ADD COLUMN modified timestamp AFTER info;",
+            "ALTER TABLE device ADD COLUMN snmp_conn_attempts integer;",
+            "ALTER TABLE device ADD COLUMN snmp_down tinyint(1) NOT NULL;",
+            "ALTER TABLE device_history ADD COLUMN snmp_conn_attempts integer;",
+            "ALTER TABLE device_history ADD COLUMN snmp_down tinyint(1) NOT NULL;",
+            "ALTER TABLE rr ADD COLUMN created timestamp;",
+            "ALTER TABLE rr ADD COLUMN modified timestamp;",
             "ALTER TABLE rr ADD INDEX RR4 (`created`);",
             "ALTER TABLE rr ADD INDEX RR5 (`modified`);",
-            "ALTER TABLE zone ADD COLUMN include blob AFTER id;",
+            "ALTER TABLE zone ADD COLUMN include blob;",
             "ALTER TABLE rrloc MODIFY COLUMN latitude bigint NOT NULL;",
             "ALTER TABLE rrloc MODIFY COLUMN longitude bigint NOT NULL;",
             "ALTER TABLE rrloc MODIFY COLUMN altitude bigint NOT NULL;",
@@ -233,17 +319,20 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
     @statements = (
             "ALTER TABLE device ADD COLUMN asset_id bigint;",
             "ALTER TABLE device ADD COLUMN extension integer NULL;",
-            "ALTER TABLE device DROP COLUMN physaddr;",
-	    "ALTER TABLE device DROP COLUMN product;",
             "ALTER TABLE device_history ADD COLUMN asset_id bigint;",
             "ALTER TABLE device_history ADD COLUMN extension integer NULL;",
-            "ALTER TABLE device_history DROP COLUMN physaddr;",
-	    "ALTER TABLE device_history DROP COLUMN product;",
 
             "UPDATE device SET asset_id=asset.id 
                FROM asset 
-              WHERE asset.serial_number=device.serialnumber
+              WHERE (asset.serial_number=device.serialnumber
+                AND asset.product_id=device.product)
                  OR asset.physaddr=device.physaddr;",
+
+            "ALTER TABLE devicemodule ADD COLUMN asset_id bigint;",
+
+            "UPDATE devicemodule SET asset_id=asset.id 
+               FROM asset 
+              WHERE asset.serial_number=devicemodule.serialnumber;",
 
             "ALTER TABLE device DROP COLUMN serialnumber;",
             "ALTER TABLE device DROP COLUMN inventorynumber;",
@@ -253,8 +342,7 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
             "ALTER TABLE device DROP COLUMN custom_serial;",
             "ALTER TABLE device DROP COLUMN physaddr;",
             "ALTER TABLE device DROP COLUMN product;",
-            "CREATE UNIQUE INDEX Device2 ON device(asset_id);",
-            "CREATE INDEX Device14 ON device(extension);",
+            "CREATE INDEX Device13 ON device(extension);",
             "ALTER TABLE device_history DROP COLUMN serialnumber;",
             "ALTER TABLE device_history DROP COLUMN inventorynumber;",
             "ALTER TABLE device_history DROP COLUMN maint_contract;",
@@ -263,21 +351,24 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
             "ALTER TABLE device_history DROP COLUMN custom_serial;",
             "ALTER TABLE device_history DROP COLUMN physaddr;",
             "ALTER TABLE device_history DROP COLUMN product;",
-            "ALTER TABLE devicemodule RENAME COLUMN serialnumber TO serial_number;",
-            "ALTER TABLE devicemodule RENAME COLUMN inventorynumber TO inventory_number;",
-            "CREATE INDEX devicemodule2 ON devicemodule(serial_number);",
-            "CREATE INDEX devicemodule3 ON devicemodule(inventory_number);",
+            "ALTER TABLE devicemodule DROP COLUMN serialnumber;",
+            "ALTER TABLE devicemodule DROP COLUMN inventorynumber;",
+            "ALTER TABLE devicemodule DROP COLUMN maint_contract;",
+            "ALTER TABLE devicemodule DROP COLUMN maint_from;",
+            "ALTER TABLE devicemodule DROP COLUMN maint_until;",
             "ALTER TABLE dhcpscope ADD COLUMN active smallint NOT NULL;",
             "UPDATE dhcpscope SET active=1;",
             "ALTER TABLE dhcpscope ADD COLUMN duid varchar(255);",
             "ALTER TABLE dhcpscope ADD COLUMN version integer;",
             "ALTER TABLE entity ADD COLUMN config_type varchar(255);",
             "ALTER TABLE entity_history ADD COLUMN config_type varchar(255);",
+            "CREATE UNIQUE INDEX Entity5 ON entity(oid);",
             "ALTER TABLE product ADD COLUMN part_number varchar(255);",
             "ALTER TABLE product ADD COLUMN config_type varchar(255);",
             "ALTER TABLE product_history ADD COLUMN part_number varchar(255);",
-            "ALTER TABLE product_history ADD COLUMN config_type varchar(255);",
+            "ALTER TABLE product_history ADD COLUMN config_type varchar(255);", 
             "ALTER TABLE interface ALTER COLUMN speed TYPE bigint;",
+            "ALTER TABLE datacache ALTER COLUMN tstamp TYPE bigint NOT NULL;",
             "DELETE FROM datacache;",
             "ALTER TABLE device ADD COLUMN snmp_conn_attempts integer;",
             "ALTER TABLE device ADD COLUMN snmp_down smallint NOT NULL;",

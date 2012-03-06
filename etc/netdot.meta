@@ -413,13 +413,13 @@ $meta = {
       ],
       brief => ['serial_number', 'physaddr', 'product_id', 'inventory_number', 'maint_from', 'maint_until', 'reserved_for' ],
     },
-    description => 'Assets represent network hardware. If an asset is installed, it will be associated with a device object.',
+    description => 'Assets represent network hardware (devices or modules). If an asset is installed, it will be associated with a device or devicemodule object.',
     has_history => 0,
     index => [ ['product_id'], ['inventory_number'], ['po_number'] ],
     isjoin => '0',
     primary_key => 'id',
     label => ['product_id', 'serial_number', 'physaddr'],
-    unique => [ ['physaddr'], ['serial_number'] ]
+    unique => [ ['physaddr'], ['product_id', 'serial_number'] ]
   },
   Availability => {
     table_db_name => 'availability',
@@ -2513,6 +2513,19 @@ $meta = {
         tag => undef,
         type => 'bigint'
       },
+      asset_id => {
+        default => '',
+        description => 'asset fk',
+        length => '',
+        nullable => 1,
+        linksto => {
+	    table => 'Asset',
+	    method => 'device_modules',
+	    cascade => 'Delete',
+        },
+        type => 'bigint',
+	tag => 'Asset',
+      },
       class => {
         default => '',
         description => 'Module Class',
@@ -2615,51 +2628,6 @@ $meta = {
         tag => 'Position',
         type => 'integer'
       },
-      serial_number => {
-        default => '',
-        description => 'The vendor-specific serial number string for the physical entity',
-        length => '128',
-        nullable => 1,
-        tag => 'S/N',
-        type => 'varchar'
-      },
-      inventory_number => {
-        default => '',
-        description => 'A number given to this Module by the organization for accounting/inventory purposes',
-        length => '64',
-        nullable => 1,
-        tag => 'Inventory',
-        type => 'varchar'
-      },
-      maint_contract => {
-        default => '',
-        description => 'Reference to a maintenance or support contract with hardware vendor or third party.',
-        length => '',
-        linksto => {
-          cascade => 'Nullify',
-          method => 'modules',
-          table => 'MaintContract'
-        },
-        nullable => 1,
-        tag => 'Maint Contract',
-        type => 'bigint'
-      },
-      maint_from => {
-        default => '',
-        description => 'Module covered in maintenance from this date (YYYY-MM-DD)',
-        length => '',
-        nullable => 1,
-        tag => 'Maint Start',
-        type => 'date'
-      },
-      maint_until => {
-        default => '',
-        description => 'Module covered in maintenance until this date (YYYY-MM-DD)',
-        length => '',
-        nullable => 1,
-        tag => 'Maint End',
-        type => 'date'
-      },
       sw_rev => {
         default => '',
         description => 'The vendor-specific software revision string for the physical entity',
@@ -2685,13 +2653,11 @@ $meta = {
         type => 'timestamp'
       }
     },
-    description => 'A Device physical entity such as a line card, port adapter, etc.',
+    description => 'A Device Physical Entity',
     has_history => 0,
-    index => [ ['serial_number'], ['inventory_number'] ],
+    index => [],
     isjoin => '0',
-    label => [
-	'name', 'model', 'device'
-    ],
+    label => [ 'name', 'model', 'device' ],
     primary_key => 'id',
     unique => [ [ 'device', 'number' ] ],
     views => {
@@ -2709,22 +2675,17 @@ $meta = {
       'fw_rev',
       'sw_rev',
       'fru',
-      'serial_number',
-      'inventory_number',
-      'maint_contract',
-      'maint_from',
-      'maint_until',
+      'asset_id',
       'date_installed',
       'last_updated',
       ],
       brief => [
-        'number',
+	'number',
         'name',
         'class',
         'model',
         'description',
-        'serial_number',
-        'inventory_number',
+        'asset_id',
       ]
     }
   },
@@ -3378,27 +3339,11 @@ $meta = {
     },
     description => 'An organization related to the network in some way',
     has_history => 1,
-    index => [
-      [
-        'oid'
-      ],
-      [
-        'asname'
-      ],
-      [
-        'asnumber'
-      ],
-    ],
+    index => [ ['asname'], ['asnumber'] ],
     isjoin => '0',
-    label => [
-      'name'
-    ],
+    label => [ 'name' ],
     primary_key => 'id',
-    unique => [
-      [
-        'name'
-      ]
-    ],
+    unique => [ ['name'], ['oid'] ],
     views => {
       all => [
         'name',

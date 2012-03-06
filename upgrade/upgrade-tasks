@@ -1,0 +1,22 @@
+#!/usr/bin/perl -w
+use strict;
+
+my $PREFIX = $ARGV[0] or die "Need install prefix\n";
+
+# Miscellaneous upgrade-related tasks
+
+###########################################################
+# Remove old mibs/ directory
+if ( -d "$PREFIX/mibs" ){
+    print "Moving mibs directory to /tmp\n";
+    &cmd("mv $PREFIX/mibs /tmp/");
+}
+
+###########################################################
+# Run system commands
+sub cmd {
+    my $str = shift;
+    if ( system($str) != 0 ){
+	die "There was a problem running $str\n";
+    }
+}

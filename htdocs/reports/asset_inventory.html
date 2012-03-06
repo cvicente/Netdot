@@ -1,5 +1,5 @@
 <%doc>
-Produces a report of Assets which are not associated to any devices
+Produces a report of Assets
 </%doc>
 
 <%args>
@@ -21,14 +21,17 @@ my $assets = $dbh->selectall_arrayref("
                  AND product.type=producttype.id");
 
 my $iassets = $dbh->selectall_arrayref("
-               SELECT device.asset_id 
-                 FROM device 
+               SELECT device.asset_id, devicemodule.asset_id 
+                 FROM device, devicemodule
                 WHERE device.asset_id IS NOT NULL 
+                  AND devicemodule.asset_id IS NOT NULL
+                  AND device.asset_id < devicemodule.asset_id
 ");
 
 my %installed;
 foreach my $row ( @$iassets ){
     $installed{$row->[0]} = 1;
+    $installed{$row->[1]} = 1;
 }
 
 my %t;

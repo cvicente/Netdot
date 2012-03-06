@@ -2075,8 +2075,6 @@ sub delete {
     my ($self) = @_;
     $self->isa_object_method('delete');
 
-    my $asset_id = $self->asset_id->id if $self->asset_id;;
-    
     # We don't want to delete dynamic addresses
     if ( my $ips = $self->get_ips ){
 	foreach my $ip ( @$ips ) {
@@ -2094,11 +2092,6 @@ sub delete {
     
     if ( my $rr = RR->retrieve($rrid) ){
 	$rr->delete() unless $rr->arecords;
-    }
-    
-    # This tries to avoid deleting an already deleted asset
-    if ( $asset_id && (my $asset = Asset->search(id=>$asset_id)->first) ){
-	$asset->delete();
     }
     
     return 1;
@@ -2651,7 +2644,10 @@ sub info_update {
     
     ##############################################################
     # Modules
-    $self->_update_modules(info=>$info->{module});
+    $self->_update_modules(
+	info         => $info->{module},
+	manufacturer => $dev_product->manufacturer,
+	);
 
     ##############################################
     $self->_update_interfaces(info            => $info, 
@@ -4940,30 +4936,44 @@ sub _assign_snmp_target {
 #
 sub _assign_product {
     my ($self, $info) = @_;
-
-    my %args;
-    if ( $info->{sysobjectid} ){
-	$args{sysobjectid} = $info->{sysobjectid};
-    }else{
-	&_unknown;
-    }
-
-    my $name = $info->{model} || $info->{productname};
-    if ( defined $name ){
-	$args{name}        = $name;
-	$args{description} = $name;
-    }else{
-	&_unknown;
-    }
-    $args{type}          = $info->{type}         if defined $info->{type};
-    $args{manufacturer}  = $info->{manufacturer} if defined $info->{manufacturer}; 
-    $args{part_number}   = $info->{part_number}  if defined $info->{part_number};     
-    $args{hostname}      = $self->fqdn;
+    $self->throw_fatal("Invalid info hashref")
+	unless ( $info && ref($info) eq 'HASH' );
     
-    return Product->find_or_create(%args);
+    my $prod;
+    $prod = Product->search(sysobjectid=>$info->{sysobjectid})->first
+	if ($info->{sysobjectid});
+    return $prod if $prod;
+   
+    $prod = Product->search(name=>$info->{model})->first 
+	if ($info->{model});
+    return $prod if $prod;	
+    
+    $prod = Product->search(name=>$info->{productname})->first 
+	if ($info->{productname});
+    return $prod if $prod;	
+    
+    # Try to create it then
+    my %args;
+    $args{name}        = $info->{model} || $info->{productname};
+    $args{sysobjectid} = $info->{sysobjectid};
+    $args{description} = $info->{productname};
+    $args{part_number} = $info->{part_number};
+    
+    if ( defined $info->{type} ){
+	my $ptype = ProductType->find_or_create({name=>$info->{type}});
+	$args{type} = $ptype;
+    }
+    if ( $info->{manufacturer} ){
+	my $ent = Entity->find_or_create({name=>$info->{manufacturer}});
+	$args{manufacturer}  = $ent; 
+    }
+    $args{hostname} = $self->fqdn;
 
-    sub _unknown {
-	return Product->search(name=>'Unknown')->first || Product->retrieve(3);
+    # We at least need a name
+    if ( $args{name} ){
+	return Product->insert(\%args);
+    }else{
+	return Product->find_or_create({name=>'Unknown'});
     }
 }
 
@@ -5122,12 +5132,13 @@ sub _update_stp_info {
 # Arguments
 #   Hashref with following keys:
 #   info =>  modules hashref from SNMP
+#   manufacturer => (Entity) from Device Product  
 # Returns
 #   True
 #
 sub _update_modules {
     my ($self, %argv) = @_;
-    my $modules = $argv{info};
+    my ($modules, $mf) = @argv{'info', 'manufacturer'};
     my $host = $self->fqdn;
 
     # Get old modules (if any)
@@ -5135,19 +5146,47 @@ sub _update_modules {
     map { $oldmodules{$_->number} = $_ } $self->modules();
 
     foreach my $number ( sort { $a <=> $b } keys %{$modules} ){
-	my %args = %{$modules->{$number}};
-	$args{device} = $self->id;
-	my $name = $args{name} || $args{description};
+	my %mod_args = %{$modules->{$number}};
+	$mod_args{device} = $self->id;
+	my $show_name = $mod_args{name} || $number;
+	# find or create asset object for given serial number and product
+	my $asset;
+	if ( (my $serial = delete $mod_args{serial_number}) && 
+	     (my $model = $mod_args{model}) ){
+	    if ( $serial =~ /^fill in/io || $model =~ /^fill in/io ){
+		# We've seen HP switches with "Fill in this information" 
+		# as value for S/N and model. Annoying.
+		next; 
+	    }
+	    # Find or create product
+	    my $product = Product->find_or_create({part_number  => $model,
+						   manufacturer => $mf,
+						  });
+	    if ( !$product->type || $product->type->name eq 'Unknown' ){
+		my $type = ProductType->find_or_create({name=>'Module'});
+		$product->update({type => $type});
+	    }
+	    
+	    # Find or create asset
+	    $asset = Asset->find_or_create({product_id    => $product,
+					    serial_number => $serial,
+					   });
+	    
+	    # Clear reservation comment as soon as hardware gets installed
+	    $asset->update({reserved_for => ""});
+	    $mod_args{asset_id} = $asset->id;
+	}
+
 	# See if it exists
 	my $module;
 	if ( exists $oldmodules{$number} ){
 	    $module = $oldmodules{$number};
 	    # Update
-	    $module->update(\%args);
+	    $module->update(\%mod_args);
 	}else{
 	    # Create new object
-	    $logger->info("$host: New module $number ($name) found. Inserting.");
-	    $module = DeviceModule->insert(\%args);
+	    $logger->info("$host: New module $number ($show_name) found. Inserting.");
+	    $module = DeviceModule->insert(\%mod_args);
 	}
 	delete $oldmodules{$number};
     }

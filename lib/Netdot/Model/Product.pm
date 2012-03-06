@@ -18,7 +18,7 @@ Netdot::Model::Product - Netdot Device Product Class
     
     use Netdot::Model::Product;
 
-    my $product = Product->find_or_create(%args);
+    my $product = Product->insert(%args);
 
     ...
 
@@ -27,146 +27,86 @@ Netdot::Model::Product - Netdot Device Product Class
 =cut
 
 ############################################################################
-=head2 find_or_create - Find or Create product
+=head2 insert - Insert product
 
-    Checks if Product exists in DB or creates a new one, based on given info
+    Override parent method to:
+    - Use sysobectid value to determine manufacturer
+    - Use part_number or sysobjectid as name if needed
 
   Arguments:  
-    Hash ref with following keys:
-     name          - A unique name for the product
-     description   - A short description of the product
-     sysobjectid   - (required) The value of SNMP's SysObjectID
-     type          - Can be a ProductType object, id or name
-     manufacturer  - An entity
-     part_number   - Manufacturer's part number
-     hostname      - (optional) for guessing product type based on device name
+     (in addition to Product's columns)
+     hostname - (optional) for guessing product type based on device name
   Returns:    
-    Product object or undef if error
+    Product object
   Example:
-    my $product = Product->find_or_create(%args);
+    my $product = Product->insert(%args);
 
 =cut
 
-sub find_or_create {
-    my ($class) = shift;
-    $class->isa_class_method('find_or_create');
+sub insert {
+    my ($class, $argv) = @_;
+    $class->isa_class_method('insert');
 
-    my %argv = ref $_[0] eq "HASH" ? %{$_[0]} : @_;
+    # This is not a column of Product
+    my $hostname = delete $argv->{hostname};
 
-    my ($name, $description, $sysobjectid, $type, $manufacturer, $part_number, $hostname) 
-	= @argv{"name", "description", "sysobjectid", "type", "manufacturer", "part_number", "hostname"};
- 
-    $class->throw_fatal("Model::Product::find_or_create: Missing required arguments")
-	unless defined( $sysobjectid || $name );
-    
     my $prod;
-    if ( $sysobjectid && ($prod = $class->search(sysobjectid=>$sysobjectid)->first) ) {
-	$logger->debug(sub{ sprintf("Product $sysobjectid known as %s", $prod->name) });
-	return $prod;
-    }elsif ( $prod = $class->search(name=>$name)->first ) {
-	$logger->debug(sub{ sprintf("Product %s found", $prod->name) });
-	return $prod;
-    }else{
-	###############################################
-	# Create a new product
-	#
-	$logger->debug("Product::find_or_create: Adding new Product");
-	
-	###############################################
+    if ( $argv->{sysobjectid} ){
 	# Check if Manufacturer Entity exists or can be added
-	#
-	my ($ent, $oid);
-	if( $sysobjectid ) {
-	    $oid = $sysobjectid;
-	    $oid =~ s/(1\.3\.6\.1\.4\.1\.\d+).*/$1/;
-	    if ( $ent = Entity->search(oid=>$oid)->first ){
-		$logger->info(sprintf("Product::find_or_create: Manufacturer OID matches %s", 
-				      $ent->name));
-	    }
-	}
-	if ( !$ent && $manufacturer ){
-	    if ( $ent = Entity->search(name=>$manufacturer)->first ){
-                # There is an entity with the same name, does it have the same oid?
-                if (!($ent = Entity->search(name=>$manufacturer, oid=>$oid)->first) ){
-                    # We'll need to add another entry with the same manufacturer name
-                    my $count = 1;
-                    # this technique will take a long time if there are a lot of products with the same name in the db
-                    # but that should very rarely happen.
-                    while( $ent = Entity->search(name=>$manufacturer."[$count]") ){
-			if ( $count < 5 ){
-			    $count++;
-			}
-			# enough counting already lets get this over with!
-			else{
-			    $count = int(rand(1000000))
-			}
-                    }
-                    # we have exited the loop, which means count contains a value that, when combined with the manufacturer's
-                    # name, does not exist in the database
-                    $manufacturer .= "[$count]";
-                    $ent = 0; #set ent to 0 so the next if statement can execute                
-                }
-	    }
-        }
-
-	if ( !$ent ){
-	    my $entname = $manufacturer || $oid;
-	    $ent = Entity->insert({name=>$entname, oid=>$oid});
-	    $logger->info("Inserted new Entity: $entname.");
-	    my $etype = EntityType->search(name=>"Manufacturer")->first || undef;
-	    my $erole = EntityRole->insert({entity=>$ent, type=>$etype});
-	}
-	
-	my $ptype;
-	if ( $type ){
-	    if ( ref($type) eq 'Netdot::Model::ProductType' ){
-		# We were given an object
-		$ptype = $type;
-	    }elsif ( $type =~ /^\d+$/ ){
-		# Looks like a ProductType id
-		$ptype = ProductType->search(id=>$type)->first;
-	    }else{
-		# Then it must be a product name
-		$ptype = ProductType->search(name=>$type)->first;
-	    }
-	}
-	
-	# Try to guess product type based on hostname
-	if ( $hostname && !$ptype ){
-	    my $typename;
-	    my %name2type = %{ $class->config->get('DEV_NAME2TYPE') };
-	    foreach my $str ( keys %name2type ){
-		if ( $hostname =~ /$str/ ){
-		    $typename = $name2type{$str};
-		    last;
+	my $ent;
+	my $oid = $argv->{sysobjectid};
+	$oid =~ s/(1\.3\.6\.1\.4\.1\.\d+).*/$1/o;
+	if ( $ent = Entity->search(oid=>$oid)->first ){
+	    $logger->debug(sprintf("Product::insert: Manufacturer OID matches %s", 
+				   $ent->name));
+	}elsif ( $argv->{manufacturer} ){
+	    $ent = ref($argv->{manufacturer})? $argv->{manufacturer} : 
+		Entity->retrieve($argv->{manufacturer});
+	    if ( $ent->oid ){
+		if ( $ent->oid ne $oid ) {
+		    # There is an entity with the same name and different oid
+		    # Use the OID as part of the name to make a unique new one
+		    my $entname = "$argv->{manufacturer} ($oid)";
+		    $ent = Entity->insert({name=>$entname, oid=>$oid});
 		}
-	    } 
-	    if ( $typename ){
-		$ptype = ProductType->search(name=>$typename)->first;
+	    }else{
+		# Entity found but OID not set. Set it now
+		$ent->update({oid=>$oid});
 	    }
-	}	
-	
-	unless ( $ptype ){
-	    $ptype = ProductType->search(name=>'Unknown')->first;
+	}else{
+	    $class->throw_fatal("Cannot proceed without a manufacturer");
 	}
-
-	###############################################
-	# Insert New product
-	#	
-	$name ||= $sysobjectid;
-	my $newproduct = Product->insert({ name         => $name,
-					   description  => $description,
-					   sysobjectid  => $sysobjectid,
-					   type         => $ptype,
-					   manufacturer => $ent,
-					   part_number  => $part_number,
-					 });
-	
-	$logger->info(sprintf("Inserted new product: %s", $newproduct->name));
-	return $newproduct;
+	# Make sure we have the correct role assigned
+	my $etype = EntityType->find_or_create({name=>"Manufacturer"});
+	my $erole = EntityRole->find_or_create({entity=>$ent, type=>$etype});
+	$argv->{manufacturer} = $ent;
     }
+    # Now on with the product itself
+    if ( !$argv->{type} && $hostname ){
+	# Try to guess product type based on hostname
+	my $typename;
+	my %name2type = %{ $class->config->get('DEV_NAME2TYPE') };
+	foreach my $str ( keys %name2type ){
+	    if ( $hostname =~ /$str/ ){
+		$typename = $name2type{$str};
+		last;
+	    }
+	} 
+	if ( $typename ){
+	    $argv->{type} = ProductType->search(name=>$typename)->first;
+	}
+    }	
+    $argv->{type} ||= ProductType->search(name=>'Unknown')->first;
+    
+    ###############################################
+    # Insert New product
+    $argv->{name} ||= $argv->{part_number} || $argv->{sysobjectid};
+    my $newproduct = $class->SUPER::insert($argv);
+    
+    $logger->info(sprintf("Inserted new product: %s", $newproduct->name));
+    return $newproduct;
 }
-
+    
 ############################################################################
 # Get lists of products, counting the number of devices
 __PACKAGE__->set_sql(by_type => qq{
@@ -234,7 +174,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
