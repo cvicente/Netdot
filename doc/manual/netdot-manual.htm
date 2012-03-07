@@ -226,12 +226,17 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <p>Netdot's database schema <strong>usually</strong> only changes between major versions. For example, if upgrading from 0.8.x to 0.9.x, you will need to run an upgrade script to adapt your current database to the new schema. Look for a file called doc/UPGRADE for upgrade notes in a particular distribution.</p>
 <p>If you are supposed to upgrade, this can be accomplished by running this command:</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> upgrade</code></pre>
-<p>Finally, install the Netdot code and restart Apache:</p>
+<p>Finally, install the new Netdot code and restart Apache:</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> <span class="kw">install</span>
 ~# /etc/init.d/httpd restart</code></pre>
 <h2 id="installing-the-package-for-the-first-time"><a href="#TOC"><span class="header-section-number">3.5</span> Installing the package for the first time</a></h2>
 <ul>
 <li><p>Make sure you have created the file etc/Site.conf with your configurations (See above).</p></li>
+<li><p>You will then be ready to initialize the database.</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">~% <span class="kw">make</span> installdb [parameters]</code></pre>
+<p>Remember you need to set <code>DB_DBA</code> and <code>DB_DBA_PASSWORD</code> to your database's admin username/password in etc/Site.conf before running this command. Or if you prefer, you can specify the <code>DB_DBA</code> and <code>DB_DBA_PASSWORD</code> values as parameters (however, these are used by many functions in Netdot, they will need to be set to the correct value in etc/Site.conf eventually)</p>
+<pre><code>DB_DBA=DATABASE-ADMIN-ACCOUNT
+DB_DBA_PASSWORD=DATABASE-ADMIN-PASSWORD</code></pre></li>
 <li><p>From the top directory in the package, do:</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> <span class="kw">install</span> [parameters]</code></pre>
 <p>Possible parameters include:</p>
@@ -241,11 +246,6 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <blockquote>
 <p><strong>Tip</strong> Ubuntu users: will probably need to set the APACHEUSER and APACHEGROUP variables to &quot;www-data&quot;, which is the user that Apache runs as.</p>
 </blockquote></li>
-<li><p>You will then be ready to initialize the database.</p>
-<pre class="sourceCode bash"><code class="sourceCode bash">~% <span class="kw">make</span> installdb [parameters]</code></pre>
-<p>Remember you need to set <code>DB_DBA</code> and <code>DB_DBA_PASSWORD</code> to your database's admin username/password in etc/Site.conf before running this command. Or if you prefer, you can specify the <code>DB_DBA</code> and <code>DB_DBA_PASSWORD</code> values as parameters (however, these are used by many functions in Netdot, they will need to be set to the correct value in etc/Site.conf eventually)</p>
-<pre><code>DB_DBA=DATABASE-ADMIN-ACCOUNT
-DB_DBA_PASSWORD=DATABASE-ADMIN-PASSWORD</code></pre></li>
 </ul>
 <h2 id="apache-configuration"><a href="#TOC"><span class="header-section-number">3.6</span> Apache Configuration</a></h2>
 <p>Edit the supplied Apache config template for either Local, RADIUS or LDAP authentication, copy it to your Apache config directory and include it somewhere in your Apache configuration file (httpd.conf) (e.g.):</p>

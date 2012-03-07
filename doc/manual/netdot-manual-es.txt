@@ -246,7 +246,7 @@ con el siguiente comando:
 ~# make upgrade
 ~~~~
 
-Finalmente, instale Netdot y reinicie Apache:
+Luego instale el nuevo Netdot y reinicie Apache:
 
 ~~~~ {.bash}
 ~# make install
@@ -258,6 +258,25 @@ Finalmente, instale Netdot y reinicie Apache:
 *   Compruebe que se ha creado el fichero etc/Site.conf, en el paquete
     de instalación, con las opciones de configuración en función de sus
     necesidades (Está explicado anteriormente).
+
+*   Luego proceda a crear la base de datos.
+
+    ~~~~ {.bash}
+    ~% make installdb [parametros]
+    ~~~~
+
+    Recuerde que necesita definir `DB_DBA` y `DB_DBA_PASSWORD` con el
+    usuario y contraseña de administración de la base de datos en el
+    fichero etc/Site.conf antes de ejecutar el comando.
+    Alternativamente, se puede especificar `DB_DBA` y `DB_DBA_PASSWORD`
+    como parámetros en la línea de comandos (como estos datos son usados
+    frecuentemente por Netdot, necesita definirlos finalmente en el
+    fichero etc/Site.conf
+
+    ~~~~ {.bash}
+    DB_DBA=CUENTA-ADMIN-BASE-DE-DATOS
+    DB_DBA_PASSWORD=CONTRASEÑA-CUENTA-ADMIN-BASE-DE-DATOS
+    ~~~~
 
 *   Ubicándose en el directorio raíz del paquete de instalación de
     Netdot, ejecute:
@@ -279,24 +298,6 @@ Finalmente, instale Netdot y reinicie Apache:
     las variables APACHEUSER y APACHEGROUP con el valor "www-data", 
     el cual es el usuario con el que el servidor Apache se ejecuta.
 
-*   Terminado el proceso anterior, se procede a crear la base de datos.
-
-    ~~~~ {.bash}
-    ~% make installdb [parametros]
-    ~~~~
-
-    Recuerde que necesita definir `DB_DBA` y `DB_DBA_PASSWORD` con el
-    usuario y contraseña de administración de la base de datos en el
-    fichero etc/Site.conf antes de ejecutar el comando.
-    Alternativamente, se puede especificar `DB_DBA` y `DB_DBA_PASSWORD`
-    como parámetros en la línea de comandos (como estos datos son usados
-    frecuentemente por Netdot, necesita definirlos finalmente en el
-    fichero etc/Site.conf
-
-    ~~~~ {.bash}
-    DB_DBA=CUENTA-ADMIN-BASE-DE-DATOS
-    DB_DBA_PASSWORD=CONTRASEÑA-CUENTA-ADMIN-BASE-DE-DATOS
-    ~~~~
 
 ## Configuración del Servidor Web Apache
 

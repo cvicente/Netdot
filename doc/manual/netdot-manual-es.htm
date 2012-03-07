@@ -224,12 +224,17 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <p>El esquema de la base de datos de Netdot <strong>generalmente</strong> sólo tiene cambios entre revisiones mayores. Por ejemplo, si se actualiza de la version 0.8.x a 0.9.x, se necesita ejecutar un script de actualización para adaptar la base de datos actual al nuevo esquema. Busque un fichero llamado doc/UPGRADE y allí encontrará instrucciones detalladas en una distribución particular.</p>
 <p>Si en su caso fuera necesario efectuar una actualización, puede hacerlo con el siguiente comando:</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> upgrade</code></pre>
-<p>Finalmente, instale Netdot y reinicie Apache:</p>
+<p>Luego instale el nuevo Netdot y reinicie Apache:</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> <span class="kw">install</span>
 ~# /etc/init.d/httpd restart</code></pre>
 <h2 id="instalando-netdot-por-primera-vez"><a href="#TOC"><span class="header-section-number">3.5</span> Instalando Netdot por primera vez</a></h2>
 <ul>
 <li><p>Compruebe que se ha creado el fichero etc/Site.conf, en el paquete de instalación, con las opciones de configuración en función de sus necesidades (Está explicado anteriormente).</p></li>
+<li><p>Luego proceda a crear la base de datos.</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">~% <span class="kw">make</span> installdb [parametros]</code></pre>
+<p>Recuerde que necesita definir <code>DB_DBA</code> y <code>DB_DBA_PASSWORD</code> con el usuario y contraseña de administración de la base de datos en el fichero etc/Site.conf antes de ejecutar el comando. Alternativamente, se puede especificar <code>DB_DBA</code> y <code>DB_DBA_PASSWORD</code> como parámetros en la línea de comandos (como estos datos son usados frecuentemente por Netdot, necesita definirlos finalmente en el fichero etc/Site.conf</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="ot">DB_DBA=</span>CUENTA-ADMIN-BASE-DE-DATOS
+<span class="ot">DB_DBA_PASSWORD=</span>CONTRASEÑA-CUENTA-ADMIN-BASE-DE-DATOS</code></pre></li>
 <li><p>Ubicándose en el directorio raíz del paquete de instalación de Netdot, ejecute:</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> <span class="kw">install</span> [parámetros]</code></pre>
 <p>Opcionalmente, incluya los siguientes parámetros:</p>
@@ -239,11 +244,6 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <blockquote>
 <p><strong>Pista</strong> Usuarios de Debian/Ubuntu: Probablemente tendrá que especificar las variables APACHEUSER y APACHEGROUP con el valor &quot;www-data&quot;, el cual es el usuario con el que el servidor Apache se ejecuta.</p>
 </blockquote></li>
-<li><p>Terminado el proceso anterior, se procede a crear la base de datos.</p>
-<pre class="sourceCode bash"><code class="sourceCode bash">~% <span class="kw">make</span> installdb [parametros]</code></pre>
-<p>Recuerde que necesita definir <code>DB_DBA</code> y <code>DB_DBA_PASSWORD</code> con el usuario y contraseña de administración de la base de datos en el fichero etc/Site.conf antes de ejecutar el comando. Alternativamente, se puede especificar <code>DB_DBA</code> y <code>DB_DBA_PASSWORD</code> como parámetros en la línea de comandos (como estos datos son usados frecuentemente por Netdot, necesita definirlos finalmente en el fichero etc/Site.conf</p>
-<pre class="sourceCode bash"><code class="sourceCode bash"><span class="ot">DB_DBA=</span>CUENTA-ADMIN-BASE-DE-DATOS
-<span class="ot">DB_DBA_PASSWORD=</span>CONTRASEÑA-CUENTA-ADMIN-BASE-DE-DATOS</code></pre></li>
 </ul>
 <h2 id="configuración-del-servidor-web-apache"><a href="#TOC"><span class="header-section-number">3.6</span> Configuración del Servidor Web Apache</a></h2>
 <p>Edite el fichero plantilla de Apache que viene con Netdot para establecer la autenticación Local, RADIUS o LDAP. Cópielo en el directorio de configuración de Apache e inclúyalo en el fichero de configuración de Apache (httpd.conf), por ejemplo:</p>

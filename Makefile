@@ -63,8 +63,6 @@ install: dir doc htdocs lib var bin etc _import _export
 	@echo
 	@echo "Netdot is installed. "
 	@echo "Please read the available documentation before proceeding."
-	@echo "If you are installing Netdot for the first time, you need to"
-	@echo "  'make installdb'"
 
 upgrade:
 	cd $@; $(MAKE) all DIR=$@

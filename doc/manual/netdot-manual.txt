@@ -235,7 +235,7 @@ command:
 ~# make upgrade
 ~~~~
 
-Finally, install the Netdot code and restart Apache:
+Finally, install the new Netdot code and restart Apache:
 
 ~~~~ {.bash}
 ~# make install
@@ -246,6 +246,24 @@ Finally, install the Netdot code and restart Apache:
 
 *   Make sure you have created the file etc/Site.conf with your
     configurations (See above).
+
+*   You will then be ready to initialize the database.
+
+    ~~~~ {.bash}
+    ~% make installdb [parameters]
+    ~~~~
+
+    Remember you need to set `DB_DBA` and `DB_DBA_PASSWORD` to your
+    database's admin username/password in etc/Site.conf before running
+    this command. Or if you prefer, you can specify the `DB_DBA` and
+    `DB_DBA_PASSWORD` values as parameters (however, these are used by
+    many functions in Netdot, they will need to be set to the correct
+    value in etc/Site.conf eventually)
+
+    ~~~~
+    DB_DBA=DATABASE-ADMIN-ACCOUNT
+    DB_DBA_PASSWORD=DATABASE-ADMIN-PASSWORD
+    ~~~~
 
 *   From the top directory in the package, do:
 
@@ -266,23 +284,6 @@ Finally, install the Netdot code and restart Apache:
     APACHEGROUP variables to "www-data", which is the user that Apache
     runs as.
 
-*   You will then be ready to initialize the database.
-
-    ~~~~ {.bash}
-    ~% make installdb [parameters]
-    ~~~~
-
-    Remember you need to set `DB_DBA` and `DB_DBA_PASSWORD` to your
-    database's admin username/password in etc/Site.conf before running
-    this command. Or if you prefer, you can specify the `DB_DBA` and
-    `DB_DBA_PASSWORD` values as parameters (however, these are used by
-    many functions in Netdot, they will need to be set to the correct
-    value in etc/Site.conf eventually)
-
-    ~~~~
-    DB_DBA=DATABASE-ADMIN-ACCOUNT
-    DB_DBA_PASSWORD=DATABASE-ADMIN-PASSWORD
-    ~~~~
 
 ## Apache Configuration
 
