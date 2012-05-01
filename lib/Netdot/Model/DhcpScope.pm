@@ -697,7 +697,7 @@ sub _print {
 	elsif ( $type eq 'global' && 
 		defined $code && defined $format ){
 	    # Assume that user is trying to define a new option
-	    print $fh " $code = $format";
+	    print $fh " code $code = $format";
 	}
 	print $fh ";\n";
     }
