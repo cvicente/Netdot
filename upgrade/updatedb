@@ -73,6 +73,9 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
         );
 }
 
+# Add new Product type for device modules
+push @statements, "INSERT INTO producttype (name) VALUES ('Module');";
+
 &processdata(\@statements);
 
 # Store assets to be inserted, keyed by serial number
@@ -82,7 +85,7 @@ my %assets;
 my $sndevs = $dbh->selectall_arrayref('SELECT serialnumber,custom_serial,physaddr,
                                               inventorynumber,maint_contract,maint_from,
                                               maint_until,product 
-                                         FROM device
+                                        FROM device
 		                        WHERE serialnumber IS NOT NULL
                                           AND serialnumber != "" 
                                           AND product IS NOT NULL
@@ -106,23 +109,23 @@ foreach my $row ( @$sndevs ){
 # Grab devicemodules with serial number and model.
 # Migrating stuff from modules takes a bit more work
 # because the new products need to be created
-my $snmods = $dbh->selectall_arrayref('SELECT dm.serialnumber,dm.inventorynumber,dm.maint_contract,
-                                              dm.maint_from,dm.maint_until,dm.model,e.id
+my $snmods = $dbh->selectall_arrayref('SELECT dm.serialnumber,dm.inventorynumber,
+                                              dm.maint_contract,dm.maint_from,
+                                              dm.maint_until,dm.model,e.id
                                          FROM devicemodule dm, device d, product p, entity e
                                         WHERE dm.device=d.id AND d.product=p.id 
                                           AND p.manufacturer=e.id
 		                          AND dm.serialnumber IS NOT NULL
-                                          AND dm.serialnumber != "" 
-                                          AND dm.model IS NOT NULL 
-                                          AND dm.model != "" ');
+                                          AND dm.model IS NOT NULL');
 
 my %products;
 foreach my $row ( @$snmods ){
     my $sn = $row->[0];
     $sn =~ s/^\s+|\s+$//g;
     next unless $sn;
-    my $model = $row->[6];
-    my $mf    = $row->[7];
+    my $model = $row->[5];
+    $model =~ s/^\s+|\s+$//g;
+    my $mf = $row->[6];
     next unless $model && $mf;
     my $i = 1;
     foreach my $v (qw/in mc mf mu/){
@@ -134,12 +137,17 @@ foreach my $row ( @$snmods ){
 }
 
 # Insert products
-my $np = $dbh->prepare('INSERT INTO product (name, manufacturer) VALUES(?,?)');
+
+# Get the Module product type id
+my @ptrow = $dbh->selectrow_array('SELECT id FROM producttype WHERE name="Module"');
+my $ptype = $ptrow[0];
+
+my $np = $dbh->prepare('INSERT INTO product (name, manufacturer,type) VALUES(?,?,?)');
 foreach my $mf ( keys %products ){
-    foreach my $model ( %{$products{$mf}} ){
+    foreach my $model ( keys %{$products{$mf}} ){
 	next if ($model =~ /Fill in/io );
 	eval {
-	    $np->execute($model, $mf);
+	    $np->execute($model, $mf, $ptype);
 	};
 	if ( my $e = $@ ){
 	    if ( $e =~ /duplicate/i ){
