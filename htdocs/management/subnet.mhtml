@@ -39,8 +39,8 @@ my $can_choose = ($manager && $manager->can($user, 'choose_ip', $network))? 1 : 
 my $q = "SELECT   ipblock.id, ipblock.address, ipblock.description, ipblockstatus.name, 
                   rr.name, device.id
          FROM     ipblockstatus, ipblock 
-                  JOIN (rr CROSS JOIN rraddr) ON (ipblock.id=rraddr.ipblock AND rraddr.rr=rr.id)
-                  JOIN (device CROSS JOIN interface) 
+                  LEFT JOIN (rr CROSS JOIN rraddr) ON (ipblock.id=rraddr.ipblock AND rraddr.rr=rr.id)
+                  LEFT JOIN (device CROSS JOIN interface) 
                     ON (ipblock.interface=interface.id AND interface.device=device.id)
          WHERE    ipblock.parent=$id
            AND    ipblock.status=ipblockstatus.id
@@ -120,28 +120,33 @@ for( my $i=0; $i<(($net->num()+1)/$cols); $i++ ) {
 	    } elsif( $status{$net->numeric} eq "Dynamic" ) {
 		# show dynamic addresses in orange, don't link
 		$divclass = "ipaddr_dynamic";
-		$disp_addr = '<a href="ip.html?id='.$iplinks{$net->numeric}.'" class="ipaddr">'.$disp_addr.'</a>' if $priv_user;
+		$disp_addr = '<a href="ip.html?id='.$iplinks{$net->numeric}.'" class="ipaddr">'.$disp_addr.'</a>' 
+		    if $priv_user;
 
 	    } elsif( $status{$net->numeric} eq "Reserved" ) {
 		# show reserved addresses in grey, don't link
 		$divclass = "ipaddr_reserved";
-		$disp_addr = '<a href="ip.html?id='.$iplinks{$net->numeric}.'" class="ipaddr">'.$disp_addr.'</a>' if $priv_user;
+		$disp_addr = '<a href="ip.html?id='.$iplinks{$net->numeric}.'" class="ipaddr">'.$disp_addr.'</a>' 
+		    if $priv_user;
 
 	    } elsif( $status{$net->numeric} eq "Container" ) {
 		# link to detail page for containers
 		$divclass = "ipaddr_container";
-		$disp_addr = '<a href="ip.html?id='.$iplinks{$net->numeric}.'" class="ipaddr">'.$disp_addr.'</a>' if $priv_user;
+		$disp_addr = '<a href="ip.html?id='.$iplinks{$net->numeric}.'" class="ipaddr">'.$disp_addr.'</a>' 
+		    if $priv_user;
 
 	    } elsif( $status{$net->numeric} eq "Discovered" ) {
 		$divclass = "ipaddr_discovered";
-		$disp_addr = '<a href="ip.html?id='.$iplinks{$net->numeric}.'" class="ipaddr">'.$disp_addr.'</a>' if $priv_user;
+		$disp_addr = '<a href="ip.html?id='.$iplinks{$net->numeric}.'" class="ipaddr">'.$disp_addr.'</a>' 
+		    if $priv_user;
 
 	    } elsif( $status{$net->numeric} eq "Available" ) {
 		$divclass = "ipaddr_available";
 		if ($priv_user && $can_edit){
 		    $disp_addr = '<a href="ip.html?id='.$iplinks{$net->numeric}.'" class="ipaddr">'.$disp_addr.'</a>';
 		}elsif ( $can_choose ){
-		    $disp_addr = '<div class="<% $divclass %>"><a href="../user_management/add_host.html?address='.$ipaddr.'&add_host_block='.$network->id.'" class="ipaddr">'.$disp_addr.'</a></div>';
+		    $disp_addr = '<div class="<% $divclass %>"><a href="../user_management/add_host.html?address='.$ipaddr.
+                    '&add_host_block='.$network->id.'" class="ipaddr">'.$disp_addr.'</a></div>';
 		}
 	    }
 
@@ -153,10 +158,12 @@ for( my $i=0; $i<(($net->num()+1)/$cols); $i++ ) {
 	} else {
 	    if ( $priv_user && $can_edit ){
 		# link this address to the "Add" section in ip.html
-		$disp_addr = '<div class="ipaddr_available"><a href="ip.html?add_block_prefix='.$net->addr().'%2F32&add_block_parent='.$network->id.
+		$disp_addr = '<div class="ipaddr_available"><a href="ip.html?add_block_prefix='.$net->addr().
+		    '%2F32&add_block_parent='.$network->id.
 		    '&_action=ADD_BLOCK" class="ipaddr">'.$disp_addr.'</a></div>';
 	    }elsif ( $can_choose ){
-		$disp_addr = '<div class="ipaddr_available"><a href="../user_management/add_host.html?address='.$ipaddr.'&add_host_block='.$network->id.'" class="ipaddr">'.$disp_addr.'</a></div>';
+		$disp_addr = '<div class="ipaddr_available"><a href="../user_management/add_host.html?address='.$ipaddr.
+		    '&add_host_block='.$network->id.'" class="ipaddr">'.$disp_addr.'</a></div>';
 	    }else{
 		$disp_addr = '<div class="ipaddr_available">'.$disp_addr.'</div>';
 	    }
