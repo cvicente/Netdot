@@ -156,19 +156,9 @@ sub insert {
 
     my $newzone;
     if ( $argv->{template} ){
-	my $tzone; # For template zone object
-	
-	if ( ref($argv->{template}) eq 'Netdot::Model::Zone' ){
-	    $tzone = $argv->{template};
-	}elsif ( $argv->{template} =~ /\D+/ ){
-	    # Probably a name
-	    $tzone = Zone->search(name=>$argv->{template}) ||
-		$class->throw_user("Cannot find Zone called ".$argv->{template});
-	}else{
-	    # Probably an ID
-	    $tzone = Zone->retrieve($argv->{template}) ||
-		$class->throw_user("Cannot retrieve Zone id: ".$argv->{template});
-	}
+
+	my $tzone = $class->objectify($argv->{template}) || 
+	    $class->throw_user("Cannot determine Zone object from template: ".$argv->{template});
 	
 	my %state = (
 	    name        => $argv->{name},
