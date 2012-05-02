@@ -36,10 +36,12 @@ my $can_choose = ($manager && $manager->can($user, 'choose_ip', $network))? 1 : 
 
 <%perl>
 
-my $q = "SELECT   ipblock.id, ipblock.address, ipblock.description, ipblockstatus.name, rr.name, device.id
+my $q = "SELECT   ipblock.id, ipblock.address, ipblock.description, ipblockstatus.name, 
+                  rr.name, device.id
          FROM     ipblockstatus, ipblock 
-                  LEFT OUTER JOIN (rr, rraddr) ON (ipblock.id=rraddr.ipblock AND rraddr.rr=rr.id)
-                  LEFT OUTER JOIN (device, interface) ON ( ipblock.interface=interface.id AND interface.device=device.id)
+                  JOIN (rr CROSS JOIN rraddr) ON (ipblock.id=rraddr.ipblock AND rraddr.rr=rr.id)
+                  JOIN (device CROSS JOIN interface) 
+                    ON (ipblock.interface=interface.id AND interface.device=device.id)
          WHERE    ipblock.parent=$id
            AND    ipblock.status=ipblockstatus.id
          ORDER BY ipblock.address";
