@@ -260,6 +260,41 @@ sub objectify {
 =cut
 
 #########################################################################
+=head2 update - Update Zone object
+
+    Override the base method to:
+    - Update PTR records if zone name changes
+    
+  Args: 
+    Hashref of zone fields
+  Returns: 
+    See Netdot::Model::update()
+  Examples:
+    $zone->update(\%args);
+
+=cut
+sub update {
+    my ($self, $argv) = @_;
+    $self->isa_object_method('update');
+
+    my $update_ptrs = 0;
+    if ( $argv->{name} && $argv->{name} ne $self->name ){
+	# We want to do this after the zone is updated
+	$update_ptrs = 1;
+    }
+
+    my @res =  $self->SUPER::update($argv);
+
+    if ( $update_ptrs ){
+	foreach my $rr ( $self->records ){
+	    $rr->update_ptr();
+	}
+    }
+    return @res;
+}
+
+
+#########################################################################
 =head2 as_text
     
     Return the text representation (BIND syntax) of the Zone file. 
@@ -805,8 +840,8 @@ sub get_hosts {
                               ip.id, ip.address, ip.version, 
                               rrptr.ptrdname, zone.name, zone.id
               FROM            zone, rr
-              LEFT OUTER JOIN (ipblock ip CROSS JOIN rrptr) ON (rr.id=rrptr.rr AND ip.id=rrptr.ipblock)
-              LEFT OUTER JOIN (ipblock subnet) ON ip.parent=subnet.id
+              LEFT OUTER JOIN (ipblock AS ip CROSS JOIN rrptr) ON (rr.id=rrptr.rr AND ip.id=rrptr.ipblock)
+              LEFT OUTER JOIN ipblock AS subnet ON ip.parent=subnet.id
               WHERE           rr.zone=zone.id AND zone.id=$id";
 
     }else{
@@ -814,8 +849,8 @@ sub get_hosts {
                               ip.id, ip.address, ip.version, 
                               physaddr.id, physaddr.address, zone.name, zone.id
               FROM            zone, rr
-              LEFT OUTER JOIN (ipblock ip CROSS JOIN rraddr)  ON (rr.id=rraddr.rr AND ip.id=rraddr.ipblock)
-              LEFT OUTER JOIN (ipblock subnet) ON ip.parent=subnet.id
+              LEFT OUTER JOIN (ipblock AS ip CROSS JOIN rraddr)  ON (rr.id=rraddr.rr AND ip.id=rraddr.ipblock)
+              LEFT OUTER JOIN ipblock AS subnet ON ip.parent=subnet.id
               LEFT OUTER JOIN (physaddr CROSS JOIN dhcpscope) ON (dhcpscope.ipblock=ip.id AND dhcpscope.physaddr=physaddr.id)
               WHERE           rr.zone=zone.id AND zone.id=$id";
 

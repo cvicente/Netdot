@@ -297,18 +297,7 @@ sub update {
 
     my @res = $self->SUPER::update($argv);
 
-    if ( $update_ptr ){
-	if ( my @arecords = $self->arecords ){
-	    foreach my $rraddr ( @arecords ){
-		my $ip = $rraddr->ipblock;
-		next if ( scalar($ip->arecords) > 1 );
-		if ( my $ptr = ($ip->ptr_records)[0] ){
-		    $ptr->update({ptrdname=>$self->get_label})
-			if ( $ptr->ptrdname ne $self->get_label );
-		}
-	    }
-	}
-    }
+    $self->update_ptr() if ( $update_ptr );
 
     # Update those CNAMEs if needed
     if ( $self->get_label ne $old_fqdn ){
@@ -318,6 +307,34 @@ sub update {
     }
 
     return @res;
+}
+
+##################################################################
+=head2 update_ptr - Update corresponding PTR record
+
+  Arguments:
+    None
+  Returns:
+    True
+  Examples:
+    $rr->update_ptr()
+
+=cut
+sub update_ptr {
+    my ($self) = @_;
+    $self->isa_object_method('update_ptr');
+    
+    if ( my @arecords = $self->arecords ){
+	foreach my $rraddr ( @arecords ){
+	    my $ip = $rraddr->ipblock;
+	    next if ( scalar($ip->arecords) > 1 );
+	    if ( my $ptr = ($ip->ptr_records)[0] ){
+		$ptr->update({ptrdname=>$self->get_label})
+		    if ( $ptr->ptrdname ne $self->get_label );
+	    }
+	}
+    }
+    1;
 }
 
 ##################################################################
