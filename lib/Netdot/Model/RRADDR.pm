@@ -78,7 +78,7 @@ sub insert {
 	if ( $current_status eq 'Available' || $current_status eq 'Discovered' );
     
     # Create/update PTR record for this IP
-    $rraddr->_update_rrptr() if $update_ptr;
+    $rraddr->update_rrptr() if $update_ptr;
     
     return $rraddr;
     
@@ -123,7 +123,7 @@ sub update {
 
     my @res = $self->SUPER::update($argv);
 
-    $self->_update_rrptr() if $update_ptr;
+    $self->update_rrptr() if $update_ptr;
 
     return @res;
 }
@@ -203,20 +203,23 @@ sub as_text {
 }
 
 
-
-
-##################################################################
-# Private methods
-##################################################################
-
 ############################################################################
-#
-# When an RRADDR record is inserted or updated, we can automatically
-# update the corresponding PTR record if told to do so
-#
-sub _update_rrptr {
+=head2 update_rrptr - Update PTR record corresponding to a A/AAAA record
+
+ When an RRADDR record is inserted or updated, we can automatically
+ update the corresponding PTR record if told to do so
+
+  Arguments:
+    None
+  Returns:
+    True
+  Examples:
+    $rraddr->update_rrptr();
+
+=cut
+sub update_rrptr {
     my ($self) = @_;
-    $self->isa_object_method('_update_rrptr');
+    $self->isa_object_method('update_rrptr');
 
     my $rrptr;
     if ( !($rrptr = ($self->ipblock->ptr_records)[0]) ){
@@ -228,12 +231,18 @@ sub _update_rrptr {
 				    zone     => $rev_zone,
 				    ttl      => $self->ttl});
 	}else{
-	    $logger->warn("Netdot::Model::RRADDR::_update_rrptr: Ipblock: "
+	    $logger->warn("Netdot::Model::RRADDR::update_rrptr: Ipblock: "
 			  .$self->ipblock->get_label." reverse zone not found");
 	}
     }
     return 1;
 }
+
+
+
+##################################################################
+# Private methods
+##################################################################
 
 
 ##################################################################

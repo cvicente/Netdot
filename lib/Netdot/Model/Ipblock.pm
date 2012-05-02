@@ -1640,19 +1640,23 @@ sub get_ancestors {
 }
 
 ##################################################################
-=head2 get_descendants - Get children recursively
-    
+=head2 get_descendants_trie - Get descendants using Trie traversal
+
+    Notice that this will not return addresses, since we do
+    not add the end nodes to the trie. Use get_descendants()
+    instead.
+
  Arguments: 
     None
  Returns:   
     arrayref of descendant children IDs
   Examples:
-    my $descendants = $ip->get_descendants();
+    my $descendants = $ip->get_descendants_trie();
 
 =cut
-sub get_descendants {
+sub get_descendants_trie {
     my ($self, $t) = @_;
-    $self->isa_object_method('get_descendants');
+    $self->isa_object_method('get_descendants_trie');
     my $class = ref($self);
    
     my $tree = $self->_tree_get();
@@ -1669,6 +1673,28 @@ sub get_descendants {
     $class->_tree_traverse(root=>$n, code=>$code, tree=>$tree);
 
     return $list;
+}
+
+##################################################################
+=head2 get_descendants - Get children recursively
+
+
+ Arguments: 
+    None
+ Returns:   
+    Arrayref of Ipblock objects
+  Examples:
+    my $desc = $block->get_descendants();
+
+=cut
+sub get_descendants {
+    my ($self, $children) = @_;
+
+    foreach my $ch ( $self->children ){
+	push @$children, $ch;
+	$ch->get_descendants($children);
+    }
+    return $children;
 }
 
 ##################################################################

@@ -217,7 +217,45 @@ sub insert {
     }
 
     $newzone->update_serial();
+
+    # Create PTR records if necessary
+    $newzone->is_dot_arpa() && $newzone->add_ptrs();
+
     return $newzone;
+}
+
+############################################################################
+=head2 - add_ptrs - Given a .arpa zone, add all the missing PTR records
+
+  Args: 
+    None
+  Returns: 
+    True
+  Examples:
+    $newzone->add_ptrs() if $newzone->is_dot_arpa();
+
+=cut
+sub add_ptrs {
+    my ($self) = @_;
+    $self->isa_object_method('add_ptrs');
+    my $class = ref($self);
+
+    if ( !$self->is_dot_arpa ){
+	$self->throw_user("I can only update PTRs on a .arpa zone");
+    }
+
+    my $block = $class->_dot_arpa_to_ip($self->name);
+    if ( my $ipb = Ipblock->search(address=>$block)->first ){
+	foreach my $ip ( @{$ipb->get_descendants} ){
+	    if ( $ip->is_address && $ip->arecords ){
+		foreach my $ar ( $ip->arecords ){
+		    $logger->debug("Adding/updating PTR record for ".$ip->address);
+		    $ar->update_rrptr();
+		}
+	    }
+	}
+    }
+    1;
 }
 
 ############################################################################
@@ -704,32 +742,11 @@ sub import_records {
 	    }
 	}elsif ( $rr->type eq 'PTR' ){
 	    my $rrptr;
-	    my $prefix = $domain;
-	    my $ipversion;
-	    if ( $prefix =~ s/(.*)\.in-addr.arpa/$1/ ){
-		$ipversion = 4;
-	    }elsif ( $prefix =~ s/(.*)\.ip6.arpa/$1/ ){
-		$ipversion = 6;
-	    }
 
-	    my $ipaddr = "$name.$prefix";
-	    
-	    if ( $ipversion eq '4' ){
-		$ipaddr = join '.', (reverse split '\.', $ipaddr);
-	    }elsif ( $ipversion eq '6' ){
-		my @n = reverse split '\.', $ipaddr;
-		my @g; my $m;
-		for (my $i=1; $i<=scalar(@n); $i++){
-		    $m .= $n[$i-1];
-		    if ( $i % 4 == 0 ){
-			push @g, $m;
-			$m = "";
-		    }
-		}
-		$ipaddr = join ':', @g;		
-	    }
+	    my $ipaddr = $self->_dot_arpa_to_ip("$name.$domain");
 	    
 	    $logger->debug("$domain: Inserting Ipblock $ipaddr");
+
 	    my $ipb;
 	    if ( $ipb = Ipblock->search(address=>$ipaddr)->first ){
 		$ipb->update({status=>'Static'})
@@ -879,6 +896,64 @@ sub is_dot_arpa {
 # Private Methods
 #
 ############################################################################
+
+
+############################################################################
+#_dot_arpa_to_ip - Convert a .arpa string into an IPv4 or IPv6 address
+#
+#  Arguments: 
+#    .arpa string (*.in-addr.arpa or *.ip6.arpa)
+#  Returns: 
+#    IP or block address in CIDR format
+#  Examples:
+#    my $cidr = Zone->_dot_arpa_to_ip("4.3.2.1.in-addr.arpa");
+#    $cidr == 1.2.3.4/32
+#
+
+sub _dot_arpa_to_ip {
+    my ($class, $ipaddr) = @_;
+
+    my $version;
+    if ( $ipaddr =~ s/(.*)\.in-addr.arpa$/$1/ ){
+	$version = 4;
+    }elsif ( $ipaddr =~ s/(.*)\.ip6.arpa$/$1/ ){
+	$version = 6;
+    }
+
+    my $plen; # prefix length
+    if ( $version == 4 ){
+	my @octets = (reverse split '\.', $ipaddr);
+	$ipaddr = join '.', @octets;
+	$plen = scalar(@octets) * 8;
+	if ( $plen == 24 ){
+	    $ipaddr .= '.0';
+	}elsif ( $plen == 16 ){
+	    $ipaddr .= '.0.0';
+	}elsif ( $plen == 8 ){
+	    $ipaddr .= '.0.0.0';
+	}
+    }elsif ( $version == 6 ){
+	my @n = reverse split '\.', $ipaddr;
+	$plen = scalar(@n) * 4; # each nibble is 4 bits
+	my @g; my $m;
+	for (my $i=1; $i<=scalar(@n); $i++){
+	    $m .= $n[$i-1];
+	    if ( $i % 4 == 0 ){
+		push @g, $m;
+		$m = "";
+	    }
+	}
+	$ipaddr = join ':', @g;
+	if ( $plen < 128 ){
+	    $ipaddr .= '::';  # or it won't validate
+	}
+    }
+    if ( Ipblock->validate($ipaddr, $plen) ){
+	return ("$ipaddr/$plen");
+    }else{
+	$class->throw_user(sprintf("Invalid IP address: %s/%d", $ipaddr, $plen));
+    }
+}
 
 ############################################################################
 #_dateserial - Get date in 'DNS zone serial' format
