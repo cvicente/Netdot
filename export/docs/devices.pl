@@ -72,7 +72,7 @@ sub gather_data{
                            i.id, i.name, i.number, i.description, i.neighbor, i.room_char, i.jack_char, 
                            hc.jackid, p.name, pt.name, e.name, ir.name
                  FROM      asset a, rr, zone, product p, producttype pt, entity e, interface i
-                 LEFT JOIN (horizontalcable hc, room ir) ON (hc.id=i.jack AND hc.room=ir.id), 
+                 LEFT JOIN (horizontalcable hc CROSS JOIN room ir) ON (hc.id=i.jack AND hc.room=ir.id), 
                            device d 
                  LEFT JOIN (site) ON (d.site=site.id)
                  LEFT JOIN (room dr) ON (d.room=dr.id)

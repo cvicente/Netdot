@@ -2664,12 +2664,13 @@ sub get_addresses_by {
     }
     my $id = $self->id;
     my $query = "    
-    SELECT    DISTINCT(ipblock.id)
+    SELECT    ipblock.id
     FROM      ipblockstatus, ipblock 
-    LEFT JOIN (rraddr, rr) ON (rraddr.ipblock=ipblock.id AND rraddr.rr=rr.id)
+    LEFT JOIN (rraddr CROSS JOIN rr) ON (rraddr.ipblock=ipblock.id AND rraddr.rr=rr.id)
     LEFT JOIN entity ON (ipblock.used_by=entity.id)
     WHERE     ipblock.parent=$id
       AND     ipblock.status=ipblockstatus.id
+    GROUP BY  ipblock.id
     ORDER BY  $sort2field{$sort}";
 
     my $dbh  = $self->db_Main();
