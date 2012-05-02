@@ -176,37 +176,27 @@ sub fast_update {
 	    $sth->execute($address, $timestamp, $timestamp);
 	}
     }else{    
-	my $db_macs = $class->retrieve_all_hashref;
 	# Build SQL queries
-	my $sth1 = $dbh->prepare_cached("UPDATE physaddr SET last_seen=?
-                                         WHERE id=?");	
+	my $sth1 = $dbh->prepare_cached("UPDATE physaddr SET last_seen=? WHERE address=?");	
 	    
-	my $sth2 = $dbh->prepare_cached("INSERT INTO physaddr (address, first_seen, last_seen, static)
+	my $sth2 = $dbh->prepare_cached("INSERT INTO physaddr (address,first_seen,last_seen,static)
                                          VALUES (?, ?, ?, '0')");	
 
-	# Now walk our list and do the right thing
+	# Now walk our list
 	foreach my $address ( keys %$macs ){
-	    if ( !exists $db_macs->{$address} ){
-		# Insert
-		eval {
-		    $sth2->execute($address, $timestamp, $timestamp);
-		};
-		if ( my $e = $@ ){
-		    if ( $e =~ /Duplicate/ ){
-			# Since we're parallelizing, an address
-			# might get inserted after we get our list.
-			# Just go on.
-			next;
-		    }else{
+	    eval {
+		$sth2->execute($address, $timestamp, $timestamp);
+	    };
+	    if ( my $e = $@ ){
+		if ( $e =~ /Duplicate/i ){
+		    # Update
+		    eval {
+			$sth1->execute($timestamp, $address);
+		    };
+		    if ( my $e = $@ ){
 			$class->throw_fatal($e);
 		    }
-		}
-	    }else{
-		# Update
-		eval {
-		    $sth1->execute($timestamp, $db_macs->{$address});
-		};
-		if ( my $e = $@ ){
+		}else{
 		    $class->throw_fatal($e);
 		}
 	    }

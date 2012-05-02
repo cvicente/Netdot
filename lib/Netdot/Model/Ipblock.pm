@@ -984,51 +984,40 @@ sub fast_update{
 			  $attrs->{status}, $attrs->{timestamp}, $attrs->{timestamp});
 	}
     }else{
-	my $db_ips  = $class->retrieve_all_hashref;
 
 	# Build SQL queries
-	my $sth1 = $dbh->prepare_cached("UPDATE ipblock SET last_seen=?
-                                          WHERE id=?");	
+	my $sth1 = $dbh->prepare_cached("UPDATE ipblock SET last_seen=? WHERE address=?");	
 	
 	my $sth2 = $dbh->prepare_cached("INSERT INTO ipblock 
                                           (address,prefix,version,status,first_seen,last_seen)
                                            VALUES (?, ?, ?, ?, ?, ?)");
 	
-	# Now walk our list and do the right thing
+	# Now walk our list
 	foreach my $address ( keys %$ips ){
 	    my $attrs = $ips->{$address};
 	    # Convert address to decimal format
 	    my $dec_addr = $class->ip2int($address);
 	    
-	    if ( exists $db_ips->{$dec_addr} ){
-		# IP exists
-		eval{
-		    $sth1->execute($attrs->{timestamp}, $db_ips->{$dec_addr});
-		};
-		if ( my $e = $@ ){
-		    $class->throw_fatal($e);
-		}
-	    }else{
-		# IP does not exist
-		eval{
-		    $sth2->execute($dec_addr, $attrs->{prefix}, $attrs->{version},
-				   $attrs->{status}, $attrs->{timestamp}, $attrs->{timestamp},
-			);
-		};
-		if ( my $e = $@ ){
-		    if ( $e =~ /Duplicate/ ){
-			# Since we're parallelizing, an address
-			# might get inserted after we get our list.
-			# Just go on.
-			next;
-		    }else{
+	    eval {
+		$sth2->execute($dec_addr, $attrs->{prefix}, $attrs->{version},
+			       $attrs->{status}, $attrs->{timestamp}, $attrs->{timestamp},
+		    );
+	    };
+	    if ( my $e = $@ ){
+		if ( $e =~ /Duplicate/i ){
+		    eval {
+			$sth1->execute($attrs->{timestamp}, $dec_addr);
+		    };
+		    if ( my $e = $@ ){
 			$class->throw_fatal($e);
 		    }
+		}else{
+		    $class->throw_fatal($e);
 		}
 	    }
 	}
     }
-
+    
     my $end = time;
     $logger->debug(sub{ sprintf("Ipblock::fast_update: Done Updating: %d addresses in %s",
 				scalar(keys %$ips), $class->sec2dhms($end-$start)) });
