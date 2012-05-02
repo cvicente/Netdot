@@ -349,15 +349,16 @@ sub _get_fwt_from_cli {
     # Output look like this:
     #  vlan   mac address     type    learn     age              ports
     # ------+----------------+--------+-----+----------+--------------------------
-    #   128  0024.b20e.fe0f   dynamic  Yes        255   Gi9/22
+    #    128  0024.b20e.fe0f   dynamic  Yes        255   Gi9/22
+    # *  703  0022.91a9.6100   dynamic  Yes          5   Fa2/13
 
     foreach my $line ( @output ) {
 	chomp($line);
-	if ( $line =~ /^\*?\s+.*\s+($CISCO_MAC)\s+dynamic\s+\S+\s+\S+\s+(\S+)\s+$/o ) {
+	if ( $line =~ /^.*($CISCO_MAC)\s+dynamic\s+\S+\s+\S+\s+(\S+)\s*$/o ) {
 	    $mac   = $1;
 	    $iname = $2;
 	}else{
-	    $logger->debug(sub{"Device::CLI::CiscoIOS::_get_fwt_from_cli: line did not match criteria: $line" });
+	    $logger->debug(sub{"Device::CLI::CiscoIOS::_get_fwt_from_cli: line did not match criteria: '$line'" });
 	    next;
 	}
 	$iname = $self->_reduce_iname($iname);
