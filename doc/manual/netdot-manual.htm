@@ -231,6 +231,13 @@ code > span.er { color: #ff0000; font-weight: bold; }
 ~# /etc/init.d/httpd restart</code></pre>
 <h2 id="installing-the-package-for-the-first-time"><a href="#TOC"><span class="header-section-number">3.5</span> Installing the package for the first time</a></h2>
 <ul>
+<li><p>Prepare your database administrator (DBA) account</p>
+<p>MySQL users: The DBA account for MySQL is usually created when installing the package. Make sure to set a password during the installation.</p>
+<p>Pg users: PostgreSQL normally comes with a default DBA account named 'postgres'. After installing, you may need to set the password for this account as follows:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">~% <span class="kw">sudo</span> -u postgres psql postgres</code></pre>
+<p>Set a password for the &quot;postgres&quot; database role using the command:</p>
+<pre><code>\password postgres</code></pre>
+<p>and give your password when prompted. Type Control+D to exit the prompt.</p></li>
 <li><p>Make sure you have created the file etc/Site.conf with your configurations (See above).</p></li>
 <li><p>You will then be ready to initialize the database.</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~% <span class="kw">make</span> installdb [parameters]</code></pre>

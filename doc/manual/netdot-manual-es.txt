@@ -255,6 +255,27 @@ Luego instale el nuevo Netdot y reinicie Apache:
 
 ## Instalando Netdot por primera vez
 
+*   Prepare la cuenta de administrador de la base de datos (DBA)
+
+    Usuarios de MySQL: La cuenta de DBA de MySQL generalmente se crea durante
+    la instalación del paquete. Asegúrese de proporcionar una clave en este paso.
+
+    Usuarios de Pg: PostgreSQL normalmente viene con una cuenta de DBA llamada 'postgres'. 
+    Al terminar la instalación, es posible que necesite configurar la clave para dicha
+    cuenta como sigue:
+    
+    ~~~~ {.bash}
+    ~% sudo -u postgres psql postgres
+    ~~~~
+
+    Configure la clave para el rol 'postgres' así:
+
+    ~~~~
+    \password postgres
+    ~~~~
+
+    Y escriba la clave cuando se le indique. Use Control+D para salir del diálogo.
+    
 *   Compruebe que se ha creado el fichero etc/Site.conf, en el paquete
     de instalación, con las opciones de configuración en función de sus
     necesidades (Está explicado anteriormente).

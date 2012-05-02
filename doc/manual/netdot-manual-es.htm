@@ -229,6 +229,13 @@ code > span.er { color: #ff0000; font-weight: bold; }
 ~# /etc/init.d/httpd restart</code></pre>
 <h2 id="instalando-netdot-por-primera-vez"><a href="#TOC"><span class="header-section-number">3.5</span> Instalando Netdot por primera vez</a></h2>
 <ul>
+<li><p>Prepare la cuenta de administrador de la base de datos (DBA)</p>
+<p>Usuarios de MySQL: La cuenta de DBA de MySQL generalmente se crea durante la instalación del paquete. Asegúrese de proporcionar una clave en este paso.</p>
+<p>Usuarios de Pg: PostgreSQL normalmente viene con una cuenta de DBA llamada 'postgres'. Al terminar la instalación, es posible que necesite configurar la clave para dicha cuenta como sigue:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">~% <span class="kw">sudo</span> -u postgres psql postgres</code></pre>
+<p>Configure la clave para el rol 'postgres' así:</p>
+<pre><code>\password postgres</code></pre>
+<p>Y escriba la clave cuando se le indique. Use Control+D para salir del diálogo.</p></li>
 <li><p>Compruebe que se ha creado el fichero etc/Site.conf, en el paquete de instalación, con las opciones de configuración en función de sus necesidades (Está explicado anteriormente).</p></li>
 <li><p>Luego proceda a crear la base de datos.</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~% <span class="kw">make</span> installdb [parametros]</code></pre>
