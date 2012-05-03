@@ -5172,6 +5172,9 @@ sub _update_modules {
 					    serial_number => $serial,
 					   });
 	    
+	    $logger->debug("$host: module $number ($show_name) has asset: ". 
+			  $asset->get_label);
+
 	    # Clear reservation comment as soon as hardware gets installed
 	    $asset->update({reserved_for => ""});
 	    $mod_args{asset_id} = $asset->id;
