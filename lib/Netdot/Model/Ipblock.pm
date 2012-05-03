@@ -678,6 +678,18 @@ sub insert {
 	$args{values} = join ',', map { "'$_'" } @values if @values;
 	$newblock->_host_audit(%args);
     }
+
+    # Reserve first or last N addresses
+    if ( !$newblock->is_address && $newblock->status->name eq 'Subnet' ){
+	my $num = $class->config->get('SUBNET_AUTO_RESERVE');
+	if ( $num > 0 ){
+	    for ( 1..$num ){
+		my $addr = $newblock->get_next_free();
+		$class->insert({address=>$addr, status=>'Reserved'});
+	    }
+	}
+    }
+
     return $newblock;
 }
 
