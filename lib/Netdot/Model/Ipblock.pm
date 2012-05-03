@@ -1726,12 +1726,12 @@ sub num_addr {
     my $class = ref($self);
     
     if ( $self->version == 4 ) {
-	if ( $self->prefix < 31 ){
+	my $num = $class->numhosts($self->prefix);
+	if ( $self->prefix < 31 && $self->status->name eq 'Subnet' ){
 	    # Subtract network and broadcast addresses
-	    return $class->numhosts($self->prefix) - 2;
-	}else{
-	    return $class->numhosts($self->prefix);
+	    $num = $num - 2;
 	}
+	return $num;
     }elsif ( $self->version == 6 ) {
 	# Notice that the first (subnet-router anycast) and last address 
 	# are valid in IPv6
