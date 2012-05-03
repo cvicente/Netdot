@@ -110,11 +110,11 @@ sub search {
 				if ( my $ip = Ipblock->search(address=>$ip)->first ){
 				    if ( $ip->interface && ($dev = $ip->interface->device) ){
 					$argv{name} = $dev->name;
-				    }elsif ( my @arecords = $ip->arecords ){
+				    }elsif ( my @a_records = $ip->a_records ){
 					# The IP is not assigned to any device interfaces
 					# but there might be a device with a name and A record
 					# associated with this IP
-					$argv{name} = $arecords[0]->rr;
+					$argv{name} = $a_records[0]->rr;
 				    }else{
 					$argv{name} = 0;
 				    }
@@ -2091,7 +2091,7 @@ sub delete {
     $self->SUPER::delete();
     
     if ( my $rr = RR->retrieve($rrid) ){
-	$rr->delete() unless $rr->arecords;
+	$rr->delete() unless $rr->a_records;
     }
     
     return 1;

@@ -1988,11 +1988,11 @@ sub update_a_records {
     # give admin more flexibility
     my $name = $ip_name_plugin->get_name( $self );
 
-    my @arecords = $self->arecords;
+    my @a_records = $self->a_records;
 
     my %rrstate = (name=>$name, zone=>$zone, auto_update=>1);
 
-    if ( ! @arecords  ){
+    if ( ! @a_records  ){
 	# No A records exist for this IP yet.
 
 	# Is this the only ip in this device,
@@ -2022,13 +2022,13 @@ sub update_a_records {
 	}
     }else{ 
 	# "A" records exist.  Update names
-	if ( (scalar @arecords) > 1 ){
+	if ( (scalar @a_records) > 1 ){
 	    # There's more than one A record for this IP
 	    # To avoid confusion, don't update and log.
 	    $logger->warn(sprintf("%s: IP %s has more than one A record. Will not update name.", 
 				  $host, $self->address));
 	}else{
-	    my $ar = $arecords[0];
+	    my $ar = $a_records[0];
 	    my $rr = $ar->rr;
 
 	    # User might not want this updated
@@ -2061,7 +2061,7 @@ sub update_a_records {
 							    $host, $name, $self->address)} );
 				
 				# And get rid of the old name
-				$rr->delete() unless $rr->arecords;
+				$rr->delete() unless $rr->a_records;
 			    }
 			}else{
 			    # The desired name does not exist
@@ -2651,7 +2651,7 @@ sub get_next_free {
 	if ( my $ipb = Ipblock->search(address=>$addr, version=>$version)->first ){
 	    # IP may have been incorrectly set as Available
 	    # Correct and move on
-	    if ( $ipb->arecords || $ipb->dhcp_scopes ){
+	    if ( $ipb->a_records || $ipb->dhcp_scopes ){
 		$ipb->update({status=>'Static'});
 		return undef;
 	    }
@@ -2834,7 +2834,7 @@ sub _validate {
 	unless ( $self->is_address($self) ){
 	    $self->throw_user($self->get_label.": Only addresses can be set to Available");
 	}
-	if ( $self->arecords || $self->dhcp_scopes ){
+	if ( $self->a_records || $self->dhcp_scopes ){
 	    $self->throw_user($self->get_label.": Available addresses cannot have A records or DHCP scopes");
 	}
     }

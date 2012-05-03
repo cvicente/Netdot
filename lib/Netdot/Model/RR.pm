@@ -324,10 +324,10 @@ sub update_ptr {
     my ($self) = @_;
     $self->isa_object_method('update_ptr');
     
-    if ( my @arecords = $self->arecords ){
-	foreach my $rraddr ( @arecords ){
+    if ( my @a_records = $self->a_records ){
+	foreach my $rraddr ( @a_records ){
 	    my $ip = $rraddr->ipblock;
-	    next if ( scalar($ip->arecords) > 1 );
+	    next if ( scalar($ip->a_records) > 1 );
 	    if ( my $ptr = ($ip->ptr_records)[0] ){
 		$ptr->update({ptrdname=>$self->get_label})
 		    if ( $ptr->ptrdname ne $self->get_label );
@@ -603,7 +603,7 @@ sub sub_records {
 
     my @records;
 
-    foreach my $m ( qw/arecords txt_records hinfo_records cnames ns_records 
+    foreach my $m ( qw/a_records txt_records hinfo_records cnames ns_records 
                      mx_records ptr_records naptr_records srv_records ds_records/ ){
 	push @records, $self->$m;
     }

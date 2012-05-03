@@ -131,13 +131,13 @@ if ( $rest->{request}->method eq 'GET' ){
 
     # Get all related IPs and names from A records
     foreach my $rr ( values %rrs ){
-	foreach my $ar ( $rr->arecords ){
+	foreach my $ar ( $rr->a_records ){
 	    my $ip = $ar->ipblock;
 	    $ips{$ip->id} = $ip;
 	} 
     }
     foreach my $ipb ( values %ips ){
-	foreach my $ar ( $ipb->arecords ){
+	foreach my $ar ( $ipb->a_records ){
 	    my $rr = $ar->rr;
 	    $rrs{$rr->id} = $rr;
 	}

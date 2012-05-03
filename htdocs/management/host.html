@@ -58,8 +58,8 @@ if ($ipblock && !ref $ipblock) {
     unless ( $manager && $manager->can($user, "view", $ipblock) ){
 	$m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
     }
-    if (my @arecords = $ipblock->arecords()) {
-	foreach my $arecord (@arecords) {
+    if (my @a_records = $ipblock->a_records()) {
+	foreach my $arecord (@a_records) {
 	    $rrs{$arecord->rr->id} = $arecord->rr;
 	}
     }
@@ -74,7 +74,7 @@ if ( $submit ){
 	}
 	eval {
 	    Netdot::Model->do_transaction(sub{
-		my @ips = map { $_->ipblock } $rr->arecords();
+		my @ips = map { $_->ipblock } $rr->a_records();
 		$deleted_label = $rr->get_label();
 		delete $rrs{$rr->id};
 		$rr->delete();
@@ -305,7 +305,7 @@ foreach my $o ( values %rrs ) {
     $m->comp('/generic/attribute_table.mhtml', %comphash, width=>2);
     (@field_headers, @cell_data) = ((),());
 
-    my @arecs = $o->arecords();
+    my @arecs = $o->a_records();
     my @ips;
     #####################################################################################################
     #RRADDR
@@ -632,7 +632,7 @@ foreach my $o ( values %rrs ) {
     # cannot have an A/AAAA record at the same time
     # the $o is unique in the cname table
     
-    if ( !$o->arecords && !$o->ptr_records && !$o->ns_records ) {
+    if ( !$o->a_records && !$o->ptr_records && !$o->ns_records ) {
 	print '<div class="container" style="margin-left:10px">';
 	print '<div class="containerheadleft"><b>'.$o->get_label.' is an alias of '.$ui->table_descr_link('RRCNAME', '(CNAME)').'</b></div>';
 	print '<div class="containerheadright">';
@@ -692,7 +692,7 @@ foreach my $o ( values %rrs ) {
 	    (@field_headers, @cell_data) = ((),());
 	}
 	
-	if (!$o->arecords()) {
+	if (!$o->a_records()) {
 	    print '<div id="rrcname_div_'.$o.'"></div>';
 	}
 	print '</div></div>';
@@ -782,7 +782,7 @@ foreach my $o ( values %rrs ) {
 
     #####################################################################################################
     #RRNS
-    if ( $o->name eq '@' || $o->name eq $o->zone->name || (!$o->arecords && !$o->ptr_records)  ){
+    if ( $o->name eq '@' || $o->name eq $o->zone->name || (!$o->a_records && !$o->ptr_records)  ){
 	print '<div class="container" style="margin-left:10px">';
 	print '<div class="containerheadleft"><b>Name Servers '.$ui->table_descr_link('RRNS', '(NS)').'</b></div>';
 	print '<div class="containerheadright">';
@@ -823,7 +823,7 @@ foreach my $o ( values %rrs ) {
     
     #####################################################################################################
     #RRDS
-    if ( !$o->arecords && !$o->ptr_records  ){
+    if ( !$o->a_records && !$o->ptr_records  ){
 	print '<div class="container" style="margin-left:10px">';
 	print '<div class="containerheadleft"><b>Delegation Signers '.$ui->table_descr_link('RRDS', '(DS)').'</b></div>';
 	print '<div class="containerheadright">';
@@ -866,7 +866,7 @@ foreach my $o ( values %rrs ) {
     #####################################################################################################
     #RRNAPTR
 
-    if ( !$o->arecords && !$o->ptr_records && !$o->ns_records ){
+    if ( !$o->a_records && !$o->ptr_records && !$o->ns_records ){
 	print '<div class="container" style="margin-left:10px">';
 	print '<div class="containerheadleft"><b>Name Authority Pointer '.$ui->table_descr_link('RRNAPTR', '(NAPTR)').'</b></div>';
 	print '<div class="containerheadright">';
@@ -911,7 +911,7 @@ foreach my $o ( values %rrs ) {
     
     #####################################################################################################
     #RRPTR (when the name is the PTR record's name)
-    if ( !$o->arecords && !$o->ns_records ){
+    if ( !$o->a_records && !$o->ns_records ){
     
 	print '<div class="container" style="margin-left:10px">';
 	print '<div class="containerheadleft"><b>Pointer Records '.$ui->table_descr_link('RRPTR', '(PTR)').'</b></div>';

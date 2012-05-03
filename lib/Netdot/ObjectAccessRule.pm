@@ -168,7 +168,7 @@ sub denies(){
 		    return 1;
 		}
 		my $ret = 0;
-		foreach my $arecord ( $rr->arecords ){
+		foreach my $arecord ( $rr->a_records ){
 		    my $ip = $arecord->ipblock;
 		    return 1 if ($ip->interface || $ip->snmp_devices);
 		}
@@ -225,7 +225,7 @@ sub denies(){
 sub _get_rr_ips {
     my ($rr) = @_;
     Netdot->throw_fatal("Missing arguments") unless ( $rr );
-    return map { $_->ipblock } $rr->arecords;
+    return map { $_->ipblock } $rr->a_records;
 }
 
 ##################################################################################

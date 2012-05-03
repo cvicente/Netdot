@@ -160,7 +160,7 @@ sub delete {
 	$ptr->rr->delete();
     }
     
-    if ( !$ipblock->arecords ){
+    if ( !$ipblock->a_records ){
 	# This IP has no more A records
 
 	# Remove any dhcp host scopes
@@ -176,7 +176,7 @@ sub delete {
 
     # If RR has no more associated records or devices
     # it should be deleted
-    $rr->delete() unless ( $rr->arecords  || $rr->mx_records || 
+    $rr->delete() unless ( $rr->a_records  || $rr->mx_records || 
 			   $rr->ns_records || $rr->devices  );
 
     return 1;

@@ -82,7 +82,7 @@ sub generate_records {
 	$name .= $suffix if ( defined $suffix );
 	$ptrdname = "$name.".$fzone->name;
 	
-	foreach my $r ( $ipb->arecords ){
+	foreach my $r ( $ipb->a_records ){
 	    $r->delete({no_change_status=>1});
 	}
 

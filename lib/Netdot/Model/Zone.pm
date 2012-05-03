@@ -247,8 +247,8 @@ sub add_ptrs {
     my $block = $class->_dot_arpa_to_ip($self->name);
     if ( my $ipb = Ipblock->search(address=>$block)->first ){
 	foreach my $ip ( @{$ipb->get_descendants} ){
-	    if ( $ip->is_address && $ip->arecords ){
-		foreach my $ar ( $ip->arecords ){
+	    if ( $ip->is_address && $ip->a_records ){
+		foreach my $ar ( $ip->a_records ){
 		    $logger->debug("Adding/updating PTR record for ".$ip->address);
 		    $ar->update_rrptr();
 		}

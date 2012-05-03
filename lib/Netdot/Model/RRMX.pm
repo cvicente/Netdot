@@ -158,7 +158,7 @@ sub _validate_args {
 		my $rr = RR->search(name=>$name, zone=>$z)->first ||
 		    $self->throw_user("Exchange ".$argv->{exchange}.
 				      " within active zone '$domain', but name '$name' does not exist");
-		unless ( $rr->arecords ){
+		unless ( $rr->a_records ){
 		    $self->throw_user("Exchange ".$argv->{exchange}.
 				      " has no address (A or AAAA) records");
 		}
