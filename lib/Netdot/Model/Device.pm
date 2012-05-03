@@ -5178,6 +5178,9 @@ sub _update_modules {
 	    # Clear reservation comment as soon as hardware gets installed
 	    $asset->update({reserved_for => ""});
 	    $mod_args{asset_id} = $asset->id;
+	}else{
+	    # If there's an asset then we probably need to remove it
+	    $mod_args{asset_id} = undef;
 	}
 
 	# See if it exists
