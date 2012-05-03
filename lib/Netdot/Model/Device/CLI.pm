@@ -110,6 +110,8 @@ sub _cli_cmd {
 	$logger->debug(sub{"$host: issuing CLI command: '$cmd' over $transport"});
 	my $s = Net::Appliance::Session->new(\%sess_args);
 
+	$s->nci->transport->ors("\r\n") if ($personality eq 'foundry');                                        
+
 #       Uncomment this to debug session exchanges	
 #	$s->set_global_log_at('debug');
 	
