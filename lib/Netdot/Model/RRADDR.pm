@@ -176,8 +176,22 @@ sub delete {
 
     # If RR has no more associated records or devices
     # it should be deleted
-    $rr->delete() unless ( $rr->a_records  || $rr->mx_records || 
-			   $rr->ns_records || $rr->devices  );
+    # However, if it has MX records, check if they point
+    # to something else, or just to itself. In the latter case
+    # it must be deleted too.
+
+    if ( !$rr->a_records && !$rr->ns_records && !$rr->devices ){
+	my $deleteme = 1;
+	if ( $rr->mx_records ) {
+	    foreach my $mx ( $rr->mx_records ) {
+		if ( $mx->exchange ne $rr->get_label ){
+		    $deleteme = 0;
+		    last;
+		}
+	    }
+	}
+	$rr->delete if $deleteme;
+    }
 
     return 1;
 }
