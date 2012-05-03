@@ -2158,7 +2158,7 @@ sub product {
 sub fqdn {
     my $self = shift;
     $self->isa_object_method('fqdn');
-    return $self->name->get_label;
+    $self->name && return $self->name->get_label;
 }
 
 ############################################################################
