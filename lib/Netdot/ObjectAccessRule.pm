@@ -37,7 +37,8 @@ sub denies(){
     
     my $oid = $object->id;
     my $username  = $user->getUsername();
-    $logger->debug("ObjectAccessRule::denies: Requesting permission to '$action' $otype id $oid on behalf of $username ($user_type)");
+    $logger->debug("ObjectAccessRule::denies: Requesting permission to '$action' $otype ".
+		   "id $oid on behalf of $username ($user_type)");
 
     if ( $user_type eq 'User' || $user_type eq 'Operator' ){
 
@@ -46,7 +47,8 @@ sub denies(){
 
 	my $access;
 	if ( !($access = $user->getAttribute('ALLOWED_OBJECTS')) ){
-	    $logger->debug("ObjectAccessRule::denies: $username: No 'ALLOWED_OBJECTS' attribute.  Denying access.");
+	    $logger->debug("ObjectAccessRule::denies: $username: No 'ALLOWED_OBJECTS' ".
+			   "attribute.  Denying access.");
 	    return 1;
 	}
 	if ( exists $access->{$otype} && exists $access->{$otype}->{$oid} ){
@@ -54,7 +56,8 @@ sub denies(){
 		# Users cannot delete these
 		# These persmissions will only apply to records in the zone
 		if ( $user_type eq 'User' && $action eq 'delete' ){
-		    $logger->debug("ObjectAccessRule::denies: '$action' $otype id $oid denied to $username ($user_type)");
+		    $logger->debug("ObjectAccessRule::denies: '$action' $otype id $oid ".
+				   "denied to $username ($user_type)");
 		    return 1;
 		}
 	    }
@@ -147,6 +150,16 @@ sub denies(){
 	    }
 	    $zone = $rr->zone;
 	    
+	    # Users cannot delete the zone apex
+	    if ( $otype eq 'RR' && $rr->name eq '@' && $action eq 'delete' ){
+		return 1;
+	    }
+
+	    # Users cannot edit or delete NS records
+	    if ( $otype eq 'RRNS' && $action ne 'view' ){
+		return 1;
+	    }
+
 	    # Users cannot edit or delete RRs for Devices or Device IPs
 	    if ( $action ne 'view' ){
 		if ( $rr->devices ) {

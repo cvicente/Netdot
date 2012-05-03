@@ -575,6 +575,10 @@ sub validate_name {
     my ($self, $name) = @_;
     
     if ( my $regex = Netdot->config->get('DNS_NAME_USER_INPUT_REGEX') ){
+	if ( $name eq '@' ){
+	    # The zone apex is OK
+	    return 1;
+	}
 	if ( $name =~ /$regex/ ){
 	    $self->throw_user("Invalid name: $name. Name contains invalid characters");
 	}

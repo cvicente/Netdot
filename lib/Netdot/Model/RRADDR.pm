@@ -174,9 +174,10 @@ sub delete {
 	}
     }
 
-    # If RR has no more A/AAAA records, MX records, or devices
+    # If RR has no more associated records or devices
     # it should be deleted
-    $rr->delete() unless ( $rr->arecords || $rr->mx_records || $rr->devices);
+    $rr->delete() unless ( $rr->arecords  || $rr->mx_records || 
+			   $rr->ns_records || $rr->devices  );
 
     return 1;
 }
