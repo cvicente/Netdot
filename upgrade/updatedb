@@ -324,8 +324,9 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
             "ALTER TABLE dhcpscope MODIFY COLUMN failover_peer varchar(128);",
             "ALTER TABLE zone MODIFY COLUMN include text;",
             "ALTER TABLE savedqueries MODIFY COLUMN querytext text;",
-
-	    "ALTER TABLE accessright MODIFY COLUMN object_id bigint;",
+	    "ALTER TABLE accessright MODIFY COLUMN object_id bigint NOT NULL;",
+            "ALTER TABLE site ADD COLUMN gsf integer;",
+            "ALTER TABLE site_history ADD COLUMN gsf integer;",
 	    
 	    # FK Indexes
 	    "ALTER TABLE backbonecable_history ADD KEY (owner);",
@@ -511,6 +512,10 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
             "ALTER TABLE dhcpscope ALTER COLUMN failover_peer TYPE varchar(128);",
             "ALTER TABLE zone ALTER COLUMN include TYPE text;",
             "ALTER TABLE savedqueries ALTER COLUMN querytext TYPE text;",
+	    "ALTER TABLE accessright ALTER COLUMN object_id TYPE bigint;",
+	    "ALTER TABLE accessright ALTER COLUMN object_id SET NOT NULL;",
+            "ALTER TABLE site ADD COLUMN gsf integer;",
+            "ALTER TABLE site_history ADD COLUMN gsf integer;",
             );
 }
 
@@ -554,14 +559,6 @@ foreach my $mtable ( sort { $a->name cmp $b->name } @tables ){
     if ($netdot_config->get('DB_TYPE') eq "mysql") {
         push @statements, "ALTER TABLE $tname CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci;";
     } 
-}
-
-# Exceptions
-if ($netdot_config->get('DB_TYPE') eq "mysql") {
-    push @statements, "ALTER TABLE accessright MODIFY COLUMN object_id bigint NOT NULL;";
-} elsif ($netdot_config->get('DB_TYPE') eq "Pg") {
-    push @statements, "ALTER TABLE accessright ALTER COLUMN object_id TYPE bigint;";
-    push @statements, "ALTER TABLE accessright ALTER COLUMN object_id SET NOT NULL;";
 }
 
 
