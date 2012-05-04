@@ -151,7 +151,9 @@ if ( $action eq 'test' ){
 	my $argstr;
 	my $program;
 	if ( $action eq 'apt-install' ){
-	    $program = 'apt-get -y install';
+	    # The packages in our temporary repository will fail authentication
+	    # unless we use --force-yes
+	    $program = 'apt-get -y --force-yes install';
 	}else{
 	    $program = 'yum install';
 	}
