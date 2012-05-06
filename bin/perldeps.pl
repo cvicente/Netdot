@@ -93,7 +93,7 @@ if ( $action eq 'test' ){
     }else{
 	die "Unrecognized RDBMS: $ans\n";
     }
-
+    my $program;
     if( $action eq 'rpm-install' ){
 	print 'Be aware that some official RPM repositories do not include many of the packages '.
 	    'that Netdot requires.  Would you like to use the EPEL (Extra Packages for '.
@@ -123,13 +123,16 @@ if ( $action eq 'test' ){
 	    &cmd($cmd);
 	    $installed_epel = 1;
 	}
+	$program = 'yum install';
     }elsif ( $action eq 'apt-install' ){
+	my $debian_version;
 	print 'We need to add a temporary repository of Netdot dependencies '.
 	    'until all packages are in Debian/Ubuntu official repositories. '.
 	    'Would you like to continue? [y/n] ';
 	my $ans = <STDIN>;
 	if ( $ans =~ /(Y|y)/ ){
 	    my $apt_src_dir = '/etc/apt/sources.list.d';
+	    $debian_version = `cat /etc/debian_version`;
 	    if ( -d $apt_src_dir ){
 		my $file = "$apt_src_dir/netdot.apt.nsrc.org.list";
 		open(FILE, ">$file")
@@ -137,6 +140,11 @@ if ( $action eq 'test' ){
 		my $str = "\n## Added by Netdot install\n".
 		    "deb http://netdot.apt.nsrc.org/ unstable/\n".
 		    "deb-src http://netdot.apt.nsrc.org/ unstable/\n\n";
+		if ( $debian_version =~ /wheezy/ ){
+		    $str .= "\n".
+			"deb http://netdot.apt.nsrc.org/ wheezy/\n".
+			"deb-src http://netdot.apt.nsrc.org/ wheezy/\n\n";
+		}
 		print FILE $str;
 		close(FILE);
 	    }else{
@@ -145,19 +153,16 @@ if ( $action eq 'test' ){
 	    print "Updating package indexes from sources\n";
 	    &cmd('apt-get update');
 	}
+	# The packages in our temporary repository will fail authentication
+	# unless we use --force-yes
+	$program = 'apt-get -y --force-yes install';
+	if ( $debian_version =~ /wheezy/ ){
+	    $program .= ' -t wheezy';
+	}
     }
     
     if ( $action eq 'apt-install' || $action eq 'rpm-install' ){
 	my $argstr;
-	my $program;
-	if ( $action eq 'apt-install' ){
-	    # The packages in our temporary repository will fail authentication
-	    # unless we use --force-yes
-	    $program = 'apt-get -y --force-yes install';
-	}else{
-	    $program = 'yum install';
-	}
-
 	foreach my $anon_hash ( @DEPS ){
 	    if ( $action eq 'apt-install' ){
 		$argstr .= " ".$anon_hash->{'apt'};
