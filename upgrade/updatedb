@@ -252,7 +252,7 @@ my $idx = $dbh->selectall_arrayref("
   WHERE   table_name = 'device'
   AND     index_name = 'Device12'
 ");
-if ( $idx && scalar(@$idx) ){
+if ( $idx && $idx->[0] == 1 ){
     @statements=('ALTER TABLE device DROP INDEX Device12;');
 }
 
@@ -284,7 +284,6 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
 	"ALTER TABLE device DROP COLUMN custom_serial;",
 	"ALTER TABLE device DROP COLUMN physaddr;",
 	"ALTER TABLE device DROP COLUMN product;",
-	"ALTER TABLE device ADD INDEX Device13 (extension);",
 	"ALTER TABLE device_history DROP COLUMN serialnumber;",
 	"ALTER TABLE device_history DROP COLUMN inventorynumber;",
 	"ALTER TABLE device_history DROP COLUMN maint_contract;",
@@ -386,7 +385,6 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
 	"ALTER TABLE device ADD KEY Device7 (down_from);",
 	"ALTER TABLE device DROP KEY Device10;",
 	"ALTER TABLE device ADD KEY Device8 (down_until);",
-	"ALTER TABLE device DROP KEY Device13;",
 	"ALTER TABLE device ADD KEY Device9 (extension);",
 	"ALTER TABLE device_history ADD KEY (asset_id);",
 	"ALTER TABLE device_history ADD KEY (monitorstatus);",
@@ -471,7 +469,7 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
 	"ALTER TABLE device DROP COLUMN custom_serial;",
 	"ALTER TABLE device DROP COLUMN physaddr;",
 	"ALTER TABLE device DROP COLUMN product;",
-	"CREATE INDEX Device13 ON device(extension);",
+	"CREATE INDEX Device9 ON device(extension);",
 	"ALTER TABLE device_history DROP COLUMN serialnumber;",
 	"ALTER TABLE device_history DROP COLUMN inventorynumber;",
 	"ALTER TABLE device_history DROP COLUMN maint_contract;",
