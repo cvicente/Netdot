@@ -241,39 +241,31 @@ foreach my $row ( @$haudits ){
     $haudit{$id}{zone}  = $zone;
     $haudit{$id}{scope} = $scope;
 }
- 
+
+my @statements;
+
+# There are some discrepancies between a schema created in 0.9 and the 
+# schema *upgraded* to 0.9
+my $idx = $dbh->selectall_arrayref("
+  SELECT COUNT(1) cnt
+  FROM    INFORMATION_SCHEMA.STATISTICS
+  WHERE   table_name = 'device'
+  AND     index_name = 'Device12'
+");
+if ( $idx && scalar(@$idx) ){
+    @statements=('ALTER TABLE device DROP INDEX Device12;');
+}
+
 if ($netdot_config->get('DB_TYPE') eq "mysql") {
     my $dbname = $netdot_config->get('DB_DATABASE');
-
-    # There are some discrepancies between a schema created in 0.9 and the 
-    # schema *upgraded* to 0.9
-    # We need a stored procedure to emulate 'CREATE INDEX IF NOT EXISTS" 
-    @statements = (
-	"DELIMITER $$
-DROP PROCEDURE IF EXISTS `create_index_if_not_exists`$$
-CREATE DEFINER=`user`@`%` PROCEDURE `create_index_if_not_exists`(table_name_vc varchar(50), index_name_vc varchar(50), field_list_vc varchar(200))
-SQL SECURITY INVOKER
-BEGIN
-SET @Index_cnt = (
-SELECT COUNT(1) cnt
-FROM    INFORMATION_SCHEMA.STATISTICS
-WHERE   table_name = table_name_vc
-AND     index_name = index_name_vc
-);
-IF ifnull(@Index_cnt,0) = 0 THEN SET @index_sql = CONCAT('ALTER TABLE ',table_name_vc,' ADD INDEX ',index_name_vc,'(',field_list_vc,');');
-PREPARE stmt FROM @index_sql;
-EXECUTE stmt;
-DEALLOCATE PREPARE stmt;
-END IF;
-END$$
-DELIMITER ;",
-	"CALL create_index_if_not_exists('device','Device12','snmp_target');",
+    
+    push @statements, (
 	"ALTER DATABASE $dbname CHARACTER SET utf8 COLLATE utf8_general_ci;",
 	"ALTER TABLE device ADD COLUMN asset_id bigint;",
 	"ALTER TABLE device ADD COLUMN extension integer;",
 	"ALTER TABLE device_history ADD COLUMN asset_id bigint;",
 	"ALTER TABLE device_history ADD COLUMN extension integer;",
-
+	
 	"UPDATE device,asset SET device.asset_id=asset.id 
               WHERE (asset.serial_number=device.serialnumber
                 AND asset.product_id=device.product)
@@ -380,7 +372,6 @@ DELIMITER ;",
 	"ALTER TABLE device ADD KEY (monitorstatus);",
 	"ALTER TABLE device ADD KEY (room);",
 	"ALTER TABLE device ADD KEY (site);",
-	"ALTER TABLE device DROP KEY Device12;",
 	"ALTER TABLE device ADD KEY (snmp_target);",
 	"ALTER TABLE device ADD UNIQUE KEY device2 (asset_id);",
 	"ALTER TABLE device DROP KEY Device4;",
