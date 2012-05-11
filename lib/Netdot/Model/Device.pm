@@ -1792,7 +1792,7 @@ sub arp_update {
     my $timestamp = $argv{timestamp} || $self->timestamp;
 
     unless ( $self->collect_arp ){
-	$logger->debug(sub{"Device::arp_update: $host excluded from ARP collection. Skipping"});
+	$logger->debug(sub{"Device::arp_update: $host: Collect ARP option off. Skipping"});
 	return;
     }
     if ( $self->is_in_downtime ){
@@ -1883,7 +1883,7 @@ sub get_arp {
     my $host = $self->fqdn;
 
     unless ( $self->collect_arp ){
-	$logger->debug(sub{"Device::get_arp: $host excluded from ARP collection. Skipping"});
+	$logger->debug(sub{"Device::get_arp: $host: Collect ARP option off. Skipping"});
 	return;
     }
     if ( $self->is_in_downtime ){
@@ -1953,7 +1953,7 @@ sub fwt_update {
     my $timestamp = $argv{timestamp} || $self->timestamp;
     
     unless ( $self->collect_fwt ){
-	$logger->debug(sub{"Device::fwt_update: $host excluded from FWT collection. Skipping"});
+	$logger->debug(sub{"Device::fwt_update: $host: Collect FWT option off. Skipping"});
 	return;
     }
     if ( $self->is_in_downtime ){
@@ -2036,7 +2036,7 @@ sub get_fwt {
     my $fwt = {};
 
     unless ( $self->collect_fwt ){
-	$logger->debug(sub{"Device::get_fwt: $host excluded from FWT collection. Skipping"});
+	$logger->debug(sub{"Device::get_fwt: $host: Collect FWT option off. Skipping"});
 	return;
     }
     if ( $self->is_in_downtime ){
@@ -2467,19 +2467,19 @@ sub snmp_update {
 			      atomic    => $atomic,
 		);
 	}else{
-	    $logger->debug(sub{"Device::snmp_update: $host excluded from FWT collection. Skipping"});
+	    $logger->debug(sub{"Device::snmp_update: $host: Collect FWT option off. Skipping"});
 	    return;
 	}
     }
     if ( $argv{do_arp} ){
-	if ( $self->has_layer(3) && $self->collect_arp ){
+	if ( $self->collect_arp ){
 	    $self->arp_update(session        => $sinfo, 
 			      timestamp      => $timestamp,
 			      no_update_tree => $argv{no_update_tree},
 			      atomic         => $atomic,
 		);
 	}else{
-	    $logger->debug(sub{"Device::snmp_update: $host excluded from ARP collection. Skipping"});
+	    $logger->debug(sub{"Device::snmp_update: $host: Collect ARP option off. Skipping"});
 	    return;
 	}
     }
@@ -4009,19 +4009,19 @@ sub snmp_update_parallel {
 
 	if ( $args{do_info} ){
 	    unless ( $dev->canautoupdate ){
-		$logger->debug(sub{ sprintf("%s excluded from auto-updates", $dev->fqdn) });
+		$logger->debug(sub{ sprintf("%s: Auto Update option off", $dev->fqdn) });
 		$args{do_info} = 0;
 	    }
 	}
 	if ( $args{do_fwt} ){
 	    unless ( $dev->collect_fwt ){
-		$logger->debug(sub{ sprintf("%s excluded from FWT collection", $dev->fqdn) });
+		$logger->debug(sub{ sprintf("%s: Collect FWT option off", $dev->fqdn) });
 		$args{do_fwt} = 0;
 	    }
 	}
 	if ( $args{do_arp} ){
 	    unless ( $dev->collect_arp ){
-		$logger->debug(sub{ sprintf("%s excluded from ARP collection", $dev->fqdn) });
+		$logger->debug(sub{ sprintf("%s: Collect ARP option off", $dev->fqdn) });
 		$args{do_arp} = 0;
 	    }
 	}
@@ -4401,7 +4401,7 @@ sub _get_fwt_from_snmp {
     my $host = $self->fqdn;
 
     unless ( $self->collect_fwt ){
-	$logger->debug(sub{"Device::_get_fwt_from_snmp: $host excluded from FWT collection. Skipping"});
+	$logger->debug(sub{"Device::_get_fwt_from_snmp: $host: Collect FWT option off. Skipping"});
 	return;
     }
 
