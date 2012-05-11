@@ -252,8 +252,8 @@ my $idx = $dbh->selectall_arrayref("
   WHERE   table_name = 'device'
   AND     index_name = 'Device12'
 ");
-if ( $idx && $idx->[0] == 1 ){
-    @statements=('ALTER TABLE device DROP INDEX Device12;');
+if ( $idx && $idx->[0]->[0] == 1 ){
+    @statements=('ALTER TABLE device DROP KEY Device12;');
 }
 
 if ($netdot_config->get('DB_TYPE') eq "mysql") {
@@ -372,20 +372,21 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
 	"ALTER TABLE device ADD KEY (room);",
 	"ALTER TABLE device ADD KEY (site);",
 	"ALTER TABLE device ADD KEY (snmp_target);",
-	"ALTER TABLE device ADD UNIQUE KEY device2 (name,asset_id);",
+	"ALTER TABLE device DROP KEY device1;",
+	"ALTER TABLE device ADD UNIQUE KEY device1 (name,asset_id);",
 	"ALTER TABLE device DROP KEY Device4;",
-	"ALTER TABLE device ADD KEY Device3 (used_by);",
+	"ALTER TABLE device ADD KEY Device2 (used_by);",
 	"ALTER TABLE device DROP KEY Device6;",
-	"ALTER TABLE device ADD KEY Device4 (owner);",
+	"ALTER TABLE device ADD KEY Device3 (owner);",
 	"ALTER TABLE device DROP KEY Device7;",
-	"ALTER TABLE device ADD KEY Device5 (os);",
+	"ALTER TABLE device ADD KEY Device4 (os);",
 	"ALTER TABLE device DROP KEY Device8;",
-	"ALTER TABLE device ADD KEY Device6 (sysname);",
+	"ALTER TABLE device ADD KEY Device5 (sysname);",
 	"ALTER TABLE device DROP KEY Device9;",
-	"ALTER TABLE device ADD KEY Device7 (down_from);",
+	"ALTER TABLE device ADD KEY Device6 (down_from);",
 	"ALTER TABLE device DROP KEY Device10;",
-	"ALTER TABLE device ADD KEY Device8 (down_until);",
-	"ALTER TABLE device ADD KEY Device9 (extension);",
+	"ALTER TABLE device ADD KEY Device7 (down_until);",
+	"ALTER TABLE device ADD KEY Device8 (extension);",
 	"ALTER TABLE device_history ADD KEY (asset_id);",
 	"ALTER TABLE device_history ADD KEY (monitorstatus);",
 	"ALTER TABLE device_history ADD KEY (name);",
@@ -443,7 +444,7 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
 	
 	);
 } elsif ($netdot_config->get('DB_TYPE') eq "Pg") {
-    @statements = (
+    push @statements, (
 	"ALTER TABLE device ADD COLUMN asset_id bigint;",
 	"ALTER TABLE device ADD COLUMN extension integer NULL;",
 	"ALTER TABLE device_history ADD COLUMN asset_id bigint;",
