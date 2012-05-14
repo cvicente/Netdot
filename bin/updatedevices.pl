@@ -12,7 +12,6 @@ use Netdot::Model::Device;
 use Netdot::Topology;
 use Getopt::Long qw(:config no_ignore_case bundling);
 use Log::Log4perl::Level;
-#use Devel::Profiler bad_pkgs => [qw(UNIVERSAL Time::HiRes B Carp Exporter Cwd Config CORE DynaLoader XSLoader AutoLoader DBD::_::st DBD::_::db DBD::st DBD::db DBI::st DBI::db DBI::dr)];
 
 # Variables that will hold given values
 my ($host, $blocks, $db, $file, $commstrs, $version, $sec_name, $sec_level, $auth_proto, $auth_pass, $priv_proto, $priv_pass);
