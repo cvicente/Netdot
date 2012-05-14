@@ -134,7 +134,7 @@ desea instalar Netdot, por ejemplo:
 
 *   Apache2 con `mod_perl2`
 
-*   MySQL (5.x recomendado) o PostgreSQL (soporte parcial/limitado)
+*   MySQL o PostgreSQL
 
 *   Servidor de autenticación (opcional). Netdot implementa
     autenticacion local y también a través de RADIUS y LDAP.
@@ -276,6 +276,16 @@ Luego instale el nuevo Netdot y reinicie Apache:
 
     Y escriba la clave cuando se le indique. Use Control+D para salir del diálogo.
     
+*   Ajuste la configuración de su base de datos si fuera necesario
+    
+    Usuarios de MySQL: Si planea utilizar las funciones de IPAM de Netdot, es posible que 
+    necesite incrementar el tamaño máximo del búfer de paquete en el fichero my.conf, por
+    ejemplo:
+
+    ~~~~
+    max_allowed_packet = 16M
+    ~~~~
+
 *   Compruebe que se ha creado el fichero etc/Site.conf, en el paquete
     de instalación, con las opciones de configuración en función de sus
     necesidades (Está explicado anteriormente).
@@ -764,13 +774,13 @@ import
   [ -c|config <path>, -d|dir <path>  ] (for multiple zones)
   [ -g|--debug ] [-h|--help]
 
-  -c  --config <path>   Bind config file containing zone definitions    
-  -d, --dir <path>      Directory where zone files are found    
-  -n, --domain <name>   Domain or Zone name    
-  -f, --zonefile <path> Zone file    
-  -w, --wipe            Wipe out existing zone data
-  -g, --debug           Print debugging output    
-  -h, --help            Print help
+  -c  --config <path>   Fichero de configuración de BIND conteniendo definiciones de zona.
+  -d, --dir <path>      Directorio donde ubicar los archivos de zona
+  -n, --domain <name>   Dominio o nombre de zona
+  -f, --zonefile <path> Fichero de zona
+  -w, --wipe            Borrar información de zona existente
+  -g, --debug           Mostrar información de depuración
+  -h, --help            Mostrar ayuda
 ~~~~
 
 Para adicionar una nueva zona manualmente, vaya a `Management -> DNS
@@ -1455,20 +1465,44 @@ o sino:
 >install Netdot::Client::REST
 ~~~~
 
-# Preguntas Frecuentes
+# Mantenimiento de la base de datos
 
-*   P: Por qué Netdot no puede descubrir mi dispositivo via SNMP? Puedo
-    verificar que el mismo responde utilizando snmpwalk
+La base de datos de Netdot crecerá con el tiempo, por lo que será necesario
+borrar información caducada. Encontará una utilidad de línea de comandos
+llamada "prune_db.pl" en el directorio bin/ de la distribución. La sintaxis
+de dicho comando es como sigue:
 
-    R: Si su equipo es un servidor Linux o cualquier otro dispositivo
-    que utiliza el agente SNMP del paquete Net-SNMP, entonces es
-    necesario agregar lo siguiente en el archivo de configuración
-    /etc/snmp.conf (o donde quiera que se encuentre):
+~~~~ {.bash}
+ usage: bin/prune_db.pl  -H, --history | -F, --fwt | -A, --arp | 
+                         -M, --macs | -I, --ips | -R, --rr | -t, --hostaudit
+                       [ -d, --num_days <number> ] [ -n, --num_history <number> ] [ -r, --rotate ]
+                       [ -g, --debug ] [-h, --help]
+    
+    -H, --history                  Tablas con historia
+    -F, --fwt                      Tablas de reenvío
+    -A, --arp                      Cachés de ARP
+    -M, --macs                     Direcciones MAC
+    -I, --ips                      Direcciones IP
+    -R, --rr                       Récords DNS
+    -t, --hostaudit                Récords de auditoría de DNS y DHCP
+    -d, --num_days                 Mantener récords por número de días (default: 365);
+    -n, --num_history              Número de récords históricos a mantener por cada record (default: 100);
+    -r, --rotate                   Rotar (en lugar de borrar) las tablas de reenvío y ARP
+    -p, --pretend                  Mostrar actividad sin realmente borrar nada
+    -g, --debug                    Información de depuración (mucha)
+    -h, --help                     Mostrar ayuda
 
-        sysservices 72
+~~~~
 
-    Luego, hay que reiniciar el servicio snmpd.
+El fichero de muestra "netdot.cron" incluído con el paquete muestra ejemplos de
+uso recomendado de este programa.
 
-    Esta variable es esencial para Netdot, y la mayoría de los
-    dispositivos implementan esta OID en sus agentes SNMP.
+>**Nota**: 
+Sea especialmente cuidadoso al utilizar las opciones -I y -M para borrar
+direcciones IP y MAC. El criterio para su eliminación depende del sello de tiempo
+"last seen" (visto por última vez) incluído en estos récords. Esto implica que
+si Netdot no está recopilando las tablas de ARP y de reenvío de los enrutadores,
+cortafuegos y switches donde se encontrarían estas direcciones, Netdot asumirá
+que no están activas, y por tanto las incluirá en la lista de eliminación.
+
 

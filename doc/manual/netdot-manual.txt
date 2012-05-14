@@ -127,7 +127,7 @@ Netdot, i.e.
 
 *   Apache2 with `mod_perl2`
 
-*   MySQL (5.x preferred) or PostgreSQL (limited support)
+*   MySQL or PostgreSQL
 
 *   Authentication Server (optional). Netdot supports local
     authentication, as well as RADIUS and LDAP.
@@ -264,6 +264,15 @@ Finally, install the new Netdot code and restart Apache:
 
     and give your password when prompted. Type Control+D to exit the prompt.
     
+*   Adjust your database configuration if necessary
+    
+    MySQL users: If you intend to use the IPAM functionalities in Netdot, you might 
+    need to increase the maximum packet buffer size in my.conf to something like:
+
+    ~~~~
+    max_allowed_packet = 16M
+    ~~~~
+
 *   Make sure you have created the file etc/Site.conf with your
     configurations (See above).
 
@@ -1380,21 +1389,58 @@ or
 >install Netdot::Client::REST
 ~~~~
 
+# Database Maintenance
 
-# FAQ
+Netdot's database will grow with time, thus it will be necessary to 
+remove old information as it becomes stale. You will find a CLI utility
+called "prune_db.pl" in the bin/ directory of the distribution. The
+command's syntax is as follows:
 
-*   Q: Why can't Netdot discover my device using SNMP? I can see it
-    responds when using snmpwalk.
+~~~~ {.bash}
+ usage: bin/prune_db.pl  -H, --history | -F, --fwt | -A, --arp | 
+                         -M, --macs | -I, --ips | -R, --rr | -t, --hostaudit
+                       [ -d, --num_days <number> ] [ -n, --num_history <number> ] [ -r, --rotate ]
+                       [ -g, --debug ] [-h, --help]
+    
+    -H, --history                  History tables
+    -F, --fwt                      Forwarding Tables
+    -A, --arp                      ARP caches
+    -M, --macs                     MAC addresses
+    -I, --ips                      IP addresses
+    -R, --rr                       DNS Resource Records
+    -t, --hostaudit                Host Audit records
+    -d, --num_days                 Number of days worth of items to keep (default: 365);
+    -n, --num_history              Number of history items to keep for each record (default: 100);
+    -r, --rotate                   Rotate forwarding tables and ARP caches (rather than delete records) 
+    -p, --pretend                  Show activity without actually deleting anything
+    -g, --debug                    Print (lots of) debugging output
+    -h, --help                     Print help
 
-    A: If your device is a Linux server or any other device using the
-    SNMP agent from Net-SNMP, you need to add the following to
-    /etc/snmpd.conf (or wherever it exists):
+    Deletes old items from database as necessary.
+    
+    * For "history" tables:
+    
+    We want to keep NUM_DAYS worth of history for every record. But
+    if a record doesn't change at all during the last NUM_DAYS, we don't 
+    want to lose the history that does exist for it from before that time. 
+    To compromise, we will only check the history tables for old data 
+    if there are more than NUM_HISTORY items for a record. If there are 
+    more than NUM_HISTORY items for a record, then we drop anything older 
+    than NUM_DAYS.
+    
+    * For address tracking tables:
+    
+    We delete records that are older than NUM_DAYS.
+~~~~
 
-        sysservices 72
+The sample CRON file "netdot.cron" included with the package contains recommended
+uses of this command. 
 
-    Then, restart your snmpd process.
-
-    The reason for this is that sysservices is essential to Netdot's
-    device discovery. Most network devices implement this OID in their
-    SNMP agents.
+>**Note**: 
+Be especially careful when using the -I and -M options to remove old IP and MAC
+addresses. The criteria for deletion relies on the "last seen" timestamp on 
+these records. That means that if Netdot is not collecting ARP and FWT tables
+from the routers, firewalls and switches where these addresses can be seen in 
+the network, then Netdot will assume that they are not active anymore, thus
+included for deletion.
 

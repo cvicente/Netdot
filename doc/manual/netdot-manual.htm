@@ -129,7 +129,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <li><a href="#restful-interface-authorization"><span class="toc-section-number">7.3</span> RESTful Interface Authorization</a></li>
 <li><a href="#client-module-on-cpan"><span class="toc-section-number">7.4</span> Client module on CPAN</a></li>
 </ul></li>
-<li><a href="#faq"><span class="toc-section-number">8</span> FAQ</a></li>
+<li><a href="#database-maintenance"><span class="toc-section-number">8</span> Database Maintenance</a></li>
 </ul>
 </div>
 <p></p>
@@ -185,7 +185,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <ul>
 <li><p>Perl 5.6.1 or later</p></li>
 <li><p>Apache2 with <code>mod_perl2</code></p></li>
-<li><p>MySQL (5.x preferred) or PostgreSQL (limited support)</p></li>
+<li><p>MySQL or PostgreSQL</p></li>
 <li><p>Authentication Server (optional). Netdot supports local authentication, as well as RADIUS and LDAP.</p>
 <ul>
 <li><p>For RADIUS, we recommend FreeRadius, available at: <a href="http://www.freeradius.org/"><code class="url">http://www.freeradius.org/</code></a></p></li>
@@ -238,6 +238,9 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <p>Set a password for the &quot;postgres&quot; database role using the command:</p>
 <pre><code>\password postgres</code></pre>
 <p>and give your password when prompted. Type Control+D to exit the prompt.</p></li>
+<li><p>Adjust your database configuration if necessary</p>
+<p>MySQL users: If you intend to use the IPAM functionalities in Netdot, you might need to increase the maximum packet buffer size in my.conf to something like:</p>
+<pre><code>max_allowed_packet = 16M</code></pre></li>
 <li><p>Make sure you have created the file etc/Site.conf with your configurations (See above).</p></li>
 <li><p>You will then be ready to initialize the database.</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~% <span class="kw">make</span> installdb [parameters]</code></pre>
@@ -664,13 +667,45 @@ POST: {ethernet=&gt;&#39;DEADDEADBEEF&#39;}</code></pre>
 <p>or</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# cpan
 <span class="kw">&gt;install</span> Netdot::Client::REST</code></pre>
-<h1 id="faq"><a href="#TOC"><span class="header-section-number">8</span> FAQ</a></h1>
-<ul>
-<li><p>Q: Why can't Netdot discover my device using SNMP? I can see it responds when using snmpwalk.</p>
-<p>A: If your device is a Linux server or any other device using the SNMP agent from Net-SNMP, you need to add the following to /etc/snmpd.conf (or wherever it exists):</p>
-<pre><code>sysservices 72</code></pre>
-<p>Then, restart your snmpd process.</p>
-<p>The reason for this is that sysservices is essential to Netdot's device discovery. Most network devices implement this OID in their SNMP agents.</p></li>
-</ul>
+<h1 id="database-maintenance"><a href="#TOC"><span class="header-section-number">8</span> Database Maintenance</a></h1>
+<p>Netdot's database will grow with time, thus it will be necessary to remove old information as it becomes stale. You will find a CLI utility called &quot;prune_db.pl&quot; in the bin/ directory of the distribution. The command's syntax is as follows:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"> usage: bin/prune_db.pl  -H, --history <span class="kw">|</span> -F, --fwt <span class="kw">|</span> -A, --arp <span class="kw">|</span> 
+                         -M, --macs <span class="kw">|</span> -I, --ips <span class="kw">|</span> -R, --rr <span class="kw">|</span> -t, --hostaudit
+                      <span class="kw"> [</span> -d, --num_days &lt;number<span class="ot">&gt;</span><span class="kw"> ] [</span> -n, --num_history &lt;number<span class="ot">&gt;</span><span class="kw"> ] [</span> -r, --rotate<span class="kw"> ]</span>
+                      <span class="kw"> [</span> -g, --debug<span class="kw"> ]</span> [-h, --help]
+
+    -H, --history                  History tables
+    -F, --fwt                      Forwarding Tables
+    -A, --arp                      ARP caches
+    -M, --macs                     MAC addresses
+    -I, --ips                      IP addresses
+    -R, --rr                       DNS Resource Records
+    -t, --hostaudit                Host Audit records
+    -d, --num_days                 Number of days worth of items to keep <span class="kw">(</span>default: 365<span class="kw">)</span>;
+    -n, --num_history              Number of <span class="kw">history</span> items to keep <span class="kw">for</span> each record <span class="kw">(</span>default: 100<span class="kw">)</span>;
+    -r, --rotate                   Rotate forwarding tables and ARP caches <span class="kw">(</span>rather than delete records<span class="kw">)</span> 
+    -p, --pretend                  Show activity without actually deleting anything
+    -g, --debug                    Print <span class="kw">(</span>lots of<span class="kw">)</span> debugging output
+    -h, --help                     Print <span class="kw">help</span>
+
+    Deletes old items from database <span class="kw">as</span> necessary.
+
+    * For <span class="st">&quot;history&quot;</span> tables:
+
+    We want to keep NUM_DAYS worth of <span class="kw">history</span> <span class="kw">for</span> every record<span class="kw">.</span> But
+    if a record doesn<span class="st">&#39;t change at all during the last NUM_DAYS, we don&#39;</span>t 
+    want to lose the <span class="kw">history</span> that does exist <span class="kw">for</span> it from before that time<span class="kw">.</span> 
+    To compromise, we will only check the <span class="kw">history</span> tables <span class="kw">for</span> old data 
+    if there are <span class="kw">more</span> than NUM_HISTORY items <span class="kw">for</span> a record<span class="kw">.</span> If there are 
+    <span class="kw">more</span> than NUM_HISTORY items <span class="kw">for</span> a record, <span class="kw">then</span> we drop anything older 
+    than NUM_DAYS.
+
+    * For address tracking tables:
+
+    We delete records that are older than NUM_DAYS.</code></pre>
+<p>The sample CRON file &quot;netdot.cron&quot; included with the package contains recommended uses of this command.</p>
+<blockquote>
+<p><strong>Note</strong>: Be especially careful when using the -I and -M options to remove old IP and MAC addresses. The criteria for deletion relies on the &quot;last seen&quot; timestamp on these records. That means that if Netdot is not collecting ARP and FWT tables from the routers, firewalls and switches where these addresses can be seen in the network, then Netdot will assume that they are not active anymore, thus included for deletion.</p>
+</blockquote>
 </body>
 </html>

@@ -127,7 +127,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <li><a href="#autorización-en-la-interfaz-rest"><span class="toc-section-number">7.3</span> Autorización en la interfaz REST</a></li>
 <li><a href="#módulo-perl-para-programas-cliente-en-cpan"><span class="toc-section-number">7.4</span> Módulo Perl para programas cliente en CPAN</a></li>
 </ul></li>
-<li><a href="#preguntas-frecuentes"><span class="toc-section-number">8</span> Preguntas Frecuentes</a></li>
+<li><a href="#mantenimiento-de-la-base-de-datos"><span class="toc-section-number">8</span> Mantenimiento de la base de datos</a></li>
 </ul>
 </div>
 <p></p>
@@ -183,7 +183,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <ul>
 <li><p>Perl 5.6.1 o superior</p></li>
 <li><p>Apache2 con <code>mod_perl2</code></p></li>
-<li><p>MySQL (5.x recomendado) o PostgreSQL (soporte parcial/limitado)</p></li>
+<li><p>MySQL o PostgreSQL</p></li>
 <li><p>Servidor de autenticación (opcional). Netdot implementa autenticacion local y también a través de RADIUS y LDAP.</p>
 <ul>
 <li><p>Para RADIUS, recomendamos FreeRadius, disponible en: <a href="http://www.freeradius.org/"><code class="url">http://www.freeradius.org/</code></a></p></li>
@@ -236,6 +236,9 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <p>Configure la clave para el rol 'postgres' así:</p>
 <pre><code>\password postgres</code></pre>
 <p>Y escriba la clave cuando se le indique. Use Control+D para salir del diálogo.</p></li>
+<li><p>Ajuste la configuración de su base de datos si fuera necesario</p>
+<p>Usuarios de MySQL: Si planea utilizar las funciones de IPAM de Netdot, es posible que necesite incrementar el tamaño máximo del búfer de paquete en el fichero my.conf, por ejemplo:</p>
+<pre><code>max_allowed_packet = 16M</code></pre></li>
 <li><p>Compruebe que se ha creado el fichero etc/Site.conf, en el paquete de instalación, con las opciones de configuración en función de sus necesidades (Está explicado anteriormente).</p></li>
 <li><p>Luego proceda a crear la base de datos.</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~% <span class="kw">make</span> installdb [parametros]</code></pre>
@@ -402,13 +405,13 @@ dispositivo3 comunidad3
   [ -c|config &lt;path&gt;, -d|dir &lt;path&gt;  ] (for multiple zones)
   [ -g|--debug ] [-h|--help]
 
-  -c  --config &lt;path&gt;   Bind config file containing zone definitions    
-  -d, --dir &lt;path&gt;      Directory where zone files are found    
-  -n, --domain &lt;name&gt;   Domain or Zone name    
-  -f, --zonefile &lt;path&gt; Zone file    
-  -w, --wipe            Wipe out existing zone data
-  -g, --debug           Print debugging output    
-  -h, --help            Print help</code></pre>
+  -c  --config &lt;path&gt;   Fichero de configuración de BIND conteniendo definiciones de zona.
+  -d, --dir &lt;path&gt;      Directorio donde ubicar los archivos de zona
+  -n, --domain &lt;name&gt;   Dominio o nombre de zona
+  -f, --zonefile &lt;path&gt; Fichero de zona
+  -w, --wipe            Borrar información de zona existente
+  -g, --debug           Mostrar información de depuración
+  -h, --help            Mostrar ayuda</code></pre>
 <p>Para adicionar una nueva zona manualmente, vaya a <code>Management -&gt; DNS Zones</code>. Opcionalmente puede seleccionar una zona para utilizar como plantilla (template). Esto indicará a Netdot que copie la zona de plantilla, incluyendo todos sus récords, y la guarde con otro nombre. Esto es útil cuando se deben crear múltiples zonas que comparten las mismas propiedades (récords NS, MX, etc.) Haga un click en [add]. Se mostrará una nueva zona creada a partir de la plantilla, o con los valores por defecto extraídos del fichero de configuración.</p>
 <p>Una vez que la zona es creada, debe ser asignada a un bloque IP (Subnet o Container). Esto se realiza haciendo click en el boton [add] de la sección de bloques IP en la página de definición de zonas.</p>
 <p>La forma más conveniente de crear zonas inversas (in-addr.arpa ó ip6.arpa) es yendo a la página del bloque IP correspondiente, sección DNS Zones, y hacer click en [add]. Si la zona inversa correspondiente no existe, Netdot le presentará el nombre de zona apropiado y la opción de crearla. Esto es especialmente últi con bloques IPv6, los cuales suelen requerir nombres de zona muy largos.</p>
@@ -652,13 +655,29 @@ POST: {ethernet=&gt;&#39;DEADDEADBEEF&#39;}</code></pre>
 <p>o sino:</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# cpan
 <span class="kw">&gt;install</span> Netdot::Client::REST</code></pre>
-<h1 id="preguntas-frecuentes"><a href="#TOC"><span class="header-section-number">8</span> Preguntas Frecuentes</a></h1>
-<ul>
-<li><p>P: Por qué Netdot no puede descubrir mi dispositivo via SNMP? Puedo verificar que el mismo responde utilizando snmpwalk</p>
-<p>R: Si su equipo es un servidor Linux o cualquier otro dispositivo que utiliza el agente SNMP del paquete Net-SNMP, entonces es necesario agregar lo siguiente en el archivo de configuración /etc/snmp.conf (o donde quiera que se encuentre):</p>
-<pre><code>sysservices 72</code></pre>
-<p>Luego, hay que reiniciar el servicio snmpd.</p>
-<p>Esta variable es esencial para Netdot, y la mayoría de los dispositivos implementan esta OID en sus agentes SNMP.</p></li>
-</ul>
+<h1 id="mantenimiento-de-la-base-de-datos"><a href="#TOC"><span class="header-section-number">8</span> Mantenimiento de la base de datos</a></h1>
+<p>La base de datos de Netdot crecerá con el tiempo, por lo que será necesario borrar información caducada. Encontará una utilidad de línea de comandos llamada &quot;prune_db.pl&quot; en el directorio bin/ de la distribución. La sintaxis de dicho comando es como sigue:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"> usage: bin/prune_db.pl  -H, --history <span class="kw">|</span> -F, --fwt <span class="kw">|</span> -A, --arp <span class="kw">|</span> 
+                         -M, --macs <span class="kw">|</span> -I, --ips <span class="kw">|</span> -R, --rr <span class="kw">|</span> -t, --hostaudit
+                      <span class="kw"> [</span> -d, --num_days &lt;number<span class="ot">&gt;</span><span class="kw"> ] [</span> -n, --num_history &lt;number<span class="ot">&gt;</span><span class="kw"> ] [</span> -r, --rotate<span class="kw"> ]</span>
+                      <span class="kw"> [</span> -g, --debug<span class="kw"> ]</span> [-h, --help]
+
+    -H, --history                  Tablas con historia
+    -F, --fwt                      Tablas de reenvío
+    -A, --arp                      Cachés de ARP
+    -M, --macs                     Direcciones MAC
+    -I, --ips                      Direcciones IP
+    -R, --rr                       Récords DNS
+    -t, --hostaudit                Récords de auditoría de DNS y DHCP
+    -d, --num_days                 Mantener récords por número de días <span class="kw">(</span>default: 365<span class="kw">)</span>;
+    -n, --num_history              Número de récords históricos a mantener por cada record <span class="kw">(</span>default: 100<span class="kw">)</span>;
+    -r, --rotate                   Rotar <span class="kw">(</span>en lugar de borrar<span class="kw">)</span> las tablas de reenvío y ARP
+    -p, --pretend                  Mostrar actividad sin realmente borrar nada
+    -g, --debug                    Información de depuración <span class="kw">(</span>mucha<span class="kw">)</span>
+    -h, --help                     Mostrar ayuda</code></pre>
+<p>El fichero de muestra &quot;netdot.cron&quot; incluído con el paquete muestra ejemplos de uso recomendado de este programa.</p>
+<blockquote>
+<p><strong>Nota</strong>: Sea especialmente cuidadoso al utilizar las opciones -I y -M para borrar direcciones IP y MAC. El criterio para su eliminación depende del sello de tiempo &quot;last seen&quot; (visto por última vez) incluído en estos récords. Esto implica que si Netdot no está recopilando las tablas de ARP y de reenvío de los enrutadores, cortafuegos y switches donde se encontrarían estas direcciones, Netdot asumirá que no están activas, y por tanto las incluirá en la lista de eliminación.</p>
+</blockquote>
 </body>
 </html>
