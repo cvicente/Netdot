@@ -14,7 +14,7 @@ my %CONFIG;
 
 $CONFIG{DEBUG}        = 1;
 $CONFIG{PROMPT}       = 1; 
-$CONFIG{CONFIG_DIR}   = '../etc';
+$CONFIG{CONFIG_DIR}   = '<<Make:ETC>>';
 $CONFIG{SCHEMA_FILE}  = "$CONFIG{CONFIG_DIR}/netdot.meta";
 $CONFIG{DEFAULT_DATA} = "$CONFIG{CONFIG_DIR}/default_data";
 
