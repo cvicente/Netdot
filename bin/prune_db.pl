@@ -21,9 +21,10 @@ $self{NUM_HISTORY} = 100;
 $self{ROTATE}      = 0;
 
 my $usage = <<EOF;
- usage: $0  -H, --history | -F, --fwt | -A, --arp | -M, --macs | -I, --ips | -R, rr | -t, --hostaudit
-    [ -d, --num_days <number> ] [ -n, --num_history <number> ] [ -r, --rotate ]
-    [ -g, --debug ] [-h, --help]
+ usage: $0  -H, --history | -F, --fwt | -A, --arp | 
+            -M, --macs | -I, --ips | -R, --rr | -t, --hostaudit
+          [ -d, --num_days <number> ] [ -n, --num_history <number> ] [ -r, --rotate ]
+          [ -g, --debug ] [-h, --help]
     
     -H, --history                  History tables
     -F, --fwt                      Forwarding Tables
