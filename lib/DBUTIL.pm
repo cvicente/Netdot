@@ -12,11 +12,22 @@ $|=1; #unbuffer output.
 
 my %CONFIG;
 
+my $rel_dir = '../etc';
+my $abs_dir = '<<Make:ETC>>';
+
+if ( -d $abs_dir ){
+    $CONFIG{CONFIG_DIR} = $abs_dir;
+}elsif ( -d $rel_dir ){
+    $CONFIG{CONFIG_DIR} = $rel_dir;
+}else{
+    die "Cannot figure out which etc/ directory to use";
+}
+
 $CONFIG{DEBUG}        = 1;
 $CONFIG{PROMPT}       = 1; 
-$CONFIG{CONFIG_DIR}   = '<<Make:ETC>>';
 $CONFIG{SCHEMA_FILE}  = "$CONFIG{CONFIG_DIR}/netdot.meta";
 $CONFIG{DEFAULT_DATA} = "$CONFIG{CONFIG_DIR}/default_data";
+
 
 my $netdot_config = Netdot::Config->new(config_dir => $CONFIG{CONFIG_DIR});
 
