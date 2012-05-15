@@ -95,35 +95,48 @@ if ( $action eq 'test' ){
     }
     my $program;
     if( $action eq 'rpm-install' ){
-	print 'Be aware that some official RPM repositories do not include many of the packages '.
-	    'that Netdot requires.  Would you like to use the EPEL (Extra Packages for '.
-	    'Enterprise Linux) repository to help install these packages? [y/n] ';
-	my $ans = <STDIN>;
-	if ( $ans =~ /(Y|y)/ ){
-	    my $arch = `uname -i`;
-	    chomp $arch;
-	    if ( ($arch ne 'x86_64') && ($arch ne 'i386') ){
-		die "Unrecognized architecture: $arch";
-	    }
-	    my $rh_rel = `lsb_release -r -s`;
-	    # Grab the first digit only
-	    $rh_rel = s/(\d+)\./$1/;
-
-	    # Set the current version of EPEL for this release
-	    # TODO: find a way to automate this!
-	    if ( $rh_rel eq '5' ){
-		$epel_rel = '5-4';
-	    }elsif ( $rh_rel eq '6' ){
-		$epel_rel = '6-5';
-	    }else{
-		die "We only support releases 5 or 6\n";
-	    }
-	    my $cmd = "rpm -Uvh http://download.fedora.redhat.com/pub/epel/$rh_rel/$arch/".
-		"epel-release-$epel_rel.noarch.rpm";
-	    &cmd($cmd);
-	    $installed_epel = 1;
-	}
 	$program = 'yum install';
+	# Check if RHEL
+	my $rhel_chk = `lsb_release -i`;
+	if ( $rhel_chk =~ /RedHatEnterpriseServer/ ){
+	    my $epel_chk = `rpm -qs epel-release`;
+	    unless ( $epel_chk =~ /^normal/ ){
+		print 'Be aware that the official RHEL repositories do not include many of the packages '.
+		    'that Netdot requires.  Would you like to use the EPEL (Extra Packages for '.
+		    'Enterprise Linux) repository to help install these packages? [y/n] ';
+		my $ans = <STDIN>;
+		if ( $ans =~ /(Y|y)/ ){
+		    my $rh_rel = `lsb_release -r -s`;
+		    chomp($rh_rel);
+		    # Grab the first digit only
+		    $rh_rel = int($rh_rel);
+		    
+		    # Set the current version of EPEL for this release
+		    # TODO: find a way to automate this!
+		    if ( $rh_rel eq '5' ){
+			$epel_rel = '5-4';
+		    }elsif ( $rh_rel eq '6' ){
+			$epel_rel = '6-6';
+		    }else{
+			die "Unknown release: $rh_rel\n";
+		    }
+		    my $cmd = "rpm -Uvh http://mirrors.kernel.org/fedora-epel/$rh_rel/i386/".
+			"epel-release-$epel_rel.noarch.rpm";
+		    
+		    &cmd($cmd);
+		    $installed_epel = 1;
+		    
+		    # Check if optional channel is installed
+		    my $rhel_optional_chk = `yum repolist`;
+		    unless ( $rhel_optional_chk =~ /RHEL Server Optional/m ){
+			print "It looks like this is RedHat Enterprise Server, but you have not \n".
+			    "enabled the Optional channel, which is needed to satisfy dependencies \n".
+			    "in the EPEL repository. See instructions at: \n\n".
+			    "    https://access.redhat.com/knowledge/solutions/11312\n\n";
+		    }
+		}
+	    }
+	}
     }elsif ( $action eq 'apt-install' ){
 	my $debian_version;
 	print 'We need to add a temporary repository of Netdot dependencies '.
@@ -162,13 +175,13 @@ if ( $action eq 'test' ){
     }
     
     if ( $action eq 'apt-install' || $action eq 'rpm-install' ){
-	my $argstr;
+	my $argstr = " ";
 	foreach my $anon_hash ( @DEPS ){
 	    if ( $action eq 'apt-install' ){
-		$argstr .= " ".$anon_hash->{'apt'};
+		$argstr .= " ".$anon_hash->{'apt'} if exists $anon_hash->{'apt'};
 	    }
 	    else{
-		$argstr .= " ".$anon_hash->{'rpm'};
+		$argstr .= " ".$anon_hash->{'rpm'} if exists $anon_hash->{'rpm'};
 	    }
 	}
 
@@ -181,6 +194,9 @@ if ( $action eq 'test' ){
     # Finally, lets call run_test to show the user if anything is missing
     print "===============RESULTS===============\n";
     &run_test();
+
+    print "\nIf there are still any missing Perl modules, you should now do:\n\n";
+    print "    make installdeps\n\n"; 
 
     if ( $installed_epel ){
 	print "Would you like to uninstall EPEL at this time? [y/n] ";
