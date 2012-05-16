@@ -141,32 +141,35 @@ if ( defined($object) && scalar @$object ){
 	}
 	print "Sorting by $sort_field<br/>" if $DEBUG;
 	# Be smart about sorting numerically, alphabetically or by IP
+	my $ip    = 0;
 	my $alpha = 0;
-	my $ipv4  = 0;
-	my ($lbl, @lbls);
+	my @lbls;
 	foreach my $obj ( @{ $object } ){
-	    if ( ref($obj->$sort_field) ){
-		# Value of sort field is a foreign object
-		# Get that object's display value
+	    my $lbl;
+	    if ( my $ref = ref($obj->$sort_field) ){
+		if ( $ref =~ /Ipblock/o ){
+		    $ip = 1;
+		}
 		$lbl = $obj->$sort_field->get_label;
 	    }else{
+		if ( $lbl =~ /\D/o ){
+		    $alpha = 1;
+		}
 		$lbl = $obj->$sort_field;
-	    }
-	    if ( Ipblock->matches_v4($lbl) ){
-		$ipv4 = 1;
-	    }elsif  ( $lbl =~ /\D+/ ){
-		$alpha = 1;
 	    }
 	    push @lbls, [$obj , $lbl];
 	}
-	if ( $ipv4 ){
-	    @lbls = sort { compare_ip() } @lbls; 
+	if ( $ip ){
+	    @lbls = sort { 
+		$a->[0]->$sort_field->address_numeric <=> 
+		    $b->[0]->$sort_field->address_numeric 
+	    } @lbls; 
 	}elsif ( $alpha ){ 
 	    @lbls = sort { $a->[1] cmp $b->[1] } @lbls; 
 	}else{
 	    @lbls = sort { $a->[1] <=> $b->[1] } @lbls; 
 	}
-	map { $objindex{$i++} = $_ } map  { $_->[0] } @lbls;
+	map { $objindex{$i++} = $_ } map { $_->[0] } @lbls;
     }
     # Total number of items
     $total = $i;
@@ -420,8 +423,3 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 <!-- end sortresults -->
 % } # endif %objindex
 
-<%once>
-sub compare_ip{
-    pack("C4"=>$a->[1] =~ /(\d+)\.(\d+)\.(\d+)\.(\d+)/) cmp pack("C4"=>$b->[1] =~ /(\d+)\.(\d+)\.(\d+)\.(\d+)/);
-}
-</%once>
