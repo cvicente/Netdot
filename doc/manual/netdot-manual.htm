@@ -220,11 +220,13 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <p><strong>Tip</strong> Notice that, each time you modify Site.conf, you must restart Apache for the changes to take effect in the web interface.</p>
 </blockquote>
 <h2 id="upgrading"><a href="#TOC"><span class="header-section-number">3.4</span> Upgrading</a></h2>
+<p>Look for a file called doc/UPGRADE for upgrade notes in a particular distribution.</p>
 <p>You should check if the version you are installing has any new requirements that need to be satisfied:</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> testdeps
 ~# <span class="kw">make</span> installdeps <span class="kw">(</span>or rpm-install, apt-install<span class="kw">)</span></code></pre>
-<p>Netdot's database schema <strong>usually</strong> only changes between major versions. For example, if upgrading from 0.8.x to 0.9.x, you will need to run an upgrade script to adapt your current database to the new schema. Look for a file called doc/UPGRADE for upgrade notes in a particular distribution.</p>
+<p>Netdot's database schema <strong>usually</strong> only changes between major versions. For example, if upgrading from 0.8.x to 0.9.x, you will need to run an upgrade script to adapt your current database to the new schema.</p>
 <p>If you are supposed to upgrade, this can be accomplished by running this command:</p>
+<p>(make a backup of your database first!)</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> upgrade</code></pre>
 <p>Finally, install the new Netdot code and restart Apache:</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> <span class="kw">install</span>

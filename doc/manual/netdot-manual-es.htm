@@ -218,11 +218,13 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <p><strong>Pista</strong> Tenga en cuenta que cada vez que actualice el fichero etc/Site.conf, es necesario reiniciar Apache para que los cambios surjan efecto en la interfaz web.</p>
 </blockquote>
 <h2 id="actualización-a-nuevas-versiones"><a href="#TOC"><span class="header-section-number">3.4</span> Actualización a nuevas versiones</a></h2>
+<p>Busque un fichero llamado doc/UPGRADE y allí encontrará instrucciones detalladas acerca de su distribución particular.</p>
 <p>Debe verificar si la versión que está instalando tiene nuevos requerimientos:</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> testdeps
 ~# <span class="kw">make</span> installdeps <span class="kw">(</span>or rpm-install, apt-install<span class="kw">)</span></code></pre>
-<p>El esquema de la base de datos de Netdot <strong>generalmente</strong> sólo tiene cambios entre revisiones mayores. Por ejemplo, si se actualiza de la version 0.8.x a 0.9.x, se necesita ejecutar un script de actualización para adaptar la base de datos actual al nuevo esquema. Busque un fichero llamado doc/UPGRADE y allí encontrará instrucciones detalladas en una distribución particular.</p>
+<p>El esquema de la base de datos de Netdot <strong>generalmente</strong> sólo tiene cambios entre revisiones mayores. Por ejemplo, si se actualiza de la version 0.8.x a 0.9.x, se necesita ejecutar un script de actualización para adaptar la base de datos actual al nuevo esquema.</p>
 <p>Si en su caso fuera necesario efectuar una actualización, puede hacerlo con el siguiente comando:</p>
+<p>(haga una copia de respaldo de su base de datos primero!)</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> upgrade</code></pre>
 <p>Luego instale el nuevo Netdot y reinicie Apache:</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> <span class="kw">install</span>
