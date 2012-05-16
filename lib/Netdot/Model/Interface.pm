@@ -535,7 +535,9 @@ sub update_ip {
 	return;
     }
     
-    $logger->debug(sprintf("%s: Subnet configured in interface is %s", $label, $args{subnet}));
+    if ( $args{subnet} ){
+	$logger->debug(sprintf("%s: Subnet configured in interface is %s", $label, $args{subnet}));
+    }
 		   
     # We might have to add a subnet
     if ( $args{add_subnets} && (my $subnet = $args{subnet}) ){
