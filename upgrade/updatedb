@@ -123,6 +123,7 @@ foreach my $row ( @$snmods ){
     my $sn = $row->[0];
     $sn =~ s/^\s+|\s+$//g;
     next unless $sn;
+    next if exists $assets{sn}{$sn};
     my $model = $row->[5];
     $model =~ s/^\s+|\s+$//g;
     my $mf = $row->[6];
@@ -190,7 +191,7 @@ my $macdevs = $dbh->selectall_arrayref('SELECT physaddr,custom_serial,inventoryn
 		                         WHERE physaddr is not NULL
                                            AND physaddr != 0 
                                            AND product IS NOT NULL
-                                           AND product != "" 
+                                           AND product != 0 
                                            AND (serialnumber IS NULL
                                              OR serialnumber = "")');
 foreach my $row ( @$macdevs ){
