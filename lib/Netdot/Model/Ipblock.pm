@@ -75,8 +75,11 @@ my $range_dns_plugin = __PACKAGE__->load_range_dns_plugin();
 sub int2ip {
     my ($class, $address, $version) = @_;
     
-    if ( !defined($address) || !defined($version) ){
-	$class->throw_fatal(sprintf("Missing required arguments: address and/or version "));
+    unless ( defined($address) ) {
+	$class->throw_fatal(sprintf("Missing required argument: address"));
+    }
+    unless ( defined($version) ){
+	$class->throw_fatal(sprintf("Missing required argument: version "));
     }
     
     my $val;
@@ -1333,17 +1336,7 @@ sub objectify{
 sub address_numeric {
     my $self = shift;
     $self->isa_object_method('address_numeric');
-    my $dbh = $self->db_Main();
-    my $id = $self->id;
-    my $address;
-    eval {
-	($address) = $dbh->selectrow_array("SELECT address 
-                                            FROM ipblock 
-                                            WHERE id = $id");
-    };
-    if ( my $e = $@ ){
-	$self->throw_user( $e ) if ( $e );
-    }
+    my $address = ($self->_attrs('decimal'))[0];
     return $address;
 }
 
@@ -3311,14 +3304,12 @@ sub _obj_int2ip {
     $self->throw_fatal("Invalid object") unless $self;
 
     return unless ( $self->id );
-
-    my $dbh  = $self->db_Main;
-    my $id   = $self->id;
-
-    if ( my ($address) = ($dbh->selectrow_array("SELECT address FROM ipblock WHERE id=$id"))[0] ){
-	my $val = $self->int2ip($address, $self->version);
-	$self->_attribute_store( address => $val );    
+    my $decimal = $self->address;
+    unless ( $decimal =~ /\D/o ){
+	my $ip = $self->int2ip($decimal, $self->version);
+	$self->_attribute_store({address => $ip, decimal => $decimal});
     }
+    
     return 1;
 }
 
