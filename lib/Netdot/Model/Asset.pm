@@ -57,6 +57,13 @@ __PACKAGE__->set_sql(by_device => qq{
           OR   (m.device=d.id AND m.asset_id=a.id) )
     });
 
+__PACKAGE__->set_sql(sn_mf => qq{
+    SELECT asset.id 
+    FROM   asset, product
+    WHERE  asset.serial_number = ?
+    AND  asset.product_id=product.id
+    AND  product.manufacturer = ?
+    });
 
 1;
 

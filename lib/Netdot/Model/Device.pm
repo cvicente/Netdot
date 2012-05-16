@@ -4938,18 +4938,19 @@ sub _assign_product {
     my ($self, $info) = @_;
     $self->throw_fatal("Invalid info hashref")
 	unless ( $info && ref($info) eq 'HASH' );
-    
+
     my $prod;
-    $prod = Product->search(sysobjectid=>$info->{sysobjectid})->first
-	if ($info->{sysobjectid});
-    return $prod if $prod;
-   
-    $prod = Product->search(name=>$info->{model})->first 
-	if ($info->{model});
-    return $prod if $prod;	
-    
-    $prod = Product->search(name=>$info->{productname})->first 
-	if ($info->{productname});
+    # Build a query that tries to find any of these
+    # Notice that we use an array to mean "OR"
+    my @where;
+    push @where, { sysobjectid => $info->{sysobjectid} } if $info->{sysobjectid};
+    push @where, { part_number => $info->{model} }       if $info->{model};
+    my @names;
+    push @names, $info->{model}       if $info->{model};    
+    push @names, $info->{productname} if $info->{productname};    
+    push @where, { name => \@names }  if @names;
+    my $prod = Product->search_where(\@where)->first if @where;
+
     return $prod if $prod;	
     
     # Try to create it then
@@ -4969,7 +4970,6 @@ sub _assign_product {
     }
     $args{hostname} = $self->fqdn;
 
-    # We at least need a name
     if ( $args{name} ){
 	return Product->insert(\%args);
     }else{
@@ -5151,30 +5151,56 @@ sub _update_modules {
 	my $show_name = $mod_args{name} || $number;
 	# find or create asset object for given serial number and product
 	my $asset;
-	if ( (my $serial = delete $mod_args{serial_number}) && 
-	     (my $model = $mod_args{model}) ){
-	    if ( $serial =~ /^fill in/io || $model =~ /^fill in/io ){
+	if ( my $serial = delete $mod_args{serial_number} ){
+	    if ( $serial =~ /^fill in/io ){
 		# We've seen HP switches with "Fill in this information" 
 		# as value for S/N and model. Annoying.
 		next; 
 	    }
-	    # Find or create product
-	    my $product = Product->find_or_create({part_number  => $model,
-						   manufacturer => $mf,
-						  });
-	    if ( !$product->type || $product->type->name eq 'Unknown' ){
-		my $type = ProductType->find_or_create({name=>'Module'});
-		$product->update({type => $type});
-	    }
-	    
-	    # Find or create asset
-	    $asset = Asset->find_or_create({product_id    => $product,
-					    serial_number => $serial,
-					   });
-	    
-	    $logger->debug("$host: module $number ($show_name) has asset: ". 
-			  $asset->get_label);
+	    # Try to find the asset based on the serial and the 
+	    # manufacturer first. The reason is that model names
+	    # learned from device info can vary slightly
+	    # from the name in the module information
+	    $asset = Asset->search_sn_mf($serial, $mf)->first;
 
+	    if ( !$asset && (my $model = $mod_args{model}) ){
+		# Now, search for the asset based on the match
+		# of both the product and either the name or
+		# the part number
+
+		if ( $model =~ /^fill in/io ){
+		    next; 
+		}
+	
+		# Find or create product
+		my $product;
+		$product = Product->search_where({
+		    manufacturer => $mf,
+		    -or => [part_number => $model,  name => $model],
+						 })->first;
+		
+		$product ||= Product->insert({part_number  => $model,
+					      name         => $model,
+					      manufacturer => $mf,
+					     });
+		
+		if ( !$product->type || $product->type->name eq 'Unknown' ){
+		    my $type = ProductType->find_or_create({name=>'Module'});
+		    $product->update({type => $type});
+		}
+		
+		# Find or create asset
+		$asset = Asset->find_or_create({product_id    => $product,
+						serial_number => $serial,
+					       });
+		
+		$logger->debug("$host: module $number ($show_name) has asset: ". 
+			       $asset->get_label);
+	    }
+	}
+
+	# At this point we should have an asset object, but check
+	if ( $asset ){
 	    # Clear reservation comment as soon as hardware gets installed
 	    $asset->update({reserved_for => ""});
 	    $mod_args{asset_id} = $asset->id;
@@ -5183,7 +5209,7 @@ sub _update_modules {
 	    $mod_args{asset_id} = undef;
 	}
 
-	# See if it exists
+	# See if the module exists
 	my $module;
 	if ( exists $oldmodules{$number} ){
 	    $module = $oldmodules{$number};
