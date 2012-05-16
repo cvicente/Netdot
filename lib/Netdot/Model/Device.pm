@@ -4939,7 +4939,6 @@ sub _assign_product {
     $self->throw_fatal("Invalid info hashref")
 	unless ( $info && ref($info) eq 'HASH' );
 
-    my $prod;
     # Build a query that tries to find any of these
     # Notice that we use an array to mean "OR"
     my @where;
