@@ -527,7 +527,17 @@ sub _validate_args {
 	    $self->throw_user("$name: Cannot assign DUID ($fields{duid}) to a non-host scope");
 	}
 	if ( $duid =~ /[^A-Fa-f0-9:]/ ){
-	    $self->throw_user("$name: DUID contains invalid characters: $duid");
+	    $self->throw_user("$name: DUID should only contain hexadecimal digits and colons: $duid");
+	}
+	my $hexonly = $duid;
+	$hexonly =~ s/://g; # Remove colons
+	if ( length($hexonly) < 24 ){
+	    $self->throw_user("$name: DUID too short: '$duid'\n DUID minimum length".
+		" is 12 bytes, or 24 hex digits");
+	}
+	if ( length($hexonly) > 40 ){
+	    $self->throw_user("$name: DUID too long: '$duid'\n DUID maximum length".
+		" is 20 bytes, or 40 hex digits");
 	}
     }
     if ( $fields{ipblock} ){
