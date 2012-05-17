@@ -552,28 +552,28 @@ sub _validate_args {
 	}
     }
     if ( $type eq 'host' ){
-	if ( !$fields{ipblock} ){
-	    $self->throw_user("$name: a host scope requires an IP address");
-	}
-	if ( $fields{ipblock}->version == 4 && !$fields{physaddr} ){
-	    $self->throw_user("$name: an IPv4 host scope requires an ethernet addres");
-	}
-	if ( $fields{ipblock}->version == 6 && !$fields{duid} && !$fields{physaddr} ){
-	    $self->throw_user("$name: an IPv6 host scope requires a DUID or ethernet address");
-	}
-	# Is Subnet scope defined?
-	my $subnet = $fields{ipblock}->parent || 
-	    $self->throw_user("$name: $fields{ipblock} not within subnet");
-	my $subnet_scope;
-	unless ( $subnet_scope = ($subnet->dhcp_scopes)[0] ){
-	    $self->throw_user("$name: Subnet ".$subnet->get_label." not dhcp-enabled.");
-	}
-	# Make sure we assign to the correct global container
-	$argv->{container} = $subnet_scope->get_global;
-	$fields{container} = $argv->{container};
+	if ( $fields{ipblock} ){
+	    if ( $fields{ipblock}->version == 4 && !$fields{physaddr} ){
+		$self->throw_user("$name: an IPv4 host scope requires an ethernet addres");
+	    }
+	    if ( $fields{ipblock}->version == 6 && !$fields{duid} && !$fields{physaddr} ){
+		$self->throw_user("$name: an IPv6 host scope requires a DUID or ethernet address");
+	    }
+	    # Is Subnet scope defined?
+	    my $subnet = $fields{ipblock}->parent || 
+		$self->throw_user("$name: $fields{ipblock} not within subnet");
+	    my $subnet_scope;
+	    unless ( $subnet_scope = ($subnet->dhcp_scopes)[0] ){
+		$self->throw_user("$name: Subnet ".$subnet->get_label." not dhcp-enabled.");
+	    }
+	    # Make sure we assign to the correct global container
+	    $argv->{container} = $subnet_scope->get_global;
+	    $fields{container} = $argv->{container};
 
-	if ( $fields{ipblock}->version != $fields{container}->version ){
-	    $self->throw_user("$name: IP version in host scope does not match IP version in container");
+	    # Check for mismatched versions
+	    if ( $fields{ipblock}->version != $fields{container}->version ){
+		$self->throw_user("$name: IP version in host scope does not match IP version in container");
+	    }
 	}
 
 	if ( $fields{physaddr} ){
