@@ -531,13 +531,11 @@ sub _validate_args {
 	}
 	my $hexonly = $duid;
 	$hexonly =~ s/://g; # Remove colons
-	if ( length($hexonly) < 24 ){
-	    $self->throw_user("$name: DUID too short: '$duid'\n DUID minimum length".
-		" is 12 bytes, or 24 hex digits");
+	if ( length($hexonly) < 1 ){
+	    $self->throw_user("$name: Invalid DUID (too short): '$duid'\n");
 	}
-	if ( length($hexonly) > 40 ){
-	    $self->throw_user("$name: DUID too long: '$duid'\n DUID maximum length".
-		" is 20 bytes, or 40 hex digits");
+	if ( length($hexonly) > 255 ){
+	    $self->throw_user("$name: Invalid DUID (too long): '$duid'\n");
 	}
     }
     if ( $fields{ipblock} ){
@@ -877,19 +875,28 @@ sub _get_all_data {
 sub _assign_name {
     my ($self, $argv) = @_;
 
-    unless ( $argv->{type} ){
-	if ( ref($self) ){
-	    $argv->{type} = $self->type;
-	}else{
-	    $self->throw_fatal("DhcpScope::_assign_name: Missing required argument: type")
+    # Get these values from object if not passed
+    if ( ref($self) ){
+	foreach my $key (qw(type ipblock physaddr duid)){
+	    $argv->{$key} = $self->$key unless exists $argv->{$key}
 	}
+    }
+
+    unless ( $argv->{type} ){
+	$self->throw_fatal("DhcpScope::_assign_name: Missing required argument: type")
     }
 
     my $name;
     if ( $argv->{type}->name eq 'host' ){
-	$self->throw_fatal("DhcpScope::_assign_name: Missing ipblock object")
-	    unless $argv->{ipblock};
-	$name = $argv->{ipblock}->address;
+	# Try to find a unique name for this scope
+	if ( $argv->{ipblock} ){
+	    $name = $argv->{ipblock}->address;
+	}elsif ( $argv->{physaddr} ){
+	    $name = $argv->{physaddr}->address;
+	}elsif ( $argv->{duid} ){
+	    $name = $argv->{duid};
+	}
+	$name =~ s/:/-/g; 
 
     }elsif ( $argv->{type}->name eq 'subnet' ){
 	$self->throw_fatal("DhcpScope::_assign_name: Missing ipblock object")

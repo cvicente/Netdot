@@ -416,11 +416,15 @@ foreach my $o ( values %rrs ) {
 		}elsif ( $ipblock->version == 6 ){
 		    push @field_headers, ('DUID: ');
 		    if ( $edit ){
-			push @cell_data, '<input type="text" size="48" name="DhcpScope__'.$scope.'__duid" value=<% $scope->duid %>>';
+			push @cell_data, '<input type="text" size="48" name="DhcpScope__'.$scope.'__duid" value="'.$scope->duid.'" >';
 		    }else{
 			push( @cell_data, $scope->duid );
 		    }
-		    $t_width = 1;
+		    if ( $edit ){
+			push @field_headers, 'Delete';
+			push @cell_data, '<input type="checkbox" name="DhcpScope__'.$scope.'__DELETE">';
+		    }
+		    $t_width = 2;
 		}
 		
 		$m->comp('/generic/attribute_table.mhtml', %comphash, width=>$t_width);
