@@ -125,8 +125,8 @@ if ( defined($object) && scalar @$object ){
 	map { $objindex{$i++} = $_ } @{ $object };
 	print "sort == $sort" if $DEBUG;
     }else{
-	# Default to label field
-	my $sort_field = $lblf;
+	# Default to first column
+	my $sort_field = $orderbrief[0];
 
 	# But maybe the sort field was specified
 	if ( defined($sort) && $sort ne '' ){
@@ -152,10 +152,10 @@ if ( defined($object) && scalar @$object ){
 		}
 		$lbl = $obj->$sort_field->get_label;
 	    }else{
-		if ( $lbl =~ /\D/o ){
-		    $alpha = 1;
-		}
 		$lbl = $obj->$sort_field;
+	    }
+	    if ( $lbl =~ /\D+/o ){
+		$alpha = 1;
 	    }
 	    push @lbls, [$obj , $lbl];
 	}
@@ -164,7 +164,7 @@ if ( defined($object) && scalar @$object ){
 		$a->[0]->$sort_field->address_numeric <=> 
 		    $b->[0]->$sort_field->address_numeric 
 	    } @lbls; 
-	}elsif ( $alpha ){ 
+	}elsif ( $alpha ){
 	    @lbls = sort { $a->[1] cmp $b->[1] } @lbls; 
 	}else{
 	    @lbls = sort { $a->[1] <=> $b->[1] } @lbls; 
