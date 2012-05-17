@@ -416,7 +416,7 @@ sub get_unused_subnets {
 	my $ip = Ipblock->retrieve($id);
 	if ( defined $args{version} && $args{version} == 4 ){
 	    # Ignore IPv4 multicast blocks
-	    if ( $ip->_netaddr->within(new NetAddr::IP "224.0.0.0/4") ){
+	    if ( $ip->netaddr->within(new NetAddr::IP "224.0.0.0/4") ){
 		next;
 	    }
 	}
@@ -512,7 +512,7 @@ sub is_link_local{
     my $class = ref($self);
     my $ip;
     if ( $class ){
-	$ip = $self->_netaddr();
+	$ip = $self->netaddr();
     }else{
 	$self->throw_fatal("Missing required arguments: address")
 	    unless $address;
@@ -1131,7 +1131,7 @@ sub add_range{
     unless ( $ipstart && $ipend && ($ipstart <= $ipend) ){
 	$self->throw_user("Invalid range: $argv{start} - $argv{end}");
     }
-    my $np = $self->_netaddr();
+    my $np = $self->netaddr();
     unless ( $ipstart->within($np) && $ipend->within($np) ){
 	$self->throw_user("Start and/or end IPs not within this subnet: ".$self->get_label);
     }
@@ -1194,7 +1194,7 @@ sub remove_range{
     unless ( $ipstart && $ipend && ($ipstart <= $ipend) ){
 	$self->throw_user("Invalid range: $argv{start} - $argv{end}");
     }
-    my $np = $self->_netaddr();
+    my $np = $self->netaddr();
     unless ( $ipstart->within($np) && $ipend->within($np) ){
 	$self->throw_user("Start and/or end IPs not within this subnet: ".$self->get_label);
     }
@@ -1382,7 +1382,7 @@ sub cidr {
 sub full_address {
     my $self = shift;
     $self->isa_object_method('full_address');
-    return $self->_netaddr->full()
+    return $self->netaddr->full()
 }
 
 ##################################################################
@@ -1772,8 +1772,8 @@ sub address_usage {
     my ($self) = @_;
     $self->isa_object_method('address_usage');
 
-    my $start  = $self->_netaddr->network();
-    my $end    = $self->_netaddr->broadcast();
+    my $start  = $self->netaddr->network();
+    my $end    = $self->netaddr->broadcast();
     my $count  = 0;
     my $q;
     my $dbh = $self->db_Main;
@@ -1857,8 +1857,8 @@ sub free_space {
         return ($subnet, fill($newfrom, $to, $divide));
     }
 
-    my @kids = map { $_->_netaddr } $self->children;
-    my $curr = $self->_netaddr->numeric;
+    my @kids = map { $_->netaddr } $self->children;
+    my $curr = $self->netaddr->numeric;
     my @freespace = ();
     foreach my $kid (sort { $a->numeric <=> $b->numeric } @kids) {
         my $curr_addr = NetAddr::IP->new($curr);
@@ -1877,7 +1877,7 @@ sub free_space {
         $curr = $kid->broadcast->numeric + 1;
     }
 
-    my $end = NetAddr::IP->new($self->_netaddr->broadcast->numeric + 1);
+    my $end = NetAddr::IP->new($self->netaddr->broadcast->numeric + 1);
     my $curr_addr = NetAddr::IP->new($curr);
     map { push @freespace, $_ } &fill($curr_addr, $end, $divide);
 
@@ -1903,8 +1903,8 @@ sub subnet_usage {
     $self->throw_user("Call subnet_usage only for Container blocks")
 	if ($self->status->name ne 'Container');
 
-    my $start = $self->_netaddr->network();
-    my $end   = $self->_netaddr->broadcast();
+    my $start = $self->netaddr->network();
+    my $end   = $self->netaddr->broadcast();
 
     my $count = new Math::BigInt(0);
     my $dbh   = $self->db_Main;
@@ -2495,19 +2495,19 @@ sub get_dot_arpa_names {
     my @names;
     if ( $self->version == 4 ){
 	if ( 0 < $self->prefix && $self->prefix <= 8 ){
-	    my @subnets = $self->_netaddr->split(8);
+	    my @subnets = $self->netaddr->split(8);
 	    foreach my $subnet ( @subnets ){
 		push @names, (split(/\./, $subnet->addr))[0];
 	    }
 
 	}elsif ( $self->prefix <= 16 ){
-	    my @subnets = $self->_netaddr->split(16);
+	    my @subnets = $self->netaddr->split(16);
 	    foreach my $subnet ( @subnets ){
 		push @names, join('.', reverse((split(/\./, $subnet->addr))[0..1]));
 	    }	    
 
 	}elsif ( $self->prefix <= 24 ){
-	    my @subnets = $self->_netaddr->split(24);
+	    my @subnets = $self->netaddr->split(24);
 	    foreach my $subnet ( @subnets ){
 		push @names, join('.', reverse((split(/\./, $subnet->addr))[0..2]));
 	    }	    
@@ -2526,12 +2526,12 @@ sub get_dot_arpa_names {
 	if ( my $rem = $self->prefix % 4 ){
 	    # prefix is not a multiple of four
 	    my $split_size = $self->prefix - $rem + 4;
-	    my @subnets = $self->_netaddr->split($split_size);
+	    my @subnets = $self->netaddr->split($split_size);
 	    foreach my $subnet ( @subnets ){
 		push @names, &_get_v6_arpa($subnet);
 	    }
 	}else{
-	    push @names, &_get_v6_arpa($self->_netaddr);
+	    push @names, &_get_v6_arpa($self->netaddr);
 	}
     }
 
@@ -2629,7 +2629,7 @@ sub get_next_free {
 
     my $strategy = $argv{strategy} || Netdot->config->get('IP_ALLOCATION_STRATEGY');
 
-    my $s = $self->_netaddr;
+    my $s = $self->netaddr;
     my $ret;
     if ( $strategy eq 'first' ){
 	for ( my $addr=Math::BigInt->new($s->first->numeric); $addr <= $s->last->numeric; $addr++ ){
@@ -2710,6 +2710,35 @@ sub get_addresses_by {
     map { push @objects, Ipblock->retrieve($_->[0]) } @$rows;
     return @objects;
 }
+
+##################################################################
+=head2 Create a NetAddr::IP object
+
+  Arguments:
+    address & prefix, unless called as instance method
+    prefix will default to host prefix if not specified
+  Returns:
+    NetAddr::IP object
+  Examples:
+    print $ipblock->netaddr->broadcast();
+    print Ipblock->netaddr(address=>$ip, prefix=>$prefix)->addr;
+=cut
+sub netaddr {
+    my ($self, %argv) = @_ ;
+    if ( ref($self) ){
+	# instance method
+	return new NetAddr::IP($self->address, $self->prefix);
+    }else{
+	# class method
+	if ( $argv{address} ){
+	    return new NetAddr::IP($argv{address}, $argv{prefix});
+	}else{
+	    $self->throw_fatal("Ipblock::netaddr: Missing required argument: address");
+	}
+    }
+}
+
+
 
 ##################################################################
 #
@@ -3265,21 +3294,6 @@ sub _tree_get {
 	}
     }
     $self->throw_fatal("Could not get a valid $name from cache");
-}
-
-##################################################################
-#
-#   Arguments:
-#     None
-#   Returns:
-#     NetAddr::IP object
-#   Examples:
-#    print $ipblock->_netaddr->broadcast();
-
-sub _netaddr {
-    my $self = shift;
-    $self->isa_object_method('_netaddr');
-    return new NetAddr::IP($self->address, $self->prefix);
 }
 
 ##################################################################

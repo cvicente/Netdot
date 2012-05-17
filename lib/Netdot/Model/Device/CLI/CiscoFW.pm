@@ -68,7 +68,7 @@ sub _get_arp_from_cli {
     foreach my $int ( $self->interfaces ){
 	$int_names{$int->name} = $int->id;
 	foreach my $ip ( $int->ips ){
-	    push @{$devsubnets{$int->id}}, $ip->parent->_netaddr 
+	    push @{$devsubnets{$int->id}}, $ip->parent->netaddr 
 		if $ip->parent;
 	}
     }

@@ -31,6 +31,7 @@ $site_name     => undef
 $room_id       => undef
 $room_number   => undef
 $ethernet      => undef
+$duid          => undef
 $submit        => undef
 $contact_name  => undef
 $contact_email => undef
@@ -75,7 +76,7 @@ if ( $submit ){
     }
     
     my %args; # For RR->add_host()
-    foreach my $key ( qw(name expiration ethernet aliases) ){
+    foreach my $key ( qw(name expiration ethernet duid aliases) ){
 	$args{$key} = $ARGS{$key};
     }
     my $person = $ui->get_user_person($user);
@@ -177,6 +178,11 @@ if ( $submit ){
           <label for="address">Address</label>
           <% $address %>
           </p>
+%       }elsif ( $manager && $manager->can($user, 'choose_ip', $block) ){
+            <p>
+            <label for="name"><% $ui->help_link('../user_help/hosts.html#IP', '', '', 'IP Address') %></label>
+            <input type="text" name="address" class="longtxt" value="">            
+            </p>
 %       }
         <p>
         <label for="domain">Domain <font color="red">*</font></label>
@@ -212,10 +218,18 @@ if ( $submit ){
         <label for="name"><% $ui->help_link('../user_help/hosts.html#Hostname', '', '', 'Host Name') %> <font color="red">*</font></label>
         <input type="text" name="name" class="longtxt" value="">
         </p>
-        <p>
-        <label for="ethernet"><% $ui->help_link('../user_help/hosts.html#Ethernet', '', '', 'Ethernet Address') %></label>
-        <input type="text" name="ethernet" class="ethertxt" value="">
-        </p>
+%	if ( $block->version == 4 || 
+%	     ($block->version == 6 && Netdot->config->get('DHCPD_ALLOW_ETHERNET_FOR_IPV6_HOST_DECL')) ){
+            <p>
+            <label for="ethernet"><% $ui->help_link('../user_help/hosts.html#Ethernet', '', '', 'Ethernet Address') %></label>
+            <input type="text" name="ethernet" class="ethertxt" value="">
+            </p>
+%       }elsif ( $block->version == 6 ){
+            <p>
+            <label for="duid"><% $ui->help_link('../user_help/hosts.html#DUID', '', '', 'DUID') %></label>
+            <input type="text" name="duid" class="longtxt" value="">
+            </p>
+%       }
         <p>
         <label for="aliases"><% $ui->help_link('../user_help/hosts.html#Cnames', '', '', 'Aliases') %></label>
         <input type="text" name="aliases" class="longtxt" value="">

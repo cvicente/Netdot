@@ -451,21 +451,48 @@ sub add_host {
 	$class->throw_fatal("Missing required argument: $arg")
 	    unless $argv{$arg};
     }
-    
-    if ( !$argv{address} ){
-	if ( $argv{subnet} ){
-	    my $subnet = Ipblock->objectify($argv{subnet});    
-	    $class->throw_user("Invalid subnet: $argv{subnet}") 
-		unless $subnet;
-	    $class->throw_user("$argv{subnet} is not a subnet!")
-		unless ( $subnet->status->name eq 'Subnet' );
-	    
+
+    my $subnet;
+    if ( $argv{subnet} ){
+	$subnet = Ipblock->objectify($argv{subnet});    
+	$class->throw_user("Invalid subnet: $argv{subnet}") 
+	    unless $subnet;
+	$class->throw_user("$argv{subnet} is not a subnet!")
+	    unless ( $subnet->status->name eq 'Subnet' );
+
+	if ( $argv{address} ){
+	    my $address = $argv{address};
+	    my $prefix;
+	    if ( Ipblock->matches_v4($address) ){
+		$prefix = 32;
+	    }elsif ( Ipblock->matches_v6($address) ){
+		$prefix = 128;
+	    }else{
+		$class->throw_user("Address $address does not match valid patterns");
+	    }
+	    if ( my $ipb = Ipblock->search(address=>$address, 
+					   prefix=>$prefix)->first ){
+		if ( $ipb->status->name ne 'Available' ){
+		    $class->throw_user("Address $address is not available");
+		}
+	    }
+
+	    # make sure that the address is within
+	    my $sip = $subnet->netaddr;
+	    my $nip = Ipblock->netaddr(address=>$argv{address});
+	    unless ( $nip->within($sip) ){
+		$class->throw_user(sprintf("Invalid IP: %s for Subnet: %s", 
+					   $argv{address}, $subnet->get_label));
+	    }
+	}else{
 	    # Obtain next available address
 	    my $ip_strategy = Netdot->config->get("IP_ALLOCATION_STRATEGY");
 	    $argv{address} = $subnet->get_next_free(strategy=>$ip_strategy);
-	}else{
-	    $class->throw_user("I need either a subnet or an IP address") 
 	}
+    }
+
+    if ( !$argv{address} && !$subnet ){
+	$class->throw_user("Adding a host requires either a subnet or an IP address") 
     }
   
     # Convert to object if needed

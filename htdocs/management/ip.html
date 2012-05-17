@@ -933,11 +933,11 @@ if ( $edit ){
     my @data;     
     push @fields,'IP Range:';
     if ( $o->version == 4 ){
-        push @data, '<input type="text" name="add_range_start" class="txt" value="'.$o->_netaddr->first->addr.
-	    '"> - <input type="text" name="add_range_end" class="txt" value="'.$o->_netaddr->last->addr.'">';
+        push @data, '<input type="text" name="add_range_start" class="txt" value="'.$o->netaddr->first->addr.
+	    '"> - <input type="text" name="add_range_end" class="txt" value="'.$o->netaddr->last->addr.'">';
     }elsif ( $o->version == 6 ){
-	push @data, '<input type="text" name="add_range_start" class="longtxt" value="'.$o->_netaddr->addr.
-	    '"> - <input type="text" name="add_range_end" class="longtxt" value="'.$o->_netaddr->broadcast->addr.'">';
+	push @data, '<input type="text" name="add_range_start" class="longtxt" value="'.$o->netaddr->addr.
+	    '"> - <input type="text" name="add_range_end" class="longtxt" value="'.$o->netaddr->broadcast->addr.'">';
     }
     
     push @fields, 'Status:';
@@ -1048,7 +1048,7 @@ if ( $edit ){
     push @data,   $o->get_label();
     unless ( $o->version == 6 ){
 	push @fields, 'Option routers:';
-	push @data,   '<input type="text" name="dhcp_option_routers" class="txt" value="'.$o->_netaddr->first->addr.'">';
+	push @data,   '<input type="text" name="dhcp_option_routers" class="txt" value="'.$o->netaddr->first->addr.'">';
     }
     
 </%perl>	

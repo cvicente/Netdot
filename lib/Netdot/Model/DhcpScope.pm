@@ -100,8 +100,8 @@ sub insert {
     if ( $scope->type->name eq 'subnet' ){
 	if ( $scope->version == 4 ){ 
 	    # Add standard attributes
-	    $attributes->{'option broadcast-address'} = $argv->{ipblock}->_netaddr->broadcast->addr();
-	    $attributes->{'option subnet-mask'}       = $argv->{ipblock}->_netaddr->mask;
+	    $attributes->{'option broadcast-address'} = $argv->{ipblock}->netaddr->broadcast->addr();
+	    $attributes->{'option subnet-mask'}       = $argv->{ipblock}->netaddr->mask;
 
 	    if ( $scope->container && $scope->container->enable_failover ){
 		my $failover_peer = $scope->container->failover_peer || 'dhcp-peer';
@@ -200,8 +200,8 @@ sub update{
     if ( $self->type->name eq 'subnet' ){
 	if ( $self->version == 4 ){ 
 	    # Add standard attributes
-	    $attributes->{'option broadcast-address'} = $argv->{ipblock}->_netaddr->broadcast->addr();
-	    $attributes->{'option subnet-mask'}       = $argv->{ipblock}->_netaddr->mask;	
+	    $attributes->{'option broadcast-address'} = $argv->{ipblock}->netaddr->broadcast->addr();
+	    $attributes->{'option subnet-mask'}       = $argv->{ipblock}->netaddr->mask;	
 	    if ( my $zone = $argv->{ipblock}->forward_zone ){
 		# Add the domain-name attribute
 		$attributes->{'option domain-name'} = $zone->name;
@@ -589,6 +589,22 @@ sub _validate_args {
 		}
 	    }
 	}
+	if ( $fields{duid} ){
+	    if ( my @scopes = DhcpScope->search(duid=>$fields{duid}) ){
+		if ( my $subnet = $fields{ipblock}->parent ){
+		    foreach my $s ( @scopes ){
+			next if ( ref($self) && $s->id == $self->id );
+			if ( $s->ipblock && (my $osubnet = $s->ipblock->parent) ){
+			    if ( $osubnet->id == $subnet->id ){
+				$self->throw_user("$name: Duplicate DUID in this subnet: ".
+						  $fields{duid});
+			    }
+			}
+		    }
+		}
+	    }
+	}
+
     }elsif ( $type eq 'subnet' ){
 	if ( $fields{ipblock}->version != $fields{container}->version ){
 	    $self->throw_user("$name: IP version in subnet scope does not match IP version in container");
@@ -890,7 +906,7 @@ sub _assign_name {
     if ( $argv->{type}->name eq 'host' ){
 	# Try to find a unique name for this scope
 	if ( $argv->{ipblock} ){
-	    $name = $argv->{ipblock}->address;
+	    $name = $argv->{ipblock}->full_address;
 	}elsif ( $argv->{physaddr} ){
 	    $name = $argv->{physaddr}->address;
 	}elsif ( $argv->{duid} ){
@@ -904,7 +920,7 @@ sub _assign_name {
 	if ( $argv->{ipblock}->version == 6 ){
 	    $name = $argv->{ipblock}->cidr;
 	}else{
-	    $name = $argv->{ipblock}->address." netmask ".$argv->{ipblock}->_netaddr->mask;
+	    $name = $argv->{ipblock}->address." netmask ".$argv->{ipblock}->netaddr->mask;
 	}
 
     }elsif ( $argv->{type}->name eq 'shared-network' ){

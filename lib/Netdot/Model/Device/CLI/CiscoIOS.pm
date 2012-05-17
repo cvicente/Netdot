@@ -250,7 +250,7 @@ sub _validate_arp {
 	if ( Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET') ){
 	    foreach my $ip ( $int->ips ){
 		next unless ($ip->version == $version);
-		push @{$devsubnets{$int->id}}, $ip->parent->_netaddr 
+		push @{$devsubnets{$int->id}}, $ip->parent->netaddr 
 		    if $ip->parent;
 	    }
 	}

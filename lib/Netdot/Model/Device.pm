@@ -4206,7 +4206,7 @@ sub _get_arp_from_snmp {
 	$devints{$int->number} = $int->id;
     }
     $logger->debug(sub{"$host: Fetching ARP cache via SNMP" });
-    my ( $at_paddr, $at_netaddr, $at_index );
+    my ( $at_paddr, $atnetaddr, $at_index );
     $at_paddr  = $sinfo->at_paddr();
 
     # With the following checks we are trying to query only one
@@ -4221,7 +4221,7 @@ sub _get_arp_from_snmp {
 	if ( !exists $devints{$idx} ){
 	    $use_shortcut = 0;
 	    $logger->debug(sub{"Device::_get_arp_from_snmp: $host: Not using ARP query shortcut"});
-	    $at_netaddr = $sinfo->at_netaddr();
+	    $atnetaddr = $sinfo->atnetaddr();
 	    $at_index   = $sinfo->at_index();
 	}
     }
@@ -4238,7 +4238,7 @@ sub _get_arp_from_snmp {
 	    }
 	}else{
 	    $idx = $at_index->{$key};
-	    $ip  = $at_netaddr->{$key};
+	    $ip  = $atnetaddr->{$key};
 	}
 	unless ( $ip && $idx && $mac ){
 	    $logger->debug(sub{"Device::_get_arp_from_snmp: $host: Missing information at row: $key" });
@@ -4323,7 +4323,7 @@ sub _validate_arp {
 	if ( Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET') ){
 	    foreach my $ip ( $int->ips ){
 		next unless ($ip->version == $version);
-		push @{$devsubnets{$int->id}}, $ip->parent->_netaddr 
+		push @{$devsubnets{$int->id}}, $ip->parent->netaddr 
 		    if $ip->parent;
 	    }
 	}
