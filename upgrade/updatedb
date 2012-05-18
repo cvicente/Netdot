@@ -257,6 +257,16 @@ if ( $idx && $idx->[0]->[0] == 1 ){
     @statements=('ALTER TABLE device DROP KEY Device12;');
 }
 
+my $idx2 = $dbh->selectall_arrayref("
+  SELECT COUNT(1) cnt
+  FROM    INFORMATION_SCHEMA.STATISTICS
+  WHERE   table_name = 'person'
+  AND     index_name = 'Person3'
+");
+if ( $idx && $idx->[0]->[0] == 1 ){
+    @statements=('ALTER TABLE person DROP KEY Person3;');
+}
+
 if ($netdot_config->get('DB_TYPE') eq "mysql") {
     my $dbname = $netdot_config->get('DB_DATABASE');
     
@@ -423,6 +433,12 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
 	"ALTER TABLE ipservice ADD KEY (contactlist);",
 	"ALTER TABLE ipservice ADD KEY (monitorstatus);",
 	"ALTER TABLE maintcontract ADD KEY (provider);",
+	"ALTER TABLE person DROP KEY Person2;",
+	"UPDATE person SET username=NULL WHERE username='';",
+	"ALTER TABLE person ADD UNIQUE KEY person2 (username);",
+	"UPDATE person SET email=NULL WHERE email='';",
+	"ALTER TABLE person ADD UNIQUE KEY Person3 (email);",
+	"ALTER TABLE person ADD KEY (location);",
 	"ALTER TABLE person ADD KEY (location);",
 	"ALTER TABLE person ADD KEY (room);",
 	"ALTER TABLE person ADD KEY (user_type);",
