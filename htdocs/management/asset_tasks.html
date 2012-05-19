@@ -24,6 +24,7 @@ $search             => undef
 <%init>
 my $DEBUG = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), $m->dhandler_arg,'</pre><br>' if $DEBUG;
+my $manager = $ui->get_permission_manager($r);
 
 $show_tasks = $show_tasks || $user->getAttribute("SHOW_TASKS");
 if ( $show_tasks eq "" ) {
@@ -42,7 +43,9 @@ my @list;
     </div>
     <div class="containerheadright">
 %   if ( $view eq 'search' ){ 
-	<a href="asset_tasks.html?view=import">[import]</a>
+%       if ( $manager && $manager->can($user, 'access_admin_section', 'asset_tasks:import') ){
+	    <a href="asset_tasks.html?view=import">[import]</a>
+%       }
 %   }elsif ( $view eq 'import' ){
         <a href="asset_tasks.html?view=search">[search]</a>
 %   }
@@ -103,6 +106,10 @@ my @list;
 <%perl>
 if ( $submit ){
     if ( $submit eq 'Import' ){
+        unless ( $manager && $manager->can($user, 'access_admin_section', 'asset_tasks:submit_import') ){
+	    $m->comp('/generic/error.mhtml', error=>"You do not have permission to do this");
+	}
+
 	$m->comp('/generic/error.mhtml', error=>"Please select fields for import")
 	    unless @import_fields;
 

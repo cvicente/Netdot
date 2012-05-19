@@ -22,6 +22,7 @@ $saved_queries => undef
 
 <%init>
 my $user = $ui->get_current_user($r);
+
 my @t;
 
 my $hideheader;
@@ -100,7 +101,7 @@ my $SECTION = "Advanced";
 <%doc>
 We do not want operators to insert any records
 </%doc>
-% if ( $user && $user->getAttribute('USER_TYPE') eq 'Admin' ){
+% if ( $manager && $manager->can($user, 'access_admin_section', 'generic_autohandler:generic_add') ){
     <p>
     <fieldset class="small">
         <legend>Add</legend>
@@ -119,7 +120,7 @@ We do not want operators to insert any records
 <%doc>
 Only Administrators should have access to the direct SQL functionality.
 </%doc>
-% if ( $user && $user->getAttribute('USER_TYPE') eq 'Admin' ){
+% if ( $manager && $manager->can($user, 'access_admin_section', 'generic_autohandler:raw_sql') ){
   <& /generic/raw_sql.html, sql => $sql, action => $action, sql_name => $sql_name, submit => $submit, forget => $forget, forget_name => $forget_name, saved_queries => $saved_queries  &>
 % }
 

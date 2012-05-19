@@ -157,6 +157,9 @@ my $manager = $ui->get_permission_manager($r);
             </form>
         </fieldset>
 %   }elsif ( $view eq 'new' ){
+%       unless ( $manager && $manager->can($user, 'access_admin_section', 'device_tasks.html:new') ){
+%           $m->comp('/generic/error.mhtml', error=>'You do not have permission to add new devices');
+%       }
         <fieldset class="medium">
             <legend>Discover Device</legend>
             <form action="updatedevice.html" method="POST">

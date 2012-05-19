@@ -44,6 +44,9 @@ my $manager = $ui->get_permission_manager($r);
 #######################################################################################
 if( $_action eq "INSERT" && !$o ){
     
+    unless ( $manager && $manager->can($user, 'access_admin_section', 'vlan:insert') ){
+	$m->comp('/generic/error.mhtml', error=>"You do not have permission to do this");
+    }
     if ( defined($name) && defined($start) && defined($end) ){
 	eval {
 	    VlanGroup->insert({name=>$name, start_vid=>$start, end_vid=>$end});

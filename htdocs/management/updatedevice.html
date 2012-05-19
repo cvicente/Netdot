@@ -34,6 +34,7 @@ $contacts        => undef
 $add_subnets     => 0
 $subs_inherit    => 0
 $pretend         => undef
+$user            => $ui->get_current_user($r)
 </%args>
 %
 %
@@ -44,6 +45,11 @@ $pretend         => undef
 %######################################################################
 <%init>
 my $DEBUG = 0;
+
+my $manager = $ui->get_permission_manager($r);
+unless ( $manager && $manager->can($user, 'access_admin_section', 'updatedevice.html:new') ){
+    $m->comp('/generic/error.mhtml', error => "You do not have permission to add new devices");    
+}
 
 my $o;
 my $fqdn;
