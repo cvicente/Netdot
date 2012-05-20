@@ -6,6 +6,17 @@
 
 IMPORTANT: MAKE SURE YOU MAKE A BACKUP COPY OF YOUR DATABASE BEFORE UPGRADING
 
+This new version of Netdot fixes a number of lax database constraints. 
+This means that table columns were previously defined in such a way that 
+their values could be undefined (NULL) or zero when they should not. 
+In additiion, the new version adds UNIQUE constraints to some fields.
+
+It is very likely that applying these constraints to your current schema now 
+will fail because there are cases where columns were set to "NULL" or zero, 
+or cases where there are duplicate values. This means that you may end up
+with an inconsistent schema, hence the importance of having a backup copy
+of your database.
+
 After making a backup copy of your database, please execute the following command:
 
     make upgrade
@@ -13,6 +24,11 @@ After making a backup copy of your database, please execute the following comman
 This will call a script that updates your current database to the schema required 
 by the version you are upgrading to. This may take a long time, depending on the 
 size of your database.
+
+Any errors found while applying these schema changes will be written to a file
+called "error.log". You will need to inspect this file and make sure to correct
+any problems before continuing. You may have to restore your database from backup,
+fix the data and start over.
 
 2. Run 'make testdeps' to make sure that you satisfy the new dependencies
 

@@ -7,17 +7,19 @@ PREFIX  ?=  `cat ../.prefix`
 
 all: db tasks
 	@echo
-	@echo "Netdot has been upgraded. Now you should:"
+	@echo "Done applying changes. Now you should:"
 	@echo 
-	@echo "  1) 'make install'"
-	@echo "  2) Stop and start Apache"
+	@echo "  * Check the file upgrade/error.log and correct any errors before continuing"
+	@echo "  * After making sure that errors have been corrected, you may:"
+	@echo "  * 'make install'"
+	@echo "  * Stop and start Apache"
 	@echo 
 
 db:
 	@echo
 	@echo "Upgrading schema and data..."
 	$(PERL) pre_updatedb # Remove after 1.0
-	$(PERL) updatedb 
+	$(PERL) updatedb 2>error.log 
 
 tasks:
 	@echo	

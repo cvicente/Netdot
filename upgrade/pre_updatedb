@@ -20,8 +20,7 @@ my $netdot_config = Netdot::Config->new(config_dir => $CONFIG{CONFIG_DIR});
 my $dbh = &dbconnect();
 my @statements;
 
-if ($netdot_config->get('DB_TYPE') eq "mysql") {
-    @statements = (	
+@statements = (	
     "CREATE TABLE `schemainfo` (
       `id` bigint NOT NULL auto_increment,
       `info` blob,
@@ -29,19 +28,7 @@ if ($netdot_config->get('DB_TYPE') eq "mysql") {
       UNIQUE INDEX schemainfo1 (`version`),
       PRIMARY KEY (`id`)
     ) ENGINE=InnoDB;",
-    	    );
-} elsif ($netdot_config->get('DB_TYPE') eq "Pg") {
-    my $u = $netdot_config->get('DB_NETDOT_USER');
-    @statements = (	
-    "CREATE TABLE schemainfo (
-      id serial PRIMARY KEY,
-      info text,
-      version varchar(255) NOT NULL,
-      CONSTRAINT schemainfo1 UNIQUE (version)
-    );",
-    "GRANT ALL ON schemainfo TO $u;"
-            );
-}
+    );
 
 push(@statements, "INSERT INTO schemainfo (version) VALUES('1.0');");
 

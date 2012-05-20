@@ -388,8 +388,15 @@ sub processdata {
 	$cmd  =~ /^(.*)$/;
 	chomp($cmd);
 	print "DEBUG: ($cmd): " if $CONFIG{DEBUG};
-	$rows = $dbh->do( $cmd );
-	print "rows affected: $rows\n" if $CONFIG{DEBUG};
+	eval {
+	    $rows = $dbh->do( $cmd );
+	};
+ 	if ( my $e = $@ ){
+ 	    # We will let the process continue
+	    warn "ERROR: $e\n";
+ 	}else{
+	    print "rows affected: $rows\n" if $CONFIG{DEBUG};
+	}
     }
     return 1;
 }
