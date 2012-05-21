@@ -301,20 +301,20 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 #######################################################################################
 }elsif ( $_action eq "ADD_BLOCK" ){
 
-    unless ( $add_block_parent ){
-	# We need the parent to determine if there are sufficient rights to add
-	# a block, so if not passed, we require Admin
+    # We need the parent to determine if there are sufficient rights to add
+    # a block, so if not passed, we require Admin
+    my $parent;
+    if ( $add_block_parent ){
+	$parent = Ipblock->retrieve($add_block_parent) || 
+	    $m->comp('/generic/error.mhtml', error=>"Cannot retrieve IPblock id $add_block_parent");
+	unless ( $manager && $manager->can($user, 'edit', $parent) ){
+	    $m->comp('/generic/error.mhtml', error=>"You don't have permission to add blocks here");
+	}
+    }else{
 	unless ( $manager && $manager->can($user, 'access_admin_section', 'ip.html:add_block') ){
 	    $m->comp('/generic/error.mhtml', error=>"You don't have permission to do this");
 	}
     }
-    my $parent = Ipblock->retrieve($add_block_parent) || 
-	$m->comp('/generic/error.mhtml', error=>"Cannot retrieve IPblock id $add_block_parent");
-	
-    unless ( $manager && $manager->can($user, 'edit', $parent) ){
-	$m->comp('/generic/error.mhtml', error=>"You don't have permission to add blocks here");
-    }
-    
     unless ( $add_block_prefix ){
 	$m->comp('/generic/error.mhtml', error=>"You need to specify IP/prefix");
     }
