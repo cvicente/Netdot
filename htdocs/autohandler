@@ -21,7 +21,6 @@ my $title      = $m->base_comp->attr('title')   || "Network Documentation Tool";
 my $section    = $m->base_comp->attr('section') || "Main";
 
 my $user = $ui->get_current_user($r);
-
     
 if ( my $show = $m->base_comp->attr_if_exists('showheader') ){
     $showheader = defined($showheader) ?  $showheader : $show;
@@ -43,9 +42,6 @@ if($m->request_comp->dir_path eq '/rest'){
 
 </%init>
 
-%if(!$rest_page){
-	<& header.mhtml,   title => $title, section => $section, user => $user, showheader=>$showheader, onload=>$onload, meta_refresh=>$meta_refresh &>
-%}
 <%perl>
 # Set user type if needed
 if ( defined $user && !defined $user->getAttribute('USER_TYPE') ){
@@ -54,10 +50,14 @@ if ( defined $user && !defined $user->getAttribute('USER_TYPE') ){
     };
     if ( my $e = $@ ){
         $user->logout($r);	    
-        $m->comp('/generic/error.mhtml', error=>$e);
+	$m->redirect(".");
     }
 }
 </%perl>
+
+%if(!$rest_page){
+    <& header.mhtml, title => $title, section => $section, user => $user, showheader=>$showheader, onload=>$onload, meta_refresh=>$meta_refresh &>
+%}
 
 %# Admin/Operator menu
 % if ( defined $user && (! $rest_page)){

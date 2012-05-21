@@ -2263,7 +2263,7 @@ sub get_user_person {
 	    $self->throw_user("Unrecognized value for DEFAULT_REMOTE_AUTHED_USER_TYPE config option");
 	}
     }
-    $self->throw_user("Username $username not found in Person table");
+    $self->throw_user("Username $username not found");
     
 }
 
