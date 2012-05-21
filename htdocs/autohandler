@@ -53,12 +53,6 @@ if ( defined $user && !defined $user->getAttribute('USER_TYPE') ){
 	    $ui->set_user_type($r, $user);
     };
     if ( my $e = $@ ){
-        if($e =~ /not found in Person table/){
-	        #we don't want to give the user too 
-            #much information about the underlying 
-            #database so lets clean up this message
-	        $e = "Sorry but we could not retrieve your permission information"; 
-        }
         $user->logout($r);	    
         $m->comp('/generic/error.mhtml', error=>$e);
     }
