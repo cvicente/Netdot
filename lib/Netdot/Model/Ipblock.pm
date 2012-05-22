@@ -1138,20 +1138,28 @@ sub add_range{
     my $prefix  = ($self->version == 4)? 32 : 128;
 
     my @newips;
-    my %args = (status => $argv{status});
-    $args{used_by}        = $argv{used_by}     if $argv{used_by};
-    $args{description}    = $argv{description} if $argv{description};
-    $args{parent}         = $self->id;
-    $args{no_update_tree} = 1; 
-    $args{validate}       = 0; # Make it faster
+    my %args = (
+	status         => $argv{status},
+	parent         => $self->id,
+	validate       => 0, # Make it faster
+	no_update_tree => 1, # not necessary because we're passing parent id
+	);
+    $args{used_by}     = $argv{used_by}     if $argv{used_by};
+    $args{description} = $argv{description} if $argv{description};
+    # Below we make a copies of the args hash because
+    # passing by reference causes it to be modified by insert/update
+    # and that breaks the next cycle
     for ( my($ip) = $ipstart->copy; $ip <= $ipend; $ip++ ){
-	my $decimal = $ip->numeric; # Do not remove.  We need the method value as a scalar
+	my $decimal = $ip->numeric; # We need the scalar value
 	if ( my $ipb = Ipblock->search(address=>$decimal, prefix=>$prefix)->first ){
-	    $ipb->update(\%args);
+	    my %uargs = %args;
+	    $ipb->update(\%uargs);
 	    push @newips, $ipb;
 	}else{
-	    $args{address} = $ip->addr;
-	    push @newips, Ipblock->insert(\%args);
+	    my %iargs = %args;
+	    $iargs{address} = $ip->addr;
+	    $iargs{prefix}  = $prefix;
+	    push @newips, Ipblock->insert(\%iargs);
 	}
     }
     #########################################
@@ -1477,9 +1485,9 @@ sub update {
     # We need at least these args before proceeding
     # If not passed, use current values
     $argv->{status} ||= $self->status;
-    $argv->{prefix} = $self->prefix unless $argv->{prefix};
+    $argv->{prefix} = $self->prefix unless defined $argv->{prefix};
 
-    if ( $argv->{address} && $argv->{prefix} ){
+    if ( defined $argv->{address} && defined $argv->{prefix} ){
 	my $ip = $class->_prevalidate($argv->{address}, $argv->{prefix});
 	if ( my $tmp = $class->search(address => $ip->addr,
 				      prefix  => $ip->masklen)->first ){
