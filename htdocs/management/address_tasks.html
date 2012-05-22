@@ -186,7 +186,7 @@ my $manager = $ui->get_permission_manager($r);
 if ( $submit ){
     if ( $search_address ){
 	$search = $search_address;
-	$search =~ s/s+//g;
+	$search =~ s/\s+//g;
 	# These might throw exceptions
 	eval { @list = Ipblock->search(address=>$search) };
 	if ( my $e = $@ ){
