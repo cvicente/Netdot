@@ -445,7 +445,7 @@ sub col_descr_link{
 sub help_link {
     my ($self, $url, $title, $size, $text) = @_;
     $title ||= 'Netdot Help Window';
-    $size  ||= 'width=600,height=400';
+    $size  ||= 'width=600,height=400,scrollbars=yes';
     $text  ||= '[?]';
     $self->throw_fatal("Missing required arguments: URL")
 	unless ($url);
