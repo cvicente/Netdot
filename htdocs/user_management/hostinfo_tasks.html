@@ -66,7 +66,17 @@ print '<pre>', Dumper($ao), '<pre>' if $DEBUG;
 if ( exists $ao->{Ipblock} ){
     foreach my $id ( keys %{$ao->{Ipblock}} ){
 	if ( my $ip = Ipblock->retrieve($id) ){
-	    push @ipblocks, $ip;
+	    if ( $ip->status->name eq 'Subnet' ){
+		push @ipblocks, $ip;
+	    }elsif ( $ip->status->name eq 'Container' ){
+		foreach my $chid ( @{$ip->get_descendants_trie} ){
+		    if ( my $ch = Ipblock->retrieve($chid) ){
+			if ( $ch->status->name eq 'Subnet' ){
+			    push @ipblocks, $ch;
+			}
+		    }
+		}
+	    }
 	}else{
 	    delete $ao->{Ipblock}->{$id};
 	}

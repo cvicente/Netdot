@@ -188,7 +188,7 @@ sub denies(){
 		    if ( my @ipbs = &_get_rr_ips($crr) ){
 			foreach my $ipb ( @ipbs ){
 			    next if $ipb == 0;
-			    return 1 if ( &_deny_rr_access($action, $access, $ipb) );
+			    return 1 if ( &_deny_ip_access($action, $access, $ipb, 1) );
 			}
 			return 0;
 		    }
@@ -197,7 +197,7 @@ sub denies(){
 		if ( my @ipbs = &_get_rr_ips($rr) ){
 		    foreach my $ipb ( @ipbs ){
 			next if !$ipb;
-			return 1 if ( &_deny_rr_access($action, $access, $ipb) );
+			return 1 if ( &_deny_ip_access($action, $access, $ipb, 1) );
 		    }
 		    return 0;
 		}elsif ( my $cname = $object->cnames->first ){
@@ -206,7 +206,7 @@ sub denies(){
 			if ( my @ipbs = &_get_rr_ips($crr) ){
 			    foreach my $ipb ( @ipbs ){
 				next if $ipb == 0;
-				return 1 if ( &_deny_rr_access($action, $access, $ipb) );
+				return 1 if ( &_deny_ip_access($action, $access, $ipb, 1) );
 			    }
 			    return 0;
 			}
@@ -252,64 +252,46 @@ sub _deny_action_access {
 }
 
 ##################################################################################
-# ip addresses inherit subnet permissions, but users cannot edit or delete them
+# ip addresses inherit ancestor permissions
+# RRs inherit IP address permissions, but users are allowed to edit and delete RRs
 sub _deny_ip_access {
-    my ($action, $access, $ipblock) = @_;
+    my ($action, $access, $ipblock, $is_rr) = @_;
     if ( $action ne 'view' && ($ipblock->interface || $ipblock->snmp_devices) ){
 	$logger->debug("ObjectAccessRule::_deny_ip_access: ".$ipblock->get_label.
 		       " linked to Device. Denying access.");
 	return 1;
     }
-    my $parent = $ipblock->parent;
-    if ( $parent &&
-	 exists $access->{'Ipblock'} && 
-	 exists $access->{'Ipblock'}->{$parent->id} ){
-	if ( $action eq 'delete' || $action eq 'edit' ){
+    unless ( $is_rr ){
+	if ( $ipblock->is_address && ($action eq 'delete' || $action eq 'edit') ){
 	    $logger->debug("ObjectAccessRule::_deny_ip_access: ".$ipblock->get_label
 			   ." Users cannot edit or delete IP addresses. Denying access.");
 	    return 1;
 	}
-	if ( $ipblock->status ){
-	    my $status = $ipblock->status->name;
-	    if ( $status eq 'Dynamic' || $status eq 'Reserved' ){
-		$logger->debug("ObjectAccessRule::_deny_ip_access: ".$ipblock->get_label
-			       ." is Dynamic or Reserved. Denying access.");
-		return 1;
-	    }
-	}
-	return &_deny_action_access($action, $access->{'Ipblock'}->{$parent->id});
     }
+    if ( $ipblock->status ){
+	my $status = $ipblock->status->name;
+	if ( $status eq 'Dynamic' || $status eq 'Reserved' ){
+	    $logger->debug("ObjectAccessRule::_deny_ip_access: ".$ipblock->get_label
+			   ." is Dynamic or Reserved. Denying access.");
+	    return 1;
+	}
+    }
+    # Deny unless there's an ancestor which is permitted. This includes
+    # subnets, containers, etc.
+    my $deny = 1;
+    foreach my $ancestor ( $ipblock->get_ancestors ){
+	if ( exists $access->{'Ipblock'}->{$ancestor->id} ){
+	    $deny = &_deny_action_access($action, $access->{'Ipblock'}->{$ancestor->id});
+	    last if $deny == 0;
+	}
+    }
+    return $deny;
+
     $logger->debug("ObjectAccessRule::_deny_ip_access: ".$ipblock->get_label
-		   ." not in allowed block. Denying access.");
+		   ." not within allowed block. Denying access.");
     return 1;
 }
 
-##################################################################################
-# RRs inherit IP address permissions, but users are allowed to edit and delete RRs
-sub _deny_rr_access {
-    my ($action, $access, $ipblock) = @_;
-    if ( $ipblock->interface ){
-	$logger->debug("ObjectAccessRule::_deny_rr_access: ".$ipblock->get_label." linked to Device interface. Denying access.");
-	return 1;
-    }
-    my $parent = $ipblock->parent;
-    if ( $parent &&
-	 exists $access->{'Ipblock'} && 
-	 exists $access->{'Ipblock'}->{$parent->id} ){
-	if ( $ipblock->status ){
-	    my $status = $ipblock->status->name;
-	    if ( $status eq 'Dynamic' || $status eq 'Reserved' ){
-		$logger->debug("ObjectAccessRule::_deny_rr_access: ".$ipblock->get_label
-			       ." is Dynamic or Reserved. Denying access.");
-		return 1;
-	    }
-	}
-	return &_deny_action_access($action, $access->{'Ipblock'}->{$parent->id});
-    }
-    $logger->debug("ObjectAccessRule::_deny_rr_access: ".$ipblock->get_label
-		   ." not in allowed block. Denying access.");
-    return 1;
-}
 
 
 1;
