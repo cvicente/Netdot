@@ -1680,7 +1680,7 @@ sub get_descendants_trie {
     my $list = ();
     my $code = sub { 
 	my $node = shift @_; 
-	push @$list, $node; 
+	push @$list, $node->data; 
     };
 
     $class->_tree_traverse(root=>$n, code=>$code, tree=>$tree);
