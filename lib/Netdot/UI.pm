@@ -2331,6 +2331,22 @@ sub get_allowed_objects{
 }
 
 ############################################################################
+=head2 get_access_names - Mapping of accessrights and their display names 
+=cut
+sub get_access_names {
+    my ($self) = @_;
+
+    my %anames = (
+    'view'      => 'View',
+    'edit'      => 'Edit',
+    'delete'    => 'Delete',
+    'choose_ip' => 'Choose IP',
+    'none'      => 'None',
+    );
+    return %anames;
+}
+
+############################################################################
 =head2 url_encode
 
   Arguments:

@@ -53,6 +53,7 @@ $topodirection  => 'left_right'
 $specific_vlan  => 0
 $stp_number     => undef
 $state_digest   => undef
+$_action        => undef
 </%args>
 %
 %
@@ -297,6 +298,11 @@ my $refresh_url = "device.html?id=$id&view=$view";
         <li><span>History</span></li>
 %     } else {
         <li><a href="device.html?id=<% $id %>&view=History">History</a></li>
+%     }
+%     if( $view eq "Permissions" ) {
+        <li><span>Permissions</span></li>
+%     } else {
+        <li><a href="device.html?id=<% $id %>&view=Permissions">Permissions</a></li>
 %     }
 %     if( $view eq "All" ) {
         <li><span>All</span></li>
@@ -1523,3 +1529,52 @@ if ( $ipeers ){
 </div> <!-- close sectiondetail -->
 
 
+%################################################################
+%# Access Rights
+%################################################################
+
+<%perl>
+if ( $view eq "Permissions" || $view eq "All" ){
+    my @arights = AccessRight->search(object_class=>'Device', object_id=>"$o");
+    my @urights  = map { $_->user_rights  } @arights;
+    my @grights  = map { $_->group_rights } @arights;
+    my @all_rights = ( @urights, @grights);
+</%perl>
+
+% if ( $manager && $manager->can($user, "access_section", 'device.html:edit_rights') ){
+      <div class="container">
+      <div class="containerheadleft">Permissions</div>
+      <div class="containerheadright">
+      &nbsp;
+%     if ( $edit ne 'edit_rights' ){
+%         if ( $manager && $manager->can($user, 'edit', $o) ){
+%             if ( @all_rights ){
+                  <a href="device.html?id=<% $o %>&view=Permissions&edit=edit_rights">[edit]</a>
+%             }
+              <a href="device.html?id=<% $o %>&view=Permissions&_action=VIEW_ADD_RIGHTS">[add]</a>
+%	  }
+%     }
+      </div>
+      <div class="containerbody">
+<%perl>
+if ( $_action eq 'VIEW_ADD_RIGHTS' ){
+    my $user_type = $user->getAttribute('USER_TYPE');
+    if ( $user_type eq "Admin" ) {
+	$m->comp('/generic/access_right_form.html', showheader=>1, 
+		 object_class=>'Device', object_id=>$o->id, 
+		 return_comp=>$m->current_comp->path, return_id=>$o->id);
+    }else {
+	$m->comp('/generic/error.mhtml', error=>"You don't have permission to manage rights!");
+    }
+}elsif ( $edit eq 'edit_rights' ){
+    $m->comp('/generic/sortresults.mhtml', object=>\@urights, withedit=>1, return_args=>"?id=$o");
+    $m->comp('/generic/sortresults.mhtml', object=>\@grights, withedit=>1, return_args=>"?id=$o");
+}elsif ( @all_rights ) {
+    $m->comp('/management/list_rights.mhtml', rights=>\@all_rights, show_object=>0);
+}
+</%perl>
+      </div>
+      </div>
+    
+%  }
+% }

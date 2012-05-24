@@ -1457,6 +1457,54 @@ print $tmp{value};
 % }
 
 %################################################################
+%# Access Rights
+%################################################################
+
+<%perl>
+my @arights = AccessRight->search(object_class=>'Ipblock', object_id=>"$o");
+my @urights  = map { $_->user_rights  } @arights;
+my @grights  = map { $_->group_rights } @arights;
+my @all_rights = ( @urights, @grights);
+</%perl>
+
+% if ( $manager && $manager->can($user, "access_section", 'ip.html:edit_rights') ){
+      <div class="container">
+      <div class="containerheadleft">Access Rights</div>
+      <div class="containerheadright">
+      &nbsp;
+%     if ( $edit ne 'edit_rights' ){
+%         if ( $manager && $manager->can($user, 'edit', $o) ){
+%             if ( @all_rights ){
+                  <a href="ip.html?id=<% $o %>&edit=edit_rights">[edit]</a>
+%             }
+              <a href="ip.html?id=<% $o %>&_action=VIEW_ADD_RIGHTS">[add]</a>
+%	  }
+%     }
+      </div>
+      <div class="containerbody">
+<%perl>
+if ( $_action eq 'VIEW_ADD_RIGHTS' ){
+    my $user_type = $user->getAttribute('USER_TYPE');
+    if ( $user_type eq "Admin" ) {
+	$m->comp('/generic/access_right_form.html', showheader=>1, 
+		 object_class=>'Ipblock', object_id=>$o->id, 
+		 return_comp=>$m->current_comp->path, return_id=>$o->id);
+    }else {
+	$m->comp('/generic/error.mhtml', error=>"You don't have permission to manage rights!");
+    }
+}elsif ( $edit eq 'edit_rights' ){
+    $m->comp('/generic/sortresults.mhtml', object=>\@urights, withedit=>1, return_args=>"?id=$o");
+    $m->comp('/generic/sortresults.mhtml', object=>\@grights, withedit=>1, return_args=>"?id=$o");
+}elsif ( @all_rights ) {
+    $m->comp('/management/list_rights.mhtml', rights=>\@all_rights, show_object=>0);
+}
+</%perl>
+      </div>
+      </div>
+    
+% }
+
+%################################################################
 %# Graphical Views
 %################################################################
 % if( $view_format eq 'block' ) {  

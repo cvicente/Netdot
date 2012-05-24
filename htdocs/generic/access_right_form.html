@@ -5,7 +5,7 @@
 </%doc>
 
 <%args>
-$table
+$table        => undef
 $id           => undef
 $select_id    => undef
 $selected     => undef
@@ -17,17 +17,22 @@ $person       => undef
 $contactlist  => undef
 @access       => undef
 $submit       => undef
+$return_comp  => undef
+$return_id    => undef
 %args         => undef
 </%args>
 
 <%init>
 my $DEBUG = 0;
-my $title = "$table " . $ui->table_descr_link($table, "[?]");
 
 # Consolidate args variables
 foreach my $arg ( %args ){
     $ARGS{$arg} = $args{$arg};
 }
+
+my %anames = $ui->get_access_names();
+
+my $title = ($table)? "$table " . $ui->table_descr_link($table, "[?]") : 'Add';
 
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 if ( $submit ){
@@ -35,11 +40,11 @@ if ( $submit ){
         $m->comp('error.mhtml', error=>"No Permissions were selected, please select one or more permissions to grant");
     }
 
-    if(! $object_id[0] ){
+    if( !$object_id[0] ){
         $m->comp('error.mhtml', error=>"No objects were selected, please select objects to grant permissions on");        
     }
 
-    if(! $object_class){
+    if( !$object_class ){
         $m->comp('error.mhtml', error=>"No object class was selected, please select an object class");
     }
     eval {
@@ -66,16 +71,21 @@ if ( $submit ){
 
 </%init>
 
-% if( $id ) {
-%      if ( $table eq 'Person' ){
-%         $m->comp('view.html', table=>$table, id=>$id);
-%      }else{
-%         $m->comp('contactlist.html', id=>$id);
-%      }
-% }else{
-
-%     if ( ! $showheader ){
-%         $m->clear_buffer;
+<%perl>
+if( $id ) {
+    if ( $return_comp && $return_id ){
+	$m->comp($return_comp, id=>$return_id); 
+    }else{
+	if ( $table eq 'Person' ){
+	    $m->comp('view.html', table=>$table, id=>$id);
+	}else{
+	    $m->comp('contactlist.html', id=>$id);
+	}
+    }
+}else{
+    if ( !$showheader ){
+	$m->clear_buffer;
+</%perl>
 <html>
   <head>
       <link rel="stylesheet" href="<% $r->dir_config('NetdotPath') %>css/style.css" type="text/css">
@@ -125,50 +135,104 @@ function setPerms(){
       <input type="hidden" name="select_id" value="<% $select_id %>">
       <input type="hidden" name="selected" value="<% $selected %>">
       <input type="hidden" name="dowindow" value="<% $dowindow %>">
+      <input type="hidden" name="return_comp" value="<% $return_comp %>">
+      <input type="hidden" name="return_id" value="<% $return_id %>">
 
 <%perl>
 
-         my (@field_headers, @cell_data);
-         if ( $ARGS{person} ){
-             my $person = Person->retrieve($ARGS{person});
-             push @field_headers, 'User:';
-	     push @cell_data, $person->get_label;
-	     print "<input type=\"hidden\" name=\"table\" value=\"Person\">";
-	     print "<input type=\"hidden\" name=\"id\" value=\"$person\">";
-         }elsif ( $ARGS{contactlist} ){
-             my $cl = ContactList->retrieve($ARGS{contactlist});
-             push @field_headers, 'Contact List:';
-	     push @cell_data, $cl->get_label;
-	     print "<input type=\"hidden\" name=\"table\" value=\"ContactList\">";
-	     print "<input type=\"hidden\" name=\"id\" value=\"$cl\">";
-         }
+my (@field_headers, @cell_data);
+if ( $ARGS{person} ){
+    my $person = Person->retrieve($ARGS{person});
+    push @field_headers, 'User:';
+    push @cell_data, $person->get_label;
+    print "<input type=\"hidden\" name=\"table\" value=\"Person\">";
+    print "<input type=\"hidden\" name=\"id\" value=\"$person\">";
 
-	 push @field_headers, 'Object Class:';
-	 my @classes = qw(ContactList Device Ipblock Zone);
-	 push @cell_data, 
-	 &{sub{
-	     my $out;
-	     $out .= "<select name=\"object_class\" id=\"object_class\" onChange=\"jsrsSendqueryRA(this.options[selectedIndex].text, 'object_id');setPerms()\">";
-	     $out .= "<option value=\"0\">-- Select --</option SELECTED>";
-	     foreach my $class ( @classes ){
-		 $out .= "<option name=\"$class\" >$class</option>";
-	     }
-	     $out .= "</select>";
-	 }};
+}elsif ( $ARGS{contactlist} ){
+    my $cl = ContactList->retrieve($ARGS{contactlist});
+    push @field_headers, 'Contact List:';
+    push @cell_data, $cl->get_label;
+    print "<input type=\"hidden\" name=\"table\" value=\"ContactList\">";
+    print "<input type=\"hidden\" name=\"id\" value=\"$cl\">";
 
-	 push @field_headers, 'Object:';
-         push @cell_data,
-         &{sub{
-            my $out;
-            $out .= "<select name=\"object_id\" id=\"object_id\" MULTIPLE><option value=\"0\">Select Class</option></select><br>";
-            $out .= "<input type=\"hidden\" name=\"keywords\" id=\"keywords\" value=\"Keywords\" onFocus=\"if (this.value == 'Keywords') {this.value = '';} return true;\">";
-            $out .= "<input type=\"hidden\" name=\"button\" id=\"button\" value=\"Search\" onClick=\"jsrsSendquery(document.getElementById('object_class').value, 'object_id', document.getElementById('keywords').value);\" >";
+}else{
+    push @field_headers, 'Subject Type:';
+    push @cell_data, ('<select name="table" id="table" '.
+		      'onChange="jsrsSendqueryRA(this.options[selectedIndex].value, \'id\')">'.
+		      '<option value="0" SELECTED>-- Select --</option>'.
+		      '<option value="Person">Person</option>'.
+		      '<option value="ContactList">Contact List</option>'.
+		      '</select>');
+    push @field_headers, 'Name:';
+    push @cell_data, ('<select name="id" id="id">'.
+		      '<option value="0" SELECTED>-- Select Type --</option>'.
+		      '</select>'.
+		      '<input type="hidden" name="subject_keywords" id="subject_keywords" value="Keywords" '.
+		      'onFocus="if (this.value == \'Keywords\') {this.value = \'\';} return true;">'.
+		      '<input type="hidden" name="button" id="button" value="Search" '.
+		      'onClick="jsrsSendquery(document.getElementById(\'table\').value, \'id\', '.
+		      'document.getElementById(\'subject_keywords\').value)">'
+    );
+}
 
-         }};
+push @field_headers, 'Object Class:';
+if ( $object_class ){
+    push @cell_data, 
+    &{sub{
+	my $out = $object_class;
+	$out .=  "<input type=\"hidden\" name=\"object_class\" value=\"$object_class\">";
+      }};
+}else{
+    my @classes = qw(ContactList Device Ipblock Zone);
+    push @cell_data, 
+    &{sub{
+	my $out;
+	$out .= "<select name=\"object_class\" id=\"object_class\" ".
+	    "onChange=\"jsrsSendqueryRA(this.options[selectedIndex].text, 'object_id');setPerms()\">";
+	$out .= "<option value=\"0\">-- Select --</option SELECTED>";
+	foreach my $class ( @classes ){
+	    $out .= "<option name=\"$class\" >$class</option>";
+	}
+	$out .= "</select>";
+      }};
+}
+push @field_headers, 'Object(s):';
+if ( $object_id[0] ){
+    push @cell_data, 
+    &{sub{
+	my $out = join(', ', map { $object_class->retrieve($_)->get_label } @object_id);
+	foreach my $oid ( @object_id ){
+	    $out .=  "<input type=\"hidden\" name=\"object_id\" value=\"$oid\">";
+	}
+	$out;
+      }};
+}else{
+    push @cell_data,
+    &{sub{
+	my $out;
+	$out .= "<select name=\"object_id\" id=\"object_id\" MULTIPLE><option value=\"0\">Select Class</option></select><br>";
+	$out .= "<input type=\"hidden\" name=\"keywords\" id=\"keywords\" value=\"Keywords\" onFocus=\"if (this.value == 'Keywords') {this.value = '';} return true;\">";
+	$out .= "<input type=\"hidden\" name=\"button\" id=\"button\" value=\"Search\" onClick=\"jsrsSendquery(document.getElementById('object_class').value, 'object_id', document.getElementById('keywords').value);\" >";
+      }};
+    
+}
+push @field_headers, 'Permissions:';
+my $txt = '<select id="access" name="access" MULTIPLE>';
+if ( $object_class ){
+    # The js code will not work in this case, so we just generate the 
+    # select options
+    my @values = ('view', 'edit', 'delete');
+    if ( $object_class eq 'Ipblock' ){
+	push @values, 'choose_ip';
+    }
+    push @values, 'none';
+    foreach my $v ( @values ){
+	$txt .= '<option value="'.$v.'">'.$anames{$v}.'</option>';
+    }
+}
+$txt .= '</select>';
+push @cell_data, $txt;
 
-	 push @field_headers, 'Permissions:';
-         push @cell_data, "<select id=\"access\" name=\"access\" MULTIPLE></select>";
-	 
 </%perl>
 	  <& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data, 
  	                                     width=>"1", headercolwidth=>"15%", datacolwidth=>"35%" &>
@@ -191,6 +255,6 @@ function setPerms(){
           </body>
           </html>
 %     }
-% }
+% } 
 
 
