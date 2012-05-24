@@ -198,10 +198,11 @@ if ( $submit ){
 	}
     }elsif ( $search_regex ){
 	$search_regex =~ s/\s+//g; # Remove spaces
-	$search = eval { qr/$search_regex/i };
-	unless ( defined $search ){
-	    $m->comp('/generic/error.mhtml', error=>"Invalid regular expression: $search_regex");	    
+	eval { qr/$search_regex/i };
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>"Your regular expression doesn't seem valid: $e");
 	}
+	$search = $search_regex;
 	@list = Ipblock->search_like(address=>$search);
     }elsif ( $search_other ){
 	$search = $search_other;
