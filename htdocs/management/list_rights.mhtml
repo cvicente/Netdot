@@ -1,0 +1,64 @@
+<%doc>
+    Show a more concise list of access rights. 
+    It handles both UserRight and GroupRight objects
+</%doc>
+
+<%args>
+$rights            # Required. Array ref of UserRight and/or GroupRight objects
+$show_object => 1  # Optional. Determines if the object to which rights are assigned
+                   # should be shown in the list
+</%args>
+
+<%init>
+my (@headers, @rows);
+push @headers, 'Type';
+push @headers, 'Name';
+push @headers, 'Object' if $show_object;
+push @headers, 'Rights';
+
+my %anames = $ui->get_access_names();
+</%init>
+
+<%perl>
+my %r;
+foreach my $right (  @$rights ){
+    my $class = ref($right);
+    my $type = ($class =~ /User/)? 'User' : 'Group';
+    my $ar = $right->accessright;
+    my $name;
+    if ( $type eq 'User' ){
+	my $person = $right->person;
+	$name = $person->get_label;
+	$r{$name}{person} = $person;
+    }else{
+	my $group = $right->contactlist;
+	$name = $group->get_label;
+	$r{$name}{group} = $group;
+    }
+    $r{$name}{type} = $type;
+    $r{$name}{rights}{$ar->access} = $ar;
+    if ( $show_object ){
+	my $oclass = $ar->object_class;
+	my $oid    = $ar->object_id;
+	my $o      = $oclass->retrieve($oid);
+	$r{$name}{object} = $o;
+    }
+}
+
+foreach my $name ( sort keys %r ){
+    my @row;
+    push @row, $r{$name}{type};
+    my $subject = $r{$name}{person} || $r{$name}{group};
+    push @row, sprintf('<a href="view.html?table=%s&id=%d">%s</a>', 
+		       $subject->short_class, $subject->id, $name);
+    if ( $show_object ){
+	my $o = $r{$name}{object};
+	push @row, sprintf('<a href="view.html?table=%s&id=%d">%s</a>', 
+			   $o->short_class, $o->id, $o->get_label);
+    }
+    push @row, join(', ', map { $anames{$_} } sort keys %{$r{$name}{rights}});
+    push @rows, \@row;
+}
+
+$m->comp('/generic/data_table.mhtml', field_headers=>\@headers, data=>\@rows);
+</%perl>
