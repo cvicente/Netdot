@@ -33,6 +33,37 @@ foreach my $md ( @{ Netdot->config->get('SNMP_MIB_DIRS') } ){
     push @MIBDIRS, Netdot->config->get('SNMP_MIBS_PATH')."/".$md;
 }
 
+# Netdot Interface field name to SNMP::Info method conversion table
+my %IFFIELDS = ( 
+    type           => 'i_type',
+    description    => 'i_alias',        speed          => 'i_speed',
+    admin_status   => 'i_up_admin',     oper_status    => 'i_up', 
+    physaddr       => 'i_mac',          oper_duplex    => 'i_duplex',
+    admin_duplex   => 'i_duplex_admin', stp_id         => 'i_stp_id',
+    dp_remote_id   => 'c_id',           dp_remote_ip   => 'c_ip',
+    dp_remote_port => 'c_port',         dp_remote_type => 'c_platform',
+    );
+
+# DeviceModule field name to SNMP::Info method conversion table
+my %MFIELDS = (
+    name         => 'e_name',    type          => 'e_type',
+    contained_in => 'e_parent',  class         => 'e_class',    
+    pos          => 'e_pos',     hw_rev        => 'e_hwver',
+    fw_rev       => 'e_fwver',   sw_rev        => 'e_swver',
+    model        => 'e_model',   serial_number => 'e_serial',
+    fru          => 'e_fru',     description   => 'e_descr',
+    );
+
+# SNMP::Info methods that return hash refs
+my @SMETHODS = qw( 
+hasCDP e_descr i_type i_alias i_speed i_up 
+i_up_admin i_duplex i_duplex_admin 
+ip_index ip_netmask i_mac
+i_vlan_membership qb_v_name v_name v_state
+);
+
+
+
 =head1 NAME
 
 Netdot::Model::Device - Network Device Class
@@ -663,14 +694,9 @@ sub get_snmp_info {
     $dev{community}    = $sinfo->snmp_comm;
     $dev{snmp_version} = $sinfo->snmp_ver;
 
-    ################################################################
-    # SNMP::Info methods that return hash refs
-    my @SMETHODS = qw( hasCDP e_descr
-		       interfaces i_index i_name i_type i_alias i_description 
-		       i_speed i_up i_up_admin i_duplex i_duplex_admin 
-		       ip_index ip_netmask i_mac
-		       i_vlan_membership qb_v_name v_name v_state
-		       );
+    my $name_src = ( $self->config->get('IFNAME_SHORT') eq '1' )? 
+	'i_name' : 'i_description';
+    push @SMETHODS, $name_src;
 
     if ( $sinfo->can('ipv6_addr_prefix') ){
 	# This version of SNMP::Info supports fetching IPv6 addresses
@@ -702,8 +728,9 @@ sub get_snmp_info {
 	my %IGNORED;
 	map { $IGNORED{$_}++ }  @{ $self->config->get('IGNOREDEVS') };
 	if ( exists($IGNORED{$dev{sysobjectid}}) ){
-	    $self->throw_user(sprintf("%s Product id %s ignored per configuration option (IGNOREDEVS)", 
-				      $args{host}, $dev{sysobjectid}));
+	    $logger->info(sprintf("%s Product id %s ignored per configuration option (IGNOREDEVS)", 
+				  $args{host}, $dev{sysobjectid}));
+	    return;
 	}
     }
 
@@ -722,10 +749,10 @@ sub get_snmp_info {
     $dev{manufacturer}   = $sinfo->vendor();
     $dev{serial_number}  = $sinfo->serial();
 
-    $dev{syslocation}    = $sinfo->location();
+    $dev{syslocation} = $sinfo->location();
     $dev{syslocation} = $class->rem_lt_sp($dev{syslocation}) # Remove white space
 	if ( $dev{syslocation} );
-
+    
     ################################################################
     # Get STP (Spanning Tree Protocol) stuff
 
@@ -791,14 +818,16 @@ sub get_snmp_info {
 									   'communities' => [$comm],
 									   'version'     => $sinfo->snmp_ver,
 									   'sclass'      => $sinfo->class);
-				    my $stp_p_info = $class->_exec_timeout( $args{host}, 
-									    sub{  return $self->_get_stp_info(sinfo=>$vsinfo) } );
+				    my $stp_p_info = $class->_exec_timeout( 
+					$args{host}, 
+					sub{  return $self->_get_stp_info(sinfo=>$vsinfo) } );
 				    foreach my $method ( keys %$stp_p_info ){
 					$dev{stp_instances}{$mst_inst}{$method} = $stp_p_info->{$method};
 				    }
 
-				    my $i_stp_info = $class->_exec_timeout( $args{host}, 
-									    sub{  return $self->_get_i_stp_info(sinfo=>$vsinfo) } );
+				    my $i_stp_info = $class->_exec_timeout( 
+					$args{host}, 
+					sub{  return $self->_get_i_stp_info(sinfo=>$vsinfo) } );
 				    foreach my $field ( keys %$i_stp_info ){
 					foreach my $i ( keys %{$i_stp_info->{$field}} ){
 					    $dev{interface}{$i}{$field} = $i_stp_info->{$field}->{$i};
@@ -901,15 +930,6 @@ sub get_snmp_info {
     # Modules
 
     if ( $self->config->get('GET_DEVICE_MODULE_INFO') ){
-	# DeviceModule field name to SNMP::Info method conversion table
-	my %MFIELDS = ( name         => 'e_name',    type         => 'e_type',
-			contained_in => 'e_parent',  class        => 'e_class',    
-			pos          => 'e_pos',     hw_rev       => 'e_hwver',
-			fw_rev       => 'e_fwver',   sw_rev       => 'e_swver',
-			model        => 'e_model',   serial_number => 'e_serial',
-			fru          => 'e_fru',     description  => 'e_descr',
-	    );
-	    
 	foreach my $key ( keys %{ $hashes{e_class} } ){
 	    $dev{module}{$key}{number} = $key;;
 	    foreach my $field ( keys %MFIELDS ){
@@ -1000,32 +1020,17 @@ sub get_snmp_info {
 	}
     }
     
-    # Netdot Interface field name to SNMP::Info method conversion table
-    my %IFFIELDS = ( type                => 'i_type',
-		     description         => 'i_alias',		     speed               => 'i_speed',
-		     admin_status        => 'i_up_admin',	     oper_status         => 'i_up', 
-		     physaddr            => 'i_mac', 		     oper_duplex         => 'i_duplex',
-		     admin_duplex        => 'i_duplex_admin',	     stp_id              => 'i_stp_id',
-		     dp_remote_id        => 'c_id',		     dp_remote_ip        => 'c_ip',
-		     dp_remote_port      => 'c_port',		     dp_remote_type      => 'c_platform',
-		     );
-    
     ##############################################
     # for each interface discovered...
 
-    unless ( scalar keys %{ $hashes{interfaces} } ){
-	$logger->debug(sub{"$args{host} did not return any interfaces"});
-    }
-
-    my $name_src = ( $self->config->get('IFNAME_SHORT') eq '1' )? 'i_name' : 'i_description';
-
-    foreach my $iid ( keys %{ $hashes{interfaces} } ){
+    foreach my $iid ( keys %{ $hashes{$name_src} } ){
 	my $name = $hashes{$name_src}->{$iid};
 	# check whether it should be ignored
 	if ( $name ){
 	    if ( my $ifreserved = $self->config->get('IFRESERVED') ){
 		if ( $name =~ /$ifreserved/i ){
-		    $logger->debug(sub{"Device::get_snmp_info: $args{host}: Interface $name ignored per config option (IFRESERVED)"});
+		    $logger->debug(sub{"Device::get_snmp_info: $args{host}: Interface $name ".
+					   "ignored per config option (IFRESERVED)"});
 		    delete $dev{interface}{$iid}; # Could have been added above
 		    next;
 		}
@@ -1039,13 +1044,13 @@ sub get_snmp_info {
 	foreach my $field ( keys %IFFIELDS ){
 	    my $method = $IFFIELDS{$field};
 	    if ( exists $hashes{$method}->{$iid} ){
-		if ( $field =~ /_enabled/ ){
+		if ( $field =~ /_enabled/o ){
 		    # These are all booleans
 		    $dev{interface}{$iid}{$field} = ( $hashes{$method}->{$iid} eq 'true' )? 1 : 0;
 		}else{
 		    $dev{interface}{$iid}{$field} = $hashes{$method}->{$iid};
 		}
- 	    }elsif ( $field =~ /^dp_/ ) {
+ 	    }elsif ( $field =~ /^dp_/o ) {
  		# Make sure we erase any old discovery protocol values
  		$dev{interface}{$iid}{$field} = "";
 	    }
@@ -1059,7 +1064,8 @@ sub get_snmp_info {
 	if ( my $vm = $hashes{'i_vlan_membership'}->{$iid} ){
 	    foreach my $vid ( @$vm ){
 		if ( exists $IGNOREDVLANS{$vid} ){
-		    $logger->debug(sub{"Device::get_snmp_info: $args{host} VLAN $vid ignored per configuration option (IGNOREVLANS)"});
+		    $logger->debug(sub{"Device::get_snmp_info: $args{host} VLAN $vid ignored ".
+					   "per configuration option (IGNOREVLANS)"});
 		    next;
 		}
 		$dev{interface}{$iid}{vlans}{$vid}{vid} = $vid;
@@ -1103,44 +1109,37 @@ sub get_snmp_info {
     # Deal with BGP Peers
     # only proceed if we were told to discover peers, either directly or in the config file
     if ( $args{bgp_peers} || $self->config->get('ADD_BGP_PEERS')) {
-
-	if ( scalar keys %{$hashes{'bgp_peers'}} ){
-	    $logger->debug(sub{"Device::get_snmp_info: Checking for BGPPeers"});
-	    
-	    ##############################################
-	    # for each BGP Peer discovered...
-	    foreach my $peer ( keys %{$hashes{'bgp_peers'}} ) {
-		$dev{bgppeer}{$peer}{address} = $peer;
-		unless ( $dev{bgppeer}{$peer}{bgppeerid} = $hashes{'bgp_peer_id'}->{$peer} ){
-		    $logger->warn("Could not determine BGP peer id of peer $peer");
-		}
-		my $asn = $hashes{'bgp_peer_as'}->{$peer};
-		if ( ! $asn ){
-		    $logger->warn("Could not determine AS number of peer $peer");
-		}else{
-		    $dev{bgppeer}{$peer}{asnumber} = $asn;
-		    $dev{bgppeer}{$peer}{asname}   = "AS $asn";
-		    $dev{bgppeer}{$peer}{orgname}  = "AS $asn";
-		    
-		    if ( Netdot->config->get('DO_WHOISQ') ){
-			# We enabled whois queries in config
-			if ( my $as_info = $self->_get_as_info($asn) ){
-			    $dev{bgppeer}{$peer}{asname}  = $as_info->{asname};
-			    $dev{bgppeer}{$peer}{orgname} = $as_info->{orgname};
-			}
+	$logger->debug(sub{"Device::get_snmp_info: Checking for BGPPeers"});
+	
+	##############################################
+	# for each BGP Peer discovered...
+	foreach my $peer ( keys %{$hashes{'bgp_peers'}} ) {
+	    $dev{bgppeer}{$peer}{address} = $peer;
+	    unless ( $dev{bgppeer}{$peer}{bgppeerid} = $hashes{'bgp_peer_id'}->{$peer} ){
+		$logger->warn("Could not determine BGP peer id of peer $peer");
+	    }
+	    if ( my $asn = $hashes{'bgp_peer_as'}->{$peer} ){
+		$dev{bgppeer}{$peer}{asnumber} = $asn;
+		$dev{bgppeer}{$peer}{asname}   = "AS $asn";
+		$dev{bgppeer}{$peer}{orgname}  = "AS $asn";
+		
+		if ( Netdot->config->get('DO_WHOISQ') ){
+		    # We enabled whois queries in config
+		    if ( my $as_info = $self->_get_as_info($asn) ){
+			$dev{bgppeer}{$peer}{asname}  = $as_info->{asname};
+			$dev{bgppeer}{$peer}{orgname} = $as_info->{orgname};
 		    }
 		}
+	    }else{
+		$logger->warn("Could not determine AS number of peer $peer");
 	    }
 	}
-    }else{
-	$logger->debug(sub{"Device::get_snmp_info: BGP Peer discovery not enabled"});
     }
 
     # Remove whitespace at beginning and end
     while ( my ($key, $val) = each %dev){
 	next unless defined $val;
-	$val =~ s/^\s+//;
-	$val =~ s/\s+$//;
+	$class->rem_lt_sp($val);
 	$dev{$key} = $val;
     }
 
@@ -1462,7 +1461,8 @@ sub discover {
     
     # Get relevant snmp_update args
     my %uargs;
-    foreach my $field ( qw(communities version timeout retries sec_name sec_level auth_proto auth_pass priv_proto priv_pass
+    foreach my $field ( qw(communities version timeout retries 
+                           sec_name sec_level auth_proto auth_pass priv_proto priv_pass
                            add_subnets subs_inherit bgp_peers pretend do_info do_fwt do_arp timestamp) ){
 	$uargs{$field} = $argv{$field} if defined ($argv{$field});
     }
@@ -3502,16 +3502,17 @@ sub _get_snmp_session {
     $sclass ||= 'SNMP::Info';
     
     # Set defaults
-    my %sinfoargs = ( DestHost      => $argv{host},
-		      Version       => $argv{version} || $self->config->get('DEFAULT_SNMPVERSION'),
-		      Timeout       => (defined $argv{timeout}) ? $argv{timeout} : $self->config->get('DEFAULT_SNMPTIMEOUT'),
-		      Retries       => (defined $argv{retries}) ? $argv{retries} : $self->config->get('DEFAULT_SNMPRETRIES'),
-		      AutoSpecify   => 1,
-		      Debug         => ( $logger->is_debug() )? 1 : 0,
-		      BulkWalk      => (defined $argv{bulkwalk}) ? $argv{bulkwalk} :  $self->config->get('DEFAULT_SNMPBULK'),
-		      BulkRepeaters => 20,
-		      MibDirs       => \@MIBDIRS,
-		      );
+    my %sinfoargs = ( 
+	DestHost      => $argv{host},
+	Version       => $argv{version} || $self->config->get('DEFAULT_SNMPVERSION'),
+	Timeout       => (defined $argv{timeout}) ? $argv{timeout} : $self->config->get('DEFAULT_SNMPTIMEOUT'),
+	Retries       => (defined $argv{retries}) ? $argv{retries} : $self->config->get('DEFAULT_SNMPRETRIES'),
+	AutoSpecify   => 1,
+	Debug         => ( $logger->is_debug() )? 1 : 0,
+	BulkWalk      => (defined $argv{bulkwalk}) ? $argv{bulkwalk} :  $self->config->get('DEFAULT_SNMPBULK'),
+	BulkRepeaters => $self->config->get('DEFAULT_SNMPBULK_MAX_REPEATERS'),
+	MibDirs       => \@MIBDIRS,
+	);
 
     # Turn off bulkwalk if we're using Net-SNMP 5.2.3 or 5.3.1.
     if ( $sinfoargs{BulkWalk} == 1  && ($SNMP::VERSION eq '5.0203' || $SNMP::VERSION eq '5.0301') 
@@ -5396,7 +5397,8 @@ sub _update_interfaces {
 	    
 	}
 	
-	$self->throw_fatal("Model::Device::_update_interfaces: $host: Could not find or create interface: $newnumber")
+	$self->throw_fatal("Model::Device::_update_interfaces: $host: ".
+			   "Could not find or create interface: $newnumber")
 	    unless $if;
 	
 	# Now update it with snmp info

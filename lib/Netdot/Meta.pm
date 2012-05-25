@@ -16,6 +16,7 @@ my $ALT_META_FILE     = catpath( ( splitpath( rel2abs $0 ) )[ 0, 1 ], '' ) . "..
 my %DERIVED_CLASSES = (
     'CiscoFW'   => ['Netdot::Model::Device::CLI::CiscoFW',   'Netdot::Model::Device'],
     'CiscoIOS'  => ['Netdot::Model::Device::CLI::CiscoIOS',  'Netdot::Model::Device'],
+    'CiscoCat'  => ['Netdot::Model::Device::CLI::CiscoCat',  'Netdot::Model::Device'],
     'FoundryIW' => ['Netdot::Model::Device::CLI::FoundryIW', 'Netdot::Model::Device'],
     'Airespace' => ['Netdot::Model::Device::Airespace',      'Netdot::Model::Device'],
     );

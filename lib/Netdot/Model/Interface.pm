@@ -7,6 +7,31 @@ use strict;
 my $MAC  = Netdot->get_mac_regex();
 my $logger = Netdot->log->get_logger('Netdot::Model::Device');
 
+# Fill in standard fields
+my @STDFIELDS = qw( 
+number name type description speed admin_status 
+oper_status admin_duplex oper_duplex stp_id 
+bpdu_guard_enabled bpdu_filter_enabled loop_guard_enabled root_guard_enabled
+dp_remote_id dp_remote_ip dp_remote_port dp_remote_type
+);
+
+my %SPEED_MAP = ('1536000'     => 'T1',
+		 '1544000'     => 'T1',
+		 '3072000'     => 'Dual T1',
+		 '3088000'     => 'Dual T1',
+		 '44210000'    => 'T3',
+		 '44736000'    => 'T3',
+		 '45045000'    => 'DS3',
+		 '46359642'    => 'DS3',
+		 '149760000'   => 'ATM on OC-3',
+		 '155000000'   => 'OC-3',
+		 '155519000'   => 'OC-3',
+		 '155520000'   => 'OC-3',
+		 '599040000'   => 'ATM on OC-12',
+		 '622000000'   => 'OC-12',
+		 '622080000'   => 'OC-12',
+    );
+
 #Be sure to return 1
 1;
 
@@ -328,24 +353,13 @@ sub snmp_update {
     my $label = $self->get_label;
     my %iftmp = (doc_status => 'snmp');
 
-    ############################################
-    # Fill in standard fields
-    my @stdfields = qw( number name type description speed admin_status 
-		        oper_status admin_duplex oper_duplex stp_id 
-   		        bpdu_guard_enabled bpdu_filter_enabled loop_guard_enabled root_guard_enabled
-                        dp_remote_id dp_remote_ip dp_remote_port dp_remote_type
-                      );
-    
-    foreach my $field ( @stdfields ){
+    foreach my $field ( @STDFIELDS ){
 	$iftmp{$field} = $newif->{$field} if exists $newif->{$field};
     }
     
     ############################################
     # Update PhysAddr
-    if ( ! $newif->{physaddr} ){
-	$iftmp{physaddr} = undef;
-    }elsif ( my $addr = PhysAddr->validate($newif->{physaddr}) ){
-	
+    if ( $newif->{physaddr} && (my $addr = PhysAddr->validate($newif->{physaddr})) ){
 	my $physaddr = PhysAddr->search(address=>$addr)->first;
 	if ( $physaddr ){
 	    $physaddr->update({last_seen=>$self->timestamp, static=>1});
@@ -358,8 +372,9 @@ sub snmp_update {
 		$logger->debug(sub{"$label: Could not insert PhysAddr $addr: $e"});
 	    }
 	}
+    }else{
+	$iftmp{physaddr} = undef;
     }
-    
     # Check if description can be overwritten
     delete $iftmp{description} if !($self->overwrite_descr) ;
 
@@ -370,7 +385,6 @@ sub snmp_update {
     $logger->debug(sub{ sprintf("%s: Interface %s (%s) updated", 
 				$label, $self->number, $self->name) }) if $r;
     
-
     ##############################################
     # Update VLANs
     #
@@ -401,7 +415,8 @@ sub snmp_update {
 		    if ( !(defined $vo->name) || 
 			 (defined $vo->name && $vdata{name} ne $vo->name) ){
 			my $r = $vo->update(\%vdata);
-			$logger->debug(sub{ sprintf("%s: VLAN %s name updated: %s", $label, $vo->vid, $vo->name) })
+			$logger->debug(sub{ sprintf("%s: VLAN %s name updated: %s", 
+						    $label, $vo->vid, $vo->name) })
 			    if $r;
 		    }
 		}
@@ -475,7 +490,7 @@ sub snmp_update {
 	my $name = $self->name;
 
 	# For layer3 switches with virtual VLAN interfaces
-	if ( !$vlan && $name && $name =~ /Vlan(\d+)/ ){
+	if ( !$vlan && $name && $name =~ /Vlan(\d+)/o ){
 	    my $vid = $1;
 	    $vlan = Vlan->search(vid=>$vid)->first;
 	}
@@ -497,7 +512,6 @@ sub snmp_update {
 	    }
 	}
     } 
-    
     return $self;
 }
 
@@ -536,7 +550,8 @@ sub update_ip {
     }
     
     if ( $args{subnet} ){
-	$logger->debug(sprintf("%s: Subnet configured in interface is %s", $label, $args{subnet}));
+	$logger->debug(sub{sprintf("%s: Subnet configured in interface is %s", 
+				   $label, $args{subnet})});
     }
 		   
     # We might have to add a subnet
@@ -656,23 +671,6 @@ sub speed_pretty {
     my ($self) = @_;
     $self->isa_object_method('speed_pretty');
     my $speed = $self->speed;
-
-    my %SPEED_MAP = ('1536000'     => 'T1',
-                     '1544000'     => 'T1',
-                     '3072000'     => 'Dual T1',
-                     '3088000'     => 'Dual T1',
-                     '44210000'    => 'T3',
-                     '44736000'    => 'T3',
-                     '45045000'    => 'DS3',
-                     '46359642'    => 'DS3',
-                     '149760000'   => 'ATM on OC-3',
-                     '155000000'   => 'OC-3',
-                     '155519000'   => 'OC-3',
-                     '155520000'   => 'OC-3',
-                     '599040000'   => 'ATM on OC-12',
-                     '622000000'   => 'OC-12',
-                     '622080000'   => 'OC-12',
-                     );
 
     if ( exists $SPEED_MAP{$speed} ){
 	return $SPEED_MAP{$speed};

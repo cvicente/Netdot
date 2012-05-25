@@ -229,10 +229,9 @@ close(SENDMAIL);
 sub rem_lt_sp {
     my ($self, $str) = @_;
     return unless $str;
-    my $logger = $class->{_log}->get_logger('Netdot');
     my $old = $str;
-    $str =~ s/^\s*(.+?)\s*$/$1/g;
-    $logger->debug("Netdot::rem_lt_sp: '$old' converted into '$str'");
+    $str =~ s/^\s+//o;
+    $str =~ s/\s+$//o;
     return $str;
 }
 
