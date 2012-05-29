@@ -299,10 +299,10 @@ my $refresh_url = "device.html?id=$id&view=$view";
 %     } else {
         <li><a href="device.html?id=<% $id %>&view=History">History</a></li>
 %     }
-%     if( $view eq "Permissions" ) {
-        <li><span>Permissions</span></li>
+%     if( $view eq "Rights" ) {
+        <li><span>Access Rights</span></li>
 %     } else {
-        <li><a href="device.html?id=<% $id %>&view=Permissions">Permissions</a></li>
+        <li><a href="device.html?id=<% $id %>&view=Rights">Access Rights</a></li>
 %     }
 %     if( $view eq "All" ) {
         <li><span>All</span></li>
@@ -1524,9 +1524,6 @@ if ( $ipeers ){
         </div>
     </div>
 %}
-  </div> <!-- close containerbodyoutside --> 
- </div> <!-- close containeroutside -->
-</div> <!-- close sectiondetail -->
 
 
 %################################################################
@@ -1534,7 +1531,7 @@ if ( $ipeers ){
 %################################################################
 
 <%perl>
-if ( $view eq "Permissions" || $view eq "All" ){
+if ( $view eq "Rights" || $view eq "All" ){
     my @arights = AccessRight->search(object_class=>'Device', object_id=>"$o");
     my @urights  = map { $_->user_rights  } @arights;
     my @grights  = map { $_->group_rights } @arights;
@@ -1543,15 +1540,15 @@ if ( $view eq "Permissions" || $view eq "All" ){
 
 % if ( $manager && $manager->can($user, "access_section", 'device.html:edit_rights') ){
       <div class="container">
-      <div class="containerheadleft">Permissions</div>
+      <div class="containerheadleft">Access Rights</div>
       <div class="containerheadright">
       &nbsp;
 %     if ( $edit ne 'edit_rights' ){
 %         if ( $manager && $manager->can($user, 'edit', $o) ){
 %             if ( @all_rights ){
-                  <a href="device.html?id=<% $o %>&view=Permissions&edit=edit_rights">[edit]</a>
+                  <a href="device.html?id=<% $o %>&view=Rights&edit=edit_rights">[edit]</a>
 %             }
-              <a href="device.html?id=<% $o %>&view=Permissions&_action=VIEW_ADD_RIGHTS">[add]</a>
+              <a href="device.html?id=<% $o %>&view=Rights&_action=VIEW_ADD_RIGHTS">[add]</a>
 %	  }
 %     }
       </div>
@@ -1578,3 +1575,9 @@ if ( $_action eq 'VIEW_ADD_RIGHTS' ){
     
 %  }
 % }
+
+
+  </div> <!-- close containerbodyoutside --> 
+ </div> <!-- close containeroutside -->
+</div> <!-- close sectiondetail -->
+
