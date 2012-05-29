@@ -152,15 +152,21 @@ $ui->add_to_fields(table=>'Contact', edit=>$edit, fields=>['contacttype', 'notif
 %         next;
 %     }
 %     my $editct = ($edit eq 'contact' && $contact_id eq $role->id)? 1 : 0;
-%     next if ( $edit && ! $editct );
+%     next if ( $edit && !$editct );
 
          <div class="containerbodyoutside">
              <div class="container">
-                 <div class="containerheadleft"><a href="view.html?table=Person&id=<% $person->id %>"><% $person->get_label %></a></div>
-                     <div class="containerheadright">
-%		 if ( ! $show_buttons ){
-                    &nbsp;
-%                }else{
+                 <div class="containerheadleft">
+%		     my $lid = $role->id.'_link';
+%                    my $bid = $role->id.'_buttons';
+%                    my $display = $editct ? 'block' : 'none';
+%                    my $button = $editct ? '-' : '+';
+  		     <a id="<% $lid %>" href="javascript:toggleContact(<% $role->id %>);">[+]</a>&nbsp;
+		     <a href="view.html?table=Person&id=<% $person->id %>"><% $person->get_label %></a>
+                 </div>
+                 <div class="containerheadright" >
+%		     if ( $show_buttons ){
+                       <div id="<% $bid %>" style="display:<% $display %>">
 %                        if ( $manager && $manager->can($user, "edit", $obj) ){
                              <a href="contactlist.html?id=<% $id %>&edit=contact&contact_id=<% $role->id %>">[edit]</a>
 %                        }
@@ -168,9 +174,11 @@ $ui->add_to_fields(table=>'Contact', edit=>$edit, fields=>['contacttype', 'notif
 		             <a href="contactlist.html?id=<% $id %>&_action=delete_role&role_id=<% $role->id %>">[delete role]</a>
 		             <a href="contactlist.html?id=<% $id %>&_action=delete_person&person_id=<% $person->id %>">[delete person]</a>
 %                        }
-%                }
-		     </div>
-                 <div class="containerbodyoutside">
+		        </div>
+                        &nbsp;
+%                    }
+		 </div>
+                 <div class="containerbodyoutside" id="<% $role->id %>" style="display:<% $display %>">
 
 %     $ui->add_to_fields(o=>$role, edit=>$editct, fields=>['contacttype', 'notify_email', 'notify_pager', 'notify_voice', 'escalation_level'], 
 %	                 field_headers=>\@headers, cell_data=>\@data, shortFieldName=>0, new_button=>$new_button,
@@ -183,14 +191,11 @@ $ui->add_to_fields(table=>'Contact', edit=>$edit, fields=>['contacttype', 'notif
                  </div>
               </div>
            </div>
-
 %     if ( $editct ){
           <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
           <input type="submit" name="submit" value="save">
         </form>
 %     }
-
 % }
-
 </div>
 

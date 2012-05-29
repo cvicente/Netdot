@@ -19,6 +19,13 @@ function toggleTasks() {
     display = toggleLayer('tasks');
     document.getElementById('tasks_link').innerHTML = (display=='none'?'[show]':'[hide]');
     jsrsExecute( "../generic/user_pref.html", emptyfunction, "set_value", Array('SHOW_TASKS', (display=='none'?'hide':'show')) );
+
+}
+function toggleContact(contact_id) {
+    var display;
+    display = toggleLayer(contact_id);
+    toggleLayer(contact_id+'_buttons');
+    document.getElementById(contact_id+'_link').innerHTML = (display=='none'?'[+]':'[-]');
 }
 function emptyfunction() {
     // do nothing
