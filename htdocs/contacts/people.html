@@ -17,8 +17,11 @@ title        => 'People'
 <%args>
 $search           => undef
 $search_people    => undef
+$search_clist     => undef
 $user             => $ui->get_current_user($r);
-$submit           => undef
+$submit_person    => undef
+$submit_list      => undef
+$submit_insert    => undef
 $show_tasks       => undef
 $showheader       => 1
 $_action          => undef
@@ -74,8 +77,12 @@ my $manager = $ui->get_permission_manager($r);
                 <p>
                 <label for="Find">Person:</label>
                 <input type="text" name="search_people" class="txt" value="<% $search_people %>"> 
-                <input name="submit" value="Find" class="btn" type="submit">
-                <input type="hidden" name="_action" value="SEARCH">
+                <input name="submit_person" value="Find" class="btn" type="submit">
+                </p>
+                <p>
+                <label for="Find">Contact List:</label>
+                <input type="text" name="search_clist" class="txt" value="<% $search_clist %>"> 
+                <input name="submit_list" value="Find" class="btn" type="submit">
                 </p>
             </form>
         </fieldset>
@@ -117,8 +124,7 @@ my $manager = $ui->get_permission_manager($r);
                 </p>
                 <p>
                 <label for="new">&nbsp;</label>
-                <input type="hidden" name="_action" value="INSERT">
-                <input name="submit" value="Add Person" class="btn" type="submit">
+                <input name="submit_insert" value="Add Person" class="btn" type="submit">
                 </p>
 		<p>(<font color="red">*</font>) Field is required<br>
             </form>
@@ -138,21 +144,16 @@ my $manager = $ui->get_permission_manager($r);
 #
 #######################################################################################
 
-if ( $_action eq "SEARCH" && $submit ){
     # Remove trailing and leading spaces
-    if ( $search_people ){
-	$search = $search_people;
-	$search =~ s/^\s*(.*?)\s*$/$1/g;
-	#print "====";
-	#print $search;
-	#print "======";
+    if ( $submit_person && $search_people ){
+	$search = $ui->rem_lt_sp($search_people);
 	my %idx1;
 	my %idx2;
 	my %resultidx;
 	my $firstpass = 1;
 	
 	#support searches with more than 1 keywords (we do an intersection on results)
-	for my $keyword (split(/ +/, $search)) {
+	for my $keyword (split(/\s+/, $search)) {
 	    if ($firstpass) {
 		map { $resultidx{$_->id} = $_ } Person->search_like(firstname  => $keyword);
 		map { $resultidx{$_->id} = $_ } Person->search_like(lastname   => $keyword);
@@ -178,17 +179,20 @@ if ( $_action eq "SEARCH" && $submit ){
 	    %idx2 = ();
 	}
 	@list = values %resultidx;
-    }else {
+
+    }elsif ( $submit_list && $search_clist ){
+	$search = $ui->rem_lt_sp($search_clist);
+	@list = ContactList->search_like(name=>$search);
+
+    }elsif ( $submit_person || $submit_list ) {
 	$m->comp('/generic/no_search_criteria.html');
     }
-}
-
 
 #######################################################################################
 # Add Person
 #
 #######################################################################################
-if ( $_action eq "INSERT" && $submit ){
+if ( $submit_insert ){
     my %ret;
     eval {
 	%ret = $ui->form_to_db(%ARGS);
@@ -217,8 +221,9 @@ if ( $_action eq "INSERT" && $submit ){
           </div>
        </div>
 %     }elsif ( scalar @list == 1 ){
-%         $personid = $list[0]->id;
-%         $m->comp('/generic/view.html', table=>"Person", id=>$personid);
+%         my $viewid = $list[0]->id;
+%         my $table = $list[0]->short_class;
+%         $m->comp('/generic/view.html', table=>$table, id=>$viewid);
 %     }else{
 %         $m->comp('/generic/no_search_results.html', search=>$search);
 %     }
