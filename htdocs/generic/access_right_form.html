@@ -37,11 +37,11 @@ my $title = ($table)? "$table " . $ui->table_descr_link($table, "[?]") : 'Add';
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 if ( $submit ){
     if ( !defined($access[0]) ){
-        $m->comp('error.mhtml', error=>"No Permissions were selected, please select one or more permissions to grant");
+        $m->comp('error.mhtml', error=>"No rights were selected, please select one or more rights to grant");
     }
 
     if( !$object_id[0] ){
-        $m->comp('error.mhtml', error=>"No objects were selected, please select objects to grant permissions on");        
+        $m->comp('error.mhtml', error=>"No objects were selected, please select objects to grant rights on");        
     }
 
     if( !$object_class ){
@@ -100,7 +100,7 @@ if( $id ) {
 <script language="javascript">
 <!--
 /* 
- * Set the permissions list based on the value of Object Class
+ * Set the rights list based on the value of Object Class
  * 
 */
 function setPerms(){
@@ -166,12 +166,12 @@ if ( $ARGS{person} ){
     push @field_headers, 'Name:';
     push @cell_data, ('<select name="id" id="id">'.
 		      '<option value="0" SELECTED>-- Select Type --</option>'.
-		      '</select>'.
-		      '<input type="hidden" name="subject_keywords" id="subject_keywords" value="Keywords" '.
+		      '</select><br>'.
+		      '<input type="hidden" name="keywords" id="keywords" value="Keywords" '.
 		      'onFocus="if (this.value == \'Keywords\') {this.value = \'\';} return true;">'.
 		      '<input type="hidden" name="button" id="button" value="Search" '.
 		      'onClick="jsrsSendquery(document.getElementById(\'table\').value, \'id\', '.
-		      'document.getElementById(\'subject_keywords\').value)">'
+		      'document.getElementById(\'keywords\').value)">'
     );
 }
 
@@ -210,13 +210,17 @@ if ( $object_id[0] ){
     push @cell_data,
     &{sub{
 	my $out;
-	$out .= "<select name=\"object_id\" id=\"object_id\" MULTIPLE><option value=\"0\">Select Class</option></select><br>";
-	$out .= "<input type=\"hidden\" name=\"keywords\" id=\"keywords\" value=\"Keywords\" onFocus=\"if (this.value == 'Keywords') {this.value = '';} return true;\">";
-	$out .= "<input type=\"hidden\" name=\"button\" id=\"button\" value=\"Search\" onClick=\"jsrsSendquery(document.getElementById('object_class').value, 'object_id', document.getElementById('keywords').value);\" >";
+	$out .= "<select name=\"object_id\" id=\"object_id\" MULTIPLE>";
+	$out .= "<option value=\"0\">Select Class</option></select><br>";
+	$out .= "<input type=\"hidden\" name=\"keywords\" id=\"keywords\" value=\"Keywords\ ";
+        $out .= "onFocus=\"if (this.value == 'Keywords') {this.value = '';} return true;\">";
+	$out .= "<input type=\"hidden\" name=\"button\" id=\"button\" value=\"Search\" ";
+	$out .= "onClick=\"jsrsSendquery(document.getElementById('object_class').value, ";
+	$out .= "'object_id', document.getElementById('keywords').value);\" >";
       }};
     
 }
-push @field_headers, 'Permissions:';
+push @field_headers, 'Rights:';
 my $txt = '<select id="access" name="access" MULTIPLE>';
 if ( $object_class ){
     # The js code will not work in this case, so we just generate the 
