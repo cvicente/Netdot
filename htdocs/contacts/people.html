@@ -223,7 +223,8 @@ if ( $submit_insert ){
 %     }elsif ( scalar @list == 1 ){
 %         my $viewid = $list[0]->id;
 %         my $table = $list[0]->short_class;
-%         $m->comp('/generic/view.html', table=>$table, id=>$viewid);
+%         my $comp  = ($table eq 'ContactList')? '/generic/contactlist.html' : '/generic/view.html';
+%         $m->comp($comp, table=>$table, id=>$viewid);
 %     }else{
 %         $m->comp('/generic/no_search_results.html', search=>$search);
 %     }

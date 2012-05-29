@@ -27,7 +27,7 @@ $newname    => undef
 <%init>
 my $DEBUG = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
-my $obj       = ContactList->retrieve($id);
+my $obj = ContactList->retrieve($id);
 
 # Check if user can view this object
 my $manager = $ui->get_permission_manager($r);
@@ -62,30 +62,28 @@ if ( $_action ){
 		}
 	    }
 	}
-	if ( $personstatus eq 'new' ){
-	    eval {
-		%ret = $ui->form_to_db(%pargs);
-		print 'form_to_db returned: <pre>', Dumper(%ret), '</pre><br>' if $DEBUG;    
-	    };
-	    if ( my $e = $@ ){
-		$m->comp('/generic/error.mhtml', error=>$e);
-	    }
-	}
-
-	# Now we add the Contact record
-	if ( $personstatus eq 'new' && %ret ){
-	    my $personid = (keys %{$ret{'Person'}{id}})[0];
-	    $cargs{'Contact__NEW__person'}      = $personid;
-	}
-	$cargs{'Contact__NEW__contactlist'} = $id;
+	# This should be atomic because inserting ContactList may fail,
+	# and we want to roll back creating the person if it does
 	eval {
-	    %ret = $ui->form_to_db(%cargs);
-	    print 'form_to_db returned: <pre>', Dumper(%ret), '</pre><br>' if $DEBUG;    
+	    Netdot::Model->do_transaction(sub{
+		if ( $personstatus eq 'new' ){
+		    %ret = $ui->form_to_db(%pargs);
+		    print 'form_to_db returned: <pre>', Dumper(%ret), '</pre><br>' if $DEBUG;    
+		}
+		
+		# Now we add the Contact record
+		if ( $personstatus eq 'new' && %ret ){
+		    my $personid = (keys %{$ret{'Person'}{id}})[0];
+		    $cargs{'Contact__NEW__person'}      = $personid;
+		}
+		$cargs{'Contact__NEW__contactlist'} = $id;
+		%ret = $ui->form_to_db(%cargs);
+		print 'form_to_db returned: <pre>', Dumper(%ret), '</pre><br>' if $DEBUG;    
+					  });
 	};
 	if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>$e);
 	}
-
     }elsif ( $_action eq 'delete_person' ){
 	$m->comp('.delete_person_confirmation', person_id=>$person_id, contactlist_id=>$id);
 	$m->abort;
