@@ -8,7 +8,7 @@ Supported arguments:
   table:      name of a table in the database
   object:     referece to a list of objects in that table for displaying in html
   sort:       column to sort by
-  page:       page to link to with results (default is view.html)
+  viewpage:   page to link to with results (default is view.html)
   withedit:   add checkboxes to allow user to edit or delete selected objects
   return_args: Caller arguments to pass to delete.html so user can return after deleting objects
 
@@ -24,7 +24,7 @@ Supported arguments:
 $table       => undef
 $object      => undef
 $sort        => undef
-$page        => undef
+$viewpage    => undef
 $withedit    => 0
 $per_page    => undef
 $offset      => 0
@@ -198,7 +198,7 @@ if ( defined($object) && scalar @$object ){
     $session->{objindex}    = \%objindex;
     $session->{table}       = $table;
     $session->{orderbrief}  = \@orderbrief;
-    $session->{page}        = $page;
+    $session->{viewpage}    = $viewpage;
     $session->{withedit}    = $withedit;
     $session->{caller_path} = $caller_path;
     $session->{total}       = $total;
@@ -216,8 +216,7 @@ if ( defined($object) && scalar @$object ){
     %objindex   = %{ $session->{objindex} };
     $table      = $session->{table};
     @orderbrief = @{ $session->{orderbrief} };
-    $page       = $session->{page};
-    print "<br>Page is now $page<br/>" if $DEBUG;
+    $viewpage   = $session->{viewpage};
     $withedit   = $session->{withedit};
     $total      = $session->{total};   
     $caller_path = $session->{caller_path};
@@ -233,15 +232,7 @@ if ( defined($object) && scalar @$object ){
 # Some tables have a specific view page. 
 # Point to those when appropriate
 #
-#I'm not sure why the first column of a sorted table of lists needs special treatment on how to get back, vs using meta data to get the table
-#it should link to like the other columns, if this page were only used for devices I would remove this check all together.  But its possible
-#this is being used somewhere else in the program.  I tried removing this check and clicked around, and everything seemed fine, but just in case,
-#we'll ignore it if DEVICE is set, since thats whats causing the bugs on the device page (with links not resolving correctly after a list has been
-#resorted.
-unless($page && $page ne "DEVICE"){
-    $page = $ui->table_view_page($table);
-}
-$page ||= 'view.html';
+$viewpage = $ui->table_view_page($table) || 'view.html';
 
 # Calculate last item to show
 $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
@@ -322,7 +313,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %                     my $lbl = $fo->get_label;
 %                     if( $first_column ) {
                           &nbsp;
-                          <a href="<% $page %>?table=<% $table %>&id=<% $o->id %>"><% $lbl %></a>
+                          <a href="<% $viewpage %>?table=<% $table %>&id=<% $o->id %>"><% $lbl %></a>
 %                     }else{
 %                         my $fviewpage = $ui->table_view_page($ftable) || 'view.html';
                           &nbsp;
@@ -338,7 +329,7 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %                if( $first_column ) {
 %                    my $val = $o->$c || 'n/a';
                      &nbsp;
-                     <a href="<% $page %>?table=<% $table %>&id=<% $o->id %>"><% $val %></a>
+                     <a href="<% $viewpage %>?table=<% $table %>&id=<% $o->id %>"><% $val %></a>
 %		 }else{
                      <% $o->$c %>
 %		 }
@@ -391,10 +382,10 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
       Results: [<% $offset+1 %>-<% $last_item %>] of <% $total %> 
 %     my $prev_offset = $offset - $per_page;
 %     if ( $session->{_session_id} && $prev_offset >= 0 ){
-          <a href="list.html?sid=<% $sid %>&osid=<% $osid %>&offset=<% $prev_offset %>&per_page=<% $per_page %>&sort=<% $sort %>&withedit=<% $withedit %>&page=<% $page %>">[<<] </a>
+          <a href="list.html?sid=<% $sid %>&osid=<% $osid %>&offset=<% $prev_offset %>&per_page=<% $per_page %>&sort=<% $sort %>&withedit=<% $withedit %>&viewpage=<% $viewpage %>">[<<] </a>
 %     }
 %     unless ( $last_item == $total ){
-          <a href="list.html?sid=<% $session->{_session_id} %>&osid=<% $osession->{_session_id} %>&offset=<% $last_item %>&per_page=<% $per_page %>&sort=<% $sort %>&withedit=<% $withedit %>&page=<% $page %>">[>>] </a>
+          <a href="list.html?sid=<% $session->{_session_id} %>&osid=<% $osession->{_session_id} %>&offset=<% $last_item %>&per_page=<% $per_page %>&sort=<% $sort %>&withedit=<% $withedit %>&viewpage=<% $viewpage %>">[>>] </a>
 %     }
 % }
 
