@@ -53,6 +53,7 @@ $template_zone_for_rev => undef
 $new_blocks_list   => undef
 $new_blocks_status => undef
 $tree_version      => undef
+$view              => 'Children'
 </%args>
 %
 %
@@ -112,7 +113,7 @@ if ( $id ){
 
 # By default, view object after any operation
 # ( some exceptions will override )
-my $view = 1;
+my $view_object = 1;
 
 unless ( $view_format =~ /^block|list|tree$/ ){
     $m->comp('/generic/error.mhtml', error => "Invalid view format: $view_format. Perhaps wrongly configured in etc/Site.conf?");
@@ -200,7 +201,7 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 
 	# Show parent block
         # reset all request variables to make this look like a view request
-        $view = 1;
+        $view_object = 1;
         $edit = 0;
         $id = $parent;
         if ( $id != 0 ){
@@ -477,7 +478,7 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 <%perl>
 
 # Do not continue with object display
-  $view = 0;
+  $view_object = 0;
 
 #######################################################################################
 # Confirm Delete
@@ -576,12 +577,13 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 #
 #######################################################################################
 
-if ( $id && $view ){
+if ( $id && $view_object ){
     if ( $edit ){	 
 </%perl>
 
     <form name="netdotform" action="ip.html" method="POST">
     <input type="hidden" name="id" value="<% $id %>">
+    <input type="hidden" name="view" value="<% $view %>">
 
 %   my $digest = $o->get_digest();
     <input type="hidden" name="state_digest" value="<% $digest %>">
@@ -593,29 +595,24 @@ if ( $id && $view ){
 %    }
 
 <%perl>
-
 my @line;
 if ( my @parents = $o->get_ancestors ){
     foreach my $par ( reverse @parents ){
     	push (@line, "<a href=\"ip.html?id=" . $par->id . "\">" . $par->get_label . "</a>");
     }
-    if( $view_format eq 'block' && !$o->is_address ) {  
-	push (@line, "<a href=\"ip.html?id=" . $o->id . "\">" . $o->get_label . "</a>");  
-    } else {  
-        push (@line, $o->get_label);  
-    }
+    push (@line, '<strong>'.$o->get_label.'</strong>');  
 }    
  
 </%perl>
 
- <div class="container">
+ <div class="containeroutside">
 
-    <div class="containerheadleft">
+    <div class="containerheadleftoutside">
       <a href="ip.html?_action=SHOW_ROOTS&rootversion=all">[*]</a>: 
 %     if ( @line ){
 %        print join ' : ', @line;
 %     }else{
-         <% $o->get_label %>
+         <strong><% $o->get_label %></strong>
 %     }
     </div>
 
@@ -626,7 +623,7 @@ if ( my @parents = $o->get_ancestors ){
 %#######################################################################################
 
 
-    <div class="containerheadright">
+    <div class="containerheadrightoutside">
 %	 if ($edit eq "ipinfo"){	 
 %            if ($added_ip) {
     	         <input type="submit" name="submit" value="cancel">
@@ -649,7 +646,7 @@ if ( my @parents = $o->get_ancestors ){
 %	 }
     </div>
 
-    <div class="containerbody">
+    <div class="containerbodyoutside">
 
 <%perl>
        my @field_headers;
@@ -709,7 +706,6 @@ if ( my @parents = $o->get_ancestors ){
                           width=>"2", headercolwidth=>"15%", datacolwidth=>"35%" &>
 
     </div>
-</div>
 
 %# Comments section
 <div class="container">
@@ -893,36 +889,33 @@ if ( $edit ){
 %     }
 <!-- End Display ARP -->
 
+</div>
 
 %} else {     
 %#######################################################################################
 %# View Block
 %#######################################################################################
 
-    <div class="containerheadright">
-%  if ($edit eq "blockinfo"){	 
-%        if ($added_block) {
+    <div class="containerheadrightoutside">
+%  if ( $edit eq "blockinfo" || $edit eq 'address_range' ){	 
+%        if ( $added_block ) {
     	    <input type="submit" name="submit" value="cancel">
 %           my @parents = $o->get_ancestors;
             <input type="hidden" name="parent" value="<% $parents[0] %>">
 %        } else {
     	    <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
 %        }
-    <input type="submit" name="submit" value="save">
-
-%  }elsif ( $edit ){
-    <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
-    <input type="submit" name="submit" value="save">
+         <input type="submit" name="submit" value="save">
 
 %  }else{
-    <a href="ip.html?id=<% $id %>">[refresh]</a>
+    <a href="ip.html?id=<% $id %>&view=<% $view %>">[refresh]</a>
 %      if ( $manager && $manager->can($user, "access_section", 'ip.html:edit_blockinfo') ){
 %           if ( $manager && $manager->can($user, 'access_admin_section', 'ip.html:edit_block') ){
 	        <a href="ip.html?id=<% $id %>&edit=blockinfo">[edit]</a>
 %           }
 %	    if ( $o->status->name eq 'Subnet' ){
 %               if ( $manager && $manager->can($user, 'edit', $o) ){
-	            <a href="ip.html?id=<% $id %>&edit=address_range">[range]</a>
+	            <a href="ip.html?id=<% $id %>&view=Children&edit=address_range">[range]</a>
 %               }
 %           }
 %           if ( $manager && $manager->can($user, 'access_admin_section', 'ip.html:delete_block') ){
@@ -931,6 +924,51 @@ if ( $edit ){
 %       }
 %  }
     </div>
+
+%#######################################################################
+%# Navigation Bar
+%#######################################################################
+
+    <div id="navbar">
+        <ul id="navigation">
+%         if( $view eq "Children" ) {
+              <li><span>Children</span></li>
+%         } else {
+            <li><a href="ip.html?id=<% $id %>&view=Children">Children</a></li>
+%         }
+%         if( $view eq "Sites" ) {
+              <li><span>Sites</span></li>
+%         } else {
+            <li><a href="ip.html?id=<% $id %>&view=Sites">Sites</a></li>
+%         }
+%         if( $view eq "Zones" ) {
+              <li><span>Zones</span></li>
+%         } else {
+            <li><a href="ip.html?id=<% $id %>&view=Zones">Zones</a></li>
+%         }
+%         if ( $o->status->name eq 'Subnet' ){
+%             if( $view eq "DHCP" ) {
+                  <li><span>DHCP</span></li>
+%             } else {
+                  <li><a href="ip.html?id=<% $id %>&view=DHCP">DHCP</a></li>
+%             }
+%         }
+%         if( $view eq "Rights" ) {
+              <li><span>Access Rights</span></li>
+%         } else {
+            <li><a href="ip.html?id=<% $id %>&view=Rights">Access Rights</a></li>
+%         }
+%         if( $view eq "Comments" ) {
+              <li><span>Comments</span></li>
+%         } else {
+            <li><a href="ip.html?id=<% $id %>&view=Comments">Comments</a></li>
+%         }
+        </ul>
+    </div>
+
+%#######################################################################
+%# Body
+%#######################################################################
 
     <div class="containerbody">
 
@@ -1271,11 +1309,15 @@ if ($o->status->name eq "Subnet") {
 
 % }
 
-    </div>
-</div>
+%     if ( $edit ){	 
+         </form>
+%     }
 
-%#################
+
+%################################################################
 %# Comments
+%################################################################
+% if ( $view eq 'Comments' ){
 <div class="container">
     <div class="containerheadleft">
         Comments
@@ -1286,7 +1328,7 @@ if ($o->status->name eq "Subnet") {
             <input type="submit" name="submit" value="save">
 %	}else{
 %           if ( $manager && $manager->can($user, "edit", $o) ){
-                <a href="ip.html?id=<% $id %>&edit=comments">[edit]</a>
+                <a href="ip.html?id=<% $id %>&view=Comments&edit=comments">[edit]</a>
 %           }else{
                 &nbsp;
 %	    }
@@ -1303,14 +1345,13 @@ print $tmp{value};
     </div>
 </div>
 
-% if ( $edit ){	 
-    </form>
 % }
+
 
 %################################################################
 %# DHCP Scopes
 %################################################################
-% if ( int($o->status) && $o->status->name eq 'Subnet' ){
+% if ( $view eq 'DHCP' ){
     <div class="container">
       <div class="containerheadleft">DHCP Scope</div>
 %   if ( my @scopes = $o->dhcp_scopes ){
@@ -1320,16 +1361,18 @@ print $tmp{value};
       </div>
 %   }else{
         <div class="containerheadright">
-%       if ( $manager && $manager->can($user, 'access_admin_section', 'ip.html:enable_dhcp') ){
-           <a href="ip.html?id=<% $id %>&edit=enable_dhcp">[enable]</a>
+%       if ( !($edit eq 'enable_dhcp') && 
+%	     $manager && $manager->can($user, 'access_admin_section', 'ip.html:enable_dhcp') ){
+           <a href="ip.html?id=<% $id %>&view=DHCP&edit=enable_dhcp">[enable]</a>
 %       }else{
             &nbsp;
 %       }
         </div>
 %   }
-% }
     </div>
+% }
 
+% if ( $view eq 'Sites' ){
 %################################################################
 %# Sites
 %################################################################
@@ -1341,16 +1384,20 @@ print $tmp{value};
 %      if ( $edit ne 'edit_sites' ){
 %          if ( $manager && $manager->can($user, 'edit', $o) ){
 %              if ( @ss ){
-                   <a href="ip.html?id=<% $o %>&edit=edit_sites">[edit]</a>
+                   <a href="ip.html?id=<% $o %>&view=Sites&edit=edit_sites">[edit]</a>
 %              }
                <a href="edit.html?table=SiteSubnet&subnet=<% $o %>">[add]</a>
 %          }
 %      }
        </div>
     <div class="containerbody">
-       <& /generic/sortresults.mhtml, object=>\@ss, withedit=>($edit eq 'edit_sites')? 1 : 0 &>
+       <& /generic/sortresults.mhtml, object=>\@ss, return_args=>"?id=$id&view=$view", withedit=>($edit eq 'edit_sites')? 1 : 0  &>
     </div>
   </div>
+
+% }
+
+% if ( $view eq 'Zones' ){
 
 %################################################################
 %# Forward Zones
@@ -1365,9 +1412,9 @@ print $tmp{value};
 %     if ( $edit ne 'edit_fzones' ){
 %         if ( $manager && $manager->can($user, 'edit', $o) ){
 %             if ( @sz ){
-                  <a href="ip.html?id=<% $o %>&edit=edit_fzones">[edit]</a>
+                  <a href="ip.html?id=<% $o %>&view=Zones&edit=edit_fzones">[edit]</a>
 %             }
-              <a href="ip.html?id=<% $o %>&_action=VIEW_ADD_FZONES">[add]</a>
+              <a href="ip.html?id=<% $o %>&view=Zones&_action=VIEW_ADD_FZONES">[add]</a>
 %	  }
 %     }
       </div>
@@ -1379,6 +1426,7 @@ print $tmp{value};
 	  <form name="netdotform" action="ip.html" method="POST">
 	    <input type="hidden" name="id" value="<% $o->id %>">
 	    <input type="hidden" name="_action" value="LINK_ZONES">
+	    <input type="hidden" name="view" value="Zones">
             Link this block with existing forward zones:
 	    <p><select name="link_zones" multiple="multiple">
             <option value=""> - select - </option>
@@ -1391,12 +1439,11 @@ print $tmp{value};
             <input type="submit" name="submit" value="save">
 	  </form>
 %     }else{
-          <& /generic/sortresults.mhtml, object=>\@sz, withedit=>($edit eq 'edit_fzones')? 1 : 0 &>
+          <& /generic/sortresults.mhtml, object=>\@sz, return_args=>"?id=$id&view=$view", withedit=>($edit eq 'edit_fzones')? 1 : 0 &>
 %     }
       </div>
       </div>
 % }
-
 
 %################################################################
 %# Reverse Zones
@@ -1418,9 +1465,9 @@ print $tmp{value};
 %     if ( $edit ne 'edit_fzones' ){
 %         if ( $manager && $manager->can($user, 'edit', $o) ){
 %             if ( %reverse_zones ){
-                  <a href="ip.html?id=<% $o %>&edit=edit_rzones">[edit]</a>
+                  <a href="ip.html?id=<% $o %>&view=Zones&edit=edit_rzones">[edit]</a>
 %             }
-              <a href="ip.html?id=<% $o %>&_action=VIEW_ADD_RZONES">[add]</a>
+              <a href="ip.html?id=<% $o %>&view=Zones&_action=VIEW_ADD_RZONES">[add]</a>
 %	  }
 %     }
       </div>
@@ -1430,6 +1477,7 @@ print $tmp{value};
 	  <form name="netdotform" action="ip.html" method="POST">
 	    <input type="hidden" name="id" value="<% $o->id %>">
 	    <input type="hidden" name="_action" value="ADD_REV_ZONE">
+	    <input type="hidden" name="view" value="Zones">
             Create reverse zones for this block (existing zones not included):
             <p><select name="new_rev_zones" multiple="multiple">
             <option value=""> - select - </option>
@@ -1450,16 +1498,18 @@ print $tmp{value};
 	  </form>
 %     }else{
 %         my @z = values %reverse_zones;
-          <& /generic/sortresults.mhtml, object=>\@z, withedit=>($edit eq 'edit_rzones')? 1 : 0 &>
+          <& /generic/sortresults.mhtml, object=>\@z, return_args=>"?id=$id&view=$view", withedit=>($edit eq 'edit_rzones')? 1 : 0 &>
 %     }
       </div>
       </div>
 % }
 
+% }
+
 %################################################################
 %# Access Rights
 %################################################################
-
+% if ( $view eq 'Rights' ){
 <%perl>
 my @arights = AccessRight->search(object_class=>'Ipblock', object_id=>"$o");
 my @urights  = map { $_->user_rights  } @arights;
@@ -1475,9 +1525,9 @@ my @all_rights = ( @urights, @grights);
 %     if ( $edit ne 'edit_rights' ){
 %         if ( $manager && $manager->can($user, 'edit', $o) ){
 %             if ( @all_rights ){
-                  <a href="ip.html?id=<% $o %>&edit=edit_rights">[edit]</a>
+                  <a href="ip.html?id=<% $o %>&view=Rights&edit=edit_rights">[edit]</a>
 %             }
-              <a href="ip.html?id=<% $o %>&_action=VIEW_ADD_RIGHTS">[add]</a>
+              <a href="ip.html?id=<% $o %>&view=Rights&_action=VIEW_ADD_RIGHTS">[add]</a>
 %	  }
 %     }
       </div>
@@ -1493,8 +1543,8 @@ if ( $_action eq 'VIEW_ADD_RIGHTS' ){
 	$m->comp('/generic/error.mhtml', error=>"You don't have permission to manage rights!");
     }
 }elsif ( $edit eq 'edit_rights' ){
-    $m->comp('/generic/sortresults.mhtml', object=>\@urights, withedit=>1, return_args=>"?id=$o");
-    $m->comp('/generic/sortresults.mhtml', object=>\@grights, withedit=>1, return_args=>"?id=$o");
+    $m->comp('/generic/sortresults.mhtml', object=>\@urights, withedit=>1, return_args=>"?id=$id&view=$view");
+    $m->comp('/generic/sortresults.mhtml', object=>\@grights, withedit=>1, return_args=>"?id=$id&view=$view");
 }elsif ( @all_rights ) {
     $m->comp('/management/list_rights.mhtml', rights=>\@all_rights, show_object=>0);
 }
@@ -1503,10 +1553,13 @@ if ( $_action eq 'VIEW_ADD_RIGHTS' ){
       </div>
     
 % }
+% }
+
 
 %################################################################
 %# Graphical Views
 %################################################################
+% if ( $view eq 'Children' && ($edit eq 'address_range' || !$edit) ){
 % if( $view_format eq 'block' ) {  
 %     if( $o->status->name eq "Subnet" ) {  
        <div class="container">  
@@ -1521,7 +1574,7 @@ if ( $_action eq 'VIEW_ADD_RIGHTS' ){
             <span class="ipaddr_static">Static</span>
             <span class="ipaddr_reserved">Reserved</span>
 			&nbsp;&nbsp;
-         	<a href="ip.html?id=<% $id %>&view_format=list">[List View]</a>
+         	<a href="ip.html?id=<% $id %>&view=Children&view_format=list">[List View]</a>
           </div>
           <div class="containerbody" id="ipaddresstable">  
           <& subnet.mhtml, network => $o &>  
@@ -1540,8 +1593,8 @@ if ( $_action eq 'VIEW_ADD_RIGHTS' ){
             <span class="ipaddr_static">Static</span>
             <span class="ipaddr_reserved">Reserved</span>
 			&nbsp;&nbsp;
-         	<a href="ip.html?id=<% $id %>&view_format=list">[List View]</a>
-		<a href="ip.html?id=<% $id %>&view_format=tree">[Tree View]</a>
+         	<a href="ip.html?id=<% $id %>&view=Children&view_format=list">[List View]</a>
+		<a href="ip.html?id=<% $id %>&view=Children&view_format=tree">[Tree View]</a>
           </div>
           <div class="containerbody" id="ipaddresstable">  
           <& container.mhtml, network => $o, rowsize => $rowsize, dividefreespace => $dividefreespace &>  
@@ -1562,10 +1615,10 @@ if ( $_action eq 'VIEW_ADD_RIGHTS' ){
 			&nbsp;&nbsp;
 %	        if ( $o->version == 4 ){
 %                   if ( $BLOCK_VIEW_MAX && ($o->prefix >= $BLOCK_VIEW_MAX) ){
-         	        <a href="ip.html?id=<% $id %>&view_format=block">[Block View]</a>
+         	        <a href="ip.html?id=<% $id %>&view=Children&view_format=block">[Block View]</a>
 %                   }
 %               }
-         	<a href="ip.html?id=<% $id %>&view_format=list">[List View]</a>
+         	<a href="ip.html?id=<% $id %>&view=Children&view_format=list">[List View]</a>
           </div>
           <div class="containerbody" id="ipaddresstable">  
           <& tree.mhtml, network => $o &>  
@@ -1597,24 +1650,25 @@ if ( $_action eq 'VIEW_ADD_RIGHTS' ){
 %	     if ( $edit_children ){
 	         <input type="hidden" name="id" value="<% $id %>">
 		 <input type="hidden" name="_action" value="UPDATE_CHILDREN">
+		 <input type="hidden" name="view" value="Children">
 		 <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
 		 <input type="submit" name="submit" value="save">
 %	      }else{
 %                 if ( @children && $manager && $manager->can($user, 'access_section', 'ip.html:edit_children') ){
 %                     if ( $manager && $manager->can($user, 'edit', $o) ){
-%		          print '<a href="ip.html?id='.$id.'&edit_children=1&view_format=list&sort=&ip_list_sort='.
-%                                $ip_list_sort.'">[edit]</a>&nbsp;';
+%		          print '<a href="ip.html?id='.$id.'&view=Children&edit_children=1&view_format=list'.
+%                               '&sort=&ip_list_sort='.$ip_list_sort.'">[edit]</a>&nbsp;';
 %                     }
 %                 }
 %                 if ( $o->version == 4 ) {
 %                     if ( $BLOCK_VIEW_MAX && ($o->prefix >= $BLOCK_VIEW_MAX) ){
-%                         print '<a href="ip.html?id='.$id.'&view_format=block">[Block View]</a>';
+%                         print '<a href="ip.html?id='.$id.'&view=Children&view_format=block">[Block View]</a>';
 %                     }
 %                 }elsif ( $o->version == 6 ){
                       &nbsp;
 %                 } 
 %                 if ( $o->status->name eq 'Container' ){
-                      <a href="ip.html?id=<% $id %>&view_format=tree">[Tree View]</a>
+                      <a href="ip.html?id=<% $id %>&view=Children&view_format=tree">[Tree View]</a>
 %                 }
 %             }
           </div>
@@ -1642,6 +1696,12 @@ if ( $_action eq 'VIEW_ADD_RIGHTS' ){
 % }
 
 % }
+
+% }
+</div>
+
+    </div>
+
 </div>
 
 
