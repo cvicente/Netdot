@@ -1,11 +1,9 @@
 <%doc>
-
 People
-
 </%doc>
 %
 <%attr>
-title        => 'People'
+title => 'People'
 </%attr>
 %
 %
@@ -17,10 +15,8 @@ title        => 'People'
 <%args>
 $search           => undef
 $search_people    => undef
-$search_clist     => undef
 $user             => $ui->get_current_user($r);
 $submit_person    => undef
-$submit_list      => undef
 $submit_insert    => undef
 $show_tasks       => undef
 $showheader       => 1
@@ -78,11 +74,6 @@ my $manager = $ui->get_permission_manager($r);
                 <label for="Find">Person:</label>
                 <input type="text" name="search_people" class="txt" value="<% $search_people %>"> 
                 <input name="submit_person" value="Find" class="btn" type="submit">
-                </p>
-                <p>
-                <label for="Find">Contact List:</label>
-                <input type="text" name="search_clist" class="txt" value="<% $search_clist %>"> 
-                <input name="submit_list" value="Find" class="btn" type="submit">
                 </p>
             </form>
         </fieldset>
@@ -180,11 +171,7 @@ my $manager = $ui->get_permission_manager($r);
 	}
 	@list = values %resultidx;
 
-    }elsif ( $submit_list && $search_clist ){
-	$search = $ui->rem_lt_sp($search_clist);
-	@list = ContactList->search_like(name=>$search);
-
-    }elsif ( $submit_person || $submit_list ) {
+    }elsif ( $submit_person ) {
 	$m->comp('/generic/no_search_criteria.html');
     }
 
@@ -222,9 +209,7 @@ if ( $submit_insert ){
        </div>
 %     }elsif ( scalar @list == 1 ){
 %         my $viewid = $list[0]->id;
-%         my $table = $list[0]->short_class;
-%         my $comp  = ($table eq 'ContactList')? '/generic/contactlist.html' : '/generic/view.html';
-%         $m->comp($comp, table=>$table, id=>$viewid);
+%         $m->comp('/generic/view.html', table=>'Person', id=>$viewid);
 %     }else{
 %         $m->comp('/generic/no_search_results.html', search=>$search);
 %     }

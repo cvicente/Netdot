@@ -1,0 +1,165 @@
+<%doc>
+Contact Lists
+</%doc>
+%
+<%attr>
+title  => 'Contact Lists'
+</%attr>
+%
+%
+%#######################################################################
+%#
+%# Args section
+%#
+%#######################################################################
+<%args>
+$search           => undef
+$search_clist     => undef
+$user             => $ui->get_current_user($r);
+$submit_list      => undef
+$submit_insert    => undef
+$show_tasks       => undef
+$showheader       => 1
+$_action          => undef
+$view             => 'search'
+</%args>
+%
+%
+%
+%#######################################################################
+%# INIT section
+%#######################################################################
+%
+<%init>
+my $DEBUG = 0;
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+
+$show_tasks = $show_tasks || $user->getAttribute("SHOW_TASKS");
+if ( $show_tasks eq "" ) {
+    $user->setAttribute($r, "SHOW_TASKS", "show");
+    $show_tasks = "show";
+}
+*print_showtaskslink = $m->comp('SELF:.sub_print_showtaskslink'); 
+my $hideheader = 'style="display:none"' if ( !$showheader );
+
+my @list;
+my $manager = $ui->get_permission_manager($r);
+my $id;
+</%init>
+
+<div id="sectiontools" <% $hideheader %>>
+  <div class="container">
+    <div class="containerheadleft">
+        Contacts Tasks
+    </div>
+    <div class="containerheadright">
+%   if ( $manager && $manager->can($user, 'access_admin_section', 'clists.html:new') ){
+%       if ( $view eq 'search' ){ 
+	    <a href="index.html?page=CLISTS&view=new">[new]</a>
+%       }elsif ( $view eq 'new' ){
+            <a href="index.html?page=CLISTS&view=search">[search]</a>
+%       }
+%   }
+%   print_showtaskslink($show_tasks);
+    </div>
+    <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
+        <table><tr><td>
+%   if ( $view eq 'search' ){
+        <fieldset class="medium">
+            <legend>Search</legend>
+            <form action="clists.html" method="POST">
+                <p>
+                <label for="Find">Contact List:</label>
+                <input type="text" name="search_clist" class="txt" value="<% $search_clist %>"> 
+                <input name="submit_list" value="Find" class="btn" type="submit">
+                </p>
+            </form>
+        </fieldset>
+%    }elsif ( $view eq 'new' ){
+        <fieldset class="medium">
+            <legend>Add a New Contact List</legend>
+            <form action="clists.html" method="POST">
+                <p>
+                <label for="name">Name<font color="red">*</font>:</label>
+%                   print $ui->form_field(table=>"ContactList", column=>"name", edit=>1, htmlExtra=>'class="txt"', returnValOnly=>1, no_help=>1);
+                </p>
+                <p>
+                <label for="comments">Comments<font color="red">*</font>:</label>
+%                   print $ui->form_field(table=>"ContactList", column=>"info", edit=>1, returnValOnly=>1, no_help=>1);
+                </p>
+                <p>
+                <p>
+                <label for="new">&nbsp;</label>
+                <input name="submit_insert" value="Add List" class="btn" type="submit">
+                </p>
+		<p>(<font color="red">*</font>) Field is required<br>
+            </form>
+        </fieldset>
+%     }
+        </td></tr></table>
+    </div> <!-- close containerbody -->
+  </div> <!-- close container -->
+</div> <!-- close sectiontools -->
+
+
+
+
+<%perl>
+#######################################################################################
+# Search
+#
+#######################################################################################
+
+    # Remove trailing and leading spaces
+if ( $submit_list && $search_clist ){
+    $search = $ui->rem_lt_sp($search_clist);
+    @list = ContactList->search_like(name=>$search);
+    
+}elsif ( $submit_list ) {
+    $m->comp('/generic/no_search_criteria.html');
+}
+
+#######################################################################################
+# Add List
+#######################################################################################
+if ( $submit_insert ){
+    my %ret;
+    eval {
+	%ret = $ui->form_to_db(%ARGS);
+	print 'form_to_db returned: <pre>', Dumper(%ret), '</pre><br>' if $DEBUG;
+    };
+    if ( my $e = $@ ) {
+	$m->comp('/generic/error.mhtml', error=>$e);
+    }
+    
+    if ( %ret ){
+	$id = (keys %{$ret{'ContactList'}{id}})[0];
+	$_action = "VIEW";
+    }
+}
+
+</%perl>
+
+% if ( $search ){
+%     if ( scalar @list > 1 ){
+	 <div class="container">
+           <div class="containerhead">
+              Query <em><% $search %></em> returned: <% scalar(@list) %> matches
+           </div>
+           <div class="containerbody">
+               <& /generic/sortresults.mhtml, object=>\@list, page=>'view.html', withedit=>0  &>
+          </div>
+       </div>
+%     }elsif ( scalar @list == 1 ){
+%         my $viewid = $list[0]->id;
+%         $m->comp('/generic/contactlist.html', table=>'ContactList', id=>$viewid);
+%     }else{
+%         $m->comp('/generic/no_search_results.html', search=>$search);
+%     }
+
+% }
+
+
+% if ( $_action eq "VIEW" && $id  ){
+%     $m->comp('/generic/view.html', table=>"ContactList", id=>$id);
+% }

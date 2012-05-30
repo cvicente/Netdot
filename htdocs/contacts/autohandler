@@ -1,7 +1,5 @@
 <%doc>
-
  Contacts Management
-
 </%doc>
 
 <%args>
@@ -23,13 +21,13 @@ my $SECTION = "Contacts";
 </%shared>
 
 <%init>
-
 my $DEBUG = 0;
+my $manager = $ui->get_permission_manager($r);
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+print "Request component name: ", $m->request_comp->name if $DEBUG;
 
 my $page;
 
-my $manager = $ui->get_permission_manager($r);
 if ( $manager && $manager->can($user, "access_section", 'contacts') ){
 
     my $caller_args = $m->caller_args(-1);
@@ -57,6 +55,8 @@ if ( $manager && $manager->can($user, "access_section", 'contacts') ){
 	$m->comp('entities.html', %ARGS);
     }elsif ( ($page eq "PEOPLE" || $page eq "") && $m->request_comp->name ne "people.html" ) {
 	$m->comp('people.html', %ARGS);
+    }elsif ( ($page eq "CLISTS" || $page eq "") && $m->request_comp->name ne "clists.html" ) {
+	$m->comp('clists.html', showheader=>$showheader);
     }
 }
 </%init>
@@ -86,6 +86,7 @@ if ( my $next = $m->fetch_next ){
 	    sub_sections => [
 		{ section => 'PEOPLE',   title => 'People'  },
 		{ section => 'ENTITIES', title => 'Entities'},
+		{ section => 'CLISTS',   title => 'Contact Lists'},
 	    ]
         };
     </%init>

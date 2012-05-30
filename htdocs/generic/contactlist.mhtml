@@ -43,9 +43,6 @@ if ( $manager && $manager->can($user, "access_section", 'contactlist.mhtml:new_b
 % if ( ! $show_buttons ) {
     &nbsp;
 % }else{
-%         if ( $manager && $manager->can($user, "access_admin_section", 'contactlist.mhtml:new_list') ){
-              <a href="edit.html?table=ContactList">[new list]</a>
-%         }
 %         if ( $manager && $manager->can($user, "edit", $obj) ){
               <a href="contactlist.html?id=<% $id %>&edit=newcontact">[new contact]</a>
               <a href="contactlist.html?id=<% $id %>&edit=editname">[edit name]</a>
@@ -140,7 +137,6 @@ $ui->add_to_fields(table=>'Contact', edit=>$edit, fields=>['contacttype', 'notif
                </div>
             </div>
           </div>
-        </div>
       </form>
 % }
 
@@ -153,14 +149,12 @@ $ui->add_to_fields(table=>'Contact', edit=>$edit, fields=>['contacttype', 'notif
 %     }
 %     my $editct = ($edit eq 'contact' && $contact_id eq $role->id)? 1 : 0;
 %     next if ( $edit && !$editct );
-
-         <div class="containerbodyoutside">
+         <div class="containerbody">
              <div class="container">
                  <div class="containerheadleft">
 %		     my $lid = $role->id.'_link';
 %                    my $bid = $role->id.'_buttons';
 %                    my $display = $editct ? 'block' : 'none';
-%                    my $button = $editct ? '-' : '+';
   		     <a id="<% $lid %>" href="javascript:toggleContact(<% $role->id %>);">[+]</a>&nbsp;
 		     <a href="view.html?table=Person&id=<% $person->id %>"><% $person->get_label %></a>
                  </div>
@@ -178,16 +172,17 @@ $ui->add_to_fields(table=>'Contact', edit=>$edit, fields=>['contacttype', 'notif
                         &nbsp;
 %                    }
 		 </div>
-                 <div class="containerbodyoutside" id="<% $role->id %>" style="display:<% $display %>">
+                 <div class="containerbody" id="<% $role->id %>" style="display:<% $display %>">
 
-%     $ui->add_to_fields(o=>$role, edit=>$editct, fields=>['contacttype', 'notify_email', 'notify_pager', 'notify_voice', 'escalation_level'], 
-%	                 field_headers=>\@headers, cell_data=>\@data, shortFieldName=>0, new_button=>$new_button,
-%		         linkpages=>['view.html','view.html','view.html', 'view.html']);
+%                $ui->add_to_fields(o=>$role, edit=>$editct, fields=>['contacttype', 'notify_email', 'notify_pager', 
+%                                   'notify_voice', 'escalation_level'], 
+%	                            field_headers=>\@headers, cell_data=>\@data, shortFieldName=>0, new_button=>$new_button,
+%		                    linkpages=>['view.html','view.html','view.html', 'view.html']);
 
-          <& /generic/attribute_table.mhtml, field_headers=>\@headers, data=>\@data, 
-                                             width=>"2", headercolwidth=>"15%", datacolwidth=>"35%" &>
+                 <& /generic/attribute_table.mhtml, field_headers=>\@headers, data=>\@data, 
+                                                    width=>"2", headercolwidth=>"15%", datacolwidth=>"35%" &>
 
-          <& form.mhtml, table=>'Person', id=>$person->id, edit=>$editct, short_field_names=>0 &>
+                 <& form.mhtml, table=>'Person', id=>$person->id, edit=>$editct, short_field_names=>0 &>
                  </div>
               </div>
            </div>
