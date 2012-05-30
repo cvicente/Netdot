@@ -37,9 +37,9 @@ foreach my $right (  @$rights ){
 	$name = $person->get_label;
 	$r{$name}{person} = $person;
     }else{
-	my $group = $right->contactlist;
-	$name = $group->get_label;
-	$r{$name}{group} = $group;
+	my $contactlist = $right->contactlist;
+	$name = $contactlist->get_label;
+	$r{$name}{contactlist} = $contactlist;
     }
     $r{$name}{type} = $type;
     $r{$name}{rights}{$ar->access} = $ar;
@@ -54,7 +54,7 @@ foreach my $right (  @$rights ){
 foreach my $name ( sort keys %r ){
     my @row;
     push @row, $r{$name}{type};
-    my $subject = $r{$name}{person} || $r{$name}{group};
+    my $subject = $r{$name}{person} || $r{$name}{contactlist};
     push @row, sprintf('<a href="view.html?table=%s&id=%d">%s</a>', 
 		       $subject->short_class, $subject->id, $name);
     if ( $show_object ){
