@@ -54,6 +54,8 @@ $new_blocks_list   => undef
 $new_blocks_status => undef
 $tree_version      => undef
 $view              => 'Children'
+$add_access_type   => undef
+$add_access_id     => undef
 </%args>
 %
 %
@@ -963,6 +965,11 @@ if ( $edit ){
 %         } else {
             <li><a href="ip.html?id=<% $id %>&view=Comments">Comments</a></li>
 %         }
+%         if( $view eq "All" ) {
+              <li><span>All</span></li>
+%         } else {
+            <li><a href="ip.html?id=<% $id %>&view=All">All</a></li>
+%         }
         </ul>
     </div>
 
@@ -1317,7 +1324,7 @@ if ($o->status->name eq "Subnet") {
 %################################################################
 %# Comments
 %################################################################
-% if ( $view eq 'Comments' ){
+% if ( $view eq 'Comments' || $view eq 'All' ){
 <div class="container">
     <div class="containerheadleft">
         Comments
@@ -1351,7 +1358,7 @@ print $tmp{value};
 %################################################################
 %# DHCP Scopes
 %################################################################
-% if ( $view eq 'DHCP' ){
+% if ( $view eq 'DHCP' || $view eq 'All' ){
     <div class="container">
       <div class="containerheadleft">DHCP Scope</div>
 %   if ( my @scopes = $o->dhcp_scopes ){
@@ -1372,7 +1379,7 @@ print $tmp{value};
     </div>
 % }
 
-% if ( $view eq 'Sites' ){
+% if ( $view eq 'Sites' || $view eq 'All'){
 %################################################################
 %# Sites
 %################################################################
@@ -1397,7 +1404,7 @@ print $tmp{value};
 
 % }
 
-% if ( $view eq 'Zones' ){
+% if ( $view eq 'Zones' || $view eq 'All' ){
 
 %################################################################
 %# Forward Zones
@@ -1509,7 +1516,7 @@ print $tmp{value};
 %################################################################
 %# Access Rights
 %################################################################
-% if ( $view eq 'Rights' ){
+% if ( $view eq 'Rights' || $view eq 'All' ){
 <%perl>
 my @arights = AccessRight->search(object_class=>'Ipblock', object_id=>"$o");
 my @urights  = map { $_->user_rights  } @arights;
@@ -1536,9 +1543,13 @@ my @all_rights = ( @urights, @grights);
 if ( $_action eq 'VIEW_ADD_RIGHTS' ){
     my $user_type = $user->getAttribute('USER_TYPE');
     if ( $user_type eq "Admin" ) {
-	$m->comp('/generic/access_right_form.html', showheader=>1, 
-		 object_class=>'Ipblock', object_id=>$o->id, 
-		 return_comp=>$m->current_comp->path, return_id=>$o->id);
+	my %ar = (showheader=>1, 
+		  object_class=>'Ipblock', object_id=>$o->id, 
+		  return_comp=>$m->current_comp->path, return_id=>$o->id);
+	if ( $add_access_type && $add_access_id ){
+	    $ar{$add_access_type} = $add_access_id;
+	}
+	$m->comp('/generic/access_right_form.html', %ar);
     }else {
 	$m->comp('/generic/error.mhtml', error=>"You don't have permission to manage rights!");
     }
@@ -1546,7 +1557,8 @@ if ( $_action eq 'VIEW_ADD_RIGHTS' ){
     $m->comp('/generic/sortresults.mhtml', object=>\@urights, withedit=>1, return_args=>"?id=$id&view=$view");
     $m->comp('/generic/sortresults.mhtml', object=>\@grights, withedit=>1, return_args=>"?id=$id&view=$view");
 }elsif ( @all_rights ) {
-    $m->comp('/management/list_rights.mhtml', rights=>\@all_rights, show_object=>0);
+    $m->comp('/management/list_rights.mhtml', rights=>\@all_rights, show_object=>0, 
+	     add=>"ip.html?id=$id&view=Rights&_action=VIEW_ADD_RIGHTS&add_access_type=SUBJECT&add_access_id=ID");
 }
 </%perl>
       </div>
@@ -1559,7 +1571,7 @@ if ( $_action eq 'VIEW_ADD_RIGHTS' ){
 %################################################################
 %# Graphical Views
 %################################################################
-% if ( $view eq 'Children' && ($edit eq 'address_range' || !$edit) ){
+% if ( ($view eq 'Children' || $view eq 'All') && ($edit eq 'address_range' || !$edit) ){
 % if( $view_format eq 'block' ) {  
 %     if( $o->status->name eq "Subnet" ) {  
        <div class="container">  

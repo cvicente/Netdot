@@ -7,6 +7,11 @@
 $rights            # Required. Array ref of UserRight and/or GroupRight objects
 $show_object => 1  # Optional. Determines if the object to which rights are assigned
                    # should be shown in the list
+$add => undef      # Show [add] button to add rights to each user or list. The value
+                   # is a URL containing caller arguments, in which the strings 
+                   # SUBJECT and ID are replaced with person/contaclist id, which
+                   # are then good to pass to access_right_form.html
+
 </%args>
 
 <%init>
@@ -15,6 +20,7 @@ push @headers, 'Type';
 push @headers, 'Name';
 push @headers, 'Object' if $show_object;
 push @headers, 'Rights';
+push @headers, 'Actions' if $add;
 
 my %anames = $ui->get_access_names();
 </%init>
@@ -23,7 +29,7 @@ my %anames = $ui->get_access_names();
 my %r;
 foreach my $right (  @$rights ){
     my $class = ref($right);
-    my $type = ($class =~ /User/)? 'User' : 'Group';
+    my $type = ($class =~ /User/o)? 'User' : 'Group';
     my $ar = $right->accessright;
     my $name;
     if ( $type eq 'User' ){
@@ -57,6 +63,14 @@ foreach my $name ( sort keys %r ){
 			   $o->short_class, $o->id, $o->get_label);
     }
     push @row, join(', ', map { $anames{$_} } sort keys %{$r{$name}{rights}});
+    if ( $add ){
+	my $subject = ($r{$name}{type} eq 'User')? 'person' : 'contactlist';
+	my $id = $r{$name}{$subject}->id;
+	$add =~ s/SUBJECT/$subject/;
+	$add =~ s/ID/$id/;
+	my $t = sprintf('<a href="%s">%s</a>', $add, '[add]');
+	push @row, $t ;
+    }
     push @rows, \@row;
 }
 
