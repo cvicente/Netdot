@@ -56,7 +56,9 @@ if ( $manager && $manager->can($user, "access_section", 'contacts') ){
     }elsif ( ($page eq "PEOPLE" || $page eq "") && $m->request_comp->name ne "people.html" ) {
 	$m->comp('people.html', %ARGS);
     }elsif ( ($page eq "CLISTS" || $page eq "") && $m->request_comp->name ne "clists.html" ) {
-	$m->comp('clists.html', showheader=>$showheader);
+	my %args = (showheader=>$showheader);
+	$args{view} = $ARGS{view} if defined $ARGS{view};
+	$m->comp('clists.html', %args);
     }
 }
 </%init>
