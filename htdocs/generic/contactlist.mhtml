@@ -37,12 +37,13 @@ if ( $manager && $manager->can($user, "access_section", 'contactlist.mhtml:new_b
         <input type="hidden" name="id" value="<% $id %>">
 % }
 
-<div class="container">
+<div class="container" id="<% $obj->id %>_list">
     <div class="containerheadleftoutside"><strong><a href="contactlist.html?id=<% $obj->id %>"><% $obj->get_label %></a></strong></div>
     <div class="containerheadrightoutside">
 % if ( ! $show_buttons ) {
     &nbsp;
 % }else{
+          <a href="javascript:toggleAllContacts('<% $obj->id %>_list', 1);" id="<% $obj->id %>_list_toggleAll">[show all]</a>
 %         if ( $manager && $manager->can($user, "edit", $obj) ){
               <a href="contactlist.html?id=<% $id %>&edit=newcontact">[new contact]</a>
               <a href="contactlist.html?id=<% $id %>&edit=editname">[edit name]</a>
@@ -172,7 +173,7 @@ $ui->add_to_fields(table=>'Contact', edit=>$edit, fields=>['contacttype', 'notif
                         &nbsp;
 %                    }
 		 </div>
-                 <div class="containerbody" id="<% $role->id %>" style="display:<% $display %>">
+                 <div class="containerbody contact" id="<% $role->id %>" style="display:<% $display %>">
 
 %                $ui->add_to_fields(o=>$role, edit=>$editct, fields=>['contacttype', 'notify_email', 'notify_pager', 
 %                                   'notify_voice', 'escalation_level'], 
