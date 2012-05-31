@@ -115,9 +115,15 @@ sub get_name_from_interface {
     }elsif ( $name =~ s/:(\d+)$// ){
 	$name = $1.'.'.$name;
     }
-    $name =~ s/\/|_|\s+/-/g;
-    $name =~ s/\'//g;
     $name = lc( $name );
+    # Remove quotes
+    $name =~ s/\'//g;
+    # Substitute invalid DNS chars with dashes
+    $name =~ s/[^a-z0-9\.]/-/og;
+    # Only one dash "-" in a row
+    $name =~ s/[-]+/-/og;
+    # Remove dashes from start and end
+    $name =~ s/^-+|-+$//og;
     
     # Append device name
     # Remove any possible prefixes added
