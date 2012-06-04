@@ -1754,7 +1754,7 @@ sub build_device_topology_graph {
     }
 
     sub dfs { # DEPTH FIRST SEARCH - recursive
-        my ($g, $root, $device, $hopup, $hopdown, $prev_dir, $seen, $vlans, 
+        my ($g, $spp, $root, $device, $hopup, $hopdown, $prev_dir, $seen, $vlans, 
 	    $show_vlans, $show_names, $view, $specific_vlan) = @_;
         return if ($hopup == 0 && $prev_dir eq "up");
         return if ($hopdown == 0 && $prev_dir eq "down");
@@ -1770,28 +1770,17 @@ sub build_device_topology_graph {
 	    my $name          = ($show_names ? $iface->name :    $iface->number)    || $iface->number;
 	    my $neighbor_name = ($show_names ? $neighbor->name : $neighbor->number) || $neighbor->number;
 	    
-            my $nd = $neighbor->device;
-	    
-            my %seen = {};
-            my $dev_dist = $self->_dist_to_root(\%seen, $root, $device->id, 0);
-            %seen = {};
-            my $nd_dist = $self->_dist_to_root(\%seen, $root, $nd->id, 0);
-	    
-            # this figures which is the child and which is the parent
-            if ($dev_dist < $nd_dist){
-                $dir = "down";      
-            } elsif ($dev_dist> $nd_dist) {
-                $dir = "up";
-            } else {
-                $dir = "level";
-            }
-            next if ($dir ne $prev_dir && $prev_dir ne "undef");
+            my $nd = $neighbor->device || next;
 
-            unless (scalar($nd)) {
-                $logger->debug("No device found for neighbor $neighbor");
-                next;
-            }
-
+	    if ( exists($spp->{$device->id}->{$nd->id}) ){
+		# Neighbor is closer to root
+		$dir = "up";
+	    }elsif ( exists($spp->{$nd->id}->{$device->id}) ){
+		# The opposite
+		$dir = "down";
+	    }else{
+		$dir = "level";
+	    }
 	    my $add_node = 0;
 
             # If we haven't seen this edge before, add it to the graph
@@ -1864,12 +1853,11 @@ sub build_device_topology_graph {
             # If we haven't recursed across this edge before, then do so now.
 	    if ( $cont == 1 ) {
                 if ($dir eq 'up') {
-                    &dfs($g, $root, $nd, $hopup-1, $hopdown, $dir, $seen, $vlans, $show_vlans, $show_names, $view, $specific_vlan);
+                    &dfs($g, $spp, $root, $nd, $hopup-1, $hopdown, $dir, $seen, $vlans, $show_vlans, $show_names, $view, $specific_vlan);
                 } elsif ($dir eq 'down') {
-                    &dfs($g, $root, $nd, $hopup, $hopdown-1, $dir, $seen, $vlans, $show_vlans, $show_names, $view, $specific_vlan);
+                    &dfs($g, $spp, $root, $nd, $hopup, $hopdown-1, $dir, $seen, $vlans, $show_vlans, $show_names, $view, $specific_vlan);
                 } else {
-                    &dfs($g, $root, $nd, $hopup-1, $hopdown-1, $seen, $vlans, $show_vlans, $show_names, $view, $specific_vlan);
-
+                    &dfs($g, $spp, $root, $nd, $hopup-1, $hopdown-1, $dir, $seen, $vlans, $show_vlans, $show_names, $view, $specific_vlan);
                 }
 	    }
         }
@@ -1882,7 +1870,10 @@ sub build_device_topology_graph {
 
     # Actually do the searching
     my $g = GraphViz->new(%args);
-    
+
+    # Shortest_path_parents graph
+    my $spp = Device->shortest_path_parents($root);
+  
     my $start = Device->retrieve($id);
     &add_topo_node(graph       => $g,
 		   device      => $start, 
@@ -1896,10 +1887,10 @@ sub build_device_topology_graph {
     $seen->{'NODE'}{$start->id} = 1;
 
     if ( $depth_up && $depth_down ) {
-	&dfs($g, $root, $start, $depth_up, $depth_down, "undef", $seen, $vlans, 
+	&dfs($g, $spp, $root, $start, $depth_up, $depth_down, "undef", $seen, $vlans, 
 	     $show_vlans, $show_names, $view, $specific_vlan);
     } else {
-	&dfs($g, $root, $start, $depth, $depth, "undef", $seen, $vlans, 
+	&dfs($g, $spp, $root, $start, $depth, $depth, "undef", $seen, $vlans, 
 	     $show_vlans, $show_names, $view, $specific_vlan);
     }
 
@@ -2451,29 +2442,6 @@ sub localize_newlines {
     1;
 }
 
-############################################################################
-sub _dist_to_root {
-    my ($self, $seen, $root, $n, $d) = @_;
-    return $d if ($n == $root);
-
-    $seen->{$n} = 1;
-
-    my $g = Device->shortest_path_parents($n);
-
-    foreach my $f (keys %$g) {
-        foreach my $s (keys %{$g->{$f}}) {
-            if ($n == $s) {
-                if ($seen->{$f} == 0 ) {
-                    $seen->{$f} = 1;
-                    my $t = $self->_dist_to_root($seen, $root, $f, $d+1);
-                    return $t if ($t > 0);
-                }
-            }
-        }
-    }
-
-    return 0;
-}
 
 =head1 AUTHORS
 
