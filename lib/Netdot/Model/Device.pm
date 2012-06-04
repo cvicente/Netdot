@@ -1721,7 +1721,13 @@ sub shortest_path_parents {
 
     $class->throw_fatal("Missing required arguments") unless ( $s );
 
-    my $graph = $class->get_device_graph();
+    # This is can be a heavy query, and we may need to call this
+    # method often, so use caching
+    my $graph;
+    unless ( $graph = $class->cache('device_graph') ){
+	$graph = $class->get_device_graph();
+	$class->cache('device_graph', $graph);
+    }
 
     $logger->debug("Netdot::Device::shortest_path_parents: Determining all shortest paths to Device id $s");
 
@@ -1741,18 +1747,23 @@ sub shortest_path_parents {
     $dist{$s} = 0;
     
     # Get path costs
-    my $dbh = $class->db_Main;
-    my $q = $dbh->selectall_arrayref("SELECT device.id, device.monitoring_path_cost 
-                                      FROM   device
-                                      WHERE  device.monitoring_path_cost > 1
-                                              ");
+    # Use caching too
+    my $q;
+    unless ( $q = $class->cache('device_path_costs') ){
+	my $dbh = $class->db_Main;
+	$q = $dbh->selectall_arrayref("
+             SELECT device.id, device.monitoring_path_cost 
+             FROM   device
+             WHERE  device.monitoring_path_cost > 1"
+	    );
+	$class->cache('device_path_costs', $q);
+    }
     foreach my $row ( @$q ){
         my ($id, $cost) = @$row;
         $cost{$id} = $cost;
     }
 
     while ( @q ) {
-
 	# sort unsolved by distance from root
 	@q = sort { $dist{$a} <=> $dist{$b} } @q;
 

@@ -18,9 +18,6 @@ my %types = (
     'Smokeping' => 'Netdot::Exporter::Smokeping',
     );
 
-my %_class_data;
-my $_cache_timeout = 60;  # Seconds	
-
 =head1 NAME
 
 Netdot::Exporter - Base class and object factory for Netdot exports
@@ -77,7 +74,7 @@ sub new{
 sub get_device_info {
     my ($self) = @_;
     
-    return $self->_cache('device_info')	if $self->_cache('device_info');
+    return $self->cache('exporter_device_info')	if $self->cache('exporter_device_info');
 
     my %device_info;
     $logger->debug("Netdot::Exporter::get_device_info: querying database");
@@ -125,7 +122,7 @@ sub get_device_info {
 	$device_info{$devid}{interface}{$intid}{contactlist} = $intcl;
     }
 
-    return $self->_cache('device_info', \%device_info);
+    return $self->cache('exporter_device_info', \%device_info);
 }
 
 ########################################################################
@@ -268,46 +265,6 @@ sub in_downtime{
     }
     return 0;
 }
-
-########################################################################
-# Private methods
-########################################################################
-
-############################################################################
-# _cache - Get or set class data cache
-#
-#  Values time out after $_cache_timeout seconds
-#
-#  Arguments:
-#    cache key
-#    cacje data (optional)
-#  Returns:
-#    cache data or undef if timed out
-#  Examples:
-#    my $graph = $self->_cache('graph');
-#    $self->_cache('graph', $data);
-#
-#
-sub _cache {
-    my ($self, $key, $data) = @_;
-
-    $self->throw_fatal("Missing required argument: key")
-	unless $key;
-
-    my $timekey = $key."_time";
-
-    if ( defined $data ){
-	$_class_data{$key}     = $data;
-	$_class_data{$timekey} = time;
-    }
-    if ( defined $_class_data{$timekey} && 
-	 (time - $_class_data{$timekey} > $_cache_timeout) ){
-	return;
-    }else{
-	return $_class_data{$key};
-    }
-}
-
 
 =head1 AUTHORS
 

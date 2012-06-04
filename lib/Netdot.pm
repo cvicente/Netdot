@@ -28,6 +28,9 @@ $class->{_meta}   = Netdot::Meta->new();
 $class->{_log}    = Netdot::Util::Log->new(config => $class->{_config}->get('LOG_OPTIONS'));
 $class->{_dns}    = Netdot::Util::DNS->new();
 
+# Memory cache data
+$class->{_cache_data} = {};
+
 # Be sure to return 1
 1;
 
@@ -234,6 +237,43 @@ sub rem_lt_sp {
     $str =~ s/\s+$//o;
     return $str;
 }
+
+############################################################################
+# cache - Get or set memory data cache
+#
+#  Values time out after $_cache_timeout seconds
+#
+#  Arguments:
+#    cache key    unique key to identify the data
+#    cache data   Required for set
+#    timeout      defaults to 60 seconds
+#  Returns:
+#    cache data or undef if timed out
+#  Examples:
+#    my $graph = $self->_cache('graph');
+#    $self->_cache('graph', $data);
+#
+#
+sub cache {
+    my ($self, $key, $data, $timeout) = @_;
+
+    $self->throw_fatal("Missing required argument: key")
+	unless $key;
+
+    $timeout ||= 60;
+
+    if ( defined $data ){
+	$class->{_cache_data}{$key}{data} = $data;
+	$class->{_cache_data}{$key}{time} = time;
+    }
+    if ( exists $class->{_cache_data}{$key}{time} && 
+	 (time - $class->{_cache_data}{$key}{time} > $timeout) ){
+	return;
+    }else{
+	return $class->{_cache_data}{$key}{data};
+    }
+}
+
 
 =head1 AUTHOR
 
