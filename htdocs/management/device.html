@@ -46,10 +46,11 @@ $view       => "Basics"
 $deviceadd  => undef
 $newhost    => undef
 $newip      => undef
-$topodepth  => 1
+$toporoot   => Netdot->config->get('NMS_DEVICE')
+$topodepth_up    => 1
+$topodepth_down  => 1
 $topovlans  => 0
 $toponames  => 0
-$topodirection  => 'left_right'
 $specific_vlan  => 0
 $stp_number     => undef
 $state_digest   => undef
@@ -1390,8 +1391,9 @@ if ( $ipeers ){
       <th>Show Vlans?</th>
       <th>Show this Vlan only?</th>
       <th>Show Interface Names?</th>
-      <th>Search depth</th>
-      <th>Direction</th>
+      <th>Search depth up</th>
+      <th>Search depth down</th>
+      <th>Reference root</th>
       <th>&nbsp;</th>
   </tr>
   <tr>
@@ -1411,17 +1413,12 @@ if ( $ipeers ){
 %       }
         </select></td>
       <td><input type="checkbox" name="toponames" value="1"  <% ($toponames ? "checked" : "") %>></td>
-      <td><input type="text" name="topodepth" size=2 value="<% $topodepth %>">
-      <small>(Deeper than 2 may take a long time to render)</small></td>
-      <td><select name="topodirection">
-%        if ( $topodirection eq 'up_down' ){
-          <option value="up_down" selected>Up/Down</option>
-          <option value="left_right">Left/Right</option>
-%        }else{
-          <option value="up_down">Up/Down</option>
-          <option value="left_right" selected>Left/Right</option>
-%        }
-      </select></td>
+      <td><input type="text" name="topodepth_up" size=2 value="<% $topodepth_up %>">
+      <small>(Greater than 2 may take a long time to render)</small></td>
+      <td><input type="text" name="topodepth_down" size=2 value="<% $topodepth_down %>">
+      <small>(Greater than 2 may take a long time to render)</small></td>
+      <td><input type="text" name="toporoot" size=20 value="<% $toporoot %>"></td>
+      
     <td><input type="submit" value="Change View"></td>
   </tr>
 </table>
@@ -1434,11 +1431,14 @@ if ( $ipeers ){
     </div>
     <div class="containerbody">
     <center>
-%       print $ui->build_device_topology_graph_html(id=>$id, view=>$view, depth=>$topodepth, 
+%       $toporoot = Device->search(name=>$toporoot)->first || 
+%                   $m->comp('/generic/error.mhtml', error=>"Cannot find root device: $toporoot");
+%       print $ui->build_device_topology_graph_html(id=>$id, view=>$view, root=>$toporoot->id,
+%                                                   depth_up=>$topodepth_up, depth_down=>$topodepth_down,
 %                                                   web_path=>$r->dir_config('NetdotPath'), 
 %                                                   show_vlans=>$topovlans, show_names=>$toponames, 
-%                                                   direction=>$topodirection, specific_vlan=>$specific_vlan);
-    <center>
+%                                                   specific_vlan=>$specific_vlan);
+    </center>
     </div>
 </div>
 

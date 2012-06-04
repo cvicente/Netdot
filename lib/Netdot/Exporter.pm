@@ -180,7 +180,7 @@ sub get_device_parents {
     $self->throw_fatal("Missing required arguments")
 	unless $nms;
 
-    return $self->_shortest_path_parents($nms);
+    return Device->shortest_path_parents($nms);
 }
 
 ########################################################################
@@ -215,40 +215,6 @@ sub get_monitored_ancestors {
 	return $self->get_monitored_ancestors($parent_id, $device_parents);
     }
 }
-
-############################################################################
-=head2 _get_device_graph
-
-  Arguments:
-    None
-  Returns:
-    Hash reference
-  Examples:
-
-=cut
-sub get_device_graph {
-    my ($self) = @_;
-
-    return $self->_cache('device_graph')
-	if $self->_cache('device_graph');
-
-    $logger->debug("Netdot::Exporter::get_device_graph: querying database");
-    my $graph = {};
-    my $links = $self->{_dbh}->selectall_arrayref("
-                SELECT  d1.id, d2.id 
-                FROM    device d1, device d2, interface i1, interface i2
-                WHERE   i1.device = d1.id AND i2.device = d2.id
-                    AND i2.neighbor = i1.id AND i1.neighbor = i2.id
-            ");
-    foreach my $link (@$links) {
-	my ($fr, $to) = @$link;
-	$graph->{$fr}{$to}  = 1;
-	$graph->{$to}{$fr}  = 1;
-    }
-    
-    return $self->_cache('device_graph', $graph);
-}
-
 
 ########################################################################
 =head2 open_and_lock - Open and lock file for writing
@@ -306,79 +272,6 @@ sub in_downtime{
 ########################################################################
 # Private methods
 ########################################################################
-
-########################################################################
-# Shortest Path Parents
-#
-# A variation of Dijkstra's single-source shortest paths algorithm 
-# to determine all the possible parents of each node that are in the 
-# shortest paths between that node and the given source.
-#
-# Arguments:
-#    s          Source vertex
-# Returns:
-#    Hash ref where key = Device.id, value = Hashref where keys = parent Device.id's
-#
-sub _shortest_path_parents {
-    my ($self, $s) = @_;
-    
-    $self->throw_fatal("Missing required arguments") unless ( $s );
-
-    my $graph = $self->get_device_graph();
-
-    $logger->debug("Netdot::Exporter::_shortest_path_parents: Determining all shortest paths to Device id $s");
-
-    my %cost;
-    my %parents;
-    my %dist;
-    my $infinity = 1000000;
-    my @nodes    = keys %$graph;
-    my @q        = @nodes;
-    
-    # Set all distances to infinity, except the source
-    # Set default cost to 1
-    foreach my $n ( @nodes ) { 
-	$dist{$n} = $infinity; 
-	$cost{$n} = 1;
-    }
-    $dist{$s} = 0;
-
-    # Get path costs
-    my $q = $self->{_dbh}->selectall_arrayref("SELECT device.id, 
-                                                      device.monitoring_path_cost 
-                                               FROM   device
-                                               WHERE  device.monitoring_path_cost > 1
-                                              ");
-    foreach my $row ( @$q ){
-	my ($id, $cost) = @$row;
-	$cost{$id} = $cost;
-    }
-    
-    while ( @q ) {
-	
-	# sort unsolved by distance from root
-	@q = sort { $dist{$a} <=> $dist{$b} } @q;
-	
-	# we'll solve the closest node.
-	my $n = shift @q;
-	
-	# now, look at all the nodes connected to n
-	foreach my $n2 ( keys %{$graph->{$n}} ) {
-
-	    # .. and find out if any of their estimated distances
-	    # can be improved if we go through n
-	    if ( $dist{$n2} >= ($dist{$n} + $cost{$n}) ) {
-		$dist{$n2} = $dist{$n} + $cost{$n};
-		# Make sure all our parents have same shortest distance
-		foreach my $p ( keys %{$parents{$n2}} ){
-		    delete $parents{$n2}{$p} if ( $dist{$p}+$cost{$p} > $dist{$n}+$cost{$n} );
-		}
-		$parents{$n2}{$n} = 1;
-	    }
-	}
-    }
-    return \%parents;
-}
 
 ############################################################################
 # _cache - Get or set class data cache

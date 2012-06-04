@@ -1666,6 +1666,117 @@ sub get_ips_from_all {
     
 }
 
+###################################################################################################
+=head2 get_device_graph - Returns the graph of devices
+
+  Arguments:
+    None
+  Returns:
+    Hash which represents the graph
+  Example:
+    Device::get_device_graph()
+$logger->info
+=cut
+sub get_device_graph {
+    my ($class) = @_;
+    $class->isa_class_method('get_device_graph');
+
+    $logger->debug("Netdot::Device::get_device_graph: querying database");
+    
+    my $dbh = $class->db_Main;
+
+    my $graph = {};
+    my $links = $dbh->selectall_arrayref("
+                SELECT  d1.id, d2.id 
+                FROM    device d1, device d2, interface i1, interface i2
+                WHERE   i1.device = d1.id AND i2.device = d2.id
+                AND i2.neighbor = i1.id AND i1.neighbor = i2.id
+            ");
+
+    foreach my $link (@$links) {
+        my ($fr, $to) = @$link;
+        $graph->{$fr}{$to}  = 1;
+        $graph->{$to}{$fr}  = 1;
+    }
+
+    return $graph;
+}
+
+###################################################################################################
+=head2 shortest_path_parents - A variation of Dijkstra's single-source shortest paths algorithm
+
+    Determines all the possible parents of each node that are in the shortest paths between 
+    that node and the given source.
+
+  Arguments:
+    Source Vertex (Device ID)
+  Returns:
+    Hash ref where key = Device.id, value = Hashref where keys = parent Device.id's
+  Example:
+    $parents = Device::shortest_path_parents($s)
+=cut
+sub shortest_path_parents {
+    my ($class, $s) = @_;
+    $class->isa_class_method('shortest_path_parents');
+
+    $class->throw_fatal("Missing required arguments") unless ( $s );
+
+    my $graph = $class->get_device_graph();
+
+    $logger->debug("Netdot::Device::shortest_path_parents: Determining all shortest paths to Device id $s");
+
+    my %cost;
+    my %parents;
+    my %dist;
+    my $infinity = 1000000;
+    my @nodes    = keys %$graph;
+    my @q        = @nodes;
+
+    # Set all distances to infinity, except the source
+    # Set default cost to 1
+    foreach my $n ( @nodes ) {
+	$dist{$n} = $infinity;
+	$cost{$n} = 1;
+    }
+    $dist{$s} = 0;
+    
+    # Get path costs
+    my $dbh = $class->db_Main;
+    my $q = $dbh->selectall_arrayref("SELECT device.id, device.monitoring_path_cost 
+                                      FROM   device
+                                      WHERE  device.monitoring_path_cost > 1
+                                              ");
+    foreach my $row ( @$q ){
+        my ($id, $cost) = @$row;
+        $cost{$id} = $cost;
+    }
+
+    while ( @q ) {
+
+	# sort unsolved by distance from root
+	@q = sort { $dist{$a} <=> $dist{$b} } @q;
+
+	# we'll solve the closest node.
+	my $n = shift @q;
+
+	# now, look at all the nodes connected to n
+	foreach my $n2 ( keys %{$graph->{$n}} ) {
+	    
+	    # .. and find out if any of their estimated distances
+	    # can be improved if we go through n
+	    if ( $dist{$n2} >= ($dist{$n} + $cost{$n}) ) {
+		$dist{$n2} = $dist{$n} + $cost{$n};
+		# Make sure all our parents have same shortest distance
+		foreach my $p ( keys %{$parents{$n2}} ){
+		    delete $parents{$n2}{$p} if ( $dist{$p}+$cost{$p} > $dist{$n}+$cost{$n} );
+		}
+		$parents{$n2}{$n} = 1;
+	    }
+	}
+    }
+    return \%parents;
+}
+
 
 ##################################################################
 
@@ -3326,6 +3437,9 @@ sub set_interfaces_auto_dns {
     
     return 1;
 }
+
+
+
 
 
 #####################################################################

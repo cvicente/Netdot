@@ -60,7 +60,7 @@ sub new {
     my ($proto, %argv) = @_;
     my $class = ref( $proto ) || $proto;
     my $self = {};
-    
+   
     # Create a session wrapper object
     bless $self, $class;
     wantarray ? ( $self, '' ) : $self; 
@@ -1688,13 +1688,16 @@ sub build_ip_tree_graph_html {
 =head2 build_device_topology_graph
 
   Arguments:
-    device id
-    depth
+    id           Device id (root of the displayed graph)
+    root         Device id (reference root for up/down direction)
+    depth        How many levels to show
+    depth_up     Show these many levels towards reference root
+    depth_down   Show these many levels away from reference root
     view
-    showvlans    Boolean
-    vlans
-    shownames    Boolean
-    filename     
+    show_vlans   Boolean. Whether to show colored arrows for each VLAN
+    vlans        
+    show_names   Boolean. Whether to show interface names
+    filename     File name for the graph
     format       (text|ps|hpgl|gd|gd2|gif|jpeg|png|svg)
     direction    (up_down|left_right)
   Returns:
@@ -1705,38 +1708,44 @@ sub build_ip_tree_graph_html {
 =cut
 sub build_device_topology_graph {
     my ($self, %argv) = @_;
-    my ($id, $depth, $view, $showvlans, $shownames, $filename, $vlans, $format, $direction, $specific_vlan) = 
-	@argv{'id', 'depth', 'view', 'show_vlans', 'show_names', 'filename', 'vlans', 'format', 'direction', 'specific_vlan'};
+    my ($id, $root, $depth, $depth_up, $depth_down, $view, $show_vlans, $show_names, 
+	$filename, $vlans, $format, $direction, $specific_vlan) = 
+	    @argv{'id', 'root', 'depth', 'depth_up', 'depth_down', 'view', 'show_vlans', 'show_names', 
+		  'filename', 'vlans', 'format', 'direction', 'specific_vlan'};
     
     # Guard against malicious input
-    $depth = (int($depth) > 0) ? int($depth) : 0;
-    $showvlans = ($showvlans == 1) ? 1 : 0;
-    $shownames = ($shownames == 1) ? 1 : 0;
+    $depth      = (int($depth)      > 0) ? int($depth)      : 0;
+    $depth_up   = (int($depth_up)   > 0) ? int($depth_up)   : 0;
+    $depth_down = (int($depth_down) > 0) ? int($depth_down) : 0;
+    $show_vlans = ($show_vlans == 1)     ? 1 : 0;
+    $show_names = ($show_names == 1)     ? 1 : 0;
+
+    $root ||= $id;
 
     $direction = ($direction eq 'up_down')? 0 : 1;
 
-    if ( $specific_vlan == 0 || $showvlans == 0 ) {
+    if ( $specific_vlan == 0 || $show_vlans == 0 ) {
 	$specific_vlan = undef;
     }
     
     if ( defined($specific_vlan) && $specific_vlan != 0 ) {
-	$showvlans = 1;
+	$show_vlans = 1;
     }
 
     # Declare some useful functions
     sub add_topo_node {
         my (%argv) = @_;
-	my ($g, $device, $view, $shownames, $showvlans, $nodeoptions) = 
+	my ($g, $device, $view, $show_names, $show_vlans, $nodeoptions) = 
 	    @argv{'graph', 'device', 'view', 'show_names', 'show_vlans', 'nodeoptions'};
 	
 	$view ||= "view";
         $g->add_node(name  => $device->short_name, 
 		     shape => "record",
-		     URL   => "device.html?id=".$device->id."&view=$view&toponames=$shownames&topovlans=$showvlans",
+		     URL   => "device.html?id=".$device->id."&view=$view&toponames=$show_names&topovlans=$show_vlans",
 		     %$nodeoptions
             );
     }
-
+    
     # Tried to be fancy and add lots of port information.  EPIC FAIL.  There's no
     # good way to do it.  A nice tarpit for others to avoid.
 
@@ -1745,19 +1754,39 @@ sub build_device_topology_graph {
     }
 
     sub dfs { # DEPTH FIRST SEARCH - recursive
-        my ($g, $device, $hops, $seen, $vlans, $showvlans, $shownames, $view, $specific_vlan) = @_;
-        return unless $hops;
+        my ($g, $root, $device, $hopup, $hopdown, $prev_dir, $seen, $vlans, 
+	    $show_vlans, $show_names, $view, $specific_vlan) = @_;
+        return if ($hopup == 0 && $prev_dir eq "up");
+        return if ($hopdown == 0 && $prev_dir eq "down");
 
         my @ifaces = $device->interfaces;
+        
+        my $dir = "undef";           
         
         foreach my $iface ( sort { int($a) cmp int($b) }  @ifaces) {
             my $neighbor = $iface->neighbor;
             next unless $neighbor;  # If there's no neighbor, skip ahead
-
-	    my $name          = ($shownames ? $iface->name :    $iface->number)    || $iface->number;
-	    my $neighbor_name = ($shownames ? $neighbor->name : $neighbor->number) || $neighbor->number;
-
+	    
+	    my $name          = ($show_names ? $iface->name :    $iface->number)    || $iface->number;
+	    my $neighbor_name = ($show_names ? $neighbor->name : $neighbor->number) || $neighbor->number;
+	    
             my $nd = $neighbor->device;
+	    
+            my %seen = {};
+            my $dev_dist = $self->_dist_to_root(\%seen, $root, $device->id, 0);
+            %seen = {};
+            my $nd_dist = $self->_dist_to_root(\%seen, $root, $nd->id, 0);
+	    
+            # this figures which is the child and which is the parent
+            if ($dev_dist < $nd_dist){
+                $dir = "down";      
+            } elsif ($dev_dist> $nd_dist) {
+                $dir = "up";
+            } else {
+                $dir = "level";
+            }
+            next if ($dir ne $prev_dir && $prev_dir ne "undef");
+
             unless (scalar($nd)) {
                 $logger->debug("No device found for neighbor $neighbor");
                 next;
@@ -1772,12 +1801,14 @@ sub build_device_topology_graph {
 
             my $color = 'black';
 	    my $cont = 0;
-            if ($showvlans && $iface->vlans) {
+
+            if ($show_vlans && $iface->vlans) {
                 foreach my $vlan ($iface->vlans) {
 		    if ( !defined($specific_vlan) || (defined($specific_vlan) && $specific_vlan == $vlan->vlan->vid) ) {
 			my $neighbor_vlan = InterfaceVlan->search(interface=>$neighbor->id, vlan=>$vlan->vlan->id)->first;
-			next if ( defined($specific_vlan) && $specific_vlan != 0 && ( ($neighbor_vlan && $neighbor_vlan->vlan->vid != $specific_vlan) || !defined($neighbor_vlan) ) );
-
+                        next if ( defined($specific_vlan) && $specific_vlan != 0 && 
+				  ( ($neighbor_vlan && $neighbor_vlan->vlan->vid != $specific_vlan) || !defined($neighbor_vlan) ) );
+			
 			my $style = 'solid';
 			my $vname = $vlan->vlan->name || $vlan->vlan->vid;
 			if (!exists $vlans->{$vname}) {
@@ -1785,8 +1816,7 @@ sub build_device_topology_graph {
 			}
 			$color = $vlans->{$vname}{'color'};
 			
-			if ($vlan->stp_state eq 'blocking' 
-			    || ($neighbor_vlan and $neighbor_vlan->stp_state eq 'blocking')) {
+                        if ($vlan->stp_state eq 'blocking' || ($neighbor_vlan and $neighbor_vlan->stp_state eq 'blocking')) {
 			    $style='dashed';
 			}   
 			
@@ -1821,14 +1851,26 @@ sub build_device_topology_graph {
 		&add_topo_node(graph      => $g, 
 			       device     => $nd, 
 			       view       => $view,
-			       show_names => $shownames, 
-			       show_vlans => $showvlans);
+			       show_names => $show_names, 
+			       show_vlans => $show_vlans);
 		$seen->{'NODE'}{$nd->id} = 1;
 	    }
 	    
+            # If we're at our root, we're done...
+            if ($root == $nd->id) {
+                $cont = 0;
+            }
+
             # If we haven't recursed across this edge before, then do so now.
 	    if ( $cont == 1 ) {
-		&dfs($g, $nd, $hops-1, $seen, $vlans, $showvlans, $shownames, $view, $specific_vlan);
+                if ($dir eq 'up') {
+                    &dfs($g, $root, $nd, $hopup-1, $hopdown, $dir, $seen, $vlans, $show_vlans, $show_names, $view, $specific_vlan);
+                } elsif ($dir eq 'down') {
+                    &dfs($g, $root, $nd, $hopup, $hopdown-1, $dir, $seen, $vlans, $show_vlans, $show_names, $view, $specific_vlan);
+                } else {
+                    &dfs($g, $root, $nd, $hopup-1, $hopdown-1, $seen, $vlans, $show_vlans, $show_names, $view, $specific_vlan);
+
+                }
 	    }
         }
     }
@@ -1844,8 +1886,8 @@ sub build_device_topology_graph {
     my $start = Device->retrieve($id);
     &add_topo_node(graph       => $g,
 		   device      => $start, 
-		   show_vlans  => $showvlans,
-		   show_names  => $shownames, 
+		   show_vlans  => $show_vlans,
+		   show_names  => $show_names, 
 		   view        => $view,
 		   nodeoptions => { color=>'red'},
 	);
@@ -1853,9 +1895,16 @@ sub build_device_topology_graph {
     my $seen = { NODE=>{}, EDGE=>{} };
     $seen->{'NODE'}{$start->id} = 1;
 
-    &dfs($g, $start, $depth, $seen, $vlans, $showvlans, $shownames, $view, $specific_vlan);
+    if ( $depth_up && $depth_down ) {
+	&dfs($g, $root, $start, $depth_up, $depth_down, "undef", $seen, $vlans, 
+	     $show_vlans, $show_names, $view, $specific_vlan);
+    } else {
+	&dfs($g, $root, $start, $depth, $depth, "undef", $seen, $vlans, 
+	     $show_vlans, $show_names, $view, $specific_vlan);
+    }
 
     $argv{format} ||= 'png';
+
     if ( $argv{format} =~ /^(text|ps|hpgl|gd|gd2|gif|jpeg|png|svg)$/){
 	my $method = 'as_'.$argv{format};
 	$g->$method($filename);
@@ -1871,7 +1920,8 @@ sub build_device_topology_graph {
 =head2 build_device_topology_graph_html
 
   Arguments:
-
+    Same as build_device_topology_graph, plus the following:
+     - web_path
   Returns:
     A string containing an img tag, a cmap, and a bunch of vlans
   Examples:
@@ -1882,15 +1932,14 @@ sub build_device_topology_graph {
 =cut
 sub build_device_topology_graph_html {
     my ($self, %argv) = @_;
-    my ($id, $view, $depth, $web_path, $showvlans, $shownames, $filename, $specificvlan) = 
-	@argv{'id', 'view', 'depth', 'web_path', 'show_vlans', 'show_names', 'filename', 'specific_vlan'};
     
-    if ( !defined($specificvlan) ) {
-	$specificvlan = 0;
+    if ( !defined($argv{specific_vlan}) ) {
+	$argv{specific_vlan} = 0;
     }
-    my $img_name      = $filename || "Device-$id-$depth-$showvlans-$shownames-$specificvlan.png";
+    my $img_name      = $argv{filename} || 
+	"Device-$argv{id}-$argv{depth}-$argv{show_vlans}-$argv{show_names}-$argv{specific_vlan}.png";
     my $graph_path    = "img/graphs/$img_name";
-    my $img           = $web_path . $graph_path;
+    my $img           = $argv{web_path} . $graph_path;
     my $netdot_path   = Netdot->config->get('NETDOT_PATH');
     $argv{filename}   = "$netdot_path/htdocs/" . $graph_path;
 
@@ -1901,11 +1950,12 @@ sub build_device_topology_graph_html {
 
     my  $vlanlist = "";
     foreach my $vlan (keys %$vlans) {
-	$vlanlist .= '<a href="view.html?table=Vlan&id=' . $vlans->{$vlan}{'vlan'} . '"><font color="' . $vlans->{$vlan}{'color'} . "\">$vlan</font></a> ";
+	$vlanlist .= '<a href="view.html?table=Vlan&id=' . $vlans->{$vlan}{'vlan'} . 
+	    '"><font color="' . $vlans->{$vlan}{'color'} . "\">$vlan</font></a> ";
     }
     return "<img src=\"$img\" usemap=\"#test\" border=\"0\">" 
 	. $g->as_cmapx
-	. ($showvlans ? '<br><b>List of vlans and their colors:</b><br>'
+	. ($argv{show_vlans} ? '<br><b>List of vlans and their colors:</b><br>'
 	   . '<b>' . $vlanlist . '</b>'
 	   : "");
 }
@@ -2399,6 +2449,30 @@ sub localize_newlines {
 	}
     }
     1;
+}
+
+############################################################################
+sub _dist_to_root {
+    my ($self, $seen, $root, $n, $d) = @_;
+    return $d if ($n == $root);
+
+    $seen->{$n} = 1;
+
+    my $g = Device->shortest_path_parents($n);
+
+    foreach my $f (keys %$g) {
+        foreach my $s (keys %{$g->{$f}}) {
+            if ($n == $s) {
+                if ($seen->{$f} == 0 ) {
+                    $seen->{$f} = 1;
+                    my $t = $self->_dist_to_root($seen, $root, $f, $d+1);
+                    return $t if ($t > 0);
+                }
+            }
+        }
+    }
+
+    return 0;
 }
 
 =head1 AUTHORS
