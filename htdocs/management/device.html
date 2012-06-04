@@ -1382,7 +1382,8 @@ if ( $ipeers ){
 %
 % if ( $view eq "Topology" || $view eq "All" ){
 %
-
+<strong>Note</strong>: Depths greater than 2 may take a long time to render
+<p>
 <form name="change_topo_view_form" action="device.html" method="GET">
       <input type="hidden" name="id" value="<% $id %>">
       <input type="hidden" name="view" value="<% $view %>">
@@ -1391,9 +1392,9 @@ if ( $ipeers ){
       <th>Show Vlans?</th>
       <th>Show this Vlan only?</th>
       <th>Show Interface Names?</th>
-      <th>Search depth up</th>
-      <th>Search depth down</th>
-      <th>Reference root</th>
+      <th>Depth up</th>
+      <th>Depth down</th>
+      <th>Reference Point</th>
       <th>&nbsp;</th>
   </tr>
   <tr>
@@ -1413,10 +1414,8 @@ if ( $ipeers ){
 %       }
         </select></td>
       <td><input type="checkbox" name="toponames" value="1"  <% ($toponames ? "checked" : "") %>></td>
-      <td><input type="text" name="topodepth_up" size=2 value="<% $topodepth_up %>">
-      <small>(Greater than 2 may take a long time to render)</small></td>
-      <td><input type="text" name="topodepth_down" size=2 value="<% $topodepth_down %>">
-      <small>(Greater than 2 may take a long time to render)</small></td>
+      <td><input type="text" name="topodepth_up" size=2 value="<% $topodepth_up %>"></td>
+      <td><input type="text" name="topodepth_down" size=2 value="<% $topodepth_down %>"></td>
       <td><input type="text" name="toporoot" size=20 value="<% $toporoot %>"></td>
       
     <td><input type="submit" value="Change View"></td>
