@@ -175,14 +175,21 @@ if ( $submit ){
         <legend>Host Identification</legend>
 %       if ( $address ){
           <p>
-          <label for="address">Address</label>
+          <label for="address">IP Address</label>
           <% $address %>
           </p>
-%       }elsif ( $manager && $manager->can($user, 'choose_ip', $block) ){
+%       }else{
             <p>
-            <label for="name"><% $ui->help_link('../user_help/hosts.html#IP', '', '', 'IP Address') %></label>
-            <input type="text" name="address" class="longtxt" value="">            
+              <label for="address">IP Address</label>
+              This form will assign the first available address in this subnet. 
             </p>
+%           if ( $manager && $manager->can($user, 'choose_ip', $block) ){
+                <p>
+                  <label for="address">&nbsp;</label>
+                  However, you may choose a specific address 
+                  <a href="hostinfo_tasks.html?ipblock=<% $block %>&ipblock_action=show_block&submit=Go">HERE</a>.
+                </p>
+%	    }
 %       }
         <p>
         <label for="domain">Domain <font color="red">*</font></label>
