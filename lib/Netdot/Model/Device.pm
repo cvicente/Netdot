@@ -5089,10 +5089,10 @@ sub _assign_product {
 	my $ptype = ProductType->find_or_create({name=>$info->{type}});
 	$args{type} = $ptype;
     }
-    if ( $info->{manufacturer} ){
-	my $ent = Entity->find_or_create({name=>$info->{manufacturer}});
-	$args{manufacturer}  = $ent; 
-    }
+
+    my $manuf_name = ($info->{manufacturer})? $info->{manufacturer} : 'Unknown';
+    $args{manufacturer} = Entity->find_or_create({name=>$manuf_name});
+
     $args{hostname} = $self->fqdn;
 
     if ( $args{name} ){
