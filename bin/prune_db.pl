@@ -324,19 +324,14 @@ sub rotate_table{
 
     if ( $db_type eq 'mysql' ){
         eval{
-            my $q = $dbh->selectall_arrayref("SHOW CREATE TABLE $table");
-            my $create_query = $q->[0]->[1];
-            $create_query =~ s/AUTO_INCREMENT=[0-9]+/AUTO_INCREMENT=1/;
-            $create_query =~ s/CREATE TABLE `(.*)`/CREATE TABLE `$1\_tmp`/;
-            $dbh->do($create_query);
-            $dbh->do("RENAME TABLE $table TO $table\_$timestamp");
-            $dbh->do("RENAME TABLE $1\_tmp TO $table");
+	    my $backup = $table.'_'.$timestamp;
+            $dbh->do("RENAME TABLE $table TO $backup");
+            $dbh->do("CREATE TABLE $table LIKE $backup");
         }
     }elsif ( $db_type eq 'Pg' ){
-        # the procedure for rotating tables is a bit different for postgres, since it doesn't 
-        # recognize the SHOW command.  We instead use the CREATE TABLE AS function of postgres
-        # to create an exact copy of the original table, then we'll drop all the records from the original
-
+	# This really needs to be redone, as the approach defeats the
+	# purpose of the rotation, which was to avoid deleting a very large
+	# number rows
         my $new_table_name = $table."_".$timestamp;
         eval{
             $dbh->do("CREATE TABLE $new_table_name AS SELECT * FROM $table");
