@@ -1,12 +1,72 @@
 <%doc>
-    Show a list of all addresses within a subnet.
-
+Show a list of all addresses within a subnet.
 </%doc>
 
 <%args>
 $network
-$user    => $ui->get_current_user($r)
+$user  => $ui->get_current_user($r)
 </%args>
+
+<%once>
+# Map IP status to <div> classes
+my %classes = (
+    Static     => 'ipaddr_static', 
+    Dynamic    => 'ipaddr_dynamic',
+    Reserved   => 'ipaddr_reserved',
+    Container  => 'ipaddr_container',
+    Discovered => 'ipaddr_discovered',
+    Available  => 'ipaddr_available',
+    );
+
+# make_cell subroutine
+my $make_cell = sub {
+    my (%argv) = @_;
+    my ($caller, $id, $addr, $disp_addr, $divtitle, $divclass, 
+	$priv_user, $can_edit, $can_choose, $subnet_id, $used) = 
+	@argv{'caller', 'id', 'addr', 'disp_addr', 'divtitle', 'divclass', 
+	      'priv_user', 'can_edit', 'can_choose', 'subnet_id', 'used'};
+
+    my $str = $disp_addr;
+    if ( $caller eq 'choose_ip.html' ){
+	# Called as a popup window
+	unless ( $used ){
+	    if ( ($priv_user && $can_edit) || $can_choose ){
+		$str = sprintf('<a href="#" onClick="selectAddr(\'%s\')">%s</a>',
+			       $addr, $disp_addr);
+	    }
+	}
+    }elsif ( $caller eq 'ip.html' ){
+	my $comp = $caller;
+	if ( $used ){
+	    # Address exists in DB
+	    if( $divclass eq 'ipaddr_available' ) {
+		if ( $priv_user && $can_edit ){
+		    # User is either admin or operator with edit rights
+		    $str = '<a href="'.$comp.'?id='.$id.'" class="ipaddr">'.$str.'</a>';
+		}elsif ( $can_choose ){
+		    # User is regular user, but has choose_ip rights
+		    $str = '<a href="../user_management/add_host.html?address='.$str.
+			'&add_host_block='.$subnet_id.'" class="ipaddr">'.$str.'</a>';
+		}
+	    }elsif ( $divclass eq 'ipaddr_static' || $priv_user ){
+		$str = '<a href="'.$comp.'?id='.$id.'" class="ipaddr">'.$str.'</a>';
+	    }
+	}else{
+	    if ( $priv_user && $can_edit ){
+		# link this address to the "Add" section in ip.html
+		$str = '<a href="'.$comp.'?add_block_prefix='.$addr.
+		    '%2F32&add_block_parent='.$subnet_id.
+		    '&_action=ADD_BLOCK" class="ipaddr">'.$str.'</a>';
+	    }elsif ( $can_choose ){
+		$str = '<a href="../user_management/add_host.html?address='.$addr.
+		    '&add_host_block='.$subnet_id.'" class="ipaddr">'.$str.'</a>';
+	    }
+	}
+    }
+    $str = '<div class="'.$divclass.'" title="'.$divtitle.'" width="100%">'.$str.'</div>';
+    return $str;
+};
+</%once>
 
 <%init>
 
@@ -22,7 +82,7 @@ if ( $network->version == 4 && $network->prefix < $BLOCK_MAX ){
 my %used;
 my %names;
 my %status;
-my %iplinks;
+my %ids;
 my @children; 
 my $dbh = Netdot::Model->db_Main();
 my $id = $network->id;
@@ -31,8 +91,18 @@ my $manager = $ui->get_permission_manager($r);
 my $priv_user  = ($manager && $manager->can($user, "access_section", 'subnet.mhtml:ip_add_link'))? 1 : 0;
 my $can_edit   = ($manager && $manager->can($user, 'edit', $network))? 1 : 0;
 my $can_choose = ($manager && $manager->can($user, 'choose_ip', $network))? 1 : 0;
-
+my $caller = $m->caller->name;
 </%init>
+
+
+<div class="containerheadright">
+Legend:
+<span class="ipaddr_available">Available</span>
+<span class="ipaddr_discovered">Discovered</span>
+<span class="ipaddr_dynamic">Dynamic</span>
+<span class="ipaddr_static">Static</span>
+<span class="ipaddr_reserved">Reserved</span>
+</div>
 
 <%perl>
 
@@ -65,10 +135,10 @@ foreach my $r ( @$results ){
 	$names{$address} = $description if ( $description ) ;
     }
     $status{$address}  = $status;
-    $iplinks{$address} = $ipid;
+    $ids{$address} = $ipid;
 }
 
-my $net = NetAddr::IP->new($network->address, $network->prefix);
+my $net = $network->netaddr();
 my $mask = $net->masklen;
 
 my @headers = ( );
@@ -89,10 +159,13 @@ for( my $i=0; $i<(($net->num()+1)/$cols); $i++ ) {
     my @row = ();
 
     for( my $j=0; $j<$cols; $j++ ) {
-	my $ipaddr = $net->addr;
-	my $disp_addr = $ipaddr;
-
-	# hide fixed octets
+	my $ip_addr     = $net->addr;
+	my $disp_addr   = $ip_addr;
+	my $status_name = $status{$net->numeric};
+	my $divclass    = $classes{$status_name} || 'ipaddr_available';
+	my $divtitle    = $names{$net->numeric} || $net->addr;
+	
+	# hide network octets
 	if ( $mask >= 24 ){
 	    # only 4th octet is significant
 	    $disp_addr =~ s/^\d+\.\d+\.\d+\.(\d+)$/$1/o;
@@ -104,69 +177,23 @@ for( my $i=0; $i<(($net->num()+1)/$cols); $i++ ) {
 	    $disp_addr =~ s/^\d+\.(\d+\.\d+\.\d+)$/$1/o;
 	}
 
-
 	if( ($net == $net->network) && ($mask != 31) ){
 	    # don't allow selection of network or broadcast addresses
 	    $disp_addr = '<div class="ipaddr_disabled" title="Network">'.$disp_addr.'</div>';
-	}elsif( exists $used{$net->numeric} ) {
-	    my $divclass;
-	    my $divtitle = $names{$net->numeric} if exists $names{$net->numeric};
-
-	    if( $status{$net->numeric} eq "Static" ) {
-		# show used addresses in red, show dns name on mouseover
-		$divclass = "ipaddr_static";
-		$disp_addr = '<a href="ip.html?id='.$iplinks{$net->numeric}.'" class="ipaddr">'.$disp_addr.'</a>';
-
-	    } elsif( $status{$net->numeric} eq "Dynamic" ) {
-		# show dynamic addresses in orange, don't link
-		$divclass = "ipaddr_dynamic";
-		$disp_addr = '<a href="ip.html?id='.$iplinks{$net->numeric}.'" class="ipaddr">'.$disp_addr.'</a>' 
-		    if $priv_user;
-
-	    } elsif( $status{$net->numeric} eq "Reserved" ) {
-		# show reserved addresses in grey, don't link
-		$divclass = "ipaddr_reserved";
-		$disp_addr = '<a href="ip.html?id='.$iplinks{$net->numeric}.'" class="ipaddr">'.$disp_addr.'</a>' 
-		    if $priv_user;
-
-	    } elsif( $status{$net->numeric} eq "Container" ) {
-		# link to detail page for containers
-		$divclass = "ipaddr_container";
-		$disp_addr = '<a href="ip.html?id='.$iplinks{$net->numeric}.'" class="ipaddr">'.$disp_addr.'</a>' 
-		    if $priv_user;
-
-	    } elsif( $status{$net->numeric} eq "Discovered" ) {
-		$divclass = "ipaddr_discovered";
-		$disp_addr = '<a href="ip.html?id='.$iplinks{$net->numeric}.'" class="ipaddr">'.$disp_addr.'</a>' 
-		    if $priv_user;
-
-	    } elsif( $status{$net->numeric} eq "Available" ) {
-		$divclass = "ipaddr_available";
-		if ($priv_user && $can_edit){
-		    $disp_addr = '<a href="ip.html?id='.$iplinks{$net->numeric}.'" class="ipaddr">'.$disp_addr.'</a>';
-		}elsif ( $can_choose ){
-		    $disp_addr = '<div class="<% $divclass %>"><a href="../user_management/add_host.html?address='.$ipaddr.
-                    '&add_host_block='.$network->id.'" class="ipaddr">'.$disp_addr.'</a></div>';
-		}
-	    }
-
-	    $disp_addr = '<div class="'.$divclass.'" title="'.$divtitle.'" width="100%">'.$disp_addr.'</div>';
 
 	}elsif ( $net == $net->broadcast && $mask != 31 ){
 	    # don't allow selection of network or broadcast addresses
 	    $disp_addr = '<div class="ipaddr_disabled" title="Broadcast">'.$disp_addr.'</div>';
-	} else {
-	    if ( $priv_user && $can_edit ){
-		# link this address to the "Add" section in ip.html
-		$disp_addr = '<div class="ipaddr_available"><a href="ip.html?add_block_prefix='.$net->addr().
-		    '%2F32&add_block_parent='.$network->id.
-		    '&_action=ADD_BLOCK" class="ipaddr">'.$disp_addr.'</a></div>';
-	    }elsif ( $can_choose ){
-		$disp_addr = '<div class="ipaddr_available"><a href="../user_management/add_host.html?address='.$ipaddr.
-		    '&add_host_block='.$network->id.'" class="ipaddr">'.$disp_addr.'</a></div>';
-	    }else{
-		$disp_addr = '<div class="ipaddr_available">'.$disp_addr.'</div>';
-	    }
+
+	}else {
+	    my $used = (exists $used{$net->numeric})? 1 : 0;
+	    my $id = $ids{$net->numeric};
+	    $disp_addr = $make_cell->(
+		addr=>$ip_addr, disp_addr=>$disp_addr, divclass=>$divclass, divtitle=>$divtitle,
+		id=>$id, subnet_id=>$network->id, used=>$used,
+		priv_user=>$priv_user, can_edit=>$can_edit, can_choose=>$can_choose, 
+		caller=>$caller,
+		);
 	}
 	push( @row, $disp_addr );
 	$net++;                      # increment the IP address
@@ -178,3 +205,4 @@ for( my $i=0; $i<(($net->num()+1)/$cols); $i++ ) {
 </%perl>
 
 <& /generic/data_table.mhtml, field_headers=>\@headers, data=>\@rows, subclass=>"ipb" &>
+

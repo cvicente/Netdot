@@ -155,6 +155,23 @@ if ( $submit ){
 %    my $cpu_defaults = $ui->config->get('DEFAULT_HINFO_CPU_VALUES');
 %    my $os_defaults  = $ui->config->get('DEFAULT_HINFO_OS_VALUES');
 
+
+<%doc>
+Opens a new window showing subnet addresses to choose from
+</%doc>
+<script type="text/javascript">
+<!--
+function openChooseIP(selectObj, subnet) {
+   var idx = selectObj.selectedIndex; 
+   var selection = selectObj.options[idx].value;
+   if ( selection == 'manual' ){
+       openwindow('../management/choose_ip.html?select_id='+selectObj.id+'&subnet='+subnet);
+   }
+}
+-->
+</script>
+
+
 <div id="sectiontools">
   <div class="container">
     <div class="containerhead">
@@ -179,17 +196,27 @@ if ( $submit ){
           <% $address %>
           </p>
 %       }else{
-            <p>
-              <label for="address">IP Address</label>
-              This form will assign the first available address in this subnet. 
-            </p>
 %           if ( $manager && $manager->can($user, 'choose_ip', $block) ){
+%               if ( $block->version == 6 ){
+                  <p>
+                    <label for="address">IPv6 Address</label>
+                      <input type="text" name="address" class="longtxt" value="">
+                  </p>
+%               }else{
+                  <p>
+                    <label for="address">IP Address</label>
+                      <select id="address" name="address" onChange="openChooseIP(this, '<% $block %>');">
+  		        <option value="" SELECTED>Automatic Assignment</option>
+		        <option value="manual">Manual Assignment</option>
+		      </select>
+                  </p>
+%               }
+%	    }else{
                 <p>
-                  <label for="address">&nbsp;</label>
-                  However, you may choose a specific address 
-                  <a href="hostinfo_tasks.html?ipblock=<% $block %>&ipblock_action=show_block&submit=Go">HERE</a>.
+                    <label for="address">IP Address</label>
+                    An available address will be automatically assigned.
                 </p>
-%	    }
+%           }
 %       }
         <p>
         <label for="domain">Domain <font color="red">*</font></label>

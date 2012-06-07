@@ -1,0 +1,42 @@
+<%doc>
+    Present the user with a subnet block view to choose an IP address
+    Inserts the option in the calling window select tag
+</%doc>
+
+<%args>
+$subnet           # Subnet ID
+$select_id        # Caller select tag id
+</%args>
+
+<%init>
+$m->clear_buffer;
+my $o = Ipblock->retrieve($subnet);
+</%init>
+
+<html>
+  <head>
+      <link rel="stylesheet" href="<% $r->dir_config('NetdotPath') %>css/style.css" type="text/css">
+  </head>      
+% my $js_prefix = $r->dir_config('NetdotPath') . "java_script";
+% for my $script ( qw(dynamic_list select jsrsClient) ){
+  <script language="JavaScript" src="<% $js_prefix %>/<% $script %>.js"></script>
+% }
+
+<script language="javascript">
+<!--
+function selectAddr(addr) {
+    insertOption('<% $select_id %>', addr, addr, '1'); 
+    window.close();
+}
+-->
+</script>
+
+  <body class="bodytag">
+      <div class="container">
+          <div class="containerhead">Choose address in <% $o->get_label %></div>
+           <div class="containerbody">
+               <& subnet.mhtml, network => $o &>
+           </div>
+      </div>
+  </body>
+</html>

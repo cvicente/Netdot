@@ -379,7 +379,7 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 	$m->comp('/generic/confirm.html', 
 		 %ARGS, 
 		 target  =>'../management/ip.html', 
-		 message =>'The IP address or block you selected does not yet exist. '.
+		 message =>'The IP address or block '.$add_block_prefix.' does not yet exist. '.
 		 'Are you sure that you want to create it?',
 	    );
     }
@@ -1576,17 +1576,10 @@ if ( $_action eq 'VIEW_ADD_RIGHTS' ){
 %     if( $o->status->name eq "Subnet" ) {  
        <div class="container">  
           <div class="containerheadleft"> 
-             Choose an Address 
+              Subnet Block View 
           </div>  
           <div class="containerheadright">
-            Legend:
-            <span class="ipaddr_available">Available</span>
-            <span class="ipaddr_discovered">Discovered</span>
-            <span class="ipaddr_dynamic">Dynamic</span>
-            <span class="ipaddr_static">Static</span>
-            <span class="ipaddr_reserved">Reserved</span>
-			&nbsp;&nbsp;
-         	<a href="ip.html?id=<% $id %>&view=Children&view_format=list">[List View]</a>
+              <a href="ip.html?id=<% $id %>&view=Children&view_format=list">[List View]</a>
           </div>
           <div class="containerbody" id="ipaddresstable">  
           <& subnet.mhtml, network => $o &>  

@@ -94,6 +94,16 @@
         return tempArray; 
      } 
 
+
+// Open a given URL in a new browser window
+    function openwindow(url){
+	var newwindow;
+	var now = new Date();
+	// the idea is to open a window with a unique name so that we don't override the contents of an already open window
+	newwindow = window.open(url, "window"+now.getMinutes()+now.getSeconds(), "width=800,height=600,scrollbars=yes");
+	return newwindow;
+    }
+
 // 	Opens a new browser window for new object insertion
 //         using edit.html
 //
@@ -104,22 +114,19 @@
 // 	<a href="#" onClick="openinsertwindow('table=DeviceContacts&device=<% $o->id %>')">[new]</a>
 
     function openinsertwindow(edit_args){
-       var insertwind;
-       var now = new Date();
-       var url = "edit.html?showheader=0&"+edit_args;
-       // the idea is to open a window with a unique name so that we don't override the contents of an already open window
-       insertwind = window.open(url, "insertwind"+now.getMinutes()+now.getSeconds(), "width=600,height=400,scrollbars=yes");
+	var now = new Date();
+	var url = "edit.html?showheader=0&"+edit_args;
+	openwindow(url);
    }
 
 //      Opens a new browser window for viewing (e.g. contact)
     var jspopoutstring="";
     function opentextwindow(data_string, format, urlargs) {
-	var textwindow;
-	var now = new Date();
 	var url = "viewtext.html?format="+format+"&"+urlargs;
-	textwindow = window.open(url, "textwind"+now.getMinutes()+now.getSeconds(), "width=600,height=400,scrollbars=yes");
+	var textwindow = openwindow(url);
 	if(format == 'js') textwindow.data_string = data_string;
     }
+
 
 // this code inserts an element into the select box in the  
 // calling page form, and selects the new element if needed  
