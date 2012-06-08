@@ -151,3 +151,9 @@
 	}
     }  
 
+// Clear options  
+    function clearOptions(id) {  
+	var myselect = opener.document.getElementById(id);  
+	myselect.options.length = 0;  
+    }  
+

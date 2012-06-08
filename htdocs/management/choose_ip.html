@@ -16,20 +16,24 @@ my $o = Ipblock->retrieve($subnet);
 <html>
   <head>
       <link rel="stylesheet" href="<% $r->dir_config('NetdotPath') %>css/style.css" type="text/css">
-  </head>      
 % my $js_prefix = $r->dir_config('NetdotPath') . "java_script";
 % for my $script ( qw(dynamic_list select jsrsClient) ){
-  <script language="JavaScript" src="<% $js_prefix %>/<% $script %>.js"></script>
+      <script language="JavaScript" src="<% $js_prefix %>/<% $script %>.js"></script>
 % }
 
 <script language="javascript">
 <!--
 function selectAddr(addr) {
+    clearOptions('<% $select_id %>');
+    insertOption('<% $select_id %>', 'Manual Assignment', 'manual', '0'); 
+    insertOption('<% $select_id %>', 'Automatic Assignment', '', '0'); 
     insertOption('<% $select_id %>', addr, addr, '1'); 
     window.close();
 }
 -->
 </script>
+
+  </head>      
 
   <body class="bodytag">
       <div class="container">
