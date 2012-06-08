@@ -800,45 +800,44 @@ sub get_snmp_info {
 			
 			# Now, if there's more than one instance, we need to get
 			# the STP standard info for at least one vlan on that instance.
-
-			# Cisco case: query repeatedly for each "community@vlan_id"
-			# Notice that we query every vlan on purpose. I have seen cases
-			# where even though a vlan is mapped to a particular instance, the query
-			# will not return the necessary values, but querying other vlans mapped to the same instance does
-
-			
+			my %seen_inst;
 			if ( $sinfo->cisco_comm_indexing() ){
-			    foreach my $vid ( keys %{$dev{stp_vlan2inst}} ){
-				next if ( exists $IGNOREDVLANS{$vid} );
+			    while ( my($vid, $mst_inst) = each %{$dev{stp_vlan2inst}} ){
+				next if ( exists $seen_inst{$mst_inst} );
 				next unless $vlan_status{$vid} eq 'operational';
-				my $mst_inst = $dev{stp_vlan2inst}->{$vid};
+				next if ( exists $IGNOREDVLANS{$vid} );
 				my $comm = $sinfo->snmp_comm . '@' . $vid;
+				my $stp_p_info;
+				my $i_stp_info;
 				eval {
 				    my $vsinfo = $class->_get_snmp_session('host'        => $args{host},
 									   'communities' => [$comm],
 									   'version'     => $sinfo->snmp_ver,
 									   'sclass'      => $sinfo->class);
-				    my $stp_p_info = $class->_exec_timeout( 
+				    
+				    $stp_p_info = $class->_exec_timeout( 
 					$args{host}, 
-					sub{  return $self->_get_stp_info(sinfo=>$vsinfo) } );
-				    foreach my $method ( keys %$stp_p_info ){
-					$dev{stp_instances}{$mst_inst}{$method} = $stp_p_info->{$method};
-				    }
-
-				    my $i_stp_info = $class->_exec_timeout( 
+					sub{  return $self->_get_stp_info(sinfo=>$vsinfo) } 
+					);
+				    
+				    $i_stp_info = $class->_exec_timeout( 
 					$args{host}, 
 					sub{  return $self->_get_i_stp_info(sinfo=>$vsinfo) } );
-				    foreach my $field ( keys %$i_stp_info ){
-					foreach my $i ( keys %{$i_stp_info->{$field}} ){
-					    $dev{interface}{$i}{$field} = $i_stp_info->{$field}->{$i};
-					}
-				    }
 				};
 				if ( my $e = $@ ){
 				    $logger->error(sprintf("Could not get SNMP session for %s with community %s",
 							   $args{host}, $comm));
 				    next;
 				}
+				foreach my $method ( keys %$stp_p_info ){
+				    $dev{stp_instances}{$mst_inst}{$method} = $stp_p_info->{$method};
+				}
+				foreach my $field ( keys %$i_stp_info ){
+				    foreach my $i ( keys %{$i_stp_info->{$field}} ){
+					$dev{interface}{$i}{$field} = $i_stp_info->{$field}->{$i};
+				    }
+				}
+				$seen_inst{$mst_inst} = 1;
 			    }
 			}
 		    }
