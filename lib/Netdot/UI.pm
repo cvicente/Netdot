@@ -1756,9 +1756,10 @@ sub build_device_topology_graph {
     sub dfs { # DEPTH FIRST SEARCH - recursive
         my ($g, $igraph, $spp, $root, $device, $hopup, $hopdown, $prev_dir, $seen, $vlans, 
 	    $show_vlans, $show_names, $view, $specific_vlan) = @_;
-        return if ($hopup == 0 && $prev_dir eq "up");
-        return if ($hopdown == 0 && $prev_dir eq "down");
-
+	return if ($hopup == 0 && $prev_dir eq "up");
+	return if ($hopdown == 0 && $prev_dir eq "down");
+	return unless ( $hopup || $hopdown ); 
+	
         my $dir;
 
 	while ( my($iid, $niid) =  each %{$igraph->{$device->id}} ){
