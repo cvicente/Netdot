@@ -359,9 +359,14 @@ function openChooseIP(selectObj, subnet) {
         <p>
         <label for="site_id">Site</label>
         <select name="site_id" id="site_id" onChange="jsrsSendqueryNM('Room', 'room_id', this.options[selectedIndex].text);">
-%       my @all_sites = Site->retrieve_all();
+%	my @sites;
+%       if ( $block->sites ){
+%            @sites = map { $_->site } $block->sites;
+%       }else{
+%           @sites = Site->retrieve_all();
+%       }
         <option value="">-- Select --</option>
-%       foreach my $site ( sort { $a->get_label cmp $b->get_label } @all_sites ){
+%       foreach my $site ( sort { $a->get_label cmp $b->get_label } @sites ){
             <option value="<% $site->id %>"><% $site->get_label %></option>
 %       }
         </select>
