@@ -468,7 +468,7 @@ sub add_host {
 	    }elsif ( Ipblock->matches_v6($address) ){
 		$prefix = 128;
 	    }else{
-		$class->throw_user("Address $address does not match valid patterns");
+		$class->throw_user("Address $address appears to be invalid");
 	    }
 	    if ( my $ipb = Ipblock->search(address=>$address, 
 					   prefix=>$prefix)->first ){

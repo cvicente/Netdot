@@ -2775,7 +2775,7 @@ sub _prevalidate {
 	unless $address;
 
     unless ( $class->matches_ip($address) ) {
-	$class->throw_user("IP: $address does not match valid patterns");
+	$class->throw_user("IP: $address appears to be invalid");
     }
 
     if ( $address eq '0.0.0.0' || $address eq '::' ){

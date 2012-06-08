@@ -83,7 +83,30 @@ if ( $submit ){
     $args{person}  = $person;
     $args{zone}    = $zone;
     $args{subnet}  = $block;
-    $args{address} = $address if $address;
+    if ( $address ){
+	$args{address} = $address;
+    }else{
+	if ( $block->version == 6 ){
+	    if ( $ui->config->get('IPV6_ADDRESS_USER_ENTRY_HOST_ONLY') ){
+		# We need to construct the address
+		my %parts;
+		foreach my $key ( %ARGS ){
+		    if ( $key =~ /v6_(\d+)$/o ){
+			my $val = $ARGS{$key};
+			if ( defined $val && $val ne "" ){
+			    $parts{$1} = $val;
+			}else{
+			    $m->comp('/generic/error.mhtml', error=>"You must fill all the address parts");
+			}
+		    }
+		}
+		my $addr = $block->address;
+		$addr =~ s/:$//;
+		$addr .= join(':', map { $parts{$_} } sort { $a <=> $b } keys %parts);
+		$args{address} = $addr;
+	    }
+	}
+    }
 
     # Hardware Info
     $args{cpu} = $cpu || $other_cpu;
@@ -199,8 +222,29 @@ function openChooseIP(selectObj, subnet) {
 %           if ( $manager && $manager->can($user, 'choose_ip', $block) ){
 %               if ( $block->version == 6 ){
                   <p>
-                    <label for="address">IPv6 Address</label>
-                      <input type="text" name="address" class="longtxt" value="">
+                      <label for="address">IPv6 Address</label>
+		      An available address will be automatically assigned.
+                  </p>
+                  <p>
+                      <label for="address">&nbsp;</label>
+		      If you do not need a specific address, leave this blank
+                  </p>
+                  <p>
+                      <label for="address">&nbsp;</label>
+%		      if ( $ui->config->get('IPV6_ADDRESS_USER_ENTRY_HOST_ONLY') ){
+%                        my $blockaddr = $block->address;
+%                        my $prefix = $block->prefix;
+%			 my $num = (128 - $prefix) / 16;
+%                        my @txt;
+%			 for (my $i=1; $i <= $num; $i++){
+%			     push @txt, '<input type="text" name="v6_'.$i.'" maxlength="4" style="width:50px" value="">';
+%			 }
+%                        my $txt = join ':', @txt;
+%			 $blockaddr =~ s/:$//;
+%                        print $blockaddr . $txt;
+%                     }else{
+                          <input type="text" name="address" class="longtxt" value=""> 
+%                     }
                   </p>
 %               }else{
                   <p>
