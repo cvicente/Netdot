@@ -37,7 +37,7 @@ my @statements = (
             `maint_until` date,
             `physaddr` bigint,
             `po_number` varchar(255),
-            `product_id` bigint,
+            `product_id` bigint NOT NULL,
             `reserved_for` varchar(255),
             `serial_number` varchar(255),
             UNIQUE INDEX asset1 (`physaddr`),
@@ -122,20 +122,14 @@ my @ptrow = $dbh->selectrow_array('SELECT id FROM producttype WHERE name="Module
 my $ptype = $ptrow[0];
 
 my $np = $dbh->prepare('INSERT INTO product (name, manufacturer,type) VALUES(?,?,?)');
+my %seen_prods; # Try to avoid duplicate errors
 foreach my $mf ( keys %products ){
     foreach my $model ( keys %{$products{$mf}} ){
+	next if exists $seen_prods{$mf}{$model};
 	next if ($model =~ /Fill in/io );
-	eval {
-	    $np->execute($model, $mf, $ptype);
-	};
-	if ( my $e = $@ ){
-	    if ( $e =~ /duplicate/i ){
-		next;
-	    }else{
-		die $e;
-	    }
-	}
+	$np->execute($model, $mf, $ptype);
 	print "DEBUG: Inserted product ($mf, $model)\n" if $CONFIG{debug};
+	$seen_prods{$mf}{$model} = 1;
     }
 }
 # Get product IDs
@@ -195,6 +189,7 @@ my %newassets;
 foreach my $sn ( keys %{$assets{sn}} ){
     my %vals = %{$assets{sn}{$sn}};
     my ($cs,$ph,$in,$mc,$mf,$mu,$pr) = @vals{'cs','ph','in','mc','mf','mu','pr'};
+    next unless ($pr); # product_id is NOT NULL
     $ia->execute($sn,$cs,$ph,$in,$mc,$mf,$mu,$pr);
     print "DEBUG: Created asset: S/N: $sn, product: $pr\n" if $CONFIG{debug};
     $newassets{$ph} = 1 if $ph;
@@ -205,6 +200,7 @@ foreach my $ph ( keys %{$assets{ph}} ){
     my ($cs,$in,$mc,$mf,$mu,$pr) = @vals{'cs','in','mc','mf','mu','pr'};
     next if ( exists $newassets{$ph} );
     my $sn = undef;
+    next unless ($pr); # product_id is NOT NULL
     $ia->execute($sn,$cs,$ph,$in,$mc,$mf,$mu,$pr);
     print "DEBUG: Created asset: Mac: $ph, product: $pr\n" if $CONFIG{debug};
 }
@@ -241,7 +237,7 @@ my $idx2 = $dbh->selectall_arrayref("
   WHERE   table_name = 'person'
   AND     index_name = 'Person3'
 ");
-if ( $idx && $idx->[0]->[0] == 1 ){
+if ( $idx2 && $idx2->[0]->[0] == 1 ){
     @statements=('ALTER TABLE person DROP KEY Person3;');
 }
 
