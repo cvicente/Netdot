@@ -1666,15 +1666,15 @@ sub get_ips_from_all {
 }
 
 ###################################################################################################
-=head2 get_device_graph - Returns the graph of devices
+=head2 get_device_graph - Returns the graph of devices - Maps Device IDs
 
   Arguments:
     None
   Returns:
-    Hash which represents the graph
+    Hashref of hashrefs, where keys are Device IDs
   Example:
-    Device::get_device_graph()
-$logger->info
+    my $graph = Device::get_device_graph()
+
 =cut
 sub get_device_graph {
     my ($class) = @_;
@@ -1700,6 +1700,44 @@ sub get_device_graph {
 
     return $graph;
 }
+
+###################################################################################################
+=head2 get_device_i_graph - Returns the graph of devices - Maps device and interface IDs
+
+  Arguments:
+    None
+  Returns:
+    Hashref of hashrefs where:
+      key1 = device id, key2 = interface id, value = interface id
+  Example:
+    my $graph = Device::get_device_i_graph()
+
+=cut
+sub get_device_i_graph {
+    my ($class) = @_;
+    $class->isa_class_method('get_device_i_graph');
+
+    $logger->debug("Netdot::Device::get_device_i_graph: querying database");
+    
+    my $dbh = $class->db_Main;
+
+    my $graph = {};
+    my $links = $dbh->selectall_arrayref("
+                SELECT  d1.id, i1.id, d2.id, i2.id 
+                FROM    device d1, device d2, interface i1, interface i2
+                WHERE   i1.device = d1.id AND i2.device = d2.id
+                AND i2.neighbor = i1.id AND i1.neighbor = i2.id
+            ");
+
+    foreach my $link (@$links) {
+        my ($d1, $i1, $d2, $i2) = @$link;
+        $graph->{$d1}{$i1}  = $i2;
+        $graph->{$d2}{$i2}  = $i1;
+    }
+
+    return $graph;
+}
+
 
 ###################################################################################################
 =head2 shortest_path_parents - A variation of Dijkstra's single-source shortest paths algorithm

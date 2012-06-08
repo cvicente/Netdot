@@ -1754,19 +1754,17 @@ sub build_device_topology_graph {
     }
 
     sub dfs { # DEPTH FIRST SEARCH - recursive
-        my ($g, $spp, $root, $device, $hopup, $hopdown, $prev_dir, $seen, $vlans, 
+        my ($g, $igraph, $spp, $root, $device, $hopup, $hopdown, $prev_dir, $seen, $vlans, 
 	    $show_vlans, $show_names, $view, $specific_vlan) = @_;
         return if ($hopup == 0 && $prev_dir eq "up");
         return if ($hopdown == 0 && $prev_dir eq "down");
 
-        my @ifaces = $device->interfaces;
-        
-        my $dir = "undef";           
-        
-        foreach my $iface ( sort { int($a) cmp int($b) }  @ifaces) {
-            my $neighbor = $iface->neighbor;
-            next unless $neighbor;  # If there's no neighbor, skip ahead
-	    
+        my $dir;
+
+	while ( my($iid, $niid) =  each %{$igraph->{$device->id}} ){
+	    my $iface = Interface->retrieve($iid);
+	    my $neighbor = Interface->retrieve($niid);
+
 	    my $name          = ($show_names ? $iface->name :    $iface->number)    || $iface->number;
 	    my $neighbor_name = ($show_names ? $neighbor->name : $neighbor->number) || $neighbor->number;
 	    
@@ -1853,11 +1851,14 @@ sub build_device_topology_graph {
             # If we haven't recursed across this edge before, then do so now.
 	    if ( $cont == 1 ) {
                 if ($dir eq 'up') {
-                    &dfs($g, $spp, $root, $nd, $hopup-1, $hopdown, $dir, $seen, $vlans, $show_vlans, $show_names, $view, $specific_vlan);
+                    &dfs($g, $igraph, $spp, $root, $nd, $hopup-1, $hopdown, $dir, $seen, 
+			 $vlans, $show_vlans, $show_names, $view, $specific_vlan);
                 } elsif ($dir eq 'down') {
-                    &dfs($g, $spp, $root, $nd, $hopup, $hopdown-1, $dir, $seen, $vlans, $show_vlans, $show_names, $view, $specific_vlan);
+                    &dfs($g, $igraph, $spp, $root, $nd, $hopup, $hopdown-1, $dir, $seen, 
+			 $vlans, $show_vlans, $show_names, $view, $specific_vlan);
                 } else {
-                    &dfs($g, $spp, $root, $nd, $hopup-1, $hopdown-1, $dir, $seen, $vlans, $show_vlans, $show_names, $view, $specific_vlan);
+                    &dfs($g, $igraph, $spp, $root, $nd, $hopup-1, $hopdown-1, $dir, $seen, 
+			 $vlans, $show_vlans, $show_names, $view, $specific_vlan);
                 }
 	    }
         }
@@ -1870,6 +1871,9 @@ sub build_device_topology_graph {
 
     # Actually do the searching
     my $g = GraphViz->new(%args);
+
+    # Get the map of neighboring interfaces
+    my $igraph = Device->get_device_i_graph();
 
     # Shortest_path_parents graph
     my $spp = Device->shortest_path_parents($root);
@@ -1887,10 +1891,10 @@ sub build_device_topology_graph {
     $seen->{'NODE'}{$start->id} = 1;
 
     if ( $depth_up && $depth_down ) {
-	&dfs($g, $spp, $root, $start, $depth_up, $depth_down, "undef", $seen, $vlans, 
+	&dfs($g, $igraph, $spp, $root, $start, $depth_up, $depth_down, "undef", $seen, $vlans, 
 	     $show_vlans, $show_names, $view, $specific_vlan);
     } else {
-	&dfs($g, $spp, $root, $start, $depth, $depth, "undef", $seen, $vlans, 
+	&dfs($g, $igraph, $spp, $root, $start, $depth, $depth, "undef", $seen, $vlans, 
 	     $show_vlans, $show_names, $view, $specific_vlan);
     }
 
@@ -1984,7 +1988,8 @@ sub build_device_stp_graph {
     
     my $devicemacs = Device->get_macs_from_all();
 
-    my $links = Netdot::Topology->get_tree_stp_links(root=>$start_root, devicemacs=>$devicemacs);  # these links contain STP graphs for all numbers
+    # These links contain STP graphs for all numbers
+    my $links = Netdot::Topology->get_tree_stp_links(root=>$start_root, devicemacs=>$devicemacs);  
     map { $links{$_} = $links->{$_} } keys %$links;
     
     
