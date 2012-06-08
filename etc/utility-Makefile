@@ -16,13 +16,15 @@
 REPLACEABLES := PREFIX LIB ETC PERL
 
 # Defaults
-LIB = $(PREFIX)/lib
-ETC = $(PREFIX)/etc
+REPLACE_PREFIX = $(PREFIX)
+REPLACE_LIB    = $(REPLACE_PREFIX)/lib
+REPLACE_ETC    = $(REPLACE_PREFIX)/etc
+REPLACE_PERL   = $(PERL)
 
 # Build up a list of sed expressions for the replacements.  Notice
 # that undefined replacements will get flagged when replaced.
 REPLACEMENT_EXPRESSIONS = $(foreach r, $(REPLACEABLES), \
--e "s|<<Make:$(r)>>|$(if $($(r)),$($(r)),$(r)_WAS_NOT_DEFINED_DURING_MAKE)|g")
+-e "s|<<Make:$(r)>>|$(if $(REPLACE_$(r)),$(REPLACE_$(r)),$(r)_WAS_NOT_DEFINED_DURING_MAKE)|g")
 
 # This macro does variable substitution using sed.  It looks for
 # occurrences of ``<<Make:NAME>>'' and replaces them with $(NAME),
