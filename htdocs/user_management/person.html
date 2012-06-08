@@ -1,0 +1,146 @@
+<%doc>
+Self-service person maintenance for regular users
+</%doc>
+%
+%
+<%attr>
+title   => 'Person' 
+</%attr>
+%
+%
+<%args>
+$id
+$user   => $ui->get_current_user($r)
+$edit   => undef
+$submit => undef
+$chpass => undef
+$oldpass => undef
+$newpass1 => undef
+$newpass2 => undef
+</%args>
+%
+%
+<%init>
+my $DEBUG = 0;
+print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+my $o = Person->retrieve($id);
+my %exclude = (
+    'username'  => 1, 
+    'password'  => 1, 
+    'user_type' => 1,
+    'info'      => 1,
+    );
+
+# This controls whether we offer the password change option
+my $can_passwd = $ui->config->get('USER_CAN_CHANGE_PASSWORD');
+
+</%init>
+
+<%perl>
+if ( $submit ){
+    if ( $submit eq "Update" ){
+	my %columns;
+	map { $columns{$_} = 1 } Person->meta_data->get_column_names;
+	my %uargs; # Update args
+	foreach my $c ( keys %ARGS ){
+	    next if $c eq 'id';
+	    next unless $columns{$c};
+	    next if $exclude{$c};
+	    $uargs{$c} = $ARGS{$c};
+	}
+	eval {
+	    Netdot::Model->do_transaction( sub{
+		$o->update(\%uargs);
+					   });
+	};
+	if ( my $e = $@ ){
+	    $m->comp('../generic/error.mhtml', error=>$e);
+	}
+    }elsif ( $can_passwd && $submit eq 'Change' ){
+	
+	unless ( $oldpass && $newpass1 && $newpass2 ){
+	    $m->comp('../generic/error.mhtml', error=>"You are missing one or more fields");
+	}
+	unless ( $o->verify_passwd($oldpass) ){
+	    $m->comp('../generic/error.mhtml', error=>"Your old password does not match what's in the DB");
+	}
+	unless ( $newpass1 eq $newpass2 ){
+	    $m->comp('../generic/error.mhtml', error=>"Your new passwords don't match");	    
+	}
+	# The Person class will take care of encrypting it
+	eval {
+	    $o->update({password=>$newpass1});
+	};
+	if ( my $e = $@ ){
+	    $m->comp('../generic/error.mhtml', error=>$e);
+	}else{
+	    $m->comp('.show_message', title=>"Action Message", msg=>"Password updated successfully");
+	}
+    }
+}
+</%perl>
+
+
+<div class="container">
+    <div class="containerheadleft"><strong>Person details</strong></div>
+    <div class="containerheadright">
+%       if ( $edit || $chpass ){
+            &nbsp;
+%       }else{
+            <a href="person.html?id=<% $id %>&edit=1">[edit]</a>
+%	    if ( $can_passwd ){
+                <a href="person.html?id=<% $id %>&chpass=1">[change password]</a>
+%           }
+%       }
+    </div>
+
+    <div class="containerbodyoutside">
+        <form name="netdotform" action="person.html" method="POST" enctype="multipart/form-data">
+%      if ( $can_passwd && $chpass ){
+%          my @headers = ('Old password', 'New password', 'Repeat new password');
+%          my @data;
+%	   push (@data, '<input type="password" name="oldpass" value="">');
+%	   push (@data, '<input type="password" name="newpass1" value="">');
+%	   push (@data, '<input type="password" name="newpass2" value="">');
+
+           <& /generic/attribute_table.mhtml, field_headers=>\@headers, data=>\@data, 
+              width=>"1", headercolwidth=>"25%", datacolwidth=>"75%" &>
+
+%      }else{
+        <& /generic/form.mhtml, table=>'Person', id=>$id, edit=>$edit, exclude=>\%exclude &>
+
+%      }
+
+%      if ( $edit ){
+           <p><br>
+           <input name="submit" type="submit" value="Update">
+    	   <input name="cancel" value="Cancel" onClick="history.go(-1)" type="button">
+%      }elsif ( $chpass ){
+           <input name="id" type="hidden" value=<% $id %>>
+           <p><br>
+           <input name="submit" type="submit" value="Change">
+    	   <input name="cancel" value="Cancel" onClick="history.go(-1)" type="button">
+%      }
+
+        </form>
+    </div>
+</div>
+
+
+<%def .show_message>
+<%args>
+$title => undef
+$msg   => undef
+</%args>
+
+<div class="container">
+    <div class="containerhead">
+       <strong><% $title %></strong>
+    </div>
+    <div class="containerbody">
+       <p><% $msg %></p>
+    </div>
+</div>
+
+</%def>
+

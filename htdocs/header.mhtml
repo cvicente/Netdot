@@ -63,14 +63,17 @@ $ui->get_allowed_objects($r, $user) if $user;
     <span class="headright">
 %
 %   if( $user ) {
+%       my $person = $ui->get_user_person($user);
 %       if ( $manager && $manager->can($user, "access_section", 'header.mhtml:search') ){
             <form action="search.html" method="post">
                 <label for="q"><b>search</b>:</label>
                 <input type="text" name="q" size="13" value="" style="color:#003300;border:1px inset #006600;width:10em;">
             </form>
             <br />
+            <strong>user</strong>: <a href="view.html?table=Person&id=<% $person->id %>"><% $user->getUsername() %></a> &nbsp;
+%       }else{
+            <strong>user</strong>: <a href="../user_management/person.html?id=<% $person->id %>"><% $user->getUsername() %></a> &nbsp;
 %       }
-        <B>user</B>: <% $user->getUsername() %> &nbsp;
         [<a href="<% $r->dir_config('NetdotPath') %>logout.html">logout</a>]
 %   }
 %
