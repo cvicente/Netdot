@@ -174,7 +174,7 @@ sub _get_v6_nd_from_cli {
     my $args = $self->_get_credentials(host=>$host);
     return unless ref($args) eq 'HASH';
 
-    my @output = $self->_cli_cmd(%$args, host=>$host, cmd=>'show ipv6 neighbor');
+    my @output = $self->_cli_cmd(%$args, host=>$host, cmd=>'show ipv6 neighbor', personality=>'pixos');
     shift @output; # Ignore header line
     my %cache;
     foreach my $line ( @output ) {
