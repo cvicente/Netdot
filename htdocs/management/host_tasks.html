@@ -188,44 +188,41 @@ my $manager = $ui->get_permission_manager($r);
 if ( $action eq "search" && $submit ){
     # Remove trailing and leading spaces
     my %idx;
-    if ( $search ){
-	# Remove trailing and leading spaces
-	$search = $ui->rem_lt_sp($search);
-	if ( $search =~ /$MAC/ ){
-	    @list = PhysAddr->search(address=>$search);
-	}elsif ( Ipblock->matches_ip($search) ){
-	    @list = Ipblock->search(address=>$search);
-	}else{
-	    my %args = (name=>$search);
-	    $args{zone} = $zone_id if ( $zone_id );
-	    @list = RR->search_like(%args);
-	}
-	# Display search results
-	if ( @list ){
-	    if ( scalar @list == 1 ){
-		my $obj = $list[0];
-		my $class = $obj->short_class;
-		if ( $class eq 'RR' ){
-		    $m->comp('/management/host.html', id=>$obj->id);
-		}elsif ( $class eq 'Ipblock' ){
-		    $m->comp('/management/ip.html', id=>$obj->id);
-		}elsif ( $class eq 'PhysAddr' ){
-		    $m->comp('/management/mac.html', id=>$obj->id);
-		}
-	    }else{
-		print '<div class="container">';
-		print '<div class="containerhead">';
-		print "Query <em>$search</em> returned: ".scalar(@list)." matches";
-		print "</div>";
-		print '<div class="containerbody">';
-		$m->comp('/generic/sortresults.mhtml', object=>\@list, withedit=>0);
-		print "</div>\n</div>";
+    # Remove trailing and leading spaces
+    $search = $ui->rem_lt_sp($search);
+    $search ||= '*';
+    if ( $search =~ /$MAC/ ){
+	@list = PhysAddr->search(address=>$search);
+    }elsif ( Ipblock->matches_ip($search) ){
+	@list = Ipblock->search(address=>$search);
+    }else{
+	my %args = (name=>$search);
+	$args{zone} = $zone_id if ( $zone_id );
+	@list = RR->search_like(%args);
+    }
+    # Display search results
+    if ( @list ){
+	if ( scalar @list == 1 ){
+	    my $obj = $list[0];
+	    my $class = $obj->short_class;
+	    if ( $class eq 'RR' ){
+		$m->comp('/management/host.html', id=>$obj->id);
+	    }elsif ( $class eq 'Ipblock' ){
+		$m->comp('/management/ip.html', id=>$obj->id);
+	    }elsif ( $class eq 'PhysAddr' ){
+		$m->comp('/management/mac.html', id=>$obj->id);
 	    }
-	} else {
-	    $m->comp('/generic/no_search_results.html', search=>$search);
-        }
+	}else{
+	    print '<div class="container">';
+	    print '<div class="containerhead">';
+	    print "Query <em>$search</em> returned: ".scalar(@list)." matches";
+	    print "</div>";
+	    print '<div class="containerbody">';
+	    $m->comp('/generic/sortresults.mhtml', object=>\@list, withedit=>0);
+	    print "</div>\n</div>";
+	}
     } else {
-	$m->comp('/generic/no_search_criteria.html');
+	$m->comp('/generic/no_search_results.html', search=>$search);
     }
 
 #######################################################################################

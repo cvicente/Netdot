@@ -18,6 +18,7 @@ title        => 'VLAN Tasks'
 $search           => undef
 $search_vlan      => undef
 $search_vlangroup => undef
+$search_type      => undef
 $user             => $ui->get_current_user($r);
 $submit           => undef
 $show_tasks       => undef
@@ -77,6 +78,7 @@ my $manager = $ui->get_permission_manager($r);
                 <label for="Find">Vlan:</label>
                 <input type="text" name="search_vlan" class="txt" value="<% $search_vlan %>"> 
                 <input name="submit" value="Find" class="btn" type="submit">
+		<input type="hidden" name="search_type" value="vlan">
                 </p>
             </form>
             <form action="vlan_tasks.html" method="POST">
@@ -84,6 +86,7 @@ my $manager = $ui->get_permission_manager($r);
                 <label for="Find">Vlan Group:</label>
                 <input type="text" name="search_vlangroup" class="txt" value="<% $search_vlangroup %>"> 
                 <input name="submit" value="Find" class="btn" type="submit">
+		<input type="hidden" name="search_type" value="vlangroup">
                 </p>
             </form>
          </fieldset>
@@ -121,28 +124,26 @@ my $manager = $ui->get_permission_manager($r);
 #
 #######################################################################################
 
-if ( $submit ){
+if ( $submit eq 'Find' ){
     my %idx;
-    if ( $search_vlan ){
+    if ( $search_type eq 'vlan' ){
 	$search = $search_vlan;
 	# Remove trailing and leading spaces
 	$search = $ui->rem_lt_sp($search);
+	$search ||= '*';
         map { $idx{$_->id} = $_ } Vlan->search_like(vid         => $search);
         map { $idx{$_->id} = $_ } Vlan->search_like(name        => $search);
         map { $idx{$_->id} = $_ } Vlan->search_like(description => $search);
-	@list = values %idx;
 	
-    }elsif ( $search_vlangroup ) {
+    }elsif ( $search_type eq 'vlangroup' ) {
 	$search = $search_vlangroup;
 	# Remove trailing and leading spaces
 	$search = $ui->rem_lt_sp($search);
+	$search ||= '*';
         map { $idx{$_->id} = $_ } VlanGroup->search_like(name        => $search);
         map { $idx{$_->id} = $_ } VlanGroup->search_like(description => $search);
-	@list = values %idx;
-    
-    }elsif ( $submit eq "Search" || $submit eq "Find" ) {
-	$m->comp('/generic/no_search_criteria.html');
     }
+    @list = values %idx;
 }
 </%perl>
 
