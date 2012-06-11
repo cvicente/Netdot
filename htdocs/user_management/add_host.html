@@ -91,7 +91,7 @@ if ( $submit ){
 		# We need to construct the address
 		my %parts;
 		foreach my $key ( %ARGS ){
-		    if ( $key =~ /v6_(\d+)$/o ){
+		    if ( $key =~ /^v6_(\d+)$/o ){
 			my $val = $ARGS{$key};
 			if ( defined $val && $val ne "" ){
 			    $parts{$1} = $val;
@@ -184,13 +184,24 @@ Opens a new window showing subnet addresses to choose from
 </%doc>
 <script type="text/javascript">
 <!--
-function openChooseIP(selectObj, subnet) {
-   var idx = selectObj.selectedIndex; 
-   var selection = selectObj.options[idx].value;
+function openChooseIP(selectObj1, selectId2, subnet) {
+   var idx = selectObj1.selectedIndex; 
+   var selection = selectObj1.options[idx].value;
    if ( selection == 'manual' ){
-       openwindow('../management/choose_ip.html?select_id='+selectObj.id+'&subnet='+subnet);
+       openwindow('../management/choose_ip.html?select_id='+selectId2+'&subnet='+subnet);
    }
 }
+
+function showIPv6Input(selectObj, Layer){
+   var idx = selectObj.selectedIndex; 
+   var selection = selectObj.options[idx].value;
+   var style = document.getElementById(Layer).style;
+   if ( selection == 'manual' ){
+       style.display = 'block';
+   }else{
+       style.display = 'none';
+   }
+} 
 -->
 </script>
 
@@ -223,12 +234,12 @@ function openChooseIP(selectObj, subnet) {
 %               if ( $block->version == 6 ){
                   <p>
                       <label for="address">IPv6 Address</label>
-		      An available address will be automatically assigned.
+                      <select id="v6_assign" name="v6_assign" onChange="showIPv6Input(this, 'ipv6_input');">
+   		        <option value="automatic" SELECTED>Automatic Assignment</option>
+		        <option value="manual">Manual Assignment</option>
+		      </select>
                   </p>
-                  <p>
-                      <label for="address">&nbsp;</label>
-		      If you do not need a specific address, leave this blank
-                  </p>
+                  <div id="ipv6_input" style="display:none">
                   <p>
                       <label for="address">&nbsp;</label>
 %		      if ( $ui->config->get('IPV6_ADDRESS_USER_ENTRY_HOST_ONLY') ){
@@ -246,14 +257,21 @@ function openChooseIP(selectObj, subnet) {
                           <input type="text" name="address" class="longtxt" value=""> 
 %                     }
                   </p>
+                  </div>
 %               }else{
                   <p>
                     <label for="address">IP Address</label>
-                      <select id="address" name="address" onChange="openChooseIP(this, '<% $block %>');">
-  		        <option value="" SELECTED>Automatic Assignment</option>
-		        <option value="manual">Manual Assignment</option>
-		      </select>
+                    <select id="v6_assign" name="v6_assign" onChange="showIPv6Input(this, 'ipv6_input');openChooseIP(this, 'address', '<% $block %>');">
+  		      <option value="automatic" SELECTED>Automatic Assignment</option>
+		      <option value="manual">Manual Assignment</option>
+		    </select>
                   </p>
+                  <div id="ipv6_input" style="display:none">
+                  <p>
+                        <label for="address">&nbsp;</label>
+                        <select id="address" name="address"></select>
+                  </p>
+                  </div>
 %               }
 %	    }else{
                 <p>
