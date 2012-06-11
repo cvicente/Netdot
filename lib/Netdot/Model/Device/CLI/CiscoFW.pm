@@ -7,13 +7,20 @@ use Net::Appliance::Session;
 
 my $logger = Netdot->log->get_logger('Netdot::Model::Device');
 
+# Some regular expressions
+my $IPV4 = Netdot->get_ipv4_regex();
+my $IPV6 = Netdot->get_ipv6_regex();
+my $CISCO_MAC = '\w{4}\.\w{4}\.\w{4}';
+
 =head1 NAME
 
 Netdot::Model::Device::CLI::CiscoFW - Cisco Firewall Class
 
 =head1 SYNOPSIS
 
- Overrides certain methods from the Device class
+ Overrides certain methods from the Device class. Specifically, methods in 
+ this class try to obtain forwarding tables and ARP/ND caches via CLI
+ instead of via SNMP.
 
 =head1 CLASS METHODS
 =cut
@@ -21,12 +28,11 @@ Netdot::Model::Device::CLI::CiscoFW - Cisco Firewall Class
 =head1 INSTANCE METHODS
 =cut
 
-
 ############################################################################
 =head2 get_arp - Fetch ARP tables
 
   Arguments:
-    None
+    session - SNMP session (optional)
   Returns:
     Hashref
   Examples:
@@ -36,9 +42,54 @@ sub get_arp {
     my ($self, %argv) = @_;
     $self->isa_object_method('get_arp');
     my $host = $self->fqdn;
-    return $self->_get_arp_from_cli(host=>$host);
-}
 
+    unless ( $self->collect_arp ){
+	$logger->debug(sub{"Device::CiscoFW::_get_arp: $host excluded from ARP collection. Skipping"});
+	return;
+    }
+    if ( $self->is_in_downtime ){
+	$logger->debug(sub{"Device::CiscoFW::_get_arp: $host in downtime. Skipping"});
+	return;
+    }
+
+    # This will hold both ARP and v6 ND caches
+    my %cache;
+
+    ### v4 ARP
+    my $start = time;
+    my $arp_count = 0;
+    my $arp_cache = $self->_get_arp_from_cli(host=>$host) ||
+	$self->_get_arp_from_snmp(session=>$argv{session});
+    foreach ( keys %$arp_cache ){
+	$cache{'4'}{$_} = $arp_cache->{$_};
+	$arp_count+= scalar(keys %{$arp_cache->{$_}})
+    }
+    my $end = time;
+    $logger->info(sub{ sprintf("$host: ARP cache fetched. %s entries in %s", 
+			       $arp_count, $self->sec2dhms($end-$start) ) });
+    
+
+    if ( $self->config->get('GET_IPV6_ND') ){
+	### v6 ND
+	$start = time;
+	my $nd_count = 0;
+	my $nd_cache  = $self->_get_v6_nd_from_cli(host=>$host) ||
+	    $self->_get_v6_nd_from_snmp($argv{session});
+	# Here we have to go one level deeper in order to
+	# avoid losing the previous entries
+	foreach ( keys %$nd_cache ){
+	    foreach my $ip ( keys %{$nd_cache->{$_}} ){
+		$cache{'6'}{$_}{$ip} = $nd_cache->{$_}->{$ip};
+		$nd_count++;
+	    }
+	}
+	$end = time;
+	$logger->info(sub{ sprintf("$host: IPv6 ND cache fetched. %s entries in %s", 
+				   $nd_count, $self->sec2dhms($end-$start) ) });
+    }
+
+    return \%cache;
+}
 
 ############################################################################
 #_get_arp_from_cli - Fetch ARP tables via CLI
@@ -61,27 +112,18 @@ sub _get_arp_from_cli {
 
     my @output = $self->_cli_cmd(%$args, host=>$host, cmd=>'show arp', personality=>'pixos');
     
-    # MAP interface names to IDs
-    # Get all interface IPs for subnet validation
-    my %int_names;
-    my %devsubnets;
-    foreach my $int ( $self->interfaces ){
-	$int_names{$int->name} = $int->id;
-	foreach my $ip ( $int->ips ){
-	    push @{$devsubnets{$int->id}}, $ip->parent->netaddr 
-		if $ip->parent;
-	}
-    }
-
     my %cache;
     my ($iname, $ip, $mac, $intid);
+    # Lines look like this:
+    # outside 10.10.47.146 0026.9809.f642 251
     foreach my $line ( @output ) {
-	if ( $line =~ /^\s+(\S+)\s(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s(\w{4}\.\w{4}\.\w{4}).*$/ ) {
+	if ( $line =~ /^\s+(\S+)\s($IPV4)\s($CISCO_MAC).*$/ ) {
 	    $iname = $1;
 	    $ip    = $2;
 	    $mac   = $3;
-	}elsif ( $line =~ /^\s+(\S+)\s([\w\._-]+)\s(\w{4}\.\w{4}\.\w{4}).*$/ ){
-	    # The 'dns domain-lookup outside' option causes outside-facing entries to be reported as hostnames
+	}elsif ( $line =~ /^\s+(\S+)\s([\w\._-]+)\s($CISCO_MAC).*$/ ){
+	    # The 'dns domain-lookup outside' option causes outside-facing entries 
+	    # to be reported as hostnames
 	    $iname       = $1;
 	    my $hostname = $2;
 	    $mac         = $3;
@@ -93,61 +135,188 @@ sub _get_arp_from_cli {
 		next;
 	    }
 	}else{
-	    $logger->debug(sub{"Device::CLI::CiscoFW::_get_arp_from_cli: line did not match criteria: $line" });
+	    $logger->debug(sub{"Device::CLI::CiscoFW::_get_arp_from_cli: line did not match criteria: ".
+				   "$line" });
 	    next;
 	}
 
 	# The failover interface appears in the arp output but it's not in the IF-MIB output
 	next if ($iname eq 'failover');
 
-	# Interface names from SNMP are stupidly long and don't match the short name in the ARP output
-	# so we have to do some pattern matching. Of course, this will break when they
-	# decide to change the string.
-	foreach my $name ( keys %int_names ){
-	    if ( $name =~ /Appliance \'$iname\' interface/ ){
-		$intid = $int_names{$name};
-		last;
-	    }
-	}
-	unless ( $intid ) {
-	    $logger->warn("Device::CLI::CiscoFW::_get_arp_from_cli: $host: Could not match $iname to any interface name");
+	unless ( $ip && $mac && $iname ){
+	    $logger->debug(sub{"Device::CiscoFW::_get_arp_from_cli: Missing information: $line" });
 	    next;
-	}
-	
-	my $validmac = PhysAddr->validate($mac); 
-	if ( $validmac ){
-	    $mac = $validmac;
-	}else{
-	    $logger->debug(sub{"Device::CLI::CiscoFW::_get_arp_from_cli: $host: Invalid MAC: $mac" });
-	    next;
-	}	
-
-	if ( Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET') ){
-	    # Don't accept entry if ip is not within this interface's subnets
-	    my $invalid_subnet = 1;
-	    foreach my $nsub ( @{$devsubnets{$intid}} ){
-		my $nip = NetAddr::IP->new($ip) 
-		    || $self->throw_fatal(sprintf("Cannot create NetAddr::IP object from %s", $ip));
-		if ( $nip->within($nsub) ){
-		    $invalid_subnet = 0;
-		    last;
-		}else{
-		    $logger->debug(sub{sprintf("Device::CLI::CiscoFW::_get_arp_from_cli: $host: IP $ip not within %s", 
-					       $nsub->cidr)});
-		}
-	    }
-	    if ( $invalid_subnet ){
-		$logger->debug(sub{"Device::CLI::CiscoFW::_get_arp_from_cli: $host: IP $ip not within interface $iname subnets"});
-		next;
-	    }
 	}
 
 	# Store in hash
-	$cache{$intid}{$ip} = $mac;
-	$logger->debug(sub{"Device::CLI::CiscoFW::_get_arp_from_cli: $host: $iname -> $ip -> $mac" });
+	$cache{$iname}{$ip} = $mac;
     }
-    
-    return \%cache;
+    return $self->_validate_arp(\%cache, 4);
+}
+
+
+
+############################################################################
+#_get_v6_nd_from_cli - Fetch ARP tables via CLI
+#    
+#   Arguments:
+#     host
+#   Returns:
+#     Hash ref.
+#   Examples:
+#     $self->_get_v6_nd_from_cli(host=>'foo');
+#
+sub _get_v6_nd_from_cli {
+    my ($self, %argv) = @_;
+    $self->isa_object_method('_get_v6_nd_from_cli');
+
+    my $host = $argv{host};
+    my $args = $self->_get_credentials(host=>$host);
+    return unless ref($args) eq 'HASH';
+
+    my @output = $self->_cli_cmd(%$args, host=>$host, cmd=>'show ipv6 neighbor');
+    shift @output; # Ignore header line
+    my %cache;
+    foreach my $line ( @output ) {
+	my ($ip, $mac, $iname);
+	chomp($line);
+	# Lines look like this:
+	# fe80::224:e8ff:fe51:6abe                    0 0024.e851.6abe  REACH dmz
+	if ( $line =~ /^($IPV6)\s+\d+\s+($CISCO_MAC)\s+\S+\s+(\S+)/o ) {
+	    $ip    = $1;
+	    $mac   = $2;
+	    $iname = $3;
+	}else{
+	    $logger->debug(sub{"Device::CLI::CiscoFW::_get_v6_nd_from_cli: ".
+				   "line did not match criteria: $line" });
+	    next;
+	}
+	unless ( $iname && $ip && $mac ){
+	    $logger->debug(sub{"Device::CiscoFW::_get_v6_nd_from_cli: Missing information: $line"});
+	    next;
+	}
+	$cache{$iname}{$ip} = $mac;
+    }
+    return $self->_validate_arp(\%cache, 6);
+}
+
+############################################################################
+# _validate_arp - Validate contents of ARP and v6 ND structures
+#    
+#   Arguments:
+#       hashref of hashrefs containing ifIndex, IP address and Mac
+#       IP version
+#   Returns:
+#     Hash ref.
+#   Examples:
+#     $self->_validate_arp(\%cache, 4);
+#
+#
+sub _validate_arp {
+    my($self, $cache, $version) = @_;
+    $self->isa_object_method('_validate_arp');
+
+    $self->throw_fatal("Device::_validate_arp: Missing required arguments")
+	unless ($cache && $version);
+
+    my $host = $self->fqdn();
+
+    # MAP interface names to IDs
+    # Get all interface IPs for subnet validation
+    my %int_names;
+    my %devsubnets;
+    foreach my $int ( $self->interfaces ){
+	my $name = $self->_reduce_iname($int->name);
+	$int_names{$name} = $int->id;
+	if ( Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET') ){
+	    foreach my $ip ( $int->ips ){
+		next unless ($ip->version == $version);
+		push @{$devsubnets{$int->id}}, $ip->parent->netaddr 
+		    if $ip->parent;
+	    }
+	}
+    }
+    if ( Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET') ){
+	$logger->warn("We have no subnet information. ARP validation will fail except ".
+		      "for link-local addresses")
+	    unless %devsubnets;
+    }
+
+    my %valid;
+    foreach my $key ( keys %{$cache} ){
+	my $iname = $self->_reduce_iname($key);
+	my $intid = $int_names{$iname};
+	unless ( $intid ) {
+	    $logger->warn("Device::CiscoFW::_validate_arp: $host: Could not match $iname ".
+			  "to any interface name");
+	    next;
+	}
+	foreach my $ip ( keys %{$cache->{$key}} ){
+	    if ( $version == 6 && Ipblock->is_link_local($ip) &&
+		 Netdot->config->get('IGNORE_IPV6_LINK_LOCAL') ){
+		next;
+	    }
+	    my $mac = $cache->{$key}->{$ip};
+	    my $validmac = PhysAddr->validate($mac); 
+	    unless ( $validmac ){
+		$logger->debug(sub{"Device::_validate_arp: $host: Invalid MAC: $mac" });
+		next;
+	    }
+	    $mac = $validmac;
+	    if ( Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET') ){
+		if ( $version == 6 && !Netdot->config->get('IGNORE_IPV6_LINK_LOCAL') ){
+		    # This check does not work with link-local, so if user wants those
+		    # just validate them
+		    if ( Ipblock->is_link_local($ip) ){
+			$valid{$intid}{$ip} = $mac;
+			$logger->debug(sub{"Device::CiscoFW::_validate_arp: $host: ".
+					     "valid: $iname -> $ip -> $mac" });
+			next;
+		    }
+		}
+		foreach my $nsub ( @{$devsubnets{$intid}} ){
+		    my $nip = NetAddr::IP->new($ip) or
+			$self->throw_fatal(sprintf("Device::CiscoFW::_validate_arp: ".
+						   "Cannot create NetAddr::IP ".
+						   "object from %s", $ip));
+		    if ( $nip->within($nsub) ){
+			$valid{$intid}{$ip} = $mac;
+			$logger->debug(sub{"Device::CiscoFW::_validate_arp: $host: valid: ".
+					       "$iname -> $ip -> $mac" });
+			last;
+		    }else{
+			$logger->debug(sub{"Device::CiscoFW::_validate_arp: $host: $ip not within $nsub" });
+		    }
+		}
+	    }else{
+		$valid{$intid}{$ip} = $mac;
+		$logger->debug(sub{"Device::CiscoFW::_validate_arp: $host: valid: $iname -> $ip -> $mac" });
+	    }
+	}
+    }
+    return \%valid;
+}
+
+
+############################################################################
+# _reduce_iname
+#
+# Interface names from SNMP are stupidly long and don't match the short name 
+# in the ARP output so we have to do some pattern matching. Of course, this 
+# will break when they decide to change the string.
+#
+# Arguments: 
+#   string
+# Returns:
+#   string
+#
+sub _reduce_iname{
+    my ($self, $name) = @_;
+    return unless $name;
+    if ( $name =~ /Appliance \'(\S+)\' interface/ ){
+	return $1;
+    }
+    return $name;
 }
 
 =head1 AUTHOR
@@ -156,7 +325,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2011 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
