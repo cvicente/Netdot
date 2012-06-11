@@ -67,25 +67,27 @@ sub get_arp {
     $logger->info(sub{ sprintf("$host: ARP cache fetched. %s entries in %s", 
 			       $arp_count, $self->sec2dhms($end-$start) ) });
     
-    ### v6 ND
-    $start = time;
-    my $nd_count = 0;
-    my $nd_cache  = $self->_get_v6_nd_from_cli(host=>$host) ||
-    	$self->_get_v6_nd_from_snmp($argv{session});
-    # Here we have to go one level deeper in order to
-    # avoid losing the previous entries
-    foreach ( keys %$nd_cache ){
-    	foreach my $ip ( keys %{$nd_cache->{$_}} ){
-    	    $cache{'6'}{$_}{$ip} = $nd_cache->{$_}->{$ip};
-    	    $nd_count++;
-    	}
+
+    if ( $self->config->get('GET_IPV6_ND') ){
+	### v6 ND
+	$start = time;
+	my $nd_count = 0;
+	my $nd_cache  = $self->_get_v6_nd_from_cli(host=>$host) ||
+	    $self->_get_v6_nd_from_snmp($argv{session});
+	# Here we have to go one level deeper in order to
+	# avoid losing the previous entries
+	foreach ( keys %$nd_cache ){
+	    foreach my $ip ( keys %{$nd_cache->{$_}} ){
+		$cache{'6'}{$_}{$ip} = $nd_cache->{$_}->{$ip};
+		$nd_count++;
+	    }
+	}
+	$end = time;
+	$logger->info(sub{ sprintf("$host: IPv6 ND cache fetched. %s entries in %s", 
+				   $nd_count, $self->sec2dhms($end-$start) ) });
     }
-    $end = time;
-    $logger->info(sub{ sprintf("$host: IPv6 ND cache fetched. %s entries in %s", 
-    				$nd_count, $self->sec2dhms($end-$start) ) });
 
     return \%cache;
-
 
 }
 
