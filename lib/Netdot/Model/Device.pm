@@ -976,14 +976,23 @@ sub get_snmp_info {
     ################################################################
     # IPv6 addresses and prefixes
     # Stuff in this hash looks like this:
-    # 2.16.32.1.4.104.13.1.0.2.0.0.0.0.0.0.0.9	=> 49.2.16.32.1.4.104.13.1.0.2.0.0.0.0.0.0.0.0.64
     #
+    # CISCO-IETF-IP-MIB:
+    # 2.16.32.1.4.104.13.1.0.2.0.0.0.0.0.0.0.9 => 
+    #     49.2.16.32.1.4.104.13.1.0.2.0.0.0.0.0.0.0.0.64
+    #
+    # IP-MIB:
+    # 2.32.1.4.104.13.1.0.2.0.0.0.0.0.0.0.41 => 
+    #     1.151126018.2.32.1.4.104.13.1.0.2.0.0.0.0.0.0.0.0.64
+    # 
     while ( my($key,$val) = each %{$hashes{'ipv6_addr_prefix'}} ){
 	my ($iid, $addr, $pfx, $len);
-	if ( $key =~ /^\d+\.\d+\.([\d\.]+)$/ ) {
+	# We only care about the last 16 octets in decimal
+	# so, that's an digit and a dot, 15 times, plus another digit
+	if ( $key =~ /^.+\.((?:\d+\.){15}\d+)$/o ) {
 	    $addr = $self->_octet_string_to_v6($1);
 	}
-	if ( $val =~ /^(\d+)\.\d+\.\d+\.([\d\.]+)\.(\d+)$/ ) {
+	if ( $val =~ /^(\d+)\.\d+\.\d+\.([\d\.]+)\.(\d+)$/o ) {
 	    # ifIndex, type, size, prefix length
 	    $iid = $1; $len = $3;
 	    $pfx = $self->_octet_string_to_v6($2);
@@ -999,14 +1008,13 @@ sub get_snmp_info {
 	}
     }
 
-
     ################################################################
     # IPv6 link-local addresses
     unless ( $self->config->get('IGNORE_IPV6_LINK_LOCAL') ){
 	my $ipv6_index = $sinfo->ipv6_index();
 	my ($iid, $addr);
 	while ( my($key,$val) = each %$ipv6_index ){
-	    if ( $key =~ /^\d+\.\d+\.([\d\.]+)$/ ) {
+	    if ( $key =~ /^.+\.((?:\d+\.){15}\d+)$/o ) {
 		$addr = $self->_octet_string_to_v6($1);
 		next unless Ipblock->is_link_local($addr);
 		$iid = $val;
@@ -1453,8 +1461,8 @@ sub discover {
 	}
 	# Insert the new Device
 	$devtmp{name} = $newname;
+	$logger->info(sprintf("Inserting new Device: %s", $name));
 	$dev = $class->insert(\%devtmp);
-	$logger->info(sprintf("Inserted new Device: %s", $dev->get_label));
 	$device_is_new = 1;
     }
     
@@ -5725,7 +5733,9 @@ sub _octet_string_to_v6 {
     my ($self, $str) = @_;
     return unless $str;
     my $v6_packed = pack("C*", split(/\./, $str));
-    my $v6addr = join(':', map { sprintf("%04x", $_) } unpack("n*", $v6_packed) );
+    my @groups = map { sprintf("%04x", $_) } unpack("n*", $v6_packed);
+    return unless ( scalar(@groups) == 8 );
+    my $v6addr = join(':', @groups);
     return $v6addr;
 }
 
