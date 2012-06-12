@@ -899,13 +899,18 @@ sub build_tree {
     my ($parents, $current_parents) = $class->_build_tree_mem($version);
 
     # Reflect changes in db
+    $logger->debug('Ipblock::build_tree: Applying hierarchy changes to DB');
     my $dbh = $class->db_Main;
     my $sth;
     $sth = $dbh->prepare_cached("UPDATE ipblock SET parent = ? WHERE id = ?");
     foreach ( keys %$parents ){
-	$sth->execute($parents->{$_}, $_)
-	    unless ( (defined $parents->{$_} && defined $current_parents->{$_}) &&
-		     ($parents->{$_} == $current_parents->{$_}) );
+	my $a = $current_parents->{$_};
+	my $b = $parents->{$_};
+	if ( (defined $a && !defined $b) || (!defined $a && defined $b) || 
+	     (defined $a && defined $b && ($a ne $b)) ){
+	    $logger->debug("Ipblock id: $_ has new parent");
+	    $sth->execute($parents->{$_}, $_);
+	}
     }
     return 1;
 }

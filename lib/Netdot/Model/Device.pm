@@ -4987,7 +4987,7 @@ sub _update_ips_from_arp_cache {
     }
     
     unless ( $no_update_tree ){
-	foreach my $version ( keys %build_tree ){
+	foreach my $version ( sort keys %build_tree ){
 	    Ipblock->build_tree($version);
 	}
     }
