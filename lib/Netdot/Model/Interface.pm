@@ -382,8 +382,10 @@ sub snmp_update {
     # Update
 
     my $r = $self->update( \%iftmp );
-    $logger->debug(sub{ sprintf("%s: Interface %s (%s) updated", 
-				$label, $self->number, $self->name) }) if $r;
+    if ( $r && $self->number && $self->name ){
+	$logger->debug(sub{ sprintf("%s: Interface %s (%s) updated", 
+				    $label, $self->number, $self->name) });
+    }
     
     ##############################################
     # Update VLANs
