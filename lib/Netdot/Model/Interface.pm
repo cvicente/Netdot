@@ -363,7 +363,6 @@ sub snmp_update {
 	my $physaddr = PhysAddr->search(address=>$addr)->first;
 	if ( $physaddr ){
 	    $physaddr->update({last_seen=>$self->timestamp, static=>1});
-	    $iftmp{physaddr} = $physaddr->id;
 	}else{
 	    eval {
 		$physaddr = PhysAddr->insert({address=>$addr, static=>1}); 
@@ -372,6 +371,7 @@ sub snmp_update {
 		$logger->debug(sub{"$label: Could not insert PhysAddr $addr: $e"});
 	    }
 	}
+	$iftmp{physaddr} = $physaddr->id if $physaddr;
     }else{
 	$iftmp{physaddr} = undef;
     }

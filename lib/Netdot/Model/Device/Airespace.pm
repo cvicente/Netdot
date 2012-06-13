@@ -7,7 +7,6 @@ use strict;
 my $logger = Netdot->log->get_logger('Netdot::Model::Device');
 my $AIRESPACEIF = '(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}\.\d';
 
-
 =head1 NAME
 
 Netdot::Model::Device::Airespace - Cisco Wireless Controller Class
@@ -19,19 +18,14 @@ Netdot::Model::Device::Airespace - Cisco Wireless Controller Class
     access point to take advantage of topology discovery and
     more documentation options.
 
-=head1 CLASS METHODS
-=cut
-
-
 =head1 INSTANCE METHODS
 =cut
-
 
 ############################################################################
 =head2 info_update - Update Device in Database using SNMP info
 
     Updates an existing Device based on information gathered via SNMP.  
-    This is exclusively an object method, and overrides the Device
+    This is exclusively an object method, and overrides the parent's
     method to gather specific SNMP information, etc.
 
   Arguments:
@@ -99,10 +93,14 @@ sub info_update {
 	    );
     }
 
-    my $info = $argv{info} || Netdot::Model::Device->_exec_timeout($host, 
-								   sub{ return $self->get_snmp_info(bgp_peers => 0,
-												    session   => $sinfo,
-									    ) });
+    my $info = $argv{info} || 
+	Netdot::Model::Device->_exec_timeout(
+	    $host, 
+	    sub{ return $self->get_snmp_info(bgp_peers => 0,
+					     session   => $sinfo,
+		     ) 
+	    }
+	);
     unless ( $info ){
 	$logger->error("$host: No SNMP info received");
 	return;	
@@ -116,7 +114,7 @@ sub info_update {
     
     # We want to do our own 'munging' for certain things
     my $munge = $sinfo->munge();
-    foreach my $m ('airespace_ap_mac', 'airespace_bl_mac', 'airespace_if_mac'){
+    foreach my $m ('airespace_ap_mac', 'airespace_bl_mac', 'airespace_if_mac', 'bsnAPEthernetMacAddress'){
 	$munge->{$m} = sub{ return $self->_oct2hex(@_) };
     }
     
@@ -146,9 +144,6 @@ sub info_update {
     }
 
     ##############################################################
-    $dev{physaddr} = $self->_assign_base_mac($info);
-
-    ##############################################################
     # Fill in some basic device info
     foreach my $field ( qw( community snmp_version layers ipforwarding sysname 
                             sysdescription syslocation os collect_arp collect_fwt ) ){
@@ -159,21 +154,31 @@ sub info_update {
     if ( my $ipb = $self->_assign_snmp_target($info) ){
 	$dev{snmp_target} = $ipb;
     }
-
-    ##############################################################
-    $dev{product} = $self->_assign_product($info);
     
     ##############################################################
     # Asset
-    my $sn   = $info->{serial_number};
-    my $prod = $dev{product};
-    if ( $sn && $prod ){
-	$dev{asset_id} = Asset->find_or_create({serial_number=>$sn, product_id=>$prod});
-    }elsif ( $sn ){
-	$dev{asset_id} = Asset->find_or_create({serial_number=>$sn});
-    }else{
-	$logger->debug(sub{"$host did not return serial number" });
+    my $dev_product = $self->_assign_product($info);
+    my %asset_args = (
+	product_id    => $dev_product->id,
+	serial_number => $info->{serial_number},
+	physaddr      => $self->_assign_base_mac($info) || undef,
+	reserved_for  => "", # needs to be cleared when device gets installed
+	);
+    
+    # This is an OR (notice the arrayref)
+    my @where;
+    push(@where, { serial_number => $asset_args{serial_number} }) 
+	if $asset_args{serial_number};
+    push(@where, { physaddr => $asset_args{physaddr} }) 
+	if $asset_args{physaddr};
+    my $asset = Asset->search_where(\@where)->first if @where;
+    if ( $asset ){
+	# Make sure that the data is complete with the latest info we got
+	$asset->update(\%asset_args);
+    }elsif ( $asset_args{serial_number} || $asset_args{physaddr} ){
+	$asset = Asset->insert(\%asset_args);
     }
+    $dev{asset_id} = $asset->id if $asset;
     
     ##############################################################
     if ( $dev{product} && $argv{device_is_new} ){
@@ -227,16 +232,6 @@ sub info_update {
 			      overwrite_descr => 1,
 	);
 
-    # Get all the APs we already had
-    my %oldaps;
-    
-    foreach my $int ( $self->interfaces ){
-	if ( $int->name =~ /$AIRESPACEIF/ ){
-	    my $apmac = $int->number;
-	    $apmac =~ s/^(.*)\.\d$/$1/;
-	    $oldaps{$apmac}++;
-	}
-    }
 
     # Insert or update the APs returned
     # When creating, we turn off snmp_managed because
@@ -252,24 +247,7 @@ sub info_update {
 					used_by       => $self->used_by,
 					info          => \%{$dev{airespace}{$ap}},
 	    );
-	my $apmac = $dev{airespace}{$ap}{physaddr};
-	delete $oldaps{$apmac};
     }
-    
-    # Notify about the APs no longer associated with this controller
-    # Note: If the AP was removed from the network, it will have
-    # to be removed from Netdot manually.  This avoids the unwanted case of
-    # removing APs that change controllers, thus losing their manually-entered information
-    # (location, links, etc)
-    foreach my $mac ( keys %oldaps ){
-	if ( my $ap = Device->search(physaddr=>$mac)->first ){
-	    $logger->warn(sprintf("AP %s (%s) no longer associated with controller: %s", 
-				  $mac, $ap->short_name, $host));
-	}
-    }
-    
-
-    ##############################################################
     
     my $end = time;
     $logger->debug(sub{ sprintf("%s: SNMP update completed in %s", 
@@ -340,7 +318,9 @@ sub _get_ap_info {
 	}else{
 	    $logger->debug(sub{"Device::get_airespace_if_info: iid $iid: Invalid MAC: $basemac" });
 	}
-    } 
+    }else{
+	$logger->debug(sub{"Device::get_airespace_if_info: iid $iid: No MAC address"});
+    }
 
     # Interfaces in this AP
     if ( defined( my $slot = $hashes->{'airespace_apif_slot'}->{$iid} ) ){
@@ -379,8 +359,7 @@ sub _get_ap_info {
     }
     $info->{interface}{$ethidx}{number} = $ethidx;
     
-    if ( my $mac = $hashes->{'bsnAPEthernetMacAddress'}->{$idx}){
-	$mac = $self->_oct2hex($mac);
+    if ( my $mac = $hashes->{'bsnAPEthernetMacAddress'}->{$idx} ){
 	$info->{interface}{$ethidx}{physaddr} = $mac;
     }
 
@@ -401,7 +380,7 @@ sub _get_ap_info {
 	if ( my $mask = $hashes->{'bsnAPNetmask'}->{$idx}  ){
 	    my ($subnet, $len) = Ipblock->get_subnet_addr(address => $ip, 
 							  prefix  => $mask );
-	    $info->{interface}{$iid}{ips}{$ip}{subnet} = "$subnet/$len";
+	    $info->{interface}{$bviidx}{ips}{$ip}{subnet} = "$subnet/$len";
 	}
 	$info->{main_ip} = $ip;
     }

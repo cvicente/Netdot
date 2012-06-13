@@ -741,8 +741,17 @@ sub get_snmp_info {
     $dev{router_id}      = $sinfo->root_ip();
     $dev{sysdescription} = $sinfo->description();
     $dev{syscontact}     = $sinfo->contact();
-    if ($hashes{'e_descr'} ){
-	my $first_idx = (sort { $a <=>$b } keys %{$hashes{'e_descr'}})[0];
+    if ( $hashes{'e_descr'} ){
+	my $first_idx ;
+	# SNMP::Info::Airespace has stuff like "0.19.26.48.21.32"
+	# instead of integers. Ideally we would override this
+	# method in the Netdot::Model::Device::Airespace, but
+	# for now...
+	if ( defined $dev{_sclass} && $dev{_sclass} =~ /Airespace/o ){
+	    $first_idx = 1;
+	}else{
+	    $first_idx = (sort { $a <=> $b } keys %{$hashes{'e_descr'}})[0];
+	}
 	$dev{productname}  = $hashes{'e_descr'}->{$first_idx} ;
 	$dev{part_number}  = $hashes{'e_model'}->{$first_idx};
     }
@@ -5506,7 +5515,7 @@ sub _update_interfaces {
 		    $logger->info(sprintf("%s: Interface %s had number: %s, now has: %s", 
 					  $host, $oldif->name, $oldif->number, $newnumber));
 		}
-	    }elsif ( exists $oldifsbynumber{$newnumber} ){
+	    }elsif ( defined $newnumber && exists $oldifsbynumber{$newnumber} ){
 		# Name not found, but found one with the same number
 		$oldif = $oldifsbynumber{$newnumber};
 		$logger->debug(sub{ sprintf("%s: Interface with number %s found", 
@@ -5514,7 +5523,7 @@ sub _update_interfaces {
 	    }
 	}else{
 	    # Using number as unique reference
-	    if ( exists $oldifsbynumber{$newnumber} ){
+	    if ( defined $newnumber && exists $oldifsbynumber{$newnumber} ){
 		$oldif = $oldifsbynumber{$newnumber};
 		$logger->debug(sub{ sprintf("%s: Interface with number %s found", 
 					    $host, $oldif->number)});
@@ -5844,6 +5853,14 @@ __PACKAGE__->set_sql(for_os_mismatches => qq{
           AND  p.latest_os IS NOT NULL
           AND  d.os != p.latest_os
      ORDER BY  a.product_id,d.os
+    });
+
+__PACKAGE__->set_sql(by_mac => qq{
+      SELECT  d.id
+	FROM  device d, physaddr p, asset a
+	WHERE a.physaddr = p.id 
+          AND d.asset_id = a.id
+          AND p.address = ?
     });
 
 =head1 AUTHOR

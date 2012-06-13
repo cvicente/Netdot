@@ -388,7 +388,7 @@ sub get_dp_links {
 
     # This is used a couple of times
     sub _find_by_mac {
-	my ($str, $macs2ints) = @_; 
+	my ($str, $macs2ints, $base_macs) = @_; 
 	my $mac = PhysAddr->format_address($str);
 	my ($h, @ints, $rem_dev, $rem_int, $iface);
 	if ( ($h = $macs2ints->{$mac}) && (ref($h) eq 'HASH') && (@ints = keys %$h) ){
@@ -426,7 +426,7 @@ sub get_dp_links {
             foreach my $rem_id (split ';', $r_id){
                 if ( $rem_id =~ /($MAC)/io ){
 		    my $mac = $rem_id;
-		    ($rem_dev, $rem_int) = &_find_by_mac($mac, $macs2ints);
+		    ($rem_dev, $rem_int) = &_find_by_mac($mac, $macs2ints, $base_macs);
 		    if ( $rem_int ){
 			$rem_dev = $rem_int->device;
 			$links{$iid} = $rem_int->id;
@@ -532,7 +532,7 @@ sub get_dp_links {
 		    }
 		    unless ( $rem_int ){
 			if ( $rem_port =~ /($MAC)/io ){
-			    ($rem_dev, $rem_int) = &_find_by_mac($rem_port, $macs2ints);
+			    ($rem_dev, $rem_int) = &_find_by_mac($rem_port, $macs2ints, $base_macs);
 			}
 		    }
 		    unless ( $rem_int ){
