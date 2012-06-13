@@ -386,6 +386,32 @@ sub get_dp_links {
     my $intsmap   = Interface->dev_name_number();
     my %ips2discover;
 
+    # This is used a couple of times
+    sub _find_by_mac {
+	my ($str, $macs2ints) = @_; 
+	my $mac = PhysAddr->format_address($str);
+	my ($h, @ints, $rem_dev, $rem_int, $iface);
+	if ( ($h = $macs2ints->{$mac}) && (ref($h) eq 'HASH') && (@ints = keys %$h) ){
+	    if ( scalar(@ints) > 1 ){
+		#There are multiple interfaces using $mac. Ignore
+	    }elsif ( my $dev = $base_macs->{$mac} ){
+		# this means that this mac is also a base_mac 
+		# don't set rem_int because it would most likely be wrong
+		$rem_dev = Device->retrieve($dev);
+	    }else{
+		my $iface = Interface->retrieve($ints[0]);
+		if ( $iface->type eq 'propVirtual' || $iface->type eq 'l2vlan' ){
+		    # Ignore virtual interfaces, but do set the remote device
+		    $rem_dev = $iface->device;
+		}else{
+		    # This should be good then
+		    $rem_int = $iface;
+		}
+	    }
+	}
+	return($rem_dev, $rem_int);
+    }
+    
     foreach my $row ( @$results ){
         my ($did, $iid, $r_ip, $r_id, $r_port) = @$row;
 	#the old version of the above query returned empty strings, now this should never be needed
@@ -399,33 +425,17 @@ sub get_dp_links {
         if ( $r_id ) {  
             foreach my $rem_id (split ';', $r_id){
                 if ( $rem_id =~ /($MAC)/io ){
-                    my $mac = PhysAddr->format_address($1);
-		    my ($h, @ints);
-                    if ( ($h = $macs2ints->{$mac}) && (ref($h) eq 'HASH') && (@ints = keys %$h) ){
-			if ( scalar(@ints) > 1 ){
-			    $logger->debug("Topology::get_dp_links: There are multiple interfaces using $mac.".
-					   "Ignoring.");
-			}elsif ( my $dev = $base_macs->{$mac} ){
-			    # this means that this mac is also a base_mac 
-			    # don't set rem_int because it would most likely be wrong
-			    $rem_dev = Device->retrieve($dev);
-			}else{
-			    my $iface = Interface->retrieve($ints[0]);
-			    if ( $iface->type eq 'propVirtual' || $iface->type eq 'l2vlan' ){
-				# Ignore virtual interfaces, but do set the remote device
-				$rem_dev = $iface->device;
-			    }else{
-				$rem_int = $iface;
-				$rem_dev = $rem_int->device;
-				$links{$iid} = $rem_int->id;
-				$links{$rem_int->id} = $iid;
-				$logger->debug(sprintf("Topology::get_dp_links: Found link ".
-						       "using remote ID: %d -> %d", $iid, $rem_int));
-				last;
-			    }
-			}
+		    my $mac = $rem_id;
+		    ($rem_dev, $rem_int) = &_find_by_mac($mac, $macs2ints);
+		    if ( $rem_int ){
+			$rem_dev = $rem_int->device;
+			$links{$iid} = $rem_int->id;
+			$links{$rem_int->id} = $iid;
+			$logger->debug(sprintf("Topology::get_dp_links: Found link ".
+					       "using remote ID: %d -> %d", $iid, $rem_int));
+			last;
 		    }else{
-			$logger->debug("Topology::get_dp_links: Cannot find Interfaces using $mac");
+			$logger->debug("Topology::get_dp_links: Cannot find neighbor interface using $mac");
 		    }
 		    if ( !$rem_dev ){
 			if ( my $rem_dev_id = $allmacs->{$mac} ){
@@ -519,6 +529,11 @@ sub get_dp_links {
 			my $rem_int_id = $intsmap->{$rem_dev->id}{number}{$rem_port} ||
 			    $intsmap->{$rem_dev->id}{name}{$rem_port};
 			$rem_int = Interface->retrieve($rem_int_id) if $rem_int_id;
+		    }
+		    unless ( $rem_int ){
+			if ( $rem_port =~ /($MAC)/io ){
+			    ($rem_dev, $rem_int) = &_find_by_mac($rem_port, $macs2ints);
+			}
 		    }
 		    unless ( $rem_int ){
 		    	# If interface name has a slot/sub-slot number
