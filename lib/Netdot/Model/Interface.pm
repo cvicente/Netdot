@@ -170,8 +170,8 @@ sub dev_name_number {
     my %map;
     foreach my $row ( @$aref ){
 	my ($iid, $inum, $iname, $did) = @$row;
-	$map{$did}{number}{$inum} = $iid;
-	$map{$did}{name}{$iname}  = $iid;
+	$map{$did}{number}{$inum} = $iid if defined $inum;
+	$map{$did}{name}{$iname}  = $iid if defined $iname;
     }
     $logger->debug(sub{ "Interface::dev_name_number ...done" });
 
