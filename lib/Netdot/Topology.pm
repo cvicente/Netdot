@@ -239,7 +239,7 @@ sub update_links {
 	# Do not remove neighbors if the neighbor_fixed flag is on
         if ( $iface1->neighbor_fixed || $iface2->neighbor_fixed ){
 	    $logger->debug(sprintf("Topology::update_links: Link %s <=> %s not removed because ".
-				   "neighbor_fixed flag is on"), $iface1->get_label, $iface2->get_label);
+				   "neighbor_fixed flag is on", $iface1->get_label, $iface2->get_label));
 	    next;
 	}
 
