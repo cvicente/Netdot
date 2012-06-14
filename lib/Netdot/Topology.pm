@@ -5,10 +5,10 @@ use Netdot::Model;
 use warnings;
 use strict;
 use Data::Dumper;
+use Scalar::Util qw(blessed);
 
 my $logger = Netdot->log->get_logger('Netdot::Topology');
 my $MAC    = Netdot->get_mac_regex();
-my $IP     = Netdot->get_ipv4_regex();
 
 # Make sure to return 1
 1;
@@ -386,7 +386,9 @@ sub get_dp_links {
     my $intsmap   = Interface->dev_name_number();
     my %ips2discover;
 
-    # This is used a couple of times
+    
+    ###########################################################
+    # Finds remote device and/or remote interfaced given a MAC
     sub _find_by_mac {
 	my ($str, $macs2ints, $base_macs) = @_; 
 	my $mac = PhysAddr->format_address($str);
@@ -400,9 +402,9 @@ sub get_dp_links {
 		$rem_dev = Device->retrieve($dev);
 	    }else{
 		my $iface = Interface->retrieve($ints[0]);
+		$rem_dev = $iface->device;
 		if ( $iface->type eq 'propVirtual' || $iface->type eq 'l2vlan' ){
 		    # Ignore virtual interfaces, but do set the remote device
-		    $rem_dev = $iface->device;
 		}else{
 		    # This should be good then
 		    $rem_int = $iface;
@@ -410,6 +412,14 @@ sub get_dp_links {
 	    }
 	}
 	return($rem_dev, $rem_int);
+    }
+
+    ###########################################################
+    # Finds remote device given an IP
+    sub _find_by_ip {
+	my($ip, $allips) = @_;
+	my $decimal = Ipblock->ip2int($ip);
+	exists $allips->{$decimal} && return Device->retrieve($allips->{$decimal});
     }
     
     foreach my $row ( @$results ){
@@ -428,7 +438,7 @@ sub get_dp_links {
 		    my $mac = $rem_id;
 		    ($rem_dev, $rem_int) = &_find_by_mac($mac, $macs2ints, $base_macs);
 		    if ( $rem_int ){
-			$rem_dev = $rem_int->device;
+			$rem_dev ||= $rem_int->device;
 			$links{$iid} = $rem_int->id;
 			$links{$rem_int->id} = $iid;
 			$logger->debug(sprintf("Topology::get_dp_links: Found link ".
@@ -446,15 +456,14 @@ sub get_dp_links {
 					   "Remote Device MAC not found: $mac");
 			}
 		    }
-		}elsif ( $rem_id =~ /($IP)/ ){
+		}elsif ( Ipblock->matches_v4($rem_id) ){
 		    # Turns out that some devices send IP addresses as IDs
-		    my $decimalip = Ipblock->ip2int($1);
-		    if ( my $rem_dev_id = $allips->{$decimalip} ){
-			$rem_dev = Device->retrieve($rem_dev_id);
+		    my $ip = $rem_id;
+		    if ( $rem_dev = &_find_by_ip($ip, $allips) ){
 			last;
 		    }else {
 			$logger->debug("Topology::get_dp_links: Interface id $iid: ".
-				       "Remote Device IP not found: $rem_id");
+				       "Remote Device IP not found: $ip");
 		    }
 		}else{
 		    # Try to find the device name
@@ -477,10 +486,7 @@ sub get_dp_links {
  
         if ( !$rem_dev && $r_ip ) {
             foreach my $rem_ip ( split ';', $r_ip ) {
-                my $decimalip = Ipblock->ip2int($rem_ip);
-                next unless (exists $allips->{$decimalip});
-		if ( my $rem_dev_id = $allips->{$decimalip} ){
-		    $rem_dev = Device->retrieve($rem_dev_id);
+		if ( $rem_dev = &_find_by_ip($r_ip, $allips) ){
 		    last;
 		}else {
 		    $logger->debug("Topology::get_dp_links: Interface id $iid: ".
@@ -501,8 +507,8 @@ sub get_dp_links {
 		    }
 		}elsif ( $r_id ){
 		    foreach my $rem_id ( split ';', $r_id ) {
-			if ( $rem_id =~ /($IP)/ ){
-			    my $ip = $1;
+			if ( Ipblock->matches_v4($rem_id) ){
+			    my $ip = $rem_id;
 			    if ( Ipblock->validate($ip) && !Ipblock->is_loopback($ip) ){
 				$ips2discover{$ip} = '';
 				$logger->debug("Topology::get_dp_links: Interface id $iid: ".
@@ -519,7 +525,8 @@ sub get_dp_links {
 		$logger->warn(sprintf("Topology::get_dp_links: %s: ".
 				      "Remote Device not found: %s", $int->get_label, $str));
 	    }
-	    next unless $rem_dev;
+	    # We need $rem_dev to continue with the next block
+	    next;
 	}
 
 	unless ( $rem_int ){
@@ -532,7 +539,7 @@ sub get_dp_links {
 		    }
 		    unless ( $rem_int ){
 			if ( $rem_port =~ /($MAC)/io ){
-			    ($rem_dev, $rem_int) = &_find_by_mac($rem_port, $macs2ints, $base_macs);
+			    (undef, $rem_int) = &_find_by_mac($rem_port, $macs2ints, $base_macs);
 			}
 		    }
 		    unless ( $rem_int ){
@@ -559,7 +566,7 @@ sub get_dp_links {
 		}
 		unless ( $rem_int ){
 		    my $int = Interface->retrieve($iid);
-		    my $dev = ref($rem_dev) ? $rem_dev : Device->retrieve($rem_dev);
+		    my $dev = blessed($rem_dev) ? $rem_dev : Device->retrieve($rem_dev);
 		    $logger->warn(sprintf("Topology::get_dp_links: %s: Port %s not found in Device: %s", 
 					  $int->get_label, $r_port, $dev->get_label));
 		}

@@ -1279,7 +1279,7 @@ sub matches_ip {
 sub matches_v4 {
     my ($class, $string) = @_;
 
-    if ( $string =~ /^$IPV4$/ ) {
+    if ( $string =~ /^$IPV4$/o ) {
 	return 1;
     }
     return 0;
@@ -1298,7 +1298,7 @@ sub matches_v4 {
 sub matches_v6 {
     my ($class, $string) = @_;
 
-    if ( $string =~ /^$IPV6$/ ) {
+    if ( $string =~ /^$IPV6$/o ) {
 	return 1;
     }
     return 0;
