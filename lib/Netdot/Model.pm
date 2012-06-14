@@ -803,6 +803,8 @@ sub delete {
     $self->isa_object_method('delete');
     $self->throw_fatal("delete does not take any parameters") if shift;
 
+    my $id = $self->id;
+
     eval {
 	$self->SUPER::delete();
     };
@@ -812,8 +814,8 @@ sub delete {
 	}
 	$self->throw_user($e);
     }
-    $logger->debug( sub { sprintf("Model::delete: Deleted record %i, from table: %s", 
-				  $id, $table) } );
+    $logger->debug( sub { sprintf("Model::delete: Deleted %s id %i", 
+				  $class, $id) } );
 
     # Remove any access rights for this object
     my %aclasses = AccessRight->get_classes;
