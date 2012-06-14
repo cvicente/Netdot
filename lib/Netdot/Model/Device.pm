@@ -915,6 +915,10 @@ sub get_snmp_info {
 	    next unless $iid;
 	    foreach my $m ( @dp_methods ){
 		next if !exists $dp_hashes{$m}->{$key};
+		my $v = $dp_hashes{$m}->{$key};
+		# Ignore values with non-ascii chars
+		next if ( $v =~ /[^[:ascii:]]/o );
+
 		# SNMP::Info can include values from both LLDP and CDP
 		# which means that for each port, we can have different
 		# values.  We save them all in a comma-separated list
@@ -923,12 +927,8 @@ sub get_snmp_info {
 		    my %vals;
 		    map { $vals{$_} = 1 } split ';', $hashes{$m}->{$iid};
 		    if ( ! exists $vals{$dp_hashes{$m}->{$key}} ){
-			my $v = $dp_hashes{$m}->{$key};
-			# Ignore non-ascii values
-			if ( $v =~ /[[:ascii:]]/o ){
-			    # Append new value to list
-			    $vals{$v} = 1;
-			}
+			# Append new value to list
+			$vals{$v} = 1;
 		    }
 		    $hashes{$m}->{$iid} = join ';', keys %vals;
 		}else{
