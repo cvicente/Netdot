@@ -6,6 +6,14 @@ use strict;
 
 my $logger = Netdot->log->get_logger('Netdot::Model');
 
+# Classes used for access rights
+my %CLASSES = (
+    Device      => 1,
+    Ipblock     => 1,
+    ContactList => 1,
+    Zone        => 1,
+    );
+
 # Make sure to return 1
 1;
 
@@ -14,6 +22,29 @@ my $logger = Netdot->log->get_logger('Netdot::Model');
 Netdot::Model::AccessRight
 
 =head1 SYNOPSIS
+
+=head1 CLASS METHODS
+=cut
+
+########################################################################
+=head2 get_classes - Get a list of classes with access rights
+
+    This is useful in places like Model::delete() where we can avoid
+    searching for access rights if we know that the object being 
+    deleted does not deal with rights
+
+  Arguments: 
+    None
+  Returns:   
+    Hash with key = class name
+  Examples:
+    my %aclasses = AccessRight->get_classes();
+
+=cut
+sub get_classes{
+    my ($self) = @_;
+    return %CLASSES;
+}
 
 
 =head1 INSTANCE METHODS
@@ -54,7 +85,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2009 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

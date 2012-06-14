@@ -799,21 +799,9 @@ sub update {
 =cut
 sub delete {
     my $self = shift;
+    my $class = ref($self);
     $self->isa_object_method('delete');
     $self->throw_fatal("delete does not take any parameters") if shift;
-
-    my ($id, $table) = ($self->id, $self->table);
-
-    # Remove any access rights for this object
-    $logger->debug( sub { sprintf("Model::delete: Searching Access Rights for table %s id %s", 
-				  $table, $id) } );
-    if ( my @access_rights = AccessRight->search(object_class=>$table, object_id=>$id) ){
-	foreach my $ar ( @access_rights ){
-	    $logger->debug( sub { sprintf("Model::delete: Deleting AccessRight: %s for table %s id %s", 
-					  $ar->access, $table, $id) } );
-	    $ar->SUPER::delete();
-	}
-    }
 
     eval {
 	$self->SUPER::delete();
@@ -826,6 +814,20 @@ sub delete {
     }
     $logger->debug( sub { sprintf("Model::delete: Deleted record %i, from table: %s", 
 				  $id, $table) } );
+
+    # Remove any access rights for this object
+    my %aclasses = AccessRight->get_classes;
+    if ( exists $aclasses{$class} ){
+	$logger->debug( sub { sprintf("Model::delete: Searching Access Rights for table %s id %s", 
+				      $class, $id) } );
+	if ( my @access_rights = AccessRight->search(object_class=>$class, object_id=>$id) ){
+	    foreach my $ar ( @access_rights ){
+		$logger->debug( sub { sprintf("Model::delete: Deleting AccessRight: %s for table %s id %s", 
+					      $ar->access, $table, $id) } );
+		$ar->SUPER::delete();
+	    }
+	}
+    }
 
     return 1;
 }

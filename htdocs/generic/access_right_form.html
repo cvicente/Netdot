@@ -183,14 +183,14 @@ if ( $object_class ){
 	$out .=  "<input type=\"hidden\" name=\"object_class\" value=\"$object_class\">";
       }};
 }else{
-    my @classes = qw(ContactList Device Ipblock Zone);
+    my %classes = AccessRight->get_classes();
     push @cell_data, 
     &{sub{
 	my $out;
 	$out .= "<select name=\"object_class\" id=\"object_class\" ".
 	    "onChange=\"jsrsSendqueryRA(this.options[selectedIndex].text, 'object_id');setPerms()\">";
 	$out .= "<option value=\"0\">-- Select --</option SELECTED>";
-	foreach my $class ( @classes ){
+	foreach my $class ( sort keys %classes ){
 	    $out .= "<option name=\"$class\" >$class</option>";
 	}
 	$out .= "</select>";
