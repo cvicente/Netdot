@@ -120,6 +120,109 @@ $meta = {
       ]
     }
   },
+  Audit => {
+    table_db_name => 'audit',
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'bigint'
+      },
+      tstamp => {
+        default => '1970-01-02 00:00:01',
+        description => 'When this change happened',
+        length => '',
+        nullable => 0,
+        tag => 'Timestamp',
+        type => 'timestamp'
+      },
+      username => {
+        default => '',
+        description => 'User that made the change',
+        length => '255',
+        nullable => 0,
+        tag => 'Username',
+        type => 'varchar'
+      },
+      tablename => {
+        default => '',
+        description => 'Table affected',
+        length => '255',
+        nullable => 0,
+        tag => 'Table',
+        type => 'varchar'
+      },
+      label => {
+        default => '',
+        description => 'Object Label',
+        length => '255',
+        nullable => 0,
+        tag => 'Label',
+        type => 'varchar'
+      },
+      object_id => {
+        default => '',
+        description => 'Object id',
+        length => '',
+        nullable => 0,
+        tag => 'Object ID',
+        type => 'bigint'
+      },
+      operation => {
+        default => '',
+        description => 'DB Operation (insert, update, delete)',
+        length => '255',
+        nullable => 0,
+        tag => 'Operation',
+        type => 'varchar'
+      },
+      fields => {
+        default => '',
+        description => 'Fields changed',
+        length => '255',
+        nullable => 1,
+        tag => 'Fields',
+        type => 'varchar'
+      },
+      vals => {
+        default => '',
+        description => 'Values that changed',
+        length => '255',
+        nullable => 1,
+        tag => 'Values',
+        type => 'varchar'
+      },
+    },
+    description => 'Audit Table to record database operations made by users',
+    has_history => 0,
+    index => [ ['tstamp'], ['username'], ['tablename'], ['label'] ],
+    isjoin => '0',
+    label => [ 'tstamp', 'username', 'label' ],
+    primary_key => 'id',
+    unique => [ [ ] ],
+    views => {
+      all => [
+	  'tstamp',
+	  'username',
+	  'tablename',
+	  'label',
+	  'object_id',
+	  'operation', 
+	  'fields',
+	  'vals', 
+      ],
+      brief => [
+	  'tstamp',
+	  'username',
+	  'tablename',
+	  'label',
+	  'operation', 
+      ]
+    }
+  },
   ArpCache => {
     table_db_name => 'arpcache',
     columns => {
@@ -8378,50 +8481,10 @@ $meta = {
         tag => 'Timestamp',
         type => 'timestamp'
       },
-      username => {
-        default => '',
-        description => 'User that made the change',
-        length => '255',
-        nullable => 0,
-        tag => 'Username',
-        type => 'varchar'
-      },
-      record_type => {
-        default => '',
-        description => 'Record Type',
-        length => '255',
-        nullable => 1,
-        tag => 'Record Type',
-        type => 'varchar'
-      },
-      operation => {
-        default => '',
-        description => 'DB Operation (insert, update, delete)',
-        length => '255',
-        nullable => 0,
-        tag => 'Operation',
-        type => 'varchar'
-      },
-      fields => {
-        default => '',
-        description => 'Fields changed',
-        length => '255',
-        nullable => 1,
-        tag => 'Fields',
-        type => 'varchar'
-      },
-      vals => {
-        default => '',
-        description => 'Values changed',
-        length => '255',
-        nullable => 1,
-        tag => 'Values',
-        type => 'varchar'
-      },
     },
-    description => 'Zone Record changes',
+    description => 'DNS and DHCP changes',
     has_history => 0,
-    index => [ ['zone'], ['scope'], ['username'], ['record_type'], ['pending'] ],
+    index => [ ['zone'], ['scope'], ['pending'] ],
     isjoin => '0',
     label => [
       'zone',
@@ -8431,22 +8494,14 @@ $meta = {
     views => {
       all => [
         'tstamp',
-        'username',
         'zone',
         'scope',
-        'record_type',
-        'operation',
-        'fields',
-        'vals',
         'pending',
       ],
       brief => [
         'tstamp',
-        'username',
 	'zone',
 	'scope',
-        'operation',
-        'record_type',
         'pending',
       ]
     }

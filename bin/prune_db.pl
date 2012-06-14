@@ -35,6 +35,7 @@ my $usage = <<EOF;
     -M, --macs                     MAC addresses
     -I, --ips                      IP addresses
     -R, --rr                       DNS Resource Records
+    -a, --audit                    Audit records
     -t, --hostaudit                Host Audit records
     -d, --num_days                 Number of days worth of items to keep (default: $self{NUM_DAYS});
     -n, --num_history              Number of history items to keep for each record (default: $self{NUM_HISTORY});
@@ -71,6 +72,7 @@ my $result = GetOptions(
     "M|macs"          => \$self{MACS},
     "I|ips"           => \$self{IPS},
     "R|rr"            => \$self{RR},
+    "a|audit"         => \$self{AUDIT},
     "t|hostaudit"     => \$self{HOSTAUDIT},
     "d|num_days=i"    => \$self{NUM_DAYS},
     "n|num_history=i" => \$self{NUM_HISTORY},
@@ -90,7 +92,8 @@ if ( !$result ){
     die "Error: Problem with cmdline args\n";
 }
 
-unless  ( $self{HISTORY} || $self{FWT} || $self{ARP} || $self{MACS} || $self{IPS} || $self{RR} || $self{HOSTAUDIT} ){
+unless  ( $self{HISTORY} || $self{FWT} || $self{ARP} || $self{MACS} || 
+	  $self{IPS} || $self{RR} || $self{HOSTAUDIT} || $self{AUDIT} ){
     print $usage;
     die "Error: Missing required args\n";
 }
@@ -210,6 +213,14 @@ if ( $self{HOSTAUDIT} ){
     $r = $dbh->do("DELETE FROM hostaudit WHERE tstamp < '$sqldate'")
 	unless $self{PRETEND};
     $rows_deleted{hostaudit} = $r;
+}
+
+if ( $self{AUDIT} ){
+    my $r;
+    $logger->debug("Deleting audit records");
+    $r = $dbh->do("DELETE FROM audit WHERE tstamp < '$sqldate'")
+	unless $self{PRETEND};
+    $rows_deleted{audit} = $r;
 }
 
 if ( $self{FWT} ){

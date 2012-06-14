@@ -22,6 +22,13 @@ Netdot::Model - Netdot implementation of the Model layer (of the MVC architectur
 my %defaults; 
 my $logger = Netdot->log->get_logger("Netdot::Model");
 
+# Tables to exclude from audit
+my %EXCLUDE_AUDIT = (
+    'audit'     => 1, 
+    'datacache' => 1, 
+    'hostaudit' => 1
+    );
+
 BEGIN {
     my $db_type  = __PACKAGE__->config->get('DB_TYPE');
     my $database = __PACKAGE__->config->get('DB_DATABASE');
@@ -101,80 +108,148 @@ BEGIN {
 	1;
     }
 
-###########################################################
-# Keep audit trail of DNS/DHCP changes.  
-# Each relevant record change inserts an entry in the 
-# houstaudit table.  Each time a new zonefile or dhcp config 
-# is generated, pending changes are unmarked. 
-# This avoids unnecessary work, and also logs record changes
-###########################################################
-    __PACKAGE__->add_trigger( after_update  => \&_host_audit_update );
-    __PACKAGE__->add_trigger( after_create  => \&_host_audit_insert );
-    __PACKAGE__->add_trigger( before_delete => \&_host_audit_delete );
+    ###########################################################
+    # Audit changes
+    ###########################################################
+    __PACKAGE__->add_trigger( after_update  => \&_audit_update );
+    __PACKAGE__->add_trigger( after_create  => \&_audit_insert );
+    __PACKAGE__->add_trigger( before_delete => \&_audit_delete );
 
-    sub _host_audit_update {
+    sub _audit_update {
 	my ($self, %args) = @_;
-	return unless ( $self->table =~ /^rr/ || $self->table eq 'zone' ||
-			$self->table eq 'dhcpscope' || $self->table eq 'dhcpattr');
 	$args{operation} = 'update';
-	my $changed_columns = $args{discard_columns};
-	if ( defined $changed_columns && scalar(@$changed_columns) ){
-	    $args{fields} = join ',', @$changed_columns;
-	    my @values;
-	    foreach my $col ( @$changed_columns ){
-		if ( $self->$col && blessed($self->$col) ){
-		    push @values, $self->$col->get_label();
-		}else{
-		    push @values, $self->$col;
-		}
-	    }
-	    $args{values} = join ',', map { "'$_'" } @values;
-	    return $self->_host_audit(%args);
-	}
+	return $self->_audit(%args);
     }
-    sub _host_audit_insert {
+    
+    sub _audit_insert {
 	my ($self, %args) = @_;
-	return unless ( $self->table =~ /^rr/ || $self->table eq 'zone' ||
-			$self->table eq 'dhcpscope' || $self->table eq 'dhcpattr');
 	$args{operation} = 'insert';
-	my (@fields, @values);
-	foreach my $col ( $self->columns ){
-	    if ( defined $self->$col ){ 
-		push @fields, $col;
-		if ( $self->$col && blessed($self->$col) ){
-		    push @values, $self->$col->get_label();
-		}else{
-		    push @values, $self->$col;
-		}
-	    } 
-	}
-	$args{fields} = join ',', @fields;
-	$args{values} = join ',', map { "'$_'" } @values if @values;
-	return $self->_host_audit(%args);
+	return $self->_audit(%args);
     }
-    sub _host_audit_delete {
+
+    sub _audit_delete {
 	my ($self, %args) = @_;
-	return unless ( $self->table =~ /^rr/ || $self->table eq 'zone' ||
-			$self->table eq 'dhcpscope' || $self->table eq 'dhcpattr');
 	$args{operation} = 'delete';
-	$args{fields} = 'all';
-	$args{values} = $self->get_label;
-	return $self->_host_audit(%args);
+	return $self->_audit(%args);
     }
+
+    # Record DB operations 
+    sub _audit {
+	my ($self, %args) = @_;
+
+	# If it's a host record, make sure that it gets
+	# recorded in hostaudit
+	if ( $self->table =~ /^rr/o || $self->table eq 'zone' ||
+	     $self->table eq 'dhcpscope' || $self->table eq 'dhcpattr' ){
+	    $self->_host_audit(%args);
+	}
+
+	unless ( $self->config->get('AUDIT_USER_ACTIVITY') ){
+	    return 1;
+	}
+
+	my $user = $ENV{REMOTE_USER};	
+	unless ( $user && $user ne 'netdot' ){
+	    # Cron jobs set user to 'netdot'
+	    # We only care about actual users
+	    return 1;
+	}
+
+	my $table = $self->table;
+	return if exists $EXCLUDE_AUDIT{$table};
+	return if $table =~ /_history$/o;
+
+	my $id    = $self->id;
+	my $label = $self->get_label;
+	my %data = (tstamp      => $self->timestamp,
+		    tablename   => $table,
+		    object_id   => $id,
+		    username    => $user,
+		    operation   => $args{operation},
+		    label       => $label,
+		    );
+
+	if ( $args{operation} eq 'insert' ){
+	    my (@fields, @values);
+	    foreach my $col ( $self->columns ){
+		if ( defined $self->$col ){ 
+		    push @fields, $col;
+		    if ( $self->$col && blessed($self->$col) ){
+			push @values, $self->$col->get_label();
+		    }else{
+			push @values, $self->$col;
+		    }
+		} 
+	    }
+	    $data{fields} = join ',', @fields;
+	    $data{vals} = join ',', map { "'$_'" } @values if @values;
+
+	}elsif ( $args{operation} eq 'update' ){
+	    my $changed_columns = $args{discard_columns};
+	    if ( defined $changed_columns && scalar(@$changed_columns) ){
+		$data{fields} = join ',', @$changed_columns;
+		return if ( $data{fields} eq 'modified' );
+		my @values;
+		foreach my $col ( @$changed_columns ){
+		    if ( $self->$col && blessed($self->$col) ){
+			push @values, $self->$col->get_label();
+		    }else{
+			push @values, $self->$col;
+		    }
+		}
+		$data{vals} = join ',', map { "'$_'" } @values;
+	    }else{
+		# Nothing happened
+		return 1;
+	    }
+	}
+
+	eval {
+	    Audit->insert(\%data);
+	};
+	if ( my $e = $@ ){
+	    $logger->error("Netdot::Model::_audit: Could not insert Audit record about $table id $id: $e");
+	    return;
+	}
+
+	my $msg = "Netdot::Model::_audit: user: $user, operation: $args{operation}, table: $table, id: $id ($label)";
+	$msg .= ", fields: ($data{fields})" if (defined $data{fields});
+        $msg .= ", values: ($data{vals})"   if (defined $data{vals});
+	$logger->info($msg);
+	1;
+    }
+
+    ###########################################################
+    # Keep audit trail of DNS/DHCP changes.  
+    # Each relevant record change inserts an entry in the 
+    # houstaudit table.  Each time a new zonefile or dhcp config 
+    # is generated, pending changes are unmarked. 
+    # This avoids unnecessary work
+    ###########################################################
     sub _host_audit {
 	my ($self, %args) = @_;
+	
+	if ( $args{operation} eq 'update' ){
+	    my $changed_columns = $args{discard_columns};
+	    if ( defined $changed_columns && scalar(@$changed_columns) ){
+		my $fields = join ',', @$changed_columns;
+		return if ( $args{fields} eq 'modified' );
+	    }else{
+		return;
+	    }
+	}
+
 	my $table = $self->table;
 	my ($zone, $scope);
-	my $user = $ENV{REMOTE_USER} || "unknown";
 	my $rr; 
+	my $name;
 	if ( $table eq 'zone' ){
 	    $zone = $self;   
 	}elsif ( $table eq 'rr' ){
 	    $rr = $self;
-	    return if ( $args{fields} eq 'modified' );
 	    $zone = $self->zone;
-	}elsif ( $table =~ /^rr/ ){
-	    if ( defined $self->rr && $self->rr ){
+	}elsif ( $table =~ /^rr/o ){
+	    if ( $self->rr ){
 		if ( blessed($self->rr) ){
 		    $rr = $self->rr;
 		    $zone = $rr->zone;
@@ -191,7 +266,7 @@ BEGIN {
 		return;
 	    }
 	}elsif ( $table eq 'dhcpscope' ){
-	    $scope = $self->get_global();   
+	    $scope = $self->get_global();
 	}elsif ( $table eq 'dhcpattr' ){
 	    $scope = $self->scope->get_global();
 	}elsif ( $table eq 'ipblock' ){
@@ -203,37 +278,21 @@ BEGIN {
 	}
 	my $label = $self->get_label;
 	my %data = (tstamp      => $self->timestamp,
-		    record_type => $table,
-		    username    => $user,
-		    operation   => $args{operation},
 		    pending     => 1,
 		    );
-	$data{fields} = $args{fields} if $args{fields};
-	$data{vals}   = $args{values} if $args{values};
-	my $name; # Name of the zone or global scope
 	if ( $zone ){
-	    unless ( blessed($zone) ){
-		$zone = Zone->retrieve($zone);
-	    }
-	    $name       = $zone->name;
+	    $name = $zone->name;
 	    $data{zone} = $name;
 	}elsif ( $scope ){
-	    $name        = $scope->name;
+	    $name = $scope->name;
 	    $data{scope} = $name;
-	}else{
-	    $self->throw_fatal("Netdot::Model::_host_audit: Could not determine audit object for table: $table");
 	}
-	
 	eval {
 	    HostAudit->insert(\%data);
 	};
 	if ( my $e = $@ ){
 	    $logger->error("Netdot::Model::_host_audit: Could not insert HostAudit record about $table id ".$self->id.": $e");
 	    return;
-	}else{
-	    my $msg = "Netdot::Model::_host_audit: table: $table, record: $label, within: $name, user: $user, operation: $args{operation}";
-	    $msg .= " fields: ($args{fields}), values: ($args{values})" if (defined $args{fields} && defined $args{values});
-	    $logger->info($msg);
 	}
 	1;
     }

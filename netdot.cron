@@ -26,3 +26,7 @@ PREFIX=/usr/local/netdot
 # Once a week, remove MAC and IP addresses older than 3 months
 # NOTE: ONLY ENABLE THIS IF YOU ARE SURE OF WHAT IT DOES
 # 45 4 * * 0 root $PREFIX/bin/prune_db.pl -M -I -d 90
+
+# Remove audit records older than 3 months
+40 4 * * 0 root $PREFIX/bin/prune_db.pl --audit --hostaudit -d 90
+

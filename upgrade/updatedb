@@ -24,6 +24,7 @@ if ( $netdot_config->get('DB_TYPE') ne "mysql" ) {
     die "Uprading schemas for other DBMSs besides mysql not supported in this release\n";
 }
 
+# Start by adding new tables
 my @statements = (
     "CREATE TABLE `asset` (
             `custom_serial` varchar(255),
@@ -47,6 +48,22 @@ my @statements = (
             INDEX Asset5 (`po_number`),
             INDEX (`maint_contract`),
             PRIMARY KEY (`id`)
+         ) ENGINE=InnoDB;",
+    "CREATE TABLE `audit` (
+	    `fields` varchar(255),
+	    `id` bigint NOT NULL auto_increment,
+	    `label` varchar(255) NOT NULL,
+	    `object_id` bigint NOT NULL,
+	    `operation` varchar(255) NOT NULL,
+	    `tablename` varchar(255) NOT NULL,
+	    `tstamp` timestamp NOT NULL DEFAULT '1970-01-02 00:00:01',
+	    `username` varchar(255) NOT NULL,
+	    `vals` varchar(255),
+	    INDEX `Audit2` (`tstamp`),
+	    INDEX `Audit3` (`username`),
+	    INDEX `Audit4` (`tablename`),
+	    INDEX `Audit5` (`label`),
+	    PRIMARY KEY (`id`)
          ) ENGINE=InnoDB;",
     );
 
@@ -317,7 +334,11 @@ push @statements, (
     "ALTER TABLE bgppeering ADD COLUMN max_v6_prefixes integer NOT NULL;",
     "ALTER TABLE hostaudit MODIFY COLUMN zone varchar(255);",
     "ALTER TABLE hostaudit MODIFY COLUMN scope varchar(255);",
-    "ALTER TABLE hostaudit CHANGE COLUMN user username varchar(255);",
+    "ALTER TABLE hostaudit DROP COLUMN user;",
+    "ALTER TABLE hostaudit DROP COLUMN operation;",
+    "ALTER TABLE hostaudit DROP COLUMN record_type;",
+    "ALTER TABLE hostaudit DROP COLUMN fields;",
+    "ALTER TABLE hostaudit DROP COLUMN vals;",
     "ALTER TABLE dhcpscope MODIFY COLUMN text text;",
     "ALTER TABLE dhcpscope MODIFY COLUMN export_file varchar(255);",
     "ALTER TABLE dhcpscope MODIFY COLUMN failover_peer varchar(128);",
@@ -325,9 +346,9 @@ push @statements, (
     "ALTER TABLE savedqueries MODIFY COLUMN querytext text;",
     "ALTER TABLE accessright MODIFY COLUMN object_id bigint NOT NULL;",
     "ALTER TABLE site ADD COLUMN gsf integer;",
-    "ALTER TABLE site ADD UNIQUE KEY Site5 ('number');", 
+    "ALTER TABLE site ADD UNIQUE KEY Site5 (number);", 
     "ALTER TABLE site_history ADD COLUMN gsf integer;",
-    "ALTER TABLE site_history ADD UNIQUE KEY Site5 ('number');",
+    "ALTER TABLE site_history ADD UNIQUE KEY Site5 (number);",
    
     # FK Indexes
     "ALTER TABLE backbonecable_history ADD KEY (owner);",
@@ -609,8 +630,6 @@ push @statements, (
 "ALTER TABLE entitysite MODIFY site bigint NOT NULL;",
 "ALTER TABLE rraddr MODIFY ipblock bigint NOT NULL;",
 "ALTER TABLE rraddr MODIFY rr bigint NOT NULL;",
-"ALTER TABLE hostaudit MODIFY username varchar(255) NOT NULL;",
-"ALTER TABLE hostaudit MODIFY operation varchar(255) NOT NULL;",
 "ALTER TABLE splice MODIFY strand2 bigint NOT NULL;",
 "ALTER TABLE splice MODIFY strand1 bigint NOT NULL;",
 "ALTER TABLE userright MODIFY person bigint NOT NULL;",

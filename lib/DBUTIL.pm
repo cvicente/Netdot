@@ -393,7 +393,7 @@ sub processdata {
 	};
  	if ( my $e = $@ ){
  	    # We will let the process continue
-	    warn "ERROR: $e\n";
+	    warn "ERROR while executing $cmd: $e\n";
  	}else{
 	    print "rows affected: $rows\n" if $CONFIG{DEBUG};
 	}
