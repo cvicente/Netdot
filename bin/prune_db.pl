@@ -12,6 +12,9 @@ use Getopt::Long qw(:config no_ignore_case bundling);
 use Log::Log4perl::Level;
 use strict;
 
+# This will be reflected in audit tables, logs, etc.
+$ENV{REMOTE_USER} = "netdot";
+
 my %self;
 $self{DEBUG}       = 0;
 $self{HELP}        = 0;
