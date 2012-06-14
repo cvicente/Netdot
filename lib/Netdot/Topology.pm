@@ -211,7 +211,6 @@ sub update_links {
 #    
 #     * Never remove links when:
 #         - neighbor_fixed flag is true on either neighbor
-#         - One of the devices has no other links (would be left out of topology)
 #        
 #     * Always Remove links when:
 #         - Both Devices are linked to each other on different ports
@@ -239,8 +238,8 @@ sub update_links {
 	############
 	# Do not remove neighbors if the neighbor_fixed flag is on
         if ( $iface1->neighbor_fixed || $iface2->neighbor_fixed ){
-	    $logger->debug("Topology::update_links: Link $ifaceid1 <=> $ifaceid2 not removed because ".
-			   "neighbor_fixed flag is on");
+	    $logger->debug(sprintf("Topology::update_links: Link %s <=> %s not removed because ".
+				   "neighbor_fixed flag is on"), $iface1->get_label, $iface2->get_label);
 	    next;
 	}
 
@@ -248,52 +247,22 @@ sub update_links {
 	# Do some more tests
 
 	my $devices_linked_on_other_ports = 0;
-	my $device1_has_neighbors         = 0;
-	my $device2_has_neighbors         = 0;
 
 	my $device1 = $iface1->device;
 	my $device2 = $iface2->device;
 
 	foreach my $iface ( $device1->interfaces ){
 	    next if ( $iface->id == $iface1->id );
-	    if ( $iface->neighbor ){
-		my $neighbor = $iface->neighbor;
-		if ( $neighbor->device && ($neighbor->device->id == $device2->id) ){
-		    $devices_linked_on_other_ports = 1;
-		    last;
+	    if ( my $neighbor = $iface->neighbor ){
+		if ( $neighbor->device->id == $device2->id ){
+		    # Remove link right away instead of increasing the neighbor_missed counter
+		    if ( $iface1->neighbor->id == $ifaceid2 ){
+			$iface1->remove_neighbor();  # This will actually remove it in both directions
+			$remcount++;
+			last;
+		    }
 		}
-		$device1_has_neighbors = 1;
-		last;
 	    }
-	}
-
-	if ( $devices_linked_on_other_ports ){
-	    # Remove link right away
-	    if ( int($iface1->neighbor) == $ifaceid2 ){
-		$iface1->remove_neighbor();  # This will actually remove it in both directions
-		$remcount++;
-		next;
-	    }
-	} 
-
-	foreach my $iface ( $device2->interfaces ){
-	    next if ( $iface->id == $iface2->id );
-	    if ( $iface->neighbor ){
-		$device2_has_neighbors = 1;
-		last;
-	    }
-	}
-
-	############
-	# If either of the devices has no other links, do not remove this link
-	# Otherwise, a device would be left out of the topology
-	if ( !$device1_has_neighbors || !$device2_has_neighbors ){
-	    if ( $logger->is_debug() ){
-		$logger->debug("Topology::update_links: Link ".
-			       $iface1->get_label() ." <=> ".  $iface2->get_label() 
-			       ." preserved because at least one device would be left out of topology");
-	    }
-	    next;
 	}
 
 	###########
