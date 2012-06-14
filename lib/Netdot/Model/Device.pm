@@ -921,10 +921,14 @@ sub get_snmp_info {
 		if ( exists $hashes{$m}->{$iid} ){
 		    # Use a hash for fast lookup
 		    my %vals;
-		    map { $vals{$_}++ } split ';', $hashes{$m}->{$iid};
+		    map { $vals{$_} = 1 } split ';', $hashes{$m}->{$iid};
 		    if ( ! exists $vals{$dp_hashes{$m}->{$key}} ){
-			# Append new value to list
-			$vals{$dp_hashes{$m}->{$key}}++;
+			my $v = $dp_hashes{$m}->{$key};
+			# Ignore non-ascii values
+			if ( $v =~ /[[:ascii:]]/o ){
+			    # Append new value to list
+			    $vals{$v} = 1;
+			}
 		    }
 		    $hashes{$m}->{$iid} = join ';', keys %vals;
 		}else{
