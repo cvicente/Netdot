@@ -7,14 +7,6 @@ use strict;
 my $MAC  = Netdot->get_mac_regex();
 my $logger = Netdot->log->get_logger('Netdot::Model::Device');
 
-# Fill in standard fields
-my @STDFIELDS = qw( 
-number name type description speed admin_status 
-oper_status admin_duplex oper_duplex stp_id 
-bpdu_guard_enabled bpdu_filter_enabled loop_guard_enabled root_guard_enabled
-dp_remote_id dp_remote_ip dp_remote_port dp_remote_type
-);
-
 my %SPEED_MAP = ('1536000'     => 'T1',
 		 '1544000'     => 'T1',
 		 '3072000'     => 'Dual T1',
@@ -329,37 +321,41 @@ sub update {
 }
 
 ############################################################################
-=head2 snmp_update - Update Interface using SNMP info
+=head2 snmp_update - Insert/Update Interface using SNMP info
 
   Arguments:  
     Hash with the following keys:
-    info          - Hash ref with SNMP info about interface
+    column        - Any of Interface table columns
+    snmp_info     - Hash ref with SNMP info about interface
     add_subnets   - Whether to add subnets automatically
     subs_inherit  - Whether subnets should inherit info from the Device
     stp_instances - Hash ref with device STP info
   Returns:    
     Interface object
-  Example:
-    $if->snmp_update(info         => $info->{interface}->{$newif},
+  Examples:
+    # Instance call
+    $if->snmp_update(snmp_info    => $info->{interface}->{$newif},
 		     add_subnets  => $add_subnets,
 		     subs_inherit => $subs_inherit,
 		     );
+    # Class call
+    my $new = Ipblock->snmp_update(%args, snmp_info=>$info, ...);
+
 =cut
 sub snmp_update {
     my ($self, %args) = @_;
-    $self->isa_object_method('snmp_update');
-    my $class = ref($self);
-    my $newif = $args{info};
-    my $label = $self->get_label;
+    my $info  = $args{snmp_info};
     my %iftmp = (doc_status => 'snmp');
 
-    foreach my $field ( @STDFIELDS ){
-	$iftmp{$field} = $newif->{$field} if exists $newif->{$field};
+    # Table column values can be arguments or keys in the snmp_info hash
+    foreach my $field ( $self->meta_data->get_column_names ){
+	$iftmp{$field} = $args{$field}   if exists $args{$field};
+	$iftmp{$field} = $info->{$field} if exists $info->{$field};
     }
     
     ############################################
     # Update PhysAddr
-    if ( $newif->{physaddr} && (my $addr = PhysAddr->validate($newif->{physaddr})) ){
+    if ( $info->{physaddr} && (my $addr = PhysAddr->validate($info->{physaddr})) ){
 	my $physaddr = PhysAddr->search(address=>$addr)->first;
 	if ( $physaddr ){
 	    $physaddr->update({last_seen=>$self->timestamp, static=>1});
@@ -368,24 +364,38 @@ sub snmp_update {
 		$physaddr = PhysAddr->insert({address=>$addr, static=>1}); 
 	    };
 	    if ( my $e = $@ ){
-		$logger->debug(sub{"$label: Could not insert PhysAddr $addr: $e"});
+		$logger->debug(sub{"$e"});
 	    }
 	}
 	$iftmp{physaddr} = $physaddr->id if $physaddr;
     }else{
 	$iftmp{physaddr} = undef;
     }
-    # Check if description can be overwritten
-    delete $iftmp{description} if !($self->overwrite_descr) ;
+
 
     ############################################
-    # Update
+    # Insert/Update
+    my $class;
+    if ( $class = ref($self) ){
 
-    my $r = $self->update( \%iftmp );
-    if ( $r && $self->number && $self->name ){
-	$logger->debug(sub{ sprintf("%s: Interface %s (%s) updated", 
-				    $label, $self->number, $self->name) });
+	# Check if description can be overwritten
+	delete $iftmp{description} if !($self->overwrite_descr) ;
+	
+	my $r = $self->update( \%iftmp );
+	my $d = $self->device->get_label;
+	if ( $r && $self->number && $self->name ){
+	    $logger->debug(sub{ sprintf("%s: Interface %s (%s) updated", 
+					$d, $self->number, $self->name) });
+	}
+    }else{
+	$class = $self;
+	$self = $class->insert(\%iftmp);
+	my $d = $self->device->get_label;
+	$logger->info(sprintf("%s: Interface %s (%s) updated", 
+			      $d, $self->number, $self->name));
+	
     }
+    my $label = $self->get_label;
     
     ##############################################
     # Update VLANs
@@ -393,7 +403,7 @@ sub snmp_update {
     # Get our current vlan memberships
     # InterfaceVlan objects
     #
-    if ( exists $newif->{vlans} ){
+    if ( exists $info->{vlans} ){
 	my %oldvlans;
 	map { $oldvlans{$_->id} = $_ } $self->vlans();
 	
@@ -403,9 +413,9 @@ sub snmp_update {
 			 stp_state      => 'i_stp_state',
 	    );
 	
-	foreach my $newvlan ( keys %{ $newif->{vlans} } ){
-	    my $vid   = $newif->{vlans}->{$newvlan}->{vid} || $newvlan;
-	    my $vname = $newif->{vlans}->{$newvlan}->{vname};
+	foreach my $newvlan ( keys %{ $info->{vlans} } ){
+	    my $vid   = $info->{vlans}->{$newvlan}->{vid} || $newvlan;
+	    my $vname = $info->{vlans}->{$newvlan}->{vname};
 	    my $vo;
 	    my %vdata;
 	    $vdata{vid}   = $vid;
@@ -441,7 +451,7 @@ sub snmp_update {
 	    }
 
 	    # Insert STP information for this interface on this vlan
-	    my $stpinst = $newif->{vlans}->{$newvlan}->{stp_instance};
+	    my $stpinst = $info->{vlans}->{$newvlan}->{stp_instance};
 	    unless ( defined $stpinst ){
 		$logger->debug(sub{sprintf("%s: VLAN %s not mapped to any STP instance", 
 					   $label, $newvlan)});
@@ -459,7 +469,7 @@ sub snmp_update {
 	    foreach my $field ( keys %IVFIELDS ){
 		my $method = $IVFIELDS{$field};
 		if ( exists $args{stp_instances}->{$stpinst}->{$method} &&
-		     (my $v = $args{stp_instances}->{$stpinst}->{$method}->{$newif->{number}}) ){
+		     (my $v = $args{stp_instances}->{$stpinst}->{$method}->{$info->{number}}) ){
 		    $uargs{$field} = $v;
 		}
 	    }
@@ -482,7 +492,7 @@ sub snmp_update {
     ################################################################
     # Update IPs
     #
-    if ( exists( $newif->{ips} ) ) {
+    if ( exists( $info->{ips} ) ) {
 
 	# For Subnet->vlan assignments
 	my $vlan = 0;
@@ -497,11 +507,11 @@ sub snmp_update {
 	    $vlan = Vlan->search(vid=>$vid)->first;
 	}
 
-	foreach my $newip ( keys %{ $newif->{ips} } ){
-	    if ( my $address = $newif->{ips}->{$newip}->{address} ){
+	foreach my $newip ( keys %{ $info->{ips} } ){
+	    if ( my $address = $info->{ips}->{$newip}->{address} ){
 		my %iargs   =  (address      => $address,
-				version      => $newif->{ips}->{$newip}->{version},
-				subnet       => $newif->{ips}->{$newip}->{subnet},
+				version      => $info->{ips}->{$newip}->{version},
+				subnet       => $info->{ips}->{$newip}->{subnet},
 				add_subnets  => $args{add_subnets},
 				subs_inherit => $args{subs_inherit},
 		    );

@@ -5534,10 +5534,15 @@ sub _update_interfaces {
 	    }
 	}	    
 	my $if;
-	if ( $oldif ){
-	    $if = $oldif;
+	if ( $if = $oldif ){
+	    $if->snmp_update(snmp_info     => $info->{interface}->{$newif},
+			     add_subnets   => $add_subnets,
+			     subs_inherit  => $subs_inherit,
+			     stp_instances => $info->{stp_instances},
+		);
 	}else{
 	    # Interface does not exist.  Add it.
+
 	    my $ifname = $info->{interface}->{$newif}->{name} || $newnumber;
 	    my %args = (device      => $self, 
 			number      => $newif, 
@@ -5577,21 +5582,19 @@ sub _update_interfaces {
 		}
 	    }
 	    
-	    $if = Interface->insert(\%args);
-	    $logger->info(sprintf("%s: New Interface Inserted", $if->get_label));
+	    $if = Interface->snmp_update(
+		%args,
+		snmp_info     => $info->{interface}->{$newif},
+		add_subnets   => $add_subnets,
+		subs_inherit  => $subs_inherit,
+		stp_instances => $info->{stp_instances},
+		);
 	    
 	}
 	
 	$self->throw_fatal("Model::Device::_update_interfaces: $host: ".
 			   "Could not find or create interface: $newnumber")
 	    unless $if;
-	
-	# Now update it with snmp info
-	$if->snmp_update(info          => $info->{interface}->{$newif},
-			 add_subnets   => $add_subnets,
-			 subs_inherit  => $subs_inherit,
-			 stp_instances => $info->{stp_instances},
-	    );
 	
 	# Remove this interface from list to delete
 	delete $oldifs{$if->id} if exists $oldifs{$if->id};  
