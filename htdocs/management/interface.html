@@ -71,6 +71,7 @@ my %linksfrom = Interface->meta_data->get_links_from;
 %             }
 %             foreach my $i ( sort keys %linksfrom ){
 %               next if $i eq 'neighbors';
+%               next if $i =~ /^history_/;
 %               if ( $view eq $i ){
                    [<% $i %>]
 %               }else{
@@ -89,6 +90,7 @@ my %linksfrom = Interface->meta_data->get_links_from;
 %    if ( ($view eq 'all' || $view eq $i ) ){
 %	# Special cases
 %       next if $i eq 'neighbors';
+%       next if $i =~ /^history_/;
 %	if( $i eq 'vlans' && (my @ivlans = $o->vlans) ){
 %           my @vlans = map { $_->vlan } @ivlans;
             <div class="containerhead">VLANs</div>
