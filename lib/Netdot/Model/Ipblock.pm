@@ -2070,7 +2070,7 @@ sub update_a_records {
 		    if ( !exists $hostnameips{$self->address} ){
 			# Check if the name already exists
 			my $other;
-			if ( $other = RR->search(%rrstate)->first ){
+			if ( $other = RR->search(name=>$name, zone=>$zone)->first ){
 			    if ( $other->id != $rr->id ){
 				# This means we need to assign the other
 				# name to this IP, not update the current name
