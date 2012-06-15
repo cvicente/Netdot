@@ -1971,7 +1971,6 @@ sub arp_update {
     my $class = ref($self);
 
     my $host      = $self->fqdn;
-    my $dbh       = $self->db_Main;
     my $timestamp = $argv{timestamp} || $self->timestamp;
 
     unless ( $self->collect_arp ){
@@ -2135,7 +2134,6 @@ sub fwt_update {
     my $class = ref($self);
 
     my $host      = $self->fqdn;
-    my $dbh       = $self->db_Main;
     my $timestamp = $argv{timestamp} || $self->timestamp;
     
     unless ( $self->collect_fwt ){
