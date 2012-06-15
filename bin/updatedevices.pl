@@ -14,17 +14,19 @@ use Getopt::Long qw(:config no_ignore_case bundling);
 use Log::Log4perl::Level;
 
 # Variables that will hold given values
-my ($host, $blocks, $db, $file, $commstrs, $version, $sec_name, $sec_level, $auth_proto, $auth_pass, $priv_proto, $priv_pass);
+my ($host, $blocks, $db, $matching, $file, $commstrs, $version, $sec_name, 
+    $sec_level, $auth_proto, $auth_pass, $priv_proto, $priv_pass);
 
 # Default values
 my $retries         = Netdot->config->get('DEFAULT_SNMPRETRIES');
 my $timeout         = Netdot->config->get('DEFAULT_SNMPTIMEOUT');
 
 # Flags
-my ($ATOMIC, $ADDSUBNETS, $SUBSINHERIT, $BGPPEERS, $RECURSIVE, $INFO, $FWT, $TOPO, $ARP, $PRETEND, $HELP, $_DEBUG);
+my ($ATOMIC, $ADDSUBNETS, $SUBSINHERIT, $BGPPEERS, $RECURSIVE, $INFO, $FWT, 
+    $TOPO, $ARP, $PRETEND, $HELP, $_DEBUG);
 
 # This will be reflected in the history tables
-$ENV{REMOTE_USER}   = "netdot";
+$ENV{REMOTE_USER} = "netdot";
 
 my $USAGE = <<EOF;
  usage: $0 [ optional args ]
@@ -36,13 +38,15 @@ my $USAGE = <<EOF;
         -I, --info  | -F, --fwt  | -A, --arp | -T, --topology
 
     Optional args:
-        [c, --community] [r, --retries] [o, --timeout] [v, --version] [d, --debug]
-        [--add-subnets <0|1>] [--subs-inherit <0|1>] [--with-bgp-peers <0|1>] [--pretend] [--atomic]
+        [-c, --community] [-r, --retries] [-o, --timeout] [-v, --version] [-d, --debug] 
+        [--add-subnets <0|1>] [--subs-inherit <0|1>] [--with-bgp-peers <0|1>] 
+        [-m, --matching] [--pretend] [--atomic]
         
     Argument Detail: 
     -H, --host <hostname|address>        Update given host only.
     -B, --blocks <address/prefix>[, ...] Specify an IP block (or blocks) to discover
     -D, --db                             Update only DB existing devices
+    -m, --matching <regex>               Update only devices whose names match pattern (with -B, -D, -E)
     -E, --file                           Update devices listed in given file
     -c, --communities <string>[, ...]    SNMP community string(s)
     -r, --retries <integer >             SNMP retries (default: $retries)
@@ -75,6 +79,7 @@ EOF
 my $result = GetOptions( "H|host=s"          => \$host,
 			 "B|blocks=s"        => \$blocks,
 			 "D|db"              => \$db,
+			 "m|matching=s"      => \$matching,
 			 "E|file=s"          => \$file,
 			 "I|info"            => \$INFO,
 			 "F|fwt"             => \$FWT,
@@ -155,7 +160,6 @@ $logger->info(sprintf("$0 started at %s", scalar localtime($start)));
 
 if ( $INFO || $FWT || $ARP ){
     
-    
     my %uargs = (version      => $version,
 		 timeout      => $timeout,
 		 retries      => $retries,
@@ -173,6 +177,7 @@ if ( $INFO || $FWT || $ARP ){
 		 do_info      => $INFO,
 		 do_fwt       => $FWT,
 		 do_arp       => $ARP,
+		 matching     => $matching,
 	);
     $uargs{communities} = \@communities if @communities;
     

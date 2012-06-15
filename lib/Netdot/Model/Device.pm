@@ -1183,6 +1183,7 @@ sub get_snmp_info {
     subs_inherit  Flag. When adding subnets, have them inherit information from the Device
     bgp_peers     Flag. When discovering routers, update bgp_peers
     pretend       Flag. Do not commit changes to the database
+    matching      Regex. Only update devices whose names match regex
   Returns:
     True if successful
     
@@ -1220,6 +1221,7 @@ sub snmp_update_all {
     subs_inherit  Flag. When adding subnets, have them inherit information from the Device
     bgp_peers     Flag. When discovering routers, update bgp_peers
     pretend       Flag. Do not commit changes to the database
+    matching      Regex. Only update devices whose names match regex
 
   Returns:
     True if successful
@@ -1275,6 +1277,7 @@ sub snmp_update_block {
     subs_inherit  Flag. When adding subnets, have them inherit information from the Device
     bgp_peers     Flag. When discovering routers, update bgp_peers
     pretend       Flag. Do not commit changes to the database
+    matching      Regex. Only update devices whose names match regex
 
   Returns:
     True if successful
@@ -4112,6 +4115,7 @@ sub _fork_end {
 #     subs_inherit   Flag. When adding subnets, have them inherit information from the Device
 #     bgp_peers      Flag. When discovering routers, update bgp_peers
 #     pretend        Flag. Do not commit changes to the database
+#     matching       Regex. Only update devices whose names match regex
 #   Returns: 
 #     Device count
 #
@@ -4186,7 +4190,12 @@ sub snmp_update_parallel {
     
     # Go over list of existing devices
     while ( my ($id, $dev) = each %do_devs ){
-	
+
+	if ( my $regex = $argv{matching} ){
+	    unless ( $dev->fqdn =~ /$regex/o ){
+		next;
+	    }
+	}
 	# Make sure we don't launch a process unless necessary
 	if ( $dev->is_in_downtime() ){
 	    $logger->debug(sub{ sprintf("Model::Device::_snmp_update_parallel: %s in downtime.  Skipping", $dev->fqdn) });
