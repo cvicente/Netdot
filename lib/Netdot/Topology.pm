@@ -256,7 +256,7 @@ sub update_links {
 	    if ( my $neighbor = $iface->neighbor ){
 		if ( $neighbor->device->id == $device2->id ){
 		    # Remove link right away instead of increasing the neighbor_missed counter
-		    if ( $iface1->neighbor->id == $ifaceid2 ){
+		    if ( $iface1->neighbor && $iface1->neighbor->id == $ifaceid2 ){
 			$iface1->remove_neighbor();  # This will actually remove it in both directions
 			$remcount++;
 			last;
