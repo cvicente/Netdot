@@ -908,7 +908,6 @@ sub build_tree {
 	my $b = $parents->{$_};
 	if ( (defined $a && !defined $b) || (!defined $a && defined $b) || 
 	     (defined $a && defined $b && ($a ne $b)) ){
-	    $logger->debug("Ipblock id: $_ has new parent");
 	    $sth->execute($parents->{$_}, $_);
 	}
     }
@@ -3062,7 +3061,6 @@ sub _update_tree{
 					       tree     => $tree,
 		    );
 		    if ( defined $node && $node->data != $par ){
-			$logger->debug("Ipblock::_update_tree: node $id has new parent");
 			$parents{$id} = $node->data;
 		    }
 		}else{
@@ -3073,7 +3071,6 @@ sub _update_tree{
 			);
 		    if ( defined $node && $node->parent 
 			 && $node->parent->data != $par ){
-			$logger->debug("Ipblock::_update_tree: node $id has new parent");
 			$parents{$id} = $node->parent->data;
 		    }
 		}

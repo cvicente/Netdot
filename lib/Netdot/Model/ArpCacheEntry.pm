@@ -29,12 +29,12 @@ Arp Cache Entry class
     objects.  We use direct SQL commands for improved speed.
 
   Arguments: 
-    Array ref containing hash refs with following keys:
-    arpcache  - id of ArpCache table record
-    interface - id of Interface
-    ipaddr    - ip address in numeric format
-    physaddr  - string with mac address
-   
+    Array ref containing these keys:
+    list = Arrayref of hash refs with following keys:
+           arpcache  - id of ArpCache table record
+           interface - id of Interface
+           ipaddr    - ip address in numeric format
+           physaddr  - string with mac address
   Returns:   
     True if successul
   Examples:
@@ -44,34 +44,28 @@ Arp Cache Entry class
 sub fast_insert{
     my ($class, %argv) = @_;
     $class->isa_class_method('fast_insert');
-
-    my $list    = $argv{list};
-    my $db_macs = PhysAddr->retrieve_all_hashref();
-    my $db_ips  = Ipblock->retrieve_all_hashref();
-
-    my $dbh = $class->db_Main;
-
+    my $list = $argv{list} || $class->throw_fatal("Missing list arg");
+    
     # Build SQL query
+    my $dbh = $class->db_Main;
     my $sth = $dbh->prepare_cached("INSERT INTO arpcacheentry 
                                     (arpcache,interface,ipaddr,physaddr)
-                                    VALUES (?, ?, ?, ?)");	
+                                    VALUES (?, ?, 
+                                    (SELECT id FROM ipblock WHERE address=? AND version=?), 
+                                    (SELECT id FROM physaddr WHERE address=?))");	
     # Now walk our list and insert
     foreach my $r ( @$list ){
-	if ( !exists $db_macs->{$r->{physaddr}} ){
-	    $logger->error(sprintf("Netdot::Model::arpcacheentry::fast_insert: Error: MAC: %s not found in database.", 
-				   $r->{physaddr}));
-	    next;
+	eval {
+	    $sth->execute($r->{arpcache}, 
+			  $r->{interface},
+			  $r->{ipaddr},
+			  $r->{version},
+			  $r->{physaddr},
+		);
+	};
+	if ( my $e = $@ ){
+	    $logger->warn("Problem inserting arpcacheentry: $e");
 	}
-	if ( !exists $db_ips->{$r->{ipaddr}} ){
-	    $logger->error(sprintf("Netdot::Model::arpcacheentry::fast_insert: Error: IP: %s not found in database.", 
-				   $r->{ipaddr}));
-	    next;
-	}
-	$sth->execute($r->{arpcache}, 
-		      $r->{interface},
-		      $db_ips->{$r->{ipaddr}},
-		      $db_macs->{$r->{physaddr}},
-	    );
     }
     
     return 1;

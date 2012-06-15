@@ -44,22 +44,22 @@ sub fast_insert{
     my ($class, %argv) = @_;
     $class->isa_class_method('fast_insert');
 
-    my $list    = $argv{list};
-    my $db_macs = PhysAddr->retrieve_all_hashref;
-
-    my $dbh = $class->db_Main;
+    my $list = $argv{list} || $class->throw_fatal('Missing list arg');
 
     # Build SQL query
+    my $dbh = $class->db_Main;
     my $sth= $dbh->prepare_cached("INSERT INTO fwtableentry 
                                    (fwtable,interface,physaddr)
-                                   VALUES (?, ?, ?)
-                                    ");	
+                                   VALUES (?, ?, (SELECT id FROM physaddr WHERE address=?))");	
     foreach my $r ( @$list ){
-	if ( exists $db_macs->{$r->{physaddr}} ){
+	eval {
 	    $sth->execute($r->{fwtable}, 
 			  $r->{interface},
-			  $db_macs->{$r->{physaddr}},
+			  $r->{physaddr},
 		);
+	};
+	if ( my $e = $@ ){
+	    $logger->warn("Problem inserting FWT entry: $e");
 	}
     }
     return 1;

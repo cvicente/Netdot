@@ -2025,6 +2025,7 @@ sub arp_update {
 		    arpcache  => $ac->id,
 		    interface => $intid,
 		    ipaddr    => Ipblock->ip2int($ip),
+		    version   => $version,
 		    physaddr  => $mac,
 		};
 	    }
