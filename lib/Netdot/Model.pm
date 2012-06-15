@@ -242,7 +242,6 @@ BEGIN {
 	my $table = $self->table;
 	my ($zone, $scope);
 	my $rr; 
-	my $name;
 	if ( $table eq 'zone' ){
 	    $zone = $self;   
 	}elsif ( $table eq 'rr' ){
@@ -281,11 +280,11 @@ BEGIN {
 		    pending     => 1,
 		    );
 	if ( $zone ){
-	    $name = $zone->name;
-	    $data{zone} = $name;
+	    my $z = (blessed $zone)? $zone : Zone->retrieve($zone);
+	    $data{zone} = $z->name;
 	}elsif ( $scope ){
-	    $name = $scope->name;
-	    $data{scope} = $name;
+	    my $s = (blessed $scope)? $scope : DhcpScope->retrieve($scope);
+	    $data{scope} = $s->name;
 	}
 	eval {
 	    HostAudit->insert(\%data);

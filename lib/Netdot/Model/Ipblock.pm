@@ -2061,7 +2061,7 @@ sub update_a_records {
 		    if ( $rr->id != $self->interface->device->name->id ){
 			$ar->delete;
 			RRADDR->insert({rr=>$device->name, ipblock=>$self});
-			$logger->info(sprintf("%s: UpdatedDNS A record for main device IP %s: %s", 
+			$logger->info(sprintf("%s: Updated DNS A record for main device IP %s: %s", 
 					      $host, $self->address, $device->name->name));
 		    }
 		}else{

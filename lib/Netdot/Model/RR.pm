@@ -662,9 +662,9 @@ sub _validate_args {
     if ( defined $argv->{zone} ){
 	if ( !ref($argv->{zone}) ){
 	    if ( $argv->{zone} =~ /\D+/ ){
-		$zone = Zone->search(name=>$zone)->first;
+		$zone = Zone->search(name=>$argv->{zone})->first;
 	    }else{
-		Zone->retrieve($argv->{zone});
+		$zone = Zone->retrieve($argv->{zone});
 	    }
 	}
     }
