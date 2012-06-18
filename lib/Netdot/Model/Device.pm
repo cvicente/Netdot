@@ -56,12 +56,11 @@ my %MFIELDS = (
 
 # SNMP::Info methods that return hash refs
 my @SMETHODS = qw( 
-hasCDP e_descr i_type i_alias i_speed i_up 
-i_up_admin i_duplex i_duplex_admin 
-ip_index ip_netmask i_mac
-i_vlan_membership qb_v_name v_name v_state
+   hasCDP e_descr i_type i_alias i_speed i_up 
+   i_up_admin i_duplex i_duplex_admin 
+   ip_index ip_netmask i_mac
+   i_vlan_membership qb_v_name v_name v_state
 );
-
 
 
 =head1 NAME
@@ -70,9 +69,11 @@ Netdot::Model::Device - Network Device Class
 
 =head1 SYNOPSIS
 
+ my $device = Device->retrieve($id);
+ $device->snmp_update();
+
 =head1 CLASS METHODS
 =cuts
-
 
 ############################################################################
 =head2 search - Search Devices
@@ -1850,16 +1851,13 @@ sub shortest_path_parents {
 }
 
 
-##################################################################
 
 =head1 INSTANCE METHODS
 
 =cut
 
 ############################################################################
-############################################################################
 ########################## INSTANCE METHODS ################################
-############################################################################
 ############################################################################
 
 

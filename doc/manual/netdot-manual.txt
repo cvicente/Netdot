@@ -7,7 +7,7 @@
 
 Version 1.0
 
-Copyright 2010 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the
@@ -523,6 +523,15 @@ via CRON. A sample crontab entry would be:
 0 * * * * root /usr/local/netdot/bin/updatedevices.pl -DIFAT
 ~~~~
 
+If you want to only update a subset of the devices in your database, 
+you may use the "--matching" parameter to specify a regular expression,
+which will be applied against devices' fully qualified names. For example
+if all your routers have the suffix "-gw", you could do something like:
+
+~~~~
+0 * * * * root /usr/local/netdot/bin/updatedevices.pl -DIFAT --matching "-gw"
+~~~~
+
 You will find some examples of cron jobs in the file named netdot.cron
 
 ### Device Documentation
@@ -785,11 +794,11 @@ page, clicking on the [import] button of the Records section and pasting
 the text from a BIND zone file into the text box.
 
 Each time the zone or its contents are modified, the transaction is
-added to a list of "pending changes". This list is used to determine
-when a zone needs to be exported. Zones can be exported manually via the
-UI by going to the Export menu, or via cron jobs. When a zone is
-exported, its serial number is increased and its list of pending changes
-is flushed.
+added to a list of pending changes. This list is kept in a database
+table called "hostaudit" and is used to determine when a zone needs to 
+be exported. Zones can be exported manually via the UI by going to the 
+Export menu, or via cron jobs. When a zone is exported, its serial number 
+is increased and the changes' "pending" status is cleared.
 
 ### The '@' record
 
@@ -891,6 +900,11 @@ will be used while exporting DHCP configurations. For example, if you
 wish to document the assignment of IP addresses to MAC addresses in
 a given subnet, but you do not want to run DHCP on that subnet, you
 can create a Subnet scope and make it inactive.
+
+Similarly to DNS records, DHCP changes are recorded in the "hostaudit"
+table, which Netdot uses to determine whether the DHCP configuration
+needs to be exported. Once exported, all changes' "pending" status
+is cleared.
 
 ## Contact Information
 
@@ -1223,6 +1237,21 @@ tasks:
     delete). Only select the 'none' right to revoke all permissions
     inherited from a group. Click on `Insert`.
 
+## Audit records
+
+Once you give users permissions to update your Netdot database, you may
+want to know who has done what. There is a special database table called
+'audit', which records every database operation made by a person (meaning
+that operations started by cron jobs are not recorded). Each audit record
+contains the following information: time stamp, username, operation type 
+(insert, update, delete), table affected, record ID, record label, fields
+and values affected.
+
+You can access these records by going to "Advanced" -> "Browse" -> "audit",
+or, if looking for a particular record, choose "Search" -> "audit" instead.
+
+This table can be pruned periodically using the bin/prune_db.pl script.
+
 # RESTful Interface
 
 The RESTful interface allows programmatic access to the Netdot database
@@ -1232,7 +1261,8 @@ support other formats, such as YAML or JSON.
 
 ## Generic RESTful resources
 
-* The REST interface is available using the following URL (or similar, depending on your Apache configuration):
+* The REST interface is available using the following URL (or similar, 
+depending on your Apache configuration):
 
 ~~~~
 https://myserver.mydomain.com/netdot/rest/
@@ -1244,13 +1274,15 @@ https://myserver.mydomain.com/netdot/rest/
 Netdot/1.0 REST OK. 
 ~~~~
 
-* Generic RESTful resources to be acted upon represent Netdot objects and are part of the request URI. For example, in this URI:
+* Generic RESTful resources to be acted upon represent Netdot objects and are part 
+of the request URI. For example, in this URI:
 
 ~~~~
 http://myserver.mydomain.com/netdot/rest/device/1
 ~~~~
 
- the resource is "device/1", which for a GET request, will return the contents of Device id 1.
+ the resource is "device/1", which for a GET request, will return the contents of 
+Device id 1.
 
 * Using the following URI with a GET request:
 
@@ -1269,13 +1301,15 @@ http://myserver.mydomain.com/netdot/rest/device?sysname=host1
 
  This will perform a search and return all devices whose sysname field is 'host1'.
 
-* The special keyword `meta_data` instead of an object ID will provide information about the object's class:
+* The special keyword `meta_data` instead of an object ID will provide information 
+about the object's class:
 
 ~~~~
 http://myserver.mydomain.com/netdot/rest/device/meta_data
 ~~~~
 
-* An existing resource can be updated by using the 'POST' method with relevant parameters. For example, a POST request to the following URI:
+* An existing resource can be updated by using the 'POST' method with relevant 
+parameters. For example, a POST request to the following URI:
 
 ~~~~
 URL: http://netdot.localdomain/rest/device/1
@@ -1285,7 +1319,8 @@ POST: {sysname=>'newhostname'}
  will update the 'sysname' field of the Device object with id 1 to be "newhostname". 
 
 
-* Similarly, a new object can be created with a POST request. However, in this case the object id must be left out:
+* Similarly, a new object can be created with a POST request. However, in this case 
+the object id must be left out:
 
 ~~~~
 URL: http://netdot.localdomain/rest/person
@@ -1298,7 +1333,8 @@ POST: {firstname=>'John', lastname=>'Doe'}
 
 ### /rest/host
 
-The special resource '/rest/host' provides a simplified interface for manipulating DNS and DHCP records. We will illustrate its usage with the following examples:
+The special resource '/rest/host' provides a simplified interface for manipulating 
+DNS and DHCP records.  We will illustrate its usage with the following examples:
 
 #### Retrieving host data (HTTP GET)
 
@@ -1401,24 +1437,26 @@ called "prune_db.pl" in the bin/ directory of the distribution. The
 command's syntax is as follows:
 
 ~~~~ {.bash}
- usage: bin/prune_db.pl  -H, --history | -F, --fwt | -A, --arp | 
-                         -M, --macs | -I, --ips | -R, --rr | -t, --hostaudit
-                       [ -d, --num_days <number> ] [ -n, --num_history <number> ] [ -r, --rotate ]
-                       [ -g, --debug ] [-h, --help]
+ usage: bin/prune_db.pl 
+ -H, --history | -F, --fwt | -A, --arp | 
+ -M, --macs | -I, --ips | -R, --rr |  -a, --audit | -t, --hostaudit
+ [ -d, --num_days <number> ] [ -n, --num_history <number> ] [ -r, --rotate ]
+ [ -g, --debug ] [-h, --help]
     
-    -H, --history                  History tables
-    -F, --fwt                      Forwarding Tables
-    -A, --arp                      ARP caches
-    -M, --macs                     MAC addresses
-    -I, --ips                      IP addresses
-    -R, --rr                       DNS Resource Records
-    -t, --hostaudit                Host Audit records
-    -d, --num_days                 Number of days worth of items to keep (default: 365);
-    -n, --num_history              Number of history items to keep for each record (default: 100);
-    -r, --rotate                   Rotate forwarding tables and ARP caches (rather than delete records) 
-    -p, --pretend                  Show activity without actually deleting anything
-    -g, --debug                    Print (lots of) debugging output
-    -h, --help                     Print help
+    -H, --history        History tables
+    -F, --fwt            Forwarding Tables
+    -A, --arp            ARP caches
+    -M, --macs           MAC addresses
+    -I, --ips            IP addresses
+    -R, --rr             DNS Resource Records
+    -a, --audit          Audit records
+    -t, --hostaudit      Host Audit records
+    -d, --num_days       Number of days worth of items to keep (default: 365)
+    -n, --num_history    Number of history items to keep for each record
+    -r, --rotate         Rotate forw. tables and ARP (rather than delete records) 
+    -p, --pretend        Show activity without actually deleting anything
+    -g, --debug          Print (lots of) debugging output
+    -h, --help           Print help
 
     Deletes old items from database as necessary.
     

@@ -25,7 +25,7 @@ $self{ROTATE}      = 0;
 
 my $usage = <<EOF;
  usage: $0  -H, --history | -F, --fwt | -A, --arp | 
-            -M, --macs | -I, --ips | -R, --rr | -t, --hostaudit
+            -M, --macs | -I, --ips | -R, --rr | -a, --audit | -t, --hostaudit
           [ -d, --num_days <number> ] [ -n, --num_history <number> ] [ -r, --rotate ]
           [ -g, --debug ] [-h, --help]
     

@@ -4,8 +4,7 @@
 
 PANDOC_OPTIONS=--number-sections --toc
 PANDOC=pandoc
-MARKDOWN2PDF=markdown2pdf
-#MARKDOWN2PDF=markdown2pdf --xetex
+MARKDOWN2PDF=pandoc
 INKSCAPE=inkscape
 SED=sed
 

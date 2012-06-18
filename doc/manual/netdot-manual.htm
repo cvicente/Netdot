@@ -115,6 +115,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 </ul></li>
 <li><a href="#authorization"><span class="toc-section-number">6</span> Authorization</a><ul>
 <li><a href="#assigning-permissions-to-users"><span class="toc-section-number">6.1</span> Assigning permissions to users</a></li>
+<li><a href="#audit-records"><span class="toc-section-number">6.2</span> Audit records</a></li>
 </ul></li>
 <li><a href="#restful-interface"><span class="toc-section-number">7</span> RESTful Interface</a><ul>
 <li><a href="#generic-restful-resources"><span class="toc-section-number">7.1</span> Generic RESTful resources</a></li>
@@ -135,7 +136,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <p></p>
 <h1 id="copyright"><a href="#TOC"><span class="header-section-number">1</span> Copyright</a></h1>
 <p>Version 1.0</p>
-<p>Copyright 2010 University of Oregon, all rights reserved.</p>
+<p>Copyright 2012 University of Oregon, all rights reserved.</p>
 <p>This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.</p>
 <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTIBILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.</p>
 <p>You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.</p>
@@ -327,6 +328,8 @@ device3 community2
 <pre class="sourceCode bash"><code class="sourceCode bash">~# bin/updatedevices.pl -T --recursive</code></pre>
 <p>Ideally, once you have discovered all your devices, you should combine all this functionality and have it run periodically (e.g. every hour) via CRON. A sample crontab entry would be:</p>
 <pre><code>0 * * * * root /usr/local/netdot/bin/updatedevices.pl -DIFAT</code></pre>
+<p>If you want to only update a subset of the devices in your database, you may use the &quot;--matching&quot; parameter to specify a regular expression, which will be applied against devices' fully qualified names. For example if all your routers have the suffix &quot;-gw&quot;, you could do something like:</p>
+<pre><code>0 * * * * root /usr/local/netdot/bin/updatedevices.pl -DIFAT --matching &quot;-gw&quot;</code></pre>
 <p>You will find some examples of cron jobs in the file named netdot.cron</p>
 <h3 id="device-documentation"><a href="#TOC"><span class="header-section-number">4.1.3</span> Device Documentation</a></h3>
 <p>Once you have created a device, you can go ahead and add more information about it.</p>
@@ -425,7 +428,7 @@ device3 community2
 <p>The most convenient way to create reverse zones (in-addr.arpa or ip6.arpa) is to go to the corresponding IP block page, DNS Zones section, and click on [add]. If the corresponding reverse zone does not exist, Netdot will present the user with the appropriate zone name and an option to create it. This is especially useful with IPv6 blocks, which tend to require very long reverse zone names.</p>
 <p>At this point, you can add new records by clicking on the [add] button on the Records section. Records can also be added from other parts of the user interface, for example, from the IP address page, or the DNS Records page.</p>
 <p>Records can also be imported in bulk into the zone by going to the Zone page, clicking on the [import] button of the Records section and pasting the text from a BIND zone file into the text box.</p>
-<p>Each time the zone or its contents are modified, the transaction is added to a list of &quot;pending changes&quot;. This list is used to determine when a zone needs to be exported. Zones can be exported manually via the UI by going to the Export menu, or via cron jobs. When a zone is exported, its serial number is increased and its list of pending changes is flushed.</p>
+<p>Each time the zone or its contents are modified, the transaction is added to a list of pending changes. This list is kept in a database table called &quot;hostaudit&quot; and is used to determine when a zone needs to be exported. Zones can be exported manually via the UI by going to the Export menu, or via cron jobs. When a zone is exported, its serial number is increased and the changes' &quot;pending&quot; status is cleared.</p>
 <h3 id="the-record"><a href="#TOC"><span class="header-section-number">4.4.1</span> The '@' record</a></h3>
 <p>In Netdot, as in BIND, the '@' record symbolizes the domain (a.k.a &quot;zone apex&quot;). In order to add records that apply to the domain itself, such as NS records, MX records, A records, etc. this record must exist. At zone creation time, Netdot automatically adds this record, together with two NS records for the zone, with the names (ns1.zone.name and ns2.zone.name).</p>
 <h2 id="dhcp"><a href="#TOC"><span class="header-section-number">4.5</span> DHCP</a></h2>
@@ -452,6 +455,7 @@ device3 community2
 <p>A template scope is not a real scope, but only a collection of attributes that you want to apply to things as a group. For example, the DHCP host scope for an IP phone may have one or more attributes that define where it should get its configuration from and other things. You can create a template containing these attributes and then use that template each time you create a host scope for IP phones.</p>
 <h3 id="active-and-inactive-scopes"><a href="#TOC"><span class="header-section-number">4.5.5</span> Active and Inactive Scopes</a></h3>
 <p>The 'active' flag in the scope object determines whether this scope will be used while exporting DHCP configurations. For example, if you wish to document the assignment of IP addresses to MAC addresses in a given subnet, but you do not want to run DHCP on that subnet, you can create a Subnet scope and make it inactive.</p>
+<p>Similarly to DNS records, DHCP changes are recorded in the &quot;hostaudit&quot; table, which Netdot uses to determine whether the DHCP configuration needs to be exported. Once exported, all changes' &quot;pending&quot; status is cleared.</p>
 <h2 id="contact-information"><a href="#TOC"><span class="header-section-number">4.6</span> Contact Information</a></h2>
 <p>Netdot uses the concept of &quot;Contact Lists&quot; to show contact information for different objects, for example devices, sites, entities (departments, providers, etc.).</p>
 <p>A Person object in Netdot contains a person's information, including location, e-mail address, phone numbers, pager numbers, etc.</p>
@@ -572,6 +576,10 @@ device3 community2
 <li><p>On the Person page, you can add permissions by clicking on the [access_rights] button. This will display current permissions. You can now add new ones by clicking on the [add] button on the right.</p></li>
 <li><p>On the UserRight window, select the Object Class, the specific object or objects, and one or more access rights (view, edit, delete). Only select the 'none' right to revoke all permissions inherited from a group. Click on <code>Insert</code>.</p></li>
 </ul>
+<h2 id="audit-records"><a href="#TOC"><span class="header-section-number">6.2</span> Audit records</a></h2>
+<p>Once you give users permissions to update your Netdot database, you may want to know who has done what. There is a special database table called 'audit', which records every database operation made by a person (meaning that operations started by cron jobs are not recorded). Each audit record contains the following information: time stamp, username, operation type (insert, update, delete), table affected, record ID, record label, fields and values affected.</p>
+<p>You can access these records by going to &quot;Advanced&quot; -&gt; &quot;Browse&quot; -&gt; &quot;audit&quot;, or, if looking for a particular record, choose &quot;Search&quot; -&gt; &quot;audit&quot; instead.</p>
+<p>This table can be pruned periodically using the bin/prune_db.pl script.</p>
 <h1 id="restful-interface"><a href="#TOC"><span class="header-section-number">7</span> RESTful Interface</a></h1>
 <p>The RESTful interface allows programmatic access to the Netdot database over the HTTP/HTTPS protocol. At this moment, all objects are formatted in XML using the XML::Simple Perl module. In the future, Netdot may support other formats, such as YAML or JSON.</p>
 <h2 id="generic-restful-resources"><a href="#TOC"><span class="header-section-number">7.1</span> Generic RESTful resources</a></h2>
@@ -671,29 +679,31 @@ POST: {ethernet=&gt;&#39;DEADDEADBEEF&#39;}</code></pre>
 <span class="kw">&gt;install</span> Netdot::Client::REST</code></pre>
 <h1 id="database-maintenance"><a href="#TOC"><span class="header-section-number">8</span> Database Maintenance</a></h1>
 <p>Netdot's database will grow with time, thus it will be necessary to remove old information as it becomes stale. You will find a CLI utility called &quot;prune_db.pl&quot; in the bin/ directory of the distribution. The command's syntax is as follows:</p>
-<pre class="sourceCode bash"><code class="sourceCode bash"> usage: bin/prune_db.pl  -H, --history <span class="kw">|</span> -F, --fwt <span class="kw">|</span> -A, --arp <span class="kw">|</span> 
-                         -M, --macs <span class="kw">|</span> -I, --ips <span class="kw">|</span> -R, --rr <span class="kw">|</span> -t, --hostaudit
-                      <span class="kw"> [</span> -d, --num_days &lt;number<span class="ot">&gt;</span><span class="kw"> ] [</span> -n, --num_history &lt;number<span class="ot">&gt;</span><span class="kw"> ] [</span> -r, --rotate<span class="kw"> ]</span>
-                      <span class="kw"> [</span> -g, --debug<span class="kw"> ]</span> [-h, --help]
-
-    -H, --history                  History tables
-    -F, --fwt                      Forwarding Tables
-    -A, --arp                      ARP caches
-    -M, --macs                     MAC addresses
-    -I, --ips                      IP addresses
-    -R, --rr                       DNS Resource Records
-    -t, --hostaudit                Host Audit records
-    -d, --num_days                 Number of days worth of items to keep <span class="kw">(</span>default: 365<span class="kw">)</span>;
-    -n, --num_history              Number of <span class="kw">history</span> items to keep <span class="kw">for</span> each record <span class="kw">(</span>default: 100<span class="kw">)</span>;
-    -r, --rotate                   Rotate forwarding tables and ARP caches <span class="kw">(</span>rather than delete records<span class="kw">)</span> 
-    -p, --pretend                  Show activity without actually deleting anything
-    -g, --debug                    Print <span class="kw">(</span>lots of<span class="kw">)</span> debugging output
-    -h, --help                     Print <span class="kw">help</span>
+<pre class="sourceCode bash"><code class="sourceCode bash"> usage: bin/prune_db.pl 
+ -H, --history <span class="kw">|</span> -F, --fwt <span class="kw">|</span> -A, --arp <span class="kw">|</span> 
+ -M, --macs <span class="kw">|</span> -I, --ips <span class="kw">|</span> -R, --rr <span class="kw">|</span>  -a, --audit <span class="kw">|</span> -t, --hostaudit
+<span class="kw"> [</span> -d, --num_days &lt;number<span class="ot">&gt;</span><span class="kw"> ] [</span> -n, --num_history &lt;number<span class="ot">&gt;</span><span class="kw"> ] [</span> -r, --rotate<span class="kw"> ]</span>
+<span class="kw"> [</span> -g, --debug<span class="kw"> ]</span> [-h, --help]
+    
+    -H, --history        History tables
+    -F, --fwt            Forwarding Tables
+    -A, --arp            ARP caches
+    -M, --macs           MAC addresses
+    -I, --ips            IP addresses
+    -R, --rr             DNS Resource Records
+    -a, --audit          Audit records
+    -t, --hostaudit      Host Audit records
+    -d, --num_days       Number of days worth of items to keep <span class="kw">(</span>default: 365<span class="kw">)</span>
+    -n, --num_history    Number of <span class="kw">history</span> items to keep <span class="kw">for</span> each record
+    -r, --rotate         Rotate forw<span class="kw">.</span> tables and ARP <span class="kw">(</span>rather than delete records<span class="kw">)</span> 
+    -p, --pretend        Show activity without actually deleting anything
+    -g, --debug          Print <span class="kw">(</span>lots of<span class="kw">)</span> debugging output
+    -h, --help           Print <span class="kw">help</span>
 
     Deletes old items from database <span class="kw">as</span> necessary.
-
+    
     * For <span class="st">&quot;history&quot;</span> tables:
-
+    
     We want to keep NUM_DAYS worth of <span class="kw">history</span> <span class="kw">for</span> every record<span class="kw">.</span> But
     if a record doesn<span class="st">&#39;t change at all during the last NUM_DAYS, we don&#39;</span>t 
     want to lose the <span class="kw">history</span> that does exist <span class="kw">for</span> it from before that time<span class="kw">.</span> 
@@ -701,9 +711,9 @@ POST: {ethernet=&gt;&#39;DEADDEADBEEF&#39;}</code></pre>
     if there are <span class="kw">more</span> than NUM_HISTORY items <span class="kw">for</span> a record<span class="kw">.</span> If there are 
     <span class="kw">more</span> than NUM_HISTORY items <span class="kw">for</span> a record, <span class="kw">then</span> we drop anything older 
     than NUM_DAYS.
-
+    
     * For address tracking tables:
-
+    
     We delete records that are older than NUM_DAYS.</code></pre>
 <p>The sample CRON file &quot;netdot.cron&quot; included with the package contains recommended uses of this command.</p>
 <blockquote>

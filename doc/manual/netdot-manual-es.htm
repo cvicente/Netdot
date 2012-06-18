@@ -113,6 +113,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 </ul></li>
 <li><a href="#autorización"><span class="toc-section-number">6</span> Autorización</a><ul>
 <li><a href="#asignar-permisos-a-los-usuarios"><span class="toc-section-number">6.1</span> Asignar permisos a los usuarios</a></li>
+<li><a href="#registros-de-auditoría"><span class="toc-section-number">6.2</span> Registros de Auditoría</a></li>
 </ul></li>
 <li><a href="#interfaz-rest"><span class="toc-section-number">7</span> Interfaz REST</a><ul>
 <li><a href="#recursos-tipo-rest-genéricos"><span class="toc-section-number">7.1</span> Recursos tipo REST Genéricos</a></li>
@@ -133,7 +134,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <p></p>
 <h1 id="copyright"><a href="#TOC"><span class="header-section-number">1</span> Copyright</a></h1>
 <p>Version 1.0</p>
-<p>Copyright 2010 University of Oregon, Todos los derechos reservados.</p>
+<p>Copyright 2012 University of Oregon, Todos los derechos reservados.</p>
 <p>This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.</p>
 <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTIBILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.</p>
 <p>You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.</p>
@@ -326,6 +327,8 @@ dispositivo3 comunidad3
 <pre class="sourceCode bash"><code class="sourceCode bash">~# bin/updatedevices.pl -T --recursive</code></pre>
 <p>Generalmente, una vez que se han descubierto todos los dispositivos de la red, se pueden actualizar todas estas informaciones ejecutando una tarea programa de forma periódica (e.j. cada hora) utilizando CRON. La línea para el cron sería la siguiente:</p>
 <pre><code>0 * * * * root /usr/local/netdot/bin/updatedevices.pl -DIFAT</code></pre>
+<p>Si desea actualizar solamente un subconjunto de los dispositivos existentes en su base de datos, puede utilizar el parámetro &quot;--matching&quot; para especificar un patrón (expresión regular) que servirá para filtrar los dispositivos basado en su nombre completo. Por ejemplo, si todos sus enrutadores tuviesen nombres con el prefijo &quot;-gw&quot;, podría hacer algo como:</p>
+<pre><code>0 * * * * root /usr/local/netdot/bin/updatedevices.pl -DIFAT --matching &quot;-gw&quot;</code></pre>
 <p>Se pueden encontrar ejemplos de configuraciones para cron en etc/netdot.cron</p>
 <h3 id="documentación-de-dispositivos"><a href="#TOC"><span class="header-section-number">4.1.3</span> Documentación de dispositivos</a></h3>
 <p>Una vez que se ha adicionado un dispositivo, se puede completar su documentación con más información.</p>
@@ -419,7 +422,7 @@ dispositivo3 comunidad3
 <p>La forma más conveniente de crear zonas inversas (in-addr.arpa ó ip6.arpa) es yendo a la página del bloque IP correspondiente, sección DNS Zones, y hacer click en [add]. Si la zona inversa correspondiente no existe, Netdot le presentará el nombre de zona apropiado y la opción de crearla. Esto es especialmente últi con bloques IPv6, los cuales suelen requerir nombres de zona muy largos.</p>
 <p>Alcanzado este punto, se pueden adicionar nuevos registros, haciendo click en el boton [add] de la sección <em>Records</em>. Los registros puede ser adicionados desde otras páginas de la interfaz web, por ejemplo, la página de direcciones IP o la página de DNS Records.</p>
 <p>Los registros pueden ser importados completamente hacia la definición de zona, haciendo click en el botón [import] de la sección <em>Records</em> y pegando el texto del fichero de zona BIND en la caja de texto de la interfaz web.</p>
-<p>Cada vez que la zona o su contenido es modificado, la operación es adicionada a la lista de &quot;cambios pendientes&quot;/&quot;pending changes&quot;. Esta lista es utilizada para determinar cuándo una zona necesita ser exportada. Las zonas pueden ser exportadas de forma manual a través de la interfaz web en el menu <em>Export</em> o utilizando tareas programadas cron. Cuando una zona es exportada, su número de serie es incrementado y la lista de cambios pendientes es reseteada.</p>
+<p>Cada vez que la zona o su contenido es modificado, la operación es adicionada a una lista de cambios pendientes. Esta lista se guarda en una tabla de la base de datos llamada &quot;hostaudit&quot;, y sirve para determinar cuándo una zona necesita ser exportada. Las zonas pueden ser exportadas de forma manual a través de la interfaz web en el menú <em>Export</em> o utilizando tareas programadas cron. Cuando una zona es exportada, su número de serie es incrementado y los cambios marcados como &quot;pendientes&quot; se cambian a &quot;no pendientes&quot;.</p>
 <p>Netdot puede generar y gestionar los registros DNS para direcciones IP que pertenecen a interfaces de dispositivos, como enturadores. La operación de cómo estos nombres son generados es manejada por un plugin y configurado <em>etc/Site.conf</em>. Para establecer que Netdot realice la generación de nombres para los dispositivos, configure la opción &quot;Auto DNS&quot; con el valor &quot;yes&quot; en la sección de gestión (<em>Management</em>) de la página de dispositivos. Después, se debe acceder a la pestaña <em>IP Info</em> del dispositivo y para cada interfaz con direccion IP establezca que la opción &quot;Auto DNS&quot; tiene el valor &quot;yes&quot;.</p>
 <h3 id="el-registro"><a href="#TOC"><span class="header-section-number">4.4.1</span> El registro '@'</a></h3>
 <p>En Netdot, igual que en BIND, el registro '@' representa el dominio en cuestión (también llamado el ápice de la zona). Para adicionar registros que representan al dominio, como NS, MX, A, etc. este récord '@' debe existir. Netdot crea este récord automáticamente al momento de crear la zona. Además, crea dos récords NS (ns1.nombre-zona y ns2.nombre-zona) por defecto.</p>
@@ -447,6 +450,7 @@ dispositivo3 comunidad3
 <p>Una plantilla de ámbito no es un ámbito real, sólo una colección de atributos que se pueden aplicar a elementos en grupo. Por ejemplo, el ámbito de dispositivos DHCP para un teléfono IP puede tener varios atributos que definan de dónde puede obtener su configuración. Se puede crear una plantilla que contenga estos atributos y utilizarla cada vez que sea necesario crear un ambito de dispositivos para teléfonos IP.</p>
 <h3 id="ambitos-activos-e-inactivos"><a href="#TOC"><span class="header-section-number">4.5.5</span> Ambitos Activos e Inactivos</a></h3>
 <p>La opción 'active' en el objeto Scope determina si éste ha de ser incluído cuando se exporta la configuración de DHCP. Por ejemplo, si usted quisiera documentar la asignación de direcciones IP a direcciones MAC en una subred, pero no desea usar DHCP en tal subred, puede definir un ámbito de subred y marcarlo como inactivo.</p>
+<p>Similar a como se hace con los registros DNS, los cambios de DHCP se registran en la tabla &quot;hostaudit&quot;, la cual Netdot utiliza para determinar si la configuración de DHCP necesita ser exportada. Ona vez exportada, los cambios marcados como &quot;pendientes&quot; se cambian a &quot;no pendientes&quot;.</p>
 <h2 id="información-de-contacto"><a href="#TOC"><span class="header-section-number">4.6</span> Información de Contacto</a></h2>
 <p>Netdot utiliza el concepto de &quot;Contact Lists&quot; para mostrar la información de contacto para diferentes objetos: dispositivos, localidades, entidades (departamentos, proveedores, etc.).</p>
 <p>El objeto persona en Netdot contiene información personal como: domicilio, e-mail, números telefónicos, localizadores, etc.</p>
@@ -565,6 +569,10 @@ dispositivo3 comunidad3
 <li><p>En la página de Usuario/Person, se pueden adicionar permisos haciendo click en el botón [access_rights]. Se monstrarán los permisos actuales y la posibilidad de adicionar nuevos con el botón [add] a la derecha.</p></li>
 <li><p>En la ventana de Permisos/UserRight, seleccione la clase de objeto/Object Class, los objetos específicos y los permisos (ver, editar, borrar). Sólo seleccione el permiso 'none' para revocar todos los permisos heredados de un grupo. Finalmente realice click en 'Insert'.</p></li>
 </ul>
+<h2 id="registros-de-auditoría"><a href="#TOC"><span class="header-section-number">6.2</span> Registros de Auditoría</a></h2>
+<p>Una vez usted asigne permisos a los usuarios para modificar la base de datos de Netdot, querrá poder saber &quot;quién hizo qué y cuándo&quot;. Existe una tabla en la base de datos llamada &quot;audit&quot;, la cual registra cada operación de la base de datos hecha por una persona (es decir, que las operaciones automáticas no se registran). Cada registro de auditoría contiene la siguiente información: sello de tiempo, nombre de usuario, tipo de operación (inserción, actualización, borrado), tabla afectada, ID del récord, descripción del récord, campos y valores cambiados.</p>
+<p>Podrá acceder a estos registros yendo a &quot;Advanced&quot; -&gt; &quot;Browse&quot; -&gt; &quot;audit&quot;, o, si quiere buscar algo en particular, elija &quot;Search&quot; -&gt; &quot;Audit&quot;.</p>
+<p>Esta tabla puede reciclarse periódicamente por medio del programa bin/prune_db.pl.</p>
 <h1 id="interfaz-rest"><a href="#TOC"><span class="header-section-number">7</span> Interfaz REST</a></h1>
 <p>La interfaz REST permite acceso remoto a Netdot mediante el protocolo HTTP/HTTPS. Actualmente, los objectos se formatean en código XML usando el módulo Perl XML::Simple. En el futuro, Netdot podría soportar otros formatos como YAML.</p>
 <h2 id="recursos-tipo-rest-genéricos"><a href="#TOC"><span class="header-section-number">7.1</span> Recursos tipo REST Genéricos</a></h2>
@@ -659,24 +667,26 @@ POST: {ethernet=&gt;&#39;DEADDEADBEEF&#39;}</code></pre>
 <span class="kw">&gt;install</span> Netdot::Client::REST</code></pre>
 <h1 id="mantenimiento-de-la-base-de-datos"><a href="#TOC"><span class="header-section-number">8</span> Mantenimiento de la base de datos</a></h1>
 <p>La base de datos de Netdot crecerá con el tiempo, por lo que será necesario borrar información caducada. Encontará una utilidad de línea de comandos llamada &quot;prune_db.pl&quot; en el directorio bin/ de la distribución. La sintaxis de dicho comando es como sigue:</p>
-<pre class="sourceCode bash"><code class="sourceCode bash"> usage: bin/prune_db.pl  -H, --history <span class="kw">|</span> -F, --fwt <span class="kw">|</span> -A, --arp <span class="kw">|</span> 
-                         -M, --macs <span class="kw">|</span> -I, --ips <span class="kw">|</span> -R, --rr <span class="kw">|</span> -t, --hostaudit
-                      <span class="kw"> [</span> -d, --num_days &lt;number<span class="ot">&gt;</span><span class="kw"> ] [</span> -n, --num_history &lt;number<span class="ot">&gt;</span><span class="kw"> ] [</span> -r, --rotate<span class="kw"> ]</span>
-                      <span class="kw"> [</span> -g, --debug<span class="kw"> ]</span> [-h, --help]
-
-    -H, --history                  Tablas con historia
-    -F, --fwt                      Tablas de reenvío
-    -A, --arp                      Cachés de ARP
-    -M, --macs                     Direcciones MAC
-    -I, --ips                      Direcciones IP
-    -R, --rr                       Récords DNS
-    -t, --hostaudit                Récords de auditoría de DNS y DHCP
-    -d, --num_days                 Mantener récords por número de días <span class="kw">(</span>default: 365<span class="kw">)</span>;
-    -n, --num_history              Número de récords históricos a mantener por cada record <span class="kw">(</span>default: 100<span class="kw">)</span>;
-    -r, --rotate                   Rotar <span class="kw">(</span>en lugar de borrar<span class="kw">)</span> las tablas de reenvío y ARP
-    -p, --pretend                  Mostrar actividad sin realmente borrar nada
-    -g, --debug                    Información de depuración <span class="kw">(</span>mucha<span class="kw">)</span>
-    -h, --help                     Mostrar ayuda</code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash"> usage: bin/prune_db.pl  
+ -H, --history <span class="kw">|</span> -F, --fwt <span class="kw">|</span> -A, --arp <span class="kw">|</span> 
+ -M, --macs <span class="kw">|</span> -I, --ips <span class="kw">|</span> -R, --rr <span class="kw">|</span> -a, --audit <span class="kw">|</span> -t, --hostaudit
+<span class="kw"> [</span> -d, --num_days &lt;number<span class="ot">&gt;</span><span class="kw"> ] [</span> -n, --num_history &lt;number<span class="ot">&gt;</span><span class="kw"> ] [</span> -r, --rotate<span class="kw"> ]</span>
+<span class="kw"> [</span> -g, --debug<span class="kw"> ]</span> [-h, --help]
+    
+    -H, --history      Tablas con historia
+    -F, --fwt          Tablas de reenvío
+    -A, --arp          Cachés de ARP
+    -M, --macs         Direcciones MAC
+    -I, --ips          Direcciones IP
+    -R, --rr           Récords DNS
+    -a, --audit        Récords de auditoría
+    -t, --hostaudit    Récords de auditoría de DNS y DHCP
+    -d, --num_days     Mantener récords por número de días <span class="kw">(</span>default: 365<span class="kw">)</span>;
+    -n, --num_history  Número de récords históricos a mantener por cada record
+    -r, --rotate       Rotar <span class="kw">(</span>en lugar de borrar<span class="kw">)</span> las tablas de reenvío y ARP
+    -p, --pretend      Mostrar actividad sin realmente borrar nada
+    -g, --debug        Información de depuración <span class="kw">(</span>mucha<span class="kw">)</span>
+    -h, --help         Mostrar ayuda</code></pre>
 <p>El fichero de muestra &quot;netdot.cron&quot; incluído con el paquete muestra ejemplos de uso recomendado de este programa.</p>
 <blockquote>
 <p><strong>Nota</strong>: Sea especialmente cuidadoso al utilizar las opciones -I y -M para borrar direcciones IP y MAC. El criterio para su eliminación depende del sello de tiempo &quot;last seen&quot; (visto por última vez) incluído en estos récords. Esto implica que si Netdot no está recopilando las tablas de ARP y de reenvío de los enrutadores, cortafuegos y switches donde se encontrarían estas direcciones, Netdot asumirá que no están activas, y por tanto las incluirá en la lista de eliminación.</p>

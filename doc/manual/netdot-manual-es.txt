@@ -7,7 +7,7 @@
 
 Version 1.0
 
-Copyright 2010 University of Oregon, Todos los derechos reservados.
+Copyright 2012 University of Oregon, Todos los derechos reservados.
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the
@@ -264,9 +264,9 @@ Luego instale el nuevo Netdot y reinicie Apache:
     Usuarios de MySQL: La cuenta de DBA de MySQL generalmente se crea durante
     la instalación del paquete. Asegúrese de proporcionar una clave en este paso.
 
-    Usuarios de Pg: PostgreSQL normalmente viene con una cuenta de DBA llamada 'postgres'. 
-    Al terminar la instalación, es posible que necesite configurar la clave para dicha
-    cuenta como sigue:
+    Usuarios de Pg: PostgreSQL normalmente viene con una cuenta de DBA llamada 
+    'postgres'. Al terminar la instalación, es posible que necesite configurar la 
+    clave para dicha cuenta como sigue:
     
     ~~~~ {.bash}
     ~% sudo -u postgres psql postgres
@@ -282,9 +282,9 @@ Luego instale el nuevo Netdot y reinicie Apache:
     
 *   Ajuste la configuración de su base de datos si fuera necesario
     
-    Usuarios de MySQL: Si planea utilizar las funciones de IPAM de Netdot, es posible que 
-    necesite incrementar el tamaño máximo del búfer de paquete en el fichero my.conf, por
-    ejemplo:
+    Usuarios de MySQL: Si planea utilizar las funciones de IPAM de Netdot, es 
+    posible que necesite incrementar el tamaño máximo del búfer de paquete en el 
+    fichero my.conf, por ejemplo:
 
     ~~~~
     max_allowed_packet = 16M
@@ -554,6 +554,17 @@ línea para el cron sería la siguiente:
 0 * * * * root /usr/local/netdot/bin/updatedevices.pl -DIFAT
 ~~~~
 
+Si desea actualizar solamente un subconjunto de los dispositivos
+existentes en su base de datos, puede utilizar el parámetro "--matching"
+para especificar un patrón (expresión regular) que servirá para filtrar
+los dispositivos basado en su nombre completo. Por ejemplo, si todos
+sus enrutadores tuviesen nombres con el prefijo "-gw", podría hacer
+algo como:
+
+~~~~
+0 * * * * root /usr/local/netdot/bin/updatedevices.pl -DIFAT --matching "-gw"
+~~~~
+
 Se pueden encontrar ejemplos de configuraciones para cron en
 etc/netdot.cron
 
@@ -818,12 +829,13 @@ pegando el texto del fichero de zona BIND en la caja de texto de la
 interfaz web.
 
 Cada vez que la zona o su contenido es modificado, la operación es
-adicionada a la lista de "cambios pendientes"/"pending changes". Esta
-lista es utilizada para determinar cuándo una zona necesita ser
-exportada. Las zonas pueden ser exportadas de forma manual a través de
-la interfaz web en el menu *Export* o utilizando tareas programadas
-cron. Cuando una zona es exportada, su número de serie es incrementado y
-la lista de cambios pendientes es reseteada.
+adicionada a una lista de cambios pendientes. Esta lista se guarda
+en una tabla de la base de datos llamada "hostaudit", y sirve para 
+determinar cuándo una zona necesita ser exportada. Las zonas pueden 
+ser exportadas de forma manual a través de la interfaz web en el menú 
+*Export* o utilizando tareas programadas cron. Cuando una zona es exportada, 
+su número de serie es incrementado y los cambios marcados como "pendientes"
+se cambian a "no pendientes".
 
 Netdot puede generar y gestionar los registros DNS para direcciones IP
 que pertenecen a interfaces de dispositivos, como enturadores. La
@@ -940,6 +952,12 @@ incluído cuando se exporta la configuración de DHCP. Por ejemplo,
 si usted quisiera documentar la asignación de direcciones IP a
 direcciones MAC en una subred, pero no desea usar DHCP en tal subred,
 puede definir un ámbito de subred y marcarlo como inactivo.
+
+Similar a como se hace con los registros DNS, los cambios de DHCP
+se registran en la tabla "hostaudit", la cual Netdot utiliza para
+determinar si la configuración de DHCP necesita ser exportada. Ona
+vez exportada, los cambios marcados como "pendientes" se cambian
+a "no pendientes".
 
 ## Información de Contacto
 
@@ -1295,6 +1313,23 @@ siguiente:
     todos los permisos heredados de un grupo. Finalmente realice click
     en 'Insert'.
 
+## Registros de Auditoría
+
+Una vez usted asigne permisos a los usuarios para modificar la base de
+datos de Netdot, querrá poder saber "quién hizo qué y cuándo". Existe 
+una tabla en la base de datos llamada "audit", la cual registra cada
+operación de la base de datos hecha por una persona (es decir, que las 
+operaciones automáticas no se registran). Cada registro de auditoría
+contiene la siguiente información: sello de tiempo, nombre de usuario,
+tipo de operación (inserción, actualización, borrado), tabla afectada,
+ID del récord, descripción del récord, campos y valores cambiados.
+
+Podrá acceder a estos registros yendo a "Advanced" -> "Browse" -> "audit",
+o, si quiere buscar algo en particular, elija "Search" -> "Audit".
+
+Esta tabla puede reciclarse periódicamente por medio del programa
+bin/prune_db.pl.
+
 # Interfaz REST
 
 La interfaz REST permite acceso remoto a Netdot mediante el protocolo
@@ -1304,19 +1339,22 @@ formatos como YAML.
 
 ## Recursos tipo REST Genéricos
 
-* La interfaz REST está disponible a través del siguiente URL (o similar, dependiendo de su configuración de Apache):
+* La interfaz REST está disponible a través del siguiente URL (o similar, 
+dependiendo de su configuración de Apache):
 
 ~~~~
 https://myserver.mydomain.com/netdot/rest/
 ~~~~
 
-Esto debe cargar la clase Netdot::REST y mostrar algo como lo siguiente en su navegador:
+Esto debe cargar la clase Netdot::REST y mostrar algo como lo siguiente en su 
+navegador:
 
 ~~~~
 Netdot/1.0 REST OK. 
 ~~~~
 
-* Los recursos REST a procesar representan objetos Netdot y son parte del URI de la petición HTTP. Por ejemplo, en este URI:
+* Los recursos REST a procesar representan objetos Netdot y son parte del URI 
+de la petición HTTP. Por ejemplo, en este URI:
 
 ~~~~
 http://myserver.mydomain.com/netdot/rest/device/1
@@ -1331,7 +1369,8 @@ retornará el contenido del objeto Device con ID "1".
 http://myserver.mydomain.com/netdot/rest/device
 ~~~~
 
-esta interfaz devolverá los contenidos de todos los objetos tipo "Device" existentes. 
+esta interfaz devolverá los contenidos de todos los objetos tipo "Device" 
+existentes. 
 
 * Es posible especificar ciertos filtros para
 limitar el alcance de los resultados:
@@ -1340,9 +1379,11 @@ limitar el alcance de los resultados:
 http://myserver.mydomain.com/netdot/rest/device?sysname=host1
 ~~~~
 
-Esto realizará una búsqueda de todos los "devices" cuyo campo "sysname" tenga el valor "host1".
+Esto realizará una búsqueda de todos los "devices" cuyo campo "sysname" tenga 
+el valor "host1".
 
-* La palabra clave "meta_data", en lugar de un ID de objeto, proveerá información acerca de la clase de objeto:
+* La palabra clave "meta_data", en lugar de un ID de objeto, proveerá información 
+acerca de la clase de objeto:
 
 ~~~~
 http://myserver.mydomain.com/netdot/rest/device/meta_data
@@ -1356,7 +1397,9 @@ tipo "POST" con el siguiente URI:
 http://netdot.localdomain/rest/device/1?sysname=newhostname
 ~~~~
 
-actualizará el campo 'sysname' del objeto "Device" con ID "1" y le asignará el valor "newhostname". De manera similar, puede crearse un nuevo objeto con una petición tipo "POST". Sin embargo, en este caso el ID del objeto no debe incluirse:
+actualizará el campo 'sysname' del objeto "Device" con ID "1" y le asignará el valor
+"newhostname". De manera similar, puede crearse un nuevo objeto con una petición 
+tipo "POST". Sin embargo, en este caso el ID del objeto no debe incluirse:
 
 ~~~~
 http://netdot.localdomain/rest/person/?firstname=John&lastname=Doe
@@ -1477,24 +1520,26 @@ llamada "prune_db.pl" en el directorio bin/ de la distribución. La sintaxis
 de dicho comando es como sigue:
 
 ~~~~ {.bash}
- usage: bin/prune_db.pl  -H, --history | -F, --fwt | -A, --arp | 
-                         -M, --macs | -I, --ips | -R, --rr | -t, --hostaudit
-                       [ -d, --num_days <number> ] [ -n, --num_history <number> ] [ -r, --rotate ]
-                       [ -g, --debug ] [-h, --help]
+ usage: bin/prune_db.pl  
+ -H, --history | -F, --fwt | -A, --arp | 
+ -M, --macs | -I, --ips | -R, --rr | -a, --audit | -t, --hostaudit
+ [ -d, --num_days <number> ] [ -n, --num_history <number> ] [ -r, --rotate ]
+ [ -g, --debug ] [-h, --help]
     
-    -H, --history                  Tablas con historia
-    -F, --fwt                      Tablas de reenvío
-    -A, --arp                      Cachés de ARP
-    -M, --macs                     Direcciones MAC
-    -I, --ips                      Direcciones IP
-    -R, --rr                       Récords DNS
-    -t, --hostaudit                Récords de auditoría de DNS y DHCP
-    -d, --num_days                 Mantener récords por número de días (default: 365);
-    -n, --num_history              Número de récords históricos a mantener por cada record (default: 100);
-    -r, --rotate                   Rotar (en lugar de borrar) las tablas de reenvío y ARP
-    -p, --pretend                  Mostrar actividad sin realmente borrar nada
-    -g, --debug                    Información de depuración (mucha)
-    -h, --help                     Mostrar ayuda
+    -H, --history      Tablas con historia
+    -F, --fwt          Tablas de reenvío
+    -A, --arp          Cachés de ARP
+    -M, --macs         Direcciones MAC
+    -I, --ips          Direcciones IP
+    -R, --rr           Récords DNS
+    -a, --audit        Récords de auditoría
+    -t, --hostaudit    Récords de auditoría de DNS y DHCP
+    -d, --num_days     Mantener récords por número de días (default: 365);
+    -n, --num_history  Número de récords históricos a mantener por cada record
+    -r, --rotate       Rotar (en lugar de borrar) las tablas de reenvío y ARP
+    -p, --pretend      Mostrar actividad sin realmente borrar nada
+    -g, --debug        Información de depuración (mucha)
+    -h, --help         Mostrar ayuda
 
 ~~~~
 
