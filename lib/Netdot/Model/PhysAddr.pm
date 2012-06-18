@@ -12,6 +12,9 @@ Netdot::Model::PhysAddr - Physical Address Class
 
 =head1 SYNOPSIS
 
+    my $valid = PhysAddr->validate($str);
+    my $p = PhysAddr->insert({address=>$address});
+    my $p = PhysAddr->search(address=>'DEADDEADBEEF')->first;
 
 =head1 CLASS METHODS
 =cut
