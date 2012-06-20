@@ -41,7 +41,7 @@ my @DEPS = (
     {cpan=>'URI::Escape', apt=>'liburi-perl', rpm=>'perl-URI'},
     {cpan=>'SQL::Translator', apt=>'libsql-translator-perl', rpm=>'perl-SQL-Translator'},
     {cpan=>'SNMP::Info 2.06', apt=>'libsnmp-info-perl', rpm=>'perl-SNMP-Info'},
-    {apt=>'netdisco-mibs-installer snmp-mibs-downloader'},
+    {apt=>'netdisco-mibs-installer'},
     {cpan=>'NetAddr::IP', apt=>'libnetaddr-ip-perl', rpm=>'perl-NetAddr-IP'},
     {cpan=>'Apache2::AuthCookie', apt=>'libapache2-authcookie-perl', rpm=>''},
     {cpan=>'Apache2::SiteControl', apt=>'libapache2-sitecontrol-perl', rpm=>''},
@@ -138,14 +138,27 @@ if ( $action eq 'test' ){
 	    }
 	}
     }elsif ( $action eq 'apt-install' ){
-	my $debian_version;
+	my $distro; # Can be Debian or Ubuntu
+	my $debian_version; # Both Debian and Ubuntu have names for their versions
 	print 'We need to add a temporary repository of Netdot dependencies '.
 	    'until all packages are in Debian/Ubuntu official repositories. '.
 	    'Would you like to continue? [y/n] ';
 	my $ans = <STDIN>;
 	if ( $ans =~ /(Y|y)/ ){
 	    my $apt_src_dir = '/etc/apt/sources.list.d';
-	    $debian_version = `cat /etc/debian_version`;
+	    $distro = `lsb_release -d`;
+	    if ( $distro =~ /(debian)/io ){
+		if ( $distro =~ /(squeeze)/io ){
+		    $debian_version = lc($1);
+		}
+		$distro = 'debian';
+	    }elsif ( $distro =~ /(ubuntu)/io ){
+		$distro = 'ubuntu';
+		$debian_version = `cat /etc/debian_version`;
+		if ( $debian_version =~ /(wheezy)/io ){
+		    $debian_version = lc($1);
+		}
+	    }
 	    if ( -d $apt_src_dir ){
 		my $file = "$apt_src_dir/netdot.apt.nsrc.org.list";
 		open(FILE, ">$file")
@@ -153,10 +166,11 @@ if ( $action eq 'test' ){
 		my $str = "\n## Added by Netdot install\n".
 		    "deb http://netdot.apt.nsrc.org/ unstable/\n".
 		    "deb-src http://netdot.apt.nsrc.org/ unstable/\n\n";
-		if ( $debian_version =~ /wheezy/ ){
+		if ( $debian_version =~ /(wheezy|squeeze)/ ){
+                    my $target = $1;	
 		    $str .= "\n".
-			"deb http://netdot.apt.nsrc.org/ wheezy/\n".
-			"deb-src http://netdot.apt.nsrc.org/ wheezy/\n\n";
+			"deb http://netdot.apt.nsrc.org/ $target/\n".
+			"deb-src http://netdot.apt.nsrc.org/ $target/\n\n";
 		}
 		print FILE $str;
 		close(FILE);
@@ -166,11 +180,23 @@ if ( $action eq 'test' ){
 	    print "Updating package indexes from sources\n";
 	    &cmd('apt-get update');
 	}
+	if ( $distro eq 'ubuntu' ){
+	    push (@DEPS, {apt=>'snmp-mibs-downloader'});
+	}
+
 	# The packages in our temporary repository will fail authentication
 	# unless we use --force-yes
 	$program = 'apt-get -y --force-yes install';
-	if ( $debian_version =~ /wheezy/ ){
-	    $program .= ' -t wheezy';
+
+	# libcrypt-cast5-perl is a requisite of libapache2-sitecontrol-perl
+	# but it's architecture dependent, so we had to build specific packages
+	# for these versions
+	if ( $debian_version =~ /(wheezy|squeeze)/ ){
+	    # Tell APT to pull the specific package
+	    &cmd("$program -t $1 libcrypt-cast5-perl");
+	}else{
+	    # Package will come from Unstable. Might fail.
+	    push (@DEPS, {apt=>'libcrypt-cast5-perl'});
 	}
     }
     
@@ -205,6 +231,15 @@ if ( $action eq 'test' ){
 	    &cmd("yum erase epel-release-$epel_rel.noarch");
 	}
     }
+
+    if ( $action eq 'apt-install' ){
+	print "In order to complete the installation of MIBs, you will need to do:\n\n";
+	print "    # /usr/sbin/netdisco-mibs-download\n";
+	print "    # /usr/sbin/netdisco-mibs-install\n";
+	print "\nThen, edit the file /etc/snmp/snmp.conf and comment-out the line that starts".
+	    " with 'mibs:'\n\n";
+    }
+
 }
 
 sub install_modules_cpan{
