@@ -615,8 +615,8 @@ sub print_contacts {
 			    print $out "\tuse                             $name\n";
 			    print $out "\tservice_notification_period     $emailperiod\n";
 			    print $out "\thost_notification_period        $emailperiod\n";
-			    print $out "\tservice_notification_commands   notify-by-email\n";
-			    print $out "\thost_notification_commands      host-notify-by-email\n";
+			    print $out "\tservice_notification_commands   notify-service-by-email\n";
+			    print $out "\thost_notification_commands      notify-host-by-email\n";
 			    print $out "}\n\n";
 			}
 		    }else{
