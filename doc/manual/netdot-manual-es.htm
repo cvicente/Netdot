@@ -196,6 +196,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <li><p>el paquete GraphViz, disponible en: <a href="http://www.graphviz.org/"><code class="url">http://www.graphviz.org/</code></a></p></li>
 <li><p>La última versión de las MIBs de Netdisco <a href="http://sourceforge.net/projects/netdisco/files/netdisco-mibs/"><code class="url">http://sourceforge.net/projects/netdisco/files/netdisco-mibs/</code></a></p></li>
 <li><p>Varios módulos Perl</p></li>
+<li><p>El programa 'make'</p></li>
 </ul>
 <h3 id="instalación-de-dependencias"><a href="#TOC"><span class="header-section-number">3.2.1</span> Instalación de dependencias</a></h3>
 <pre><code>Existen dos formas de instalar las dependencias: La primera
@@ -204,15 +205,10 @@ distribución que se está utilizando (este método no sólo instalará
 los módulos Perl, sino también los demás paquetes necesarios).</code></pre>
 <ul>
 <li><p>Para sistemas con APT (ej. Debian o sistemas basados en Debian como Ubuntu), ejecutar:</p>
-<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> apt-install</code></pre>
-<p>Uno de los paquetes instalados es 'netdisco-mibs-downloader', el cual requiere que usted descargue e instale manualmente los ficheros MIB:</p>
-<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">sudo</span> /usr/sbin/netdisco-mibs-download\n<span class="st">&quot;;</span>
-<span class="st">~# sudo /usr/sbin/netdisco-mibs-install\n&quot;</span>;</code></pre>
-<p>Luego, deberá editar el siguiente fichero</p>
-<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">sudo</span> editor /etc/snmp/snmp.conf </code></pre>
-<p>y comentar esta línea (agregar un '#' al principio):</p>
-<pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># mibs:</span></code></pre></li>
-<li><p>Para sistemas con RPM (ej. Red Hat, Centos, Fedora), ejecute:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# apt-get <span class="kw">install</span> build-essential</code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> apt-install</code></pre></li>
+<li><p>Para sistemas con RPM (ej. Fedora, Red Hat, CentOS), ejecute:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# yum <span class="kw">install</span> <span class="kw">make</span></code></pre>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> rpm-install</code></pre></li>
 </ul>
 <blockquote>
@@ -283,8 +279,8 @@ los módulos Perl, sino también los demás paquetes necesarios).</code></pre>
 <p>Algunas configuraciones de Apache definen un directorio desde el cual se incluyen ficheros automáticamente cuando Apache se inicia. En ese caso, puede crear un enlace al fichero de Netdot desde ese directorio:</p>
 <p>For example, in Debian or Ubuntu, it's a two-step process:</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">cd</span> /etc/apache2
-~# <span class="kw">sudo</span> <span class="kw">ln</span> -s /usr/local/netdot/etc/netdot_apache2_local.conf sites-available/netdot
-~# <span class="kw">sudo</span> <span class="kw">ln</span> -s sites-available/netdot sites-enabled/netdot</code></pre>
+~# <span class="kw">ln</span> -s /usr/local/netdot/etc/netdot_apache2_local.conf sites-available/netdot
+~# <span class="kw">ln</span> -s sites-available/netdot sites-enabled/netdot</code></pre>
 <p>O en otras distribuciones con sólo un directorio:</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">ln</span> -s /usr/local/netdot/etc/netdot_apache2_radius.conf /etc/apache2/conf.d/netdot</code></pre>
 <blockquote>
@@ -680,7 +676,7 @@ POST: {ethernet=&gt;&#39;DEADDEADBEEF&#39;}</code></pre>
 <h2 id="módulo-perl-para-programas-cliente-en-cpan"><a href="#TOC"><span class="header-section-number">7.4</span> Módulo Perl para programas cliente en CPAN</a></h2>
 <p>Se provee un módulo conveniente a través de CPAN para ser utilizado en programas que necesiten acceso a la interfaz REST de Netdot. El nombre del módulo es &quot;Netdot::Client::REST&quot;. Puede instalarse con algo similar a:</p>
 <p>Si está en un sistema basado en Debian (ej. Ubuntu):</p>
-<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">sudo</span> apt-get <span class="kw">install</span> libnetdot-client-rest-perl</code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# apt-get <span class="kw">install</span> libnetdot-client-rest-perl</code></pre>
 <p>o sino:</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# cpan
 <span class="kw">&gt;install</span> Netdot::Client::REST</code></pre>

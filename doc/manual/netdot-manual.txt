@@ -149,6 +149,8 @@ Netdot, i.e.
 
 *   Various Perl modules.
 
+*   The 'make' utility.
+
 ### Installing dependencies
 
     There are two ways to install dependencies: The first and
@@ -159,30 +161,18 @@ Netdot, i.e.
 *   For systems with APT (e.g. Debian-based systems), run:
 
     ~~~~ {.bash}
+    ~# apt-get install build-essential
+    ~~~~
+
+    ~~~~ {.bash}
     ~# make apt-install
     ~~~~
 
-    One of these APT packages is 'netdisco-mibs-downloader', which
-    requires that you manually download and install the MIB files:
+*   For systems with RPM (e.g. Fedora, Red Hat, CentOS), run:
 
     ~~~~ {.bash}
-    ~# sudo /usr/sbin/netdisco-mibs-download\n";
-    ~# sudo /usr/sbin/netdisco-mibs-install\n";
+    ~# yum install make
     ~~~~
-
-    Then, you will need to edit this file:
-
-    ~~~~ {.bash}
-    ~# sudo editor /etc/snmp/snmp.conf 
-    ~~~~
-
-    and comment-out this line (add a '#' at the beginning):
- 
-    ~~~~ {.bash}
-    # mibs:
-    ~~~~
-
-*   For systems with RPM (e.g. Red Hat), run:
 
     ~~~~ {.bash}
     ~# make rpm-install
@@ -363,8 +353,8 @@ For example, in Debian or Ubuntu, it's a two-step process:
 
 ~~~~ {.bash}
 ~# cd /etc/apache2
-~# sudo ln -s /usr/local/netdot/etc/netdot_apache2_local.conf sites-available/netdot
-~# sudo ln -s sites-available/netdot sites-enabled/netdot
+~# ln -s /usr/local/netdot/etc/netdot_apache2_local.conf sites-available/netdot
+~# ln -s sites-available/netdot sites-enabled/netdot
 ~~~~
 
 Or, in other distributions with just one directory:
@@ -1446,7 +1436,7 @@ Netdot::Client::REST. It can be installed by doing something like this:
 If you are on a Debian-based system:
 
 ~~~~ {.bash}
-~# sudo apt-get install libnetdot-client-rest-perl
+~# apt-get install libnetdot-client-rest-perl
 ~~~~
 
 or
