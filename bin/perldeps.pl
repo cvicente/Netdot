@@ -80,7 +80,7 @@ if ( $action eq 'test' ){
 	die "You must be root to install required dependencies";
     }
     
-    print 'Which RDBMS do you plan to use as backend: [mysql|Pg]? ';
+    print "\nWhich RDBMS do you plan to use as backend: [mysql|Pg]? ";
     my $ans = <STDIN>;
     chomp($ans);
     if ( $ans =~ /mysql/i ){
@@ -140,9 +140,9 @@ if ( $action eq 'test' ){
     }elsif ( $action eq 'apt-install' ){
 	my $distro; # Can be Debian or Ubuntu
 	my $debian_version; # Both Debian and Ubuntu have names for their versions
-	print 'We need to add a temporary repository of Netdot dependencies '.
-	    'until all packages are in Debian/Ubuntu official repositories. '.
-	    'Would you like to continue? [y/n] ';
+	print "\nWe need to add a temporary repository of Netdot dependencies ".
+	    "until all packages are in Debian/Ubuntu official repositories.\n";
+	print "Would you like to continue? [y/n] ";
 	my $ans = <STDIN>;
 	if ( $ans =~ /(Y|y)/ ){
 	    my $apt_src_dir = '/etc/apt/sources.list.d';
@@ -180,9 +180,6 @@ if ( $action eq 'test' ){
 	    print "Updating package indexes from sources\n";
 	    &cmd('apt-get update');
 	}
-	if ( $distro eq 'ubuntu' ){
-	    push (@DEPS, {apt=>'snmp-mibs-downloader'});
-	}
 
 	# The packages in our temporary repository will fail authentication
 	# unless we use --force-yes
@@ -217,13 +214,6 @@ if ( $action eq 'test' ){
 	&install_modules_cpan();
     }
 
-    # Finally, lets call run_test to show the user if anything is missing
-    print "===============RESULTS===============\n";
-    &run_test();
-
-    print "\nIf there are still any missing Perl modules, you should now do:\n\n";
-    print "    make installdeps\n\n"; 
-
     if ( $installed_epel ){
 	print "Would you like to uninstall EPEL at this time? [y/n] ";
 	my $ans = <STDIN>;
@@ -233,11 +223,44 @@ if ( $action eq 'test' ){
     }
 
     if ( $action eq 'apt-install' ){
-	print "In order to complete the installation of MIBs, you will need to do:\n\n";
-	print "    # /usr/sbin/netdisco-mibs-download\n";
-	print "    # /usr/sbin/netdisco-mibs-install\n";
-	print "\nThen, edit the file /etc/snmp/snmp.conf and comment-out the line that starts".
-	    " with 'mibs:'\n\n";
+	# Automate this part for the user too
+	print "\nWe will install the MIB files now. Continue? [y/n] ";
+	my $ans = <STDIN>;
+	if ( $ans =~ /(Y|y)/ ){
+	    print "Downloading necessary SNMP MIB files. This may take a few minutes.\n";
+	    &cmd('rm -fr /tmp/netdisco-mibs');
+	    &cmd('/usr/sbin/netdisco-mibs-download');
+	    print "\nInstalling SNMP MIB files\n";
+	    &cmd('/usr/sbin/netdisco-mibs-install');
+	    print "\nA new /etc/snmp/snmp.conf needs to be installed to point to the newly ".
+		"installed MIB files.\n";
+	    print "The current file will be backed up. Continue? [y/n] ";
+	    $ans = <STDIN>;
+	    if ( $ans =~ /(Y|y)/ ){
+		# We'll use the snmp.conf provided with netdisco-mibs. But it refers to
+		# a different directory than the one used by netdisco-mibs-installer, so
+		# we'll create a symlink
+		unless ( -d '/usr/local/netdisco' ){
+		    # Create directory for link
+		    mkdir('/usr/local/netdisco');
+		}
+		unless ( -l '/usr/local/netdisco/mibs' ){
+		    &cmd('ln -s /usr/share/netdisco/mibs /usr/local/netdisco/mibs');
+		}
+		&cmd('mv -f /etc/snmp/snmp.conf /etc/snmp/snmp.conf.netdot_install');
+		&cmd('cp /usr/share/doc/netdisco-mibs-installer/contrib/snmp.conf /etc/snmp/snmp.conf');
+		print("\nDone with snmp.conf\n");
+	    }
+	}
+    }
+
+    # Finally, lets call run_test to show the user if anything is missing
+    print "\n===============RESULTS===============\n";
+    &run_test();
+
+    unless ( $action eq 'install' ){
+	print "\nIf there are still any missing Perl modules, you can try:\n\n";
+	print "    make installdeps\n\n"; 
     }
 
 }
