@@ -156,6 +156,8 @@ desea instalar Netdot, por ejemplo:
 
 *   Varios módulos Perl
 
+*   El programa 'make'
+
 ### Instalación de dependencias
 
     Existen dos formas de instalar las dependencias: La primera
@@ -167,31 +169,18 @@ desea instalar Netdot, por ejemplo:
     Ubuntu), ejecutar:
 
     ~~~~ {.bash}
+    ~# apt-get install build-essential
+    ~~~~
+
+    ~~~~ {.bash}
     ~# make apt-install
     ~~~~
 
-    Uno de los paquetes instalados es 'netdisco-mibs-downloader', 
-    el cual requiere que usted descargue e instale manualmente
-    los ficheros MIB:
+*   Para sistemas con RPM (ej. Fedora, Red Hat, CentOS), ejecute:
 
     ~~~~ {.bash}
-    ~# sudo /usr/sbin/netdisco-mibs-download\n";
-    ~# sudo /usr/sbin/netdisco-mibs-install\n";
+    ~# yum install make
     ~~~~
-
-    Luego, deberá editar el siguiente fichero
-
-    ~~~~ {.bash}
-    ~# sudo editor /etc/snmp/snmp.conf 
-    ~~~~
-
-    y comentar esta línea (agregar un '#' al principio):
- 
-    ~~~~ {.bash}
-    # mibs:
-    ~~~~
-
-*   Para sistemas con RPM (ej. Red Hat, Centos, Fedora), ejecute:
 
     ~~~~ {.bash}
     ~# make rpm-install
@@ -382,8 +371,8 @@ For example, in Debian or Ubuntu, it's a two-step process:
 
 ~~~~ {.bash}
 ~# cd /etc/apache2
-~# sudo ln -s /usr/local/netdot/etc/netdot_apache2_local.conf sites-available/netdot
-~# sudo ln -s sites-available/netdot sites-enabled/netdot
+~# ln -s /usr/local/netdot/etc/netdot_apache2_local.conf sites-available/netdot
+~# ln -s sites-available/netdot sites-enabled/netdot
 ~~~~
 
 O en otras distribuciones con sólo un directorio:
@@ -1531,7 +1520,7 @@ similar a:
 Si está en un sistema basado en Debian (ej. Ubuntu):
 
 ~~~~ {.bash}
-~# sudo apt-get install libnetdot-client-rest-perl
+~# apt-get install libnetdot-client-rest-perl
 ~~~~
 
 o sino:

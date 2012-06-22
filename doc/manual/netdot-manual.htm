@@ -198,6 +198,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <li><p>The GraphViz package, available at: <a href="http://www.graphviz.org/"><code class="url">http://www.graphviz.org/</code></a></p></li>
 <li><p>The latest Netdisco MIBs. <a href="http://sourceforge.net/projects/netdisco/files/netdisco-mibs/"><code class="url">http://sourceforge.net/projects/netdisco/files/netdisco-mibs/</code></a></p></li>
 <li><p>Various Perl modules.</p></li>
+<li><p>The 'make' utility.</p></li>
 </ul>
 <h3 id="installing-dependencies"><a href="#TOC"><span class="header-section-number">3.2.1</span> Installing dependencies</a></h3>
 <pre><code>There are two ways to install dependencies: The first and
@@ -206,15 +207,10 @@ distribution (this will also install other necessary packages,
 not just Perl modules).</code></pre>
 <ul>
 <li><p>For systems with APT (e.g. Debian-based systems), run:</p>
-<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> apt-install</code></pre>
-<p>One of these APT packages is 'netdisco-mibs-downloader', which requires that you manually download and install the MIB files:</p>
-<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">sudo</span> /usr/sbin/netdisco-mibs-download\n<span class="st">&quot;;</span>
-<span class="st">~# sudo /usr/sbin/netdisco-mibs-install\n&quot;</span>;</code></pre>
-<p>Then, you will need to edit this file:</p>
-<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">sudo</span> editor /etc/snmp/snmp.conf </code></pre>
-<p>and comment-out this line (add a '#' at the beginning):</p>
-<pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># mibs:</span></code></pre></li>
-<li><p>For systems with RPM (e.g. Red Hat), run:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# apt-get <span class="kw">install</span> build-essential</code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> apt-install</code></pre></li>
+<li><p>For systems with RPM (e.g. Fedora, Red Hat, CentOS), run:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# yum <span class="kw">install</span> <span class="kw">make</span></code></pre>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> rpm-install</code></pre></li>
 </ul>
 <blockquote>
@@ -285,8 +281,8 @@ DB_DBA_PASSWORD=DATABASE-ADMIN-PASSWORD</code></pre></li>
 <p>Alternatively, some Apache environments provide a directory from which files are included automatically when Apache starts. In that case, you can create a link to the file in said directory.</p>
 <p>For example, in Debian or Ubuntu, it's a two-step process:</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">cd</span> /etc/apache2
-~# <span class="kw">sudo</span> <span class="kw">ln</span> -s /usr/local/netdot/etc/netdot_apache2_local.conf sites-available/netdot
-~# <span class="kw">sudo</span> <span class="kw">ln</span> -s sites-available/netdot sites-enabled/netdot</code></pre>
+~# <span class="kw">ln</span> -s /usr/local/netdot/etc/netdot_apache2_local.conf sites-available/netdot
+~# <span class="kw">ln</span> -s sites-available/netdot sites-enabled/netdot</code></pre>
 <p>Or, in other distributions with just one directory:</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">ln</span> -s /usr/local/netdot/etc/netdot_apache2_radius.conf /etc/apache2/conf.d/netdot</code></pre>
 <blockquote>
@@ -692,7 +688,7 @@ POST: {ethernet=&gt;&#39;DEADDEADBEEF&#39;}</code></pre>
 <h2 id="client-module-on-cpan"><a href="#TOC"><span class="header-section-number">7.4</span> Client module on CPAN</a></h2>
 <p>A convenient module is provided via CPAN for use in Perl scripts that need to access Netdot's REST interface. The module name is Netdot::Client::REST. It can be installed by doing something like this:</p>
 <p>If you are on a Debian-based system:</p>
-<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">sudo</span> apt-get <span class="kw">install</span> libnetdot-client-rest-perl</code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# apt-get <span class="kw">install</span> libnetdot-client-rest-perl</code></pre>
 <p>or</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# cpan
 <span class="kw">&gt;install</span> Netdot::Client::REST</code></pre>
