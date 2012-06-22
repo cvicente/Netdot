@@ -4,8 +4,8 @@
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <meta http-equiv="Content-Style-Type" content="text/css" />
   <meta name="generator" content="pandoc" />
-  <meta name="author" content="Carlos Vicente" />
-  <title>Manual de Netdot</title>
+  <meta name="author" content="Manual del Usuario" />
+  <title>Network Documentation Tool - Netdot</title>
   <style type="text/css">
 table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
   margin: 0; padding: 0; vertical-align: baseline; border: none; }
@@ -28,20 +28,22 @@ code > span.er { color: #ff0000; font-weight: bold; }
 </head>
 <body>
 <div id="header">
-<h1 class="title">Manual de Netdot</h1>
-<h2 class="author">Carlos Vicente</h2>
+<h1 class="title">Network Documentation Tool - Netdot</h1>
+<h2 class="author">Manual del Usuario</h2>
 </div>
 <div id="TOC">
 <ul>
 <li><a href="#copyright"><span class="toc-section-number">1</span> Copyright</a><ul>
-<li><a href="#abstract"><span class="toc-section-number">1.1</span> Abstract</a></li>
+<li><a href="#propósito"><span class="toc-section-number">1.1</span> Propósito</a></li>
 </ul></li>
 <li><a href="#introducción"><span class="toc-section-number">2</span> Introducción</a><ul>
 <li><a href="#estructura"><span class="toc-section-number">2.1</span> Estructura</a></li>
 </ul></li>
 <li><a href="#instalación"><span class="toc-section-number">3</span> Instalación</a><ul>
 <li><a href="#obtener-y-desempaquetar-el-archivo-de-distribución"><span class="toc-section-number">3.1</span> Obtener y desempaquetar el archivo de distribución</a></li>
-<li><a href="#requerimientos"><span class="toc-section-number">3.2</span> Requerimientos</a></li>
+<li><a href="#requerimientos"><span class="toc-section-number">3.2</span> Requerimientos</a><ul>
+<li><a href="#instalación-de-dependencias"><span class="toc-section-number">3.2.1</span> Instalación de dependencias</a></li>
+</ul></li>
 <li><a href="#configuración"><span class="toc-section-number">3.3</span> Configuración</a></li>
 <li><a href="#actualización-a-nuevas-versiones"><span class="toc-section-number">3.4</span> Actualización a nuevas versiones</a></li>
 <li><a href="#instalando-netdot-por-primera-vez"><span class="toc-section-number">3.5</span> Instalando Netdot por primera vez</a></li>
@@ -60,7 +62,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <li><a href="#pestaña-bgp-si-el-dispositivo-es-un-enrutador-con-sesiones-bgp"><span class="toc-section-number">4.1.3.5</span> Pestaña BGP: Si el dispositivo es un enrutador con sesiones BGP,</a></li>
 </ul></li>
 </ul></li>
-<li><a href="#assets-activos"><span class="toc-section-number">4.2</span> Assets (activos):</a><ul>
+<li><a href="#activos-de-hardware-assets"><span class="toc-section-number">4.2</span> Activos de Hardware (Assets):</a><ul>
 <li><a href="#importar-assets"><span class="toc-section-number">4.2.1</span> Importar Assets</a></li>
 </ul></li>
 <li><a href="#gestión-del-espacio-de-direcciones-ip"><span class="toc-section-number">4.3</span> Gestión del espacio de direcciones IP</a><ul>
@@ -138,7 +140,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <p>This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.</p>
 <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTIBILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.</p>
 <p>You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.</p>
-<h2 id="abstract"><a href="#TOC"><span class="header-section-number">1.1</span> Abstract</a></h2>
+<h2 id="propósito"><a href="#TOC"><span class="header-section-number">1.1</span> Propósito</a></h2>
 <p>En este manual se documenta todo lo relacionado con la instalación, administración y operación de Netdot.</p>
 <p></p>
 <h1 id="introducción"><a href="#TOC"><span class="header-section-number">2</span> Introducción</a></h1>
@@ -193,19 +195,36 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <li><p>El paquete RRDtool, incluyendo sus módulos Perl, disponible en: <a href="http://oss.oetiker.ch/rrdtool/"><code class="url">http://oss.oetiker.ch/rrdtool/</code></a></p></li>
 <li><p>el paquete GraphViz, disponible en: <a href="http://www.graphviz.org/"><code class="url">http://www.graphviz.org/</code></a></p></li>
 <li><p>La última versión de las MIBs de Netdisco <a href="http://sourceforge.net/projects/netdisco/files/netdisco-mibs/"><code class="url">http://sourceforge.net/projects/netdisco/files/netdisco-mibs/</code></a></p></li>
-<li><p>Varios módulos Perl. Para comprobar los módulosnecesarios y su estado en el sistema ejecute:</p>
-<pre class="sourceCode bash"><code class="sourceCode bash">~% <span class="kw">make</span> testdeps</code></pre></li>
-<li><p>Existen dos formas para instalar las dependencias: La primera forma (recomendada) es mediante los gestores de paquetes de la distribución que se está utilizando.</p>
-<p>Para sistemas con APT (ej. Debian o sistemas basados en Debian como Ubuntu), ejecutar:</p>
+<li><p>Varios módulos Perl</p></li>
+</ul>
+<h3 id="instalación-de-dependencias"><a href="#TOC"><span class="header-section-number">3.2.1</span> Instalación de dependencias</a></h3>
+<pre><code>Existen dos formas de instalar las dependencias: La primera
+forma (recomendada) es mediante los gestores de paquetes de la
+distribución que se está utilizando (este método no sólo instalará
+los módulos Perl, sino también los demás paquetes necesarios).</code></pre>
+<ul>
+<li><p>Para sistemas con APT (ej. Debian o sistemas basados en Debian como Ubuntu), ejecutar:</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> apt-install</code></pre>
-<p>Para sistemas con RPM (ej. Red Hat, Centos, Fedora), ejecute:</p>
-<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> rpm-install</code></pre>
+<p>Uno de los paquetes instalados es 'netdisco-mibs-downloader', el cual requiere que usted descargue e instale manualmente los ficheros MIB:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">sudo</span> /usr/sbin/netdisco-mibs-download\n<span class="st">&quot;;</span>
+<span class="st">~# sudo /usr/sbin/netdisco-mibs-install\n&quot;</span>;</code></pre>
+<p>Luego, deberá editar el siguiente fichero</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">sudo</span> editor /etc/snmp/snmp.conf </code></pre>
+<p>y comentar esta línea (agregar un '#' al principio):</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># mibs:</span></code></pre></li>
+<li><p>Para sistemas con RPM (ej. Red Hat, Centos, Fedora), ejecute:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> rpm-install</code></pre></li>
+</ul>
 <blockquote>
 <p><strong>Pista</strong> Si después de ejecutar los pasos anteriores siguen faltando módulos Perl, se puede completar el proceso ejecutando el siguiente paso.</p>
-</blockquote></li>
-<li><p>La otra alternativa para instalar módulos Perl es utilizando la herramienta CPAN:</p>
+</blockquote>
+<ul>
+<li><p>Si su gestor de paquetes no está soportado, o si le faltan dependencias, puede instalar éstas a mano. Sin embargo, al menos tendrá la asistencia de la herramienta CPAN para instalar los módulos Perl automáticamente.</p>
+<p>Para verificar qué módulos Perl necesita, ejecute lo siguiente:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">~% <span class="kw">make</span> testdeps</code></pre>
+<p>Luego, el siguiente comando instalará los módulos necesarios:</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> installdeps</code></pre>
-<p>Si desea instalar los módulos individualmente, puede ejecutar lo siguiente:</p>
+<p>Si necesita instalar los módulos individualmente, puede ejecutar lo siguiente:</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">perl</span> -MCPAN -e shell
 <span class="kw">&gt;install</span> Module::Blah</code></pre></li>
 </ul>
@@ -358,7 +377,7 @@ dispositivo3 comunidad3
 <h4 id="pestaña-bgp-si-el-dispositivo-es-un-enrutador-con-sesiones-bgp"><a href="#TOC"><span class="header-section-number">4.1.3.5</span> Pestaña BGP: Si el dispositivo es un enrutador con sesiones BGP,</a></h4>
 <p>y la información se puede capturar con SNMP, Netdot mostrará esta información en esta pestaña. Entre los campos mostrados están la dirección IP del vecino BGP, el ID y el AS. El récord BGPPeering también incluye campos opcionales para indicar el número máximo de prefijos IPv4 o de IPv6 que se han de permitir, o si la sesión se ha de monitorizar (con Nagios), etc.</p>
 <p>Para cada AS descubierto, Netdot intenta encontrar más información utilizando la herramienta WHOIS. Si la información existe, se crea un récord tipo &quot;entity&quot; incluyendo el número y nombre del AS. Usted puede completar dicho record con más información de contacto, comentarios, etc.</p>
-<h2 id="assets-activos"><a href="#TOC"><span class="header-section-number">4.2</span> Assets (activos):</a></h2>
+<h2 id="activos-de-hardware-assets"><a href="#TOC"><span class="header-section-number">4.2</span> Activos de Hardware (Assets):</a></h2>
 <p>Un asset en Netdot es un récord que contiene información común acerca del hardware red, por ejemplo, número de serie, dirección MAC, nombre del producto, etc. Además, los récords asset pueden usarse para documentar unidades adquiridas que aún no se han instalado. Una vez que el hardware haya sido instalado y descubierto con Netdot, el récord asset permanece y es referenciado por el nuevo dispositivo.</p>
 <h3 id="importar-assets"><a href="#TOC"><span class="header-section-number">4.2.1</span> Importar Assets</a></h3>
 <p>Vaya a Management -&gt; Assets -&gt; [import] Este formulario le permite importar múltiples assets. Por ejemplo, puede utilizar un escaneador de códigos de barras para capturar la información desde las cajas de los equipos a medida que los recibe.</p>

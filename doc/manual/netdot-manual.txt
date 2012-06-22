@@ -1,5 +1,5 @@
-% The Netdot Manual
-% Carlos Vicente
+% The Network Documentation Tool - Netdot
+% User's Manual
 
 \pagebreak
 
@@ -23,7 +23,7 @@ You should have received a copy of the GNU General Public License along
 with this program; if not, write to the Free Software Foundation, Inc.,
 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-## Abstract
+## Purpose
 
 This manual documents the installation, administration and operation of
 the Netdot application.
@@ -147,41 +147,68 @@ Netdot, i.e.
 *   The latest Netdisco MIBs. 
     <http://sourceforge.net/projects/netdisco/files/netdisco-mibs/>
 
-*   Various Perl modules. To test for missing modules in your system,
-    run:
+*   Various Perl modules.
 
-    ~~~~ {.bash}
-    ~% make testdeps
-    ~~~~
+### Installing dependencies
 
-*   There are two ways to install dependencies: The first (and
-    the recommended) way is through package managers of your
-    distribution.
+    There are two ways to install dependencies: The first and
+    the recommended way is through package managers of your
+    distribution (this will also install other necessary packages, 
+    not just Perl modules).
 
-    For systems with APT (e.g. Debian-based systems), run:
+*   For systems with APT (e.g. Debian-based systems), run:
 
     ~~~~ {.bash}
     ~# make apt-install
     ~~~~
 
-    For systems with RPM (e.g. Red Hat), run:
+    One of these APT packages is 'netdisco-mibs-downloader', which
+    requires that you manually download and install the MIB files:
+
+    ~~~~ {.bash}
+    ~# sudo /usr/sbin/netdisco-mibs-download\n";
+    ~# sudo /usr/sbin/netdisco-mibs-install\n";
+    ~~~~
+
+    Then, you will need to edit this file:
+
+    ~~~~ {.bash}
+    ~# sudo editor /etc/snmp/snmp.conf 
+    ~~~~
+
+    and comment-out this line (add a '#' at the beginning):
+ 
+    ~~~~ {.bash}
+    # mibs:
+    ~~~~
+
+*   For systems with RPM (e.g. Red Hat), run:
 
     ~~~~ {.bash}
     ~# make rpm-install
     ~~~~
 
-    > **Tip**
-    If you are still missing Perl modules after running this step, 
-    you can complete the process in the next step.
+> **Tip**
+If you are still missing Perl modules after running this step, 
+you can complete the process in the next step.
 
-*   Alternatively, you can install any missing modules automatically
-    using the CPAN, by running:
+*   If your package manager is not supported, or if you are missing
+    dependencies, you can install those by hand. However, you can at least
+    take advantage of the CPAN to install Perl modules automatically.
+
+    To test for missing modules in your system, run:
+
+    ~~~~ {.bash}
+    ~% make testdeps
+    ~~~~
+
+    Then, use this to install the missing modules:    
 
     ~~~~ {.bash}
     ~# make installdeps
     ~~~~
 
-    If you want to install modules individually, you can do this
+    If you need to install modules individually, you can do this
     instead:
 
     ~~~~ {.bash}
