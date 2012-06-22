@@ -4,8 +4,8 @@
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <meta http-equiv="Content-Style-Type" content="text/css" />
   <meta name="generator" content="pandoc" />
-  <meta name="author" content="Carlos Vicente" />
-  <title>The Netdot Manual</title>
+  <meta name="author" content="User's Manual" />
+  <title>The Network Documentation Tool - Netdot</title>
   <style type="text/css">
 table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
   margin: 0; padding: 0; vertical-align: baseline; border: none; }
@@ -28,20 +28,22 @@ code > span.er { color: #ff0000; font-weight: bold; }
 </head>
 <body>
 <div id="header">
-<h1 class="title">The Netdot Manual</h1>
-<h2 class="author">Carlos Vicente</h2>
+<h1 class="title">The Network Documentation Tool - Netdot</h1>
+<h2 class="author">User's Manual</h2>
 </div>
 <div id="TOC">
 <ul>
 <li><a href="#copyright"><span class="toc-section-number">1</span> Copyright</a><ul>
-<li><a href="#abstract"><span class="toc-section-number">1.1</span> Abstract</a></li>
+<li><a href="#purpose"><span class="toc-section-number">1.1</span> Purpose</a></li>
 </ul></li>
 <li><a href="#introduction"><span class="toc-section-number">2</span> Introduction</a><ul>
 <li><a href="#structure"><span class="toc-section-number">2.1</span> Structure</a></li>
 </ul></li>
 <li><a href="#installation"><span class="toc-section-number">3</span> Installation</a><ul>
 <li><a href="#obtaining-and-unpacking-the-packaged-distribution-file"><span class="toc-section-number">3.1</span> Obtaining and unpacking the packaged distribution file</a></li>
-<li><a href="#requirements"><span class="toc-section-number">3.2</span> Requirements</a></li>
+<li><a href="#requirements"><span class="toc-section-number">3.2</span> Requirements</a><ul>
+<li><a href="#installing-dependencies"><span class="toc-section-number">3.2.1</span> Installing dependencies</a></li>
+</ul></li>
 <li><a href="#configuration"><span class="toc-section-number">3.3</span> Configuration</a></li>
 <li><a href="#upgrading"><span class="toc-section-number">3.4</span> Upgrading</a></li>
 <li><a href="#installing-the-package-for-the-first-time"><span class="toc-section-number">3.5</span> Installing the package for the first time</a></li>
@@ -140,7 +142,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <p>This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.</p>
 <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTIBILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.</p>
 <p>You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.</p>
-<h2 id="abstract"><a href="#TOC"><span class="header-section-number">1.1</span> Abstract</a></h2>
+<h2 id="purpose"><a href="#TOC"><span class="header-section-number">1.1</span> Purpose</a></h2>
 <p>This manual documents the installation, administration and operation of the Netdot application.</p>
 <p></p>
 <h1 id="introduction"><a href="#TOC"><span class="header-section-number">2</span> Introduction</a></h1>
@@ -195,19 +197,36 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <li><p>The RRDtool package, including its Perl modules, available at: <a href="http://oss.oetiker.ch/rrdtool/"><code class="url">http://oss.oetiker.ch/rrdtool/</code></a></p></li>
 <li><p>The GraphViz package, available at: <a href="http://www.graphviz.org/"><code class="url">http://www.graphviz.org/</code></a></p></li>
 <li><p>The latest Netdisco MIBs. <a href="http://sourceforge.net/projects/netdisco/files/netdisco-mibs/"><code class="url">http://sourceforge.net/projects/netdisco/files/netdisco-mibs/</code></a></p></li>
-<li><p>Various Perl modules. To test for missing modules in your system, run:</p>
-<pre class="sourceCode bash"><code class="sourceCode bash">~% <span class="kw">make</span> testdeps</code></pre></li>
-<li><p>There are two ways to install dependencies: The first (and the recommended) way is through package managers of your distribution.</p>
-<p>For systems with APT (e.g. Debian-based systems), run:</p>
+<li><p>Various Perl modules.</p></li>
+</ul>
+<h3 id="installing-dependencies"><a href="#TOC"><span class="header-section-number">3.2.1</span> Installing dependencies</a></h3>
+<pre><code>There are two ways to install dependencies: The first and
+the recommended way is through package managers of your
+distribution (this will also install other necessary packages, 
+not just Perl modules).</code></pre>
+<ul>
+<li><p>For systems with APT (e.g. Debian-based systems), run:</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> apt-install</code></pre>
-<p>For systems with RPM (e.g. Red Hat), run:</p>
-<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> rpm-install</code></pre>
+<p>One of these APT packages is 'netdisco-mibs-downloader', which requires that you manually download and install the MIB files:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">sudo</span> /usr/sbin/netdisco-mibs-download\n<span class="st">&quot;;</span>
+<span class="st">~# sudo /usr/sbin/netdisco-mibs-install\n&quot;</span>;</code></pre>
+<p>Then, you will need to edit this file:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">sudo</span> editor /etc/snmp/snmp.conf </code></pre>
+<p>and comment-out this line (add a '#' at the beginning):</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># mibs:</span></code></pre></li>
+<li><p>For systems with RPM (e.g. Red Hat), run:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> rpm-install</code></pre></li>
+</ul>
 <blockquote>
 <p><strong>Tip</strong> If you are still missing Perl modules after running this step, you can complete the process in the next step.</p>
-</blockquote></li>
-<li><p>Alternatively, you can install any missing modules automatically using the CPAN, by running:</p>
+</blockquote>
+<ul>
+<li><p>If your package manager is not supported, or if you are missing dependencies, you can install those by hand. However, you can at least take advantage of the CPAN to install Perl modules automatically.</p>
+<p>To test for missing modules in your system, run:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">~% <span class="kw">make</span> testdeps</code></pre>
+<p>Then, use this to install the missing modules:</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> installdeps</code></pre>
-<p>If you want to install modules individually, you can do this instead:</p>
+<p>If you need to install modules individually, you can do this instead:</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# cpan
 <span class="kw">&gt;install</span> Module::Blah</code></pre></li>
 </ul>

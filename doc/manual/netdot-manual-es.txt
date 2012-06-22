@@ -1,5 +1,5 @@
-% Manual de Netdot
-% Carlos Vicente
+% Network Documentation Tool - Netdot
+% Manual del Usuario
 
 \pagebreak
 
@@ -23,7 +23,7 @@ You should have received a copy of the GNU General Public License along
 with this program; if not, write to the Free Software Foundation, Inc.,
 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-## Abstract
+## Propósito
 
 En este manual se documenta todo lo relacionado con la instalación,
 administración y operación de Netdot.
@@ -154,42 +154,71 @@ desea instalar Netdot, por ejemplo:
 *   La última versión de las MIBs de Netdisco
     <http://sourceforge.net/projects/netdisco/files/netdisco-mibs/>
 
-*   Varios módulos Perl. Para comprobar los módulosnecesarios y su 
-    estado en el sistema ejecute:
+*   Varios módulos Perl
 
-    ~~~~ {.bash}
-    ~% make testdeps
-    ~~~~
+### Instalación de dependencias
 
-*   Existen dos formas para instalar las dependencias: La primera
+    Existen dos formas de instalar las dependencias: La primera
     forma (recomendada) es mediante los gestores de paquetes de la
-    distribución que se está utilizando.
+    distribución que se está utilizando (este método no sólo instalará
+    los módulos Perl, sino también los demás paquetes necesarios).
 
-    Para sistemas con APT (ej. Debian o sistemas basados en Debian como
+*   Para sistemas con APT (ej. Debian o sistemas basados en Debian como
     Ubuntu), ejecutar:
 
     ~~~~ {.bash}
     ~# make apt-install
     ~~~~
 
-    Para sistemas con RPM (ej. Red Hat, Centos, Fedora), ejecute:
+    Uno de los paquetes instalados es 'netdisco-mibs-downloader', 
+    el cual requiere que usted descargue e instale manualmente
+    los ficheros MIB:
+
+    ~~~~ {.bash}
+    ~# sudo /usr/sbin/netdisco-mibs-download\n";
+    ~# sudo /usr/sbin/netdisco-mibs-install\n";
+    ~~~~
+
+    Luego, deberá editar el siguiente fichero
+
+    ~~~~ {.bash}
+    ~# sudo editor /etc/snmp/snmp.conf 
+    ~~~~
+
+    y comentar esta línea (agregar un '#' al principio):
+ 
+    ~~~~ {.bash}
+    # mibs:
+    ~~~~
+
+*   Para sistemas con RPM (ej. Red Hat, Centos, Fedora), ejecute:
 
     ~~~~ {.bash}
     ~# make rpm-install
     ~~~~
 
-    >**Pista**
-    Si después de ejecutar los pasos anteriores siguen faltando módulos
-    Perl, se puede completar el proceso ejecutando el siguiente paso.
+>**Pista**
+Si después de ejecutar los pasos anteriores siguen faltando módulos
+Perl, se puede completar el proceso ejecutando el siguiente paso.
 
-*   La otra alternativa para instalar módulos Perl es utilizando la 
-    herramienta CPAN:
+*   Si su gestor de paquetes no está soportado, o si le faltan
+    dependencias, puede instalar éstas a mano. Sin embargo, al 
+    menos tendrá la asistencia de la herramienta CPAN para instalar
+    los módulos Perl automáticamente.
+
+    Para verificar qué módulos Perl necesita, ejecute lo siguiente:
+
+    ~~~~ {.bash}
+    ~% make testdeps
+    ~~~~
+
+    Luego, el siguiente comando instalará los módulos necesarios:
 
     ~~~~ {.bash}
     ~# make installdeps
     ~~~~
 
-    Si desea instalar los módulos individualmente, puede ejecutar lo
+    Si necesita instalar los módulos individualmente, puede ejecutar lo
     siguiente:
 
     ~~~~ {.bash}
@@ -653,7 +682,7 @@ un récord tipo "entity" incluyendo el número y nombre del AS. Usted
 puede completar dicho record con más información de contacto, 
 comentarios, etc.
 
-## Assets (activos):
+## Activos de Hardware (Assets):
 
 Un asset en Netdot es un récord que contiene información común acerca
 del hardware red, por ejemplo, número de serie, dirección MAC, nombre
