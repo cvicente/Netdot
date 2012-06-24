@@ -238,6 +238,26 @@ sub rem_lt_sp {
     return $str;
 }
 
+######################################################################
+=head2 is_ascii - Determine if value is ascii only
+
+    If value has non-ascii characters, returns 0
+	
+   Arguments: 
+    string
+   Returns:
+    1 or 0
+   Example:
+    if $self->is_ascii($str);
+=cut   
+sub is_ascii {
+    my ($self, $v) = @_;
+    return unless $v;
+    return 0 if ( $v =~ /[^[:ascii:]]/o );
+    return 1;
+}
+
+
 ############################################################################
 # cache - Get or set memory data cache
 #

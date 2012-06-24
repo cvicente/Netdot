@@ -918,7 +918,7 @@ sub get_snmp_info {
 		next if !exists $dp_hashes{$m}->{$key};
 		my $v = $dp_hashes{$m}->{$key};
 		# Ignore values with non-ascii chars
-		next if ( $v =~ /[^[:ascii:]]/o );
+		next unless $self->is_ascii($v);
 
 		# SNMP::Info can include values from both LLDP and CDP
 		# which means that for each port, we can have different
