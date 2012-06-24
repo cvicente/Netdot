@@ -947,12 +947,13 @@ sub get_snmp_info {
 	    $dev{module}{$key}{number} = $key;;
 	    foreach my $field ( keys %MFIELDS ){
 		my $method = $MFIELDS{$field};
-		if ( defined($hashes{$method}->{$key}) && $hashes{$method}->{$key} =~ /\w+/ ){
+		my $v = $hashes{$method}->{$key};
+		if ( defined($v) && $self->is_ascii($v) ){
 		    if ( $field eq 'fru' ){
 			# This is boolean
-			$dev{module}{$key}{$field} = ( $hashes{$method}->{$key} eq 'true' )? 1 : 0;
+			$dev{module}{$key}{$field} = ( $v eq 'true' )? 1 : 0;
 		    }else{
-			$dev{module}{$key}{$field} = $hashes{$method}->{$key};
+			$dev{module}{$key}{$field} = $v;
 		    }
 		}
 	    }
