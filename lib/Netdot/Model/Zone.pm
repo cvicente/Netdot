@@ -907,7 +907,7 @@ sub is_dot_arpa {
 #    IP or block address in CIDR format
 #  Examples:
 #    my $cidr = Zone->_dot_arpa_to_ip("4.3.2.1.in-addr.arpa");
-#    $cidr == 1.2.3.4/32
+#    $cidr == 1.2.3.4
 #
 
 sub _dot_arpa_to_ip {
@@ -949,7 +949,7 @@ sub _dot_arpa_to_ip {
 	}
     }
     if ( Ipblock->validate($ipaddr, $plen) ){
-	return ("$ipaddr/$plen");
+	return ("$ipaddr");
     }else{
 	$class->throw_user(sprintf("Invalid IP address: %s/%d", $ipaddr, $plen));
     }
