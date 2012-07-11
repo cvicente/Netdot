@@ -20,12 +20,14 @@ my $MAX_PREFERENCE = 2**16 - 1;
 =head2 insert - Insert new RRMX object
 
     We override the base method to:
-     - Validate TTL
-     - Check for conflicting record types
-     - Validate preference
+    - Validate TTL
+    - Check for conflicting record types
+    - Validate preference
+    - Validate exchange
 
   Arguments:
-    See schema
+    All RRMX fields plus:
+    - validate - (flag) Enable/disable validation (default on)
   Returns:
     RRMX object
   Example:
@@ -52,7 +54,10 @@ sub insert {
     $argv->{ttl} = (defined($argv->{ttl}) && length($argv->{ttl}))? $argv->{ttl} : $rr->zone->default_ttl;
     $argv->{ttl} = $class->ttl_from_text($argv->{ttl});
 
-    $class->_validate_args($argv);
+    my $validate = delete $argv->{validate};
+    defined $validate or $validate = 1;
+
+    $class->_validate_args($argv) if $validate;
 
     # Avoid the "CNAME and other records" error condition
     if ( $rr->cnames ){
@@ -155,6 +160,9 @@ sub _validate_args {
 		my $name = $argv->{exchange};
 		my $domain = $z->name;
 		$name =~ s/\.$domain$//;
+		if ( $name eq $domain ){
+		    $name = '@';
+		}
 		my $rr = RR->search(name=>$name, zone=>$z)->first ||
 		    $self->throw_user("Exchange ".$argv->{exchange}.
 				      " within active zone '$domain', but name '$name' does not exist");

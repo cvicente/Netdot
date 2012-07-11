@@ -209,13 +209,6 @@ sub insert {
     # Create '@' record if not already there
     my $apex = RR->find_or_create({name=>'@', zone=>$newzone});
     
-    # Add Two NS records if there aren't any yet
-    # Ideally the user should have a template zone to clone these from
-    unless ( $apex->ns_records ){
-	RRNS->insert({rr=>$apex, nsdname=>'ns1.'.$newzone->get_label});
-	RRNS->insert({rr=>$apex, nsdname=>'ns2.'.$newzone->get_label});
-    }
-
     $newzone->update_serial();
 
     # Create PTR records if necessary
@@ -714,6 +707,9 @@ sub import_records {
 		$args{preference} = $rr->preference;
 		$args{exchange}   = $rr->exchange;
 		$args{ttl}        = $ttl;
+		# Validation may fail if A/AAAA recors for exchange do not exist when MX
+		# record is created. Disable when importing.
+		$args{validate}   = 0; 
 		$logger->debug("$domain: Inserting RRMX $name, ".$rr->exchange.", ttl: $ttl");
 		$rrmx = RRMX->insert(\%args);
 	    }
