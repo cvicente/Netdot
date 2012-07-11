@@ -688,9 +688,9 @@ sub _validate_args {
 	if ( $name =~ /[^A-Za-z0-9\.\-_@]/ ){
 	    $self->throw_user("Invalid name: $name. Contains invalid characters");
 	}
-	# Check that underscore only appear at beginning
-	if ( $name =~ /.+_/ ){
-	    $self->throw_user("Invalid name: $name. One underscore only allowed at beginning of string");
+	# Underscore only allowed at beginning of string or dotted section
+	if ( $name =~ /[^^.]_/ || $name =~ /_$/ ){
+	    $self->throw_user("Invalid name: $name. Invalid underscores");
 	}
 	# Name must not start or end with a dash
 	if ( $name =~ /^\-/ || $name =~ /\-$/ ){
