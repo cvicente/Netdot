@@ -922,7 +922,7 @@ foreach my $o ( values %rrs ) {
 	print '<div class="containerheadright">';
 
 	#new rrptr
-	push( @field_headers, "IP");
+	push( @field_headers, "IP:");
 	push( @cell_data, "<input name='RRPTR__NEW__ipblock' value='' type='text'>");
 	$ui->add_to_fields(table=>'RRPTR', edit=>1, fields=>['ptrdname', 'ttl'],
 			   field_headers=>\@field_headers, cell_data=>\@cell_data,
@@ -945,7 +945,7 @@ foreach my $o ( values %rrs ) {
 	print '<div class="containerbody">';
 	if (my @ptrs = $o->ptr_records()) {
 	    foreach my $ptr (@ptrs) {
-		push( @field_headers, "IP");
+		push( @field_headers, "IP:");
 		if ($edit) {
 		    push( @cell_data, "<input name='RRPTR__".$ptr."__ipblock' value='".$ptr->ipblock->address."' type='text'>" );
 		} else {
