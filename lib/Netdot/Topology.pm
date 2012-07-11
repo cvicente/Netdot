@@ -455,7 +455,7 @@ sub get_dp_links {
  
         if ( !$rem_dev && $r_ip ) {
             foreach my $rem_ip ( split ';', $r_ip ) {
-		if ( $rem_dev = &_find_by_ip($r_ip, $allips) ){
+		if ( $rem_dev = &_find_by_ip($rem_ip, $allips) ){
 		    last;
 		}else {
 		    $logger->debug("Topology::get_dp_links: Interface id $iid: ".
