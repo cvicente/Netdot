@@ -1262,7 +1262,8 @@ sub matches_cidr {
 sub matches_ip {
     my ($class, $string) = @_;
 
-    if ( $class->matches_v4($string) || $class->matches_v6($string) ){
+    if ( defined $string && ($class->matches_v4($string) || 
+			     $class->matches_v6($string)) ){
 	return 1;
     }
     return 0;
@@ -1283,7 +1284,7 @@ sub matches_ip {
 sub matches_v4 {
     my ($class, $string) = @_;
 
-    if ( $string =~ /^$IPV4$/o ) {
+    if ( defined $string && $string =~ /^$IPV4$/o ) {
 	return 1;
     }
     return 0;
@@ -1302,7 +1303,7 @@ sub matches_v4 {
 sub matches_v6 {
     my ($class, $string) = @_;
 
-    if ( $string =~ /^$IPV6$/o ) {
+    if ( defined $string && $string =~ /^$IPV6$/o ) {
 	return 1;
     }
     return 0;
