@@ -150,7 +150,7 @@ sub search {
 	$args{status} = $statusid;
     }
     if ( defined $args{address} ){
-	if ( $args{address} =~ /\/\d+$/ ){
+	if ( $args{address} =~ /.+\/\d+$/ ){
 	    # Address is in CIDR format
 	    my ($address, $prefix) = split /\//, $args{address};
 	    $args{address} = $class->ip2int($address);
@@ -582,6 +582,11 @@ sub insert {
     
     $class->throw_fatal("Missing required arguments: address")
 	unless ( exists $argv->{address} );
+
+    if ( $argv->{address} =~ /.+\/\d+$/ ){
+	# Address is in CIDR format
+	($argv->{address}, $argv->{prefix}) = split /\//, $argv->{address};
+    }
 
     unless ( $argv->{status} ){
 	if (defined $argv->{prefix} && 

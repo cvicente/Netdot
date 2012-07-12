@@ -51,14 +51,16 @@ sub fast_insert{
     my $sth = $dbh->prepare_cached("INSERT INTO arpcacheentry 
                                     (arpcache,interface,ipaddr,physaddr)
                                     VALUES (?, ?, 
-                                    (SELECT id FROM ipblock WHERE address=? AND version=?), 
+                                    (SELECT id FROM ipblock WHERE address=? AND PREFIX=? AND version=?), 
                                     (SELECT id FROM physaddr WHERE address=?))");	
     # Now walk our list and insert
     foreach my $r ( @$list ){
+	my $plen = ($r->{version} == 6)? 128 : 32;
 	eval {
 	    $sth->execute($r->{arpcache}, 
 			  $r->{interface},
 			  $r->{ipaddr},
+			  $plen,
 			  $r->{version},
 			  $r->{physaddr},
 		);

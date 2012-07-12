@@ -68,6 +68,12 @@ my @statements = (
     );
 
 
+# Try to speed up the conversion as much as possible
+push @statements, 
+    "SET FOREIGN_KEY_CHECKS = 0;",
+    "SET UNIQUE_CHECKS = 0;",
+    "SET AUTOCOMMIT = 0;";
+
 # Add new Product type for device modules
 push @statements, "INSERT INTO producttype (name) VALUES ('Module');";
 
@@ -641,6 +647,12 @@ push @statements, (
 "ALTER TABLE device_history MODIFY name bigint NOT NULL;",
 "ALTER TABLE savedqueries MODIFY querytext text NOT NULL;"
     );
+
+push @statements, 
+    "SET UNIQUE_CHECKS = 1;",
+    "SET FOREIGN_KEY_CHECKS = 1;",
+    "COMMIT;";
+
 
 &processdata(\@statements);
 

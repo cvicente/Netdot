@@ -918,7 +918,7 @@ sub get_snmp_info {
 		next if !exists $dp_hashes{$m}->{$key};
 		my $v = $dp_hashes{$m}->{$key};
 		# Ignore values with non-ascii chars
-		next if ( $v =~ /[^[:ascii:]]/o );
+		next unless $self->is_ascii($v);
 
 		# SNMP::Info can include values from both LLDP and CDP
 		# which means that for each port, we can have different
@@ -947,12 +947,13 @@ sub get_snmp_info {
 	    $dev{module}{$key}{number} = $key;;
 	    foreach my $field ( keys %MFIELDS ){
 		my $method = $MFIELDS{$field};
-		if ( defined($hashes{$method}->{$key}) && $hashes{$method}->{$key} =~ /\w+/ ){
+		my $v = $hashes{$method}->{$key};
+		if ( defined($v) && $self->is_ascii($v) ){
 		    if ( $field eq 'fru' ){
 			# This is boolean
-			$dev{module}{$key}{$field} = ( $hashes{$method}->{$key} eq 'true' )? 1 : 0;
+			$dev{module}{$key}{$field} = ( $v eq 'true' )? 1 : 0;
 		    }else{
-			$dev{module}{$key}{$field} = $hashes{$method}->{$key};
+			$dev{module}{$key}{$field} = $v;
 		    }
 		}
 	    }
@@ -2650,7 +2651,6 @@ sub snmp_update {
 		);
 	}else{
 	    $logger->debug(sub{"Device::snmp_update: $host: Collect FWT option off. Skipping"});
-	    return;
 	}
     }
     if ( $argv{do_arp} ){
@@ -2662,7 +2662,6 @@ sub snmp_update {
 		);
 	}else{
 	    $logger->debug(sub{"Device::snmp_update: $host: Collect ARP option off. Skipping"});
-	    return;
 	}
     }
     $logger->info("Device::snmp_update: $host: Finished updating");

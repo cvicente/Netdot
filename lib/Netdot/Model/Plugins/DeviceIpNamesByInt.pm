@@ -95,8 +95,9 @@ sub get_name {
 sub get_name_from_interface {
     my ($self, $ip) = @_;
     my $ipaddr = $ip->address;
-    $logger->debug("Plugins::DeviceIpNamesByInt::get_name_from_interface: $ipaddr: Using Interface name");
     my $name = $ip->interface->name;
+    return unless $name;
+    $logger->debug("Plugins::DeviceIpNamesByInt::get_name_from_interface: $ipaddr: Using Interface name");
     
     foreach my $pat ( sort keys %ABBR ){
 	my $conv = $ABBR{$pat};

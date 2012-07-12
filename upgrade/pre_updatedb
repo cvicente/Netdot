@@ -23,14 +23,14 @@ my @statements;
 @statements = (	
     "CREATE TABLE `schemainfo` (
       `id` bigint NOT NULL auto_increment,
-      `info` blob,
+      `info` text,
       `version` varchar(255) NOT NULL,
       UNIQUE INDEX schemainfo1 (`version`),
       PRIMARY KEY (`id`)
     ) ENGINE=InnoDB;",
     );
 
-push(@statements, "INSERT INTO schemainfo (version) VALUES('1.0');");
+push(@statements, "INSERT INTO schemainfo (version) VALUES('1.0.1');");
 
 &processdata(\@statements);
 &dbdisconnect();
