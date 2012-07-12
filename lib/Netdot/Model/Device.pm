@@ -2651,7 +2651,6 @@ sub snmp_update {
 		);
 	}else{
 	    $logger->debug(sub{"Device::snmp_update: $host: Collect FWT option off. Skipping"});
-	    return;
 	}
     }
     if ( $argv{do_arp} ){
@@ -2663,7 +2662,6 @@ sub snmp_update {
 		);
 	}else{
 	    $logger->debug(sub{"Device::snmp_update: $host: Collect ARP option off. Skipping"});
-	    return;
 	}
     }
     $logger->info("Device::snmp_update: $host: Finished updating");
