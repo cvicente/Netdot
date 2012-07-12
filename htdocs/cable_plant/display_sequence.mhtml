@@ -7,7 +7,7 @@ Arguments:
 </%doc>
 
 <%args>
-$id
+$id         => undef
 $add        => undef
 $strands    => undef
 $table_view => undef
@@ -22,10 +22,13 @@ my $delimiter = '--';
 my $manager   = $ui->get_permission_manager($r);
 </%init>
 
+% if ( $id ){
 <!-- Begin Cable Strand Sequence Table -->
 <form name="sequence_form" action="circuit.html" method="POST">
   <input type="hidden" name="_action" value="UPDATE_SEQUENCES">
   <input type="hidden" name="id" value="<% $id %>">
+% }
+
 % if ( $table_view ){
 <div class="container">
     <div class="containerheadleft">Cable Strand Sequences</div>
@@ -89,7 +92,10 @@ my $manager   = $ui->get_permission_manager($r);
 %if ( $strands && @$strands ) {
      <div align="left"><input type="submit" name="submit_seq" value="Unassign"></div>
 %}    
-</form>
+
+% if ( $id ){
+  </form>
+% }
 
 %# Allow the user to add strands to this circuit by backbone.
 %# First select a start site, then an end site, and then a backbone
