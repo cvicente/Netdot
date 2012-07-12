@@ -45,6 +45,9 @@ NetdotLDAPServer2
     A backup server in case the first one is not available
     e.g. ldaps://server2.local.domain:[port]
     
+NetdotLDAPRequireTLS <yes|no>
+    Require TLS session
+
 NetdotLDAPUserDN         
     e.g. uid=<username>.  
     The string "<username>" is replaced with the username supplied at the login prompt
@@ -60,7 +63,7 @@ NetdotLDAPCACert
 NetdotLDAPVersion
     Optional.  Defaults to "3".
 
-NetdotLDAPFailToLocal
+NetdotLDAPFailToLocal <yes|no>
     If LDAP authentication fails, authenticate against local (Netdot DB) credentials.
     
 =cut
@@ -111,9 +114,29 @@ sub check_credentials {
 	}
     }
 
+    # start TLS
+    my $scheme = $ldap->scheme();
+    my $dse = $ldap->root_dse();
+    my $does_support_tls = $dse->supported_extension(LDAP_EXTENSION_START_TLS);
+    my $require_tls = ($r->dir_config("NetdotLDAPRequireTLS") eq "yes")? 1 : 0;
+    if ( $scheme eq "ldap" && ( $require_tls || $does_support_tls ) ) {
+        my $tls = $ldap->start_tls();
+        if ( $tls->code ) {
+            if ( $require_tls ) {
+                $r->log_error("Netdot::LDAP::check_credentials: Failed to start TLS".
+			      ", config requires TLS, cannot continue: " . $tls->error);
+                return 0;
+            } elsif ( $does_support_tls ) {
+                $r->log_warning("Netdot::LDAP::check_credentials: Failed to start TLS ".
+				"although server advertises TLS support: " . $tls->error);
+            }
+        }
+    }
+
     my $auth = $ldap->bind($user_dn, password=>$password);
     if ( $auth->code ) {
-	$r->log_error("Netdot::LDAP::check_credentials: User $username failed LDAP authentication: " . $auth->error);
+	$r->log_error("Netdot::LDAP::check_credentials: User $username failed LDAP authentication: ".
+		      $auth->error);
 	if  ( $fail_to_local ){
 	    $r->log_error("Netdot::LDAP::check_credentials: Trying local auth");
 	    return Netdot::AuthLocal::check_credentials($r, $username, $password);
