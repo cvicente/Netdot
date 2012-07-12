@@ -10,7 +10,7 @@ use Getopt::Long qw(:config no_ignore_case bundling);
 
 # Default parameters
 my $nms = Netdot->config->get('NMS_DEVICE');
-my %self = ( root=>$nms, vlans=>0, names=>0, depth=>99999 );
+my %self = ( root=>$nms, start=>$nms, vlans=>0, names=>0, depth=>99999 );
 
 my $USAGE = <<EOF;
  
@@ -68,7 +68,7 @@ my $ui = Netdot::UI->new();
 my $device_obj = Device->search(name=>$self{root})->first
     || die "Cannot find root device: $self{root}";
 my $start_obj = Device->search(name=>$self{start})->first
-    || die "Cannot find root device: $self{start}";
+    || die "Cannot find start device: $self{start}";
 
 my $rid   = $device_obj->id;
 my $sid   = $start_obj->id;
