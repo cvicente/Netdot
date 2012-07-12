@@ -106,9 +106,9 @@ sub search {
     
     my $dev;
     
-    if ( exists $argv{name} ){
+    if ( defined $argv{name} ){
 	my $foundname = 0;
-	if ( ref($argv{name}) =~ /RR/ ){ 
+	if ( ref($argv{name}) =~ /RR$/o ){ 
 	    # We were passed a RR object.  
 	    # Proceed as regular search
 	}elsif ( Ipblock->matches_ip($argv{name}) ){
