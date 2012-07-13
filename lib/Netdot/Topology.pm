@@ -372,7 +372,9 @@ sub get_dp_links {
 	    }else{
 		my $iface = Interface->retrieve($ints[0]);
 		$rem_dev = $iface->device;
-		if ( $iface->type eq 'propVirtual' || $iface->type eq 'l2vlan' ){
+		my $iftype = $iface->type;
+		if ( $iftype eq 'propVirtual' || $iftype eq '53' ||
+		     $iftype eq 'l2vlan' || $iftype eq '135' ){
 		    # Ignore virtual interfaces, but do set the remote device
 		}else{
 		    # This should be good then
@@ -819,7 +821,8 @@ sub get_fdb_links {
 			foreach my $int ( $physaddr->interfaces() ){
 			    # The idea is that there could be multiple interfaces using the same
 			    # MAC address.  Our goal is to ignore the vitual ones.
-			    next if ( $int->type && ($int->type eq 'propVirtual' || $int->type eq 'l2vlan') );
+			    next if ( $int->type && ($int->type eq 'propVirtual' || $int->type eq '53' ||
+						     $int->type eq 'l2vlan' || $int->type eq '135' ) );
 			    push @other_links, ['single-entry', $interface, $int];
 			    last;
 			}
@@ -1112,10 +1115,22 @@ sub get_p2p_links {
 	my @ints;
 	foreach my $ip ( @ips ){
 	    if ( $ip->interface ){
-		my $type = $ip->interface->type || 'unknown';
 		# Ignore virtual interfaces, sice most likely these
 		# are not where the actual physical connection happens
-		push @ints, $ip->interface if ( $type ne 'propVirtual' && $type ne 'l2vlan' );
+		my $type = $ip->interface->type || 'unknown';
+		next if ( $type eq 'l2vlan' || $type eq '135' );
+		if ( $type eq 'propVirtual' || $type eq '53' ){
+		    my $ifname = $ip->interface->name;
+		    if ( $ifname  =~ s/\.\d+$// ){
+			# Looks like a sub-interface. Is there a matching physical interface?
+			my $dev = $ip->interface->device;
+			if ( my $physif = Interface->search(device=>$dev, name=>$ifname)->first ){
+			    push @ints, $physif;
+			}
+		    }
+		}else{
+		    push @ints, $ip->interface;
+		}
 	    }
 	}
 	if ( scalar(@ints) == 2 ){
