@@ -106,9 +106,9 @@ sub search {
     
     my $dev;
     
-    if ( exists $argv{name} ){
+    if ( defined $argv{name} ){
 	my $foundname = 0;
-	if ( ref($argv{name}) =~ /RR/ ){ 
+	if ( ref($argv{name}) =~ /RR$/o ){ 
 	    # We were passed a RR object.  
 	    # Proceed as regular search
 	}elsif ( Ipblock->matches_ip($argv{name}) ){
@@ -705,8 +705,8 @@ sub get_snmp_info {
     }
 
     if ( $self->config->get('GET_DEVICE_MODULE_INFO') ){
-	push @SMETHODS, qw( e_type e_parent e_name e_class e_pos e_descr
-                            e_hwver e_fwver e_swver e_model e_serial e_fru );
+	push @SMETHODS, qw( e_index e_type e_parent e_name e_class e_pos e_descr
+                            e_hwver e_fwver e_swver e_model e_serial e_fru);
     }
 
     if ( $args{bgp_peers} || $self->config->get('ADD_BGP_PEERS')) {
@@ -751,7 +751,7 @@ sub get_snmp_info {
 	if ( defined $dev{_sclass} && $dev{_sclass} =~ /Airespace/o ){
 	    $first_idx = 1;
 	}else{
-	    $first_idx = (sort { $a <=> $b } keys %{$hashes{'e_descr'}})[0];
+	    $first_idx = (sort { $a <=> $b } values %{$hashes{'e_index'}})[0];
 	}
 	$dev{productname}  = $hashes{'e_descr'}->{$first_idx} ;
 	$dev{part_number}  = $hashes{'e_model'}->{$first_idx};
@@ -944,7 +944,7 @@ sub get_snmp_info {
 
     if ( $self->config->get('GET_DEVICE_MODULE_INFO') ){
 	foreach my $key ( keys %{ $hashes{e_class} } ){
-	    $dev{module}{$key}{number} = $key;;
+	    $dev{module}{$key}{number} = $hashes{e_index}->{$key};
 	    foreach my $field ( keys %MFIELDS ){
 		my $method = $MFIELDS{$field};
 		my $v = $hashes{$method}->{$key};

@@ -1,6 +1,8 @@
 package Netdot::AuthLocal;
+
 use strict;
 use warnings;
+use Netdot::Model;
 
 sub check_credentials {
     my ($r, $username, $password) = @_;
@@ -31,7 +33,7 @@ __END__
 
 =head1 NAME
 
-Netdot::AuthenLocal - Local authentication module for Netdot via Apache2::SiteControl
+Netdot::AuthLocal - Local authentication module for Netdot via Apache2::SiteControl
 
 
 =head1 SYNOPSIS
