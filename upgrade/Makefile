@@ -11,15 +11,15 @@ all: db tasks
 	@echo 
 	@echo "  * Check the file upgrade/error.log and correct any errors before continuing"
 	@echo "  * After making sure that errors have been corrected, you may:"
-	@echo "  * 'make install'"
+	@echo "    'make install'"
 	@echo "  * Stop and start Apache"
 	@echo 
 
 db:
 	@echo
 	@echo "Upgrading schema and data..."
-	$(PERL) pre_updatedb # Remove after 1.0
-	$(PERL) updatedb 2>error.log 
+	$(PERL) pre_updatedb 2>error.log # Remove after 1.0
+	$(PERL) updatedb 2>>error.log 
 
 tasks:
 	@echo	
