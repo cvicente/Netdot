@@ -143,31 +143,25 @@ foreach my $row ( @$snmods ){
 my @ptrow = $dbh->selectrow_array('SELECT id FROM producttype WHERE name="Module"');
 my $ptype = $ptrow[0];
 
+my $np = $dbh->prepare('INSERT INTO product (name, manufacturer,type) VALUES(?,?,?)');
+foreach my $mf ( keys %products ){
+    foreach my $model ( keys %{$products{$mf}} ){
+	next if ($model =~ /Fill in/io ); # Ignore bogus values
+	eval { 
+	    $np->execute($model, $mf, $ptype);
+	};
+	if ( my $e = $@ ){
+	    warn "$e\n";
+	}else{
+	    print "DEBUG: Inserted product ($mf, $model)\n" if $CONFIG{debug};
+	}
+    }
+}
+
 # Get existing products
 print "DEBUG: Retrieving all products from DB\n" if $CONFIG{debug};
 my $prodq = $dbh->selectall_arrayref('SELECT id,name,manufacturer FROM product');
 my %all_prods;
-foreach my $row ( @$prodq ){
-    my($id,$name,$mf) = @$row;
-    $all_prods{$mf}{$name} = $id;
-}
-
-my $np = $dbh->prepare('INSERT INTO product (name, manufacturer,type) VALUES(?,?,?)');
-my %seen_prods; # Try to avoid duplicate errors
-foreach my $mf ( keys %products ){
-    foreach my $model ( keys %{$products{$mf}} ){
-	next if exists $all_prods{$mf}{$model};
-	next if exists $seen_prods{$mf}{$model};
-	next if ($model =~ /Fill in/io ); # Ignore bogus values
-	$np->execute($model, $mf, $ptype);
-	print "DEBUG: Inserted product ($mf, $model)\n" if $CONFIG{debug};
-	$seen_prods{$mf}{$model} = 1;
-    }
-}
-
-# Refresh products hash
-print "DEBUG: Retrieving all products from DB\n" if $CONFIG{debug};
-$prodq = $dbh->selectall_arrayref('SELECT id,name,manufacturer FROM product');
 foreach my $row ( @$prodq ){
     my($id,$name,$mf) = @$row;
     $all_prods{$mf}{$name} = $id;
