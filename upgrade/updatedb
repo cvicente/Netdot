@@ -151,11 +151,9 @@ foreach my $mf ( keys %products ){
 	    $np->execute($model, $mf, $ptype);
 	};
 	if ( my $e = $@ ){
-	    if ( $e =~ /duplicate/io ){
-		warn "$e\n";
-	    }else{
-		print "DEBUG: Inserted product ($mf, $model)\n" if $CONFIG{debug};
-	    }
+	    warn "$e\n";
+	}else{
+	    print "DEBUG: Inserted product ($mf, $model)\n" if $CONFIG{debug};
 	}
     }
 }
