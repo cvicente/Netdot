@@ -621,7 +621,6 @@ sub update_ip {
 		}else{
 		    $logger->info(sprintf("%s: Created Subnet %s/%s", 
 					  $label, $subnetaddr, $subnetprefix));
-		    my $version = $newblock->version;
 		}
 	    }
 	}
