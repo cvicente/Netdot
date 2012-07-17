@@ -1187,11 +1187,13 @@ sub _adjust_vals{
     map { $meta_columns{$_->name} = $_ } $class->meta_data->get_columns;
     foreach my $field ( keys %$args ){
 	my $mcol = $meta_columns{$field} || $class->throw_fatal("Cannot find $field in $class metadata");
-	if ( !blessed($args->{$field}) && $mcol->sql_type eq 'varchar' && defined($mcol->length) && $mcol->length =~ /^\d+$/ ) {
+	if ( !blessed($args->{$field}) && $mcol->sql_type eq 'varchar' 
+	     && defined($mcol->length) && $mcol->length =~ /^\d+$/ ) {
             if (defined($args->{$field}) && length($args->{$field}) > $mcol->length) {
-		my $msg = "Value for field '$field' (max " . $mcol->length . ") is too long: '$args->{$field}'";
+		my $msg = "Value for field '$field' (max " . $mcol->length . 
+		    ") is too long: '$args->{$field}'";
 		if ( $ENV{REMOTE_USER} eq 'netdot' ){
-		    $logger->warn($msg);
+		    $logger->debug($msg);
 		}else{
 		    $class->throw_user($msg);
 		}
