@@ -2783,9 +2783,7 @@ sub info_update {
 
     ##############################################################
     # Asset
-    my $dev_product = $self->_assign_product($info);
     my %asset_args = (
-	product_id    => $dev_product->id,
 	serial_number => $info->{serial_number},
 	physaddr      => $self->_assign_base_mac($info) || undef,
 	reserved_for  => "", # needs to be cleared when device gets installed
@@ -2798,11 +2796,15 @@ sub info_update {
     push(@where, { physaddr => $asset_args{physaddr} }) 
 	if $asset_args{physaddr};
     my $asset = Asset->search_where(\@where)->first if @where;
+    my $dev_product;
     if ( $asset ){
 	# Make sure that the data is complete with the latest info we got
 	$asset->update(\%asset_args);
+	$dev_product = $asset->product_id;
     }elsif ( $asset_args{serial_number} || $asset_args{physaddr} ){
-	    $asset = Asset->insert(\%asset_args);
+	$dev_product = $self->_assign_product($info);
+	$asset_args{product_id} = $dev_product->id;
+	$asset = Asset->insert(\%asset_args);
     }
     $devtmp{asset_id} = $asset->id if $asset;
     
