@@ -4886,13 +4886,15 @@ sub _get_as_info{
     }
     $i->disconnect();
 
-    if ( $obj =~ /as-name:\s+(.*)\n/ ){
+    if ( $obj =~ /as-name:\s+(.*)\n/o ){
 	my $as_name = $1;
+	$as_name = substr($as_name, 0, 32);
 	$results{asname} = $as_name;
 	$logger->debug(sub{"Device::_get_as_info:: $server: Found asname: $as_name"});
     }
-    if ( $obj =~ /descr:\s+(.*)\n/ ){
+    if ( $obj =~ /descr:\s+(.*)\n/o ){
 	my $descr = $1;
+	$descr = substr($descr, 0, 128);
 	$results{orgname} = $descr;
 	$logger->debug(sub{"Device::_get_as_info:: $server: Found orgname: $descr"});
     }
