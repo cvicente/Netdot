@@ -578,7 +578,12 @@ sub update_ip {
 	$logger->debug(sprintf("%s: Adding or updating subnet %s/%d", 
 			       $label, $subnetaddr, $subnetprefix));
 	
-	if ( ($version == 4 && $subnetprefix == 31) || $subnetaddr ne $address ){
+	# Make sure we compare the same formatting
+	my $subnet_netaddr = Ipblock->netaddr(address=>$subnetaddr, prefix=>$subnetprefix);
+	my $address_netaddr = Ipblock->netaddr(address=>$address);
+
+	if ( $subnet_netaddr->addr ne $address_netaddr->addr || 
+	     ($version == 4 && $subnetprefix == 31) ){
 	    my %iargs;
 	    $iargs{status} = 'Subnet' ;
 	    
@@ -600,8 +605,8 @@ sub update_ip {
 		$logger->debug(sub{ sprintf("Subnet %s/%s does not exist.  Inserting.", 
 					    $subnetaddr, $subnetprefix) });
 		
-		$iargs{address} = $subnetaddr;
-		$iargs{prefix}  = $subnetprefix;
+		$iargs{address} = $subnet_netaddr->addr;
+		$iargs{prefix}  = $subnet_netaddr->masklen;
 		$iargs{version} = $version;
 		
 		# Check if subnet should inherit device info
@@ -617,7 +622,7 @@ sub update_ip {
 		};
 		if ( my $e = $@ ){
 		    $logger->error(sprintf("%s: Could not insert Subnet %s/%s: %s", 
-					   $label, $subnetaddr, $subnetprefix, $e));
+					   $label, $subnet_netaddr->addr, $subnet_netaddr->masklen, $e));
 		}else{
 		    $logger->info(sprintf("%s: Created Subnet %s/%s", 
 					  $label, $subnetaddr, $subnetprefix));

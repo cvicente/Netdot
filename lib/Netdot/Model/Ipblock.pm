@@ -579,13 +579,15 @@ sub within{
 sub insert {
     my ($class, $argv) = @_;
     $class->isa_class_method('insert');
-    
+
     $class->throw_fatal("Missing required arguments: address")
 	unless ( exists $argv->{address} );
 
-    if ( $argv->{address} =~ /.+\/\d+$/ ){
+    if ( $argv->{address} =~ /.+\/\d+$/o ){
 	# Address is in CIDR format
-	($argv->{address}, $argv->{prefix}) = split /\//, $argv->{address};
+	my ($a,$p) = split /\//, $argv->{address};
+	$argv->{address} = $a;
+	$argv->{prefix} ||= $p; # Only if not passed explicitly
     }
 
     unless ( $argv->{status} ){
@@ -599,8 +601,7 @@ sub insert {
     }
     
     # $ip is a NetAddr::IP object;
-    my $ip;
-    $ip = $class->_prevalidate($argv->{address}, $argv->{prefix});
+    my $ip = $class->_prevalidate($argv->{address}, $argv->{prefix});
     $argv->{address} = $ip->addr;
     $argv->{prefix}  = $ip->masklen;
     $argv->{version} = $ip->version;
@@ -693,7 +694,18 @@ sub insert {
 	if ( $num && $num < $newblock->num_addr ){
 	    for ( 1..$num ){
 		my $addr = $newblock->get_next_free();
-		$class->insert({address=>$addr, status=>'Reserved'});
+		eval {
+		    $class->insert({address=>$addr, status=>'Reserved', validate=>0});
+		};
+		if ( my $e = $@ ){
+		    if ( $e =~ /Duplicate/io ){
+			# This happens often when running parallel processes
+			# Just go on
+		    }else{
+			$logger->warn("Ipblock::insert: Failed to insert one of first ".
+				      "N addresses in subnet: $e");
+		    }
+		}
 	    }
 	}
     }
@@ -2778,7 +2790,6 @@ sub netaddr {
 
 sub _prevalidate {
     my ($class, $address, $prefix) = @_;
-
     $class->isa_class_method('_prevalidate');
 
     $class->throw_fatal("Ipblock::_prevalidate: Missing required arguments: address")
@@ -2792,9 +2803,9 @@ sub _prevalidate {
 	$class->throw_user("The unspecified IP: $address is not valid");
     }
 
-    my $ip;
+    my $ip = NetAddr::IP->new($address, $prefix);
     my $str = ( $address && $prefix ) ? (join('/', $address, $prefix)) : $address;
-    if ( !($ip = NetAddr::IP->new($address, $prefix)) || $ip->numeric == 0 ){
+    if ( !$ip || $ip->numeric == 0 ){
 	$class->throw_user("Invalid IP: $str");
     }
 
