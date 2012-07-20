@@ -2805,6 +2805,8 @@ sub info_update {
 	$dev_product = $self->_assign_product($info);
 	$asset_args{product_id} = $dev_product->id;
 	$asset = Asset->insert(\%asset_args);
+    }else{
+	$dev_product = $self->_assign_product($info);	
     }
     $devtmp{asset_id} = $asset->id if $asset;
     
