@@ -140,6 +140,7 @@ if ( $table ){
 		    if ( $state_digest && ($state_digest ne $new_digest) ){
 			$ui->throw_user('This object changed while you were editing!');
 		    }
+		    $ui->check_value_lenghts($table, \%args);
 		    $obj->update(\%args);
 					       });
 	    };
@@ -158,7 +159,10 @@ if ( $table ){
 	    $ui->localize_newlines($table, \%args);
 	    my $new;
 	    eval{
-		$new = $table->insert(\%args);
+		Netdot::Model->do_transaction( sub{
+		    $ui->check_value_lenghts($table, \%args);
+		    $new = $table->insert(\%args);
+					       });
 	    };
 	    if ( my $e = $@ ){
 		$m->comp('error.mhtml', error=>$e);
