@@ -71,14 +71,14 @@ sub generate_configs {
     my ($self) = @_;
 
     my $query = $self->{_dbh}->selectall_arrayref("
-                SELECT     rr.name, zone.name, p.name, p.sysobjectid, p.config_type, e.name, e.config_type,
-                           d.sysdescription, d.monitor_config, d.monitor_config_group, d.down_from, d.down_until
-                 FROM      device d, rr, zone, product p, entity e, asset a
-                WHERE      d.name=rr.id
-                  AND      rr.zone=zone.id
-                  AND      a.product_id=p.id
-                  AND      d.asset_id=a.id
-                  AND      p.manufacturer=e.id
+          SELECT rr.name, zone.name, p.name, p.sysobjectid, p.config_type, e.name, e.config_type,
+                 d.sysdescription, d.monitor_config, d.monitor_config_group, d.down_from, d.down_until
+          FROM   device d, rr, zone, product p, entity e, asset a
+          WHERE  d.name=rr.id
+          AND    rr.zone=zone.id
+          AND    a.product_id=p.id
+          AND    d.asset_id=a.id
+          AND    p.manufacturer=e.id
          ");
     
     my %groups;
@@ -89,7 +89,8 @@ sub generate_configs {
 	my $name = $rrname . "." . $zone;
 
 	unless ( $monitor ){
-	    $logger->debug("Netdot::Exporter::Rancid::generate_configs: $name configured to not monitor config");
+	    $logger->debug("Netdot::Exporter::Rancid::generate_configs: $name configured ".
+			   "to not monitor config");
 	    next;
 	}
 
@@ -98,9 +99,10 @@ sub generate_configs {
 	    next;
 	}
 
-	if ( exists $self->{EXCLUDE}->{$oid} ){
+	if ( defined $oid && exists $self->{EXCLUDE}->{$oid} ){
 	    my $descr = $self->{EXCLUDE}->{$oid};
-	    $logger->debug("Netdot::Exporter::Rancid::generate_configs: $name: $descr ($oid) excluded per configuration");
+	    $logger->debug("Netdot::Exporter::Rancid::generate_configs: $name: $descr ($oid) ".
+			   "excluded per configuration");
 	    next;
 	}
 	
@@ -112,7 +114,8 @@ sub generate_configs {
 	    my $time2 = Netdot::Model->sqldate2time($down_until);
 	    my $now = time;
 	    if ( $time1 < $now && $now < $time2 ){
-		$logger->debug("Netdot::Exporter::Rancid::generate_configs: $name in down time. Setting state to 'down'.");
+		$logger->debug("Netdot::Exporter::Rancid::generate_configs: $name in down time. ".
+			       "Setting state to 'down'.");
 		$groups{$group}{$name}{state} = 'down';
 	    }
 	}
@@ -123,7 +126,8 @@ sub generate_configs {
 				      sysdescr => $sysdescr,
 	    );
 	unless ( $mfg ) {
-	    $logger->debug("Netdot::Exporter::Rancid::generate_configs: $name: $vendor has no RANCID device_type mapping");
+	    $logger->debug("Netdot::Exporter::Rancid::generate_configs: $name: $vendor has no ".
+			   "RANCID device_type mapping");
 	    next;
 	}
 	$groups{$group}{$name}{mfg} = $mfg;
@@ -133,14 +137,15 @@ sub generate_configs {
 	my $dir_path  = $self->{RANCID_DIR}."/".$group;
 	unless ( -d $dir_path ){
 	    system("mkdir -p $dir_path") 
-		&& $self->throw_fatal("Netdot::Exporter::Rancid::generate_configs: Can't make dir $dir_path: $!");
+		&& $self->throw_fatal("Netdot::Exporter::Rancid::generate_configs: Cannot make dir ".
+				      "$dir_path: $!");
 	}
 	my $file_path = "$dir_path/".$self->{RANCID_FILE};
 	my $rancid = $self->open_and_lock($file_path);
 
 	foreach my $device ( sort keys %{$groups{$group}} ){
-	    my $mfg   = $groups{$group}{$device}{mfg};
-	    my $state = $groups{$group}{$device}{state};
+	    my $mfg   = $groups{$group}{$device}{mfg} || next;
+	    my $state = $groups{$group}{$device}{state} || next;
 	    print $rancid $device, ":$mfg:$state\n";
 	}
 	close($rancid) || $logger->warn("Netdot::Exporter::Rancid::generate_configs: ".
