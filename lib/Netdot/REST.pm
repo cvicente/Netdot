@@ -113,7 +113,7 @@ sub handle_resource {
     
     my $resource = delete $argv{resource} || $self->throw_fatal("You need to pass resource");
     my $r = delete $argv{r}               || $self->throw_fatal("You need to pass request object");
-    $self->{request} = $argv{r};
+    $self->{request} = $r;
 
     # Get relevant HTTP headers from request object
     my $headers = $self->{request}->headers_in;

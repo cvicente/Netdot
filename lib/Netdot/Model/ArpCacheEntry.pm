@@ -3,6 +3,7 @@ package Netdot::Model::ArpCacheEntry;
 use base 'Netdot::Model';
 use warnings;
 use strict;
+use DBI qw(:sql_types);
 
 my $logger = Netdot->log->get_logger('Netdot::Model::Device');
 
@@ -56,14 +57,16 @@ sub fast_insert{
     # Now walk our list and insert
     foreach my $r ( @$list ){
 	my $plen = ($r->{version} == 6)? 128 : 32;
+	$sth->bind_param(1, $r->{arpcache});
+	$sth->bind_param(2, $r->{interface});
+	# Workaround for http://bugs.mysql.com/bug.php?id=60213
+	# See another example in Ipblock::search()
+	$sth->bind_param(3, "".$r->{ipaddr}, SQL_INTEGER);
+	$sth->bind_param(4, $plen);
+	$sth->bind_param(5, $r->{version});
+	$sth->bind_param(6, $r->{physaddr});
 	eval {
-	    $sth->execute($r->{arpcache}, 
-			  $r->{interface},
-			  $r->{ipaddr},
-			  $plen,
-			  $r->{version},
-			  $r->{physaddr},
-		);
+	    $sth->execute();
 	};
 	if ( my $e = $@ ){
 	    $logger->warn("Problem inserting arpcacheentry: $e");

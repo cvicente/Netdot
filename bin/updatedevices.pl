@@ -221,7 +221,7 @@ if ( $TOPO ){
     Netdot::Topology->discover(%uargs);
 }
 
-$logger->info(sprintf("$0 total runtime: %s\n", Netdot->sec2dhms(time-$start)));
+$logger->info(sprintf("$0 total runtime: %s", Netdot->sec2dhms(time-$start)));
 
 =head1 AUTHOR
 

@@ -224,6 +224,7 @@ sub form_to_db{
 		my $newid;
 		my $args = \%{ $objs{$table}{$id} };
 		$self->localize_newlines($table, $args);
+		$self->check_value_lengths($table, $args);
 		$newid = $table->insert($args);
 		$ret{$table}{id}{$newid}{action} = "INSERTED";
 		$act = 1;
@@ -250,6 +251,7 @@ sub form_to_db{
 		    if ( my $o = $table->retrieve($id) ){
 			my $args = \%{ $objs{$table}{$id} };
 			$self->localize_newlines($table, $args);
+			$self->check_value_lengths($table, $args);
 			$o->update($args);
 			$ret{$table}{id}{$id}{action}  = "UPDATED";
 			$ret{$table}{id}{$id}{columns} = $args;
@@ -2443,6 +2445,34 @@ sub localize_newlines {
 	if ( $type eq 'blob' || $type eq 'text' ){
 	    $args->{$c} =~ s/\r\n/\n/g;
 	    $args->{$c} =~ s/\r/\n/g;
+	}
+    }
+    1;
+}
+
+############################################################################
+=head check_value_lengths
+
+  Arguments: table, args hashref
+  Returns: True
+  Examples: $ui->_check_value_lenghts(\%args);
+
+=cut
+sub check_value_lenghts {
+    my($self, $table, $args) = @_;
+    foreach my $c ( keys %$args ){
+	my $mcol;
+	eval {
+	    $mcol = $table->meta_data->get_column($c);
+	};
+	next if ( $@ =~ /does not exist/ );
+	my $val = $args->{$c};
+	next unless defined $val;
+	my $type = $mcol->sql_type || next;
+	if ( $type eq 'varchar' && defined($mcol->length) 
+	     && ($mcol->length =~ /^\d+$/o) && (length($val) > $mcol->length) ){
+	    $self->throw_user("Value for field '$c' (max " . $mcol->length . 
+			      ") is too long: '$val'");
 	}
     }
     1;
