@@ -1398,8 +1398,8 @@ sub cidr {
 ##################################################################
 =head2 full_address
 
-    Returns the address part in FULL notation for ipV4 and ipV6 respectively.
-    See NetAddr::IP::full()
+    Returns the address part in FULL notation for IPv6. 
+    For IPv4, it returns the standard dotted-quad string.
 
   Arguments:
     None
@@ -1412,7 +1412,11 @@ sub cidr {
 sub full_address {
     my $self = shift;
     $self->isa_object_method('full_address');
-    return $self->netaddr->full()
+    if ( $self->version == 6 ){
+	return $self->netaddr->full();
+    }else{
+	return $self->address;
+    }
 }
 
 ##################################################################

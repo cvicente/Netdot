@@ -2451,14 +2451,14 @@ sub localize_newlines {
 }
 
 ############################################################################
-=head check_value_lengths
+=head2 check_value_lengths
 
   Arguments: table, args hashref
   Returns: True
-  Examples: $ui->_check_value_lenghts(\%args);
+  Examples: $ui->check_value_lenghts(\%args);
 
 =cut
-sub check_value_lenghts {
+sub check_value_lengths {
     my($self, $table, $args) = @_;
     foreach my $c ( keys %$args ){
 	my $mcol;
