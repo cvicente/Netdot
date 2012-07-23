@@ -516,9 +516,8 @@ sub get_dp_links {
 		    unless ( $rem_int ){
 		    	# If interface name has a slot/sub-slot number
 		    	# (helps finding stuff like Gi2/7)
-		    	my $ptrn;
-		    	if ( $rem_port =~ /^([A-Z]{1})\S+?([\d\/\.])+$/io ){
-		    	    $ptrn = "'".$1.'%'.$2."'";
+			if ( $rem_port =~ /^([a-z]{2})[a-z]*([0-9\/.]+)$/io ){
+		    	    my $ptrn = "'".$1.'%'.$2."'";
 		    	    $rem_int = Interface->search_like(device=>$rem_dev, name=>$ptrn)->first;
 		    	}
 		    }
