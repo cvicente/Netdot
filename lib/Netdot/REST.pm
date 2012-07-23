@@ -537,7 +537,7 @@ sub check_accept_header{
 =cut
 sub throw {
     my ($self, %args) = @_;
-    return $self->SUPER::throw_rest(@_);
+    return $self->SUPER::throw_rest(%args);
 }
 
 ##################################################################
