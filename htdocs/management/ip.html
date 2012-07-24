@@ -931,22 +931,23 @@ if ( $edit ){
 %# Navigation Bar
 %#######################################################################
 
+% if ( $manager && $manager->can($user, "access_section", 'ip.html:sites') ){
     <div id="navbar">
         <ul id="navigation">
 %         if( $view eq "Children" ) {
               <li><span>Children</span></li>
 %         } else {
-            <li><a href="ip.html?id=<% $id %>&view=Children">Children</a></li>
+              <li><a href="ip.html?id=<% $id %>&view=Children">Children</a></li>
 %         }
 %         if( $view eq "Sites" ) {
               <li><span>Sites</span></li>
 %         } else {
-            <li><a href="ip.html?id=<% $id %>&view=Sites">Sites</a></li>
+              <li><a href="ip.html?id=<% $id %>&view=Sites">Sites</a></li>
 %         }
 %         if( $view eq "Zones" ) {
               <li><span>Zones</span></li>
 %         } else {
-            <li><a href="ip.html?id=<% $id %>&view=Zones">Zones</a></li>
+              <li><a href="ip.html?id=<% $id %>&view=Zones">Zones</a></li>
 %         }
 %         if ( $o->status->name eq 'Subnet' ){
 %             if( $view eq "DHCP" ) {
@@ -963,7 +964,7 @@ if ( $edit ){
 %         if( $view eq "Comments" ) {
               <li><span>Comments</span></li>
 %         } else {
-            <li><a href="ip.html?id=<% $id %>&view=Comments">Comments</a></li>
+              <li><a href="ip.html?id=<% $id %>&view=Comments">Comments</a></li>
 %         }
 %         if( $view eq "All" ) {
               <li><span>All</span></li>
@@ -972,6 +973,7 @@ if ( $edit ){
 %         }
         </ul>
     </div>
+% }
 
 %#######################################################################
 %# Body
@@ -1380,9 +1382,11 @@ print $tmp{value};
 % }
 
 % if ( $view eq 'Sites' || $view eq 'All'){
+
 %################################################################
 %# Sites
 %################################################################
+% if ( $manager && $manager->can($user, "access_section", 'ip.html:sites') ){
 % my @ss = $o->sites;
   <div class="container">
     <div class="containerheadleft">Sites</div>
@@ -1402,6 +1406,7 @@ print $tmp{value};
     </div>
   </div>
 
+%  }
 % }
 
 % if ( $view eq 'Zones' || $view eq 'All' ){
@@ -1517,6 +1522,7 @@ print $tmp{value};
 %# Access Rights
 %################################################################
 % if ( $view eq 'Rights' || $view eq 'All' ){
+%  if ( $manager && $manager->can($user, "access_section", 'ip.html:edit_rights') ){
 <%perl>
 my @arights = AccessRight->search(object_class=>'Ipblock', object_id=>"$o");
 my @urights  = map { $_->user_rights  } @arights;
@@ -1524,7 +1530,6 @@ my @grights  = map { $_->group_rights } @arights;
 my @all_rights = ( @urights, @grights);
 </%perl>
 
-% if ( $manager && $manager->can($user, "access_section", 'ip.html:edit_rights') ){
       <div class="container">
       <div class="containerheadleft">Access Rights</div>
       <div class="containerheadright">
@@ -1563,8 +1568,7 @@ if ( $_action eq 'VIEW_ADD_RIGHTS' ){
 </%perl>
       </div>
       </div>
-    
-% }
+%  }
 % }
 
 
