@@ -225,13 +225,15 @@ if ( $self{AUDIT} ){
 
 if ( $self{FWT} ){
     if ( $self{ROTATE} ){
-	if ( $db_type eq 'mysql' || $db_type eq 'Pg' ){
+	if ( $db_type eq 'mysql' ){
 	    unless ( $self{PRETEND} ){
-		&rotate_table('fwtable');
-		&rotate_table('fwtableentry');
+		my $fwtable_def = &get_table_def('fwtable');
+		my $fwtableentry_def = &get_table_def('fwtableentry');
+		&rotate_table('fwtable', $fwtable_def);
+		&rotate_table('fwtableentry', $fwtableentry_def);	
 	    }
 	}else{
-	    die "Rotate function only implemented in mysql and postgreSQL for now";
+	    die "Rotate function only implemented in mysql for now";
 	}
     }else{
 	###########################################################################################
@@ -254,8 +256,10 @@ if ( $self{ARP} ){
     if ( $self{ROTATE} ){
 	if ( $db_type eq 'mysql' or $db_type eq 'Pg' ){
 	    unless ( $self{PRETEND} ){
-		&rotate_table('arpcache');
-		&rotate_table('arpcacheentry');
+		my $arpcache_def = &get_table_def('arpcache');
+		my $arpcacheentry_def = &get_table_def('arpcacheentry');
+		&rotate_table('arpcache', $arpcache_def);
+		&rotate_table('arpcacheentry', $arpcacheentry_def);
 	    }
 	}else{
 	    die "Rotate function only implemented in mysql and postgreSQL for now";
@@ -312,9 +316,20 @@ sub optimize_table{
     return;
 }
 
-sub rotate_table{
+# Get table definition
+sub get_table_def {
     my $table = shift;
-    
+    my $q = $dbh->selectall_arrayref("SHOW CREATE TABLE $table");
+    my $def = $q->[0]->[1];
+    $def =~ s/AUTO_INCREMENT=[0-9]+/AUTO_INCREMENT=1/;
+    $def =~ s/CREATE TABLE `(.*)`/CREATE TABLE `$table`/;
+    return $def;
+}
+
+sub rotate_table{
+    my ($table, $def) = @_;
+    die "Missing required arguments" unless $table && $def;
+
     # We need DBA privileges here
    
     my $db_host = Netdot->config->get('DB_HOST');
@@ -329,28 +344,42 @@ sub rotate_table{
     
     my $dbh = &dbconnect($db_type, $db_host, $db_port, $db_user, $db_pass, $db_db) 
 	|| die ("Cannot connect to database as root");
-    
-    
+   
     $dbh->{AutoCommit} = 0; # make sure autocommit is off so we use transactions
     $dbh->{RaiseError} = 1; # make sure we hear about any problems
     
     my $timestamp = time;
 
     if ( $db_type eq 'mysql' ){
+	# Tried to do this with just rename table and create table like
+	# but the constraints complicate things
         eval{
+	    my @statements;
+	    
+	    # Constraint names are unique per database, so we need to
+	    # remove them from the backup table before creating the
+	    # new one
+	    my $fkq = "SELECT CONSTRAINT_NAME, TABLE_NAME, COLUMN_NAME, 
+                              REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
+                       FROM   INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
+                       WHERE  TABLE_NAME = '$table' 
+                         AND  TABLE_SCHEMA = 'netdot'
+                         AND  REFERENCED_TABLE_NAME IS NOT NULL";
+	    my $rows = $dbh->selectall_arrayref($fkq);
+
 	    my $backup = $table.'_'.$timestamp;
-            $dbh->do("RENAME TABLE $table TO $backup");
-            $dbh->do("CREATE TABLE $table LIKE $backup");
-        }
-    }elsif ( $db_type eq 'Pg' ){
-	# This really needs to be redone, as the approach defeats the
-	# purpose of the rotation, which was to avoid deleting a very large
-	# number rows
-        my $new_table_name = $table."_".$timestamp;
-        eval{
-            $dbh->do("CREATE TABLE $new_table_name AS SELECT * FROM $table");
-            $dbh->do("DELETE FROM $table");
-	    $dbh->do("SELECT setval('".$table."_id_seq', 1, false"); #reset auto_increment
+            push @statements, ("RENAME TABLE $table TO $backup");
+
+	    foreach my $row ( @$rows ){
+		my ($const, $table, $col, $reftable, $refcol) = @$row;
+		push @statements, ("ALTER TABLE $backup DROP FOREIGN KEY `$const`");
+	    }
+	    # Re-create the original table
+	    push @statements, $def;
+	    foreach my $st ( @statements ){
+		$logger->debug($st);
+		$dbh->do($st);
+	    }
         }
     }else{
 	$logger->warn("Could not rotate table $table.  Database $db_type not supported");
@@ -363,7 +392,8 @@ sub rotate_table{
     
     $dbh->commit;
     $logger->info("Table $table rotated successfully");
-    $dbh->{AutoCommit} = 1; #we can turn autocommit back on since the rest of the transactions are basically atomic
+    # We can turn autocommit back on since the rest of the transactions are basically atomic
+    $dbh->{AutoCommit} = 1; 
     $logger->debug("Droping $table backups older than $self{NUM_DAYS} days");    
     my $tables_q;
     
