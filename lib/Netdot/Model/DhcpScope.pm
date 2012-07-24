@@ -606,6 +606,10 @@ sub _validate_args {
 	}
 
     }elsif ( $type eq 'subnet' ){
+
+	$self->throw_user("$name: Subnet IP block not defined")
+	    unless $fields{ipblock};
+
 	if ( $fields{ipblock}->version != $fields{container}->version ){
 	    $self->throw_user("$name: IP version in subnet scope does not match IP version in container");
 	}	
