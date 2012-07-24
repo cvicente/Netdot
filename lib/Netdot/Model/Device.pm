@@ -965,83 +965,6 @@ sub get_snmp_info {
     ################################################################
     # Interface stuff
     
-    sub _check_if_status_down{
-	my ($dev, $iid) = @_;
-	return 1 if ( (defined $dev->{interface}{$iid}{admin_status}) &&
-		      ($dev->{interface}{$iid}{admin_status} eq 'down') );
-	return 0;
-    }
-    
-    ################################################################
-    # IPv4 addresses and masks 
-    #
-    while ( my($ip,$iid) = each %{ $hashes{'ip_index'} } ){
-	next if &_check_if_status_down(\%dev, $iid);
-	next if Ipblock->is_loopback($ip);
-	next if ( $ip eq '0.0.0.0' || $ip eq '255.255.255.255' );
-	$dev{interface}{$iid}{ips}{$ip}{address} = $ip;
-	$dev{interface}{$iid}{ips}{$ip}{version} = 4;
-	if ( my $mask = $hashes{'ip_netmask'}->{$ip} ){
-	    my ($subnet, $len) = Ipblock->get_subnet_addr(address => $ip, 
-							  prefix  => $mask );
-	    $dev{interface}{$iid}{ips}{$ip}{subnet} = "$subnet/$len";
-	}
-    }
-
-    ################################################################
-    # IPv6 addresses and prefixes
-    # Stuff in this hash looks like this:
-    #
-    # CISCO-IETF-IP-MIB:
-    # 2.16.32.1.4.104.13.1.0.2.0.0.0.0.0.0.0.9 => 
-    #     49.2.16.32.1.4.104.13.1.0.2.0.0.0.0.0.0.0.0.64
-    #
-    # IP-MIB:
-    # 2.32.1.4.104.13.1.0.2.0.0.0.0.0.0.0.41 => 
-    #     1.151126018.2.32.1.4.104.13.1.0.2.0.0.0.0.0.0.0.0.64
-    # 
-    while ( my($key,$val) = each %{$hashes{'ipv6_addr_prefix'}} ){
-	my ($iid, $addr, $pfx, $len);
-	# We only care about the last 16 octets in decimal
-	# so, that's an digit and a dot, 15 times, plus another digit
-	if ( $key =~ /^.+\.((?:\d+\.){15}\d+)$/o ) {
-	    $addr = $self->_octet_string_to_v6($1);
-	}
-	if ( $val =~ /^(\d+)\.\d+\.\d+\.([\d\.]+)\.(\d+)$/o ) {
-	    # ifIndex, type, size, prefix length
-	    $iid = $1; $len = $3;
-	    $pfx = $self->_octet_string_to_v6($2);
-	}
-	if ( $iid && $addr && $pfx && $len ){
-	    next if &_check_if_status_down(\%dev, $iid);
-	    $dev{interface}{$iid}{ips}{$addr}{address} = $addr;
-	    $dev{interface}{$iid}{ips}{$addr}{version} = 6;
-	    $dev{interface}{$iid}{ips}{$addr}{subnet}  = "$pfx/$len";
-	}else{
-	    # What happened?
-	    $logger->warn("$args{host}: Unrecognized ipv6_addr_prefix entry: $key => $val")
-	}
-    }
-
-    ################################################################
-    # IPv6 link-local addresses
-    unless ( $self->config->get('IGNORE_IPV6_LINK_LOCAL') ){
-	my $ipv6_index = $sinfo->ipv6_index();
-	my ($iid, $addr);
-	while ( my($key,$val) = each %$ipv6_index ){
-	    if ( $key =~ /^.+\.((?:\d+\.){15}\d+)$/o ) {
-		$addr = $self->_octet_string_to_v6($1);
-		next unless Ipblock->is_link_local($addr);
-		$iid = $val;
-		$dev{interface}{$iid}{ips}{$addr}{address} = $addr;
-		$dev{interface}{$iid}{ips}{$addr}{version} = 6;
-	    }else{
-		# What happened?
-		$logger->warn("$args{host}: Unrecognized ipv6_index entry: $key => $val")
-	    }
-	}
-    }
-    
     ##############################################
     # for each interface discovered...
 
@@ -1126,6 +1049,85 @@ sub get_snmp_info {
 	    }
 	}
     }
+
+    sub _check_if_status_down{
+	my ($dev, $iid) = @_;
+	return 1 if ( (defined $dev->{interface}{$iid}{admin_status}) &&
+		      ($dev->{interface}{$iid}{admin_status} eq 'down') );
+	return 0;
+    }
+    
+    ################################################################
+    # IPv4 addresses and masks 
+    #
+    while ( my($ip,$iid) = each %{ $hashes{'ip_index'} } ){
+	next if &_check_if_status_down(\%dev, $iid);
+	next if Ipblock->is_loopback($ip);
+	next if ( $ip eq '0.0.0.0' || $ip eq '255.255.255.255' );
+	$dev{interface}{$iid}{ips}{$ip}{address} = $ip;
+	$dev{interface}{$iid}{ips}{$ip}{version} = 4;
+	if ( my $mask = $hashes{'ip_netmask'}->{$ip} ){
+	    my ($subnet, $len) = Ipblock->get_subnet_addr(address => $ip, 
+							  prefix  => $mask );
+	    $dev{interface}{$iid}{ips}{$ip}{subnet} = "$subnet/$len";
+	}
+    }
+
+    ################################################################
+    # IPv6 addresses and prefixes
+    # Stuff in this hash looks like this:
+    #
+    # CISCO-IETF-IP-MIB:
+    # 2.16.32.1.4.104.13.1.0.2.0.0.0.0.0.0.0.9 => 
+    #     49.2.16.32.1.4.104.13.1.0.2.0.0.0.0.0.0.0.0.64
+    #
+    # IP-MIB:
+    # 2.32.1.4.104.13.1.0.2.0.0.0.0.0.0.0.41 => 
+    #     1.151126018.2.32.1.4.104.13.1.0.2.0.0.0.0.0.0.0.0.64
+    # 
+    while ( my($key,$val) = each %{$hashes{'ipv6_addr_prefix'}} ){
+	my ($iid, $addr, $pfx, $len);
+	# We only care about the last 16 octets in decimal
+	# so, that's an digit and a dot, 15 times, plus another digit
+	if ( $key =~ /^.+\.((?:\d+\.){15}\d+)$/o ) {
+	    $addr = $self->_octet_string_to_v6($1);
+	}
+	if ( $val =~ /^(\d+)\.\d+\.\d+\.([\d\.]+)\.(\d+)$/o ) {
+	    # ifIndex, type, size, prefix length
+	    $iid = $1; $len = $3;
+	    $pfx = $self->_octet_string_to_v6($2);
+	}
+	if ( $iid && $addr && $pfx && $len ){
+	    next if &_check_if_status_down(\%dev, $iid);
+	    $dev{interface}{$iid}{ips}{$addr}{address} = $addr;
+	    $dev{interface}{$iid}{ips}{$addr}{version} = 6;
+	    $dev{interface}{$iid}{ips}{$addr}{subnet}  = "$pfx/$len";
+	}else{
+	    # What happened?
+	    $logger->warn("$args{host}: Unrecognized ipv6_addr_prefix entry: $key => $val")
+	}
+    }
+
+    ################################################################
+    # IPv6 link-local addresses
+    unless ( $self->config->get('IGNORE_IPV6_LINK_LOCAL') ){
+	my $ipv6_index = $sinfo->ipv6_index();
+	my ($iid, $addr);
+	while ( my($key,$val) = each %$ipv6_index ){
+	    if ( $key =~ /^.+\.((?:\d+\.){15}\d+)$/o ) {
+		$addr = $self->_octet_string_to_v6($1);
+		next unless Ipblock->is_link_local($addr);
+		$iid = $val;
+		$dev{interface}{$iid}{ips}{$addr}{address} = $addr;
+		$dev{interface}{$iid}{ips}{$addr}{version} = 6;
+	    }else{
+		# What happened?
+		$logger->warn("$args{host}: Unrecognized ipv6_index entry: $key => $val")
+	    }
+	}
+    }
+    
+
     
     ##############################################
     # Deal with BGP Peers
