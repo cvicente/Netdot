@@ -159,8 +159,17 @@ BEGIN {
 	return if exists $EXCLUDE_AUDIT{$table};
 	return if $table =~ /_history$/o;
 
-	my $id    = $self->id;
-	my $label = $self->get_label;
+	my $id = $self->id;
+	my $label;
+	# If one of the fields which compose the label is being updated
+	# this breaks with "Can't call method without ..."
+	# In that case, just use the record's ID as label.
+	eval {
+	    $label = $self->get_label;
+	};
+	if ( my $e = $@ ){
+	    $label = $self->id;
+	}
 	my %data = (tstamp      => $self->timestamp,
 		    tablename   => $table,
 		    object_id   => $id,
