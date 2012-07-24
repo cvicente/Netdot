@@ -2490,7 +2490,7 @@ sub check_value_lengths {
 sub nl2br {
     my ($self, $t) = @_;
     return unless $t;
-    $t =~ s/([\r\n])/<br />$1/g;
+    $t =~ s/([\r\n])/<br \/>$1/g;
     return $t;
 }
 
