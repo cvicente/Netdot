@@ -29,29 +29,28 @@ my $deleted_label;
 
 my $manager = $ui->get_permission_manager($r);
 
-if ($id) {
+if ( $id ) {
     $rr = RR->retrieve($id);
     $m->comp('/generic/error.mhtml', error=>"Could not retrieve RR id $id")
 	unless $id;
+    $rrs{$rr->id} = $rr;
 }elsif ( $rr ){
+    my @tmp;
     if ( ref($rr) eq 'ARRAY' ){
-	# We somehow got an arrayref.  Ignore this.
-	undef($rr);
-    }elsif ( !ref($rr) ) {
-	$rr = RR->retrieve($rr);
-	$m->comp('/generic/error.mhtml', error=>"Could not retrieve RR id $rr")
-	    unless $rr;
-	$id = $rr->id;
+	@tmp = @$rr;
+    }else {
+	push @tmp, $rr;
+    }
+    foreach ( @tmp ){
+	$_ = RR->retrieve($_) unless ref($_);
+	# Check if user can view this object 
+	unless ( $manager && $manager->can($user, "view", $_) ){
+	    $m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
+	}
+	$rrs{$_->id} = $_;
     }
 }
 
-# Check if user can view this object 
-if ( $rr ){
-    unless ( $manager && $manager->can($user, "view", $rr) ){
-	$m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
-    }
-    $rrs{$rr->id} = $rr;
-}
 
 if ( $ipblock ) {
     $ipblock = Ipblock->objectify($ipblock);
@@ -821,7 +820,8 @@ foreach my $o ( values %rrs ) {
 	print '<script type="text/javascript" language="javascript">uricomponents[\'rrns_'.$o.'_content\']=encodeURIComponent(\''.$newns.'\');</script>';
 	print '&nbsp;';
 	if ( !$edit ){
-	    if ( $manager && $manager->can($user, 'edit', $o) ){
+	    if ( $manager && $manager->can($user, 'access_section', 'add_ns_records') 
+		 && $manager->can($user, 'edit', $o) ){
 		print '<div id="rrns_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrns\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
 	    }
 	}
@@ -1073,7 +1073,8 @@ foreach my $o ( values %rrs ) {
 
     } # close restrict if
     print '</div>'; #close container
-    
+ 
+    print '<br>';
 }
 
 print '</div>'; #close outer containerbody
