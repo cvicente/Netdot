@@ -53,8 +53,8 @@ if ( $rr ){
     $rrs{$rr->id} = $rr;
 }
 
-if ($ipblock && !ref $ipblock) {
-    $ipblock = Ipblock->retrieve($ipblock);
+if ( $ipblock ) {
+    $ipblock = Ipblock->objectify($ipblock);
     unless ( $manager && $manager->can($user, "view", $ipblock) ){
 	$m->comp('/generic/error.mhtml', error=>"You don't have permission to view this object");
     }
@@ -144,8 +144,6 @@ if ( $submit ){
 	}
     }
 }
-
-
 </%init>
 
 <%perl>
@@ -204,19 +202,39 @@ if ($action eq 'new') {
     $ui->add_to_fields(edit=>1, table=>'RR', fields=>['name'],
 		       field_headers=>\@field_headers, cell_data=>\@cell_data);
 
+    my %ffargs = (table=>'RR', column=>'zone', edit=>1, linkPage=>'zone.html');
+
     if ( defined $zone ){
-	unless ( ref($zone) ){
-	    $zone = Zone->retrieve($zone);
-	}
+	$zone = Zone->objectify($zone);
     }elsif ( $ipblock ){
-	unless ( ref($ipblock) ){
-	    $ipblock = Ipblock->retrieve($ipblock);
-	}
+	$ipblock = Ipblock->objectify($ipblock);
 	$zone = $ipblock->forward_zone();
     }
     
-    my %ffargs = (table=>'RR', column=>'zone', edit=>1, linkPage=>'zone.html');
-    $ffargs{default} = $zone->id if $zone;
+    # Make sure that user does not add a record to a zone for which
+    # they don't have permissions
+    my @select_list;
+    if ( $zone ){
+	@select_list = ( $zone );
+	$ffargs{default} = $zone->id;
+    }
+    foreach my $z ( sort { $a->name cmp $b->name } Zone->retrieve_all ){
+	next if $z->is_dot_arpa;
+	next unless $z->active;
+	next if $zone && ($z->id == $zone->id);
+	if ( $manager && $manager->can($user, 'edit', $z) ){
+	    push @select_list, $z;
+	}
+    }
+    # The list needs to have at least one item, otherwise
+    # the form_field function will display all zones
+    scalar @select_list or push(@select_list, undef);
+    $ffargs{defaults} = \@select_list;
+
+    unless ( $manager && $manager->can($user, 'access_section', 'new_zone_button') ){
+	$ffargs{new_button} = 0;
+    }
+
     my %tmp = $ui->form_field(%ffargs);
     push( @field_headers, $tmp{label} );
     push( @cell_data, $tmp{value} );
