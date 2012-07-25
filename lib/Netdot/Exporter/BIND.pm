@@ -127,9 +127,8 @@ sub print_zone_to_file {
     	|| $self->throw_user(sprintf('Zone %s: Apex record (@) not defined', $zone->name));
 
     my @ns_records = $apex->ns_records();
-    $self->throw_user('Zone has no NS records')
+    $self->throw_user(sprintf("Zone %s has no NS records", $zone->name))
 	unless @ns_records;
-	
     
     my $rec = $zone->get_all_records();
 

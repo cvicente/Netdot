@@ -79,15 +79,24 @@ foreach my $type ( split ',', $self{types} ){
 	    my @zones = split ',', $self{zones};
 	    $args{zones} = \@zones;
 	}
-	$exporter->generate_configs(%args);
+	eval {
+	    $exporter->generate_configs(%args);
+	};
+	$logger->error($@) if $@; 
 
     }elsif ( $type eq 'DHCPD' ){
 	my %args;
 	$args{scopes} = [split ',', $self{scopes}] if $self{scopes};
 	$args{force} = $self{force} if $self{force};
-	$exporter->generate_configs(%args);
+	eval {
+	    $exporter->generate_configs(%args);
+	};
+	$logger->error($@) if $@; 
     }else{
-	$exporter->generate_configs();
+	eval {
+	    $exporter->generate_configs();
+	};
+	$logger->error($@) if $@; 
     }
 }
 
