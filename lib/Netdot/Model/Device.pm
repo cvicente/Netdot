@@ -5057,6 +5057,11 @@ sub _munge_speed_high {
 ##############################################################
 # Assign Base MAC
 #
+# Ideally this is the base MAC address from BRIDGE-MIB
+# but if that's not available, we'll assign the first good
+# MAC address from interfaces. This might be necessary
+# to create a unique asset
+#
 # Arguments
 #   snmp info hashref
 # Returns
@@ -5068,31 +5073,38 @@ sub _assign_base_mac {
     my $host = $self->fqdn;
     my $address = delete $info->{physaddr}; 
     if ( $address && ($address = PhysAddr->validate($address)) ) {
-	# Look it up
-	my $mac;
-	if ( $mac = PhysAddr->search(address=>$address)->first ){
-	    # The address exists
-	    # (may have been discovered in fw tables/arp cache)
-	    $mac->update({static=>1, last_seen=>$self->timestamp});
-	    $logger->debug(sub{"$host: Using existing $address as base bridge address"});
-	    return $mac;
-	}else{
-	    # address is new.  Add it
-	    eval {
-		$mac = PhysAddr->insert({address=>$address, static=>1});
-	    };
-	    if ( my $e = $@ ){
-		$logger->debug(sprintf("%s: Could not insert base MAC: %s: %s",
-				       $host, $address, $e));
-	    }else{
-		$logger->info(sprintf("%s: Inserted new base MAC: %s", $host, $mac->address));
-		return $mac;
+	# OK
+    }else{
+	$logger->warn(sub{"$host did not return base MAC. Using first available interface MAC."});
+	foreach my $iid ( sort keys %{$info->{interface}} ){
+	    if ( my $addr = $info->{interface}->{$iid}->{physaddr} ){
+		next unless ($address = PhysAddr->validate($addr));
+		last;
 	    }
 	}
-    }else{
-	$logger->debug(sub{"$host did not return base MAC"});
-	return;
     }
+    # Look it up
+    my $mac;
+    if ( $mac = PhysAddr->search(address=>$address)->first ){
+	# The address exists
+	# (may have been discovered in fw tables/arp cache)
+	$mac->update({static=>1, last_seen=>$self->timestamp});
+	$logger->debug(sub{"$host: Using existing $address as base bridge address"});
+	return $mac;
+    }else{
+	# address is new.  Add it
+	eval {
+	    $mac = PhysAddr->insert({address=>$address, static=>1});
+	};
+	if ( my $e = $@ ){
+	    $logger->debug(sprintf("%s: Could not insert base MAC: %s: %s",
+				   $host, $address, $e));
+	}else{
+	    $logger->info(sprintf("%s: Inserted new base MAC: %s", $host, $mac->address));
+	    return $mac;
+	}
+    }
+    $logger->debug("$host: No suitable base MAC found");
 }
 
 ##############################################################
