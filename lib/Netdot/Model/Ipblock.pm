@@ -1688,7 +1688,7 @@ sub get_ancestors {
  Arguments: 
     None
  Returns:   
-    arrayref of descendant children IDs
+    Arrayref of descendant Net::IPTrie::Node objects
   Examples:
     my $descendants = $ip->get_descendants_trie();
 
@@ -1706,7 +1706,7 @@ sub get_descendants_trie {
     my $list = ();
     my $code = sub { 
 	my $node = shift @_; 
-	push @$list, $node->data; 
+	push @$list, $node; 
     };
 
     $class->_tree_traverse(root=>$n, code=>$code, tree=>$tree);

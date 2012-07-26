@@ -1602,11 +1602,9 @@ sub build_ip_tree_graph {
     my %seen;
 
     foreach my $n ( @$list ){
-	my $ip = Ipblock->retrieve($n->data);
+	next unless defined $n;
+	my $ip = Ipblock->retrieve($n->data) or next;
 	
-	# Make sure we don't have a null reference
-	next unless($ip);
-
 	# Make sure we don't include end addresses in the tree
 	next if $ip->is_address;
 	
