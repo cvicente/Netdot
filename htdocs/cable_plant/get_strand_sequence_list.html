@@ -22,19 +22,33 @@ $form_name
 my @terms;
 my $DEBUG       = 0;
 my $MAX_RESULTS = 1000;
+my $sequences = CableStrand->find_sequences($start_id, $end_id);
+use Data::Dumper;
 </%init>
 
 % print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
 <html>
 <body>
+
+
+<%perl>
+if ( $DEBUG) {
+    foreach my $seq ( @$sequences ){
+	my (@names, @ids);
+	foreach my $row ( @$seq ){
+	    print Dumper($row), '<br>';
+	}
+    }
+}
+</%perl>
+
 <script language="JavaScript">
 <!--
 <%perl>
 printf("opener.document.forms[\'%s\'][\'%s\'].options.length = 0;\n", $form_name, $field_name);
 
 my $i = 0;
-my $sequences = CableStrand->find_sequences($start_id, $end_id);
 foreach my $seq ( @$sequences ){
     my (@names, @ids);
     foreach my $row ( @$seq ){

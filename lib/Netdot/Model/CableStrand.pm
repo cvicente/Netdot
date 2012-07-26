@@ -10,22 +10,27 @@ my $logger = Netdot->log->get_logger('Netdot::Model');
 
 Netdot::Model::CableStrand
 
-=head1 SYNOPSIS
-
-
 =head1 CLASS METHODS
 =cut
 
 ##################################################################
-=head2 find_sequences - Fetch available sequences between sites
+=head2 find_sequences - Fetch available sequences of strands between sites
 
   Arguments:
     - start: id of starting Site.
     - end:   id of ending Site.
   Returns:
-      Arrayref
+      Arrayref containing an arrayref for each group of strands which
+      are spliced together, or which belong to a single backbone connecting
+      the given sites. Each third-level arrayref contains a cable strand id
+      and its name.
   Examples:
     $sequences = CableStrand->find_sequences($start, $end);
+    foreach my $seq ( @$sequences ){
+       foreach my $strand ( @$ ){
+           printf ("ID: %d, Name: %s", $strand->id, $strand->name);
+       }
+    }
 
 =cut
 sub find_sequences{
@@ -38,6 +43,27 @@ sub find_sequences{
     my $dbh = $class->db_Main;
     eval{
 	
+	# Get strands from backbones connecting given sites
+	my $strandsq1 = "SELECT DISTINCT cs.id, cs.name
+                         FROM   cablestrand cs, backbonecable bc, 
+                                closet c1, closet c2, room r1, room r2,
+                                floor f1, floor f2, site a, site b
+                         WHERE  cs.circuit_id IS NULL AND cs.cable=bc.id  
+                           AND  a.id = $start AND b.id = $end
+                           AND  c1.room=r1.id
+                           AND  r1.floor=f1.id
+                           AND  f1.site=a.id
+                           AND  c2.room=r2.id
+                           AND  r2.floor=f2.id
+                           AND  f2.site=b.id
+                           AND  ( (bc.start_closet=c1.id AND bc.end_closet=c2.id)
+                            OR    (bc.end_closet=c1.id AND bc.start_closet=c2.id) )";
+
+	my $rows = $dbh->selectall_arrayref($strandsq1);
+	foreach my $row ( @$rows ){
+	    push @sequences, [$row];
+	}
+
 	# Get strands that either start or end in given sites
 	my $strands_st = $dbh->prepare_cached("SELECT DISTINCT cs.id
                                                         FROM   cablestrand cs, backbonecable bc, closet c,
@@ -146,7 +172,7 @@ sub get_sequence_path {
 	$st->execute($id);
 	
 	if ( $st->rows() == 0 ) {
-	    return;
+	    push @ret, $id;
 	}else{
 	    $strand = $self->find_endpoint() if ( $st->rows() > 1 );
 	    $st->execute($strand);
@@ -217,9 +243,9 @@ sub find_endpoint{
   Arguments:
     None
   Returns:
-    Array ref
+    Array ref of array refs containing strand id and name
   Examples:
-  $strand->get_sequence();
+  my $seq = $strand->get_sequence();
 =cut
 sub get_sequence {
     my ($self) = @_;

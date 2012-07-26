@@ -57,9 +57,9 @@ my $manager   = $ui->get_permission_manager($r);
 %       my @ids = ();
 %       if ( my $seq = $st->get_sequence() ){
 %           foreach my $row ( @$seq ) {
-%               $found{@$row[0]} = 1;
-%               push(@links, sprintf("<A HREF=\"cable_strand.html?id=%d\">%s</A>", @$row[0], @$row[1]));
-%               push(@ids, @$row[0]);
+%               $found{$row->[0]} = 1;
+%               push(@links, sprintf("<A HREF=\"cable_strand.html?id=%d\">%s</A>", $row->[0], $row->[1]));
+%               push(@ids, $row->[0]);
 %           }
 %       }
         <tr align="left" class="<% $cssitem{$j} %>">
