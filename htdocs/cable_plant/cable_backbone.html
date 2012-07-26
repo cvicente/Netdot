@@ -16,6 +16,7 @@ $fiber_type     => undef
 $range1         => undef
 $range2         => undef
 $splice_bb_end  => undef
+$splice_action  => undef
 $strand_range   => undef
 $user           => $ui->get_current_user($r)
 </%args>
@@ -129,7 +130,7 @@ elsif ( defined($_action) && $_action eq "ADD_STRANDS" ){
 }
 
 # splice cables by a range of strands
-elsif (defined($_action) && $_action eq "ADD_SPLICE_RANGE") {
+elsif (defined($_action) && $_action eq "SPLICE_RANGE") {
     $m->comp("../generic/error.mhtml", error => "range1, range2, or backbone not specified.") 
 	if (!$range1 || !$range2 || !$splice_bb_end);
 
@@ -163,9 +164,11 @@ elsif (defined($_action) && $_action eq "ADD_SPLICE_RANGE") {
 	$m->comp("../generic/error.mhtml", error=>"$@") if $@;
     }
     
-    # and now lets add our splices...
-    for (my $i = 0, my $len = scalar(@start_strands); $i < $len; ++$i) {
-	Splice->insert({strand1=>$start_strands[$i], strand2=>$end_strands[$i]});
+    if ( $splice_action eq 'add' ){
+	# and now lets add our splices...
+	for (my $i = 0, my $len = scalar(@start_strands); $i < $len; ++$i) {
+	    Splice->insert({strand1=>$start_strands[$i], strand2=>$end_strands[$i]});
+	}
     }
 }
 
@@ -684,15 +687,19 @@ HERE
 % if ( $o->strands && @bbones ){
   <div class="container">
     <div class="containerhead">
-      Manually Splice Strand Range
+      Splice/Unsplice Strand Range
     </div>
     
     <div class="containerbody">
       <form action="cable_backbone.html" method="POST">
 	<input type="hidden" name="id" value="<% $id %>" />
-	<input type="hidden" name="_action" value="ADD_SPLICE_RANGE" />
-	Splice strands (i.e. 1-12)
-	<input type="text" name="range1" value="" size="4">&nbsp;from this backbone, to strands &nbsp;
+	<input type="hidden" name="_action" value="SPLICE_RANGE" />
+	<SELECT NAME="splice_action">
+	  <OPTION VALUE="add">Splice</OPTION>
+	  <OPTION VALUE="delete">Unsplice</OPTION>
+	</SELECT>
+	Strands (i.e. 1-12)
+	<input type="text" name="range1" value="" size="4">&nbsp;from this backbone, and strands &nbsp;
 	<input type="text" name="range2" value="" size="4">&nbsp;from 
 	<SELECT NAME="splice_bb_end">
 	  <OPTION VALUE="">Backbone...</OPTION>
@@ -705,7 +712,7 @@ HERE
 	  }
 	  </%perl>
 	</SELECT>
-	&nbsp;<input type="submit" name="splice_add" value="Go">
+	&nbsp;<input type="submit" name="splice_update" value="Go">
       </form>
     </div>
   </div>
