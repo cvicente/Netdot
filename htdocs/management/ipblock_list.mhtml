@@ -113,7 +113,11 @@ if ( $type eq "address" ){
     }
 
     # Special case: sort by device name
-    @rows = sort { $a->[2] cmp $b->[2] } @rows if ($sort eq 'Device');
+    # We use the infamous Shwartzian transform because we have added the device names 
+    # in the previous section, so we can't ask the caller to return a sorted list
+    if ( $sort eq 'Device' ){
+	@rows = map { $_->[0] } sort { $a->[1] cmp $b->[1] } map { [ $_, $_->[2] =~ />(\S+)<\/a>/ ] } @rows;
+    }
 
 } elsif( $type eq "block" ) {
 
