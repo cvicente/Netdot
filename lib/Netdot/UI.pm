@@ -1058,7 +1058,7 @@ sub text_area($@){
     if ( $isEditing ){
         $output .= sprintf("<textarea name=\"%s\" %s>%s</textarea>\n", $name, $htmlExtra, $value);
     }else{
-        $output .= sprintf("%s", $self->nl2br($value));
+        $output .= sprintf("<pre>%s</pre>\n", $value);
     }
     
     if ($returnAsVar==1) {
@@ -2476,21 +2476,6 @@ sub check_value_lengths {
     1;
 }
 
-
-############################################################################
-=head2 nl2br - Returns string with '<br />' inserted before all newlines.
-
-  Arguments: string 
-  Returns: string
-  Examples: $ui->nl2br($text);
-
-=cut
-sub nl2br {
-    my ($self, $t) = @_;
-    return unless $t;
-    $t =~ s/([\r\n])/<br />$1/g;
-    return $t;
-}
 
 =head1 AUTHORS
 
