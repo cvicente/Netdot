@@ -9,14 +9,12 @@
     so it makes more sense to have the DB order them at 
     retrieval time.  After that, objects are "inflated" to
     a string, which is harder to sort.
-
-    
 </%doc>
 
 <%args>
-$parent
-$objects
-$type             => undef
+$parent                          # ID of parent block
+$objects                         # Arrayref of Ipblock objects
+$type             => undef       # address or block
 $edit             => 0
 $sid              => undef
 $sort             => 'Address'
@@ -50,11 +48,19 @@ if ( $type ){
 <%perl>
 
 if ( $type eq "address" ){
+
+    my %devs_by_ip;
+    my $block_devs = Ipblock->objectify($parent)->get_devices();
+    foreach my $dev ( @$block_devs ){
+	my $ips = $dev->get_ips();
+	map { $devs_by_ip{$_->id} = [$dev->id, $dev->fqdn] } @$ips;
+    }
+
     if ( $edit ){
 	push @headers, '[del]';
     }
     # @headers: header for html
-    push @headers, ( 'Address', 'Name', 'Status', 'Used by', 'Description', 'Last Seen' );
+    push @headers, ( 'Address', 'Name', 'Device', 'Status', 'Used by', 'Description', 'Last Seen' );
     foreach my $header ( @headers ){
 	next if $header eq '[del]';
 	unless ( $sort eq $header ){
@@ -85,6 +91,13 @@ if ( $type eq "address" ){
             push @text_row, join ', ', @text_names;
 	} else {
 	    push( @row, "");
+            push( @text_row, "");
+	}
+	if ( my $ar = $devs_by_ip{$o->id} ){
+	    push @row, sprintf('<a href="device.html?id=%d">%s</a>', $ar->[0], $ar->[1]);
+	    push( @text_row, $ar->[1]);
+	}else{
+	    push(@row, "");
             push( @text_row, "");
 	}
 
