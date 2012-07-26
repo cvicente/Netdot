@@ -1637,7 +1637,7 @@ if ( $_action eq 'VIEW_ADD_RIGHTS' ){
 <%perl>
 } elsif ( $view_format eq 'list' ) {  
     my @children;
-    if ( $o->status->name eq 'Subnet' ){
+    if ( $o->status->name eq 'Subnet' && $ip_list_sort ne "Device" ){
 	@children = $o->get_addresses_by($ip_list_sort);
     }else{
 	@children = $o->children;

@@ -56,14 +56,16 @@ if ( $type eq "address" ){
     }
     # @headers: header for html
     push @headers, ( 'Address', 'Name', 'Device', 'Status', 'Used by', 'Description', 'Last Seen' );
+
+    # @text_headers: header for csv text
+    push @text_headers, ( 'Address', 'Name', 'Device', 'Status', 'Used by', 'Description', 'Last Seen' ); 
+
     foreach my $header ( @headers ){
 	next if $header eq '[del]';
 	unless ( $sort eq $header ){
 	    $header = "<a href=\"ip.html?id=$parent&view_format=list&ip_list_sort=$header\">$header</a>";
 	}
     }
-    # @text_headers: header for csv text
-    push @text_headers, ( 'Address', 'Name', 'Status', 'Used by', 'Description', 'Last Seen' ); 
 
     foreach my $o ( @{ $objects } ) {
         # @row: cell_data for html text
@@ -109,6 +111,10 @@ if ( $type eq "address" ){
 	push( @rows, \@row );
         push( @$page, \@text_row);
     }
+
+    # Special case: sort by device name
+    @rows = sort { $a->[2] cmp $b->[2] } @rows if ($sort eq 'Device');
+
 } elsif( $type eq "block" ) {
 
     $show_utilization = 0 if $edit;
