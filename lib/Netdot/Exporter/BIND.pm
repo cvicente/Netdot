@@ -166,7 +166,7 @@ sub print_zone_to_file {
 			print $fh $rr->as_text, "\n";
 		    }
 		}else{
-		    foreach my $data ( keys %{$rec->{$name}->{$type}} ){
+		    foreach my $data ( sort keys %{$rec->{$name}->{$type}} ){
 			if ( $argv{nopriv} && $type eq 'HINFO' ){
 			    next;
 			}
