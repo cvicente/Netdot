@@ -82,14 +82,14 @@ my $manager   = $ui->get_permission_manager($r);
     foreach my $st ( @{$strands} ){
 	if ( my $seq = $st->get_sequence() ){
 	    foreach my $row ( @$seq ) {
-		push(@links, sprintf("<A HREF=\"cable_strand.html?id=%d\">[%s]</A>", @$row[0], @$row[1]));
+		push(@links, sprintf("<A HREF=\"cable_strand.html?id=%d\">[%s]</A>", $row->[0], $row->[1]));
 	    }
 	}
     }
     printf("%s\n", join($delimiter, @links));
 </%perl>
 % }
-%if ( $strands && @$strands ) {
+%if ( $table_view && $strands && @$strands ) {
      <div align="left"><input type="submit" name="submit_seq" value="Unassign"></div>
 %}    
 
