@@ -62,7 +62,7 @@ if ( $_action ){
 		}
 	    }
 	}else{
-	    $m->comp("error.mhtml", error=>"Empty sequence list");
+	    $m->comp("/generic/error.mhtml", error=>"Empty sequence list");
 	}
     }elsif( $_action eq "UPDATE_SEQUENCES" ){
 	foreach my $key ( keys(%ARGS) ) {
@@ -74,7 +74,7 @@ if ( $_action ){
 		    $strand->update({circuit_id=>""});
 		};
 		if ( my $e = $@ ){
-		    $m->comp("error.mhtml", error=>"Problem updating strand: $e");
+		    $m->comp("/generic/error.mhtml", error=>"Problem updating strand: $e");
 		}
 	    }	    
 	}
@@ -85,10 +85,10 @@ if ( $_action ){
 		$i->update({circuit=>$o});
 	    };
 	    if ( my $e = $@ ){
-		$m->comp("error.mhtml", error=>"Problem updating interface: $e");
+		$m->comp("/generic/error.mhtml", error=>"Problem updating interface: $e");
 	    }
 	}else{
-	    $m->comp("error.mhtml", error=>"No interface selected, or invalid value");
+	    $m->comp("/generic/error.mhtml", error=>"No interface selected, or invalid value");
 	}
     }elsif( $_action eq "UPDATE_INTERFACES" ){
 	my @ints;
