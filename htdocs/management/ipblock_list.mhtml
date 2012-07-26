@@ -49,12 +49,7 @@ if ( $type ){
 
 if ( $type eq "address" ){
 
-    my %devs_by_ip;
-    my $block_devs = Ipblock->objectify($parent)->get_devices();
-    foreach my $dev ( @$block_devs ){
-	my $ips = $dev->get_ips();
-	map { $devs_by_ip{$_->id} = [$dev->id, $dev->fqdn] } @$ips;
-    }
+    my $devs_by_ip = Device->get_ips_from_all();
 
     if ( $edit ){
 	push @headers, '[del]';
@@ -93,9 +88,10 @@ if ( $type eq "address" ){
 	    push( @row, "");
             push( @text_row, "");
 	}
-	if ( my $ar = $devs_by_ip{$o->id} ){
-	    push @row, sprintf('<a href="device.html?id=%d">%s</a>', $ar->[0], $ar->[1]);
-	    push( @text_row, $ar->[1]);
+	if ( my $did = $devs_by_ip->{$o->address_numeric} ){
+	    my $dev = Device->retrieve($did);
+	    push @row, sprintf('<a href="device.html?id=%d">%s</a>', $did, $dev->fqdn);
+	    push( @text_row, $dev->fqdn);
 	}else{
 	    push(@row, "");
             push( @text_row, "");

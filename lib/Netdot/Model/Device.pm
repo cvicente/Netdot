@@ -1666,7 +1666,7 @@ sub get_within_downtime {
   Arguments: 
     None
   Returns:   
-    Hashref with key=address (Decimal), value=device
+    Hashref with key=address (Decimal), value=device id
   Examples:
    my $devips = Device->get_ips_from_all();
 
