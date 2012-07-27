@@ -25,10 +25,11 @@ my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
       - Check for conflicting record types
     
   Arguments:
-    None
+    Any of RRPTRs fields
   Returns:
     RRPTR object
   Examples:
+    $rrptr->insert(ipblock=>$ip);
 
 =cut
 sub insert {
@@ -47,16 +48,23 @@ sub insert {
 	$class->throw_fatal("Figuring out the rr field requires passing zone")
 	    unless ( $argv->{zone} );
 
-	$logger->debug("Netdot::Model::RRPTR: Figuring out owner for ".$ipb->get_label);
-
+	my $zone;
 	my $zone = blessed($argv->{zone}) ? $argv->{zone} : Zone->retrieve($argv->{zone});
 	unless ( $zone->name =~ /(?:\.in-addr)|(?:\.ip6)\.arpa$/o ){
 	    $class->throw_user(sprintf("Zone %s is not a reverse zone", $zone->name));
 	}
+	
+	# This gets us the the FQDN
 	my $name = $class->get_name(ipblock=>$ipb);
-	$rr = RR->find_or_create({zone=>$zone, name=>$name});
-	$logger->debug("Netdot::Model::RRPTR: Created owner RR for IP: ".
-		       $ipb->get_label." as: ".$rr->get_label);
+
+	$rr = RR->search(name=>$name)->first;
+	unless ( $rr ){
+	    my $domain = $zone->name;
+	    $name =~ s/\.$domain\.?$//i;
+	    $rr = RR->insert({zone=>$zone, name=>$name});
+	    $logger->debug("Netdot::Model::RRPTR: Created owner RR for IP: ".
+			   $ipb->get_label." as: ".$rr->get_label);
+	}
 	$argv->{rr} = $rr;
     }
 
@@ -98,23 +106,23 @@ sub insert {
 =cut
 sub get_name {
     my ($class, %argv) = @_;
-
+    
     my $ipblock = $argv{ipblock};
     unless ( $ipblock ){
 	$class->throw_fatal("RRPTR::get_name: Missing required arguments");
     }
-
-      my $name;
-      if ( $ipblock->version eq '4' ){
-          $name = join('.', reverse(split(/\./, $ipblock->address)), 'in-addr.arpa');
-      }elsif ( $ipblock->version eq '6' ){
-          $name = $ipblock->full_address;
-          $name =~ s/://g;
-          $name = join('.', reverse(split(//, $name)), 'ip6.arpa');
-      }else {
-          $class->throw_fatal("RRPTR::get_name: Unknown IP version");
-      }
-      return $name;
+    
+    my $name;
+    if ( $ipblock->version eq '4' ){
+	$name = join('.', reverse(split(/\./, $ipblock->address)), 'in-addr.arpa');
+    }elsif ( $ipblock->version eq '6' ){
+	$name = $ipblock->full_address;
+	$name =~ s/://g;
+	$name = join('.', reverse(split(//, $name)), 'ip6.arpa');
+    }else {
+	$class->throw_fatal("RRPTR::get_name: Unknown IP version");
+    }
+    return $name;
 }
 
 =head1 INSTANCE METHODS
@@ -157,6 +165,36 @@ sub update {
     $self->_sanitize_ptrdname($argv);
     
     return $self->SUPER::update($argv);
+}
+
+############################################################################
+=head2 delete - Delete object
+    
+    We override the delete method for extra functionality:
+    - When removing a PTR record, most likely the RR (name)
+    associated with it needs to be deleted too.
+
+  Arguments:
+    None
+  Returns:
+    True if successful. 
+  Example:
+    $rrptr->delete;
+
+=cut
+sub delete {
+    my ($self, $argv) = @_;
+    $self->isa_object_method('delete');
+
+    my $rr = $self->rr;
+    $self->SUPER::delete();
+
+    # If RR has no more associated records
+    # it should be deleted
+    unless ( $rr->sub_records ){
+	$rr->delete;
+    }
+    return 1;
 }
 
 
