@@ -4546,29 +4546,27 @@ sub _validate_arp {
 	    }
 	    $mac = $validmac;
 	    if ( Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET') ){
-		if ( !Netdot->config->get('IGNORE_IPV6_LINK_LOCAL') ){
-		    # This check does not work with link-local, so if user wants those
-		    # just validate them
-		    if ( Ipblock->is_link_local($ip) ){
-			$valid{$intid}{$ip} = $mac;
-			$logger->debug(sub{"Device::_validate_arp: $host: valid: $idx -> $ip -> $mac" });
-			next;
-		    }
+		# This check does not work with link-local, so if user wants those
+		# just validate them
+		if ( $version == 6 && Ipblock->is_link_local($ip) ){
+		    $valid{$intid}{$ip} = $mac;
+		    next;
+		}
+		my $nip;
+		unless ( $nip = NetAddr::IP->new($ip) ){
+		    $logger->error("Device::_validate_arp: Cannot create NetAddr::IP object from $ip");
+		    next;
 		}
 		foreach my $nsub ( @{$devsubnets{$intid}} ){
-		    my $nip = NetAddr::IP->new($ip) or
-			$self->throw_fatal(sprintf("Device::_validate_arp: Cannot create NetAddr::IP ".
-						   "object from %s", $ip));
 		    if ( $nip->within($nsub) ){
 			$valid{$intid}{$ip} = $mac;
-			$logger->debug(sub{"Device::_validate_arp: $host: valid: $idx -> $ip -> $mac" });
 			last;
 		    }
 		}
 	    }else{
 		$valid{$intid}{$ip} = $mac;
-		$logger->debug(sub{"Device::_validate_arp: $host: valid: $idx -> $ip -> $mac" });
 	    }
+	    $logger->debug(sub{"Device::_validate_arp: $host: valid: $idx -> $ip -> $mac" });
 	}
     }
     return \%valid;

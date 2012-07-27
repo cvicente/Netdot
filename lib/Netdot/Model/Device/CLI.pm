@@ -132,13 +132,106 @@ sub _cli_cmd {
     return @output;
 }
 
+############################################################################
+# _validate_arp - Validate contents of ARP and v6 ND structures
+#    
+#   Arguments:
+#       hashref of hashrefs containing ifIndex, IP address and Mac
+#       IP version
+#   Returns:
+#     Hash ref
+#   Examples:
+#     $self->_validate_arp(\%cache, 4);
+#
+#
+sub _validate_arp {
+    my($self, $cache, $version) = @_;
+    $self->isa_object_method('_validate_arp');
+
+    $self->throw_fatal("Device::CLI::_validate_arp: Missing required arguments")
+	unless ($cache && $version);
+
+    my $host = $self->fqdn();
+
+    # MAP interface names to IDs
+    # Get all interface IPs for subnet validation
+    my %int_names;
+    my %devsubnets;
+    foreach my $int ( $self->interfaces ){
+	my $name = $self->_reduce_iname($int->name);
+	$int_names{$name} = $int->id;
+	if ( Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET') ){
+	    foreach my $ip ( $int->ips ){
+		next unless ($ip->version == $version);
+		push @{$devsubnets{$int->id}}, $ip->parent->netaddr 
+		    if $ip->parent;
+	    }
+	}
+    }
+    if ( Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET') ){
+	$logger->warn("We have no subnet information. ARP validation will fail except for ".
+		      "link-local addresses")
+	    unless %devsubnets;
+    }
+
+    my %valid;
+    foreach my $key ( keys %{$cache} ){
+	my $iname = $self->_reduce_iname($key);
+	my $intid = $int_names{$iname};
+	unless ( $intid ) {
+	    $logger->warn("Device::CLI::_validate_arp: $host: Could not match $iname ".
+			  "to any interface name");
+	    next;
+	}
+	foreach my $ip ( keys %{$cache->{$key}} ){
+	    if ( $version == 6 && Ipblock->is_link_local($ip) &&
+		 Netdot->config->get('IGNORE_IPV6_LINK_LOCAL') ){
+		next;
+	    }
+	    my $mac = $cache->{$key}->{$ip};
+	    my $validmac = PhysAddr->validate($mac); 
+	    unless ( $validmac ){
+		$logger->debug(sub{"Device::CLI::_validate_arp: $host: Invalid MAC: $mac" });
+		next;
+	    }
+	    $mac = $validmac;
+	    if ( Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET') ){
+		# This check does not work with link-local, so if user wants those
+		# just validate them
+		if ( $version == 6 && Ipblock->is_link_local($ip) ){
+		    $valid{$intid}{$ip} = $mac;
+		    next;
+		}
+		my $nip;
+		unless ( $nip = NetAddr::IP->new($ip) ){
+		    $logger->error("Device::CLI::_validate_arp: Cannot create NetAddr::IP object from $ip");
+		    next;
+		}
+		foreach my $nsub ( @{$devsubnets{$intid}} ){
+		    if ( $nip->within($nsub) ){
+			$valid{$intid}{$ip} = $mac;
+			last;
+		    }else{
+			$logger->debug(sub{"Device::CLI::_validate_arp: $host: $ip not within $nsub" });
+		    }
+		}
+	    }else{
+		$valid{$intid}{$ip} = $mac;
+	    }
+	    $logger->debug(sub{"Device::CLI::_validate_arp: $host: valid: $iname -> $ip -> $mac" });
+	}
+    }
+    return \%valid;
+}
+
+
 =head1 AUTHOR
 
 Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2011 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

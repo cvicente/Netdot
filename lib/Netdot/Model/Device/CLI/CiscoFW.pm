@@ -117,11 +117,11 @@ sub _get_arp_from_cli {
     # Lines look like this:
     # outside 10.10.47.146 0026.9809.f642 251
     foreach my $line ( @output ) {
-	if ( $line =~ /^\s+(\S+)\s($IPV4)\s($CISCO_MAC).*$/ ) {
+	if ( $line =~ /^\s*(\S+)\s($IPV4)\s($CISCO_MAC).*$/ ) {
 	    $iname = $1;
 	    $ip    = $2;
 	    $mac   = $3;
-	}elsif ( $line =~ /^\s+(\S+)\s([\w\._-]+)\s($CISCO_MAC).*$/ ){
+	}elsif ( $line =~ /^\s*(\S+)\s([\w\._-]+)\s($CISCO_MAC).*$/ ){
 	    # The 'dns domain-lookup outside' option causes outside-facing entries 
 	    # to be reported as hostnames
 	    $iname       = $1;
@@ -198,61 +198,6 @@ sub _get_v6_nd_from_cli {
 	$cache{$iname}{$ip} = $mac;
     }
     return $self->_validate_arp(\%cache, 6);
-}
-
-############################################################################
-# _validate_arp - Validate contents of ARP and v6 ND structures
-#    
-#   Arguments:
-#       hashref of hashrefs containing ifIndex, IP address and Mac
-#       IP version
-#   Returns:
-#     Hash ref.
-#   Examples:
-#     $self->_validate_arp(\%cache, 4);
-#
-#
-sub _validate_arp {
-    my($self, $cache, $version) = @_;
-    $self->isa_object_method('_validate_arp');
-
-    $self->throw_fatal("Device::_validate_arp: Missing required arguments")
-	unless ($cache && $version);
-
-    my $host = $self->fqdn();
-
-    # MAP interface names to IDs
-    my %int_names;
-    foreach my $int ( $self->interfaces ){
-	my $name = $self->_reduce_iname($int->name);
-	$int_names{$name} = $int->id;
-    }
-    my %valid;
-    foreach my $key ( keys %{$cache} ){
-	my $iname = $self->_reduce_iname($key);
-	my $intid = $int_names{$iname};
-	unless ( $intid ) {
-	    $logger->warn("Device::CiscoFW::_validate_arp: $host: Could not match $iname ".
-			  "to any interface name");
-	    next;
-	}
-	foreach my $ip ( keys %{$cache->{$key}} ){
-	    if ( $version == 6 && Ipblock->is_link_local($ip) &&
-		 Netdot->config->get('IGNORE_IPV6_LINK_LOCAL') ){
-		next;
-	    }
-	    my $mac = $cache->{$key}->{$ip};
-	    my $validmac = PhysAddr->validate($mac); 
-	    unless ( $validmac ){
-		$logger->debug(sub{"Device::_validate_arp: $host: Invalid MAC: $mac" });
-		next;
-	    }
-	    $mac = $validmac;
-	    $valid{$intid}{$ip} = $mac;
-	    $logger->debug(sub{"Device::CiscoFW::_validate_arp: $host: valid: $iname -> $ip -> $mac" });
-	}
-    }
-    return \%valid;
 }
 
 
