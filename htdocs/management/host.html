@@ -123,8 +123,7 @@ if ( $submit ){
 		    # Also, if RR was just updated, this re-reads it from the DB
 		    # to avoid the old values from showing up
 		    my $newrr = RR->retrieve($newid);
-		    defined $newrr ||  $m->comp('/generic/error.mhtml', error=>"Could not retrieve RR id $id"); ;
-		    $rrs{$newrr->id} = $newrr;
+		    $rrs{$newrr->id} = $newrr if defined $newrr;
 		    
 		}
 					  })

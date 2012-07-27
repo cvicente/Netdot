@@ -48,7 +48,6 @@ sub insert {
 	$class->throw_fatal("Figuring out the rr field requires passing zone")
 	    unless ( $argv->{zone} );
 
-	my $zone;
 	my $zone = blessed($argv->{zone}) ? $argv->{zone} : Zone->retrieve($argv->{zone});
 	unless ( $zone->name =~ /(?:\.in-addr)|(?:\.ip6)\.arpa$/o ){
 	    $class->throw_user(sprintf("Zone %s is not a reverse zone", $zone->name));
