@@ -19,6 +19,7 @@ $contactlist  => undef
 $submit       => undef
 $return_comp  => undef
 $return_id    => undef
+$return_view  => undef
 %args         => undef
 </%args>
 
@@ -74,7 +75,7 @@ if ( $submit ){
 <%perl>
 if( $id ) {
     if ( $return_comp && $return_id ){
-	$m->comp($return_comp, id=>$return_id); 
+	$m->comp($return_comp, id=>$return_id, view=>$return_view); 
     }else{
 	if ( $table eq 'Person' ){
 	    $m->comp('view.html', table=>$table, id=>$id);
@@ -137,6 +138,7 @@ function setPerms(){
       <input type="hidden" name="dowindow" value="<% $dowindow %>">
       <input type="hidden" name="return_comp" value="<% $return_comp %>">
       <input type="hidden" name="return_id" value="<% $return_id %>">
+      <input type="hidden" name="return_view" value="<% $return_view %>">
 
 <%perl>
 

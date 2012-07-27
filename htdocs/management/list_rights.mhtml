@@ -23,6 +23,10 @@ push @headers, 'Rights';
 push @headers, 'Actions' if $add;
 
 my %anames = $ui->get_access_names();
+my $DEBUG = 0;
+
+use Data::Dumper;
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 </%init>
 
 <%perl>
@@ -51,6 +55,8 @@ foreach my $right (  @$rights ){
     }
 }
 
+print '%r is  <pre>', Dumper(%r), '</pre><br>' if $DEBUG;
+
 foreach my $name ( sort keys %r ){
     my @row;
     push @row, $r{$name}{type};
@@ -64,11 +70,12 @@ foreach my $name ( sort keys %r ){
     }
     push @row, join(', ', map { $anames{$_} } sort keys %{$r{$name}{rights}});
     if ( $add ){
+	my $add_txt = $add;
 	my $subject = ($r{$name}{type} eq 'User')? 'person' : 'contactlist';
 	my $id = $r{$name}{$subject}->id;
-	$add =~ s/SUBJECT/$subject/;
-	$add =~ s/ID/$id/;
-	my $t = sprintf('<a href="%s">%s</a>', $add, '[add]');
+	$add_txt =~ s/SUBJECT/$subject/;
+	$add_txt =~ s/ID/$id/;
+	my $t = sprintf('<a href="%s">%s</a>', $add_txt, '[add]');
 	push @row, $t ;
     }
     push @rows, \@row;
