@@ -4519,12 +4519,23 @@ sub _validate_arp {
 	unless ($cache && $version);
 
     my $host = $self->fqdn();
+
+    my $ign_non_subnet = Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET');
     
+    # Cisco Firewalls do not return subnet prefix information via SNMP
+    # as of 27/07/2012. But we can get ARP info from them, so if we are
+    # configured to ignore IPs which are not within known subnets, then
+    # we'll have to disable that if we want to get v6 ARP from them.
+    # This block must be removed later if the SNMP values are supported
+    if ( $version == 6 && ref($self) =~ /CiscoFW$/o ){
+	$ign_non_subnet = 0;
+    }
+
     # Get all interfaces and IPs
     my %devints; my %devsubnets;
     foreach my $int ( $self->interfaces ){
 	$devints{$int->number} = $int->id;
-	if ( Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET') ){
+	if ( $ign_non_subnet ){
 	    foreach my $ip ( $int->ips ){
 		next unless ($ip->version == $version);
 		push @{$devsubnets{$int->id}}, $ip->parent->netaddr 
@@ -4552,7 +4563,7 @@ sub _validate_arp {
 		next;
 	    }
 	    $mac = $validmac;
-	    if ( Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET') ){
+	    if ( $ign_non_subnet ){
 		# This check does not work with link-local, so if user wants those
 		# just validate them
 		if ( $version == 6 && Ipblock->is_link_local($ip) ){
