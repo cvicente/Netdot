@@ -1075,6 +1075,9 @@ sub get_snmp_info {
 
     ################################################################
     # IPv6 addresses and prefixes
+    
+    my $ignore_link_local = $self->config->get('IGNORE_IPV6_LINK_LOCAL');
+
     # Stuff in this hash looks like this:
     #
     # CISCO-IETF-IP-MIB:
@@ -1099,6 +1102,7 @@ sub get_snmp_info {
 	}
 	if ( $iid && $addr && $pfx && $len ){
 	    next if &_check_if_status_down(\%dev, $iid);
+	    next if ( Ipblock->is_link_local($addr) && $ignore_link_local );
 	    $dev{interface}{$iid}{ips}{$addr}{address} = $addr;
 	    $dev{interface}{$iid}{ips}{$addr}{version} = 6;
 	    $dev{interface}{$iid}{ips}{$addr}{subnet}  = "$pfx/$len";
@@ -1110,7 +1114,10 @@ sub get_snmp_info {
 
     ################################################################
     # IPv6 link-local addresses
-    unless ( $self->config->get('IGNORE_IPV6_LINK_LOCAL') ){
+    # It looks like in Cisco 'ipv6_index' contains a the addresses from
+    # 'ipv6_addr_prefix', plus link locals, so we won't query it
+    # unless we want those.
+    unless ( $ignore_link_local ){
 	my $ipv6_index = $sinfo->ipv6_index();
 	my ($iid, $addr);
 	while ( my($key,$val) = each %$ipv6_index ){
