@@ -2016,7 +2016,7 @@ sub update_a_records {
     # Only generate names for IP blocks that are mapped to a zone
     my $zone;
     unless ( $zone = $self->forward_zone ){
-	$logger->debug(sprintf("%s: Cannot determine DNS zone for IP: %s", 
+	$logger->debug(sprintf("%s: Cannot determine forward DNS zone for IP: %s", 
 			       $host, $self->get_label));
 	return;
 	
