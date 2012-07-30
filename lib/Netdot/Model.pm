@@ -876,10 +876,11 @@ sub delete {
 	$self->SUPER::delete();
     };
     if ( my $e = $@ ){
+	my $msg;
 	if ( $e =~ /objects still refer to/i ){
-	    $e = "Other objects refer to this object.  Delete failed.";
+	    $msg = "Other objects refer to this object ($class id $id).  Delete failed.";
 	}
-	$self->throw_user($e);
+	$self->throw_user($msg);
     }
     $logger->debug( sub { sprintf("Model::delete: Deleted %s id %i", 
 				  $class, $id) } );

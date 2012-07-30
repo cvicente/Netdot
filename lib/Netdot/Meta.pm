@@ -234,11 +234,20 @@ sub cdbi_class{
 	    my $l      = $c->links_to_attrs();
 	    my $casc   = $l->{cascade};
 	    croak "cdbi_classes: Missing 'cascade' entry for $tab:$col" unless $casc;
-	    my %args;
+  	    my %args;
 	    if ( $casc eq 'Nullify' ){
 		$args{cascade} = 'Class::DBI::Cascade::Nullify';
-	    }elsif ( $casc =~ /^Delete|Fail$/i ){
+	    }elsif ( $casc eq 'Delete' ){
 		$args{cascade} = $casc;
+	    }elsif ( $casc eq 'Fail' ){
+		if ( $t->is_history ){
+		    # We don't want any delete operation to fail
+		    # because of a history table. Just nullify the
+		    # foreign key in the history record
+		    $args{cascade} = 'Delete';
+		}else{
+		    $args{cascade} = 'Fail';
+		}
 	    }else{
 		croak "cdbi_classes: Unknown cascade behavior $casc";
 	    }
