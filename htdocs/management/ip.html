@@ -159,6 +159,7 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
     }
 
     @list = Ipblock->get_roots($rootversion);
+    my $max = $ui->config->get('ROOT_BLOCK_SHOW_MAX');
 </%perl>
        <div class="container">
           <div class="containerheadleft">Root Blocks: (<% scalar(@list) %>)</div>
@@ -179,8 +180,10 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
             </form>
 	  </div>
           <div class="containerbody">
-%             if ( @list ){
+%             if ( @list && scalar(@list) < $max ){
                   <& ipblock_list.mhtml, parent=>0, objects=>\@list, type=>"block", show_utilization=>$show_ch_util &>
+%             }else{
+                  The number of root blocks exceeds the configured threshold (<% $max %>). Please use the search boxes.
 %             }
           </div>
        </div>
