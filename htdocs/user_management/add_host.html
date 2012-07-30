@@ -36,6 +36,7 @@ $submit        => undef
 $contact_name  => undef
 $contact_email => undef
 $contact_phone => undef
+$v6_assign     => undef
 </%args>
 %
 %
@@ -86,7 +87,7 @@ if ( $submit ){
     if ( $address ){
 	$args{address} = $address;
     }else{
-	if ( $block->version == 6 ){
+	if ( $block->version == 6 && $v6_assign eq 'manual' ){
 	    if ( $ui->config->get('IPV6_ADDRESS_USER_ENTRY_HOST_ONLY') ){
 		# We need to construct the address
 		my %parts;
