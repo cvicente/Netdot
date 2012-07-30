@@ -1,0 +1,33 @@
+<%doc>
+Devices in 'SNMP_Down' state
+</%doc>
+
+<%attr>
+title   => 'Devices in SNMP Down State' 
+section => 'Reports'
+</%attr>
+
+<%args>
+
+</%args>
+
+<%init>
+my $DEBUG = 0;
+if ( $DEBUG ){
+    print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>';
+}
+my @devices = Device->search(snmp_down=>1);
+</%init>
+
+
+<div class="container">
+    <div class="containerhead">Devices in 'SNMP Down' State</div>
+    <div class="containerbody">
+%   if( @devices ){
+    <& ../generic/sortresults.mhtml, table => 'Device', object=>\@devices, view => "row", withdelete => 1, withedit => 1 &>
+%   }else{
+    None
+%   }
+    </div>
+</div>
+
