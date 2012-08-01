@@ -6,12 +6,63 @@ use strict;
 
 my $logger = Netdot->log->get_logger('Netdot::Model');
 
+# Store the graph as class data to avoid recalculating
+# within the same process
+my $graph;
+
 =head1 NAME
 
 Netdot::Model::CableStrand
 
 =head1 CLASS METHODS
 =cut
+
+##################################################################
+=head2 get_graph - Returns a graph of CableStrands
+
+    Maps cablestrands to cablestrands and sites
+
+  Arguments:
+    None
+  Returns:
+    Hash of hashes
+  Examples:
+    CableStrand->get_graph();
+
+=cut
+sub get_graph {
+    my ($class) = @_;
+    
+    # Don't compute again if we already did in this process
+    return $graph if $graph;
+
+    my $dbh = $class->db_Main;
+    my %g;
+    my $q1 = "SELECT DISTINCT cs.id, s.id
+              FROM   cablestrand cs, backbonecable bc, closet cl, 
+                     room rm, floor fl, site s
+              WHERE  cs.cable=bc.id 
+                 AND (bc.start_closet=cl.id OR bc.end_closet=cl.id)
+                 AND cl.room=rm.id AND rm.floor=fl.id AND fl.site=s.id";
+    
+    my $rows = $dbh->selectall_arrayref($q1);
+    foreach my $row ( @$rows ){
+	my ($csid, $sid) = @$row;
+	$g{STRAND}{$csid}{$sid} = 1;
+	$g{SITE}{$sid}{$csid} = 1;
+    }
+    
+    my $q2 = "SELECT strand1, strand2 FROM splice WHERE strand1 < strand2";
+    $rows = $dbh->selectall_arrayref($q2);
+    foreach my $row ( @$rows ){
+	my ($cs1, $cs2) = @$row;
+	$g{SPLICE}{$cs1}{$cs2} = 1;
+	$g{SPLICE}{$cs2}{$cs1} = 1;
+    }
+
+    $graph = \%g;
+    return $graph;
+}
 
 ##################################################################
 =head2 find_sequences - Fetch available sequences of strands between sites
@@ -26,99 +77,50 @@ Netdot::Model::CableStrand
       and its name.
   Examples:
     $sequences = CableStrand->find_sequences($start, $end);
-    foreach my $seq ( @$sequences ){
-       foreach my $strand ( @$ ){
-           printf ("ID: %d, Name: %s", $strand->id, $strand->name);
-       }
-    }
 
 =cut
-sub find_sequences{
-    my ($class, $start, $end) = @_;
-    $class->isa_class_method('find_sequences');
-    $class->throw_user("Missing required arguments: start/end") 
-	unless (defined $start && defined $end);
+sub find_sequences {
+    my ($class, $site_a, $site_b) = @_;
+
+    return if $site_a == $site_b;
     
-    my @sequences;
-    my $dbh = $class->db_Main;
-    eval{
-	
-	# Get strands from backbones connecting given sites
-	my $strandsq1 = "SELECT DISTINCT cs.id, cs.name
-                         FROM   cablestrand cs, backbonecable bc, 
-                                closet c1, closet c2, room r1, room r2,
-                                floor f1, floor f2, site a, site b
-                         WHERE  cs.circuit_id IS NULL AND cs.cable=bc.id  
-                           AND  a.id = $start AND b.id = $end
-                           AND  c1.room=r1.id
-                           AND  r1.floor=f1.id
-                           AND  f1.site=a.id
-                           AND  c2.room=r2.id
-                           AND  r2.floor=f2.id
-                           AND  f2.site=b.id
-                           AND  ( (bc.start_closet=c1.id AND bc.end_closet=c2.id)
-                            OR    (bc.end_closet=c1.id AND bc.start_closet=c2.id) )";
-
-	my $rows = $dbh->selectall_arrayref($strandsq1);
-	foreach my $row ( @$rows ){
-	    push @sequences, [$row];
-	}
-
-	# Get strands that either start or end in given sites
-	my $strands_st = $dbh->prepare_cached("SELECT DISTINCT cs.id
-                                                        FROM   cablestrand cs, backbonecable bc, closet c,
-                                                               room r, floor f, site s
-                                                        WHERE  cs.circuit_id IS NULL AND cs.cable=bc.id  
-                                                          AND  site IN (?,?)
-                                                          AND  c.room=r.id
-                                                          AND  r.floor=f.id
-                                                          AND  f.site=s.id
-                                                          AND (bc.start_closet=c.id OR bc.end_closet=c.id)");
-	
-	my $site_st1 = $dbh->prepare_cached("SELECT COUNT(*) 
-                                             FROM   cablestrand, backbonecable, closet, room, floor
-                                             WHERE  cablestrand.id = ?   
-                                                AND cablestrand.cable = backbonecable.id 
-                                                AND backbonecable.end_closet = closet.id 
-                                                AND closet.room = room.id 
-                                                AND room.floor = floor.id
-                                                AND floor.site = ?");
-
-	my $site_st2 = $dbh->prepare_cached("SELECT COUNT(*) 
-                                             FROM   cablestrand, backbonecable, closet, room, floor
-                                             WHERE  cablestrand.id = ? 
-                                                AND cablestrand.cable = backbonecable.id 
-                                                AND backbonecable.start_closet = closet.id 
-                                                AND closet.room = room.id
-                                                AND room.floor = floor.id
-                                                AND floor.site = ?");
-	
-	$strands_st->execute($start, $end);
-	my $i = 0;
-	while ( my ($strand_id) = $strands_st->fetchrow_array() ){
-	    my $strand = CableStrand->retrieve($strand_id);
-	    my @seq = $strand->get_sequence_path();
-	    my $end_strand;
-	    if ($seq[0] == $strand_id) {
-		$end_strand = $seq[scalar(@seq) - 1];
-	    } elsif ($seq[scalar(@seq) - 1] == $strand_id) {
-		$end_strand = $seq[0];
-	    } else {
-		next;
-	    }
-	    
-	    if (($site_st1->execute($end_strand, $end) && ($site_st1->fetchrow_array())[0] != 0) ||
-		($site_st2->execute($end_strand, $end) && ($site_st2->fetchrow_array())[0] != 0)) {
-		my $end_strand_obj = CableStrand->retrieve($end_strand);
-		push @sequences, $end_strand_obj->get_sequence();
+    # Depth-first search (recursive) subroutine 
+    # returns an arrayref of cablestrand IDs
+    # for each sequence of strands that goes from A to B
+    sub dfs {
+	my ($g, $csid, $end, $seen, $path) = @_;
+	push @$path, $csid;
+	# check if this strand ends in $end
+	if ( exists $g->{SITE}{$end}{$csid} ){
+	    return $path;
+	}else{
+	    # Check if this strand is spliced
+	    foreach my $cs ( sort { $a <=> $b } keys %{$g->{SPLICE}{$csid}} ){
+		next if ($seen->{$csid}{$cs} || $seen->{$cs}{$csid});
+		$seen->{$csid}{$cs} = 1;
+		$seen->{$cs}{$csid} = 1;
+		return &dfs($g, $cs, $end, $seen, $path);
 	    }
 	}
-    };
-    if ( my $e = $@ ){
-	$class->throw_fatal("$e");
+	# Return undef because we did not reach $end
     }
 
-    return \@sequences;
+    # Get graph structure
+    my $g = $class->get_graph();
+
+    my @seq; # Stores sequences
+
+    # For each strand connected to A
+    foreach my $csid ( sort { $a <=> $b } keys %{$g->{SITE}{$site_a}} ){
+	# depth first search
+	my $seen = {};
+	my $path = [];
+	if ( my $p = &dfs($g, $csid, $site_b, $seen, $path) ){
+	    # We have a valid path vector
+	    push @seq, $class->_get_sequence_names($p);
+	}
+    }
+    return \@seq;
 }
 
 =head1 INSTANCE METHODS
@@ -150,6 +152,40 @@ sub delete_splices{
 }
 
 ##################################################################
+=head2 find_endpoint
+
+  Finds the endpoint splice for the specified strand (anything but the middle)
+
+  Arguments:
+    None
+  Returns:
+    CableStrand id marking the endpoint of a Splice sequence.
+  Examples:
+    $endpoint = $strand->find_endpoint();
+
+=cut
+sub find_endpoint {
+    my ($self) = @_;
+    
+    # Get graph structure
+    my $g = $self->get_graph();
+    
+    sub _dfs {
+	my ($g, $csid, $seen) = @_;
+	foreach my $cs ( keys %{$g->{SPLICE}{$csid}} ){
+	    next if ($seen->{$csid}{$cs} || $seen->{$cs}{$csid});
+	    $seen->{$csid}{$cs} = 1;
+	    $seen->{$cs}{$csid} = 1;
+	    return $cs unless &_dfs($g, $cs, $seen);
+	}
+    }
+
+    my $path = [];
+    my $seen = {};
+    return &_dfs($g, $self->id, $seen) || $self->id;
+}
+
+##################################################################
 =head2 get_sequence_path
 
   Arguments:
@@ -162,79 +198,33 @@ sub delete_splices{
 =cut
 sub get_sequence_path {
     my ($self) = @_;
-    $self->isa_object_method('get_sequence_path');
-    my @ret;
-    my $dbh = $self->db_Main;
-    my $id  = $self->id;
-    my $strand = $id;
-    eval{
-	my $st = $dbh->prepare_cached("SELECT strand2 FROM splice WHERE strand1 = ?");
-	$st->execute($id);
-	
-	if ( $st->rows() == 0 ) {
-	    push @ret, $id;
-	}else{
-	    $strand = $self->find_endpoint() if ( $st->rows() > 1 );
-	    $st->execute($strand);
-	    my $tmp_strand = ($st->fetchrow_array())[0];
-	    push(@ret, $strand);
-	    $st->finish();
-	    $st = $dbh->prepare_cached("SELECT strand2 
-                                        FROM   splice 
-                                        WHERE  strand1 = ? 
-                                           AND strand2 != ?");
-	    while ( $st->execute($tmp_strand, $strand) && $st->rows() ){
-		push(@ret, $tmp_strand);
-		$strand = $tmp_strand;
-		$tmp_strand = ($st->fetchrow_array())[0];
-	    }
-	    push(@ret, $tmp_strand) if (defined $tmp_strand);
+    
+    sub __dfs {
+	my ($g, $csid, $seen, $path) = @_;
+	foreach my $cs ( keys %{$g->{SPLICE}{$csid}} ){
+	    next if ($seen->{$csid}{$cs} || $seen->{$cs}{$csid});
+	    $seen->{$csid}{$cs} = 1;
+	    $seen->{$cs}{$csid} = 1;
+	    push @$path, $cs;
+	    &__dfs($g, $cs, $seen, $path);
 	}
-	$st->finish();
-    };
-    $self->throw_user("$@") if $@;
-    return @ret if @ret;
-}
+	return $path;
+    }
 
-##################################################################
-=head2 find_endpoint
-
-    Finds the endpoint splice for the specified strand (anything but the middle)
-
-  Arguments:
-    None
-  Returns:
-    CableStrand id marking the endpoint of a Splice sequence.
-  Examples:
-    $endpoint = $strand->find_endpoint();
-
-=cut
-sub find_endpoint{
-    my ($self) = @_;
-    $self->isa_object_method('find_endpoint');
-    my ($st, $tmp_strand);
-    my $dbh = $self->db_Main;
-    eval{
-	$st = $dbh->prepare_cached("SELECT strand2 
-                                    FROM   splice 
-                                    WHERE  strand1 = ?");
-
-	return $self->id if ( $st->execute($self->id) && $st->rows() == 1 );
-	
-	$tmp_strand = ($st->fetchrow_array())[0];
-	$st->finish();
-	$st = $dbh->prepare_cached("SELECT strand2 
-                                    FROM   splice 
-                                    WHERE  strand1 = ? 
-                                       AND strand2 <> ?");
-	my $strand = $self->id;
-	while ( $st->execute($tmp_strand, $strand) && $st->rows() > 1 ){
-	    $strand = $tmp_strand;
-	    $tmp_strand = ($st->fetchrow_array())[0];
-	}
-    };
-    $self->throw_user("$@") if $@;
-    return ($st->fetchrow_array())[0] || $tmp_strand;
+    # Get graph structure
+    my $g = $self->get_graph();
+    # Get nearest endpoint
+    my $endpoint = $self->find_endpoint($self->id);
+    my $path = [$endpoint]; # The path starts with this endpoint
+    my $seen = {};
+    my $r = &__dfs($g, $endpoint, $seen, $path);
+    my @res = @$r;
+    # Make the order predictable by always starting from the
+    # endpoint with the lowest id value
+    if ( $res[0] > $res[$#res] ){
+	@res = reverse @res;
+    }
+    return @res;
 }
 
 ##################################################################
@@ -249,32 +239,48 @@ sub find_endpoint{
 =cut
 sub get_sequence {
     my ($self) = @_;
+    my $class = ref($self);
     $self->isa_object_method('get_sequence');
-    my $dbh = $self->db_Main;
-    my $st;
     if ( my @seq_path = $self->get_sequence_path() ){
-	my $str = join ',', @seq_path;
-	return unless $str;
-	eval{
-	    $st = $dbh->prepare_cached("SELECT cablestrand.id, cablestrand.name
-                                        FROM   cablestrand 
-                                        WHERE  cablestrand.id IN ($str)");
-	    $st->execute();
-	};
-	$self->throw_user("$@") if $@;
-	return $st->fetchall_arrayref();
+	return $class->_get_sequence_names(\@seq_path);
     }
+}
+
+
+#################################################################
+# Private methods
+#################################################################
+
+##################################################################
+# _get_sequence_names 
+#
+#  Arguments:
+#    Array ref containing strand ids
+#  Returns:
+#    Array ref of array refs containing strand id and name
+#  Examples:
+#  my $result = CableStrand->_get_sequence_names($seq);
+sub _get_sequence_names {
+    my ($class, $path) = @_;
+    $class->isa_class_method('_get_sequence_names');
+    return unless ( defined $path && ref($path) eq 'ARRAY' 
+		    && scalar(@$path) );
+    my $str = join ',', @$path;
+    return unless $str;
+    my $dbh = $class->db_Main;
+    return $dbh->selectall_arrayref("SELECT cablestrand.id, cablestrand.name
+                                     FROM   cablestrand 
+                                     WHERE  cablestrand.id IN ($str)");
 }
 
 
 =head1 AUTHOR
 
-Kai Waldron
 Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

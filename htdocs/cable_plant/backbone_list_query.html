@@ -2,14 +2,11 @@
 ###############################################################################
 # A customized version of the generic dynamic_list_query.html
 ###############################################################################
-
 </%doc>
 
 <%args>
-
 $val    => $ARGS{crit};
 $caller => $ARGS{self};
-
 </%args>
 
 <%init>
@@ -22,7 +19,7 @@ print "<pre> ", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 if ( $DEBUG ){
     use Data::Dumper;
     print "<pre> ", Dumper(%ARGS), "</pre><br>";
-    print &backbone_search("end_id", "137");
+    print &backbone_search("end_id", "1");
 } else {
     do "jsrsServer.pm";
     jsrsDispatch("backbone_search");
@@ -50,63 +47,24 @@ sub backbone_search {
 	    $val =~ s/\s+//;
 	    push @terms, $val;
 	}
-#	print "terms are: ",  join ', ', @terms, "<br>" if $DEBUG;
     }
     
     my $site_id = $terms[0] if ( scalar(@terms) );
-    my $site;
-    unless ( $site = Site->retrieve($site_id) ){
-	$m->comp("error.mhtml", error=>"Can't retrieve site id $site_id");
-    }
-    my @closets   = $site->closets;
-    my @results;
-    my %stored;
-    my @backbones;
-    
-    # get backbone cable for each closet
-    foreach my $closet ( @closets ){
-	my $c_id = $closet->id;
-	map { push (@backbones, $_) } (BackboneCable->search(start_closet=>$c_id),
-				       BackboneCable->search(end_closet=>$c_id));
-    }
-    
-    # and now go through all of our backbones and add sites to our list.
-    foreach my $backbone ( @backbones ){
-	my ($start_site, $end_site);
-	if ( $backbone->start_closet->room->floor && $backbone->start_closet->room->floor->site ){
-	    $start_site = $backbone->start_closet->room->floor->site;
-        }
-	if ( $backbone->end_closet->room->floor && $backbone->end_closet->room->floor->site ){
-	    $end_site = $backbone->end_closet->room->floor->site;
-	}
-	
-        if ( $start_site && $end_site ){
-	    if ($start_site->id != $site_id &&
-	        !exists($stored{$start_site})) {
-	        push(@results, $start_site);
-	        $stored{$start_site} = 1;
-	    } 
-	
-	    if ($end_site->id != $site_id &&
-	        !exists($stored{$end_site})) {
-	        push(@results, $end_site);
-	        $stored{$end_site} = 1;
-	    }
-        }
-    }
-    
-# printf("var listdata = new Array();\n");
-    
+
+    my $site_graph = BackboneCable->get_site_graph();
+    my @results = keys %{$site_graph->{$site_id}};
+
     my $MAX_RESULTS   = $ui->config->get('DEFAULT_SELECTMAX');
     my $response = $field."&";
     
     if ( scalar(@results ) < $MAX_RESULTS) {
-	@results = sort { $a->name cmp $b->name } @results;
-	
 	$response .= "0=".$ui->url_encode("No matches") unless (scalar(@results));
+
+	@results = sort { $a->name cmp $b->name } 
+	map { Site->retrieve($_) } @results;
 	
-	foreach my $end_site ( @results ){
-	    $response .= $end_site->id."=".$ui->url_encode($end_site->name)."&";
+	foreach my $site ( @results ){
+	    $response .= $site->id."=".$ui->url_encode($site->name)."&";
 	}
     }else{
 	$response .= "0=".$ui->url_encode("More than ".$MAX_RESULTS." matches.")."&";
