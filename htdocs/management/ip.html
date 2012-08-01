@@ -158,8 +158,10 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 	$m->comp('/generic/error.mhtml', error => "You do not have permission to view this section");
     }
 
-    @list = Ipblock->get_roots($rootversion);
-    my $max = $ui->config->get('ROOT_BLOCK_SHOW_MAX');
+    my $get_roots = $ui->config->get('SHOW_ROOT_BLOCKS');
+    if ( $get_roots ){
+        @list = Ipblock->get_roots($rootversion);
+        my $max = $ui->config->get('ROOT_BLOCK_SHOW_MAX');
 </%perl>
        <div class="container">
           <div class="containerheadleft">Root Blocks: (<% scalar(@list) %>)</div>
@@ -188,6 +190,7 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
           </div>
        </div>
 <%perl>
+    }
 #######################################################################################
 # Update
 # 
