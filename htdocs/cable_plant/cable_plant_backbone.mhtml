@@ -20,7 +20,7 @@ my $manager = $ui->get_permission_manager($r);
 </%init>
 
 <%perl>
-
+    
 	my @cables = ();
 	my $header_descr = "";
 
@@ -43,42 +43,21 @@ my $manager = $ui->get_permission_manager($r);
 
 	# user selected a start and end point
 	elsif ($start_id && $end_id) {
-	    # need to get all closets for both start and end and find all 
-	    # BackboneCable's that have a match for either start_closet or end_closet.
-	    my ($s1, $s2, @closets, %found);
-	    $s1 = Site->retrieve($start_id);
-	    $s2 = Site->retrieve($end_id);
-	    @closets = grep(!$found{$_}++, ($s1->closets, $s2->closets));
-	    %found = ();
-
-	    # and finally all BackboneCables that either start or end
-	    # at one of these closets..
-	    foreach my $closet (@closets) {
-		foreach my $c1 (@closets) {
-		    my $c_id = $closet->id;
-		    my $c1_id = $c1->id;
-		    next if ($c_id == $c1_id);
-		    map { push (@cables, $_) } grep(!$found{$_}++, 
-						    (BackboneCable->search(start_closet=>$c_id, end_closet=>$c1_id),
-						     BackboneCable->search(start_closet=>$c1_id, end_closet=>$c_id)));
-		}
-	    }
-
-	    $header_descr = sprintf("between <a href=\"view.html?table=Site&id=%d\">%s</a>, <a href=\"view.html?table=Site&id=%d\">%s</a>", 
-				    $s1->id, $s1->name, $s2->id, $s2->name);
-	}
+	    my $s1 = Site->retrieve($start_id);
+	    my $s2 = Site->retrieve($end_id);
+	    @cables = BackboneCable->search_by_site(site1=>$start_id, site2=>$end_id);
+	    
+	    $header_descr = sprintf("between <a href=\"view.html?table=Site&id=%d\">%s</a>".
+				    " and <a href=\"view.html?table=Site&id=%d\">%s</a>", 
+	 			    $s1->id, $s1->get_label, $s2->id, $s2->get_label);
+        }
 
 	elsif ($start_id) {
-	    my (@start_closets, $start_site);
-	    $start_site = Site->retrieve($start_id) if ($start_id);
-	    @start_closets = $start_site->closets if ($start_site);
-	    
-	    foreach my $start_c (@start_closets) {
-		my @cab = BackboneCable->search(start_closet=>$start_c->id);
-		push (@cables, @cab);
-	    }
+	    my $start_site = Site->retrieve($start_id);
+	    @cables = BackboneCable->search_by_site(site1=>$start_id);
 
-	    $header_descr = sprintf("connected to <a href=\"view.html?table=Site&id=%d\">%s</a>", $start_site->id, $start_site->name);
+	    $header_descr = sprintf("connected to <a href=\"view.html?table=Site&id=%d\">%s</a>", 
+				    $start_site->id, $start_site->name);
 	}
 	</%perl>
 
@@ -95,7 +74,7 @@ my $manager = $ui->get_permission_manager($r);
 %         } else {
 
             <div class="containerheadleft">
-	      Backbone Cable <% $header_descr ? $header_descr : "" %>
+	      Backbone Cable(s) <% $header_descr ? $header_descr : "" %>
 	    </div>
 	    <div class="containerheadright">
 %             if ($edit eq "cableinfo"){	 
