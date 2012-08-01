@@ -42,8 +42,8 @@ if ( $_action ){
 		$search = undef;
 	    }
 	}else{
-	    print "<p><b>No search criteria</b>";   
-	    $m->abort;
+	    # Show all
+	    @list = Circuit->retrieve_all();
 	}
 
     }elsif( $_action eq "ADD_STRANDS" && $sequence_list ){
@@ -111,7 +111,7 @@ if ( $_action ){
 }
 </%init>
 
-% if ( $search && @list ){
+% if ( defined $search && @list ){
 <div class="container">
   <div class="containerhead">
     <% scalar(@list) %> results for <i><% $search %></i>
