@@ -6,6 +6,10 @@ use strict;
 
 my $logger = Netdot->log->get_logger('Netdot::Model');
 
+# Store the graph as class data to avoid recalculating
+# within the same process
+my $site_graph;
+
 =head1 NAME
 
 Netdot::Model::BackboneCable
@@ -15,6 +19,47 @@ Netdot::Model::BackboneCable
 
 =head1 CLASS METHODS
 =cut
+
+##################################################################
+=head2 get_site_graph - Graph of sites connected by backbone cables
+
+  Arguments:
+    None
+  Returns:
+    Hash of hashes
+  Examples:
+    BackboneCable->get_site_graph();
+=cut
+sub get_site_graph {
+    my ($class) = @_;
+
+    # Don't compute again if we already did in this process
+    return $site_graph if $site_graph;
+
+    my $dbh = $class->db_Main;
+    my %g;
+    my $q1 = "SELECT DISTINCT s1.id, s2.id
+              FROM   backbonecable bc, 
+                     closet cl1, closet cl2, 
+                     room rm1, room rm2, floor fl1, floor fl2, 
+                     site s1, site s2
+              WHERE  s1.id < s2.id 
+                 AND cl1.room=rm1.id AND rm1.floor=fl1.id AND fl1.site=s1.id
+                 AND cl2.room=rm2.id AND rm2.floor=fl2.id AND fl2.site=s2.id
+                 AND ((bc.start_closet=cl1.id AND bc.end_closet=cl2.id) 
+                  OR (bc.end_closet=cl1.id AND bc.start_closet=cl2.id))";
+    
+    my $rows = $dbh->selectall_arrayref($q1);
+    foreach my $row ( @$rows ){
+	my ($s1, $s2) = @$row;
+	$g{$s1}{$s2} = 1;
+	$g{$s2}{$s1} = 1;
+    }
+    
+    $site_graph = \%g;
+    return $site_graph;
+}
+
 
 ##################################################################
 =head2 insert

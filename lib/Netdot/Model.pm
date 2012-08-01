@@ -159,8 +159,17 @@ BEGIN {
 	return if exists $EXCLUDE_AUDIT{$table};
 	return if $table =~ /_history$/o;
 
-	my $id    = $self->id;
-	my $label = $self->get_label;
+	my $id = $self->id;
+	my $label;
+	# If one of the fields which compose the label is being updated
+	# this breaks with "Can't call method without ..."
+	# In that case, just use the record's ID as label.
+	eval {
+	    $label = $self->get_label;
+	};
+	if ( my $e = $@ ){
+	    $label = $self->id;
+	}
 	my %data = (tstamp      => $self->timestamp,
 		    tablename   => $table,
 		    object_id   => $id,
@@ -744,14 +753,14 @@ sub do_transaction {
 	    my $rollback_error = $@;
 	    if ( $rollback_error ){
 		$self->throw_fatal("Transaction aborted: $e; "
-				   . "(Rollback failed): $rollback_error\n");
+				   . "(Rollback failed): $rollback_error");
 	    }else{
 		# Rethrow
 		if ( ref($e) =~ /Netdot::Util::Exception/  &&
 		     $e->isa_netdot_exception('User') ){
-		    $self->throw_user("Transaction aborted: $e\n");
+		    $self->throw_user("Transaction aborted: $e");
 		}else{
-		    $self->throw_fatal("Transaction aborted: $e\n");
+		    $self->throw_fatal("Transaction aborted: $e");
 		}
 	    }
 	    return;
@@ -867,10 +876,11 @@ sub delete {
 	$self->SUPER::delete();
     };
     if ( my $e = $@ ){
+	my $msg;
 	if ( $e =~ /objects still refer to/i ){
-	    $e = "Other objects refer to this object.  Delete failed.";
+	    $msg = "Other objects refer to this object ($class id $id).  Delete failed.";
 	}
-	$self->throw_user($e);
+	$self->throw_user($msg);
     }
     $logger->debug( sub { sprintf("Model::delete: Deleted %s id %i", 
 				  $class, $id) } );
@@ -1047,35 +1057,34 @@ sub search_all_tables {
 	$table = $1;
 	$q     = $2;
     }
-    
+   
     if ( Ipblock->matches_ip($q) ){
 	# Convert IP addresses before searching
-	my @res = Ipblock->search(address=>Ipblock->ip2int($q));
+	my @res = Ipblock->search(address=>$q);
 	map { $results{'Ipblock'}{$_->id} = $_ } @res;
     }elsif ( my ($addr,$pref) = Ipblock->matches_cidr($q) ){
 	my @res = Ipblock->search(address=>$addr, prefix=>$pref);
 	map { $results{'Ipblock'}{$_->id} = $_ } @res;	
-    }else{
-	foreach my $tbl ( $self->meta->get_table_names() ) {
-	    next if ( $table && $tbl !~ /^$table$/i );
-	    $lctbl = lc($tbl);
-	    my @cols;
-	    foreach my $c ( $tbl->columns ){
-		my $mcol = $tbl->meta_data->get_column($c);
-		# Ignore id field
-		next if ( $mcol->name eq 'id' );
-		# Ignore foreign key fields
-		next if ( $mcol->links_to() );
-		# Only include these types
-		push @cols, $c
-		    if ( $mcol->sql_type =~ /^blob|text|varchar|integer$/ ); 
-	    }
-	    foreach my $col ( @cols ){
-		my @res = $tbl->search_like($col=>$q);
-		map { $results{$tbl}{$_->id} = $_ } @res;
-	    }
-	    last if $table;
+    }
+    foreach my $tbl ( $self->meta->get_table_names() ) {
+	next if ( $table && $tbl !~ /^$table$/i );
+	$lctbl = lc($tbl);
+	my @cols;
+	foreach my $c ( $tbl->columns ){
+	    my $mcol = $tbl->meta_data->get_column($c);
+	    # Ignore id field
+	    next if ( $mcol->name eq 'id' );
+	    # Ignore foreign key fields
+	    next if ( $mcol->links_to() );
+	    # Only include these types
+	    push @cols, $c
+		if ( $mcol->sql_type =~ /^blob|text|varchar|integer$/ ); 
 	}
+	foreach my $col ( @cols ){
+	    my @res = $tbl->search_like($col=>$q);
+	    map { $results{$tbl}{$_->id} = $_ } @res;
+	}
+	last if $table;
     }
     return \%results;
 }

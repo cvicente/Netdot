@@ -456,7 +456,7 @@ sub get_all_records {
     
     my $dbh = $self->db_Main;
     my $id = $self->id;
-    my $order_by = ($self->is_dot_arpa)? 'pip.address' : 'rr.name';
+    my $order_by = ($self->is_dot_arpa)? 'pip.address,rr.name' : 'rr.name';
     my $q = "SELECT   rr.name, zone.name, aip.version, aip.address, rrtxt.txtdata, rrhinfo.cpu, rrhinfo.os,
                       rrptr.ptrdname, rrns.nsdname, rrmx.preference, rrmx.exchange, rrcname.cname, rrloc.id, 
                       rrsrv.id, rrnaptr.id, rrds.algorithm, rrds.key_tag, rrds.digest_type, rrds.digest, rr.active,

@@ -965,83 +965,6 @@ sub get_snmp_info {
     ################################################################
     # Interface stuff
     
-    sub _check_if_status_down{
-	my ($dev, $iid) = @_;
-	return 1 if ( (defined $dev->{interface}{$iid}{admin_status}) &&
-		      ($dev->{interface}{$iid}{admin_status} eq 'down') );
-	return 0;
-    }
-    
-    ################################################################
-    # IPv4 addresses and masks 
-    #
-    while ( my($ip,$iid) = each %{ $hashes{'ip_index'} } ){
-	next if &_check_if_status_down(\%dev, $iid);
-	next if Ipblock->is_loopback($ip);
-	next if ( $ip eq '0.0.0.0' || $ip eq '255.255.255.255' );
-	$dev{interface}{$iid}{ips}{$ip}{address} = $ip;
-	$dev{interface}{$iid}{ips}{$ip}{version} = 4;
-	if ( my $mask = $hashes{'ip_netmask'}->{$ip} ){
-	    my ($subnet, $len) = Ipblock->get_subnet_addr(address => $ip, 
-							  prefix  => $mask );
-	    $dev{interface}{$iid}{ips}{$ip}{subnet} = "$subnet/$len";
-	}
-    }
-
-    ################################################################
-    # IPv6 addresses and prefixes
-    # Stuff in this hash looks like this:
-    #
-    # CISCO-IETF-IP-MIB:
-    # 2.16.32.1.4.104.13.1.0.2.0.0.0.0.0.0.0.9 => 
-    #     49.2.16.32.1.4.104.13.1.0.2.0.0.0.0.0.0.0.0.64
-    #
-    # IP-MIB:
-    # 2.32.1.4.104.13.1.0.2.0.0.0.0.0.0.0.41 => 
-    #     1.151126018.2.32.1.4.104.13.1.0.2.0.0.0.0.0.0.0.0.64
-    # 
-    while ( my($key,$val) = each %{$hashes{'ipv6_addr_prefix'}} ){
-	my ($iid, $addr, $pfx, $len);
-	# We only care about the last 16 octets in decimal
-	# so, that's an digit and a dot, 15 times, plus another digit
-	if ( $key =~ /^.+\.((?:\d+\.){15}\d+)$/o ) {
-	    $addr = $self->_octet_string_to_v6($1);
-	}
-	if ( $val =~ /^(\d+)\.\d+\.\d+\.([\d\.]+)\.(\d+)$/o ) {
-	    # ifIndex, type, size, prefix length
-	    $iid = $1; $len = $3;
-	    $pfx = $self->_octet_string_to_v6($2);
-	}
-	if ( $iid && $addr && $pfx && $len ){
-	    next if &_check_if_status_down(\%dev, $iid);
-	    $dev{interface}{$iid}{ips}{$addr}{address} = $addr;
-	    $dev{interface}{$iid}{ips}{$addr}{version} = 6;
-	    $dev{interface}{$iid}{ips}{$addr}{subnet}  = "$pfx/$len";
-	}else{
-	    # What happened?
-	    $logger->warn("$args{host}: Unrecognized ipv6_addr_prefix entry: $key => $val")
-	}
-    }
-
-    ################################################################
-    # IPv6 link-local addresses
-    unless ( $self->config->get('IGNORE_IPV6_LINK_LOCAL') ){
-	my $ipv6_index = $sinfo->ipv6_index();
-	my ($iid, $addr);
-	while ( my($key,$val) = each %$ipv6_index ){
-	    if ( $key =~ /^.+\.((?:\d+\.){15}\d+)$/o ) {
-		$addr = $self->_octet_string_to_v6($1);
-		next unless Ipblock->is_link_local($addr);
-		$iid = $val;
-		$dev{interface}{$iid}{ips}{$addr}{address} = $addr;
-		$dev{interface}{$iid}{ips}{$addr}{version} = 6;
-	    }else{
-		# What happened?
-		$logger->warn("$args{host}: Unrecognized ipv6_index entry: $key => $val")
-	    }
-	}
-    }
-    
     ##############################################
     # for each interface discovered...
 
@@ -1126,6 +1049,92 @@ sub get_snmp_info {
 	    }
 	}
     }
+
+    sub _check_if_status_down{
+	my ($dev, $iid) = @_;
+	return 1 if ( (defined $dev->{interface}{$iid}{admin_status}) &&
+		      ($dev->{interface}{$iid}{admin_status} eq 'down') );
+	return 0;
+    }
+    
+    ################################################################
+    # IPv4 addresses and masks 
+    #
+    while ( my($ip,$iid) = each %{ $hashes{'ip_index'} } ){
+	next if &_check_if_status_down(\%dev, $iid);
+	next if Ipblock->is_loopback($ip);
+	next if ( $ip eq '0.0.0.0' || $ip eq '255.255.255.255' );
+	$dev{interface}{$iid}{ips}{$ip}{address} = $ip;
+	$dev{interface}{$iid}{ips}{$ip}{version} = 4;
+	if ( my $mask = $hashes{'ip_netmask'}->{$ip} ){
+	    my ($subnet, $len) = Ipblock->get_subnet_addr(address => $ip, 
+							  prefix  => $mask );
+	    $dev{interface}{$iid}{ips}{$ip}{subnet} = "$subnet/$len";
+	}
+    }
+
+    ################################################################
+    # IPv6 addresses and prefixes
+    
+    my $ignore_link_local = $self->config->get('IGNORE_IPV6_LINK_LOCAL');
+
+    # Stuff in this hash looks like this:
+    #
+    # CISCO-IETF-IP-MIB:
+    # 2.16.32.1.4.104.13.1.0.2.0.0.0.0.0.0.0.9 => 
+    #     49.2.16.32.1.4.104.13.1.0.2.0.0.0.0.0.0.0.0.64
+    #
+    # IP-MIB:
+    # 2.32.1.4.104.13.1.0.2.0.0.0.0.0.0.0.41 => 
+    #     1.151126018.2.32.1.4.104.13.1.0.2.0.0.0.0.0.0.0.0.64
+    # 
+    while ( my($key,$val) = each %{$hashes{'ipv6_addr_prefix'}} ){
+	my ($iid, $addr, $pfx, $len);
+	# We only care about the last 16 octets in decimal
+	# so, that's an digit and a dot, 15 times, plus another digit
+	if ( $key =~ /^.+\.((?:\d+\.){15}\d+)$/o ) {
+	    $addr = $self->_octet_string_to_v6($1);
+	}
+	if ( $val =~ /^(\d+)\.\d+\.\d+\.([\d\.]+)\.(\d+)$/o ) {
+	    # ifIndex, type, size, prefix length
+	    $iid = $1; $len = $3;
+	    $pfx = $self->_octet_string_to_v6($2);
+	}
+	if ( $iid && $addr && $pfx && $len ){
+	    next if &_check_if_status_down(\%dev, $iid);
+	    next if ( Ipblock->is_link_local($addr) && $ignore_link_local );
+	    $dev{interface}{$iid}{ips}{$addr}{address} = $addr;
+	    $dev{interface}{$iid}{ips}{$addr}{version} = 6;
+	    $dev{interface}{$iid}{ips}{$addr}{subnet}  = "$pfx/$len";
+	}else{
+	    # What happened?
+	    $logger->warn("$args{host}: Unrecognized ipv6_addr_prefix entry: $key => $val")
+	}
+    }
+
+    ################################################################
+    # IPv6 link-local addresses
+    # It looks like in Cisco 'ipv6_index' contains a the addresses from
+    # 'ipv6_addr_prefix', plus link locals, so we won't query it
+    # unless we want those.
+    unless ( $ignore_link_local ){
+	my $ipv6_index = $sinfo->ipv6_index();
+	my ($iid, $addr);
+	while ( my($key,$val) = each %$ipv6_index ){
+	    if ( $key =~ /^.+\.((?:\d+\.){15}\d+)$/o ) {
+		$addr = $self->_octet_string_to_v6($1);
+		next unless Ipblock->is_link_local($addr);
+		$iid = $val;
+		$dev{interface}{$iid}{ips}{$addr}{address} = $addr;
+		$dev{interface}{$iid}{ips}{$addr}{version} = 6;
+	    }else{
+		# What happened?
+		$logger->warn("$args{host}: Unrecognized ipv6_index entry: $key => $val")
+	    }
+	}
+    }
+    
+
     
     ##############################################
     # Deal with BGP Peers
@@ -1664,7 +1673,7 @@ sub get_within_downtime {
   Arguments: 
     None
   Returns:   
-    Hashref with key=address (Decimal), value=device
+    Hashref with key=address (Decimal), value=device id
   Examples:
    my $devips = Device->get_ips_from_all();
 
@@ -4510,12 +4519,23 @@ sub _validate_arp {
 	unless ($cache && $version);
 
     my $host = $self->fqdn();
+
+    my $ign_non_subnet = Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET');
     
+    # Cisco Firewalls do not return subnet prefix information via SNMP
+    # as of 27/07/2012. But we can get ARP info from them, so if we are
+    # configured to ignore IPs which are not within known subnets, then
+    # we'll have to disable that if we want to get v6 ARP from them.
+    # This block must be removed later if the SNMP values are supported
+    if ( $version == 6 && ref($self) =~ /CiscoFW$/o ){
+	$ign_non_subnet = 0;
+    }
+
     # Get all interfaces and IPs
     my %devints; my %devsubnets;
     foreach my $int ( $self->interfaces ){
 	$devints{$int->number} = $int->id;
-	if ( Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET') ){
+	if ( $ign_non_subnet ){
 	    foreach my $ip ( $int->ips ){
 		next unless ($ip->version == $version);
 		push @{$devsubnets{$int->id}}, $ip->parent->netaddr 
@@ -4543,30 +4563,28 @@ sub _validate_arp {
 		next;
 	    }
 	    $mac = $validmac;
-	    if ( Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET') ){
-		if ( !Netdot->config->get('IGNORE_IPV6_LINK_LOCAL') ){
-		    # This check does not work with link-local, so if user wants those
-		    # just validate them
-		    if ( Ipblock->is_link_local($ip) ){
-			$valid{$intid}{$ip} = $mac;
-			$logger->debug(sub{"Device::_validate_arp: $host: valid: $idx -> $ip -> $mac" });
-			next;
-		    }
+	    if ( $ign_non_subnet ){
+		# This check does not work with link-local, so if user wants those
+		# just validate them
+		if ( $version == 6 && Ipblock->is_link_local($ip) ){
+		    $valid{$intid}{$ip} = $mac;
+		    next;
+		}
+		my $nip;
+		unless ( $nip = NetAddr::IP->new($ip) ){
+		    $logger->error("Device::_validate_arp: Cannot create NetAddr::IP object from $ip");
+		    next;
 		}
 		foreach my $nsub ( @{$devsubnets{$intid}} ){
-		    my $nip = NetAddr::IP->new($ip) or
-			$self->throw_fatal(sprintf("Device::_validate_arp: Cannot create NetAddr::IP ".
-						   "object from %s", $ip));
 		    if ( $nip->within($nsub) ){
 			$valid{$intid}{$ip} = $mac;
-			$logger->debug(sub{"Device::_validate_arp: $host: valid: $idx -> $ip -> $mac" });
 			last;
 		    }
 		}
 	    }else{
 		$valid{$intid}{$ip} = $mac;
-		$logger->debug(sub{"Device::_validate_arp: $host: valid: $idx -> $ip -> $mac" });
 	    }
+	    $logger->debug(sub{"Device::_validate_arp: $host: valid: $idx -> $ip -> $mac" });
 	}
     }
     return \%valid;
@@ -5055,6 +5073,11 @@ sub _munge_speed_high {
 ##############################################################
 # Assign Base MAC
 #
+# Ideally this is the base MAC address from BRIDGE-MIB
+# but if that's not available, we'll assign the first good
+# MAC address from interfaces. This might be necessary
+# to create a unique asset
+#
 # Arguments
 #   snmp info hashref
 # Returns
@@ -5066,31 +5089,38 @@ sub _assign_base_mac {
     my $host = $self->fqdn;
     my $address = delete $info->{physaddr}; 
     if ( $address && ($address = PhysAddr->validate($address)) ) {
-	# Look it up
-	my $mac;
-	if ( $mac = PhysAddr->search(address=>$address)->first ){
-	    # The address exists
-	    # (may have been discovered in fw tables/arp cache)
-	    $mac->update({static=>1, last_seen=>$self->timestamp});
-	    $logger->debug(sub{"$host: Using existing $address as base bridge address"});
-	    return $mac;
-	}else{
-	    # address is new.  Add it
-	    eval {
-		$mac = PhysAddr->insert({address=>$address, static=>1});
-	    };
-	    if ( my $e = $@ ){
-		$logger->debug(sprintf("%s: Could not insert base MAC: %s: %s",
-				       $host, $address, $e));
-	    }else{
-		$logger->info(sprintf("%s: Inserted new base MAC: %s", $host, $mac->address));
-		return $mac;
+	# OK
+    }else{
+	$logger->warn(sub{"$host did not return base MAC. Using first available interface MAC."});
+	foreach my $iid ( sort keys %{$info->{interface}} ){
+	    if ( my $addr = $info->{interface}->{$iid}->{physaddr} ){
+		next unless ($address = PhysAddr->validate($addr));
+		last;
 	    }
 	}
-    }else{
-	$logger->debug(sub{"$host did not return base MAC"});
-	return;
     }
+    # Look it up
+    my $mac;
+    if ( $mac = PhysAddr->search(address=>$address)->first ){
+	# The address exists
+	# (may have been discovered in fw tables/arp cache)
+	$mac->update({static=>1, last_seen=>$self->timestamp});
+	$logger->debug(sub{"$host: Using existing $address as base bridge address"});
+	return $mac;
+    }else{
+	# address is new.  Add it
+	eval {
+	    $mac = PhysAddr->insert({address=>$address, static=>1});
+	};
+	if ( my $e = $@ ){
+	    $logger->debug(sprintf("%s: Could not insert base MAC: %s: %s",
+				   $host, $address, $e));
+	}else{
+	    $logger->info(sprintf("%s: Inserted new base MAC: %s", $host, $mac->address));
+	    return $mac;
+	}
+    }
+    $logger->debug("$host: No suitable base MAC found");
 }
 
 ##############################################################

@@ -27,7 +27,8 @@ my (@headers, @rows) = ();
          <option value="product_monitored" <% ($report_type eq "product_monitored")?"SELECTED":"" %>>Type/Model (monitored)</option>
          <option value="site" <% ($report_type eq "site")?"SELECTED":"" %>>Site/Type/Model</option>
          <option value="os" <% ($report_type eq "os")?"SELECTED":"" %>>Model/OS</option>
-         <option value="downtime" <% ($report_type eq "downtime")?"SELECTED":"" %>>Downtime</option>
+         <option value="downtime" <% ($report_type eq "downtime")?"SELECTED":"" %>>In Scheduled Downtime</option>
+         <option value="snmp_down" <% ($report_type eq "snmp_down")?"SELECTED":"" %>>SNMP Down</option>
          <option value="duplex" <% ($report_type eq "duplex")?"SELECTED":"" %>>Duplex Mismatches</option>
          <option value="os_mismatches" <% ($report_type eq "os_mismatches")?"SELECTED":"" %>>OS Mismatches</option>
          </select>
@@ -100,7 +101,7 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 	    if ( $t{$pt}{prod}{$product}{id} ){
 		push( @row, '<a href="../generic/view.html?table=Product&id=' . $t{$pt}{prod}{$product}{id} . '">' . $product . '</a>' );
 	    }elsif ( $product eq "Unset" ){
-		push( @row, '<a href="../generic/search_obj.html?table=Device&asset=undef&res=1">' . $product . '</a>' );
+		push( @row, '<a href="../generic/search_obj.html?table=Device&asset_id=undef&res=1">' . $product . '</a>' );
 	    }
 	    push( @row, $t{$pt}{prod}{$product}{num}  );
 	    push( @rows, \@row );
@@ -234,6 +235,9 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 #######################################################################################
 }elsif ( $report_type eq 'downtime' ){
     $m->comp('downtime.html');
+
+}elsif ( $report_type eq 'snmp_down' ){
+    $m->comp('snmp_down.html');
 
 #######################################################################################
 }elsif ( $report_type eq 'duplex' ){

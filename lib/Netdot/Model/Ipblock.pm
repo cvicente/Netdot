@@ -1398,8 +1398,8 @@ sub cidr {
 ##################################################################
 =head2 full_address
 
-    Returns the address part in FULL notation for ipV4 and ipV6 respectively.
-    See NetAddr::IP::full()
+    Returns the address part in FULL notation for IPv6. 
+    For IPv4, it returns the standard dotted-quad string.
 
   Arguments:
     None
@@ -1412,7 +1412,11 @@ sub cidr {
 sub full_address {
     my $self = shift;
     $self->isa_object_method('full_address');
-    return $self->netaddr->full()
+    if ( $self->version == 6 ){
+	return $self->netaddr->full();
+    }else{
+	return $self->address;
+    }
 }
 
 ##################################################################
@@ -1684,7 +1688,7 @@ sub get_ancestors {
  Arguments: 
     None
  Returns:   
-    arrayref of descendant children IDs
+    Arrayref of descendant Net::IPTrie::Node objects
   Examples:
     my $descendants = $ip->get_descendants_trie();
 
@@ -1702,7 +1706,7 @@ sub get_descendants_trie {
     my $list = ();
     my $code = sub { 
 	my $node = shift @_; 
-	push @$list, $node->data; 
+	push @$list, $node; 
     };
 
     $class->_tree_traverse(root=>$n, code=>$code, tree=>$tree);
@@ -2012,7 +2016,7 @@ sub update_a_records {
     # Only generate names for IP blocks that are mapped to a zone
     my $zone;
     unless ( $zone = $self->forward_zone ){
-	$logger->debug(sprintf("%s: Cannot determine DNS zone for IP: %s", 
+	$logger->debug(sprintf("%s: Cannot determine forward DNS zone for IP: %s", 
 			       $host, $self->get_label));
 	return;
 	

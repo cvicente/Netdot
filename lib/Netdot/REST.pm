@@ -148,9 +148,7 @@ sub handle_resource {
 		    if ( $argv{depth} ){
 			$get_args{depth} = $argv{depth};
 		    }
-		    if ( $argv{no_linked_from} ){
-			$get_args{no_linked_from} = $argv{no_linked_from};
-		    }
+		    $get_args{linked_from} = $argv{linked_from};
 		    my $o = $self->get(%get_args);
 		    $self->print_formatted($o);
 
@@ -179,12 +177,12 @@ sub handle_resource {
 		# A lack of id means we're working in plural
 		my $results;
 		my $depth;
-		my $no_linked_from;
+		my $linked_from;
 		if ( %argv ){
 		    # We were given a query hash
 		    # Remove non-fields
 		    $depth = delete $argv{depth};
-		    $no_linked_from = delete $argv{no_linked_from};
+		    $linked_from = delete $argv{linked_from};
 		}
 		if ( %argv ){
 		    # If there are any args left do a search with them
@@ -197,7 +195,7 @@ sub handle_resource {
 		    while ( my $o = $results->next ){
 			my %get_args = (obj=>$o);
 			$get_args{depth} = $depth if ( $depth );
-			$get_args{no_linked_from} = $no_linked_from if ( $no_linked_from );
+			$get_args{linked_from} = $linked_from if defined( $linked_from );
 			push @objs, $self->get(%get_args);
 		    }
 		    $self->print_formatted({$table=>\@objs});
@@ -231,10 +229,11 @@ sub handle_resource {
     snmp_target       => "192.168.1.1"
     snmp_target_xlink => "Ipblock/1"
 
-    In the case of objects linking to the given record, the returned hashref
-    will include a key called "linked_from" containing arrays of resources
+    In the case of objects referencing the given record, the returned hashref
+    can include a key called "linked_from" containing arrays of resources
     which can be used to obtain those records using the REST interface.
-    You can omit these resources by using the 'no_linked_from' parameter
+    You can get these resources by passing the 'linked_from' with a value of 1.
+    The default is to not include these records.
 
     Arguments:
        Hash containing the following keys:
@@ -243,7 +242,7 @@ sub handle_resource {
        xlink           xlink string (see above)
        id	       The id of the object
        depth           How many levels of foreign objects to return (default: 0)    
-       no_linked_from  Do not return foreign objects referencing this object
+       linked_from     Return foreign objects referencing this object
     Returns:
        hashref containing object information
     Examples:
@@ -280,7 +279,7 @@ sub get{
     my %order   = $obj->meta_data->get_column_order;
     my %linksto = $obj->meta_data->get_links_to;
 
-    unless($argv{no_linked_from}){
+    if( $argv{linked_from} ){
 	$ret{linked_from} = $self->_get_linked_from(obj=>$obj, depth=>$argv{depth});
     }
     
@@ -294,7 +293,7 @@ sub get{
 			table          => $fclass, 
 			id             => $fid, 
 			depth          => $argv{depth}-1,
-			no_linked_from => $argv{no_linked_from},
+			linked_from    => $argv{linked_from},
 			);
 		}else{
 		    my $fobj = $obj->$col;
@@ -538,7 +537,7 @@ sub check_accept_header{
 =cut
 sub throw {
     my ($self, %args) = @_;
-    return $self->SUPER::throw_rest(@_);
+    return $self->SUPER::throw_rest(%args);
 }
 
 ##################################################################
@@ -570,6 +569,7 @@ sub _get_linked_from{
     my %results;
     foreach my $i ( keys %linksfrom ){
 	my $rtable = (keys %{$linksfrom{$i}})[0]; # Table that points to us
+	next if ( $rtable =~ /_history$/o ); # Do not include history records
 	my @robjs = $obj->$i; # Objects that point to us
 	if ( $depth ){
 	    map { push @{$results{$i}}, $self->get(table=>$rtable, id=>$_->id, depth=>$depth-1) } @robjs;

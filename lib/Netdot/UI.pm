@@ -520,14 +520,14 @@ sub select_lookup{
     } else {
 	$name = $table . '__' . $id . '__' . $column;
     }
-    if( $args{edit} && $args{defaults} && $args{default} ) { 
-	# If there is a default element specified, then we don't actually want a list of choices.
-	# So, don't show a select box, but instead, make a hidden form element with the id,
-	# and print out the name of the default element. 
+    if( $args{edit} && @defaults && (scalar(@defaults) == 1) && $args{default} ) { 
+    	# If there is a default element specified, then we don't actually want a list of choices.
+    	# So, don't show a select box, but instead, make a hidden form element with the id,
+    	# and print out the name of the default element. 
 	
-	# should be only 1 element in @defaults
-	$output .= '<input type="hidden" name="'.$name.'" value="'.$args{default}.'">';
-	$output .= $defaults[0]->get_label;
+    	# should be only 1 element in @defaults
+    	$output .= '<input type="hidden" name="'.$name.'" value="'.$args{default}.'">';
+    	$output .= $defaults[0]->get_label;
     } elsif( $args{edit} ){
         my ($count, @fo);
         if ( @defaults ){
@@ -1602,11 +1602,9 @@ sub build_ip_tree_graph {
     my %seen;
 
     foreach my $n ( @$list ){
-	my $ip = Ipblock->retrieve($n->data);
+	next unless defined $n;
+	my $ip = Ipblock->retrieve($n->data) or next;
 	
-	# Make sure we don't have a null reference
-	next unless($ip);
-
 	# Make sure we don't include end addresses in the tree
 	next if $ip->is_address;
 	
@@ -2451,14 +2449,14 @@ sub localize_newlines {
 }
 
 ############################################################################
-=head check_value_lengths
+=head2 check_value_lengths
 
   Arguments: table, args hashref
   Returns: True
-  Examples: $ui->_check_value_lenghts(\%args);
+  Examples: $ui->check_value_lenghts(\%args);
 
 =cut
-sub check_value_lenghts {
+sub check_value_lengths {
     my($self, $table, $args) = @_;
     foreach my $c ( keys %$args ){
 	my $mcol;

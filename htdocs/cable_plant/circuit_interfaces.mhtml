@@ -21,7 +21,7 @@ my $manager   = $ui->get_permission_manager($r);
       <div class="containerheadleft">Interfaces</div>
       <div class="containerheadright">
       &nbsp;
-%     if ( $manager && $manager->can($user, 'access_admin_section', 'circuit:add_interfaces') ){
+%     if ( !$add && ($manager && $manager->can($user, 'access_admin_section', 'circuit:add_interfaces')) ){
           <a href="circuit.html?id=<% $id %>&add_interfaces=1">[add]</a>
 %     }else{
           &nbsp;
@@ -68,7 +68,7 @@ my $manager   = $ui->get_permission_manager($r);
 	  if ( $count <= $max_count ){
 	      my @all = sort { $a->get_label cmp 
 				   $b->get_label } Interface->retrieve_all;
-	      print '<select>';
+	      print '<select name="new_interface" id="new_interface">';
 	      foreach my $i ( @all ){
 		  printf('<option value="%d">%s</option>', $i->id, $i->get_label);
 	      }
@@ -89,11 +89,11 @@ my $manager   = $ui->get_permission_manager($r);
 	      print '<option value="" selected>-- Select --</option>';
 	      print '<option value="">[null]</option>';
 	      print '</select>';
-	      print '&nbsp;<input type="submit" name="add_button" value="Add">';
-	      print '</nobr>';
-	      print '<p><input type="button" name="cancel_button" value="cancel" '.
-		  'onClick="history.go(-1);">';
 	  }
+	  print '&nbsp;<input type="submit" name="add_button" value="Add">';
+	  print '</nobr>';
+	  print '<p><input type="button" name="cancel_button" value="cancel" '.
+	  'onClick="history.go(-1);">';
 </%perl>
           </form>
           </div>
