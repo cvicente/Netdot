@@ -456,6 +456,7 @@ function editSelected(id)
 
 	if (!$editStrand) {        
 	    push( @headers, 'Part of Sequence' );
+	    push(@headers, '<a href="cable_backbone.html?id=' . $id . '&strand_sort=circuit#cable_strand">Circuit</a>');
             if ( $manager && $manager->can($user, 'edit', $o) ){
 	        push( @headers, '<B>Edit?</B>' );
 	    }
@@ -473,9 +474,13 @@ function editSelected(id)
 	    # -----------------------------------------------------------
 	    @sorted_strands = sort { uc($a->status->name) cmp uc($b->status->name) } @strands;
 	} elsif ($strand_sort eq "type") {
-	    # sort by status
+	    # sort by type
 	    # -----------------------------------------------------------
 	    @sorted_strands = sort { uc($a->fiber_type->name) cmp uc($b->fiber_type->name) } @strands;
+	} elsif ($strand_sort eq "circuit") {
+	    # sort by circuit
+	    # -----------------------------------------------------------
+	    @sorted_strands = sort { uc($a->circuit_id->cid) cmp uc($b->circuit_id->cid) } @strands;
 	}
 	</%perl>
 
@@ -592,16 +597,15 @@ HERE
 		  }} );
 
 	    if (!$editStrand) {        
-	      push( @row, $m->scomp('display_sequence.mhtml', strands=>[$st]) );
-              if ( $manager && $manager->can($user, 'edit', $o) ){
-	          push( @row, '<input type="checkbox" name="edit_' . $st->id . '" onChange="editCheck(this);">' );
-	      }
+		push( @row, $m->scomp('display_sequence.mhtml', strands=>[$st]) );
 
-	      # This scomp method is *very* helpful.  It returns as a
-	      # string what the component would have printed.  Like
-	      # sprintf vs printf.
+		%tmp = $ui->form_field(object=>$st, column=>"circuit_id", edit=>0, linkPage=>"circuit.html");
+		push( @row, $tmp{value} );
+		
+		if ( $manager && $manager->can($user, 'edit', $o) ){
+		    push( @row, '<input type="checkbox" name="edit_' . $st->id . '" onChange="editCheck(this);">' );
+		}
 	    }
-
 	    push( @rows, \@row );
 	} # foreach
 	</%perl>
