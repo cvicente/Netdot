@@ -85,9 +85,23 @@ sub search_by_site {
     
     my @res;
     if ( $s1 && $s2 ){
-	my %tmp; 
-	map { $tmp{$_} = 1 } @set1;
-	@res =  grep { $tmp{$_} } @set2;
+	if ( $s1 != $s2 ){
+	    # Get intersection of sets 1 and 2
+	    my %tmp; 
+	    map { $tmp{$_} = 1 } @set1;
+	    @res =  grep { $tmp{$_} } @set2;
+	}else{
+	    # backbone starts and ends in same site
+	    # Get the backbone connected to this site
+	    # which has only one site
+	    foreach my $bb ( keys %{$graph->{SITE}->{$s1}} ){
+		my @n = keys %{$graph->{BB}->{$bb}};
+		if ( scalar(@n) == 1 ){
+		    push @res, $bb;
+		    last;
+		}
+	    }
+	}
     }elsif ( $s1 ){
 	@res = @set1;
     }elsif ( $s2 ){
@@ -121,7 +135,7 @@ sub get_site_graph {
                      closet cl1, closet cl2, 
                      room rm1, room rm2, floor fl1, floor fl2, 
                      site s1, site s2
-              WHERE  s1.id < s2.id 
+              WHERE  s1.id <= s2.id 
                  AND cl1.room=rm1.id AND rm1.floor=fl1.id AND fl1.site=s1.id
                  AND cl2.room=rm2.id AND rm2.floor=fl2.id AND fl2.site=s2.id
                  AND ((bc.start_closet=cl1.id AND bc.end_closet=cl2.id) 
