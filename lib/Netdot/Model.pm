@@ -242,7 +242,7 @@ BEGIN {
 	    my $changed_columns = $args{discard_columns};
 	    if ( defined $changed_columns && scalar(@$changed_columns) ){
 		my $fields = join ',', @$changed_columns;
-		return if ( $args{fields} eq 'modified' );
+		return if ( $fields eq 'modified' );
 	    }else{
 		return;
 	    }

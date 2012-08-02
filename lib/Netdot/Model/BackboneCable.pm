@@ -6,9 +6,10 @@ use strict;
 
 my $logger = Netdot->log->get_logger('Netdot::Model');
 
-# Store the graph as class data to avoid recalculating
+# Store the graphs as class data to avoid recalculating
 # within the same process
 my $site_graph;
+my $bb_graph;
 
 =head1 NAME
 
@@ -19,6 +20,97 @@ Netdot::Model::BackboneCable
 
 =head1 CLASS METHODS
 =cut
+
+##################################################################
+=head2 get_graph - Backbone cable to site graph
+
+  Arguments:
+    None
+  Returns:
+    Hash of hashes
+  Examples:
+    BackboneCable->get_graph();
+=cut
+sub get_graph {
+    my ($class) = @_;
+
+    # Don't compute again if we already did in this process
+    return $bb_graph if $bb_graph;
+
+    my $dbh = $class->db_Main;
+    my %g;
+    my $q = "SELECT DISTINCT bc.id, s.id
+              FROM   backbonecable bc, closet cl, 
+                     room rm, floor fl, site s
+              WHERE  (bc.start_closet=cl.id OR bc.end_closet=cl.id)
+                 AND cl.room=rm.id AND rm.floor=fl.id AND fl.site=s.id";
+    
+    my $rows = $dbh->selectall_arrayref($q);
+    foreach my $row ( @$rows ){
+	my ($bcid, $sid) = @$row;
+	$g{SITE}{$sid}{$bcid} = 1;
+	$g{BB}{$bcid}{$sid} = 1;
+    }
+    
+    $bb_graph = \%g;
+    return $bb_graph;
+}
+
+##################################################################
+=head2 search_by_site - Search backbone cables by start and/or end sites
+
+  Arguments:
+    Hash with the following keys:
+      site1 -  Site id
+      site2 -  Site id 
+    (at least 1 site required)
+  Returns:
+    Array of BackboneCable objects
+  Examples:
+    BackboneCable->search_by_site(site1=>$a,site2=>$b);
+=cut
+sub search_by_site {
+    my ($class, %argv) = @_;
+
+    my $s1 = $argv{site1};
+    my $s2 = $argv{site2};
+    
+    $class->throw_user("At least one site is required for this search")
+	unless $s1 or $s2;
+
+    my $graph = $class->get_graph();
+    my (@set1,@set2);
+    @set1 = keys %{$graph->{SITE}->{$s1}} if defined $s1;
+    @set2 = keys %{$graph->{SITE}->{$s2}} if defined $s2;
+    
+    my @res;
+    if ( $s1 && $s2 ){
+	if ( $s1 != $s2 ){
+	    # Get intersection of sets 1 and 2
+	    my %tmp; 
+	    map { $tmp{$_} = 1 } @set1;
+	    @res =  grep { $tmp{$_} } @set2;
+	}else{
+	    # backbone starts and ends in same site
+	    # Get the backbone connected to this site
+	    # which has only one site
+	    foreach my $bb ( keys %{$graph->{SITE}->{$s1}} ){
+		my @n = keys %{$graph->{BB}->{$bb}};
+		if ( scalar(@n) == 1 ){
+		    push @res, $bb;
+		    last;
+		}
+	    }
+	}
+    }elsif ( $s1 ){
+	@res = @set1;
+    }elsif ( $s2 ){
+	@res = @set2;
+    }
+
+    @res = map { BackboneCable->retrieve($_) } @res;
+    return @res;
+}
 
 ##################################################################
 =head2 get_site_graph - Graph of sites connected by backbone cables
@@ -43,7 +135,7 @@ sub get_site_graph {
                      closet cl1, closet cl2, 
                      room rm1, room rm2, floor fl1, floor fl2, 
                      site s1, site s2
-              WHERE  s1.id < s2.id 
+              WHERE  s1.id <= s2.id 
                  AND cl1.room=rm1.id AND rm1.floor=fl1.id AND fl1.site=s1.id
                  AND cl2.room=rm2.id AND rm2.floor=fl2.id AND fl2.site=s2.id
                  AND ((bc.start_closet=cl1.id AND bc.end_closet=cl2.id) 
