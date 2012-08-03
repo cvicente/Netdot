@@ -30,17 +30,19 @@ my $logger = Netdot->log->get_logger("Netdot::UI");
 
 # Some tables have a specific view page. 
 #
-my %VIEWPAGE = ( BinFile     => "../generic/display_bin.html",
-		 Closet      => "../cable_plant/closet.html",
-		 Circuit     => "../cable_plant/circuit.html",
-		 ContactList => "contactlist.html",
-		 Device      => "../management/device.html",
-		 DhcpScope   => "../management/scope.html",
-		 Interface   => "../management/interface.html",
-		 Ipblock     => "../management/ip.html",
-		 PhysAddr    => "../management/mac.html",
-		 RR          => "../management/host.html",
-		 Zone        => "../management/zone.html",
+my %VIEWPAGE = ( BinFile       => "../generic/display_bin.html",
+		 BackboneCable => "../cable_plant/cable_backbone.html",
+		 CableStrand    => "../cable_plant/cable_strand.html",
+		 Closet        => "../cable_plant/closet.html",
+		 Circuit       => "../cable_plant/circuit.html",
+		 ContactList   => "contactlist.html",
+		 Device        => "../management/device.html",
+		 DhcpScope     => "../management/scope.html",
+		 Interface     => "../management/interface.html",
+		 Ipblock       => "../management/ip.html",
+		 PhysAddr      => "../management/mac.html",
+		 RR            => "../management/host.html",
+		 Zone          => "../management/zone.html",
 		 );
 
 
