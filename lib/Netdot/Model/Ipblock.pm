@@ -1182,6 +1182,10 @@ sub add_range{
 	    $iargs{prefix}  = $prefix;
 	    push @newips, Ipblock->insert(\%iargs);
 	}
+	# In theory, we should not need this, but there is a strange
+	# behavior in NetAddr::IP in which the for loop will become infinite
+	# if $ipend is the broadcast in the subnet.
+	last if $ip == $ipstart->broadcast;
     }
     #########################################
     # Call the plugin that generates DNS records
@@ -1232,6 +1236,8 @@ sub remove_range{
 	my $decimal = $ip->numeric;
 	my $ipb = Ipblock->search(address=>$decimal, prefix=>$prefix)->first;
 	$ipb->delete() if $ipb;
+	# See add_range() about this next line
+	last if $ip == $ipstart->broadcast;
     }
     $logger->info("Ipblock::remove_range: done with $argv{start} - $argv{end}");
     1;    
