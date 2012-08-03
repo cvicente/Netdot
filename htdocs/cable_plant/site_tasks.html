@@ -108,32 +108,21 @@ if ( $site_select ){
 	$search_number =~ s/^\s*(.*)\s*$/$1/g;
 	$sargs{number} = $search_number;
     }
-    @results = Site->search_like(%sargs);
+    @results = Site->search_like(%sargs) if %sargs;
 
     $search = join ' ', %sargs;
 </%perl>
 
-%   if ( $search ){   
-     <div class="container">
-       <div class="containerhead">
-	    Search for <em><% $search %></em> returned: <% scalar(@results) %> matches
-       </div>
-       <div class="containerbody">
-%         if ( @results ){
-              <& /generic/sortresults.mhtml, object =>\@results, withedit=>1&>
-%         }
-       </div>
-     </div>
-
-%   }else{
-     <div class="container">
-       <div class="containerhead">
-         <strong>Error!</strong>   
-       </div>
-       <div class="containerbody">
-         <p><strong>No search criteria</strong>   
-       </div>
-     </div>
-%   }
+<div class="container">
+   <div class="containerhead">
+       Search for <em><% $search %></em> returned: <% scalar(@results) %> matches
+   </div>
+   <div class="containerbody">
+%      unless ( $search){
+%         @results = Site->retrieve_all();
+%      }
+       <& /generic/sortresults.mhtml, object =>\@results, withedit=>1&>
+   </div>
+</div>
 
 %}
