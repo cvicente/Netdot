@@ -45,7 +45,7 @@ Las características principales de Netdot son:
 *   Descubrimiento de dispositivos a través de SNMP
 
 *   Descubrimiento y visualización de topología de capa/nivel 2,
-    utilizando las siguientes fuentes de información: CDP+LLDP, Protocolo 
+    utilizando las siguientes fuentes de información: CDP+LLDP, Protocolo
     Spanning Tree, tablas de reenvío de los switches y subredes punto a
     punto de enrutadores.
 
@@ -53,8 +53,8 @@ Las características principales de Netdot son:
     como IPAM), incluyendo organizacion jerárquica, visualización de
     direcciones en bloques y seguimiento de direcciones IP y MAC.
 
-*   Información del cableado de planta: edificios, oficinas, tomas de red, 
-    closets/armarios, enlaces entre edificios o dentro de los mismos, 
+*   Información del cableado de planta: edificios, oficinas, tomas de red,
+    closets/armarios, enlaces entre edificios o dentro de los mismos,
     circuitos dedicados, etc.
 
 *   Información de contacto para las diferentes entidades que se
@@ -63,10 +63,10 @@ Las características principales de Netdot son:
 *   Netdot puede generar ficheros de configuración para un conjunto de
     herramientas de gestión y administración de redes:
 
-    * [Nagios](http://www.nagios.org), 
+    * [Nagios](http://www.nagios.org),
     * [Sysmon](http://www.sysmon.org),
     * [RANCID](http://www.shrubbery.net/rancid)
-    * [Cacti](http://www.cacti.net) 
+    * [Cacti](http://www.cacti.net)
     * [BIND y DHCPD de ISC](http://www.isc.org)
     * [Smokeping](http://oss.oetiker.ch/smokeping/)
 
@@ -191,7 +191,7 @@ Si después de ejecutar los pasos anteriores siguen faltando módulos
 Perl, se puede completar el proceso ejecutando el siguiente paso.
 
 *   Si su gestor de paquetes no está soportado, o si le faltan
-    dependencias, puede instalar éstas a mano. Sin embargo, al 
+    dependencias, puede instalar éstas a mano. Sin embargo, al
     menos tendrá la asistencia de la herramienta CPAN para instalar
     los módulos Perl automáticamente.
 
@@ -238,13 +238,13 @@ necesario sobreescribir el fichero `Site.conf` con las definiciones de
 la instalación anterior.
 
 > **Pista**
-Tenga en cuenta que cada vez que actualice el fichero etc/Site.conf, 
+Tenga en cuenta que cada vez que actualice el fichero etc/Site.conf,
 es necesario reiniciar Apache para que los cambios surjan efecto
 en la interfaz web.
 
 ## Actualización a nuevas versiones
 
-Busque un fichero llamado doc/UPGRADE y allí encontrará instrucciones 
+Busque un fichero llamado doc/UPGRADE y allí encontrará instrucciones
 detalladas acerca de su distribución particular.
 
 Debe verificar si la versión que está instalando tiene nuevos requerimientos:
@@ -254,10 +254,10 @@ Debe verificar si la versión que está instalando tiene nuevos requerimientos:
 ~# make installdeps (or rpm-install, apt-install)
 ~~~~
 
-El esquema de la base de datos de Netdot **generalmente** sólo tiene 
-cambios entre revisiones mayores. Por ejemplo, si se actualiza de la version 
+El esquema de la base de datos de Netdot **generalmente** sólo tiene
+cambios entre revisiones mayores. Por ejemplo, si se actualiza de la version
 0.8.x a 0.9.x, se necesita ejecutar un script de actualización para adaptar
-la base de datos actual al nuevo esquema. 
+la base de datos actual al nuevo esquema.
 
 Si en su caso fuera necesario efectuar una actualización, puede hacerlo
 con el siguiente comando:
@@ -282,10 +282,10 @@ Luego instale el nuevo Netdot y reinicie Apache:
     Usuarios de MySQL: La cuenta de DBA de MySQL generalmente se crea durante
     la instalación del paquete. Asegúrese de proporcionar una clave en este paso.
 
-    Usuarios de Pg: PostgreSQL normalmente viene con una cuenta de DBA llamada 
+    Usuarios de Pg: PostgreSQL normalmente viene con una cuenta de DBA llamada
     'postgres'. Al terminar la instalación, es posible que necesite configurar la 
     clave para dicha cuenta como sigue:
-    
+
     ~~~~ {.bash}
     ~% sudo -u postgres psql postgres
     ~~~~
@@ -297,10 +297,10 @@ Luego instale el nuevo Netdot y reinicie Apache:
     ~~~~
 
     Y escriba la clave cuando se le indique. Use Control+D para salir del diálogo.
-    
+
 *   Ajuste la configuración de su base de datos si fuera necesario
-    
-    Usuarios de MySQL: Si planea utilizar las funciones de IPAM de Netdot, es 
+
+    Usuarios de MySQL: Si planea utilizar las funciones de IPAM de Netdot, es
     posible que necesite incrementar el tamaño máximo del búfer de paquete en el 
     fichero my.conf, por ejemplo:
 
@@ -341,22 +341,22 @@ Luego instale el nuevo Netdot y reinicie Apache:
     Opcionalmente, incluya los siguientes parámetros:
 
     ~~~~ {.bash}
-    PREFIX=DIRECTORIO-DE-INSTALACION (/usr/local/netdot) 
+    PREFIX=DIRECTORIO-DE-INSTALACION (/usr/local/netdot)
     APACHEUSER=USUARIO-QUE-EJECUTA-APACHE (apache)
     APACHEGROUP=GRUPO-QUE-EJECUTA-APACHE (apache)
     ~~~~
 
     > **Pista**
-    Usuarios de Debian/Ubuntu: Probablemente tendrá que especificar 
-    las variables APACHEUSER y APACHEGROUP con el valor "www-data", 
+    Usuarios de Debian/Ubuntu: Probablemente tendrá que especificar
+    las variables APACHEUSER y APACHEGROUP con el valor "www-data",
     el cual es el usuario con el que el servidor Apache se ejecuta.
 
 
 ## Configuración del Servidor Web Apache
 
-Edite el fichero plantilla de Apache que viene con Netdot para establecer 
-la autenticación Local, RADIUS o LDAP. Cópielo en el directorio de 
-configuración de Apache e inclúyalo en el fichero de configuración de 
+Edite el fichero plantilla de Apache que viene con Netdot para establecer
+la autenticación Local, RADIUS o LDAP. Cópielo en el directorio de
+configuración de Apache e inclúyalo en el fichero de configuración de
 Apache (httpd.conf), por ejemplo:
 
 ~~~~ {.apache}
@@ -364,7 +364,7 @@ Include conf/netdot_apache2_<local|radius|ldap>.conf
 ~~~~
 
 Algunas configuraciones de Apache definen un directorio
-desde el cual se incluyen ficheros automáticamente cuando Apache se inicia. 
+desde el cual se incluyen ficheros automáticamente cuando Apache se inicia.
 En ese caso, puede crear un enlace al fichero de Netdot desde ese directorio:
 
 For example, in Debian or Ubuntu, it's a two-step process:
@@ -383,9 +383,9 @@ O en otras distribuciones con sólo un directorio:
 
 > **Pista**
 Asegúrese de utilizar la versión del fichero que se copia en el
-directorio de instalación al ejecutar make install. No utilice el 
-fichero que está en el directorio fuente del paquete. Al ejecutar el 
-comando de instalación, este fichero de configuración de Apache cambia 
+directorio de instalación al ejecutar make install. No utilice el
+fichero que está en el directorio fuente del paquete. Al ejecutar el
+comando de instalación, este fichero de configuración de Apache cambia
 dinámicamente en función de las rutas de carpetas definidas.
 
 Terminando todo lo anterior, reinicie Apache2. Si utiliza las opciones
@@ -630,7 +630,7 @@ se muestran organizados jerárquicamente dependiendo de cómo los módulos
 están incluidos dentro de otros.
 
 #### Pestaña IP: Esta sección lista todas las direcciones IP utilizadas
-por el dispositivo, junto con las subredes a las que pertenecen, las 
+por el dispositivo, junto con las subredes a las que pertenecen, las
 interfaces donde están configuradas, y de manera opcional, su nombre
 DNS.
 
@@ -658,8 +658,8 @@ Para que este mecanismo funcione, necesita lo siguiente:
   tener una zona inversa asignada (in-addr.arpa o ip6.arpa).
 
 #### Pestaña BGP: Si el dispositivo es un enrutador con sesiones BGP,
-y la información se puede capturar con SNMP, Netdot mostrará esta 
-información en esta pestaña. Entre los campos mostrados están la 
+y la información se puede capturar con SNMP, Netdot mostrará esta
+información en esta pestaña. Entre los campos mostrados están la
 dirección IP del vecino BGP, el ID y el AS. El récord BGPPeering
 también incluye campos opcionales para indicar el número máximo de
 prefijos IPv4 o de IPv6 que se han de permitir, o si la sesión se
@@ -668,8 +668,39 @@ ha de monitorizar (con Nagios), etc.
 Para cada AS descubierto, Netdot intenta encontrar más información
 utilizando la herramienta WHOIS. Si la información existe, se crea
 un récord tipo "entity" incluyendo el número y nombre del AS. Usted
-puede completar dicho record con más información de contacto, 
+puede completar dicho record con más información de contacto,
 comentarios, etc.
+
+## VLANs
+
+Netdot crea records para VLANs cuando éstas se descubren en los
+dispositivos. Usted puede agregar información adicional al récord,
+por ejemplo, una descripción o comentarios.
+
+Cuando visualiza una VLAN, puede ver cuáles interfaces en cuáles
+dispositivos son actualmente miembros (o troncales) de esa VLAN.
+Además, en la página de dispositivos puede ver cuáles VLANs están
+activas en cada interfaz.
+
+Por el momento Netdot asume que las VLANs son únicas. Si usted
+reutiliza las IDs de VLANs en diferentes segmentos físicos de su
+red, entonces la información sobre VLANs en Netdot podría ser confusa.
+Es nuestra intención mejorar este aspecto en versiones futuras.
+
+### Buscar VLANs
+
+Puede buscar VLANs específicas yendo a  "Management" -> "VLANs".
+Netdot hará una búsqueda en los campos de ID y nombre.
+
+### Grupos de VLANs
+
+Los grupos de VLANs son básicamente rangos que le pueden ayudar a
+organizar la asignación de sus VLANs. Por ejemplo, usted podría
+asignar todas sus VLANs de voz sobre IP del rango 2000-2500.
+
+Puede crear grupos de VLANs yendo a "Management" -> "VLANs" y 
+clicando en [new]. Introduzca el nombre para el grupo y el rango
+de identificadores (ID).
 
 ## Activos de Hardware (Assets):
 
@@ -678,7 +709,7 @@ del hardware red, por ejemplo, número de serie, dirección MAC, nombre
 del producto, etc. Además, los récords asset pueden usarse para documentar
 unidades adquiridas que aún no se han instalado. Una vez que el hardware
 haya sido instalado y descubierto con Netdot, el récord asset permanece
-y es referenciado por el nuevo dispositivo. 
+y es referenciado por el nuevo dispositivo.
 
 ### Importar Assets
 
@@ -687,7 +718,7 @@ Este formulario le permite importar múltiples assets. Por ejemplo, puede
 utilizar un escaneador de códigos de barras para capturar la información
 desde las cajas de los equipos a medida que los recibe.
 
-Cree un fichero de texto compuesto de número de pieza, número de serie y 
+Cree un fichero de texto compuesto de número de pieza, número de serie y
 otros campos opcionales. El número de pieza debe coincidir con un récord
 tipo "product" en Netdot. El orden de los campos en cada línea debe
 coincidir con la lista de campos en el menú "Fields for import".
@@ -802,7 +833,7 @@ ayuda de la herramienta `import_bind_zones.pl` que está en la carpeta
 import
 
 ~~~~
- usage: import/import_bind_zones.pl     
+ usage: import/import_bind_zones.pl
   [ -n|domain <name>, -f|file <path> ] (for single zone)
   [ -c|config <path>, -d|dir <path>  ] (for multiple zones)
   [ -g|--debug ] [-h|--help]
@@ -848,10 +879,10 @@ interfaz web.
 
 Cada vez que la zona o su contenido es modificado, la operación es
 adicionada a una lista de cambios pendientes. Esta lista se guarda
-en una tabla de la base de datos llamada "hostaudit", y sirve para 
-determinar cuándo una zona necesita ser exportada. Las zonas pueden 
-ser exportadas de forma manual a través de la interfaz web en el menú 
-*Export* o utilizando tareas programadas cron. Cuando una zona es exportada, 
+en una tabla de la base de datos llamada "hostaudit", y sirve para
+determinar cuándo una zona necesita ser exportada. Las zonas pueden
+ser exportadas de forma manual a través de la interfaz web en el menú
+*Export* o utilizando tareas programadas cron. Cuando una zona es exportada,
 su número de serie es incrementado y los cambios marcados como "pendientes"
 se cambian a "no pendientes".
 
@@ -948,6 +979,8 @@ Se puede crear un nuevo ámbito de nodo desde la página de récords DNS.
     redirección hacia la página de dispositivos. Allí, se localiza la
     sección `DHCP for <IP address>` y se realiza click en [add]. Se
     introduce la dirección Ethernet y se guardan los cambios.
+    Si dicha sección para DHCP no está presente, quiere decir que la
+    dirección IP no está en una subred en la cual se haya activado DHCP.
 
 *   Cuando se realiza click en la dirección Ethernet, se muestra la
     página de direcciones MAC, la cual tiene una sección "*DHCP
@@ -1014,7 +1047,7 @@ Los closets de comunicaciones alojan equipos de red y terminaciones de
 cableado. Un closet se ubica en una habitación (room), la cual se ubica
 en un nivel (floor), el cual se ubica en un edificio (Site).
 
-Para crear un nuevo closet, vaya a Cable Plant -> Closets -> [new]. 
+Para crear un nuevo closet, vaya a Cable Plant -> Closets -> [new].
 También es posible incluir fotos de los closets en la base de datos.
 Esto es útil para cuando los técnicos necesitan verificar las caracte-
 rísticas físicas del espacio del closet antes de visitarlo.
@@ -1066,14 +1099,14 @@ sección "Part of Sequence".
 
 ### Circuitos
 Luego de haber creado secuencias de filamentos desde un origen A hasta
-un destino B, puede crear un circuito para agrupar esos filamentos y 
+un destino B, puede crear un circuito para agrupar esos filamentos y
 asignarlos a un par de interfaces de dispositivos.
 
 Para crear un circuito, vaya a Cable Plant -> Circuits -> [new]. Será
 necesario proporcionar un identificador único, y luego un proveedor.
 En este caso, el proveedor podría ser su propia organización. También
 puede utilizar los circuitos en Netdot para documentar enlaces provistos
-por otros proveedores. En tales casos, el circuito probablemente no 
+por otros proveedores. En tales casos, el circuito probablemente no
 estará asociado a filamentos de cable de su propiedad.
 
 Los circuitos tiene las siguientes propiedades, entre otras:
@@ -1087,7 +1120,7 @@ Los circuitos tiene las siguientes propiedades, entre otras:
 
 Una vez creado un circuito, tendrá la opción de asociarlo a una lista de
 secuencias de filamentos. Simplemente seleccione los sitios de origen y
-destino, y luego seleccione un par de secuencias de filamentos que 
+destino, y luego seleccione un par de secuencias de filamentos que
 compondrán este circuito (asumiendo que es un circuito de fibra).
 
 También encontrará la opción de asociar un par de interfaces de dispositivos
@@ -1099,7 +1132,7 @@ en una toma de red en alguna oficina o habitación, generalmente cable de
 par de cobre categoría 5 o similar. Describiremos algunos de sus atributos:
 
 * Jack ID: Un identificador único de la toma en toda la organización. Por
-  ejemplo, una toma ubicada en el sitio #123, terminada en el closet "A", 
+  ejemplo, una toma ubicada en el sitio #123, terminada en el closet "A",
   y cuyo número de secuencia es "456" podría identificarse de manera única
   con algo similar a "123-A-456".
 * Faceplate ID: Identificador de placa. Generalmente varias tomas de red se
@@ -1175,7 +1208,7 @@ de hardware, ya sea instalado o sin instalar.
 #### Por tipo/modelo (Type/Model)
 
 Muestra un resumen del hardware por tipo y modelo, y muestra las cantidades
-de cada uno. 
+de cada uno.
 
 #### Detallado (Detailed)
 
@@ -1242,7 +1275,7 @@ en el fichero `Site.conf`.
 
 La integración de Cacti se hace de manera diferente (es más bien
 una "importación" que una "exportación"). Existe un script llamado
-'netdot_to_cacti.php' dentro del directorio export/cacti del 
+'netdot_to_cacti.php' dentro del directorio export/cacti del
 paquete Netdot. Este script debe colocarse, junto con su fichero
 de configuración, en el directorio "cli" de su instalación Cacti
 (no es necesario que sea en el mismo servidor que aloja a Netdot,
@@ -1279,12 +1312,12 @@ usuarios restringidos:
 
 *   Registros DNS: Los usuarios pueden crear, modificar y borrar
     registros de cierta zona. Los permisos puden definirse para la zona
-    completa o partes de ella, basándose en bloques IP. Por ejemplo, si 
-    un usuario tiene permisos para ver, editar y borrar registros de 
-    mizona.com, entonces puede ver, editar y borrar cualquier registro 
-    de esa zona. Por otro lado, si la zona contiene registros de la supered 
-    10.0.0.0/16 y el usuario sólo tiene control sobre registros de una 
-    subred específica 10.0.0.0/24, entonces no se asignan permisos de acceso 
+    completa o partes de ella, basándose en bloques IP. Por ejemplo, si
+    un usuario tiene permisos para ver, editar y borrar registros de
+    mizona.com, entonces puede ver, editar y borrar cualquier registro
+    de esa zona. Por otro lado, si la zona contiene registros de la supered
+    10.0.0.0/16 y el usuario sólo tiene control sobre registros de una
+    subred específica 10.0.0.0/24, entonces no se asignan permisos de acceso
     a la zona mizona.com, sino a la subred específicamente.
 
 *   Los usuarios con permiso para editar una subred no tienen la opción
@@ -1334,9 +1367,9 @@ siguiente:
 ## Registros de Auditoría
 
 Una vez usted asigne permisos a los usuarios para modificar la base de
-datos de Netdot, querrá poder saber "quién hizo qué y cuándo". Existe 
+datos de Netdot, querrá poder saber "quién hizo qué y cuándo". Existe
 una tabla en la base de datos llamada "audit", la cual registra cada
-operación de la base de datos hecha por una persona (es decir, que las 
+operación de la base de datos hecha por una persona (es decir, que las
 operaciones automáticas no se registran). Cada registro de auditoría
 contiene la siguiente información: sello de tiempo, nombre de usuario,
 tipo de operación (inserción, actualización, borrado), tabla afectada,
@@ -1357,28 +1390,28 @@ formatos como YAML.
 
 ## Recursos tipo REST Genéricos
 
-* La interfaz REST está disponible a través del siguiente URL (o similar, 
+* La interfaz REST está disponible a través del siguiente URL (o similar,
 dependiendo de su configuración de Apache):
 
 ~~~~
 https://myserver.mydomain.com/netdot/rest/
 ~~~~
 
-Esto debe cargar la clase Netdot::REST y mostrar algo como lo siguiente en su 
+Esto debe cargar la clase Netdot::REST y mostrar algo como lo siguiente en su
 navegador:
 
 ~~~~
-Netdot/1.0 REST OK. 
+Netdot/1.0 REST OK.
 ~~~~
 
-* Los recursos REST a procesar representan objetos Netdot y son parte del URI 
+* Los recursos REST a procesar representan objetos Netdot y son parte del URI
 de la petición HTTP. Por ejemplo, en este URI:
 
 ~~~~
 http://myserver.mydomain.com/netdot/rest/device/1
 ~~~~
 
-el recurso es "device/1", el cual, en una petición tipo "GET", 
+el recurso es "device/1", el cual, en una petición tipo "GET",
 retornará el contenido del objeto Device con ID "1".
 
 * Usando el siguiente URI en la petición tipo "GET":
@@ -1387,8 +1420,8 @@ retornará el contenido del objeto Device con ID "1".
 http://myserver.mydomain.com/netdot/rest/device
 ~~~~
 
-esta interfaz devolverá los contenidos de todos los objetos tipo "Device" 
-existentes. 
+esta interfaz devolverá los contenidos de todos los objetos tipo "Device"
+existentes.
 
 * Es posible especificar ciertos filtros para
 limitar el alcance de los resultados:
@@ -1397,7 +1430,7 @@ limitar el alcance de los resultados:
 http://myserver.mydomain.com/netdot/rest/device?sysname=host1
 ~~~~
 
-Esto realizará una búsqueda de todos los "devices" cuyo campo "sysname" tenga 
+Esto realizará una búsqueda de todos los "devices" cuyo campo "sysname" tenga
 el valor "host1".
 
 * La palabra clave "meta_data", en lugar de un ID de objeto, proveerá información 
@@ -1453,7 +1486,7 @@ http://netdot.localdomain/netdot/rest/host?zone=localdomain
 ~~~~
 http://netdot.localdomain/netdot/rest/host?name=foo
 ~~~~
-     
+
 * Recuperar el RR con id 1
 
 ~~~~
@@ -1466,17 +1499,17 @@ http://netdot.localdomain/netdot/rest/host?rrid=1
 http://netdot.localdomain/netdot/rest/host?subnet=192.168.1.0/24
 ~~~~
 
-#### Crear nuevos records (HTTP POST). 
+#### Crear nuevos records (HTTP POST).
 
 * Crear un récord tipo A llamado 'host1' y asignar la primera dirección IP disponible
 (Ojo: No especificar el Id):
 
 ~~~~
-URL:  http://netdot.localdomain/netdot/rest/host?name=host1
-POST: {subnet=>'192.168.1.0/24'}
+URL:  http://netdot.localdomain/netdot/rest/host
+POST: {name=>'host1', subnet=>'192.168.1.0/24'}
 ~~~~
 
-#### Actualizar récords existentes (HTTP POST). 
+#### Actualizar récords existentes (HTTP POST).
 
 * Cambiar el nombre al host con RR Id 2. Requiere rrid o ipid:
 
@@ -1495,7 +1528,7 @@ POST: {ethernet=>'DEADDEADBEEF'}
 #### Borrar records (HTTP DELETE)
 
 * Borrar el nombre de host con RR Id 3 (también libera la IP)
- 
+
 ~~~~
 http://netdot.localdomain/netdot/rest/host?rrid=3
 ~~~~
@@ -1513,7 +1546,7 @@ algunas cosas utilizando los recursos de propósito específico como
 ## Módulo Perl para programas cliente en CPAN
 
 Se provee un módulo conveniente a través de CPAN para ser utilizado
-en programas que necesiten acceso a la interfaz REST de Netdot. El 
+en programas que necesiten acceso a la interfaz REST de Netdot. El
 nombre del módulo es "Netdot::Client::REST". Puede instalarse con algo
 similar a:
 
@@ -1538,12 +1571,12 @@ llamada "prune_db.pl" en el directorio bin/ de la distribución. La sintaxis
 de dicho comando es como sigue:
 
 ~~~~ {.bash}
- usage: bin/prune_db.pl  
- -H, --history | -F, --fwt | -A, --arp | 
+ usage: bin/prune_db.pl
+ -H, --history | -F, --fwt | -A, --arp |
  -M, --macs | -I, --ips | -R, --rr | -a, --audit | -t, --hostaudit
  [ -d, --num_days <number> ] [ -n, --num_history <number> ] [ -r, --rotate ]
  [ -g, --debug ] [-h, --help]
-    
+
     -H, --history      Tablas con historia
     -F, --fwt          Tablas de reenvío
     -A, --arp          Cachés de ARP
@@ -1564,7 +1597,7 @@ de dicho comando es como sigue:
 El fichero de muestra "netdot.cron" incluído con el paquete muestra ejemplos de
 uso recomendado de este programa.
 
->**Nota**: 
+>**Nota**:
 Sea especialmente cuidadoso al utilizar las opciones -I y -M para borrar
 direcciones IP y MAC. El criterio para su eliminación depende del sello de tiempo
 "last seen" (visto por última vez) incluído en estos récords. Esto implica que

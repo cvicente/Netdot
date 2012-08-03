@@ -170,7 +170,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <p>Netdot consists of several components:</p>
 <ol style="list-style-type: decimal">
 <li><p>The database</p>
-<p>Our goal has been to make Netdot database-agnostic as much as possible. In principle, it should be able to use any database supported by Perl DBI. There are, however, some limitations to this, for example, schema migration scripts are db-specific and may not always be availab.e. Currently MySQL is fully supported. There is currently partial support for PostgreSQL.</p></li>
+<p>Our goal has been to make Netdot database-agnostic as much as possible. In principle, it should be able to use any database supported by Perl DBI. There are, however, some limitations to this, for example, schema migration scripts are db-specific and may not always be available. Currently MySQL is fully supported. There is currently partial support for PostgreSQL.</p></li>
 <li><p>The libraries</p>
 <p>The back-end code is a hierarchy of object-oriented Perl classes. It can function as an API as well. One advantage of this model is that presentation, collection and database can be separated among different physical machines.</p></li>
 <li><p>User Interface (UI)</p>
@@ -203,7 +203,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <h3 id="installing-dependencies"><a href="#TOC"><span class="header-section-number">3.2.1</span> Installing dependencies</a></h3>
 <pre><code>There are two ways to install dependencies: The first and
 the recommended way is through package managers of your
-distribution (this will also install other necessary packages, 
+distribution (this will also install other necessary packages,
 not just Perl modules).</code></pre>
 <ul>
 <li><p>For systems with APT (e.g. Debian-based systems), run:</p>
@@ -268,11 +268,11 @@ DB_DBA_PASSWORD=DATABASE-ADMIN-PASSWORD</code></pre></li>
 <li><p>From the top directory in the package, do:</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">make</span> <span class="kw">install</span> [parameters]</code></pre>
 <p>Possible parameters include:</p>
-<pre class="sourceCode bash"><code class="sourceCode bash"><span class="ot">PREFIX=</span>YOUR-PREFIX <span class="ot">(</span>default: /usr/local/netdot<span class="ot">)</span> 
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="ot">PREFIX=</span>YOUR-PREFIX <span class="ot">(</span>default: /usr/local/netdot<span class="ot">)</span>
 <span class="ot">APACHEUSER=</span>USER-YOUR-APACHE-RUNS-AS <span class="ot">(</span>default: apache<span class="ot">)</span>
 <span class="ot">APACHEGROUP=</span>GROUP-YOUR-APACHE-RUNS-AS <span class="ot">(</span>default: apache<span class="ot">)</span></code></pre>
 <blockquote>
-<p><strong>Tip</strong> Ubuntu users: will probably need to set the APACHEUSER and APACHEGROUP variables to &quot;www-data&quot;, which is the user that Apache runs as.</p>
+<p><strong>Tip</strong> Debian or Ubuntu users: will probably need to set the APACHEUSER and APACHEGROUP variables to &quot;www-data&quot;, which is the user that Apache runs as.</p>
 </blockquote></li>
 </ul>
 <h2 id="apache-configuration"><a href="#TOC"><span class="header-section-number">3.6</span> Apache Configuration</a></h2>
@@ -328,7 +328,7 @@ password: &quot;admin&quot;</code></pre>
 <p>You can also try discovering a whole subnet like this:</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# bin/updatedevices.pl -B 192.168.1.0/24 -I -c <span class="kw">&lt;</span>community<span class="kw">&gt;</span></code></pre>
 <p>In addition, you can give Netdot a specific list of devices you would like to discover:</p>
-<pre class="sourceCode bash"><code class="sourceCode bash">~# bin/updatedevices.pl -E <span class="kw">&lt;</span>text-file<span class="kw">&gt;</span> -I </code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# bin/updatedevices.pl -E <span class="kw">&lt;</span>text-file<span class="kw">&gt;</span> -I</code></pre>
 <p>The file should contain a list of device names, or IP addresses and their communities, separated by spaces, one device/community per line, for example:</p>
 <pre><code>device1 community1
 device2 community1
@@ -353,7 +353,7 @@ device3 community2
 <h4 id="basics-tab-in-this-section-you-can-view-and-edit-general-information"><a href="#TOC"><span class="header-section-number">4.1.3.1</span> Basics Tab: In this section you can view and edit general information</a></h4>
 <p>about the device, including its location, contact information, and management details.</p>
 <h4 id="interfaces-tab-here-you-can-edit-interface-descriptions-assign"><a href="#TOC"><span class="header-section-number">4.1.3.2</span> Interfaces Tab: Here you can edit interface descriptions, assign</a></h4>
-<p>network jacks, etc. by clicking on the [edit] button. You can also edit a specific interface by clicking on its number or on its name. If you are running topology discovery, you will probably see neighbor information. If for some reason the topology discovery process cannot dectect a neighbor, you can add it manually by clicking on the [add] button in the neighbor column.</p>
+<p>network jacks, etc. by clicking on the [edit] button. You can also edit a specific interface by clicking on its number or on its name. If you are running topology discovery, you will probably see neighbor information. If for some reason the topology discovery process cannot detect a neighbor, you can add it manually by clicking on the [add] button in the neighbor column.</p>
 <p>Manually adding a neighbor sets the &quot;Neighbor Fixed&quot; flag in the Interface object. This flag prevents the topology discovery process from removing the neighbor relationship.</p>
 <blockquote>
 <p><strong>Tip</strong> Neighbor relationships tend to change frequently as hardware is replaced and connections are moved. Therefore, fixed neighbor settings can become out of date pretty soon. It is preferable to let the topology discovery process maintain neighbor relationships.</p>
@@ -426,17 +426,17 @@ device3 community2
 </blockquote>
 <p>Netdot supports the following DNS records: A, AAAA, CNAME, DS, HINFO, LOC, MX, NAPTR, SRV, and TXT.</p>
 <p>You can import your existing BIND zones into netdot with the help of the tool <code>import_bind_zones.pl</code> from the import subdirectory</p>
-<pre><code> usage: import/import_bind_zones.pl     
+<pre><code> usage: import/import_bind_zones.pl
   [ -n|domain &lt;name&gt;, -f|file &lt;path&gt; ] (for single zone)
   [ -c|config &lt;path&gt;, -d|dir &lt;path&gt;  ] (for multiple zones)
   [ -g|--debug ] [-h|--help]
 
-  -c  --config &lt;path&gt;   Bind config file containing zone definitions    
-  -d, --dir &lt;path&gt;      Directory where zone files are found    
-  -n, --domain &lt;name&gt;   Domain or Zone name    
-  -f, --zonefile &lt;path&gt; Zone file    
+  -c  --config &lt;path&gt;   Bind config file containing zone definitions
+  -d, --dir &lt;path&gt;      Directory where zone files are found
+  -n, --domain &lt;name&gt;   Domain or Zone name
+  -f, --zonefile &lt;path&gt; Zone file
   -w, --wipe            Wipe out existing zone data
-  -g, --debug           Print debugging output    
+  -g, --debug           Print debugging output
   -h, --help            Print help</code></pre>
 <p>To add a new zone manually, go to <code>Management -&gt; DNS Zones</code> and provide a name for the zone. Optionally, select an existing zone which you would like to use as a template. This will tell Netdot to basically clone this template zone and all its records, but saving it with the name you provide. This is useful in cases when multiple zones share the same information, such as NS records, MX records, etc. Click on [add]. You will see a new zone created using the values from the template zone, or with default values extracted from the configuration file.</p>
 <p>Once a zone is created, it should be linked to an IP block (Subnet or Container). You can do this by clicking on the [add] button of the IP blocks section in the zone page.</p>
@@ -456,14 +456,14 @@ device3 community2
 <h3 id="subnet-scopes"><a href="#TOC"><span class="header-section-number">4.5.2</span> Subnet Scopes</a></h3>
 <p>Subnet scopes contain attributes that apply to all hosts within a subnet. Subnet scopes are contained by a global scope.</p>
 <p>The easiest way to enable DHCP for a particular subnet is from within the Subnet page. First, make sure that the subnet exists (you can create it manually or by discovering the router that serves that subnet). You can view the subnet by going to <code>Management -&gt; Address Space</code> and navigating to where the subnet is, or by simply searching for its address.</p>
-<p>Once in the subnet page, look for the Dhcp Scope section and click on [enable]. This will bring an input section where you can select the global scope and the routers option. By default, Netdot shows the first address of the subnet as the routers option value. You can change this value if your router interface has a different address. Click Save. You will now see the subnet scope listed in the Subnet page. You can click on the scope name and that will take you to the DHCP Scope page, from which you can add any other necessary attributes.</p>
+<p>Once in the subnet page, look for the Dhcp Scope section and click on [enable]. This will bring an input section where you can select the global scope and the routers option. By default, Netdot shows the first address of the subnet as the routers option value. You can change this value if your router interface has a different address. Click [Save]. You will now see the subnet scope listed in the Subnet page. You can click on the scope name and that will take you to the DHCP Scope page, from which you can add any other necessary attributes.</p>
 <h3 id="host-scopes"><a href="#TOC"><span class="header-section-number">4.5.3</span> Host Scopes</a></h3>
 <p>Host scopes allow you to assign attributes that apply to particular hosts. Host scopes also link a host's Ethernet address with its IP address.</p>
 <p>You can create a new host scope from the host page.</p>
 <ul>
 <li><p>First of all, a Static IP address object needs to exist. You can create new static IP objects by selecting the desired address from the Subnet page.</p></li>
 <li><p>Once the Static IP address is created, you need to give it name. Look for the DNS A records section and click on [add].</p></li>
-<li><p>Once you provide a name for the A record, you will be redirected to the host page. Here, find the <code>DHCP for &lt;IP address&gt;</code> section and click on [add]. Type the Ethernet address and save your changes.</p></li>
+<li><p>Once you provide a name for the A record, you will be redirected to the host page. Here, find the <code>DHCP for &lt;IP address&gt;</code> section and click on [add]. Type the Ethernet address and save your changes. If you don't see a <code>DHCP for &lt;IP address&gt;</code> section, the IP is not within a subnet that has DHCP enabled.</p></li>
 <li><p>When you click on the Ethernet address, you'll go to the MAC address page, which has a &quot;DHCP Scopes&quot; section. Clicking on the IP address will take you to the DHCP scope page. Here, you can add any specific attributes for that specific host.</p></li>
 </ul>
 <h3 id="template-scopes"><a href="#TOC"><span class="header-section-number">4.5.4</span> Template Scopes</a></h3>
@@ -483,7 +483,7 @@ device3 community2
 <p>To create a new Site, go to Cable Plant -&gt; Sites and click on [new]. You will need to enter a name. The &quot;Site ID&quot; is a value that can represent the (shorter) unique identification of that building within the organization.</p>
 <p>You can also insert pictures of Sites in the database.</p>
 <h3 id="closets"><a href="#TOC"><span class="header-section-number">4.7.2</span> Closets</a></h3>
-<p>Communications closets house network equipment and cable terminations. A Closet is located in a Room, which is located in a Floor, wich is located in a Site.</p>
+<p>Communications closets house network equipment and cable terminations. A Closet is located in a Room, which is located in a Floor, which is located in a Site.</p>
 <p>To create a new Closet, go to Cable Plant -&gt; Closets and click on [new]. It is also possible to include pictures of closets in the database. This is useful for technicians that might want to review the physical characteristics of the closet space without visiting it in person.</p>
 <h3 id="backbone-cables"><a href="#TOC"><span class="header-section-number">4.7.3</span> Backbone Cables</a></h3>
 <p>Backbone cables exist between two closets.</p>
@@ -501,14 +501,14 @@ device3 community2
 <li>Fiber Type - Multimode or Single Mode</li>
 <li>Circuit - An end-to-end circuit composed of sequences of strands</li>
 </ul>
-<p>You can modify ranges of strands from a backbone as a group. For example, if you have a new hybrid fiber cable with 24 strands, of which 12 are single mode and the other 12 are multi-mode, at the the backbone page, after the list of strands, type Range: 1-12, then select Type: &quot;Single Mode&quot;, Status: &quot;Not Terminated&quot;. Do similarly for range 13-24.</p>
-<p>Fiber strands from diferent backbone cables can be spliced together to form a sequence. To splice a range of strands, go to the bottom of the Backbone Cable page, and in the section &quot;Manually Splice Strand Range&quot;, type the range of strands that are spliced to another backbone, for example, &quot;1-12&quot;, and the corresponding strands from the next backbone, say &quot;1-12&quot; or &quot;13-24&quot;, then select the other backbone cable, and click &quot;Go&quot; You should now see the contiguous strands in the &quot;Spliced With&quot; column, and the whole sequence in &quot;Part of Sequence&quot;.</p>
+<p>You can modify ranges of strands from a backbone as a group. For example, if you have a new hybrid fiber cable with 24 strands, of which 12 are single mode and the other 12 are multi-mode, at the backbone page, after the list of strands, type Range: 1-12, then select Type: &quot;Single Mode&quot;, Status: &quot;Not Terminated&quot;. Do similarly for range 13-24.</p>
+<p>Fiber strands from different backbone cables can be spliced together to form a sequence. To splice a range of strands, go to the bottom of the Backbone Cable page, and in the section &quot;Manually Splice Strand Range&quot;, type the range of strands that are spliced to another backbone, for example, &quot;1-12&quot;, and the corresponding strands from the next backbone, say &quot;1-12&quot; or &quot;13-24&quot;, then select the other backbone cable, and click &quot;Go&quot; You should now see the contiguous strands in the &quot;Spliced With&quot; column, and the whole sequence in &quot;Part of Sequence&quot;.</p>
 <h3 id="circuits"><a href="#TOC"><span class="header-section-number">4.7.5</span> Circuits</a></h3>
 <p>After you have created sequences of strands from origin A to destination B, you can now create a circuit to group those strands and assign it to existing device interfaces.</p>
 <p>To create a new circuit, go to Cable Plant -&gt; Circuits and click on [new]. You will need to give it a unique identifier, and specify a provider. In this case, the provider might be your own organization. Circuits can also be used to document links provided by other parties. In those cases the circuit would probably not be associated with fiber strands that you own.</p>
 <p>Circuits have these attributes, among others:</p>
 <ul>
-<li>Site Link: A record that ties two sites that are linked by this circuit. A link betwen two sites can use more than one circuit.</li>
+<li>Site Link: A record that ties two sites that are linked by this circuit. A link between two sites can use more than one circuit.</li>
 <li>Status: Active, Disabled, Disconnected, Pending</li>
 <li>Type: DS3, Ethernet, Frame Relay, etc.</li>
 <li>Speed: 45Mbps, 100Mbps, etc.</li>
@@ -603,7 +603,7 @@ device3 community2
 </ul>
 <pre><code>https://myserver.mydomain.com/netdot/rest/</code></pre>
 <p>This should load the Netdot::REST class and return something like:</p>
-<pre><code>Netdot/1.0 REST OK. </code></pre>
+<pre><code>Netdot/1.0 REST OK.</code></pre>
 <ul>
 <li>Generic RESTful resources to be acted upon represent Netdot objects and are part of the request URI. For example, in this URI:</li>
 </ul>
@@ -665,8 +665,8 @@ POST: {firstname=&gt;&#39;John&#39;, lastname=&gt;&#39;Doe&#39;}</code></pre>
 <ul>
 <li>Create new A record named 'host1' using next available address in given subnet (note: do not specify an object ID):</li>
 </ul>
-<pre><code>URL:  http://netdot.localdomain/netdot/rest/host?name=host1
-POST: {subnet=&gt;&#39;192.168.1.0/24&#39;}</code></pre>
+<pre><code>URL:  http://netdot.localdomain/netdot/rest/host
+POST: {name=&#39;host1&#39;, subnet=&gt;&#39;192.168.1.0/24&#39;}</code></pre>
 <h4 id="updating-existing-records-http-post"><a href="#TOC"><span class="header-section-number">7.2.1.3</span> Updating existing records (HTTP POST)</a></h4>
 <ul>
 <li>Requires passing rrid or ipid. Rename host with RR id=2</li>
@@ -694,12 +694,12 @@ POST: {ethernet=&gt;&#39;DEADDEADBEEF&#39;}</code></pre>
 <span class="kw">&gt;install</span> Netdot::Client::REST</code></pre>
 <h1 id="database-maintenance"><a href="#TOC"><span class="header-section-number">8</span> Database Maintenance</a></h1>
 <p>Netdot's database will grow with time, thus it will be necessary to remove old information as it becomes stale. You will find a CLI utility called &quot;prune_db.pl&quot; in the bin/ directory of the distribution. The command's syntax is as follows:</p>
-<pre class="sourceCode bash"><code class="sourceCode bash"> usage: bin/prune_db.pl 
- -H, --history <span class="kw">|</span> -F, --fwt <span class="kw">|</span> -A, --arp <span class="kw">|</span> 
+<pre class="sourceCode bash"><code class="sourceCode bash"> usage: bin/prune_db.pl
+ -H, --history <span class="kw">|</span> -F, --fwt <span class="kw">|</span> -A, --arp <span class="kw">|</span>
  -M, --macs <span class="kw">|</span> -I, --ips <span class="kw">|</span> -R, --rr <span class="kw">|</span>  -a, --audit <span class="kw">|</span> -t, --hostaudit
 <span class="kw"> [</span> -d, --num_days &lt;number<span class="ot">&gt;</span><span class="kw"> ] [</span> -n, --num_history &lt;number<span class="ot">&gt;</span><span class="kw"> ] [</span> -r, --rotate<span class="kw"> ]</span>
 <span class="kw"> [</span> -g, --debug<span class="kw"> ]</span> [-h, --help]
-    
+
     -H, --history        History tables
     -F, --fwt            Forwarding Tables
     -A, --arp            ARP caches
@@ -710,25 +710,25 @@ POST: {ethernet=&gt;&#39;DEADDEADBEEF&#39;}</code></pre>
     -t, --hostaudit      Host Audit records
     -d, --num_days       Number of days worth of items to keep <span class="kw">(</span>default: 365<span class="kw">)</span>
     -n, --num_history    Number of <span class="kw">history</span> items to keep <span class="kw">for</span> each record
-    -r, --rotate         Rotate forw<span class="kw">.</span> tables and ARP <span class="kw">(</span>rather than delete records<span class="kw">)</span> 
+    -r, --rotate         Rotate forw<span class="kw">.</span> tables and ARP <span class="kw">(</span>rather than delete records<span class="kw">)</span>
     -p, --pretend        Show activity without actually deleting anything
     -g, --debug          Print <span class="kw">(</span>lots of<span class="kw">)</span> debugging output
     -h, --help           Print <span class="kw">help</span>
 
     Deletes old items from database <span class="kw">as</span> necessary.
-    
+
     * For <span class="st">&quot;history&quot;</span> tables:
-    
+
     We want to keep NUM_DAYS worth of <span class="kw">history</span> <span class="kw">for</span> every record<span class="kw">.</span> But
-    if a record doesn<span class="st">&#39;t change at all during the last NUM_DAYS, we don&#39;</span>t 
-    want to lose the <span class="kw">history</span> that does exist <span class="kw">for</span> it from before that time<span class="kw">.</span> 
-    To compromise, we will only check the <span class="kw">history</span> tables <span class="kw">for</span> old data 
-    if there are <span class="kw">more</span> than NUM_HISTORY items <span class="kw">for</span> a record<span class="kw">.</span> If there are 
-    <span class="kw">more</span> than NUM_HISTORY items <span class="kw">for</span> a record, <span class="kw">then</span> we drop anything older 
+    if a record doesn<span class="st">&#39;t change at all during the last NUM_DAYS, we don&#39;</span>t
+    want to lose the <span class="kw">history</span> that does exist <span class="kw">for</span> it from before that time.
+    To compromise, we will only check the <span class="kw">history</span> tables <span class="kw">for</span> old data
+    if there are <span class="kw">more</span> than NUM_HISTORY items <span class="kw">for</span> a record<span class="kw">.</span> If there are
+    <span class="kw">more</span> than NUM_HISTORY items <span class="kw">for</span> a record, <span class="kw">then</span> we drop anything older
     than NUM_DAYS.
-    
+
     * For address tracking tables:
-    
+
     We delete records that are older than NUM_DAYS.</code></pre>
 <p>The sample CRON file &quot;netdot.cron&quot; included with the package contains recommended uses of this command.</p>
 <blockquote>
