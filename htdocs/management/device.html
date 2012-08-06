@@ -29,7 +29,9 @@ $editcomments => undef
 $editmgmt   => undef
 $editattr   => undef
 $editips    => undef
-$addips     => undef
+$add_ip     => undef
+$add_ip_int => undef
+$add_ip_address => undef
 $editints   => undef
 $editdevbgp => undef
 $editbgp    => undef
@@ -123,6 +125,12 @@ if ( $o ){
 	if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>$e);	
 	}
+    }elsif ( $add_ip eq 'Add' ){
+	eval { $o->add_ip($add_ip_address, $add_ip_int) };
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);	
+	}
+	$add_ip = undef;
     }
 }
 
@@ -959,7 +967,7 @@ $objects
         IPs
     </div>
     <div class="containerheadright">
-%   if ( $editips || $addips ) {
+%   if ( $editips ) {
       <form name="netdotform" action="device.html" method="POST">
 	  <input type="hidden" name="id" value="<% $id %>">
 	  <input type="hidden" name="view" value="<% $view %>">
@@ -967,10 +975,10 @@ $objects
 	  <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
           <input type="submit" name="submit" value="save">
 %   }
-%   if ( !$editips && !$addips ){
+%   if ( !$editips && !$add_ip ){
 %       if ( $manager && $manager->can($user, "edit", $o) ){
           <a href="device.html?id=<% $id %>&view=<% $view %>&ipsort=<% $ipsort %>&editips=1">[edit]</a>
-          <a href="device.html?id=<% $id %>&view=<% $view %>&ipsort=<% $ipsort %>&addips=1">[add]</a>
+          <a href="device.html?id=<% $id %>&view=<% $view %>&ipsort=<% $ipsort %>&add_ip=1">[add]</a>
 %       }
 %   }
     </div>
@@ -1068,14 +1076,26 @@ if (scalar @$ips){
 if ( !$editips ){
     (@headers, @rows) = ();
     
-    if ( $addips ){
+    if ( $add_ip ){
 	# Let user add a new IP           
-	@headers = ( 'Interface', 'Address' );
+</%perl>
+      <form name="netdotform" action="device.html" method="POST">
+	  <input type="hidden" name="id" value="<% $id %>">
+	  <input type="hidden" name="view" value="<% $view %>">
+	  <input type="hidden" name="ipsort" value="<% $ipsort %>">
+<%perl>
+	@headers = ( 'Address', 'Interface' );
 	(@row) = ();
 	push( @row, 
 	      &{sub{
 		  my $ac = "";
-		  $ac .= '<select name="' . "Ipblock__" . "NEW" . "__interface" . '" >';
+		  $ac .= '<input type="text" name="add_ip_address" >';
+		  $ac;
+	      }} );
+	push( @row, 
+	      &{sub{
+		  my $ac = "";
+		  $ac .= '<select name="add_ip_int" >';
 		  $ac .= '<option value="">Select Interface</option>';
 		  foreach my $int ( sort { $a->get_label cmp $b->get_label } $o->interfaces ){
 		      $ac .= '<option value="' . $int->id . '">' . $int->get_label . '</option>';
@@ -1083,29 +1103,23 @@ if ( !$editips ){
 		  $ac .= '</select>';
 		  $ac;
 	      }} );
-	push( @row, 
-	      &{sub{
-		  my $ac = "";
-		  $ac .= '<input type="text" name="' . "Ipblock__" . "NEW" . "__address" . '" >';
-		  $ac .= '<input type="hidden" name="' . "Ipblock__" . "NEW" . "__status" . '" value="Static">';
-		  $ac;
-	      }} );
 	push( @rows, \@row );
-	
+
     }
-    
     $m->comp('/generic/data_table.mhtml', field_headers=>\@headers, data=>\@rows );
-    
+    if ( $add_ip ){
+	print '<p>';
+	print '<input type="button" name="cancel_button" value="Cancel" onClick="history.go(-1);">';
+	print '<input type="submit" name="add_ip" value="Add">';
+    }
+}
+if ( $editips || $add_ip ) {
+    print '</form>';
 }
 </%perl>
-
-%   if ( $editips || $addips ) {
-       </form>
-%   }
-
     </div>
 </div>
-% if ( !$editips && !$addips ){
+% if ( !$editips && !$add_ip ){
 <div class="container">
     <div class="containerheadleft">
         Options
