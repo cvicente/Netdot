@@ -9,8 +9,7 @@ $showheader      => 1
 $show_tasks      => undef
 $site_select     => undef
 $submit_search   => undef
-$search_name     => undef
-$search_number   => undef
+$search_site     => undef
 
 </%args>
 
@@ -73,12 +72,8 @@ my $manager = $ui->get_permission_manager($r);
            </form>
            <form name="site_tasks_search_form" action="site_tasks.html" method="POST">
                 <p>
-                  <label for="search">Site Name:</label>
-                  <input name="search_name" value="<% $search_name %>" >
-                </p>
-                <p>
-                  <label for="search">Site ID:</label>
-                  <input name="search_number" value="<% $search_number %>" > <input type="submit" name="submit_search" value="Search">
+                  <label for="search">Site Search:</label>
+                  <input name="search_site" value="<% $search_site %>" > <input type="submit" name="submit_search" value="Search">
                 </p>
            </form>
          </fieldset>
@@ -99,26 +94,17 @@ if ( $site_select ){
     $m->comp('/generic/view.html', table=>"Site", id=>$site_select);
 
 }elsif ( $submit_search ){
-    my %sargs;
-    if ( $search_name ){
-	$search_name =~ s/^\s*(.*)\s*$/$1/g; # Remove trailing and leading spaces
-	$sargs{name} = $search_name;
-    }
-    if ( $search_number ){
-	$search_number =~ s/^\s*(.*)\s*$/$1/g;
-	$sargs{number} = $search_number;
-    }
-    @results = Site->search_like(%sargs) if %sargs;
+    my $r = Netdot::Model->search_all_tables("Site:".$search_site);
+    @results = values %{ $r->{Site} } if ( exists $r->{Site} );
 
-    $search = join ' ', %sargs;
 </%perl>
 
 <div class="container">
    <div class="containerhead">
-       Search for <em><% $search %></em> returned: <% scalar(@results) %> matches
+       Search for <em><% $search_site %></em> returned: <% scalar(@results) %> matches
    </div>
    <div class="containerbody">
-%      unless ( $search){
+%      unless ( $search_site ){
 %         @results = Site->retrieve_all();
 %      }
        <& /generic/sortresults.mhtml, object =>\@results, withedit=>1&>
