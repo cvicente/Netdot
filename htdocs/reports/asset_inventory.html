@@ -3,7 +3,7 @@ Produces a report of Assets
 </%doc>
 
 <%args>
-$report_type => 'type_product'
+$report_type => undef
 $sort        => 'type'
 </%args>
 
@@ -59,13 +59,15 @@ if ( $DEBUG ){
 <div class="container">
   <div class="containerhead">Asset Inventory</div>
     <div class="containerbody"
-    <p>
-      <form name="report_form" action="asset_inventory.html" method="POST">
-         By <select name="report_type" onChange="document.report_form.submit()">
+    <p><br>
+    <form name="report_form" action="asset_inventory.html" method="POST">
+         By <select name="report_type">
+         <option value="">Select Report</option>
          <option value="type_product" <% ($report_type eq "type_product")?"SELECTED":"" %>>Type/Model Summary</option>
          <option value="detailed" <% ($report_type eq "detailed")?"SELECTED":"" %>>Detailed</option>
          </select>
-      </form>
+         <input type="submit" name="submit" class="btn" value="Go" >
+    </form>
 
 <%perl>
 

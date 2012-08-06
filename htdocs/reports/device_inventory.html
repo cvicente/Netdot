@@ -8,7 +8,7 @@ section => 'Reports'
 </%attr>
 
 <%args>
-$report_type => 'product'
+$report_type => undef
 </%args>
 
 <%init>
@@ -22,7 +22,8 @@ my (@headers, @rows) = ();
     <div class="containerbody">
     <p>
       <form name="report_form" action="device_inventory.html" method="POST">
-         By <select name="report_type" onChange="document.report_form.submit()">
+         By <select name="report_type">
+         <option value="">Select Report</option>
          <option value="product" <% ($report_type eq "product")?"SELECTED":"" %>>Type/Model</option>
          <option value="product_monitored" <% ($report_type eq "product_monitored")?"SELECTED":"" %>>Type/Model (monitored)</option>
          <option value="site" <% ($report_type eq "site")?"SELECTED":"" %>>Site/Type/Model</option>
@@ -33,6 +34,7 @@ my (@headers, @rows) = ();
          <option value="vlan_mismatches" <% ($report_type eq "vlan_mismatches")?"SELECTED":"" %>>VLAN Mismatches</option>
          <option value="os_mismatches" <% ($report_type eq "os_mismatches")?"SELECTED":"" %>>OS Mismatches</option>
          </select>
+         <input type="submit" name="submit" class="btn" value="Go" >
       </form>
 
 <%perl>
@@ -304,8 +306,6 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 	}
     }
     $m->comp('/generic/data_table.mhtml', field_headers=>\@headers, data=>\@rows);
-}else{
-    $m->comp('/generic/error.mhtml', error=>"Unknown report type: $report_type");
 }
 </%perl>
 
