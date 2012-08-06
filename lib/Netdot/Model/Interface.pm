@@ -133,6 +133,64 @@ sub find_duplex_mismatches {
     }
 }
 
+
+################################################################
+=head2 - find_vlan_mismatches
+
+    Use topology information to determine if VLAN memembership
+    of connected interfaces does not correspond
+
+  Arguments: 
+    None
+  Returns:   
+    Hasref
+  Examples:
+    my $v = Interface->find_vlan_mismatches();
+=cut
+sub find_vlan_mismatches {
+    my ($class) = @_;
+    my $dbh = $class->db_Main;
+    my $rows = $dbh->selectall_arrayref("
+    SELECT i1.id, i2.id, v1.vid, v2.vid
+    FROM   interface i1, interface i2, 
+	   interfacevlan iv1, interfacevlan iv2,
+	   vlan v1, vlan v2
+    WHERE  i1.neighbor=i2.id 
+    AND    i1.id < i2.id
+    AND    iv1.interface=i1.id AND iv2.interface=i2.id
+    AND    iv1.vlan=v1.id AND iv2.vlan=v2.id");
+
+    my %x; my %y; my %lks;
+
+    foreach my $row ( @$rows ){
+	my ($i1, $i2, $v1, $v2) = @$row;
+	$lks{$i1} = $i2;
+	$lks{$i2} = $i1;
+	$x{$i1}{$v1} = 1;
+	$y{$i2}{$v2} = 1;
+    }
+
+    my %res; my %seen;
+    foreach my $i ( keys %x ){
+	next if $seen{$i};
+	my $n = $lks{$i}; 
+	$seen{$i} = 1; $seen{$n} = 1;
+	my $vlx = join ',', sort { $a <=> $b } keys %{$x{$i}};
+	my $vly = join ',', sort { $a <=> $b } keys %{$y{$n}};
+	if ( $vlx ne $vly ){
+	    my $i_name = $class->retrieve($i)->get_label;
+	    my $n_name = $class->retrieve($n)->get_label;
+	    $res{$i}{name}    = $i_name;
+	    $res{$i}{vlans}   = $vlx;
+	    $res{$i}{n_id}    = $n;
+	    $res{$i}{n_name}  = $n_name;
+	    $res{$i}{n_vlans} = $vly;
+	}
+    }
+    return \%res;
+}
+
+
 #################################################################
 =head2 - dev_name_number - Hash all interfaces by device, name and number
 

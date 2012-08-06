@@ -30,6 +30,7 @@ my (@headers, @rows) = ();
          <option value="downtime" <% ($report_type eq "downtime")?"SELECTED":"" %>>In Scheduled Downtime</option>
          <option value="snmp_down" <% ($report_type eq "snmp_down")?"SELECTED":"" %>>SNMP Down</option>
          <option value="duplex" <% ($report_type eq "duplex")?"SELECTED":"" %>>Duplex Mismatches</option>
+         <option value="vlan_mismatches" <% ($report_type eq "vlan_mismatches")?"SELECTED":"" %>>VLAN Mismatches</option>
          <option value="os_mismatches" <% ($report_type eq "os_mismatches")?"SELECTED":"" %>>OS Mismatches</option>
          </select>
       </form>
@@ -242,6 +243,9 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 #######################################################################################
 }elsif ( $report_type eq 'duplex' ){
     $m->comp('duplex.html');
+
+}elsif ( $report_type eq 'vlan_mismatches' ){
+    $m->comp('vlan_mismatches.html');
 
 #######################################################################################
 }elsif ( $report_type eq 'os_mismatches' ){
