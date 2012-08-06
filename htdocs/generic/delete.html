@@ -74,12 +74,14 @@ if ( $table && $id ){
     }
     my %linksfrom = $table->meta_data->get_links_from();
     foreach my $i ( sort keys %linksfrom ){
-	next if $i =~ /^history_/;
 	# Table that points to us
 	my $j = (keys %{ $linksfrom{$i} })[0];
+	my $fmt = $j->meta_data;
+	next if $fmt->is_history; # Don't warn about history tables.
+	next if $fmt->is_join; # Don't warn about join tables. Confuses the user.
 	# Column in the other table that points to this table
 	my $ffield = $linksfrom{$i}{$j};
-	my $attr = $j->meta_data->get_column($ffield)->links_to_attrs();
+	my $attr = $fmt->get_column($ffield)->links_to_attrs();
 	if ( $attr->{cascade} eq 'Delete' ){
 	    foreach my $ro ( $obj->$i ){
 		push @{$cascade{$j}}, $ro->get_label;
