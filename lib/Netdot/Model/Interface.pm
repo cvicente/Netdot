@@ -175,8 +175,15 @@ sub find_vlan_mismatches {
 	next if $seen{$i};
 	my $n = $lks{$i}; 
 	$seen{$i} = 1; $seen{$n} = 1;
-	my $vlx = join ',', sort { $a <=> $b } keys %{$x{$i}};
-	my $vly = join ',', sort { $a <=> $b } keys %{$y{$n}};
+	my @l1 = sort { $a <=> $b } keys %{$x{$i}};
+	my @l2 = sort { $a <=> $b } keys %{$y{$n}};
+	if ( scalar(@l1) == 1 && scalar(@l2) == 1 ){
+	    # Assume that one vlan on each side
+	    # means that they are both the native vlan
+	    next;
+	}
+	my $vlx = join ', ', @l1;
+	my $vly = join ', ', @l2;
 	if ( $vlx ne $vly ){
 	    my $i_name = $class->retrieve($i)->get_label;
 	    my $n_name = $class->retrieve($n)->get_label;

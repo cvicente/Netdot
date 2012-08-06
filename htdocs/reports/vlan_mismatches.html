@@ -17,7 +17,12 @@ my $DEBUG = 0;
 print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
 
 my $res = Interface->find_vlan_mismatches();
-
+my $num;
+if ( defined $res && ref($res) eq 'HASH' ){
+    $num = scalar(keys %$res);
+}else{
+    $m->comp('/generic/error.mhtml', error=>"Invalid data");
+}
 print Dumper($res) if $DEBUG;
 
 my @cssitem = ("formtablec1", "formtablec2");
@@ -26,10 +31,10 @@ my $ci = 1;
 </%init>
 
 <div class="container">
-    <div class="containerheadleft"><b>VLAN Mismatches:</b></div>
+    <div class="containerheadleft"><b>VLAN Mismatches <% ($num) %>:</b></div>
     <div class="containerheadright">&nbsp;</div>
         <div class="containerbody">
-%       if ( !(%$res) ){
+%       if ( !$num ){
 	   <p>No mismatches found.</p>
 %       }else{
         <table border="0" cellpading="0" width="100%">
