@@ -4,8 +4,49 @@ use base 'Netdot::Model';
 use warnings;
 use strict;
 
+=head1 NAME
 
-############################################################################
+Netdot::Model::Asset - Asset class
+
+=head1 SYNOPSIS
+
+my $installed = Asset->get_installed_hash();
+
+=head1 CLASS METHODS
+=cut
+
+###########################################################################
+=head2 get_installed_hash - Build a hash of installed assets keyed by id
+
+  Arguments: 
+    None
+  Returns: 
+    Hashref with key = asset.id, value = 1
+
+=cut
+sub get_installed_hash {
+    my ($class) = @_;
+    my %installed;
+    my $dbh = $class->db_Main();
+    # Note: Tried to do this in one query but for some reason it takes forever
+    my $rows1 = $dbh->selectall_arrayref('
+                       SELECT DISTINCT(asset.id) 
+                       FROM   asset, device
+                       WHERE  device.asset_id=asset.id');
+    
+    my $rows2 = $dbh->selectall_arrayref('
+                       SELECT DISTINCT(asset.id) 
+                       FROM   asset, device
+                       WHERE  device.asset_id=asset.id');
+    
+    foreach my $row ( @$rows1, @$rows2 ){
+	my $id = $row->[0];
+	$installed{$id} = 1;
+    }
+    return \%installed;
+}
+
+###########################################################################
 =head2 search_like -  Search for asset objects.  Allow substrings
 
   Overridden to allow producttype to be searched on
@@ -16,7 +57,6 @@ use strict;
     Array of Asset objects or iterator
 
 =cut
-
 sub search_like{
     my ($class, %argv) = @_;
     $class->isa_class_method('search_like');

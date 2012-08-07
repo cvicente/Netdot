@@ -225,20 +225,8 @@ if ( $submit ){
 
     }elsif ( $submit eq 'Search' ){
 	
-	my %installed;
-	if ( $search_type ne 'all' ){
-	    my $dbh = Netdot::Model->db_Main();
-	    my $rows = $dbh->selectall_arrayref('
-                       SELECT asset.id 
-                       FROM   asset, device, devicemodule 
-                       WHERE  device.asset_id=asset.id
-                         OR   devicemodule.asset_id=asset.id');
-	    foreach my $row ( @$rows ){
-		my $id = $row->[0];
-		$installed{$id} = 1;
-	    }
-	}
-	print '%installed contains: ', Dumper(%installed) if $DEBUG;
+	my $installed = Asset->get_installed_hash() 
+	    unless $search_type eq 'all';
 
 	# Search for labels in Asset table and foreign objects recursively
 	my $r1 = $ui->select_query(table=>'Asset', terms=>[$search]);
@@ -253,8 +241,8 @@ if ( $submit ){
 	my %res;
 	for ( @assets, values %$r1 ) {
 	    if ( $search_type eq 'all' || 
-		 ($search_type eq 'installed' && $installed{$_->id}) ||
-		 ($search_type eq 'not installed' && !exists $installed{$_->id}) ){
+		 ($search_type eq 'installed' && $installed->{$_->id}) ||
+		 ($search_type eq 'not installed' && !exists $installed->{$_->id}) ){
 		$res{$_->id} = $_;
 	    }
 	}

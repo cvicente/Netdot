@@ -25,18 +25,8 @@ if ( $report_type eq 'type_product' || $report_type eq 'detailed' ){
               WHERE  asset.product_id=product.id
                  AND product.type=producttype.id");
     
-    my $iassets = $dbh->selectall_arrayref("
-               SELECT device.asset_id, devicemodule.asset_id 
-                 FROM device, devicemodule
-                WHERE device.asset_id IS NOT NULL 
-                  AND devicemodule.asset_id IS NOT NULL
-                  AND device.asset_id < devicemodule.asset_id");
     
-    my %installed;
-    foreach my $row ( @$iassets ){
-	$installed{$row->[0]} = 1;
-	$installed{$row->[1]} = 1;
-    }
+    my $installed = Asset->get_installed_hash();
     
     foreach my $row ( @$assets ){
 	my ($id, $sn, $inv, $res, $pid, $pname, $ptype) = @$row;
@@ -44,7 +34,7 @@ if ( $report_type eq 'type_product' || $report_type eq 'detailed' ){
 	$t{$ptype}{prod}{$pname}{total}++;
 	$t{$ptype}{prod}{$pname}{id}  = $pid;
 	$t{$ptype}{prod}{$pname}{assets}{$sn}{id}  = $id;
-	$t{$ptype}{prod}{$pname}{assets}{$sn}{installed} = (exists($installed{$id}))? 1 : 0;
+	$t{$ptype}{prod}{$pname}{assets}{$sn}{installed} = (exists($installed->{$id}))? 1 : 0;
 	$t{$ptype}{prod}{$pname}{assets}{$sn}{inv} = $inv;
 	$t{$ptype}{prod}{$pname}{assets}{$sn}{res} = $res;
 	$grandtotal++;
@@ -54,7 +44,7 @@ if ( $report_type eq 'type_product' || $report_type eq 'detailed' ){
 	use Data::Dumper;
 	print '<pre>';
 	print Dumper(%t);
-	print Dumper(%installed);
+	print Dumper($installed);
 	print '</pre>';
     }
 }
