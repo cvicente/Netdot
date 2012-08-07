@@ -11,48 +11,52 @@ $sort        => 'type'
 my $DEBUG = 0;
 my (@headers, @rows, @assets) = ();
 
-my $dbh = Netdot::Model->db_Main;
+my %t;
+my $grandtotal = 0;
 
-my $assets = $dbh->selectall_arrayref("
+if ( $report_type eq 'type_product' || $report_type eq 'detailed' ){
+
+    my $dbh = Netdot::Model->db_Main;
+    
+    my $assets = $dbh->selectall_arrayref("
               SELECT asset.id, asset.serial_number, asset.inventory_number, asset.reserved_for,
                      product.id, product.name, producttype.name
               FROM   asset, product, producttype 
               WHERE  asset.product_id=product.id
                  AND product.type=producttype.id");
-
-my $iassets = $dbh->selectall_arrayref("
+    
+    my $iassets = $dbh->selectall_arrayref("
                SELECT device.asset_id, devicemodule.asset_id 
                  FROM device, devicemodule
                 WHERE device.asset_id IS NOT NULL 
                   AND devicemodule.asset_id IS NOT NULL
-                  AND device.asset_id < devicemodule.asset_id
-");
+                  AND device.asset_id < devicemodule.asset_id");
+    
+    my %installed;
+    foreach my $row ( @$iassets ){
+	$installed{$row->[0]} = 1;
+	$installed{$row->[1]} = 1;
+    }
+    
+    foreach my $row ( @$assets ){
+	my ($id, $sn, $inv, $res, $pid, $pname, $ptype) = @$row;
+	$t{$ptype}{total}++;
+	$t{$ptype}{prod}{$pname}{total}++;
+	$t{$ptype}{prod}{$pname}{id}  = $pid;
+	$t{$ptype}{prod}{$pname}{assets}{$sn}{id}  = $id;
+	$t{$ptype}{prod}{$pname}{assets}{$sn}{installed} = (exists($installed{$id}))? 1 : 0;
+	$t{$ptype}{prod}{$pname}{assets}{$sn}{inv} = $inv;
+	$t{$ptype}{prod}{$pname}{assets}{$sn}{res} = $res;
+	$grandtotal++;
+    }
 
-my %installed;
-foreach my $row ( @$iassets ){
-    $installed{$row->[0]} = 1;
-    $installed{$row->[1]} = 1;
-}
-
-my %t;
-my $grandtotal = 0;
-foreach my $row ( @$assets ){
-    my ($id, $sn, $inv, $res, $pid, $pname, $ptype) = @$row;
-    $t{$ptype}{total}++;
-    $t{$ptype}{prod}{$pname}{total}++;
-    $t{$ptype}{prod}{$pname}{id}  = $pid;
-    $t{$ptype}{prod}{$pname}{assets}{$sn}{id}  = $id;
-    $t{$ptype}{prod}{$pname}{assets}{$sn}{installed} = (exists($installed{$id}))? 1 : 0;
-    $t{$ptype}{prod}{$pname}{assets}{$sn}{inv} = $inv;
-    $t{$ptype}{prod}{$pname}{assets}{$sn}{res} = $res;
-    $grandtotal++;
-}
-if ( $DEBUG ){
-    use Data::Dumper;
-    print '<pre>';
-    print Dumper(%t);
-    print Dumper(%installed);
-    print '</pre>';
+    if ( $DEBUG ){
+	use Data::Dumper;
+	print '<pre>';
+	print Dumper(%t);
+	print Dumper(%installed);
+	print '</pre>';
+    }
 }
 </%init>
 
