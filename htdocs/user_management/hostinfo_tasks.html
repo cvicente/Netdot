@@ -60,21 +60,21 @@ my $MAC  = Netdot->get_mac_regex();
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
 
 <%perl>
-my (@ipblocks, @zones);
+my (%ipblocks, @zones);
 my $ao = $ui->get_allowed_objects($r, $user);
 print '<pre>', Dumper($ao), '<pre>' if $DEBUG;
 if ( exists $ao->{Ipblock} ){
     foreach my $id ( keys %{$ao->{Ipblock}} ){
 	if ( my $ip = Ipblock->retrieve($id) ){
 	    if ( $ip->status->name eq 'Subnet' ){
-		push @ipblocks, $ip;
+		$ipblocks{$id} = $ip;
 	    }elsif ( $ip->status->name eq 'Container' ){
 		foreach my $n ( @{$ip->get_descendants_trie} ){
 		    next unless defined $n;
 		    my $chid = $n->data;
 		    if ( my $ch = Ipblock->retrieve($chid) ){
 			if ( $ch->status->name eq 'Subnet' ){
-			    push @ipblocks, $ch;
+			    $ipblocks{$chid} = $ch;
 			}
 		    }
 		}
@@ -115,13 +115,13 @@ my %ipb_actions = (
         </form>
     </fieldset>
 
-% if ( @ipblocks ){
+% if ( %ipblocks ){
     <fieldset class="small">
         <legend>IP Block Actions</legend>
         <form name="actions_form" action="hostinfo_tasks.html" method="POST">
         <select name="ipblock">
             <option value="">- Select Block -</option>
-%       foreach my $o ( sort { $a->address_numeric <=> $b->address_numeric } @ipblocks ){
+%       foreach my $o ( sort { $a->address_numeric <=> $b->address_numeric } values %ipblocks ){
 %           if ( $ipblock && $ipblock eq $o->id ){
                 <option value="<% $o %>" SELECTED><% $o->get_label %></option>
 %           }else{
@@ -192,7 +192,7 @@ if ( $submit && $ipblock ){
     $search =~ s/^\s*(.*)\s*$/$1/g;
     my %rrids;
     my @allrecords;
-    foreach my $ipblock ( @ipblocks ){
+    foreach my $ipblock ( values %ipblocks ){
 	if ( my $zone = $ipblock->forward_zone ){
 	    my $records = $zone->get_hosts($ipblock->id);
 	    push @allrecords, @$records;
