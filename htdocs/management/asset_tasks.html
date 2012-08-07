@@ -18,6 +18,7 @@ $view               => 'search'
 $show_tasks         => undef
 $showheader         => 1
 $search             => undef
+$search_type        => 'all'  # installed, not installed, all
 </%args>
 
 
@@ -92,6 +93,15 @@ my @list;
                 <p>
                 <label for="Find">Keywords:</label>
                 <input type="text" name="search" class="txt" value="<% $search %>"> 
+		<select name="search_type">
+%		foreach my $type ( 'installed', 'not installed', 'all' ){
+%                   if ( $search_type eq $type ){
+		        <option value="<% $type %>" SELECTED><% $type %></option>
+%                   }else{
+		        <option value="<% $type %>"><% $type %></option>
+%                   }
+%	        }   
+		</select>
                 <input name="submit" value="Search" class="btn" type="submit">
                 </p>
             </form>
@@ -214,11 +224,21 @@ if ( $submit ){
 	
 
     }elsif ( $submit eq 'Search' ){
-	$m->comp('/generic/no_search_criteria.html')
-	    unless $search;
+	
+	my %installed;
+	if ( $search_type ne 'all' ){
+	    my $dbh = Netdot::Model->db_Main();
+	    my $rows = $dbh->selectall_arrayref('SELECT asset.id FROM asset, device 
+                                                  WHERE device.asset_id=asset.id');
+	    foreach my $row ( @$rows ){
+		my $id = $row->[0];
+		$installed{$id} = 1;
+	    }
+	}
+	print '%installed contains: ', Dumper(%installed) if $DEBUG;
 
 	# Search for labels in Asset table and foreign objects recursively
-	my $res = $ui->select_query(table=>'Asset', terms=>[$search]);
+	my $r1 = $ui->select_query(table=>'Asset', terms=>[$search]);
 
 	# Search for other fields in Asset table
 	my @where;
@@ -227,9 +247,15 @@ if ( $submit ){
 	    push @where, { $field => { '-like' => '%'.$search.'%' } };
 	}
 	my @assets = Asset->search_where(\@where);
-	for ( @assets ) { $res->{$_->id} = $_ };
-	@list = values %$res;
-
+	my %res;
+	for ( @assets, values %$r1 ) {
+	    if ( $search_type eq 'all' || 
+		 ($search_type eq 'installed' && $installed{$_->id}) ||
+		 ($search_type eq 'not installed' && !exists $installed{$_->id}) ){
+		$res{$_->id} = $_;
+	    }
+	}
+	@list = values %res;
 	if ( @list ){
 	    $m->comp('/generic/show_search_results.mhtml', search=>$search, list=>\@list, dowindow=>1 );
 	}else{
