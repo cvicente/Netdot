@@ -176,7 +176,8 @@ if ( $submit && $ipblock ){
 	my $ipblock = Ipblock->retrieve($ipblock);
 	if ( my $zone = $ipblock->forward_zone ){
 	    my $records = $zone->get_hosts($ipblock->id);
-	    $m->comp('/management/hostlist.mhtml', records=>$records, withedit=>1, return_args=>"?ipblock=$ipblock&ipblock_action='browse_records'");
+	    $m->comp('/management/hostlist.mhtml', records=>$records, withedit=>1, 
+		     return_args=>"?ipblock=$ipblock&ipblock_action='browse_records'");
 	}else{
 	    $m->comp('/generic/error.mhtml', error=>$ipblock->get_label." not associated with a zone");
 	}

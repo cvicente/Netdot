@@ -803,6 +803,7 @@ foreach my $o ( values %rrs ) {
     #####################################################################################################
     #RRNS
     if ( $o->name eq '@' || $o->name eq $o->zone->name || (!$o->a_records && !$o->ptr_records)  ){
+
 	print '<div class="container" style="margin-left:10px">';
 	print '<div class="containerheadleft"><b>Name Servers '.$ui->table_descr_link('RRNS', '(NS)').'</b></div>';
 	print '<div class="containerheadright">';
@@ -829,8 +830,14 @@ foreach my $o ( values %rrs ) {
 	#display/edit
 	print '<div class="containerbody">';
 	if (my @nss = $o->ns_records()) {
+	    my $ns_edit = $edit;
+	    unless ( $manager && $manager->can($user, 'access_section', 'edit_ns_records') 
+		 && $manager->can($user, 'edit', $o) ){
+		# Do not allow edits unless they have permissions
+		$ns_edit = 0;
+	    }
 	    foreach my $ns (@nss) {
-		$ui->add_to_fields(o=>$ns, edit=>$edit, fields=>['nsdname', 'ttl'],
+		$ui->add_to_fields(o=>$ns, edit=>$ns_edit, fields=>['nsdname', 'ttl'],
 				   field_headers=>\@field_headers, cell_data=>\@cell_data,
 				   linkpages=>['view.html',''], with_delete=>1);
 		$m->comp('/generic/attribute_table.mhtml', %comphash);
@@ -862,7 +869,8 @@ foreach my $o ( values %rrs ) {
 	print '<script type="text/javascript" language="javascript">uricomponents[\'rrds_'.$o.'_content\']=encodeURIComponent(\''.$newds.'\');</script>';
 	print '&nbsp;';
 	if ( !$edit ){
-	    if ( $manager && $manager->can($user, 'edit', $o) ){
+	    if ( $manager && $manager->can($user, 'access_section', 'add_ds_records') 
+		 && $manager->can($user, 'edit', $o) ){
 		print '<div id="rrds_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrds\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
 	    }
 	}
@@ -871,8 +879,14 @@ foreach my $o ( values %rrs ) {
 	#display/edit
 	print '<div class="containerbody">';
 	if (my @dss = $o->ds_records()) {
+	    my $ds_edit = $edit;
+	    unless ( $manager && $manager->can($user, 'access_section', 'edit_ns_records') 
+		 && $manager->can($user, 'edit', $o) ){
+		# Do not allow edits unless they have permissions
+		$ds_edit = 0;
+	    }
 	    foreach my $ds (@dss) {
-		$ui->add_to_fields(o=>$ds, edit=>$edit, fields=>\@field_names,
+		$ui->add_to_fields(o=>$ds, edit=>$ds_edit, fields=>\@field_names,
 				   field_headers=>\@field_headers, cell_data=>\@cell_data,
 				   with_delete=>1);
 		$m->comp('/generic/attribute_table.mhtml', %comphash);
