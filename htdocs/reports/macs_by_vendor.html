@@ -10,60 +10,70 @@ MAC address Report
 title   => 'MAC Address Report' 
 section => 'Reports'
 </%attr>
+
 <%args>
 $topn => 100;
 $type => 'node'
+$submit => undef
 </%args>
+
 <%init>
 my $DEBUG = 0;
-my ($stats, $total) = PhysAddr->vendor_count($type);
-print "<pre>", Dumper($stats), "</pre>" if $DEBUG;
-</%init>
-<%perl>
+my ($stats, $total);
 my (@headers, @rows) = ();
+</%init>
 
-@headers = ( 'OUI', 'Vendor', 'Count', '%', );
+<%perl>
+if ( $submit ){
+    ($stats, $total) = PhysAddr->vendor_count($type);
+    print "<pre>", Dumper($stats), "</pre>" if $DEBUG;
 
-my @row = ();
-push( @row, "Total in Database" );
-push( @row, "" );
-push( @row, "<strong>$total</strong>" );
-push( @row, "&nbsp;" );
-push( @rows, \@row );
+    @headers = ( 'OUI', 'Vendor', 'Count', '%', );
 
-my $i;
-foreach my $oui ( sort { $stats->{$b}{total} <=> $stats->{$a}{total} } keys %$stats ){
-    $i++;
     my @row = ();
-    my $vendor = $stats->{$oui}{vendor};
-    my $count  = $stats->{$oui}{total};
-    my $srch   = "$oui*";
-    my $slink  = "<a href=\"../generic/search_obj.html?table=PhysAddr&address=$srch&res=1\">$oui</a>";
-    push( @row, $slink, $vendor, $count );
-    push( @row, sprintf("%02.2f",$count/$total * 100) );
+    push( @row, "Total in Database" );
+    push( @row, "" );
+    push( @row, "<strong>$total</strong>" );
+    push( @row, "&nbsp;" );
     push( @rows, \@row );
-    last if ( $i == $topn );
+
+    my $i;
+    foreach my $oui ( sort { $stats->{$b}{total} <=> $stats->{$a}{total} } keys %$stats ){
+	$i++;
+	my @row = ();
+	my $vendor = $stats->{$oui}{vendor};
+	my $count  = $stats->{$oui}{total};
+	my $srch   = "$oui*";
+	my $slink  = "<a href=\"../generic/search_obj.html?table=PhysAddr&address=$srch&res=1\">$oui</a>";
+	push( @row, $slink, $vendor, $count );
+	push( @row, sprintf("%02.2f",$count/$total * 100) );
+	push( @rows, \@row );
+	last if ( $i == $topn );
+    }
 }
 </%perl>
 
 <div class="container">
-<div class="containerhead">MAC Addresses by Vendor (top <% $topn %>)</div>
-<div class="containerbody">
-<p>
-<form action="macs_by_vendor.html" method="POST">
-Top <input type="text" size="4" name="topn" value="<% $topn %>"> Vendors
-<br>Of type: 
+ <div class="containerhead">MAC Addresses by Vendor (top <% $topn %>)</div>
+ <div class="containerbody">
+ <p>
+ <form action="macs_by_vendor.html" method="POST">
+ Top <input type="text" size="4" name="topn" value="<% $topn %>"> Vendors of type: 
 % my %checked = (node => "",  infrastructure => "",   all => "");
 % $checked{$type} = "SELECTED";
 % 
-<select name="type">
-  <option value="node" <% $checked{node} %>>Node</option>
-  <option value="infrastructure" <% $checked{infrastructure} %>>Infrastructure</option>
-  <option value="all" <% $checked{all} %>>All</option>
-</select>
-<input type="submit" value="Submit" name="submit">
-</form>
-<& /generic/data_table.mhtml, field_headers=>\@headers, data=>\@rows, style=>['', '', 'text-align: right', 'text-align: right'] &>
+ <select name="type">
+   <option value="node" <% $checked{node} %>>Node</option>
+   <option value="infrastructure" <% $checked{infrastructure} %>>Infrastructure</option>
+   <option value="all" <% $checked{all} %>>All</option>
+ </select>
+ <input type="submit" value="Submit" name="submit">
+ </form>
 
+% if ( $submit ){
+ <& /generic/data_table.mhtml, field_headers=>\@headers, data=>\@rows, 
+   style=>['', '', 'text-align: right', 'text-align: right'] &>
+% }
+ </div>
 </div>
-</div>
+

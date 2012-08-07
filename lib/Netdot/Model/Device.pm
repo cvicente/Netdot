@@ -2886,22 +2886,44 @@ sub info_update {
 }
 
 ############################################################################
-=head2 add_ip - Add an IP address (assumes only one interface)
+=head2 add_ip - Add an IP address
    
   Arguments:
     IP address in dotted-quad notation
+    Interface  (Optional. Will use first interface if not passed)
   Returns:
     Ipblock object
   Examples:
-    $device->add_ip('10.0.0.1');
+    $device->add_ip('10.0.0.1', $int);
 
 =cut
 sub add_ip {
-    my ($self, $address) = @_;
+    my ($self, $address, $int) = @_;
     $self->isa_object_method('add_ip');
-    my $int = $self->interfaces->first;
-    my $n = Ipblock->insert({address=>$address, interface=>$int, status=>'Static'});
-    return $n;
+    $self->throw_user("Missing required IP address argument")
+	unless $address;
+    my ($prefix, $version);
+    if ( Ipblock->matches_v4($address) ){
+	$version = 4; $prefix = 32;
+    }elsif ( Ipblock->matches_v6($address) ){
+	$version = 6; $prefix = 128;
+    }else{
+	$self->throw_user("Invalid IP address: $address");
+    }
+    $int ||= $self->interfaces->first;
+    $self->throw_user("Need an interface to add this IP to")
+	unless $int;
+    my $ipb;
+    if ( $ipb = Ipblock->search(address=>$address, 
+				    version=>$version, prefix=>$prefix)->first ){
+	$ipb->update({interface=>$int, status=>'Static'});
+	
+    }else{
+	$ipb = Ipblock->insert({address=>$address, prefix=>$prefix, 
+				version=>$version, interface=>$int, 
+				status=>'Static'});
+    }
+    return $ipb;
 }
 ############################################################################
 =head2 get_ips - Get all IP addresses from a device

@@ -3,7 +3,7 @@ Produces a report of Assets
 </%doc>
 
 <%args>
-$report_type => 'type_product'
+$report_type => undef
 $sort        => 'type'
 </%args>
 
@@ -11,61 +11,57 @@ $sort        => 'type'
 my $DEBUG = 0;
 my (@headers, @rows, @assets) = ();
 
-my $dbh = Netdot::Model->db_Main;
+my %t;
+my $grandtotal = 0;
 
-my $assets = $dbh->selectall_arrayref("
+if ( $report_type eq 'type_product' || $report_type eq 'detailed' ){
+
+    my $dbh = Netdot::Model->db_Main;
+    
+    my $assets = $dbh->selectall_arrayref("
               SELECT asset.id, asset.serial_number, asset.inventory_number, asset.reserved_for,
                      product.id, product.name, producttype.name
               FROM   asset, product, producttype 
               WHERE  asset.product_id=product.id
                  AND product.type=producttype.id");
+    
+    
+    my $installed = Asset->get_installed_hash();
+    
+    foreach my $row ( @$assets ){
+	my ($id, $sn, $inv, $res, $pid, $pname, $ptype) = @$row;
+	$t{$ptype}{total}++;
+	$t{$ptype}{prod}{$pname}{total}++;
+	$t{$ptype}{prod}{$pname}{id}  = $pid;
+	$t{$ptype}{prod}{$pname}{assets}{$sn}{id}  = $id;
+	$t{$ptype}{prod}{$pname}{assets}{$sn}{installed} = (exists($installed->{$id}))? 1 : 0;
+	$t{$ptype}{prod}{$pname}{assets}{$sn}{inv} = $inv;
+	$t{$ptype}{prod}{$pname}{assets}{$sn}{res} = $res;
+	$grandtotal++;
+    }
 
-my $iassets = $dbh->selectall_arrayref("
-               SELECT device.asset_id, devicemodule.asset_id 
-                 FROM device, devicemodule
-                WHERE device.asset_id IS NOT NULL 
-                  AND devicemodule.asset_id IS NOT NULL
-                  AND device.asset_id < devicemodule.asset_id
-");
-
-my %installed;
-foreach my $row ( @$iassets ){
-    $installed{$row->[0]} = 1;
-    $installed{$row->[1]} = 1;
-}
-
-my %t;
-my $grandtotal = 0;
-foreach my $row ( @$assets ){
-    my ($id, $sn, $inv, $res, $pid, $pname, $ptype) = @$row;
-    $t{$ptype}{total}++;
-    $t{$ptype}{prod}{$pname}{total}++;
-    $t{$ptype}{prod}{$pname}{id}  = $pid;
-    $t{$ptype}{prod}{$pname}{assets}{$sn}{id}  = $id;
-    $t{$ptype}{prod}{$pname}{assets}{$sn}{installed} = (exists($installed{$id}))? 1 : 0;
-    $t{$ptype}{prod}{$pname}{assets}{$sn}{inv} = $inv;
-    $t{$ptype}{prod}{$pname}{assets}{$sn}{res} = $res;
-    $grandtotal++;
-}
-if ( $DEBUG ){
-    use Data::Dumper;
-    print '<pre>';
-    print Dumper(%t);
-    print Dumper(%installed);
-    print '</pre>';
+    if ( $DEBUG ){
+	use Data::Dumper;
+	print '<pre>';
+	print Dumper(%t);
+	print Dumper($installed);
+	print '</pre>';
+    }
 }
 </%init>
 
 <div class="container">
   <div class="containerhead">Asset Inventory</div>
     <div class="containerbody"
-    <p>
-      <form name="report_form" action="asset_inventory.html" method="POST">
-         By <select name="report_type" onChange="document.report_form.submit()">
+    <p><br>
+    <form name="report_form" action="asset_inventory.html" method="POST">
+         By <select name="report_type">
+         <option value="">Select Report</option>
          <option value="type_product" <% ($report_type eq "type_product")?"SELECTED":"" %>>Type/Model Summary</option>
          <option value="detailed" <% ($report_type eq "detailed")?"SELECTED":"" %>>Detailed</option>
          </select>
-      </form>
+         <input type="submit" name="submit" class="btn" value="Go" >
+    </form>
 
 <%perl>
 

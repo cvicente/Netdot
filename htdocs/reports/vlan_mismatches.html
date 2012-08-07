@@ -1,0 +1,63 @@
+<%doc>
+Show VLAN mismatches
+</%doc>
+%
+%
+<%attr>
+title => 'VLAN Mismatches' 
+</%attr>
+%
+%
+<%args>
+</%args>
+%
+%
+<%init>
+my $DEBUG = 0;
+print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
+
+my $res = Interface->find_vlan_mismatches();
+my $num;
+if ( defined $res && ref($res) eq 'HASH' ){
+    $num = scalar(keys %$res);
+}else{
+    $m->comp('/generic/error.mhtml', error=>"Invalid data");
+}
+print Dumper($res) if $DEBUG;
+
+my @cssitem = ("formtablec1", "formtablec2");
+my $ci = 1;
+
+</%init>
+
+<div class="container">
+    <div class="containerheadleft"><b>VLAN Mismatches <% ($num) %>:</b></div>
+    <div class="containerheadright">&nbsp;</div>
+        <div class="containerbody">
+%       if ( !$num ){
+	   <p>No mismatches found.</p>
+%       }else{
+        <table border="0" cellpading="0" width="100%">
+            <tr class="rowtitle2">
+%           foreach ('Interface', 'VLANs', 'Interface', 'VLANs'){
+                <td class="formtabletitle"><% $_ %></td>
+%           }
+            </tr>
+%           foreach my $iid ( sort { $res->{$a}{name} cmp $res->{$b}{name} } keys %$res ){
+%               my $name    = $res->{$iid}{name};
+%               my $vlans   = $res->{$iid}{vlans};
+%               my $n_id    = $res->{$iid}{n_id};
+%               my $n_name  = $res->{$iid}{n_name};
+%               my $n_vlans = $res->{$iid}{n_vlans};
+%               $ci = ($ci + 1) % 2;
+                <tr class="<% $cssitem[$ci] %>">
+                <td><a href="../generic/view.html?table=Interface&id=<% $iid %>"><% $name %></a></td>
+                <td><% $vlans %></td>
+                <td><a href="../generic/view.html?table=Interface&id=<% $n_id %>"><% $n_name %></a></td>
+                <td><% $n_vlans %></td>
+                </tr>    
+%           }
+        </table>
+%       }
+        </div>
+</div>

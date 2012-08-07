@@ -59,18 +59,18 @@ Netdot features include:
     vendors, etc.
 
 *   Netdot can generate configuration files for various other tools,
-    including: 
+    including:
 
     * [Nagios](http://www.nagios.org),
     * [Sysmon](http://www.sysmon.org),
     * [RANCID](http://www.shrubbery.net/rancid),
-    * [Cacti](http://www.cacti.net). 
+    * [Cacti](http://www.cacti.net).
     * [ISC BIND and ISC DHCPD](http://www.isc.org)
     * [Smokeping](http://oss.oetiker.ch/smokeping/)
 
-*   Netdot implements role-based access control, allowing tasks 
-    such as IP address management, documentation of switch/router ports 
-    and updating of contact information to be delegated to specific 
+*   Netdot implements role-based access control, allowing tasks
+    such as IP address management, documentation of switch/router ports
+    and updating of contact information to be delegated to specific
     groups with limited access to the web interface.
 
 ## Structure
@@ -83,7 +83,7 @@ Netdot consists of several components:
     possible. In principle, it should be able to use any database
     supported by Perl DBI. There are, however, some limitations to this,
     for example, schema migration scripts are db-specific and may not
-    always be availab.e. Currently MySQL is fully supported. There is
+    always be available. Currently MySQL is fully supported. There is
     currently partial support for PostgreSQL.
 
 2.  The libraries
@@ -144,7 +144,7 @@ Netdot, i.e.
 *   The GraphViz package, available at:
     <http://www.graphviz.org/>
 
-*   The latest Netdisco MIBs. 
+*   The latest Netdisco MIBs.
     <http://sourceforge.net/projects/netdisco/files/netdisco-mibs/>
 
 *   Various Perl modules.
@@ -155,7 +155,7 @@ Netdot, i.e.
 
     There are two ways to install dependencies: The first and
     the recommended way is through package managers of your
-    distribution (this will also install other necessary packages, 
+    distribution (this will also install other necessary packages,
     not just Perl modules).
 
 *   For systems with APT (e.g. Debian-based systems), run:
@@ -179,7 +179,7 @@ Netdot, i.e.
     ~~~~
 
 > **Tip**
-If you are still missing Perl modules after running this step, 
+If you are still missing Perl modules after running this step,
 you can complete the process in the next step.
 
 *   If your package manager is not supported, or if you are missing
@@ -192,7 +192,7 @@ you can complete the process in the next step.
     ~% make testdeps
     ~~~~
 
-    Then, use this to install the missing modules:    
+    Then, use this to install the missing modules:
 
     ~~~~ {.bash}
     ~# make installdeps
@@ -245,7 +245,7 @@ requirements that need to be satisfied:
 Netdot's database schema **usually** only changes between major
 versions. For example, if upgrading from 0.8.x to 0.9.x, you will need
 to run an upgrade script to adapt your current database to the new
-schema. 
+schema.
 
 If you are supposed to upgrade, this can be accomplished by running this
 command:
@@ -267,12 +267,12 @@ Finally, install the new Netdot code and restart Apache:
 
 *   Prepare your database administrator (DBA) account
 
-    MySQL users: The DBA account for MySQL is usually created when installing 
+    MySQL users: The DBA account for MySQL is usually created when installing
     the package. Make sure to set a password during the installation.
 
-    Pg users: PostgreSQL normally comes with a default DBA account named 'postgres'. 
+    Pg users: PostgreSQL normally comes with a default DBA account named 'postgres'.
     After installing, you may need to set the password for this account as follows:
-    
+
     ~~~~ {.bash}
     ~% sudo -u postgres psql postgres
     ~~~~
@@ -284,10 +284,10 @@ Finally, install the new Netdot code and restart Apache:
     ~~~~
 
     and give your password when prompted. Type Control+D to exit the prompt.
-    
+
 *   Adjust your database configuration if necessary
-    
-    MySQL users: If you intend to use the IPAM functionalities in Netdot, you might 
+
+    MySQL users: If you intend to use the IPAM functionalities in Netdot, you might
     need to increase the maximum packet buffer size in my.conf to something like:
 
     ~~~~
@@ -324,13 +324,13 @@ Finally, install the new Netdot code and restart Apache:
     Possible parameters include:
 
     ~~~~ {.bash}
-    PREFIX=YOUR-PREFIX (default: /usr/local/netdot) 
+    PREFIX=YOUR-PREFIX (default: /usr/local/netdot)
     APACHEUSER=USER-YOUR-APACHE-RUNS-AS (default: apache)
     APACHEGROUP=GROUP-YOUR-APACHE-RUNS-AS (default: apache)
     ~~~~
 
     > **Tip**
-    Ubuntu users: will probably need to set the APACHEUSER and
+    Debian or Ubuntu users: will probably need to set the APACHEUSER and
     APACHEGROUP variables to "www-data", which is the user that Apache
     runs as.
 
@@ -347,7 +347,7 @@ Include conf/netdot_apache2_<local|radius|ldap>.conf
 
 Alternatively, some Apache environments provide a directory from which
 files are included automatically when Apache starts. In that case, you
-can create a link to the file in said directory. 
+can create a link to the file in said directory.
 
 For example, in Debian or Ubuntu, it's a two-step process:
 
@@ -431,7 +431,7 @@ jobs.
 ## Device Management
 
 In Netdot, devices are network infrastructure equipment: switches,
-routers, firewalls, access points, servers, etc. End nodes such as 
+routers, firewalls, access points, servers, etc. End nodes such as
 desktop computers, laptops and printers are not devices.
 
 Netdot can discover and maintain an extensive amount of information
@@ -487,11 +487,11 @@ In addition, you can give Netdot a specific list of devices you would
 like to discover:
 
 ~~~~ {.bash}
-~# bin/updatedevices.pl -E <text-file> -I 
+~# bin/updatedevices.pl -E <text-file> -I
 ~~~~
 
-The file should contain a list of device names, or IP addresses 
-and their communities, separated by spaces, one device/community 
+The file should contain a list of device names, or IP addresses
+and their communities, separated by spaces, one device/community
 per line, for example:
 
 ~~~~
@@ -540,7 +540,7 @@ via CRON. A sample crontab entry would be:
 0 * * * * root /usr/local/netdot/bin/updatedevices.pl -DIFAT
 ~~~~
 
-If you want to only update a subset of the devices in your database, 
+If you want to only update a subset of the devices in your database,
 you may use the "--matching" parameter to specify a regular expression,
 which will be applied against devices' fully qualified names. For example
 if all your routers have the suffix "-gw", you could do something like:
@@ -564,14 +564,14 @@ depending on the information you want to edit. Notice that clicking on
 any field name will open a browser window with a description of that field.
 
 #### Basics Tab: In this section you can view and edit general information
-about the device, including its location, contact information, and 
+about the device, including its location, contact information, and
 management details.
 
-#### Interfaces Tab: Here you can edit interface descriptions, assign 
+#### Interfaces Tab: Here you can edit interface descriptions, assign
 network jacks, etc. by clicking on the [edit] button. You can also edit a
 specific interface by clicking on its number or on its name. If you are
 running topology discovery, you will probably see neighbor information.
-If for some reason the topology discovery process cannot dectect a
+If for some reason the topology discovery process cannot detect a
 neighbor, you can add it manually by clicking on the [add] button in the
 neighbor column.
 
@@ -589,19 +589,19 @@ process maintain neighbor relationships.
 Netdot will show it in this tab. Modules are shown hierarchically based
 on how they are contained within each other.
 
-#### IP Info Tab: This section lists all the IP addresses found in the 
-device, together with the subnets they belong in, the device interface 
+#### IP Info Tab: This section lists all the IP addresses found in the
+device, together with the subnets they belong in, the device interface
 where they were found, and optionally, their DNS names.
 
 At the bottom of this section, you will find an option to set the "Auto
 DNS" flag on all interfaces with IP addresses. The purpose of this flag
-is to tell Netdot whether it should generate DNS names for each IP 
-address based on the interface name and the device name. 
+is to tell Netdot whether it should generate DNS names for each IP
+address based on the interface name and the device name.
 
-The logic of this operation is handed off to a plugin module, which means 
-that you can write your own plugin to generate DNS names based on your own 
-naming scheme (see configuration file for more details). The included 
-plugin generates names such as "ge-0-1.router1.mydomain.com", assuming 
+The logic of this operation is handed off to a plugin module, which means
+that you can write your own plugin to generate DNS names based on your own
+naming scheme (see configuration file for more details). The included
+plugin generates names such as "ge-0-1.router1.mydomain.com", assuming
 that the device name is router1 and that the interface is GigabitEthernet0/1.
 This is very useful for when you are using the traceroute utility.
 
@@ -631,29 +631,62 @@ contact information, comments, etc.
 #### Topology Tab: Netdot can use the neighbor relationships from the
 device interface to draw a graph of this device and its neighbors.
 By default, Netdot only shows directly connected neighbors. However,
-you can expand the graph to include neighbors of neighbors by 
+you can expand the graph to include neighbors of neighbors by
 specifying a larger "Search Depth" value.
 
-## Assets 
+## VLANs
 
-An asset in Netdot is a record which contains common information about 
-device hardware. For example, serial number, base MAC address, product 
-name, etc. In addition to storing common information from devices 
-discovered, asset records can be used to document items that are not yet 
-installed. Once the asset is discovered in the network, it is referenced 
-by the new device record.
+Netdot creates VLANs when these are found in devices. You can add
+additional information to the VLAN record, such as a description,
+or comments. 
+
+When viewing a VLAN, you can see which interfaces in which devices
+are currently members (or trunks) of that VLAN. Also, in the device
+page you can see which VLANs are configured on each interface.
+
+Currently Netdot assumes that VLANs are unique. If your VLAN IDs are
+reused around your network for different physical segments, Netdot 
+information could be confusing. We intend to address this limitation
+in a future release.
+
+### Finding VLANs
+
+You can search for specific VLANs by going to "Management" -> "VLANs".
+Netdot will match the search string against VLAN IDs (numbers) or names.
+
+### VLAN Groups
+
+VLAN Groups are basically VLAN ID ranges that can help organize your 
+VLAN assignments. For example, you might want to assign all your VOIP
+VLANs from the range 2000-2500.
+
+You can create a VLAN group by going to "Management" -> "VLANs" and
+clicking on [new]. Provide a name for the group and a range of IDs.
+
+## Assets
+
+An asset in Netdot is a record which contains information about
+device hardware. For example, serial number, inventory number, MAC address,
+product name, etc. 
+
+The difference between an Asset and a Device in Netdot is that a Device is
+an Asset which has been deployed and discovered.
+
+Asset records can be used to document equipment that is not yet deployed.
+Once the asset is discovered in the network, it is referenced by the new
+device or device module record. 
 
 ### Importing Assets
 
 Go to Management -> Assets -> [import]
-This form allows you to import multiple hardware assets. For example, you 
-can use a bar code scanner to scan the information from vendor boxes as you 
-receive your equipment. 
+This form allows you to import multiple hardware assets. For example, you
+can use a bar code scanner to scan the information from vendor boxes as you
+receive your equipment.
 
-Create a text file composed of part number, serial number, and optionally 
-other fields. The part number must match the value from an existing product 
-in Netdot. The order of fields in each line must match the list of fields in 
-the "Fields for import" select menu. 
+Create a text file composed of part number, serial number, and optionally
+other fields. The part number must match the value from an existing product
+in Netdot. The order of fields in each line must match the list of fields in
+the "Fields for import" select menu.
 
 Once imported, you can view a report of your assets in the Reports section.
 
@@ -704,7 +737,7 @@ The status of an end-node address can be one of:
 
 *   *Reserved*: Addresses that should not be assigned
 
-*   *Available*: Addresses that were previously used, but have been 
+*   *Available*: Addresses that were previously used, but have been
     freed.
 
 On the other hand, the status of an IP block can be one of:
@@ -767,17 +800,17 @@ You can import your existing BIND zones into netdot with the help of the
 tool `import_bind_zones.pl` from the import subdirectory
 
 ~~~~
- usage: import/import_bind_zones.pl     
+ usage: import/import_bind_zones.pl
   [ -n|domain <name>, -f|file <path> ] (for single zone)
   [ -c|config <path>, -d|dir <path>  ] (for multiple zones)
   [ -g|--debug ] [-h|--help]
 
-  -c  --config <path>   Bind config file containing zone definitions    
-  -d, --dir <path>      Directory where zone files are found    
-  -n, --domain <name>   Domain or Zone name    
-  -f, --zonefile <path> Zone file    
+  -c  --config <path>   Bind config file containing zone definitions
+  -d, --dir <path>      Directory where zone files are found
+  -n, --domain <name>   Domain or Zone name
+  -f, --zonefile <path> Zone file
   -w, --wipe            Wipe out existing zone data
-  -g, --debug           Print debugging output    
+  -g, --debug           Print debugging output
   -h, --help            Print help
 ~~~~
 
@@ -812,9 +845,9 @@ the text from a BIND zone file into the text box.
 
 Each time the zone or its contents are modified, the transaction is
 added to a list of pending changes. This list is kept in a database
-table called "hostaudit" and is used to determine when a zone needs to 
-be exported. Zones can be exported manually via the UI by going to the 
-Export menu, or via cron jobs. When a zone is exported, its serial number 
+table called "hostaudit" and is used to determine when a zone needs to
+be exported. Zones can be exported manually via the UI by going to the
+Export menu, or via cron jobs. When a zone is exported, its serial number
 is increased and the changes' "pending" status is cleared.
 
 ### The '@' record
@@ -872,7 +905,7 @@ Once in the subnet page, look for the Dhcp Scope section and click on
 [enable]. This will bring an input section where you can select the
 global scope and the routers option. By default, Netdot shows the first
 address of the subnet as the routers option value. You can change this
-value if your router interface has a different address. Click Save. You
+value if your router interface has a different address. Click [Save]. You
 will now see the subnet scope listed in the Subnet page. You can click
 on the scope name and that will take you to the DHCP Scope page, from
 which you can add any other necessary attributes.
@@ -895,6 +928,8 @@ You can create a new host scope from the host page.
 *   Once you provide a name for the A record, you will be redirected to
     the host page. Here, find the `DHCP for <IP address>` section and
     click on [add]. Type the Ethernet address and save your changes.
+    If you don't see a `DHCP for <IP address>` section, the IP is not
+    within a subnet that has DHCP enabled.
 
 *   When you click on the Ethernet address, you'll go to the MAC address
     page, which has a "DHCP Scopes" section. Clicking on the IP address
@@ -946,18 +981,18 @@ and copper wiring, closets, jacks, etc.
 
 ### Sites
 Sites are usually buildings with one or more floors, closets and rooms.
-Sites can be associated with other things, such as people, departments, 
+Sites can be associated with other things, such as people, departments,
 subnets, etc.
 
 To create a new Site, go to Cable Plant -> Sites and click on [new].
-You will need to enter a name. The "Site ID" is a value that can represent 
+You will need to enter a name. The "Site ID" is a value that can represent
 the (shorter) unique identification of that building within the organization.
 
 You can also insert pictures of Sites in the database.
 
 ### Closets
 Communications closets house network equipment and cable terminations.
-A Closet is located in a Room, which is located in a Floor, wich is
+A Closet is located in a Room, which is located in a Floor, which is
 located in a Site.
 
 To create a new Closet, go to Cable Plant -> Closets and click on [new].
@@ -966,11 +1001,11 @@ is useful for technicians that might want to review the physical
 characteristics of the closet space without visiting it in person.
 
 ### Backbone Cables
-Backbone cables exist between two closets. 
+Backbone cables exist between two closets.
 
-* If a physical cable traverses closets in various sites, for the purpose 
-  of documentation,those sections of cable should be represented as 
-  different backbone cables. 
+* If a physical cable traverses closets in various sites, for the purpose
+  of documentation,those sections of cable should be represented as
+  different backbone cables.
 
 * Backbone cables can interconnect closets within the same site (risers).
 
@@ -993,11 +1028,11 @@ Backbone cables contain strands. These have several attributes, including:
 
 You can modify ranges of strands from a backbone as a group. For example,
 if you have a new hybrid fiber cable with 24 strands, of which 12 are single
-mode and the other 12 are multi-mode, at the the backbone page, after the 
-list of strands, type Range: 1-12, then select Type: "Single Mode", 
+mode and the other 12 are multi-mode, at the backbone page, after the
+list of strands, type Range: 1-12, then select Type: "Single Mode",
 Status: "Not Terminated". Do similarly for range 13-24.
 
-Fiber strands from diferent backbone cables can be spliced together
+Fiber strands from different backbone cables can be spliced together
 to form a sequence. To splice a range of strands, go to the bottom of
 the Backbone Cable page, and in the section "Manually Splice Strand Range",
 type the range of strands that are spliced to another backbone,
@@ -1008,11 +1043,11 @@ and the whole sequence in "Part of Sequence".
 
 ### Circuits
 After you have created sequences of strands from origin A to destination
-B, you can now create a circuit to group those strands and assign it to 
-existing device interfaces. 
+B, you can now create a circuit to group those strands and assign it to
+existing device interfaces.
 
 To create a new circuit, go to Cable Plant -> Circuits and click on [new].
-You will need to give it a unique identifier, and specify a provider. In 
+You will need to give it a unique identifier, and specify a provider. In
 this case, the provider might be your own organization. Circuits can also
 be used to document links provided by other parties. In those cases the
 circuit would probably not be associated with fiber strands that you own.
@@ -1020,35 +1055,35 @@ circuit would probably not be associated with fiber strands that you own.
 Circuits have these attributes, among others:
 
 * Site Link: A record that ties two sites that are linked by this circuit.
-  A link betwen two sites can use more than one circuit.
+  A link between two sites can use more than one circuit.
 * Status: Active, Disabled, Disconnected, Pending
 * Type: DS3, Ethernet, Frame Relay, etc.
 * Speed: 45Mbps, 100Mbps, etc.
 * Loss: Last measured loss on the circuit
 
 Once you have created the circuit, you will have the option of associating
-a list of strand sequences. Simply select the origin and destination sites, 
+a list of strand sequences. Simply select the origin and destination sites,
 then select a pair of sequences that compose this circuit (a pair, assuming
 that it's a fiber circuit).
 
-You can associate existing device interfaces to this circuit. 
+You can associate existing device interfaces to this circuit.
 
 ### Horizontal Cables
 A horizontal cable represents cabling that starts in a closet and terminates
 in a wall jack, usually Cat5 or similar. These are some of their attributes:
 
 * Jack ID: The unique identifier of the jack in the organization. For example,
-  a jack located in Site #123, terminated in closet "A" and whose sequence 
+  a jack located in Site #123, terminated in closet "A" and whose sequence
   is 456, could be labeled uniquely with something like "123-A-456".
 * Faceplate ID: Normally, faceplates contain more than one jack. This is the
-  unique identifier of the faceplate, not the jack. 
+  unique identifier of the faceplate, not the jack.
 * Type: Cat5, Cat6, etc.
 * Closet: The closet where the cable is terminated (one end)
 * Room: The room where the cable is terminated (the other end)
 
 Once created, you can assign this horizontal cable to a device interface
 by going to the Device page, selecting "Interfaces" and [edit]. You should
-see a list of existing cables in the "Jack(cable)" column. Notice that 
+see a list of existing cables in the "Jack(cable)" column. Notice that
 there are also free-form fields in the "Room" and "Jack" columns. These
 are available in case you don't need to document the cable, but just
 the interface-to-jack relationship.
@@ -1108,11 +1143,11 @@ be it installed or not installed.
 #### By Type/Model
 
 Gives a summary of device hardware by type and model, and shows
-quantities of each. 
+quantities of each.
 
 #### Detailed
 
-Shows a list of assets including their type, model serial number, inventory 
+Shows a list of assets including their type, model serial number, inventory
 number, whether it has been installed or not, comments, etc.
 
 ### IP Reports
@@ -1216,10 +1251,10 @@ access to:
 *   When creating new DNS records, users with 'edit' rights on a subnet
     do not have the option to choose specific IP addresses. This helps
     keep ranges of IP addresses together so that Subnets can be resized
-    more easily if necessary. If the Netdot administrator wishes to 
+    more easily if necessary. If the Netdot administrator wishes to
     grant such rights to a user or group, there is a right called
     'Choose IP' which allows that.
-  
+
 *   Device interfaces: Users can view port details such as number, name,
     vlan, room, jack, description and neighbor. A user can only edit the
     room, jack and description fields. To assign permissions to a user
@@ -1260,7 +1295,7 @@ Once you give users permissions to update your Netdot database, you may
 want to know who has done what. There is a special database table called
 'audit', which records every database operation made by a person (meaning
 that operations started by cron jobs are not recorded). Each audit record
-contains the following information: time stamp, username, operation type 
+contains the following information: time stamp, username, operation type
 (insert, update, delete), table affected, record ID, record label, fields
 and values affected.
 
@@ -1278,7 +1313,7 @@ support other formats, such as YAML or JSON.
 
 ## Generic RESTful resources
 
-* The REST interface is available using the following URL (or similar, 
+* The REST interface is available using the following URL (or similar,
 depending on your Apache configuration):
 
 ~~~~
@@ -1288,17 +1323,17 @@ https://myserver.mydomain.com/netdot/rest/
  This should load the Netdot::REST class and return something like:
 
 ~~~~
-Netdot/1.0 REST OK. 
+Netdot/1.0 REST OK.
 ~~~~
 
-* Generic RESTful resources to be acted upon represent Netdot objects and are part 
+* Generic RESTful resources to be acted upon represent Netdot objects and are part
 of the request URI. For example, in this URI:
 
 ~~~~
 http://myserver.mydomain.com/netdot/rest/device/1
 ~~~~
 
- the resource is "device/1", which for a GET request, will return the contents of 
+ the resource is "device/1", which for a GET request, will return the contents of
 Device id 1.
 
 * Using the following URI with a GET request:
@@ -1307,7 +1342,7 @@ Device id 1.
 http://myserver.mydomain.com/netdot/rest/device
 ~~~~
 
- this interface will return the contents of all Device objects in the database. 
+ this interface will return the contents of all Device objects in the database.
 
 * You can also specify certain search filters to limit the scope
 of a GET request:
@@ -1318,14 +1353,14 @@ http://myserver.mydomain.com/netdot/rest/device?sysname=host1
 
  This will perform a search and return all devices whose sysname field is 'host1'.
 
-* The special keyword `meta_data` instead of an object ID will provide information 
+* The special keyword `meta_data` instead of an object ID will provide information
 about the object's class:
 
 ~~~~
 http://myserver.mydomain.com/netdot/rest/device/meta_data
 ~~~~
 
-* An existing resource can be updated by using the 'POST' method with relevant 
+* An existing resource can be updated by using the 'POST' method with relevant
 parameters. For example, a POST request to the following URI:
 
 ~~~~
@@ -1333,10 +1368,10 @@ URL: http://netdot.localdomain/rest/device/1
 POST: {sysname=>'newhostname'}
 ~~~~
 
- will update the 'sysname' field of the Device object with id 1 to be "newhostname". 
+ will update the 'sysname' field of the Device object with id 1 to be "newhostname".
 
 
-* Similarly, a new object can be created with a POST request. However, in this case 
+* Similarly, a new object can be created with a POST request. However, in this case
 the object id must be left out:
 
 ~~~~
@@ -1350,7 +1385,7 @@ POST: {firstname=>'John', lastname=>'Doe'}
 
 ### /rest/host
 
-The special resource '/rest/host' provides a simplified interface for manipulating 
+The special resource '/rest/host' provides a simplified interface for manipulating
 DNS and DHCP records.  We will illustrate its usage with the following examples:
 
 #### Retrieving host data (HTTP GET)
@@ -1372,7 +1407,7 @@ http://netdot.localdomain/netdot/rest/host?zone=localdomain
 ~~~~
 http://netdot.localdomain/netdot/rest/host?name=foo
 ~~~~
-     
+
 * Retrieve RR id 1 and all related records
 
 ~~~~
@@ -1385,17 +1420,17 @@ http://netdot.localdomain/netdot/rest/host?rrid=1
 http://netdot.localdomain/netdot/rest/host?subnet=192.168.1.0/24
 ~~~~
 
-#### Creating new records (HTTP POST). 
+#### Creating new records (HTTP POST).
 
 * Create new A record named 'host1' using next available address in given subnet
 (note: do not specify an object ID):
 
 ~~~~
-URL:  http://netdot.localdomain/netdot/rest/host?name=host1
-POST: {subnet=>'192.168.1.0/24'}
+URL:  http://netdot.localdomain/netdot/rest/host
+POST: {name='host1', subnet=>'192.168.1.0/24'}
 ~~~~
 
-#### Updating existing records (HTTP POST) 
+#### Updating existing records (HTTP POST)
 
 * Requires passing rrid or ipid. Rename host with RR id=2
 
@@ -1414,7 +1449,7 @@ POST: {ethernet=>'DEADDEADBEEF'}
 #### Deleting records (HTTP DELETE)
 
 * Delete hostname with RR id 3 (also frees IP)
- 
+
 ~~~~
 http://netdot.localdomain/netdot/rest/host?rrid=3
 ~~~~
@@ -1424,7 +1459,7 @@ http://netdot.localdomain/netdot/rest/host?rrid=3
 All user types can interact with the RESTful interface as long as they
 are granted permissions to do so. However only Admin users can edit
 or delete objects using generic REST resources. Operators and regular
-users can view generic resources but can only edit or delete them 
+users can view generic resources but can only edit or delete them
 using specific-purpose resources such as 'rest/host'.
 
 ## Client module on CPAN
@@ -1448,18 +1483,18 @@ or
 
 # Database Maintenance
 
-Netdot's database will grow with time, thus it will be necessary to 
+Netdot's database will grow with time, thus it will be necessary to
 remove old information as it becomes stale. You will find a CLI utility
 called "prune_db.pl" in the bin/ directory of the distribution. The
 command's syntax is as follows:
 
 ~~~~ {.bash}
- usage: bin/prune_db.pl 
- -H, --history | -F, --fwt | -A, --arp | 
+ usage: bin/prune_db.pl
+ -H, --history | -F, --fwt | -A, --arp |
  -M, --macs | -I, --ips | -R, --rr |  -a, --audit | -t, --hostaudit
  [ -d, --num_days <number> ] [ -n, --num_history <number> ] [ -r, --rotate ]
  [ -g, --debug ] [-h, --help]
-    
+
     -H, --history        History tables
     -F, --fwt            Forwarding Tables
     -A, --arp            ARP caches
@@ -1470,36 +1505,36 @@ command's syntax is as follows:
     -t, --hostaudit      Host Audit records
     -d, --num_days       Number of days worth of items to keep (default: 365)
     -n, --num_history    Number of history items to keep for each record
-    -r, --rotate         Rotate forw. tables and ARP (rather than delete records) 
+    -r, --rotate         Rotate forw. tables and ARP (rather than delete records)
     -p, --pretend        Show activity without actually deleting anything
     -g, --debug          Print (lots of) debugging output
     -h, --help           Print help
 
     Deletes old items from database as necessary.
-    
+
     * For "history" tables:
-    
+
     We want to keep NUM_DAYS worth of history for every record. But
-    if a record doesn't change at all during the last NUM_DAYS, we don't 
-    want to lose the history that does exist for it from before that time. 
-    To compromise, we will only check the history tables for old data 
-    if there are more than NUM_HISTORY items for a record. If there are 
-    more than NUM_HISTORY items for a record, then we drop anything older 
+    if a record doesn't change at all during the last NUM_DAYS, we don't
+    want to lose the history that does exist for it from before that time.
+    To compromise, we will only check the history tables for old data
+    if there are more than NUM_HISTORY items for a record. If there are
+    more than NUM_HISTORY items for a record, then we drop anything older
     than NUM_DAYS.
-    
+
     * For address tracking tables:
-    
+
     We delete records that are older than NUM_DAYS.
 ~~~~
 
 The sample CRON file "netdot.cron" included with the package contains recommended
-uses of this command. 
+uses of this command.
 
->**Note**: 
+>**Note**:
 Be especially careful when using the -I and -M options to remove old IP and MAC
-addresses. The criteria for deletion relies on the "last seen" timestamp on 
+addresses. The criteria for deletion relies on the "last seen" timestamp on
 these records. That means that if Netdot is not collecting ARP and FWT tables
-from the routers, firewalls and switches where these addresses can be seen in 
+from the routers, firewalls and switches where these addresses can be seen in
 the network, then Netdot will assume that they are not active anymore, thus
 included for deletion.
 

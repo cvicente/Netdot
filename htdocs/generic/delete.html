@@ -21,7 +21,7 @@ my @objs;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
 my $manager = $ui->get_permission_manager($r);
-
+my %cascade;
 </%init>
 
 <div id="sectiondetail">
@@ -52,7 +52,7 @@ my $manager = $ui->get_permission_manager($r);
        $ARGS{$key} = "";
    }
    foreach my $arg ( sort keys %ARGS ){
-       next unless $arg =~ /__/;
+       next unless $arg =~ /__/o;
        my ($table, $id) = split /__/, $arg;
        my $obj;
        unless ( $obj = $table->retrieve($id) ){
@@ -65,14 +65,55 @@ my $manager = $ui->get_permission_manager($r);
    $session->{objects} = \@objs;
 </%perl>
     </ul> 
-%  if ( !($warning eq "") ){
+
+<%perl>
+if ( $table && $id ){
+    my $obj;
+    unless ( $obj = $table->retrieve($id) ){
+	$m->comp('error.mhtml', error => "Error retrieving $table id '$id'");
+    }
+    my %linksfrom = $table->meta_data->get_links_from();
+    foreach my $i ( sort keys %linksfrom ){
+	# Table that points to us
+	my $j = (keys %{ $linksfrom{$i} })[0];
+	my $fmt = $j->meta_data;
+	next if $fmt->is_history; # Don't warn about history tables.
+	next if $fmt->is_join; # Don't warn about join tables. Confuses the user.
+	# Column in the other table that points to this table
+	my $ffield = $linksfrom{$i}{$j};
+	my $attr = $fmt->get_column($ffield)->links_to_attrs();
+	if ( $attr->{cascade} eq 'Delete' ){
+	    foreach my $ro ( $obj->$i ){
+		push @{$cascade{$j}}, $ro->get_label;
+	    }
+	}
+    }
+}
+</%perl>
+
+% if ( $warning ne "" ){
     <nobr>
     <p>
     <strong>WARNINGS: </strong>
      <% $warning %></p>
     </nobr>
     <br>
-%} 
+% }
+
+% if ( %cascade ){
+    <strong>Notice that by deleting this object, you will also delete:</strong>
+    <ul>
+%   foreach my $t ( keys %cascade ){
+        <li><% $t %>
+	<ul>
+%	foreach my $lbl ( @{$cascade{$t}} ){
+            <li><% $lbl %>
+%       }
+	</ul>
+%   }
+    </ul>
+% }
+ 
     <form method="POST" action="delete.html">
     <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
     <input type="hidden" name="return_url" value="<% $return_url %>">
