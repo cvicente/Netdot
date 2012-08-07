@@ -64,8 +64,6 @@ unless ( $manager && $manager->can($user, "edit", $block) ){
 my $zone;
 if ( $zone_id ){
     $zone = Zone->retrieve($zone_id);
-}else{
-    $zone = $block->forward_zone();
 }
 
 if ( $submit ){
@@ -288,20 +286,26 @@ function showIPv6Input(selectObj, Layer){
             <% $zone->get_label %>
 %       }else{
             <select name="zone_id" id="zone">
-%           my $default_domain = Netdot->config->get('DEFAULT_DNSDOMAIN');
-%           my $default_zone = (Zone->search(name=>$default_domain))[0];
+%           my $default_zone;
 %	    # Show only zones that this user has access to
 %           my $ao = $ui->get_allowed_objects($r, $user);
-%           my @zones;
+%           my %zones;
 %           if ( exists $ao->{Zone} ){
 %               foreach my $id ( keys %{$ao->{Zone}} ){
 %	            if ( my $zone = Zone->retrieve($id) ){
-%	                push @zones, $zone;
+%	                $zones{$id} = $zone;
 %	            }
 %               }
 %           }
+%	    if ( my $fz = $block->forward_zone ){
+%               $zones{$fz->id} = $fz;
+%               $default_zone = $fz;
+%	    }else{
+%               my $default_domain = Netdot->config->get('DEFAULT_DNSDOMAIN');
+%               $default_zone = (Zone->search(name=>$default_domain))[0];
+%           }
             <option value="">-- Select --</option>
-%           foreach my $z ( sort { $a->get_label cmp $b->get_label } @zones ){
+%           foreach my $z ( sort { $a->get_label cmp $b->get_label } values %zones ){
 %               if ( $default_zone && $default_zone->id == $z->id ){
                     <option value="<% $z->id %>" SELECTED><% $z->get_label %></option>
 %               }else{
