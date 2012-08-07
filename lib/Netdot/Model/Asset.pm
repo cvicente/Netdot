@@ -36,8 +36,8 @@ sub get_installed_hash {
     
     my $rows2 = $dbh->selectall_arrayref('
                        SELECT DISTINCT(asset.id) 
-                       FROM   asset, device
-                       WHERE  device.asset_id=asset.id');
+                       FROM   asset, devicemodule
+                       WHERE  devicemodule.asset_id=asset.id');
     
     foreach my $row ( @$rows1, @$rows2 ){
 	my $id = $row->[0];
