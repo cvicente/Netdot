@@ -27,7 +27,7 @@ my @DEPS = (
     {apt=>'libapache2-mod-perl2', rpm=>'mod_perl'},
     {apt=> 'rrdtool', rpm=>'rrdtool'},
     {cpan=>'RRDs' , apt=>'librrds-perl', rpm=>'rrdtool-perl'},
-    {cpan=>'GraphViz', apt=> 'graphviz', 
+    {cpan=>'GraphViz', apt=> 'graphviz libgraphviz-perl', 
      rpm=>'graphviz graphviz-devel libpng-devel graphviz-gd perl-GraphViz'},
     {cpan=>'Module::Build' , apt=> 'libmodule-build-perl', rpm=>'perl-Module-Build'},
     {cpan=>'CGI' , apt=>'libcgi-pm-perl'},
@@ -184,6 +184,9 @@ if ( $action eq 'test' ){
 	# The packages in our temporary repository will fail authentication
 	# unless we use --force-yes
 	$program = 'apt-get -y --force-yes install';
+	
+	# Try to install as little as possible
+	$program .= ' --no-install-recommends';
 
 	# libcrypt-cast5-perl is a requisite of libapache2-sitecontrol-perl
 	# but it's architecture dependent, so we had to build specific packages
