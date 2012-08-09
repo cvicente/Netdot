@@ -13,29 +13,28 @@ my $DEBUG = 0;
 my (@field_headers, @cell_data, @headers, @rows);
 </%init>
 
-    <%perl>
-    my @closets = ();
-	if (defined($closet_srch)) {
-	    my $crit = $closet_srch;
-	    my @terms = ();
-	    if ($crit =~ /\w+/) {
-		if ($crit =~ /\w+\s+\w+/) {
-		    @terms = split(/\s+/, $crit);
-		} else { 
-		    $crit =~ s/\s+//;
-		    push(@terms, $crit);
-		}
-	    }
-	    
-	    my $r = $ui->select_query(table=>"Closet", terms=>\@terms, $MAX_SELECTION);
-	    @closets = map { $r->{$_} } keys(%$r);
-	    
-	} else {
-	    map { push (@closets, $_) } $o->closets;
-	}
+<%perl>
+my @closets = ();
+if (defined($closet_srch)) {
+    my $crit = $closet_srch;
+    my @terms = ();
+    if ($crit =~ /\w+\s+\w+/) {
+	@terms = split(/\s+/, $crit);
+    } else { 
+	$crit =~ s/\s+//;
+	push(@terms, $crit);
+    }
+    my $r = $ui->select_query(table=>"Closet", terms=>\@terms, $MAX_SELECTION);
+    @closets = map { $r->{$_} } keys(%$r);
+    
+}elsif ( $o ) {
+    map { push (@closets, $_) } $o->closets;
+}else{
+    @closets = Closet->retrieve_all();
+}
 
 print "closets is <pre>", Dumper(@closets), "</pre><br>" if $DEBUG;
-	</%perl>
+</%perl>
 
 	<div class="container">
 

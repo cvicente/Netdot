@@ -1328,9 +1328,10 @@ sub format_size {
     - o:              A reference to a DBI object
     - edit:           True if editing, false otherwise
     - new_button:     Show [new] button to create new foreign objects
-    - fields:         Reference to an array of column names in the database
-    - defaults:       Reference to an array containing default objects or values
-    - linkpages:      Reference to an array of the same size as @fields, with optional pages to link to
+    - fields:         Array ref of of column names in the database
+    - defaults:       Array ref of arrayrefs containing default objects or values
+    - default:        Array ref of default objects to select
+    - linkpages:      Array ref of the same size as @fields, with optional pages to link to
     - with_delete:    Add a checkbox at the end to delete object when editing (requires passing object)
     - field_headers:  Reference to the array to add the names of the columns to
     - cell_data:      Reference to the array to add the form fields to
@@ -1351,8 +1352,10 @@ sub format_size {
 =cut
 sub add_to_fields {
     my ($self, %args) = @_;
-    my ($o, $table, $edit, $fields, $linkpages, $defaults, $with_delete, $field_headers, $cell_data) = 
-	@args{ 'o', 'table', 'edit', 'fields', 'linkpages', 'defaults', 'with_delete', 'field_headers', 'cell_data'};
+    my ($o, $table, $edit, $fields, $linkpages, $defaults, $default,
+	$with_delete, $field_headers, $cell_data) = 
+	@args{ 'o', 'table', 'edit', 'fields', 'linkpages', 'defaults', 'default',
+	       'with_delete', 'field_headers', 'cell_data'};
     
     $self->throw_fatal("You need to pass either a valid object or a table name")
 	unless ( ref($o) || $table );
@@ -1367,6 +1370,8 @@ sub add_to_fields {
 		      linkPage=>$linkpage, new_button=>$args{new_button});
 	$ffargs{defaults} = $defaults->[$i] 
 	    if ( defined $defaults && defined $defaults->[$i] );
+	$ffargs{default} = $default->[$i] 
+	    if defined $default && defined $default->[$i];
         %tmp = $self->form_field(%ffargs);
         push( @{$field_headers}, $tmp{label} );
         push( @{$cell_data}, $tmp{value} );
