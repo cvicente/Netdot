@@ -18,6 +18,7 @@ $range2         => undef
 $splice_bb_end  => undef
 $splice_action  => undef
 $strand_range   => undef
+$start_closet   => undef
 $user           => $ui->get_current_user($r)
 </%args>
 
@@ -296,8 +297,12 @@ function suggestName()
 <%perl>
     (@field_headers, @cell_data) = ();
     my @fields = ('start_closet','end_closet','type');
-    $ui->add_to_fields(o=>$o, table=>"BackboneCable", edit=>$editBackbone, fields=>\@fields, 
+    my %args = (o=>$o, table=>"BackboneCable", edit=>$editBackbone, fields=>\@fields, 
 		       field_headers=>\@field_headers, cell_data=>\@cell_data);
+    if ( my $sc = Closet->retrieve($start_closet) ){
+	$args{default} = [$sc, undef, undef];
+    }
+    $ui->add_to_fields(%args);
 </%perl>
     
 		<& /generic/attribute_table.mhtml, field_headers=>\@field_headers, data=>\@cell_data &>
