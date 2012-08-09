@@ -93,7 +93,8 @@ sub check_credentials {
 
     my $user_dn = $r->dir_config("NetdotLDAPUserDN");
     unless ( $user_dn ){
-	$r->log_error("Netdot::LDAP::check_credentials: ERROR: DN is not set. Use NetdotLDAPUserDN in httpd.conf");
+	$r->log_error("Netdot::LDAP::check_credentials: ERROR: DN is not set. ".
+		      "Use NetdotLDAPUserDN in httpd.conf");
 	return 0;
     }
 
@@ -117,7 +118,7 @@ sub check_credentials {
     # start TLS
     my $scheme = $ldap->scheme();
     my $dse = $ldap->root_dse();
-    my $does_support_tls = $dse->supported_extension(LDAP_EXTENSION_START_TLS);
+    my $does_support_tls = $dse->supported_extension('LDAP_EXTENSION_START_TLS');
     my $require_tls = ($r->dir_config("NetdotLDAPRequireTLS") eq "yes")? 1 : 0;
     if ( $scheme eq "ldap" && ( $require_tls || $does_support_tls ) ) {
         my $tls = $ldap->start_tls();
@@ -165,7 +166,8 @@ sub _connect {
 
     $server1 = $r->dir_config("NetdotLDAPServer");
     unless ( $server1 ){
-	$r->log_error("Netdot::LDAP::check_credentials: WARNING: LDAP server is not set. Set NetdotLDAPServer in httpd.conf");
+	$r->log_error("Netdot::LDAP::check_credentials: WARNING: LDAP server is not set. ".
+		      "Set NetdotLDAPServer in httpd.conf");
 	$server1 = "ldaps://localhost";
     }
     push @servers, $server1;
@@ -188,7 +190,8 @@ sub _connect {
 	if ( $ldap ) {
 	    return $ldap;
 	}else{
-	    $r->log_error("Netdot::LDAP::check_credentials: ERROR: Could not contact LDAP server $server: $@");
+	    $r->log_error("Netdot::LDAP::check_credentials: ERROR: Could not contact ".
+			  "LDAP server $server: $@");
 	}
     }
 
