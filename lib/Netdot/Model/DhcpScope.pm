@@ -552,7 +552,7 @@ sub _validate_args {
     if ( $type eq 'host' ){
 	if ( $fields{ipblock} ){
 	    if ( $fields{ipblock}->version == 4 && !$fields{physaddr} ){
-		$self->throw_user("$name: an IPv4 host scope requires an ethernet addres");
+		$self->throw_user("$name: an IPv4 host scope requires an ethernet address");
 	    }
 	    if ( $fields{ipblock}->version == 6 && !$fields{duid} && !$fields{physaddr} ){
 		$self->throw_user("$name: an IPv6 host scope requires a DUID or ethernet address");
@@ -610,9 +610,10 @@ sub _validate_args {
 	$self->throw_user("$name: Subnet IP block not defined")
 	    unless $fields{ipblock};
 
-	if ( $fields{ipblock}->version != $fields{container}->version ){
+	if ( $fields{container}->type->name eq 'global' && 
+	     $fields{ipblock}->version != $fields{container}->version ){
 	    $self->throw_user("$name: IP version in subnet scope does not match IP version in container");
-	}	
+	}
     }elsif ( $type eq 'global' ){
 	$argv->{version} = $fields{version} || 4;
 	if ( $argv->{version} != 4 && $argv->{version} != 6 ){
