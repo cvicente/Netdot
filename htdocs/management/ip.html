@@ -49,6 +49,8 @@ $show_ch_util      => 0
 $state_digest      => undef
 @link_zones        => undef
 @new_rev_zones     => undef
+$new_a_name        => undef
+$new_a_zone        => undef
 $template_zone_for_rev => undef
 $new_blocks_list   => undef
 $new_blocks_status => undef
@@ -568,6 +570,30 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
     }
 
 #######################################################################################
+# ADD_A_RECORD
+#
+#######################################################################################
+}elsif ( $_action eq 'ADD_A_RECORD' ){
+
+    unless ( $manager && $manager->can($user, "edit", $o) ){
+        $m->comp('/generic/error.mhtml', error=>"You don't have permission to edit this object");
+    }
+
+    unless ( $new_a_name && $new_a_zone ){
+	$m->comp('/generic/error.mhtml', error=>"Adding a DNS record requires both a name and a zone");
+    }
+    eval {
+	RR->insert({type=>"A", name=>$new_a_name, zone=>$new_a_zone, ipblock=>$o});
+    };
+    if ( my $e = $@ ){
+	$m->comp('/generic/error.mhtml', error=>$e);
+    }else{
+	$m->comp('.show_message', title=>"Action Message", msg=>"A or AAAA record added successfully");
+    }
+    
+    
+
+#######################################################################################
 # REBUILD_TREE
 #
 #######################################################################################
@@ -747,19 +773,54 @@ print $tmp{value};
 <%perl>
 
 if (!$edit){
-    my @rraddrs = $o->a_records();
-    my @rrs = map { $_->rr } @rraddrs;
     print '<div class="container">';
     print '<div class="containerheadleft">DNS A Records</div>';
     print '<div class="containerheadright">';
-    if ( $manager && $manager->can($user, 'edit', $o->parent) ){
-	print "<a href=\"host.html?ipblock=$o&action=new\">[add]</a>";
+    if ( ($_action ne 'VIEW_ADD_A_RECORD') && $manager && $manager->can($user, 'edit', $o) ){
+	print "<a href=\"ip.html?id=$o&_action=VIEW_ADD_A_RECORD\">[add]</a>";
     }else{
 	print '&nbsp;';
     }
     print '</div>';
     print '<div class="containerbody">';
-    $m->comp('/generic/sortresults.mhtml', object=>\@rrs);
+    if ( $_action eq 'VIEW_ADD_A_RECORD' ){
+	my $zone = $o->forward_zone();
+	# Make sure that user does not add a record to a zone for which
+	# they don't have permissions
+	my @zone_list;
+	if ( $zone ){
+	    @zone_list = ( $zone );
+	}
+	foreach my $z ( sort { $a->name cmp $b->name } Zone->retrieve_all ){
+	    next if $z->is_dot_arpa;
+	    next unless $z->active;
+	    next if $zone && ($z->id == $zone->id);
+	    if ( $manager && $manager->can($user, 'edit', $z) ){
+		push @zone_list, $z;
+	    }
+	}
+
+</%perl>
+      <div class="containerbody">
+	  <form name="netdotform" action="ip.html" method="POST">
+	    <input type="hidden" name="id" value="<% $o->id %>">
+	    <input type="hidden" name="_action" value="ADD_A_RECORD">
+            Name: <input type="text" name="new_a_name" value="">
+	    <select name="new_a_zone">
+            <option value=""> - select - </option>
+%	    foreach my $zone ( @zone_list ){
+                <option value="<% $zone->id %>"><% $zone->get_label %></option>
+%	    }
+            </select>
+            <p><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+            <input type="submit" name="submit" value="add">
+	  </form>
+<%perl>	  
+    }else{
+        my @rraddrs = $o->a_records();
+        my @rrs = map { $_->rr } @rraddrs;
+	$m->comp('/generic/sortresults.mhtml', object=>\@rrs);
+    }
     print '</div>';
     print '</div>';
 
