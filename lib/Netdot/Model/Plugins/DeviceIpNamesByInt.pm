@@ -125,6 +125,8 @@ sub get_name_from_interface {
     $name =~ s/[-]+/-/og;
     # Remove dashes from start and end
     $name =~ s/^-+|-+$//og;
+    # No dash before dot
+    $name =~ s/-\./\./g;
     
     # Append device name
     # Remove any possible prefixes added
