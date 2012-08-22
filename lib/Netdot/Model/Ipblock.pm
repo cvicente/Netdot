@@ -779,13 +779,13 @@ sub get_roots {
     
     my $len;
     my @ipb;
-    if ( $version == 4 || $version eq 'all' ){
+    if ( $version eq '4' || $version eq 'all' ){
 	$len = 32;
 	$where{version} = 4;
 	$where{prefix} = { '!=', $len };
 	push @ipb, $class->search_where(\%where, \%opts);
     }
-    if ( $version == 6 || $version eq 'all' ){
+    if ( $version eq '6' || $version eq 'all' ){
 	$len = 128;
 	$where{version} = 6;
 	$where{prefix} = { '!=', $len };
