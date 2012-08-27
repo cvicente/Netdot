@@ -67,10 +67,14 @@ my %cascade;
     </ul> 
 
 <%perl>
+my $is_device = 0;
 if ( $table && $id ){
     my $obj;
     unless ( $obj = $table->retrieve($id) ){
 	$m->comp('error.mhtml', error => "Error retrieving $table id '$id'");
+    }
+    if ( $table eq 'Device' ){
+	$is_device = 1;
     }
     my %linksfrom = $table->meta_data->get_links_from();
     foreach my $i ( sort keys %linksfrom ){
@@ -96,6 +100,16 @@ if ( $table && $id ){
     <p>
     <strong>WARNINGS: </strong>
      <% $warning %></p>
+    </nobr>
+% }
+
+% if ( $is_device ){
+    <nobr>
+    <p>
+    <strong>Device removal notice:</strong>
+     This hardware will be moved to the available asset pool. If you inted to 
+     decommission the hardware remember to remove the asset as well.
+    </p>
     </nobr>
     <br>
 % }
