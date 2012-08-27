@@ -626,7 +626,7 @@ sub import_records {
 	$nrrs{$r->name} = $r;
     }
     
-    my $new_ips = 0;
+    my %new_ips;
 
     foreach my $rr ( @$rrs ){
 	my $name = $rr->name;
@@ -672,7 +672,7 @@ sub import_records {
 		$ipb = Ipblock->insert({ address        => $address,
 					 status         => 'Static',
 					 no_update_tree => 1});
-		$new_ips++;
+		$new_ips{$ipb->version}++;
 	    }
 	    my $rraddr;
 	    my %args = (rr=>$nrr, ipblock=>$ipb);
@@ -751,7 +751,7 @@ sub import_records {
 		$ipb = Ipblock->insert({ address        => $ipaddr,
 					 status         => 'Static',
 					 no_update_tree => 1 });
-		$new_ips++;
+		$new_ips{$ipb->version}++;
 	    }
 	    my %args = (rr=>$nrr, ptrdname=>$rr->ptrdname, ipblock=>$ipb);
 	    if ( $argv{overwrite} || !($rrptr = RRPTR->search(%args)->first) ){
@@ -806,10 +806,10 @@ sub import_records {
 	}
     }
 
-    if ( $new_ips ){
+    if ( %new_ips ){
 	# Update IP space hierarchy
-	Ipblock->build_tree(4);
-	Ipblock->build_tree(6);
+	Ipblock->build_tree(4) if exists $new_ips{4};
+	Ipblock->build_tree(6) if exists $new_ips{6};
     }
 
     1;
@@ -825,7 +825,7 @@ sub import_records {
     rr.id, rr.name, ip.id, ip.address, ip.version, rrptr.ptrdname
 
   Args: 
-    ipblock object or ID  (optional)
+    ipblock object or ID (optional)
   Returns: 
     Arrayref of arrayrefs
   Examples:
