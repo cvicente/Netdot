@@ -225,15 +225,11 @@ if ( $self{AUDIT} ){
 
 if ( $self{FWT} ){
     if ( $self{ROTATE} ){
-	if ( $db_type eq 'mysql' ){
-	    unless ( $self{PRETEND} ){
-		my $fwtable_def = &get_table_def('fwtable');
-		my $fwtableentry_def = &get_table_def('fwtableentry');
-		&rotate_table('fwtable', $fwtable_def);
-		&rotate_table('fwtableentry', $fwtableentry_def);	
-	    }
-	}else{
+	if ( $db_type ne 'mysql' ){
 	    die "Rotate function only implemented in mysql for now";
+	}
+	unless ( $self{PRETEND} ){
+	    &rotate_tables('fwtableentry', 'fwtable');
 	}
     }else{
 	###########################################################################################
@@ -254,15 +250,11 @@ if ( $self{FWT} ){
 
 if ( $self{ARP} ){
     if ( $self{ROTATE} ){
-	if ( $db_type eq 'mysql' or $db_type eq 'Pg' ){
-	    unless ( $self{PRETEND} ){
-		my $arpcache_def = &get_table_def('arpcache');
-		my $arpcacheentry_def = &get_table_def('arpcacheentry');
-		&rotate_table('arpcache', $arpcache_def);
-		&rotate_table('arpcacheentry', $arpcacheentry_def);
-	    }
-	}else{
-	    die "Rotate function only implemented in mysql and postgreSQL for now";
+	if ( $db_type ne 'mysql' ){
+	    die "Rotate function only implemented in mysql for now";
+	}
+	unless ( $self{PRETEND} ){
+	    &rotate_tables('arpcacheentry', 'arpcache');
 	}
     }else{
 	###########################################################################################
@@ -316,7 +308,7 @@ sub optimize_table{
     return;
 }
 
-# Get table definition
+# Get table definition (mysql only)
 sub get_table_def {
     my $table = shift;
     my $q = $dbh->selectall_arrayref("SHOW CREATE TABLE $table");
@@ -326,22 +318,18 @@ sub get_table_def {
     return $def;
 }
 
-sub rotate_table{
-    my ($table, $def) = @_;
-    die "Missing required arguments" unless $table && $def;
+sub rotate_tables{
+    my (@tables) = @_;
+
+    die "Missing table names" unless scalar @tables;
 
     # We need DBA privileges here
-   
     my $db_host = Netdot->config->get('DB_HOST');
     my $db_port = Netdot->config->get('DB_PORT');
     my $db_user = Netdot->config->get('DB_DBA');
     my $db_pass = Netdot->config->get('DB_DBA_PASSWORD');
     my $db_db   = Netdot->config->get('DB_DATABASE');
  
-    if ( $db_type ne 'mysql' and $db_type ne 'Pg' ){
-        die("didn't recognize the database we're using ($db_type), could not rotate table $table");
-    }
-    
     my $dbh = &dbconnect($db_type, $db_host, $db_port, $db_user, $db_pass, $db_db) 
 	|| die ("Cannot connect to database as root");
    
@@ -350,76 +338,33 @@ sub rotate_table{
     
     my $timestamp = time;
 
-    if ( $db_type eq 'mysql' ){
-	# Tried to do this with just rename table and create table like
-	# but the constraints complicate things
-        eval{
-	    my @statements;
-	    
-	    # Constraint names are unique per database, so we need to
-	    # remove them from the backup table before creating the
-	    # new one
-	    my $fkq = "SELECT CONSTRAINT_NAME, TABLE_NAME, COLUMN_NAME, 
-                              REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
-                       FROM   INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
-                       WHERE  TABLE_NAME = '$table' 
-                         AND  TABLE_SCHEMA = 'netdot'
-                         AND  REFERENCED_TABLE_NAME IS NOT NULL";
-	    my $rows = $dbh->selectall_arrayref($fkq);
-
-	    my $backup = $table.'_'.$timestamp;
-            push @statements, ("RENAME TABLE $table TO $backup");
-
-	    foreach my $row ( @$rows ){
-		my ($const, $table, $col, $reftable, $refcol) = @$row;
-		push @statements, ("ALTER TABLE $backup DROP FOREIGN KEY `$const`");
-	    }
-	    # Re-create the original table
-	    push @statements, $def;
-	    foreach my $st ( @statements ){
-		$logger->debug($st);
-		$dbh->do($st);
-	    }
-        }
-    }else{
-	$logger->warn("Could not rotate table $table.  Database $db_type not supported");
+    my %defs;
+    my @statements;
+    foreach my $table ( @tables ){
+	$defs{$table} = &get_table_def($table);
+	push @statements, ("DROP TABLE $table");
     }
+    # Re-create the original tables in reverse order
+    # to avoid integrity errors
+    foreach my $table ( reverse @tables ){
+	push @statements, $defs{$table};
+    }
+    eval {
+	foreach my $st ( @statements ){
+	    $logger->debug($st);
+	    $dbh->do($st);
+	}
+    };
 
+    my $table_list = join ', ', @tables;
     if ( my $e = $@ ){
-        $dbh->rollback;
-        die "Error rotating table $table with database: $db_type, $db_host, $db_db, changes not commited: $e\n";
+	$dbh->rollback;
+	die "Error rotating tables $table_list. Changes not commited: $e\n";
     }
-    
     $dbh->commit;
-    $logger->info("Table $table rotated successfully");
+    $logger->info("Tables $table_list rotated successfully");
     # We can turn autocommit back on since the rest of the transactions are basically atomic
     $dbh->{AutoCommit} = 1; 
-    $logger->debug("Droping $table backups older than $self{NUM_DAYS} days");    
-    my $tables_q;
-    
-    if ( $db_type eq 'mysql' ){
-        $tables_q = $dbh->selectall_arrayref("SHOW TABLES");
-    }elsif ( $db_type eq 'Pg' ){
-        $tables_q = $dbh->selectall_arrayref("SELECT tablename FROM pg_tables");
-    }
-
-    my $epochdate = time-($self{NUM_DAYS}*24*60*60); 
-
-    foreach my $row ( @$tables_q ){
-        my $tablename = $row->[0];
-        if ( $tablename =~ /$table\_(\d+)/ ){
-            my $tstamp = $1;
-            if ( $tstamp < $epochdate ){
-		$logger->debug("Droping $table\_$tstamp");
-		$dbh->do("DROP TABLE $table\_$tstamp");
-            }
-        }
-    }
-    
-    if ( $db_type eq 'Pg' ){ 
-	# Since we just deleted every record from table during the copy, we need to clean up a bit
-        &optimize_table($table);
-    }
     
     &dbdisconnect($dbh);
     return 1;
@@ -432,7 +377,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2009 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
