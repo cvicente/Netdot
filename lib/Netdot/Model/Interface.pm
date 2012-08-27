@@ -137,7 +137,7 @@ sub find_duplex_mismatches {
 ################################################################
 =head2 - find_vlan_mismatches
 
-    Use topology information to determine if VLAN memembership
+    Use topology information to determine if VLAN memmbership
     of connected interfaces does not correspond
 
   Arguments: 
