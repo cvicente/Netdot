@@ -5413,6 +5413,12 @@ sub _update_modules {
 	    # from the name in the module information
 	    $asset = Asset->search_sn_mf($serial, $mf)->first;
 
+	    # The asset can unfortunately be from a different
+	    # manufacturer. We run the risk of assigning the
+	    # wrong asset, but the alternative may be worse
+	    $asset = Asset->search(serial_number=>$serial)->first
+		unless $asset;
+
 	    if ( !$asset && (my $model = $mod_args{model}) ){
 		# Now, search for the asset based on the match
 		# of both the product and either the name or
