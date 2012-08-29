@@ -507,7 +507,8 @@ sub select_lookup{
     my $table  = ($o ? $o->short_class : $args{table});
     $self->throw_fatal("Need to specify table and field to look up") unless ( $args{lookup} && $column );
 
-    my @defaults = @{$args{defaults}} if $args{defaults};
+    my @defaults;
+    @defaults = @{$args{defaults}} if (defined $args{defaults} && ref($args{defaults}) eq 'ARRAY');
 
     my $output;
     
