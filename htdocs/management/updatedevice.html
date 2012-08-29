@@ -31,8 +31,8 @@ $owner           => undef
 $used_by         => undef
 $site            => undef
 $contacts        => undef
-$add_subnets     => 0
-$subs_inherit    => 0
+$add_subnets     => 1
+$subs_inherit    => 1
 $pretend         => undef
 $user            => $ui->get_current_user($r)
 </%args>
@@ -363,7 +363,7 @@ else{
 %################################################################
 %# The following block only applies to routers
 %################################################################
-% if ( $info->{type} eq "Router" ){
+% if ( $info->{ipforwarding} ){
 %    push( @field_headers, "Add new Subnets (if any)?:" );
 <&| "/generic/HERE.mhtml" &>
 %    if ( Netdot->config->get('ADDSUBNETS') ){
