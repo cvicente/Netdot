@@ -944,7 +944,9 @@ sub get_snmp_info {
 
     if ( $self->config->get('GET_DEVICE_MODULE_INFO') ){
 	foreach my $key ( keys %{ $hashes{e_class} } ){
-	    $dev{module}{$key}{number} = $hashes{e_index}->{$key};
+	    # Notice that we use int() to avoid duplicate errors
+	    # in DB when number is like 01000000
+	    $dev{module}{$key}{number} = int($hashes{e_index}->{$key});
 	    foreach my $field ( keys %MFIELDS ){
 		my $method = $MFIELDS{$field};
 		my $v = $hashes{$method}->{$key};
