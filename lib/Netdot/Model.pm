@@ -531,7 +531,7 @@ sub search_like {
             } else {
                 # Fix lack of typecast introduced in Pg 8.x
                 if (Netdot->config->get('DB_TYPE') eq "Pg") {
-                    push @qual, "CAST($column AS text) LIKE ?";
+		    push @qual, "UPPER(CAST($column AS text)) LIKE UPPER(?)";
                     push @bind, $value;
                 } else {
                     push @qual, "$column LIKE ?";
