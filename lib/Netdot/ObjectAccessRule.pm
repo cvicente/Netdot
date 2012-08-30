@@ -60,6 +60,9 @@ sub denies(){
 				   "denied to $username ($user_type)");
 		    return 1;
 		}
+		if ( $otype eq 'Ipblock' ){
+		    return &_deny_ip_access($action, $access, $object);
+		}
 	    }
 	    return &_deny_action_access($action, $access->{$otype}->{$oid});
 
@@ -276,20 +279,26 @@ sub _deny_ip_access {
 	    return 1;
 	}
     }
+
     # Deny unless there's an ancestor which is permitted. This includes
     # subnets, containers, etc.
     my $deny = 1;
+
+    # Start with the given object
+    $deny = &_deny_action_access($action, $access->{'Ipblock'}->{$ipblock->id});
+    return $deny if $deny == 0;
+
+    # Then check its ancestors recursively
     foreach my $ancestor ( $ipblock->get_ancestors ){
 	if ( exists $access->{'Ipblock'}->{$ancestor->id} ){
 	    $deny = &_deny_action_access($action, $access->{'Ipblock'}->{$ancestor->id});
-	    last if $deny == 0;
+	    return $deny if $deny == 0;
 	}
     }
-    return $deny;
 
     $logger->debug("ObjectAccessRule::_deny_ip_access: ".$ipblock->get_label
 		   ." not within allowed block. Denying access.");
-    return 1;
+    return $deny;
 }
 
 
