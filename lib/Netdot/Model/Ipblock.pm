@@ -1587,15 +1587,16 @@ sub update {
     }
 	
     if ( $recursive ){
-	my %data = %{ $argv };
-	foreach my $key ( keys %data ){
-	    if ( $key =~ /^(address|prefix|parent|version|interface|status)$/ ){
-		delete $data{$key};
+	my %data;
+	# Only these fields are allowed
+	foreach my $key ( qw(owner used_by description) ){
+	    $data{$key} = $argv->{$key} if exists $argv->{$key};
+	}
+	if ( %data ){
+	    foreach my $d ( @{ $self->get_descendants } ){
+		$d->SUPER::update(\%data) ;
 	    }
 	}
-	$data{recursive} = $recursive;
-	$data{validate}  = 0;
-	$_->update(\%data) foreach $self->children;
     }
 
     return $result;
