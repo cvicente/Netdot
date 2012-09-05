@@ -147,7 +147,9 @@ my $cols;
 
 $net = $net->network();  # start printing from the first address, in case $net was not at the start of the subnet
 
-if( $mask > 28 ) {
+if( $mask == 31 ) {
+    $cols = $net->num();
+}elsif( $mask > 28 ) {
     # if there are less than 16 addresses in the subnet, show only that many columns
     $cols = $net->num()+2;
 } else {
@@ -155,7 +157,8 @@ if( $mask > 28 ) {
     $cols = 16;
 }
 
-for( my $i=0; $i<(($net->num()+1)/$cols); $i++ ) {
+my $num = ($mask == 31)? $net->num() : $net->num()+1;
+for( my $i=0; $i<($num/$cols); $i++ ) {
     my @row = ();
 
     for( my $j=0; $j<$cols; $j++ ) {
