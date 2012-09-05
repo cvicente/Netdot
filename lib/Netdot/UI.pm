@@ -1609,9 +1609,8 @@ sub build_ip_tree_graph {
     
     my %seen;
 
-    foreach my $n ( @$list ){
-	next unless defined $n;
-	my $ip = Ipblock->retrieve($n->data) or next;
+    foreach my $ip ( @$list ){
+	next unless defined $ip;
 	
 	# Make sure we don't include end addresses in the tree
 	next if $ip->is_address;
@@ -1633,7 +1632,7 @@ sub build_ip_tree_graph {
 	    URL       => "ip.html?id=".$ip->id,
 	    );
 	
-	if ( $n->parent && (my $parent = Ipblock->retrieve($n->parent->data)) ){
+	if ( my $parent = $ip->parent ){
 	    
 	    my @lbls;
 	    push @lbls, $parent->get_label;
@@ -1665,10 +1664,11 @@ sub build_ip_tree_graph {
 =head2 build_ip_tree_graph_html
 
   Arguments:
-    ipblock id
-    Arrayref of Net::IPTrie nodes
-    web_path string
-    filename
+    Hash with keys:
+      id       - ipblock id
+      list     - Arrayref of Ipblock objects
+      web_path - web_path string
+      filename - File name for graph
   Returns:
     html img code
   Examples:
@@ -1992,7 +1992,7 @@ sub build_device_stp_graph {
     my $start = Device->retrieve($id);
     my $stp_inst = STPInstance->search(device=>$id, number=>$number)->first;
     return $g unless defined($stp_inst);
-    my $start_root = $stp_inst->root_bridge;
+    my $start_root = $stp_inst->root_bridgse;
     return $g unless defined($start_root);
     
     my $devicemacs = Device->get_macs_from_all();
