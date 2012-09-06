@@ -40,7 +40,7 @@ BEGIN {
     $defaults{dsn} .= ";port=$port" if defined ($port); 
     $defaults{user}        = __PACKAGE__->config->get('DB_NETDOT_USER');
     $defaults{password}    = __PACKAGE__->config->get('DB_NETDOT_PASS');
-    $defaults{dbi_options} = { __PACKAGE__->_default_attributes };
+    $defaults{dbi_options} = {};
     if ($db_type eq "mysql") {
         $defaults{dbi_options}->{AutoCommit} = 1;
         $defaults{dbi_options}->{mysql_enable_utf8} = 1;
@@ -59,7 +59,8 @@ BEGIN {
     my $dbh = __PACKAGE__->db_Main();
     my ($schema_version) = $dbh->selectrow_array("SELECT version FROM schemainfo");
     if ( $schema_version ne $Netdot::VERSION ){
-     	Netdot::Model->_croak(sprintf("Netdot DB schema version mismatch: Netdot version '%s' != Schema version '%s'", 
+     	Netdot::Model->_croak(sprintf("Netdot DB schema version mismatch: ".
+				      "Netdot version '%s' != Schema version '%s'", 
 				      $Netdot::VERSION, $schema_version));
     }
 
