@@ -5,7 +5,7 @@ use warnings;
 use strict;
 use Math::BigInt;
 use NetAddr::IP;
-use Net::Patricia;
+use Net::Patricia 1.19_01;
 use Storable qw(nfreeze thaw);
 use Scalar::Util qw(blessed);
 use DBI qw(:sql_types);
@@ -3017,9 +3017,12 @@ sub _update_tree{
 	# This is a non-address block
 
 	# This block's address and/or prefix were changed
-        if ( $argv{old_addr} && $argv{old_prefix} ) {
-	    my $cidr = $argv{old_addr}. '/'.$argv{old_prefix}; 
-            $tree->remove_string($cidr);
+        if ( $argv{old_addr} || $argv{old_prefix} ) {
+	    $logger->debug("Ipblock::_update_tree: ". $self->get_label .
+			   " changed address and/or prefix. Rebuilding.");
+	    $class->build_tree($version);
+	    $class->_tree_save(version=>$self->version, tree=>$tree);
+	    return 1;
         }
 
 	# Find the closest parent
