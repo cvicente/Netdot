@@ -461,7 +461,7 @@ sub is_loopback{
 
     my $ip;
     my $str;
-    if ( !($ip = $class->netaddr(address=>$address, address=>$prefix))){
+    if ( !($ip = $class->netaddr(address=>$address, prefix=>$prefix))){
 	$str = ( $address && $prefix ) ? (join '/', $address, $prefix) : $address;
 	$class->throw_user("Invalid IP: $str");
     }
