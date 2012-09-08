@@ -480,6 +480,7 @@ sub snmp_update {
 	
 	foreach my $newvlan ( keys %{ $info->{vlans} } ){
 	    my $vid   = $info->{vlans}->{$newvlan}->{vid} || $newvlan;
+	    next if $vid == 0;
 	    my $vname = $info->{vlans}->{$newvlan}->{vname};
 	    my $vo;
 	    my %vdata;
