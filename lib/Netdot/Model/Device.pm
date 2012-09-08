@@ -1688,13 +1688,18 @@ sub get_ips_from_all {
     $logger->debug(sub{ "Device::get_ips_from_all: Retrieving all Device IPs..." });
 
     my $dbh = $class->db_Main;
-    my $aref = $dbh->selectall_arrayref("SELECT ip.address, d.id
-                                         FROM   ipblock ip, device d, interface i
-                                         WHERE  i.device=d.id AND ip.interface=i.id
+    my $aref1 = $dbh->selectall_arrayref("SELECT ip.address, d.id
+                                          FROM   ipblock ip, device d, interface i
+                                          WHERE  i.device=d.id AND ip.interface=i.id
                                          ");
+
+    my $aref2 = $dbh->selectall_arrayref("SELECT ip.address, d.id
+                                          FROM   ipblock ip, device d 
+                                          WHERE  d.snmp_target=ip.id;");
+
     # Build a hash of mac addresses to device ids
     my %dev_ips;
-    foreach my $row ( @$aref ){
+    foreach my $row ( @$aref1, @$aref2 ){
 	my ($address, $id) = @$row;
 	$dev_ips{$address} = $id;
     }
