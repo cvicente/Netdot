@@ -82,7 +82,7 @@ sub insert {
     if ( defined $argv->{ttl} && length($argv->{ttl}) ){
 	$argv->{ttl} = $class->ttl_from_text($argv->{ttl});
     }else{
-	$argv->{ttl} = $argv->{rr}->zone->default_ttl;
+	$argv->{ttl} = $rr->zone->default_ttl;
     }
 
     $class->_sanitize_ptrdname($argv);
