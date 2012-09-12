@@ -1063,6 +1063,7 @@ sub get_snmp_info {
     # IPv4 addresses and masks 
     #
     while ( my($ip,$iid) = each %{ $hashes{'ip_index'} } ){
+ 	next unless (defined $dev{interface}{$iid});
 	next if &_check_if_status_down(\%dev, $iid);
 	next if Ipblock->is_loopback($ip);
 	next if ( $ip eq '0.0.0.0' || $ip eq '255.255.255.255' );
@@ -1103,6 +1104,7 @@ sub get_snmp_info {
 	    $pfx = $self->_octet_string_to_v6($2);
 	}
 	if ( $iid && $addr && $pfx && $len ){
+	    next unless (defined $dev{interface}{$iid});
 	    next if &_check_if_status_down(\%dev, $iid);
 	    next if ( Ipblock->is_link_local($addr) && $ignore_link_local );
 	    $dev{interface}{$iid}{ips}{$addr}{address} = $addr;
