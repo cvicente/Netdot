@@ -59,16 +59,17 @@ if ( $submit ){
     push( @field_headers, "Options:" );
     push( @cell_data, 'Apply to all descendants <input type="checkbox" name="recursive"'.($recursive?' CHECKED':'').'>' );
 }
+my $netdot_path = $r->dir_config('NetdotPath');
 </%init>
 
 <html>
 <head>
-    <link rel="stylesheet" href="<% $r->dir_config('NetdotPath') %>css/style.css" type="text/css">
+    <link rel="stylesheet" href="<% $netdot_path %>/css/style.css" type="text/css">
     <title>Edit IP block Recursively</title>
 </head> 
-<script language="JavaScript" src="select.js"></script>
-<script language="JavaScript" src="insertentry.js"></script>
-<script language="JavaScript" src="jsrsClient.js"></script>
+<script language="JavaScript" src="<% $netdot_path %>/java_script/select.js"></script>
+<script language="JavaScript" src="<% $netdot_path %>/java_script/insertentry.js"></script>
+<script language="JavaScript" src="<% $netdot_path %>/java_script/jsrsClient.js"></script>
 
 <body class="bodytag">
 
