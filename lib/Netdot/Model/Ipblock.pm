@@ -672,27 +672,48 @@ sub insert {
 
     # Reserve first or last N addresses
     if ( !$newblock->is_address && $newblock->status->name eq 'Subnet' ){
-	my $num = $class->config->get('SUBNET_AUTO_RESERVE');
-	if ( $num && $num < $newblock->num_addr ){
-	    for ( 1..$num ){
-		my $addr = $newblock->get_next_free();
-		eval {
-		    $class->insert({address=>$addr, status=>'Reserved', validate=>0});
-		};
-		if ( my $e = $@ ){
-		    if ( $e =~ /Duplicate/io ){
-			# This happens often when running parallel processes
-			# Just go on
-		    }else{
-			$logger->warn("Ipblock::insert: Failed to insert one of first ".
-				      "N addresses in subnet: $e");
-		    }
+	$newblock->reserve_first_n();
+    }
+
+    return $newblock;
+}
+
+#########################################################################
+=head2 reserve_first_n - Reserve first (or last) N addresses in subnet
+
+ Based on config option SUBNET_AUTO_RESERVE
+
+  Arguments: 
+    None
+  Returns:   
+    True
+  Examples:
+    $block->reserve_first_n();
+
+=cut
+sub reserve_first_n {
+    my ($self) = @_;
+    $self->isa_object_method('reserve_first_n');
+    my $class = ref($self);
+    my $num = $class->config->get('SUBNET_AUTO_RESERVE');
+    if ( $num && $num < $self->num_addr ){
+	for ( 1..$num ){
+	    my $addr = $self->get_next_free();
+	    eval {
+		$class->insert({address=>$addr, status=>'Reserved', validate=>0});
+	    };
+	    if ( my $e = $@ ){
+		if ( $e =~ /Duplicate/io ){
+		    # This happens often when running parallel processes
+		    # Just go on
+		}else{
+		    $logger->warn("Ipblock::insert: Failed to insert one of first ".
+				  "N addresses in subnet: $e");
 		}
 	    }
 	}
     }
-
-    return $newblock;
+    1;
 }
 
 ##################################################################
@@ -1587,6 +1608,13 @@ sub update {
 	    foreach my $d ( @{ $self->get_descendants } ){
 		$d->SUPER::update(\%data) ;
 	    }
+	}
+    }
+
+    # If changing into a subnet, reserve addresses if needed
+    if ( !$self->is_address && $bak{status} != $self->status ){
+	if ( $self->status->name eq 'Subnet' ){
+	    $self->reserve_first_n();
 	}
     }
 
