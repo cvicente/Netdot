@@ -1725,20 +1725,24 @@ sub get_descendants {
     my $start = $self->netaddr->network->numeric;
     my $end   = $self->netaddr->broadcast->numeric + 1;
 
-    my $size = ($self->version == 4)? 32 : 128;
+
+    my @bindvars = ($start, $end);
 
     my $dbh = $self->db_Main();
-    my $q  = 'SELECT id FROM ipblock WHERE address > ? AND address < ?';
+    my $q  = 'SELECT id FROM ipblock WHERE address >= ? AND address < ?';
     if ( $argv{no_addresses} ){
 	$q .= ' AND prefix != ?';
+	my $size = ($self->version == 4)? 32 : 128;
+	push @bindvars, $size;
     }
     $q .= ' ORDER BY address';
     my $sth = $dbh->prepare_cached($q);
-    $sth->execute($start, $end, $size);
+    $sth->execute(@bindvars);
     my $rows = $sth->fetchall_arrayref();
     my @ret;
     foreach my $row ( @$rows ){
-	push @ret, Ipblock->retrieve($row->[0]);
+	my $o = Ipblock->retrieve($row->[0]);
+	push @ret, $o unless ( $o->id == $self->id );
     }
     return \@ret;
 }
