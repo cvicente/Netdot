@@ -500,8 +500,6 @@ sub add_host {
     $class->throw_user("Invalid zone: $argv{zone}") 
 	unless $zone;
 
-    # Hostname validation
-    RR->validate_name($argv{name});
     if ( my $h = RR->search(name=>$argv{name}, zone=>$zone)->first ){
 	$class->throw_user($h->get_label." is already taken");
     }
@@ -533,7 +531,6 @@ sub add_host {
 		    if ( my $h = RR->search(name=>$alias, zone=>$zone)->first ){
 			$class->throw_user($h->get_label." from your aliases list is already taken");
 		    }
-		    RR->validate_name($alias);
 		    push @cnames, $alias;
 		}
 
@@ -607,7 +604,7 @@ sub validate_name {
 	    return 1;
 	}
 	if ( $name =~ /$regex/ ){
-	    $self->throw_user("Invalid name: $name. Name contains invalid characters");
+	    $self->throw_user("Name $name contains characters not allowed in this context");
 	}
     }
     1;
@@ -685,7 +682,7 @@ sub _validate_args {
 	}
 
 	# Valid characters
-	if ( $name =~ /[^A-Za-z0-9\.\-_@]/ ){
+	if ( $name =~ /[^A-Za-z0-9\.\-_@\*]/ ){
 	    $self->throw_user("Invalid name: $name. Contains invalid characters");
 	}
 	# Underscore only allowed at beginning of string or dotted section

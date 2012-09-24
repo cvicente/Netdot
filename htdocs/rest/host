@@ -41,6 +41,9 @@ $logger->info(sprintf("/rest/host: %s request with args: %s from %s (%s)",
  		      $rest->{request}->connection->remote_ip, 
  		      $headers->{'User-Agent'}
  	      ));
+
+my $user_type = $user->getAttribute('USER_TYPE');
+
 my %rrs;
 my %ips;
 
@@ -174,6 +177,18 @@ if ( $rest->{request}->method eq 'GET' ){
 	foreach my $rarg ( qw/name expiration info/ ){
 	    $args{$rarg} = $ARGS{$rarg};
 	}
+
+	# Hostname validation
+	if ( $args{name} && $user_type ne "Admin" ) {
+	    eval {
+		RR->validate_name($args{name});
+	    };
+	    if ( my $e = $@ ){
+		$rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
+			     msg=>"Bad request: $e"); 
+	    }
+	}
+	
 	eval {
 	    $rr->update(\%args);
 	};
@@ -233,7 +248,19 @@ if ( $rest->{request}->method eq 'GET' ){
     }else{
 	# No rrid or ipid means We're adding a new host
 	my %add_args;
+
+	if ( $name && $user_type ne "Admin" ) {
+	    # Hostname validation
+	    eval {
+		RR->validate_name($name);
+	    };
+	    if ( my $e = $@ ){
+		$rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
+			     msg=>"Bad request: $e"); 
+	    }
+	}
 	$add_args{name} = $name;
+
 	foreach my $arg (qw/subnet expiration aliases cpu os info/ ){
 	    $add_args{$arg} = $ARGS{$arg};
 	}

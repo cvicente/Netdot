@@ -78,6 +78,17 @@ if ( $submit ){
     foreach my $key ( qw(name expiration ethernet duid aliases) ){
 	$args{$key} = $ARGS{$key};
     }
+
+    # Hostname validation
+    if ( $args{name} ) {
+	eval {
+	    RR->validate_name($args{name});
+	};
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>"$e");
+	}
+    }
+
     my $person = $ui->get_user_person($user);
     $args{person}  = $person;
     $args{zone}    = $zone;
