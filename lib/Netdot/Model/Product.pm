@@ -66,7 +66,7 @@ sub insert {
 		if ( $ent->oid ne $oid ) {
 		    # There is an entity with the same name and different oid
 		    # Use the OID as part of the name to make a unique new one
-		    my $entname = "$argv->{manufacturer} ($oid)";
+		    my $entname = $ent->name." ($oid)";
 		    $ent = Entity->insert({name=>$entname, oid=>$oid});
 		}
 	    }else{
