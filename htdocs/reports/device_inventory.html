@@ -120,13 +120,15 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
                asset.product_id,
                site.name AS site_name,
                product.name AS product_name,
+               producttype.name AS product_type,
                entity.name AS manufacturer
     FROM       device
     LEFT JOIN  site ON site.id=device.site
     LEFT JOIN  (asset CROSS JOIN product CROSS JOIN entity) 
                 ON (asset.id=device.asset_id 
                  AND asset.product_id=product.id
-                 AND entity.id=product.manufacturer) 
+                 AND entity.id=product.manufacturer)
+    LEFT JOIN  producttype ON product.type = producttype.id
     ORDER BY   site_name,product_name
     ")->{rows};
 
@@ -135,8 +137,8 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
     my %t;
     foreach my $r ( @$res ) {
         my $site        = $r->[0] || "_unset";
-	$t{$site}{name} = $r->[2] || "Unset"; 
 	my $product     = $r->[1] || "_unset";
+	$t{$site}{name} = $r->[2] || "Unset"; 
 	my $type        = $r->[4] || "Unset";
 	$t{$site}{types}{$type}{count}++;
 	$t{$site}{types}{$type}{prods}{$product}{name}  = $r->[3] || "Unset";
