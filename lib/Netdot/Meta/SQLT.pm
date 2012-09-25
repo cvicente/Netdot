@@ -43,7 +43,7 @@ sub new{
 =head2 sql_schema - Generate SQL code to create schema
 
  Arguments:
-    type - DBMS [MySQL|Pg]
+    type - DBMS [MySQL|PostgreSQL]
   Returns:
     scalar containing SQL code
   Examples:
@@ -55,6 +55,11 @@ sub sql_schema {
     $t->parser( sub{ return $self->_parser(@_) } ) or croak $t->error;
     $t->producer($type) or croak $t->error;
     my $output = $t->translate() or croak $t->error;
+    if ( $type eq 'PostgreSQL' ){
+	# Bug in SQLT
+	# https://rt.cpan.org/Public/Bug/Display.html?id=58420
+	$output =~ s/serial NOT NULL/bigserial NOT NULL/smg;
+    }
     return $output;
 }
 
