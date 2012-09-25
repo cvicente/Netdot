@@ -21,6 +21,7 @@ Netdot::Model - Netdot implementation of the Model layer (of the MVC architectur
 
 my %defaults; 
 my $logger = Netdot->log->get_logger("Netdot::Model");
+my $db_type = __PACKAGE__->config->get('DB_TYPE');
 
 # Tables to exclude from audit
 my %EXCLUDE_AUDIT = (
@@ -63,7 +64,6 @@ BEGIN {
 				      "Netdot version '%s' != Schema version '%s'", 
 				      $Netdot::VERSION, $schema_version));
     }
-
 
 ###########################################################
 # Copy stored object in corresponding history table 
@@ -531,7 +531,7 @@ sub search_like {
             # Not a foreign key, regex this sucker
             } else {
                 # Fix lack of typecast introduced in Pg 8.x
-                if (Netdot->config->get('DB_TYPE') eq "Pg") {
+                if ( $db_type eq 'Pg' ) {
 		    push @qual, "UPPER(CAST($column AS text)) LIKE UPPER(?)";
                     push @bind, $value;
                 } else {
@@ -814,12 +814,13 @@ sub update {
 
 	$class->_adjust_vals(args=>$argv, action=>'update');
 	
-	while ( my ($col, $val) = each %$argv ){
-	    my $a = blessed($self->$col) ? $self->$col->id : $self->$col;
-	    my $b = blessed($val)        ? $val->id        : $val;
-	    if ( (!defined $a || !defined $b) || (defined $a && defined $b && $a ne $b) ){
-		$self->set($col=>$b);
-		push @changed_keys, $col;
+	{   # Avoid warnings when comparing to undef
+	    no warnings 'uninitialized';
+	    while ( my ($col, $val) = each %$argv ){
+		if ( $self->$col ne $val ){
+		    $self->set($col=>$val);
+		    push @changed_keys, $col;
+		}
 	    }
 	}
     }
@@ -1196,7 +1197,17 @@ sub _adjust_vals{
     my %meta_columns;
     map { $meta_columns{$_->name} = $_ } $class->meta_data->get_columns;
     foreach my $field ( keys %$args ){
-	my $mcol = $meta_columns{$field} || $class->throw_fatal("Cannot find $field in $class metadata");
+	my $mcol = $meta_columns{$field} || 
+	    $class->throw_fatal("Cannot find $field in $class metadata");
+	
+	# Shorten string if necessary (affects Pg only)
+	# This has effect when the values are not the result of user input
+	# In that case, user gets an error message
+	if ( $mcol->sql_type eq 'varchar' && 
+	     defined $mcol->length && ($mcol->length < length($args->{$field})) ){
+	    $args->{$field} = substr($args->{$field}, 0, $mcol->length);
+	}
+	# Deal with NULL values properly
 	if ( !blessed($args->{$field}) && 
 	     (!defined($args->{$field}) || $args->{$field} eq '' || 
 	      $args->{$field} eq 'null' || $args->{$field} eq 'NULL' ) ){
@@ -1208,8 +1219,8 @@ sub _adjust_vals{
 		    $class->throw_fatal("Netdot::Model::_adjust_vals: sql_type not defined for $field");
 		}
 		if ( $mcol->sql_type =~ /^integer|bigint|bool$/o ) {
-		    $logger->debug(sub{sprintf("Model::_adjust_vals: Setting empty field '%s' type '%s' to 0.", 
-					       $field, $mcol->sql_type) });
+		    $logger->debug(sub{sprintf("Model::_adjust_vals: Setting empty field '%s' ".
+					       "type '%s' to 0.", $field, $mcol->sql_type) });
 		    $args->{$field} = 0;
 		}else{
 		    # Insert NULL instead of ""
