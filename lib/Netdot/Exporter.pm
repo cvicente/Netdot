@@ -90,7 +90,7 @@ sub get_device_info {
                 LEFT JOIN devicecontacts ON d.id=devicecontacts.device
                 LEFT JOIN contactlist ON contactlist.id=devicecontacts.contactlist
                 LEFT JOIN bgppeering ON d.id=bgppeering.device
-                WHERE     d.monitored=1
+                WHERE     d.monitored='1'
                      AND  i.device=d.id                  
                      AND  d.name=rr.id 
                      AND  rr.zone=zone.id

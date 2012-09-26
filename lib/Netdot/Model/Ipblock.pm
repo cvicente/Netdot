@@ -703,13 +703,9 @@ sub reserve_first_n {
 		$class->insert({address=>$addr, status=>'Reserved', validate=>0});
 	    };
 	    if ( my $e = $@ ){
-		if ( $e =~ /Duplicate/io ){
-		    # This happens often when running parallel processes
-		    # Just go on
-		}else{
-		    $logger->warn("Ipblock::insert: Failed to insert one of first ".
-				  "N addresses in subnet: $e");
-		}
+		# Dups are possible when running parallel processes
+		# Just warn and go on
+		$logger->warn("Ipblock::reserve_first_n: Failed to insert address: $e");
 	    }
 	}
     }
@@ -1052,15 +1048,12 @@ sub fast_update{
 		    );
 	    };
 	    if ( my $e = $@ ){
-		if ( $e =~ /Duplicate/i ){
-		    eval {
-			$sth1->execute($attrs->{timestamp}, $dec_addr);
-		    };
-		    if ( my $e = $@ ){
-			$class->throw_fatal($e);
-		    }
-		}else{
-		    $class->throw_fatal($e);
+		# Probably duplicate. Try to update.
+		eval {
+		    $sth1->execute($attrs->{timestamp}, $dec_addr);
+		};
+		if ( my $e2 = $@ ){
+		    $logger->error($e2);
 		}
 	    }
 	}

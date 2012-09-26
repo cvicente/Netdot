@@ -228,18 +228,25 @@ if ( $submit ){
 	my $installed = Asset->get_installed_hash() 
 	    unless $search_type eq 'all';
 
-	# Search for labels in Asset table and foreign objects recursively
-	my $r1 = $ui->select_query(table=>'Asset', terms=>[$search]);
+	my @assets;
+	if ( $search ){
+	    # Search for labels in Asset table and foreign objects recursively
+	    my $r1 = $ui->select_query(table=>'Asset', terms=>[$search]);
+	    @assets = values %$r1;
 
-	# Search for other fields in Asset table
-	my @where;
-	foreach my $field ( qw/custom_serial inventory_number reserved_for 
+	    # Search for other fields in Asset table
+	    my @where;
+	    foreach my $field ( qw/custom_serial inventory_number reserved_for 
                                description info po_number maint_contract/ ){
-	    push @where, { $field => { '-like' => '%'.$search.'%' } };
+		push @where, { $field => { '-like' => '%'.$search.'%' } };
+	    }
+	    push @assets, Asset->search_where(\@where);
+	}else{
+	    # No criteria given. Get all.
+	    @assets = Asset->retrieve_all();
 	}
-	my @assets = Asset->search_where(\@where);
 	my %res;
-	for ( @assets, values %$r1 ) {
+	for ( @assets ) {
 	    if ( $search_type eq 'all' || 
 		 ($search_type eq 'installed' && $installed->{$_->id}) ||
 		 ($search_type eq 'not installed' && !exists $installed->{$_->id}) ){

@@ -5393,8 +5393,9 @@ sub _update_modules {
     my %oldmodules;
     map { $oldmodules{$_->number} = $_ } $self->modules();
 
-    foreach my $number ( sort { $a <=> $b } keys %{$modules} ){
-	my %mod_args = %{$modules->{$number}};
+    foreach my $key ( keys %{$modules} ){
+	my $number = $modules->{$key}->{number};
+	my %mod_args = %{$modules->{$key}};
 	$mod_args{device} = $self->id;
 	my $show_name = $mod_args{name} || $number;
 	# find or create asset object for given serial number and product
