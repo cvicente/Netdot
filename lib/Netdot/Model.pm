@@ -454,20 +454,7 @@ sub insert {
 	}else{
 	    $error = $e;
 	}
-	my $msg = "Error while inserting $class: ";
-	if ( $e =~ /Duplicate entry/i ){
-	    $msg .= "Some values are duplicated\n\n";
-	    $msg .= "Error details: ".$error;
-	}elsif ( $e =~ /cannot be null|not-null constraint/i ){
-	    $msg .= "Some fields cannot be null\n\n";
-	    $msg .= "Error details: ".$error;
-	}elsif ( $e =~ /invalid input syntax/i ){
-	    $msg .= "Some fields have invalid input syntax.";
-	}elsif ( $e =~ /out of range/i ){
-	    $msg .= "Some values are out of valid range.";
-	}else{
-	    $msg .= $error;
-	}
+	my $msg = "Error while inserting $class: $error";
 	$class->throw_user("$msg");
     }
 
@@ -671,8 +658,6 @@ sub raw_sql {
     	    $st->execute();
     	};
     	if ( my $e = $@ ){
-            # parse out SQL error message from the entire error
-            $e =~ s/execute failed:(.*)\"] at/$1/io;
     	    $self->throw_user("SQL Error: $e");
     	}
         $result{headers} = $st->{"NAME_lc"};
@@ -830,18 +815,7 @@ sub update {
 	$res = $self->SUPER::update();
     };
     if ( my $e = $@ ){
-	my $msg = "Error while updating $class: ";
-	# Class::DBI shows a full stack trace
-	# Try to make it less frightening for the user
-	if ( $e =~ /Duplicate/i ){
-	    $msg .= "Some values are duplicated. Full error: $e";
-	}elsif ( $e =~ /invalid input syntax/i ){
-	    $msg .= "Some fields have invalid input syntax";
-	}elsif ( $e =~ /out of range/i ){
-	    $msg .= "Some values are out of valid range.";
-	}else{ 
-	    $msg .= $e;
-	}
+	my $msg = "Error while updating $class: $e";
 	$self->throw_user("$msg");
     }
     if ( @changed_keys ){
@@ -878,11 +852,7 @@ sub delete {
 	$self->SUPER::delete();
     };
     if ( my $e = $@ ){
-	my $msg;
-	if ( $e =~ /objects still refer to/i ){
-	    $msg = "Other objects refer to this object ($class id $id).  Delete failed.";
-	}
-	$self->throw_user($msg);
+	$self->throw_user($e);
     }
     $logger->debug( sub { sprintf("Model::delete: Deleted %s id %i", 
 				  $class, $id) } );
