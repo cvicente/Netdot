@@ -1052,15 +1052,12 @@ sub fast_update{
 		    );
 	    };
 	    if ( my $e = $@ ){
-		if ( $e =~ /Duplicate/i ){
-		    eval {
-			$sth1->execute($attrs->{timestamp}, $dec_addr);
-		    };
-		    if ( my $e = $@ ){
-			$class->throw_fatal($e);
-		    }
-		}else{
-		    $class->throw_fatal($e);
+		# Probably duplicate. Try to update.
+		eval {
+		    $sth1->execute($attrs->{timestamp}, $dec_addr);
+		};
+		if ( my $e2 = $@ ){
+		    $logger->error($e2);
 		}
 	    }
 	}

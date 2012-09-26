@@ -191,16 +191,13 @@ sub fast_update {
 		$sth2->execute($address, $timestamp, $timestamp);
 	    };
 	    if ( my $e = $@ ){
-		if ( $e =~ /Duplicate/i ){
-		    # Update
-		    eval {
-			$sth1->execute($timestamp, $address);
-		    };
-		    if ( my $e = $@ ){
-			$class->throw_fatal($e);
-		    }
-		}else{
-		    $class->throw_fatal($e);
+		# Probably duplicate. That's OK. Update
+		eval {
+		    $sth1->execute($timestamp, $address);
+		};
+		if ( my $e2 = $@ ){
+		    # Something else is wrong
+		    $logger->error($e2);
 		}
 	    }
 	}
