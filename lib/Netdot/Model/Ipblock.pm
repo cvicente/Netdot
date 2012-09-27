@@ -616,6 +616,7 @@ sub insert {
             # assume any errors from _update_tree are caused by $newblock
 	    $newblock->delete();
 	    $e->rethrow() if ref($e);
+	    $class->throw_fatal($e);
 	}
     }
     
@@ -700,7 +701,9 @@ sub reserve_first_n {
 	for ( 1..$num ){
 	    my $addr = $self->get_next_free();
 	    eval {
-		$class->insert({address=>$addr, status=>'Reserved', validate=>0});
+		$class->insert({address=>$addr, status=>'Reserved', 
+				parent=>$self->id, no_update_tree=>1,
+				validate=>0});
 	    };
 	    if ( my $e = $@ ){
 		# Dups are possible when running parallel processes
@@ -939,46 +942,6 @@ sub build_tree {
     return 1;
 }
 
-############################################################################
-=head2 retrieve_all_hashref
-
-    Retrieves all IPs from the DB and stores them in a hash, keyed by 
-    numeric address. The value is the Ipblock id.
-
-  Arguments: 
-    None
-  Returns:   
-    Hash reference 
-  Examples:
-    my $db_ips = Ipblock->retriev_all_hash();
-
-=cut
-sub retrieve_all_hashref {
-    my ($class) = @_;
-    $class->isa_class_method('retrieve_all_hashref');
-
-    # Build the search-all-ips SQL
-    $logger->debug(sub{"Ipblock::retrieve_all_hashref: Retrieving all IPs..." });
-    my ($ip_aref, %db_ips, $sth);
-    
-    my $dbh = $class->db_Main;
-    eval {
-	$sth = $dbh->prepare_cached("SELECT id,address FROM ipblock");	
-	$sth->execute();
-	$ip_aref = $sth->fetchall_arrayref;
-    };
-    if ( my $e = $@ ){
-	$class->throw_fatal($e);
-    }
-    # Build a hash of ip addresses.
-    foreach my $row ( @$ip_aref ){
-	my ($id, $address) = @$row;
-	$db_ips{$address} = $id;
-    }
-    $logger->debug(sub{"Ipblock::retrieve_all_hashref: ...done" });
-
-    return \%db_ips;
-}
 
 ##################################################################
 =head2 fast_update - Faster updates for specific cases
@@ -2613,8 +2576,9 @@ sub get_host_addrs {
 	$nip = $self->netaddr;
     }else{
 	$subnet = shift;
-	$nip = $self->netaddr(address=>$subnet) or
-	    $class->throw_fatal("Invalid Subnet: $subnet");
+	my ($address, $prefix) = split /\//, $subnet;
+	$nip = Ipblock->netaddr(address=>$address, prefix=>$prefix) or
+	    $self->throw_fatal("Invalid Subnet: $subnet");
     }
         
     # Populating an array with all addresses in most IPv6 blocks
@@ -2645,25 +2609,13 @@ sub get_next_free {
     my ($self, %argv) = @_;
     $self->isa_object_method('get_next_free');
     my $class = ref($self);
-    $self->throw_user("Invalid call to this method on a non-subnet")
+    $self->throw_user('Invalid call to this method on a non-subnet')
 	unless ( $self->status->name eq 'Subnet' );
 
-    $logger->debug("Getting next free address in ".$self->get_label);
-
-    my $dbh  = $self->db_Main();
-    my $id   = $self->id;
-    my $rows = $dbh->selectall_arrayref("
-               SELECT   ipblock.address, ipblockstatus.name
-               FROM     ipblock, ipblockstatus
-               WHERE    ipblock.status=ipblockstatus.id
-                 AND    ipblock.parent=$id
-               ");
-
+    # Build hash with address and status for fast lookup
     my %used;
-    foreach my $row ( @$rows ){
-	my ($numeric, $status) = @$row;
-	next unless ( $numeric && $status );
-	$used{$numeric} = $status;
+    foreach my $kid ( $self->children ){
+	$used{$kid->address_numeric} = $kid->status->name;
     }
 
     my $strategy = $argv{strategy} || Netdot->config->get('IP_ALLOCATION_STRATEGY');
@@ -2671,32 +2623,38 @@ sub get_next_free {
     my $s = $self->netaddr;
     my $ret;
     if ( $strategy eq 'first' ){
-	for ( my $addr=Math::BigInt->new($s->first->numeric); $addr <= $s->last->numeric; $addr++ ){
-	    $ret = &_do_addr($class, $addr, \%used, $self->version);
-	    last if $ret;
+	my $start = $s->first->numeric;
+	my $end   = $s->last->numeric;
+	my $addr  = ($self->version == 6)? Math::BigInt->new($start) : $start;
+	while ( $addr <= $end ){
+	    $ret = &_chk_addr($class, $addr, \%used, $self->version);
+	    return $ret if $ret;
+	    $addr++;
 	}
     }elsif ( $strategy eq 'last' ){
-	for ( my $addr=Math::BigInt->new($s->last->numeric); $addr >= $s->first->numeric; $addr-- ){
-	    $ret = &_do_addr($class, $addr, \%used, $self->version);
-	    last if $ret;
+	my $start = $s->last->numeric;
+	my $end   = $s->first->numeric;
+	my $addr  = ($self->version == 6)? Math::BigInt->new($start) : $start;
+	while ( $addr >= $end ){
+	    $ret = &_chk_addr($class, $addr, \%used, $self->version);
+	    return $ret if $ret;
+	    $addr--;
 	}	
     }else{
 	$self->throw_fatal("Ipblock::get_next_free: Invalid strategy: $strategy");
     }
-    # Return what we got
-    return $ret;
 
-    sub _do_addr(){
+    sub _chk_addr(){
 	my ($class, $addr, $used, $version) = @_;
 	# Ignore anything that exists, unless it's marked as available
-	if (exists $used->{$addr} && $used->{$addr} ne 'Available'){
+	if ( exists $used->{$addr} && $used->{$addr} ne 'Available' ){
 	    return undef;
 	}
 	if ( my $ipb = Ipblock->search(address=>$addr, version=>$version)->first ){
 	    # IP may have been incorrectly set as Available
 	    # Correct and move on
 	    if ( $ipb->a_records || $ipb->dhcp_scopes ){
-		$ipb->update({status=>'Static'});
+		$ipb->SUPER::update({status=>'Static'});
 		return undef;
 	    }
 	}
@@ -3041,7 +2999,6 @@ sub _update_tree{
 
     }else{
 	# This is a non-address block
-
 	# This block's address and/or prefix were changed
         if ( $argv{old_addr} || $argv{old_prefix} ) {
 	    $logger->debug("Ipblock::_update_tree: ". $self->get_label .
@@ -3050,7 +3007,7 @@ sub _update_tree{
 	    $class->_tree_save(version=>$self->version, tree=>$tree);
 	    return 1;
         }
-
+	# At this point we can assume that the block is new
 	# Find the closest parent
         my $n = $class->_tree_find(
 	    address => $self->address,
@@ -3061,7 +3018,6 @@ sub _update_tree{
 	
 	if ( $n && $n != $self->id ){
 	    my $parent_id = $n;
-	    
 	    # Now insert it in the tree
 	    my $n = $class->_tree_insert(
 		address => $self->address,
@@ -3076,7 +3032,7 @@ sub _update_tree{
 	    my %parents;
 	    $parents{$self->id} = $parent_id;
 	    
-	    # Now, deal with my children and my parent's children
+	    # Now, deal with my parent's children
 	    # They could be my children or my siblings, so
 	    # we need to rebuild this section of the tree
 	    
@@ -3084,17 +3040,32 @@ sub _update_tree{
 	    my $sth1 = $dbh->prepare_cached("SELECT id,address,prefix,parent 
                                                FROM ipblock 
                                               WHERE parent=?
-                                                 OR parent=?
 					   ORDER BY prefix"
 		);
-	    $sth1->execute($parent_id, $self->id);
+	    $sth1->execute($parent_id);
 	    while ( my ($id,$address,$prefix,$par) = $sth1->fetchrow_array ){
+		next if $id == $self->id;
 		my $n = $class->_tree_find(iaddress => $address,
 					   prefix   => $prefix,
 					   tree     => $tree,
 					   version  => $version,
 		    );
+
+		if ( $n && $n == $id ){
+		    # address is in tree. Need to remove it.
+		    my $cidr = $class->int2ip($address, $version);
+		    $cidr .= "/$prefix";
+		    $tree->remove_string($cidr);
+		    
+		    # Search again, to find parent
+		    $n = $class->_tree_find(iaddress => $address,
+					    prefix   => $prefix,
+					    tree     => $tree,
+					    version  => $version,
+			);
+		}	
 		if ( $n && $n != $id && $n != $par ){
+		    $logger->debug("New parent for $address is $n");
 		    $parents{$id} = $n;
 		}
 		# We do not insert end nodes in the tree for speed
@@ -3109,6 +3080,8 @@ sub _update_tree{
 			);
 		}
 	    }
+	    $class->_tree_save(version=>$self->version, tree=>$tree);
+
 	    # Now update the DB
 	    my $sth2 = $dbh->prepare_cached("UPDATE ipblock SET parent=? WHERE id=?");
 	    foreach my $id ( keys %parents ){
@@ -3123,7 +3096,6 @@ sub _update_tree{
 	    $class->build_tree($version);
 	}
 
-	$class->_tree_save(version=>$self->version, tree=>$tree);
     }
     return 1;
 }
