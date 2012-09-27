@@ -104,6 +104,9 @@ sub get_label {
     my $self = shift;
     $self->isa_object_method('get_label');
     my $lbl = $self->name;
+    if ( my $aliases = $self->aliases ){
+	$lbl .= " ($aliases)"; 
+    } 
     if ( my $number = $self->number ){
 	$lbl .= " ($number)";
     }
