@@ -328,6 +328,8 @@ sub _reduce_iname{
     my ($self, $name) = @_;
     return unless $name;
     $name =~ s/^.*Ethernet//;
+    $name =~ s/-.*$//; # Fix LACPa
+    $name =~ s/\*.*$//; # Fix LACP
     return $name;
 }
 
