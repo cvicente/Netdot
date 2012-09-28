@@ -700,7 +700,7 @@ sub get_snmp_info {
     $dev{snmp_version} = $sinfo->snmp_ver;
 
     my $name_src = ( $self->config->get('IFNAME_SHORT') eq '1' )? 
-	'i_name' : 'i_description';
+	'orig_i_name' : 'i_description';
     push @SMETHODS, $name_src;
 
     if ( $sinfo->can('ipv6_addr_prefix') ){
