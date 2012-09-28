@@ -5486,16 +5486,20 @@ sub _update_modules {
 		    -or => [part_number => $model,  name => $model],
 						 })->first;
 		
-		$product ||= Product->insert({part_number  => $model,
-					      name         => $model,
-					      manufacturer => $mf,
-					     });
+		my $type = ProductType->find_or_create({name=>'Module'});
 		
-		if ( !$product->type || $product->type->name eq 'Unknown' ){
-		    my $type = ProductType->find_or_create({name=>'Module'});
-		    $product->update({type => $type});
+		if ( $product ){
+		    if ( !$product->type || $product->type->name eq 'Unknown' ){
+			$product->update({type => $type});
+		    }
+		}else{
+		    $product = Product->insert({part_number  => $model,
+						name         => $model,
+						manufacturer => $mf,
+						type         => $type,
+					       });
 		}
-		
+				
 		# Find or create asset
 		$asset = Asset->find_or_create({product_id    => $product,
 						serial_number => $serial,
