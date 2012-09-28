@@ -118,7 +118,8 @@ sub search {
 		    $argv{name} = $dev->name;
 		    $foundname = 1;
 		}else{
-		    $logger->debug(sub{"Device::search: Address $argv{name} exists but no Device associated"});
+		    $logger->debug(sub{"Device::search: Address $argv{name} exists but ".
+					   "no Device associated"});
 		}
 	    }else{
 		$logger->debug(sub{"Device::search: $argv{name} not found in DB"});
@@ -243,7 +244,8 @@ sub search_address_live {
 	if ( $subnet && !@fwt_devs ){
 	    @fwt_devs = @{$subnet->get_devices()};
 	}else{
-	    $class->throw_user("Device::search_address_live: Cannot proceed without VLAN or IP information\n");
+	    $class->throw_user("Device::search_address_live: ".
+			       "Cannot proceed without VLAN or IP information\n");
 	}
     }
 
@@ -433,7 +435,8 @@ sub assign_name {
 	# we were given an IP address
 	if ( my $ipb = Ipblock->search(address=>$host)->first ){
 	    if ( $ipb->interface && ( my $dev = $ipb->interface->device ) ){
-		$logger->debug("Device::assign_name: A Device with IP $host already exists: " . $dev->get_label);
+		$logger->debug("Device::assign_name: A Device with IP $host already exists: ".
+			       $dev->get_label);
 		return $dev->name;
 	    }
 	}
@@ -539,7 +542,8 @@ sub insert {
 
     # Get the default owner entity from config
     my $config_owner  = Netdot->config->get('DEFAULT_DEV_OWNER');
-    my $default_owner = Entity->search(name=>$config_owner)->first || Entity->search(name=>'Unknown')->first;
+    my $default_owner = Entity->search(name=>$config_owner)->first || 
+	Entity->search(name=>'Unknown')->first;
 
     # Assign defaults
     # These will be overridden by given arguments
@@ -835,7 +839,8 @@ sub get_snmp_info {
 					sub{  return $self->_get_i_stp_info(sinfo=>$vsinfo) } );
 				};
 				if ( my $e = $@ ){
-				    $logger->error(sprintf("Could not get SNMP session for %s with community %s",
+				    $logger->error(sprintf("Could not get SNMP session for %s with ".
+							   "community %s",
 							   $args{host}, $comm));
 				    next;
 				}
@@ -869,14 +874,18 @@ sub get_snmp_info {
 								       'communities' => [$comm],
 								       'version'     => $sinfo->snmp_ver,
 								       'sclass'      => $sinfo->class);
-				my $stp_p_info = $class->_exec_timeout( $args{host}, 
-									sub{  return $self->_get_stp_info(sinfo=>$vsinfo) } );
+				my $stp_p_info = $class->_exec_timeout( 
+				    $args{host}, 
+				    sub{  return $self->_get_stp_info(sinfo=>$vsinfo) } );
+
 				foreach my $method ( keys %$stp_p_info ){
 				    $dev{stp_instances}{$vid}{$method} = $stp_p_info->{$method};
 				}
+				
+				my $i_stp_info = $class->_exec_timeout( 
+				    $args{host}, 
+				    sub{  return $self->_get_i_stp_info(sinfo=>$vsinfo) } );
 
-				my $i_stp_info = $class->_exec_timeout( $args{host}, 
-									sub{  return $self->_get_i_stp_info(sinfo=>$vsinfo) } );
 				foreach my $field ( keys %$i_stp_info ){
 				    foreach my $i ( keys %{$i_stp_info->{$field}} ){
 					$dev{interface}{$i}{$field} = $i_stp_info->{$field}->{$i};
@@ -1453,7 +1462,8 @@ sub discover {
 	if ( !$info->{type} && $info->{layers} ){
 	    $info->{type}  = "Hub"     if ( $class->_layer_active($info->{layers}, 1) );
 	    $info->{type}  = "Switch"  if ( $class->_layer_active($info->{layers}, 2) );
-	    $info->{type}  = "Router"  if ( $class->_layer_active($info->{layers}, 3) && $info->{ipforwarding} );
+	    $info->{type}  = "Router"  if ( $class->_layer_active($info->{layers}, 3) && 
+					    $info->{ipforwarding} );
 	    $info->{type}  = "Server"  if ( $class->_layer_active($info->{layers}, 7) );
 	    $info->{type}  = "Unknown" unless defined $info->{type};
 	}
@@ -2000,7 +2010,9 @@ sub arp_update {
     }
 
     # Fetch from SNMP if necessary
-    my $cache = $argv{cache} || $class->_exec_timeout($host, sub{ return $self->get_arp(session=>$argv{session}) });
+    my $cache = $argv{cache} || $class->_exec_timeout(
+	$host, sub{ return $self->get_arp(session=>$argv{session}) }
+	);
     
     unless ( keys %$cache ){
 	$logger->debug("$host: ARP cache empty");
@@ -2018,7 +2030,8 @@ sub arp_update {
 	$ac = ArpCache->insert({device=>$self->id, tstamp=>$timestamp});
     };
     if ( my $e = $@ ){
-	$logger->warn(sprintf("Device %s: Could not insert ArpCache at %s: %s", $self->fqdn, $timestamp, $e));
+	$logger->warn(sprintf("Device %s: Could not insert ArpCache at %s: %s", $self->fqdn, 
+			      $timestamp, $e));
 	return;
     }
 	
@@ -2163,7 +2176,8 @@ sub fwt_update {
     }
 
     # Fetch from SNMP if necessary
-    my $fwt = $argv{fwt} || $class->_exec_timeout($host, sub{ return $self->get_fwt(session=>$argv{session}) } );
+    my $fwt = $argv{fwt} || 
+	$class->_exec_timeout($host, sub{ return $self->get_fwt(session=>$argv{session}) } );
 
     unless ( keys %$fwt ){
 	$logger->debug("$host: FWT empty");
@@ -2639,17 +2653,19 @@ sub snmp_update {
 
     if ( $argv{do_info} ){
 	my $info = $argv{info} || 
-	    $class->_exec_timeout($host, sub{ return $self->get_snmp_info(session   => $sinfo,
-									  bgp_peers => $argv{bgp_peers}) });
-
+	    $class->_exec_timeout($host, 
+				  sub{ return $self->get_snmp_info(session   => $sinfo,
+								   bgp_peers => $argv{bgp_peers}) });
+	
 	if ( $atomic && !$argv{pretend} ){
-	    Netdot::Model->do_transaction( sub{ return $self->info_update(add_subnets   => $argv{add_subnets},
-									  subs_inherit  => $argv{subs_inherit},
-									  bgp_peers     => $argv{bgp_peers},
-									  session       => $sinfo,
-									  info          => $info,
-									  device_is_new => $argv{device_is_new},
-						    ) } );
+	    Netdot::Model->do_transaction( 
+		sub{ return $self->info_update(add_subnets   => $argv{add_subnets},
+					       subs_inherit  => $argv{subs_inherit},
+					       bgp_peers     => $argv{bgp_peers},
+					       session       => $sinfo,
+					       info          => $info,
+					       device_is_new => $argv{device_is_new},
+			 ) } );
 	}else{
 	    $self->info_update(add_subnets   => $argv{add_subnets},
 			       subs_inherit  => $argv{subs_inherit},
@@ -2745,26 +2761,34 @@ sub info_update {
 	    
 	    my $timeout     = $argv{timeout}     || $self->config->get('DEFAULT_SNMPTIMEOUT');
 	    my $retries     = $argv{retries}     || $self->config->get('DEFAULT_SNMPRETRIES');
-	    my $communities = $argv{communities} || [$self->community]        || $self->config->get('DEFAULT_SNMPCOMMUNITIES');
-	    my $sec_name    = $argv{sec_name}    || $self->snmp_securityname  || $self->config->get('DEFAULT_SNMP_SECNAME');
-	    my $sec_level   = $argv{sec_level}   || $self->snmp_securitylevel || $self->config->get('DEFAULT_SNMP_SECLEVEL');
-	    my $auth_proto  = $argv{auth_proto}  || $self->snmp_authprotocol  || $self->config->get('DEFAULT_SNMP_AUTHPROTO');
-	    my $auth_pass   = $argv{auth_pass}   || $self->snmp_authkey       || $self->config->get('DEFAULT_SNMP_AUTHPASS');
-	    my $priv_proto  = $argv{priv_proto}  || $self->snmp_privprotocol  || $self->config->get('DEFAULT_SNMP_PRIVPROTO');
-	    my $priv_pass   = $argv{priv_pass}   || $self->snmp_privkey       || $self->config->get('DEFAULT_SNMP_PRIVPASS');
+	    my $communities = $argv{communities} || [$self->community]        
+		|| $self->config->get('DEFAULT_SNMPCOMMUNITIES');
+	    my $sec_name    = $argv{sec_name}    || $self->snmp_securityname  
+		|| $self->config->get('DEFAULT_SNMP_SECNAME');
+	    my $sec_level   = $argv{sec_level}   || $self->snmp_securitylevel 
+		|| $self->config->get('DEFAULT_SNMP_SECLEVEL');
+	    my $auth_proto  = $argv{auth_proto}  || $self->snmp_authprotocol  
+		|| $self->config->get('DEFAULT_SNMP_AUTHPROTO');
+	    my $auth_pass   = $argv{auth_pass}   || $self->snmp_authkey       
+		|| $self->config->get('DEFAULT_SNMP_AUTHPASS');
+	    my $priv_proto  = $argv{priv_proto}  || $self->snmp_privprotocol  
+		|| $self->config->get('DEFAULT_SNMP_PRIVPROTO');
+	    my $priv_pass   = $argv{priv_pass}   || $self->snmp_privkey       
+		|| $self->config->get('DEFAULT_SNMP_PRIVPASS');
 	    $info = $class->_exec_timeout($host, 
-					  sub{ return $self->get_snmp_info(communities => $communities, 
-									   version     => $version,
-									   timeout     => $timeout,
-									   retries     => $retries,
-									   sec_name    => $sec_name,
-									   sec_level   => $sec_level,
-									   auth_proto  => $auth_proto,
-									   auth_pass   => $auth_pass,
-									   priv_proto  => $priv_proto,
-									   priv_pass   => $priv_pass,
-									   bgp_peers   => $argv{bgp_peers},
-						   ) });
+					  sub{ 
+					      return $self->get_snmp_info(communities => $communities, 
+									  version     => $version,
+									  timeout     => $timeout,
+									  retries     => $retries,
+									  sec_name    => $sec_name,
+									  sec_level   => $sec_level,
+									  auth_proto  => $auth_proto,
+									  auth_pass   => $auth_pass,
+									  priv_proto  => $priv_proto,
+									  priv_pass   => $priv_pass,
+									  bgp_peers   => $argv{bgp_peers},
+						  ) });
 	}
     }
     unless ( $info ){
@@ -2836,7 +2860,8 @@ sub info_update {
     }
 
     ##############################################################
-    if ( $argv{device_is_new} && (my $g = $self->_assign_monitor_config_group($info)) ){
+    if ( $argv{device_is_new} && 
+	 (my $g = $self->_assign_monitor_config_group($info)) ){
 	$devtmp{monitor_config}       = 1;
 	$devtmp{monitor_config_group} = $g;
     }
@@ -3731,13 +3756,13 @@ sub _get_snmp_session {
     
     # Set defaults
     my %sinfoargs = ( 
-	DestHost      => $argv{host},
-	Version       => $argv{version} || $self->config->get('DEFAULT_SNMPVERSION'),
-	Timeout       => (defined $argv{timeout}) ? $argv{timeout} : $self->config->get('DEFAULT_SNMPTIMEOUT'),
-	Retries       => (defined $argv{retries}) ? $argv{retries} : $self->config->get('DEFAULT_SNMPRETRIES'),
-	AutoSpecify   => 1,
-	Debug         => ( $logger->is_debug() )? 1 : 0,
-	BulkWalk      => (defined $argv{bulkwalk}) ? $argv{bulkwalk} :  $self->config->get('DEFAULT_SNMPBULK'),
+	DestHost => $argv{host},
+	Version  => $argv{version} || $self->config->get('DEFAULT_SNMPVERSION'),
+	Timeout  => (defined $argv{timeout})? $argv{timeout} : $self->config->get('DEFAULT_SNMPTIMEOUT'),
+	Retries  => (defined $argv{retries}) ? $argv{retries} : $self->config->get('DEFAULT_SNMPRETRIES'),
+	AutoSpecify => 1,
+	Debug       => ( $logger->is_debug() )? 1 : 0,
+	BulkWalk    => (defined $argv{bulkwalk}) ? $argv{bulkwalk} :  $self->config->get('DEFAULT_SNMPBULK'),
 	BulkRepeaters => $self->config->get('DEFAULT_SNMPBULK_MAX_REPEATERS'),
 	MibDirs       => \@MIBDIRS,
 	);
@@ -3811,7 +3836,8 @@ sub _get_snmp_session {
 	foreach my $community ( @{$argv{communities}} ){
 
 	    $sinfoargs{Community} = $community;
-	    $logger->debug(sub{ sprintf("Device::_get_snmp_session: Trying SNMPv%d session with %s, community %s",
+	    $logger->debug(sub{ sprintf("Device::_get_snmp_session: Trying SNMPv%d session with %s, ".
+					"community %s",
 					$sinfoargs{Version}, $argv{host}, $sinfoargs{Community})});
 	    $sinfo = $sclass->new( %sinfoargs );
 	    
@@ -3826,18 +3852,21 @@ sub _get_snmp_session {
 	    if ( defined $sinfo ){
 		# Check for errors
 		if ( my $err = $sinfo->error ){
-		    $self->throw_user(sprintf("Device::_get_snmp_session: SNMPv%d error: device %s, community '%s': %s", 
+		    $self->throw_user(sprintf("Device::_get_snmp_session: SNMPv%d error: device %s, ".
+					      "community '%s': %s", 
 					      $sinfoargs{Version}, $argv{host}, $sinfoargs{Community}, $err));
 		}
 		# Test for connectivity
 		$layers = $sinfo->layers() || 
-		    $self->throw_user(sprintf("Device::_get_snmp_session: %s: SNMPv%d failed: No sysServices", 
+		    $self->throw_user(sprintf("Device::_get_snmp_session: %s: SNMPv%d failed: ".
+					      "No sysServices", 
 					      $argv{host}, $sinfoargs{Version}));
 
 		last; # If we made it here, we are fine.  Stop trying communities
 
 	    }else{
-		$logger->debug(sub{ sprintf("Device::_get_snmp_session: Failed SNMPv%s session with %s community '%s'", 
+		$logger->debug(sub{ sprintf("Device::_get_snmp_session: Failed SNMPv%s session with ".
+					    "%s community '%s'", 
 					    $sinfoargs{Version}, $argv{host}, $sinfoargs{Community})});
 	    }
 
@@ -3845,7 +3874,8 @@ sub _get_snmp_session {
 
 	unless ( defined $sinfo ){
 	    &_check_max_attempts($self, $argv{host});
-	    $self->throw_user(sprintf("Device::_get_snmp_session: Cannot connect to %s.  Tried communities: %s", 
+	    $self->throw_user(sprintf("Device::_get_snmp_session: Cannot connect to %s. ".
+				      "Tried communities: %s", 
 				      $argv{host}, (join ', ', @{$argv{communities}}) ));
 	}
     }
@@ -3864,28 +3894,38 @@ sub _get_snmp_session {
 	$uargs{snmp_conn_attempts} = 0; $uargs{snmp_down} = 0;
 
 	# We might have tried a different SNMP version and community above. Rectify DB if necessary
-	$uargs{snmp_version} = $sinfoargs{Version}   if ( !$self->snmp_version || $self->snmp_version ne $sinfoargs{Version}  );
-	$uargs{snmp_bulk}    = $sinfoargs{BulkWalk}  if ( !$self->snmp_bulk    || $self->snmp_bulk    ne $sinfoargs{BulkWalk} );
+	$uargs{snmp_version} = $sinfoargs{Version}   if ( !$self->snmp_version || 
+							  $self->snmp_version ne $sinfoargs{Version}  );
+	$uargs{snmp_bulk}    = $sinfoargs{BulkWalk}  if ( !$self->snmp_bulk    || 
+							  $self->snmp_bulk ne $sinfoargs{BulkWalk} );
 	if ( $sinfoargs{Version} == 3 ){
 	    # Store v3 parameters
-	    $uargs{snmp_securityname}  = $sinfoargs{SecName}   if (!$self->snmp_securityname  || 
-								   $self->snmp_securityname  ne $sinfoargs{SecName});
-	    $uargs{snmp_securitylevel} = $sinfoargs{SecLevel}  if (!$self->snmp_securitylevel || 
-								   $self->snmp_securitylevel ne $sinfoargs{SecLevel});
-	    $uargs{snmp_authprotocol}  = $sinfoargs{AuthProto} if (!$self->snmp_authprotocol  || 
-								   $self->snmp_authprotocol  ne $sinfoargs{AuthProto});
-	    $uargs{snmp_authkey}       = $sinfoargs{AuthPass}  if (!$self->snmp_authkey       || 
-								   $self->snmp_authkey       ne $sinfoargs{AuthPass});
-	    $uargs{snmp_privprotocol}  = $sinfoargs{PrivProto} if (!$self->snmp_privprotocol  || 
-								   $self->snmp_privprotocol  ne $sinfoargs{PrivProto});
-	    $uargs{snmp_privkey}       = $sinfoargs{PrivPass}  if (!$self->snmp_privkey       || 
-								   $self->snmp_privkey       ne $sinfoargs{PrivPass});
+	    $uargs{snmp_securityname} = $sinfoargs{SecName} if (
+		!$self->snmp_securityname  || $self->snmp_securityname  ne $sinfoargs{SecName});
+	    
+	    $uargs{snmp_securitylevel} = $sinfoargs{SecLevel}  if (
+		!$self->snmp_securitylevel || $self->snmp_securitylevel ne $sinfoargs{SecLevel});
+
+	    $uargs{snmp_authprotocol} = $sinfoargs{AuthProto} if (
+		!$self->snmp_authprotocol || $self->snmp_authprotocol ne $sinfoargs{AuthProto});
+
+	    $uargs{snmp_authkey} = $sinfoargs{AuthPass}  if (
+		!$self->snmp_authkey || $self->snmp_authkey ne $sinfoargs{AuthPass});
+
+	    $uargs{snmp_privprotocol}  = $sinfoargs{PrivProto} if (
+		!$self->snmp_privprotocol || $self->snmp_privprotocol ne $sinfoargs{PrivProto});
+
+	    $uargs{snmp_privkey} = $sinfoargs{PrivPass}  if (
+		!$self->snmp_privkey || $self->snmp_privkey ne $sinfoargs{PrivPass});
+
 	}else{
-	    $uargs{community} = $sinfoargs{Community} if (!$self->community || $self->community ne $sinfoargs{Community});
+	    $uargs{community} = $sinfoargs{Community} if (!$self->community || 
+							  $self->community ne $sinfoargs{Community});
 	}
 	$self->update(\%uargs) if ( keys %uargs );
     }
-    $logger->debug(sub{ sprintf("SNMPv%d session with host %s established", $sinfoargs{Version}, $argv{host}) });
+    $logger->debug(sub{ sprintf("SNMPv%d session with host %s established", 
+				$sinfoargs{Version}, $argv{host}) });
 
     # We want to do our own 'munging' for certain things
     my $munge = $sinfo->munge();
@@ -3909,7 +3949,8 @@ sub _get_main_ip {
     $class->throw_fatal("Model::Device::_get_main_ip: Missing required argument (info)")
 	unless $info;
     my @methods = @{$class->config->get('DEVICE_NAMING_METHOD_ORDER')};
-    $class->throw_fatal("Model::Device::_get_main_ip: Missing or invalid configuration variable: DEVICE_NAMING_METHOD_ORDER")
+    $class->throw_fatal("Model::Device::_get_main_ip: Missing or invalid configuration variable: ".
+			"DEVICE_NAMING_METHOD_ORDER")
 	unless scalar @methods;
 
     my %allips;
@@ -4041,7 +4082,8 @@ sub _get_devs_from_file {
 	    $logger->info("Device $host does not yet exist in the Database.");
 	}
     }
-    $class->throw_user("Device::_get_devs_from_file: No existing devices in list.  You might need to run a discover first.")
+    $class->throw_user("Device::_get_devs_from_file: No existing devices in list. ".
+		       "You might need to run a discover first.")
 	unless ( scalar @devs );
 
     return \@devs;
@@ -4172,7 +4214,8 @@ sub snmp_update_parallel {
 	    if ( ref($argv{devs}) ne "ARRAY" );
 	$devs = $argv{devs};
     }else{
-	$class->throw_fatal("Model::Device::_snmp_update_parallel: Missing required parameters: hosts or devs");
+	$class->throw_fatal("Model::Device::_snmp_update_parallel: Missing required parameters: ".
+			    "hosts or devs");
     }
     
     my %uargs;
@@ -4237,7 +4280,8 @@ sub snmp_update_parallel {
 	}
 	# Make sure we don't launch a process unless necessary
 	if ( $dev->is_in_downtime() ){
-	    $logger->debug(sub{ sprintf("Model::Device::_snmp_update_parallel: %s in downtime.  Skipping", $dev->fqdn) });
+	    $logger->debug(sub{ sprintf("Model::Device::_snmp_update_parallel: %s in downtime. Skipping", 
+					$dev->fqdn) });
 	    next;
 	}
 	my %args = %uargs;
@@ -4751,19 +4795,22 @@ sub _walk_fwt {
 
 	    my $mac = $fw_mac->{$fw_index};
 	    unless ( defined $mac ) {
-		$logger->debug(sub{"Device::_walk_fwt: $host: MAC not defined at index $fw_index.  Skipping" });
+		$logger->debug(
+		    sub{"Device::_walk_fwt: $host: MAC not defined at index $fw_index. Skipping" });
 		next;
 	    }
 
 	    my $bp_id  = $fw_port->{$fw_index};
 	    unless ( defined $bp_id ) {
-		$logger->debug(sub{"Device::_walk_fwt: $host: Port $fw_index has no fw_port mapping.  Skipping" });
+		$logger->debug(
+		    sub{"Device::_walk_fwt: $host: Port $fw_index has no fw_port mapping. Skipping" });
 		next;
 	    }
 	    
 	    my $iid = $bp_index->{$bp_id};
 	    unless ( defined $iid ) {
-		$logger->debug(sub{"Device::_walk_fwt: $host: Interface $bp_id has no bp_index mapping. Skipping" });
+		$logger->debug(
+		    sub{"Device::_walk_fwt: $host: Interface $bp_id has no bp_index mapping. Skipping" });
 		next;
 	    }
 	    
@@ -4775,7 +4822,8 @@ sub _walk_fwt {
 	foreach my $iid ( keys %{ $last_src } ){
 	    my $mac = $last_src->{$iid};
 	    unless ( defined $mac ) {
-		$logger->debug(sub{"Device::_walk_fwt: $host: MAC not defined at rptr index $iid. Skipping" });
+		$logger->debug(
+		    sub{"Device::_walk_fwt: $host: MAC not defined at rptr index $iid. Skipping" });
 		next;
 	    }
 	    
@@ -4788,7 +4836,8 @@ sub _walk_fwt {
     foreach my $iid ( keys %tmp ){
 	my $descr = $sints->{$iid};
 	unless ( defined $descr ) {
-	    $logger->debug(sub{"Device::_walk_fwt: $host: SNMP iid $iid has no physical port matching. Skipping" });
+	    $logger->debug(
+		sub{"Device::_walk_fwt: $host: SNMP iid $iid has no physical port matching. Skipping" });
 	    next;
 	}
 	
@@ -4836,7 +4885,8 @@ sub _exec_timeout {
     $class->isa_class_method("_exec_timeout");
 
     $class->throw_fatal("Model::Device::_exec_timeout: Missing required argument: code") unless $code;
-    $class->throw_fatal("Model::Device::_exec_timeout: Invalid code reference") unless ( ref($code) eq 'CODE' );
+    $class->throw_fatal("Model::Device::_exec_timeout: Invalid code reference") 
+	unless ( ref($code) eq 'CODE' );
     my @result;
     eval {
 	alarm($TIMEOUT);
@@ -5347,9 +5397,11 @@ sub _update_stp_info {
 	    }
 	    # Finally, just get the priority
 	    $uargs{bridge_priority} = $info->{stp_instances}->{$instn}->{stp_priority};
-	    if ( defined $stpinst->bridge_priority && $stpinst->bridge_priority ne $uargs{bridge_priority} ){
+	    if ( defined $stpinst->bridge_priority && 
+		 $stpinst->bridge_priority ne $uargs{bridge_priority} ){
 		$logger->warn(sprintf("%s: STP instance %s: Bridge Priority Changed: %s -> %s", 
-				      $host, $stpinst->number, $stpinst->bridge_priority, $uargs{bridge_priority}));
+				      $host, $stpinst->number, $stpinst->bridge_priority, 
+				      $uargs{bridge_priority}));
 	    }
 	    
 	    # Update the instance
@@ -5510,7 +5562,8 @@ sub _update_interfaces {
     my %IGNORED;
     map { $IGNORED{$_}++ } @{ $self->config->get('IGNOREPORTS') };
     if ( defined $info->{sysobjectid} && exists $IGNORED{$info->{sysobjectid}} ){
-	$logger->debug(sub{"Device::_update_interfaces: $host ports ignored per configuration option (IGNOREPORTS)"});
+	$logger->debug(
+	    sub{"Device::_update_interfaces: $host ports ignored per configuration option (IGNOREPORTS)"});
 	return;
     }
     
