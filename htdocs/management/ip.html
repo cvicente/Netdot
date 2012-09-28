@@ -686,8 +686,10 @@ if ( my @parents = $o->get_ancestors ){
        my @field_headers;
        my @cell_data;
 
-       # Address:
-       my %addr_tmp = $ui->form_field(object=>$o, column=>"address", edit=>$edit_ip, htmlExtra=>"style='width: 15em'");
+################################################################
+# Address
+       my %addr_tmp = $ui->form_field(object=>$o, column=>"address", edit=>$edit_ip, 
+				      htmlExtra=>"style='width: 15em'");
        push( @field_headers, $addr_tmp{'label'} );
        push( @cell_data, $addr_tmp{'value'} );
 
@@ -741,6 +743,7 @@ if ( my @parents = $o->get_ancestors ){
 
     </div>
 
+%################################################################
 %# Comments section
 <div class="container">
     <div class="containerheadleft">
@@ -770,8 +773,8 @@ print $tmp{value};
  </div>
 
 
+%################################################################
 <%perl>
-
 if (!$edit){
     print '<div class="container">';
     print '<div class="containerheadleft">DNS A Records</div>';
@@ -861,6 +864,8 @@ if ( $edit ){
 </%perl>
 % if ( $manager && $manager->can($user, "access_section", 'ip.html:edit_ipinfo') ){
 
+
+%################################################################
 <div class="container">
     <div class="containerheadleft">Services</div>
     <div class="containerheadright">
@@ -898,8 +903,6 @@ if ( $edit ){
 % }
 
 %################################################################
-%# Custom Attributes
-%################################################################
 <!-- Display Custom Attributes -->
 % my @attributes = $o->attributes;
   <div class="container">
@@ -921,6 +924,7 @@ if ( $edit ){
 <!-- End Display Custom Attributes -->
 
 
+%################################################################
 <!-- Display ARP -->
 <%perl>
 # Get latest arp entries
@@ -1027,6 +1031,11 @@ if ( $edit ){
               <li><span>Access Rights</span></li>
 %         } else {
             <li><a href="ip.html?id=<% $id %>&view=Rights">Access Rights</a></li>
+%         }
+%         if( $view eq "Attributes" ) {
+              <li><span>Attributes</span></li>
+%         } else {
+            <li><a href="ip.html?id=<% $id %>&view=Attributes">Attributes</a></li>
 %         }
 %         if( $view eq "Comments" ) {
               <li><span>Comments</span></li>
@@ -1648,6 +1657,30 @@ if ( $_action eq 'VIEW_ADD_RIGHTS' ){
 %  }
 % }
 
+%################################################################
+<!-- Display Custom Attributes -->
+% if ( $view eq 'Attributes' || $view eq 'All' ){
+%  if ( $manager && $manager->can($user, "access_section", 'ip.html:edit_attributes') ){
+%      my @attributes = $o->attributes;
+  <div class="container">
+    <div class="containerheadleft"><strong>Custom Attributes</strong></div>
+    <div class="containerheadright">
+%     if ( @attributes ) {
+        <a href="ip.html?id=<% $o %>&editattr=1">[edit]</a>
+%     }
+%   if ( $manager && $manager->can($user, 'edit', $o) ){
+        <a href="edit.html?table=IpblockAttr&ipblock=<% $o %>">[add]</a>
+%   }else{
+        &nbsp;
+%   }
+    </div>
+    <div class="containerbody">
+        <& /generic/sortresults.mhtml, object=>\@attributes, withedit=>$editattr, return_args=>"?id=$id" &>
+    </div>
+  </div>
+<!-- End Display Custom Attributes -->
+% }
+%}
 
 %################################################################
 %# Graphical Views
