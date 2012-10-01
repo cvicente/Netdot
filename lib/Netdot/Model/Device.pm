@@ -1127,7 +1127,7 @@ sub get_snmp_info {
 
     ################################################################
     # IPv6 link-local addresses
-    # It looks like in Cisco 'ipv6_index' contains a the addresses from
+    # It looks like in Cisco 'ipv6_index' contains all the addresses from
     # 'ipv6_addr_prefix', plus link locals, so we won't query it
     # unless we want those.
     unless ( $ignore_link_local ){
@@ -1138,6 +1138,7 @@ sub get_snmp_info {
 		$addr = $self->_octet_string_to_v6($1);
 		next unless Ipblock->is_link_local($addr);
 		$iid = $val;
+		next unless $iid; # Sometimes this can be 0
 		$dev{interface}{$iid}{ips}{$addr}{address} = $addr;
 		$dev{interface}{$iid}{ips}{$addr}{version} = 6;
 	    }else{
