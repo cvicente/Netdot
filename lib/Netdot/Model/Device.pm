@@ -724,7 +724,7 @@ sub get_snmp_info {
 
     ################################################################
     # Device's global vars
-    $dev{layers}       = $sinfo->layers;
+    $dev{layers} = $sinfo->layers;
     my $ipf = $sinfo->ipforwarding || 'unknown';
     $dev{ipforwarding} = ( $ipf eq 'forwarding') ? 1 : 0;
     $dev{sysobjectid}  = $sinfo->id;
@@ -3775,7 +3775,7 @@ sub _get_snmp_session {
 	$sinfoargs{BulkWalk} = 0;
     }
 
-    my ($sinfo, $layers);
+    my $sinfo;
 
     # Deal with the number of connection attempts and the snmp_down flag
     # We need to do this in a couple of places
@@ -3817,11 +3817,6 @@ sub _get_snmp_session {
 					  $sinfoargs{Version}, $argv{host}, $err));
 	    }
 	    
-	    # Test for connectivity
-	    $layers = $sinfo->layers() || 
-		$self->throw_user(sprintf("Device::_get_snmp_session: %s: SNMPv%d failed: No sysServices", 
-					  $argv{host}, $sinfoargs{Version}));
-	    
 	}else {
 	    &_check_max_attempts($self, $argv{host});
 	    $self->throw_user(sprintf("Device::get_snmp_session: %s: SNMPv%d failed", 
@@ -3857,12 +3852,6 @@ sub _get_snmp_session {
 					      "community '%s': %s", 
 					      $sinfoargs{Version}, $argv{host}, $sinfoargs{Community}, $err));
 		}
-		# Test for connectivity
-		$layers = $sinfo->layers() || 
-		    $self->throw_user(sprintf("Device::_get_snmp_session: %s: SNMPv%d failed: ".
-					      "No sysServices", 
-					      $argv{host}, $sinfoargs{Version}));
-
 		last; # If we made it here, we are fine.  Stop trying communities
 
 	    }else{
