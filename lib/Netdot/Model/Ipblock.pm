@@ -61,7 +61,7 @@ my $range_dns_plugin = __PACKAGE__->load_range_dns_plugin();
 =cut
 
 ##################################################################
-=head int2ip - Convert a decimal IP into a string address
+=head2 int2ip - Convert a decimal IP into a string address
 
   Arguments:
     address (decimal)
