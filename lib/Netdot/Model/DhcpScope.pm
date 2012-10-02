@@ -98,12 +98,12 @@ sub insert {
     }
 
     if ( $scope->type->name eq 'subnet' ){
-	if ( $scope->version == 4 ){ 
+	if ( $scope->container->version == 4 ){ 
 	    # Add standard attributes
 	    $attributes->{'option broadcast-address'} = $argv->{ipblock}->netaddr->broadcast->addr();
 	    $attributes->{'option subnet-mask'}       = $argv->{ipblock}->netaddr->mask;
 
-	    if ( $scope->container && $scope->container->enable_failover ){
+	    if ( $scope->container->enable_failover ){
 		my $failover_peer = $scope->container->failover_peer || 'dhcp-peer';
 		$scope->SUPER::update({enable_failover=>1, failover_peer=> $failover_peer});
 	    }
@@ -609,6 +609,9 @@ sub _validate_args {
 
 	$self->throw_user("$name: Subnet IP block not defined")
 	    unless $fields{ipblock};
+
+	$self->throw_user("$name: Subnet scopes require a container") 
+	    unless $fields{container};
 
 	if ( $fields{container}->type->name eq 'global' && 
 	     $fields{ipblock}->version != $fields{container}->version ){
