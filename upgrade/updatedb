@@ -22,6 +22,8 @@ my ($schema_version) = $dbh->selectrow_array("SELECT version
                                               FROM   schemainfo 
                                               WHERE  id=1;");
 
+die "Schema version unknown\n" unless $schema_version;
+
 my @statements;
 
 if ( $schema_version eq '1.0.1' ){
@@ -29,38 +31,40 @@ if ( $schema_version eq '1.0.1' ){
     print "Upgrading Netdot schema from version $schema_version\n";
     
     if ( $dbms eq 'mysql' ) {
-
+	
 	# Try to speed up the conversion as much as possible
 	push @statements, 
 	"SET FOREIGN_KEY_CHECKS = 0;",
 	"SET AUTOCOMMIT = 0;";
-
+	
 	# Add a new unique constraint to avoid devices with same name. 
 	# Requires renaming existing indexes to be consistent with newly generated 
 	# schema in this version
 	push @statements, 'ALTER TABLE device DROP INDEX `Device2`;';
-	push @statements, 'ALTER TABLE device DROP INDEX `Device3`;';
-	push @statements, 'ALTER TABLE device DROP INDEX `Device4`;';
-	push @statements, 'ALTER TABLE device DROP INDEX `Device5`;';
-	push @statements, 'ALTER TABLE device DROP INDEX `Device6`;';
-	push @statements, 'ALTER TABLE device DROP INDEX `Device7`;';
-	push @statements, 'ALTER TABLE device DROP INDEX `Device8`;';
+	'ALTER TABLE device DROP INDEX `Device3`;',
+	'ALTER TABLE device DROP INDEX `Device4`;',
+	'ALTER TABLE device DROP INDEX `Device5`;',
+	'ALTER TABLE device DROP INDEX `Device6`;',
+	'ALTER TABLE device DROP INDEX `Device7`;',
+	'ALTER TABLE device DROP INDEX `Device8`;',
 	
-	push @statements, 'ALTER TABLE device ADD UNIQUE INDEX `device2` (`name`);';
-
-	push @statements, 'ALTER TABLE device ADD INDEX `Device3` (`used_by`);';
-	push @statements, 'ALTER TABLE device ADD INDEX `Device4` (`owner`);';
-	push @statements, 'ALTER TABLE device ADD INDEX `Device5` (`os`);';
-	push @statements, 'ALTER TABLE device ADD INDEX `Device6` (`sysname`);';
-	push @statements, 'ALTER TABLE device ADD INDEX `Device7` (`down_from`);';
-	push @statements, 'ALTER TABLE device ADD INDEX `Device8` (`down_until`);';
-	push @statements, 'ALTER TABLE device ADD INDEX `Device9` (`extension`);';
-
+	'ALTER TABLE device ADD UNIQUE INDEX `device2` (`name`);',
+	
+	'ALTER TABLE device ADD INDEX `Device3` (`used_by`);',
+	'ALTER TABLE device ADD INDEX `Device4` (`owner`);',
+	'ALTER TABLE device ADD INDEX `Device5` (`os`);',
+	'ALTER TABLE device ADD INDEX `Device6` (`sysname`);',
+	'ALTER TABLE device ADD INDEX `Device7` (`down_from`);',
+	'ALTER TABLE device ADD INDEX `Device8` (`down_until`);',
+	'ALTER TABLE device ADD INDEX `Device9` (`extension`);',
+	
+	"UPDATE schemainfo SET version='1.0.2' WHERE id=1;";
+	
 	# Restore checks
 	push @statements, "SET FOREIGN_KEY_CHECKS = 1;", "COMMIT;";
-
+	
     }elsif ( $dbms eq 'Pg' ){
-
+	
 	# IDs were erroneously created as "serial" instead of "bigserial"
 	foreach my $table_name ( $dbh->tables('', 'public', '%', '') ){
 	    push @statements, "ALTER TABLE $table_name ALTER COLUMN id TYPE bigint;";
@@ -70,29 +74,30 @@ if ( $schema_version eq '1.0.1' ){
 	# Requires renaming existing indexes to be consistent with newly generated 
 	# schema in this version
 	push @statements, 'DROP INDEX "Device2";';
-	push @statements, 'DROP INDEX "Device3";';
-	push @statements, 'DROP INDEX "Device4";';
-	push @statements, 'DROP INDEX "Device5";';
-	push @statements, 'DROP INDEX "Device6";';
-	push @statements, 'DROP INDEX "Device7";';
-	push @statements, 'DROP INDEX "Device8";';
+	'DROP INDEX "Device3";',
+	'DROP INDEX "Device4";',
+	'DROP INDEX "Device5";',
+	'DROP INDEX "Device6";',
+	'DROP INDEX "Device7";',
+	'DROP INDEX "Device8";',
+	
+	'ALTER TABLE device ADD CONSTRAINT "device2" UNIQUE ("name");',
+	
+	'CREATE INDEX "Device3" on "device" ("used_by");',
+	'CREATE INDEX "Device4" on "device" ("owner");',
+	'CREATE INDEX "Device5" on "device" ("os");',
+	'CREATE INDEX "Device6" on "device" ("sysname");',
+	'CREATE INDEX "Device7" on "device" ("down_from");',
+	'CREATE INDEX "Device8" on "device" ("down_until");',
+	'CREATE INDEX "Device9" on "device" ("extension");',
 
-	push @statements, 'ALTER TABLE device ADD CONSTRAINT "device2" UNIQUE ("name");';
-
-	push @statements, 'CREATE INDEX "Device3" on "device" ("used_by");';
-	push @statements, 'CREATE INDEX "Device4" on "device" ("owner");';
-	push @statements, 'CREATE INDEX "Device5" on "device" ("os");';
-	push @statements, 'CREATE INDEX "Device6" on "device" ("sysname");';
-	push @statements, 'CREATE INDEX "Device7" on "device" ("down_from");';
-	push @statements, 'CREATE INDEX "Device8" on "device" ("down_until");';
-	push @statements, 'CREATE INDEX "Device9" on "device" ("extension");';
-
+	"UPDATE schemainfo SET version='1.0.2' WHERE id=1;";
+	
     }else{
 	die "Unsupported DB type: $dbms\n";
     }
-
-    push @statements, "UPDATE schemainfo SET version='1.0.2' WHERE id=1;";
-
+    
+    
 }else{
     die "Unsupported version for this upgrade: $schema_version\n";
 }
