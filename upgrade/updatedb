@@ -1,661 +1,101 @@
-#Updates netdot database from version 0.9 to version 1.0
+# Updates the Netdot database
 
 use warnings;
 use strict;
 use lib "../lib";
 use DBUTIL;
 use Netdot;
-use Netdot::Model;
-use Netdot::Meta;
 use Data::Dumper;
 
 my %CONFIG;
-$CONFIG{debug} = 1;
-$CONFIG{CONFIG_DIR} = "../etc";
+$CONFIG{debug}        = 1;
+$CONFIG{CONFIG_DIR}   = "../etc";
 $CONFIG{SCHEMA_FILE}  = "$CONFIG{CONFIG_DIR}/netdot.meta";
 $CONFIG{DEFAULT_DATA} = "$CONFIG{CONFIG_DIR}/default_data";
 
 my $netdot_config = Netdot::Config->new(config_dir => $CONFIG{CONFIG_DIR});
-
+my $dbms = $netdot_config->get('DB_TYPE');
 my $dbh = &dbconnect();
 
-# Previous Pg schema wasn't really usable, so we won't bother with that
-if ( $netdot_config->get('DB_TYPE') ne "mysql" ) {
-    die "Uprading schemas for other DBMSs besides mysql not supported in this release\n";
-}
+# Get the current schema version from DB
+my ($schema_version) = $dbh->selectrow_array("SELECT version 
+                                              FROM   schemainfo 
+                                              WHERE  id=1;");
 
-# Start by adding new tables
-my @statements = (
-    "CREATE TABLE `asset` (
-            `custom_serial` varchar(255),
-            `date_purchased` date,
-            `description` varchar(255),
-            `id` bigint NOT NULL auto_increment,
-            `info` text,
-            `inventory_number` varchar(255),
-            `maint_contract` bigint,
-            `maint_from` date,
-            `maint_until` date,
-            `physaddr` bigint,
-            `po_number` varchar(255),
-            `product_id` bigint NOT NULL,
-            `reserved_for` varchar(255),
-            `serial_number` varchar(255),
-            UNIQUE INDEX asset1 (`physaddr`),
-            UNIQUE INDEX asset2 (`product_id`, `serial_number`),
-            INDEX Asset3 (`serial_number`),
-            INDEX Asset4 (`inventory_number`),
-            INDEX Asset5 (`po_number`),
-            INDEX (`maint_contract`),
-            PRIMARY KEY (`id`)
-         ) ENGINE=InnoDB;",
-    "CREATE TABLE `audit` (
-	    `fields` varchar(255),
-	    `id` bigint NOT NULL auto_increment,
-	    `label` varchar(255) NOT NULL,
-	    `object_id` bigint NOT NULL,
-	    `operation` varchar(255) NOT NULL,
-	    `tablename` varchar(255) NOT NULL,
-	    `tstamp` timestamp NOT NULL DEFAULT '1970-01-02 00:00:01',
-	    `username` varchar(255) NOT NULL,
-	    `vals` varchar(255),
-	    INDEX `Audit2` (`tstamp`),
-	    INDEX `Audit3` (`username`),
-	    INDEX `Audit4` (`tablename`),
-	    INDEX `Audit5` (`label`),
-	    PRIMARY KEY (`id`)
-         ) ENGINE=InnoDB;",
-    );
+my @statements;
 
+if ( $schema_version eq '1.0.1' ){
 
-# Try to speed up the conversion as much as possible
-push @statements, 
-    "SET FOREIGN_KEY_CHECKS = 0;",
-    "SET AUTOCOMMIT = 0;";
+    print "Upgrading Netdot schema from version $schema_version\n";
+    
+    if ( $dbms eq 'mysql' ) {
 
-# Add new Product type for device modules
-push @statements, "INSERT INTO producttype (name) VALUES ('Module');";
+	# Try to speed up the conversion as much as possible
+	push @st atements, 
+	"SET FOREIGN_KEY_CHECKS = 0;",
+	"SET AUTOCOMMIT = 0;";
 
-&processdata(\@statements);
+	# Add a new unique constraint to avoid devices with same name. 
+	# Requires renaming existing indexes to be consistent with newly generated 
+	# schema in this version
+	push @statements, 'ALTER TABLE device DROP INDEX `Device2`;';
+	push @statements, 'ALTER TABLE device DROP INDEX `Device3`;';
+	push @statements, 'ALTER TABLE device DROP INDEX `Device4`;';
+	push @statements, 'ALTER TABLE device DROP INDEX `Device5`;';
+	push @statements, 'ALTER TABLE device DROP INDEX `Device6`;';
+	push @statements, 'ALTER TABLE device DROP INDEX `Device7`;';
+	push @statements, 'ALTER TABLE device DROP INDEX `Device8`;';
+	
+	push @statements, 'ALTER TABLE device ADD UNIQUE INDEX `device2` (`name`);';
 
-# Store assets to be inserted, keyed by serial number
-my %assets;
+	push @statements, 'ALTER TABLE device ADD INDEX `Device3` (`used_by`);';
+	push @statements, 'ALTER TABLE device ADD INDEX `Device4` (`owner`);';
+	push @statements, 'ALTER TABLE device ADD INDEX `Device5` (`os)`;';
+	push @statements, 'ALTER TABLE device ADD INDEX `Device6` (`sysname`);';
+	push @statements, 'ALTER TABLE device ADD INDEX `Device7` (`down_from`);';
+	push @statements, 'ALTER TABLE device ADD INDEX `Device8` (`down_until`);';
+	push @statements, 'ALTER TABLE device ADD INDEX `Device9` (`extension`);';
 
-# Grab devices with serial number and product
-my $sndevs = $dbh->selectall_arrayref('SELECT serialnumber,custom_serial,physaddr,
-                                              inventorynumber,maint_contract,maint_from,
-                                              maint_until,product 
-                                        FROM device
-		                        WHERE serialnumber IS NOT NULL
-                                          AND serialnumber != "" 
-                                          AND product IS NOT NULL
-                                          AND product != "" ');
-foreach my $row ( @$sndevs ){
-    my $sn = $row->[0];
-    $sn =~ s/^\s+|\s+$//g;
-    next unless $sn;
-    # Convert foreign keys from 0 to undef
-    $row->[2] = undef if $row->[2] == 0;
-    $row->[4] = undef if $row->[4] == 0;
-    $row->[7] = undef if $row->[7] == 0;
-    my $i = 1;
-    foreach my $v (qw/cs ph in mc mf mu pr/){
-	$assets{sn}{$sn}{$v} = $row->[$i];
-	$i++;
-    }
-}
+	# Restore checks
+	push @statements, "SET FOREIGN_KEY_CHECKS = 1;", "COMMIT;";
 
-########################################################
-# Grab devicemodules with serial number and model.
-# Migrating stuff from modules takes a bit more work
-# because the new products need to be created
-my $snmods = $dbh->selectall_arrayref('SELECT dm.serialnumber,dm.inventorynumber,
-                                              dm.maint_contract,dm.maint_from,
-                                              dm.maint_until,dm.model,e.id
-                                         FROM devicemodule dm, device d, product p, entity e
-                                        WHERE dm.device=d.id AND d.product=p.id 
-                                          AND p.manufacturer=e.id
-		                          AND dm.serialnumber IS NOT NULL
-                                          AND dm.model IS NOT NULL');
+    }elsif ( $dbms eq 'Pg' ){
 
-my %products;
-foreach my $row ( @$snmods ){
-    my $sn = $row->[0];
-    $sn =~ s/^\s+|\s+$//g;
-    next unless $sn;
-    next if exists $assets{sn}{$sn};
-    my $model = $row->[5];
-    $model =~ s/^\s+|\s+$//g;
-    my $mf = $row->[6];
-    next unless $model && $mf;
-    my $i = 1;
-    foreach my $v (qw/in mc mf mu/){
-	$assets{sn}{$sn}{$v} = $row->[$i];
-	$i++;
-    }
-    # Associate model/mf with each S/N
-    push(@{$products{$mf}{$model}}, $sn);
-}
-
-# Insert products
-
-# Get the Module product type id
-my @ptrow = $dbh->selectrow_array('SELECT id FROM producttype WHERE name="Module"');
-my $ptype = $ptrow[0];
-
-my $np = $dbh->prepare('INSERT INTO product (name, manufacturer,type) VALUES(?,?,?)');
-foreach my $mf ( keys %products ){
-    foreach my $model ( keys %{$products{$mf}} ){
-	next if ($model =~ /Fill in/io ); # Ignore bogus values
-	eval { 
-	    $np->execute($model, $mf, $ptype);
-	};
-	if ( my $e = $@ ){
-	    warn "$e\n";
-	}else{
-	    print "DEBUG: Inserted product ($mf, $model)\n" if $CONFIG{debug};
+	# IDs were erroneously created as "serial" instead of "bigserial"
+	foreach my $table_name ( $dbh->tables('', 'public', '%', '') ){
+	    push @statements, "ALTER TABLE $table_name ALTER COLUMN id TYPE bigint;";
 	}
+	
+	# Add a new unique constraint to avoid devices with same name. 
+	# Requires renaming existing indexes to be consistent with newly generated 
+	# schema in this version
+	push @statements, 'DROP INDEX "Device2";';
+	push @statements, 'DROP INDEX "Device3";';
+	push @statements, 'DROP INDEX "Device4";';
+	push @statements, 'DROP INDEX "Device5";';
+	push @statements, 'DROP INDEX "Device6";';
+	push @statements, 'DROP INDEX "Device7";';
+	push @statements, 'DROP INDEX "Device8";';
+
+	push @statements, 'ALTER TABLE device ADD CONSTRAINT "device2" UNIQUE ("name");';
+
+	push @statements, 'CREATE INDEX "Device3" on "device" ("used_by");';
+	push @statements, 'CREATE INDEX "Device4" on "device" ("owner");';
+	push @statements, 'CREATE INDEX "Device5" on "device" ("os");';
+	push @statements, 'CREATE INDEX "Device6" on "device" ("sysname");';
+	push @statements, 'CREATE INDEX "Device7" on "device" ("down_from");';
+	push @statements, 'CREATE INDEX "Device8" on "device" ("down_until");';
+	push @statements, 'CREATE INDEX "Device9" on "device" ("extension");';
+
+    }else{
+	die "Unsupported DB type: $dbms\n";
     }
+
+    push @statements, "UPDATE schemainfo SET version='1.0.2' WHERE id=1;";
+
+}else{
+    die "Unsupported version for this upgrade: $schema_version\n";
 }
-
-# Get existing products
-print "DEBUG: Retrieving all products from DB\n" if $CONFIG{debug};
-my $prodq = $dbh->selectall_arrayref('SELECT id,name,manufacturer FROM product');
-my %all_prods;
-foreach my $row ( @$prodq ){
-    my($id,$name,$mf) = @$row;
-    $all_prods{$mf}{$name} = $id;
-}
-
-# Complete the Asset hash with product IDs
-foreach my $mf ( keys %products ){
-    foreach my $model ( keys %{$products{$mf}} ){
-	my $product_id;
-	if ( exists $all_prods{$mf}{$model} ){
-	    $product_id = $all_prods{$mf}{$model};
-	    print "DEBUG: Product ($mf,$model) found: $product_id\n" if $CONFIG{debug};
-	    foreach my $sn ( @{$products{$mf}{$model}} ){
-		print "DEBUG: Assigning prod ID: $product_id to module S/N: $sn\n" if $CONFIG{debug};
-		$assets{sn}{$sn}{pr} = $product_id;
-	    }
-	}
-    }
-}
-
-# Grab devices with base MAC and product but no serial number
-my $macdevs = $dbh->selectall_arrayref('SELECT physaddr,custom_serial,inventorynumber,
-                                               maint_contract,maint_from,maint_until,product 
-                                          FROM device
-		                         WHERE physaddr is not NULL
-                                           AND physaddr != 0 
-                                           AND product IS NOT NULL
-                                           AND product != 0 
-                                           AND (serialnumber IS NULL
-                                             OR serialnumber = "")');
-foreach my $row ( @$macdevs ){
-    my $ph = $row->[0];
-    $ph =~ s/^\s+|\s+$//g;
-    next unless $ph;
-    # Convert foreign keys from 0 to undef
-    $row->[3] = undef if $row->[3] == 0;
-    $row->[6] = undef if $row->[6] == 0;
-    my $i = 1;
-    foreach my $v (qw/cs in mc mf mu pr/){
-	$assets{ph}{$ph}{$v} = $row->[$i];
-	$i++;
-    }
-}
-
-# Create asset records with information from devices and modules
-my $ia = $dbh->prepare('INSERT INTO asset (serial_number,custom_serial,physaddr,
-                                           inventory_number,maint_contract,
-                                           maint_from,maint_until,product_id)
-                                           VALUES (?,?,?,?,?,?,?,?)');
-my %newassets;
-foreach my $sn ( keys %{$assets{sn}} ){
-    my %vals = %{$assets{sn}{$sn}};
-    my ($cs,$ph,$in,$mc,$mf,$mu,$pr) = @vals{'cs','ph','in','mc','mf','mu','pr'};
-    next unless ($pr); # product_id is NOT NULL
-    $ia->execute($sn,$cs,$ph,$in,$mc,$mf,$mu,$pr);
-    print "DEBUG: Created asset: S/N: $sn, product: $pr\n" if $CONFIG{debug};
-    $newassets{$ph} = 1 if $ph;
-}
-
-foreach my $ph ( keys %{$assets{ph}} ){
-    my %vals = %{$assets{ph}{$ph}};
-    my ($cs,$in,$mc,$mf,$mu,$pr) = @vals{'cs','in','mc','mf','mu','pr'};
-    next if ( exists $newassets{$ph} );
-    my $sn = undef;
-    next unless ($pr); # product_id is NOT NULL
-    $ia->execute($sn,$cs,$ph,$in,$mc,$mf,$mu,$pr);
-    print "DEBUG: Created asset: Mac: $ph, product: $pr\n" if $CONFIG{debug};
-}
-
-# Grab hostaudit data before conversion
-my $haudits = $dbh->selectall_arrayref('SELECT          ha.id,zone.name,dhcpscope.name  
-                                        FROM            hostaudit ha 
-                                        LEFT OUTER JOIN zone ON ha.zone=zone.id 
-                                        LEFT OUTER JOIN dhcpscope ON ha.scope=dhcpscope.id');
-my %haudit;
-foreach my $row ( @$haudits ){
-    my ($id, $zone, $scope) = @$row;
-    $haudit{$id}{zone}  = $zone;
-    $haudit{$id}{scope} = $scope;
-}
-
-@statements = ();
-
-# There are some discrepancies between a schema created in 0.9 and the 
-# schema *upgraded* to 0.9
-my $idx = $dbh->selectall_arrayref("
-  SELECT COUNT(1) cnt
-  FROM    INFORMATION_SCHEMA.STATISTICS
-  WHERE   table_name = 'device'
-  AND     index_name = 'Device12'
-");
-if ( $idx && $idx->[0]->[0] == 1 ){
-    @statements=('ALTER TABLE device DROP KEY Device12;');
-}
-
-my $idx2 = $dbh->selectall_arrayref("
-  SELECT COUNT(1) cnt
-  FROM    INFORMATION_SCHEMA.STATISTICS
-  WHERE   table_name = 'person'
-  AND     index_name = 'Person3'
-");
-if ( $idx2 && $idx2->[0]->[0] == 1 ){
-    @statements=('ALTER TABLE person DROP KEY Person3;');
-}
-
-my $dbname = $netdot_config->get('DB_DATABASE');
-
-push @statements, (
-    "ALTER DATABASE $dbname CHARACTER SET utf8 COLLATE utf8_general_ci;",
-    "ALTER TABLE device ADD COLUMN asset_id bigint;",
-    "ALTER TABLE device ADD COLUMN extension integer;",
-    "ALTER TABLE device_history ADD COLUMN asset_id bigint;",
-    "ALTER TABLE device_history ADD COLUMN extension integer;",
-    
-    "UPDATE device,asset SET device.asset_id=asset.id 
-              WHERE (asset.serial_number=device.serialnumber
-                AND asset.product_id=device.product)
-                OR  asset.physaddr=device.physaddr;",
-
-    "ALTER TABLE devicemodule ADD COLUMN asset_id bigint;",
-
-    "UPDATE devicemodule,asset SET devicemodule.asset_id=asset.id 
-              WHERE asset.serial_number=devicemodule.serialnumber;",
-
-    "ALTER TABLE device DROP COLUMN serialnumber;",
-    "ALTER TABLE device DROP COLUMN inventorynumber;",
-    "ALTER TABLE device DROP COLUMN maint_contract;",
-    "ALTER TABLE device DROP COLUMN maint_from;",
-    "ALTER TABLE device DROP COLUMN maint_until;",
-    "ALTER TABLE device DROP COLUMN custom_serial;",
-    "ALTER TABLE device DROP COLUMN physaddr;",
-    "ALTER TABLE device DROP COLUMN product;",
-    "ALTER TABLE device_history DROP COLUMN serialnumber;",
-    "ALTER TABLE device_history DROP COLUMN inventorynumber;",
-    "ALTER TABLE device_history DROP COLUMN maint_contract;",
-    "ALTER TABLE device_history DROP COLUMN maint_from;",
-    "ALTER TABLE device_history DROP COLUMN maint_until;",
-    "ALTER TABLE device_history DROP COLUMN custom_serial;",
-    "ALTER TABLE device_history DROP COLUMN physaddr;",
-    "ALTER TABLE device_history DROP COLUMN product;",
-    "ALTER TABLE devicemodule DROP COLUMN serialnumber;",
-    "ALTER TABLE devicemodule DROP COLUMN inventorynumber;",
-    "ALTER TABLE devicemodule DROP COLUMN maint_contract;",
-    "ALTER TABLE devicemodule DROP COLUMN maint_from;",
-    "ALTER TABLE devicemodule DROP COLUMN maint_until;",
-    "ALTER TABLE dhcpscope ADD COLUMN active tinyint(1) NOT NULL;",
-    "UPDATE dhcpscope SET active=1;",
-    "ALTER TABLE dhcpscope ADD COLUMN duid varchar(255);",
-    "ALTER TABLE dhcpscope ADD COLUMN version integer;",
-    "ALTER TABLE entity ADD COLUMN config_type varchar(255);",
-    "ALTER TABLE entity_history ADD COLUMN config_type varchar(255);",
-    "ALTER TABLE entity MODIFY COLUMN name varchar(128);",
-    "ALTER TABLE entity_history MODIFY COLUMN name varchar(128);",
-    "ALTER TABLE product ADD COLUMN part_number varchar(255);",
-    "ALTER TABLE product ADD COLUMN config_type varchar(255);",
-    "ALTER TABLE product_history ADD COLUMN part_number varchar(255);",
-    "ALTER TABLE product_history ADD COLUMN config_type varchar(255);",
-    "ALTER TABLE interface MODIFY COLUMN name varchar(255);",
-    "ALTER TABLE interface MODIFY COLUMN speed bigint;",
-    "ALTER TABLE interface_history MODIFY COLUMN name varchar(255);",
-    "ALTER TABLE interface_history MODIFY COLUMN speed bigint;",
-    "ALTER TABLE datacache MODIFY COLUMN tstamp bigint NOT NULL;",
-    "DELETE FROM datacache;",
-    "ALTER TABLE device ADD COLUMN snmp_conn_attempts integer;",
-    "ALTER TABLE device ADD COLUMN snmp_down tinyint(1) NOT NULL;",
-    "ALTER TABLE device_history ADD COLUMN snmp_conn_attempts integer;",
-    "ALTER TABLE device_history ADD COLUMN snmp_down tinyint(1) NOT NULL;",
-    "ALTER TABLE rr ADD COLUMN created timestamp;",
-    "ALTER TABLE rr ADD COLUMN modified timestamp;",
-    "ALTER TABLE rr ADD INDEX RR4 (`created`);",
-    "ALTER TABLE rr ADD INDEX RR5 (`modified`);",
-    "ALTER TABLE zone ADD COLUMN include blob;",
-    "ALTER TABLE rrloc MODIFY COLUMN latitude bigint NOT NULL;",
-    "ALTER TABLE rrloc MODIFY COLUMN longitude bigint NOT NULL;",
-    "ALTER TABLE rrloc MODIFY COLUMN altitude bigint NOT NULL;",
-    "ALTER TABLE zone MODIFY COLUMN minimum bigint NOT NULL;",
-    "ALTER TABLE zone MODIFY COLUMN serial bigint NOT NULL;",
-    "ALTER TABLE bgppeering ADD COLUMN authkey varchar(255);",
-    "ALTER TABLE bgppeering ADD COLUMN info text;",
-    "ALTER TABLE bgppeering ADD COLUMN max_v4_prefixes integer NOT NULL;",
-    "ALTER TABLE bgppeering ADD COLUMN max_v6_prefixes integer NOT NULL;",
-    "ALTER TABLE hostaudit MODIFY COLUMN zone varchar(255);",
-    "ALTER TABLE hostaudit MODIFY COLUMN scope varchar(255);",
-    "ALTER TABLE hostaudit DROP COLUMN user;",
-    "ALTER TABLE hostaudit DROP COLUMN operation;",
-    "ALTER TABLE hostaudit DROP COLUMN record_type;",
-    "ALTER TABLE hostaudit DROP COLUMN fields;",
-    "ALTER TABLE hostaudit DROP COLUMN vals;",
-    "ALTER TABLE dhcpscope MODIFY COLUMN text text;",
-    "ALTER TABLE dhcpscope MODIFY COLUMN export_file varchar(255);",
-    "ALTER TABLE dhcpscope MODIFY COLUMN failover_peer varchar(128);",
-    "ALTER TABLE zone MODIFY COLUMN include text;",
-    "ALTER TABLE savedqueries MODIFY COLUMN querytext text;",
-    "ALTER TABLE accessright MODIFY COLUMN object_id bigint NOT NULL;",
-    "ALTER TABLE site ADD COLUMN gsf integer;",
-    "ALTER TABLE site ADD UNIQUE KEY Site5 (number);", 
-    "ALTER TABLE site_history ADD COLUMN gsf integer;",
-   
-    # FK Indexes
-    "ALTER TABLE backbonecable_history ADD KEY (owner);",
-    "ALTER TABLE backbonecable_history ADD KEY (start_closet);",
-    "ALTER TABLE backbonecable_history ADD KEY (end_closet);",
-    "ALTER TABLE backbonecable_history ADD KEY (type);",
-    "ALTER TABLE backbonecable ADD KEY (owner);",
-    "ALTER TABLE backbonecable ADD KEY (type);",
-    "ALTER TABLE cablestrand ADD KEY (fiber_type);",
-    "ALTER TABLE cablestrand ADD KEY (status);",
-    "ALTER TABLE cablestrand ADD KEY (cable);",
-    "ALTER TABLE cablestrand ADD KEY (circuit_id);",
-    "ALTER TABLE circuit ADD KEY (status);",
-    "ALTER TABLE circuit ADD KEY (type);",
-    "ALTER TABLE circuit_history ADD KEY (status);",
-    "ALTER TABLE circuit_history ADD KEY (type);",
-    "ALTER TABLE circuit_history ADD KEY (linkid);",
-    "ALTER TABLE circuit_history ADD KEY (vendor);",
-    "ALTER TABLE contact ADD KEY (notify_email);",
-    "ALTER TABLE contact ADD KEY (notify_pager);",
-    "ALTER TABLE contact ADD KEY (notify_voice);",
-    "ALTER TABLE contact ADD KEY (person);",
-    "ALTER TABLE contact_history ADD KEY (notify_email);",
-    "ALTER TABLE contact_history ADD KEY (notify_pager);",
-    "ALTER TABLE contact_history ADD KEY (notify_voice);",
-    "ALTER TABLE contact_history ADD KEY (person);",
-    "ALTER TABLE contact_history ADD KEY (contactlist);",
-    "ALTER TABLE contact_history ADD KEY (contacttype);",
-    "ALTER TABLE device ADD KEY (monitorstatus);",
-    "ALTER TABLE device ADD KEY (room);",
-    "ALTER TABLE device ADD KEY (site);",
-    "ALTER TABLE device ADD KEY (snmp_target);",
-    "ALTER TABLE device DROP KEY device1;",
-    "ALTER TABLE device ADD UNIQUE KEY device1 (name,asset_id);",
-    "ALTER TABLE device DROP KEY Device4;",
-    "ALTER TABLE device ADD KEY Device2 (used_by);",
-    "ALTER TABLE device DROP KEY Device6;",
-    "ALTER TABLE device ADD KEY Device3 (owner);",
-    "ALTER TABLE device DROP KEY Device7;",
-    "ALTER TABLE device ADD KEY Device4 (os);",
-    "ALTER TABLE device DROP KEY Device8;",
-    "ALTER TABLE device ADD KEY Device5 (sysname);",
-    "ALTER TABLE device DROP KEY Device9;",
-    "ALTER TABLE device ADD KEY Device6 (down_from);",
-    "ALTER TABLE device DROP KEY Device10;",
-    "ALTER TABLE device ADD KEY Device7 (down_until);",
-    "ALTER TABLE device ADD KEY Device8 (extension);",
-    "ALTER TABLE device_history ADD KEY (asset_id);",
-    "ALTER TABLE device_history ADD KEY (monitorstatus);",
-    "ALTER TABLE device_history ADD KEY (name);",
-    "ALTER TABLE device_history ADD KEY (owner);",
-    "ALTER TABLE device_history ADD KEY (room);",
-    "ALTER TABLE device_history ADD KEY (site);",
-    "ALTER TABLE device_history ADD KEY (used_by);",
-    "ALTER TABLE device_history ADD KEY (snmp_target);",
-    "ALTER TABLE devicemodule ADD KEY (asset_id);",
-    "ALTER TABLE dhcpscope ADD KEY (container);",
-    "ALTER TABLE entity ADD KEY (availability);",
-    "ALTER TABLE entity ADD KEY (contactlist);",
-    "ALTER TABLE entity DROP KEY Entity2;",
-    "UPDATE entity set oid=NULL WHERE oid='';",
-    "ALTER TABLE entity ADD UNIQUE KEY entity2 (oid);",
-    "ALTER TABLE entity_history ADD KEY (contactlist);",
-    "ALTER TABLE entity_history ADD KEY (availability);",
-    "ALTER TABLE horizontalcable ADD KEY (contactlist);",
-    "ALTER TABLE horizontalcable ADD KEY (type);",
-    "ALTER TABLE interface ADD KEY (contactlist);",
-    "ALTER TABLE interface ADD KEY (monitorstatus);",
-    "ALTER TABLE interface_history ADD KEY (contactlist);",
-    "ALTER TABLE interface_history ADD KEY (monitorstatus);",
-    "ALTER TABLE interface_history ADD KEY (circuit);",
-    "ALTER TABLE interface_history ADD KEY (device);",
-    "ALTER TABLE interface_history ADD KEY (jack);",
-    "ALTER TABLE interface_history ADD KEY (neighbor);",
-    "ALTER TABLE interface_history ADD KEY (physaddr);",
-    "ALTER TABLE ipblock ADD KEY (owner);",
-    "ALTER TABLE ipblock ADD KEY (used_by);",
-    "ALTER TABLE ipservice ADD KEY (contactlist);",
-    "ALTER TABLE ipservice ADD KEY (monitorstatus);",
-    "ALTER TABLE maintcontract ADD KEY (provider);",
-    "ALTER TABLE person DROP KEY Person2;",
-    "UPDATE person SET username=NULL WHERE username='';",
-    "ALTER TABLE person ADD UNIQUE KEY person2 (username);",
-    "UPDATE person SET email=NULL WHERE email='';",
-    "ALTER TABLE person ADD UNIQUE KEY Person3 (email);",
-    "ALTER TABLE person ADD KEY (location);",
-    "ALTER TABLE person ADD KEY (location);",
-    "ALTER TABLE person ADD KEY (room);",
-    "ALTER TABLE person ADD KEY (user_type);",
-    "ALTER TABLE person_history ADD KEY (location);",
-    "ALTER TABLE person_history ADD KEY (room);",
-    "ALTER TABLE person_history ADD KEY (user_type);",
-    "ALTER TABLE person_history ADD KEY (entity);",
-    "ALTER TABLE product_history ADD KEY (manufacturer);",
-    "ALTER TABLE product_history ADD KEY (type);",
-    "ALTER TABLE site ADD KEY (availability);",
-    "ALTER TABLE site ADD KEY (contactlist);",
-    "ALTER TABLE site_history ADD KEY (availability);",
-    "ALTER TABLE site_history ADD KEY (contactlist);",
-    "ALTER TABLE sitelink ADD KEY (farend);",
-    "ALTER TABLE sitelink ADD KEY (nearend);",
-    "ALTER TABLE sitelink ADD KEY (entity);",
-    "ALTER TABLE sitelink_history ADD KEY (farend);",
-    "ALTER TABLE sitelink_history ADD KEY (nearend);",
-    "ALTER TABLE sitelink_history ADD KEY (entity);",
-    "ALTER TABLE zone ADD KEY (contactlist);",
-    "ALTER TABLE zonealias ADD KEY (zone);",
-    
-    );
-
-
-# Change all table IDs and foreign keys to bigint (Ticket #737)
-# Also, set them to NULLable and replace 0s with NULL values
-# This allows us to apply foreign_key constraints and allow 
-# user to fix their data before applying the NOT NULL constraints,
-# which can be done later (see below)
-my $meta = Netdot::Meta->new();
-my @tables = $meta->get_tables(with_history=>1);
-
-foreach my $mtable ( sort { $a->name cmp $b->name } @tables ){
-    my $tname = lc($mtable->name);
-    foreach my $mcol ( $mtable->get_columns ) {
-        my $cname = $mcol->name;
-        if ( $cname eq 'id' ){
-	    push @statements, "ALTER TABLE $tname MODIFY COLUMN $cname bigint NOT NULL auto_increment;";
-        } elsif ($cname eq 'info') {
-	    push @statements, "ALTER TABLE $tname MODIFY COLUMN $cname text;";
-        }
-        if ( $mcol->links_to ){
-	    push @statements, "ALTER TABLE $tname MODIFY COLUMN $cname bigint;";
-            push @statements, "UPDATE $tname SET $cname=NULL WHERE $cname=0;";
-        }
-    }
-    
-    push @statements, "ALTER TABLE $tname CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci;";
-}
-
-
-# Update hostaudit with string data
-#
-foreach my $hid ( keys %haudit ){
-    my ($zone, $scope) = ($haudit{$hid}{zone}, $haudit{$hid}{scope});
-    next unless ($zone || $scope);
-    my $st = 'UPDATE hostaudit SET';
-    $st .= " zone='$zone'" if $zone;
-    $st .= "," if ($zone && $scope);
-    $st .= " scope='$scope'" if $scope;
-    $st .= " WHERE id=$hid;";
-    push @statements,  $st;
-}
-
-# Set version to 4 on current global DhcpScopes
-push @statements, "UPDATE dhcpscope,dhcpscopetype SET dhcpscope.version=4 WHERE dhcpscopetype.name='global' AND dhcpscope.type=dhcpscopetype.id;";
-
-# Add new DHCP attributes
-push @statements, "INSERT INTO dhcpattrname (name) VALUES ('allow leasequery');",
-push @statements, "INSERT INTO dhcpattrname (name) VALUES ('preferred-lifetime');",
-push @statements, "INSERT INTO dhcpattrname (name) VALUES ('option dhcp6.name-servers');",
-push @statements, "INSERT INTO dhcpattrname (name) VALUES ('option dhcp6.domain-search');",
-push @statements, "INSERT INTO dhcpattrname (name) VALUES ('option dhcp6.preference');",
-push @statements, "INSERT INTO dhcpattrname (name) VALUES ('option dhcp6.rapid-commit');",
-push @statements, "INSERT INTO dhcpattrname (name) VALUES ('option dhcp6.info-refresh-time');",
-push @statements, "INSERT INTO dhcpattrname (name) VALUES ('dhcpv6-lease-file-name');",
-push @statements, "INSERT INTO dhcpattrname (name) VALUES ('range6');",
-push @statements, "INSERT INTO dhcpattrname (name) VALUES ('prefix6');",
-
-&processdata(\@statements);
-
-
-##################   THIS HAS TO BE THE LAST THING   #######################
-# Add FK constraints. 
-my @schema = &generate_schema_from_metadata();
-@statements = ('SET foreign_key_checks=0;');
-my $fk_table;
-foreach ( @schema ){
-    if ( /^CREATE TABLE `(\S+)`/ ){
-	$fk_table = $1;
-    }elsif ( /CONSTRAINT/ ){
-	$_ =~ s/^\s+//; # Remove leading spaces
-	$_ =~ s/,$//;   # Remove last comma
-	push @statements, "ALTER TABLE $fk_table ADD $_;";
-    }
-}
-push @statements, 'SET foreign_key_checks=1;';
-
-# New NOT NULL constraints
-
-push @statements, (
-"ALTER TABLE stpinstance MODIFY number integer NOT NULL;",
-"ALTER TABLE stpinstance MODIFY device bigint NOT NULL;",
-"ALTER TABLE rrloc MODIFY rr bigint NOT NULL;",
-"ALTER TABLE subnetzone MODIFY zone bigint NOT NULL;",
-"ALTER TABLE subnetzone MODIFY subnet bigint NOT NULL;",
-"ALTER TABLE rrsrv MODIFY rr bigint NOT NULL;",
-"ALTER TABLE closetpicture MODIFY closet bigint NOT NULL;",
-"ALTER TABLE rrns MODIFY rr bigint NOT NULL;",
-"ALTER TABLE rrtxt MODIFY txtdata varchar(255) NOT NULL;",
-"ALTER TABLE rrtxt MODIFY rr bigint NOT NULL;",
-"ALTER TABLE arpcacheentry MODIFY physaddr bigint NOT NULL;",
-"ALTER TABLE arpcacheentry MODIFY interface bigint NOT NULL;",
-"ALTER TABLE arpcacheentry MODIFY arpcache bigint NOT NULL;",
-"ALTER TABLE arpcacheentry MODIFY ipaddr bigint NOT NULL;",
-"ALTER TABLE maintcontract MODIFY provider bigint NOT NULL;",
-"ALTER TABLE horizontalcable MODIFY room bigint NOT NULL;",
-"ALTER TABLE horizontalcable MODIFY closet bigint NOT NULL;",
-"ALTER TABLE horizontalcable MODIFY type bigint NOT NULL;",
-"ALTER TABLE entityrole MODIFY entity bigint NOT NULL;",
-"ALTER TABLE entityrole MODIFY type bigint NOT NULL;",
-"ALTER TABLE zonealias MODIFY zone bigint NOT NULL;",
-"ALTER TABLE room MODIFY floor bigint NOT NULL;",
-"ALTER TABLE fwtableentry MODIFY fwtable bigint NOT NULL;",
-"ALTER TABLE fwtableentry MODIFY physaddr bigint NOT NULL;",
-"ALTER TABLE fwtableentry MODIFY interface bigint NOT NULL;",
-"ALTER TABLE rrptr MODIFY rr bigint NOT NULL;",
-"ALTER TABLE bgppeering MODIFY bgppeerid varchar(64) NOT NULL;",
-"ALTER TABLE bgppeering MODIFY bgppeeraddr varchar(64) NOT NULL;",
-"ALTER TABLE devicecontacts MODIFY contactlist bigint NOT NULL;",
-"ALTER TABLE devicecontacts MODIFY device bigint NOT NULL;",
-"ALTER TABLE dhcpscope MODIFY type bigint NOT NULL;",
-"ALTER TABLE dhcpscopeuse MODIFY template bigint NOT NULL;",
-"ALTER TABLE dhcpscopeuse MODIFY scope bigint NOT NULL;",
-"ALTER TABLE rrnaptr MODIFY rr bigint NOT NULL;",
-"ALTER TABLE ipservice MODIFY ip bigint NOT NULL;",
-"ALTER TABLE ipservice MODIFY service bigint NOT NULL;",
-"ALTER TABLE rrmx MODIFY rr bigint NOT NULL;",
-"ALTER TABLE circuit MODIFY status bigint NOT NULL;",
-"ALTER TABLE circuit_history MODIFY status bigint NOT NULL;",
-"ALTER TABLE dhcpscope MODIFY version integer NOT NULL;",
-"ALTER TABLE rrhinfo MODIFY rr bigint NOT NULL;",
-"ALTER TABLE interface MODIFY device bigint NOT NULL;",
-"ALTER TABLE interface_history MODIFY device bigint NOT NULL;",
-"ALTER TABLE sitepicture MODIFY site bigint NOT NULL;",
-"ALTER TABLE ipblockattr MODIFY ipblock bigint NOT NULL;",
-"ALTER TABLE ipblockattr MODIFY name bigint NOT NULL;",
-"ALTER TABLE arpcache MODIFY device bigint NOT NULL;",
-"ALTER TABLE sitesubnet MODIFY site bigint NOT NULL;",
-"ALTER TABLE sitesubnet MODIFY subnet bigint NOT NULL;",
-"ALTER TABLE cablestrand MODIFY status bigint NOT NULL;",
-"ALTER TABLE cablestrand MODIFY cable bigint NOT NULL;",
-"ALTER TABLE cablestrand_history MODIFY cable bigint NOT NULL;",
-"ALTER TABLE cablestrand_history MODIFY status bigint NOT NULL;",
-"ALTER TABLE contact MODIFY contacttype bigint NOT NULL;",
-"ALTER TABLE contact MODIFY person bigint NOT NULL;",
-"ALTER TABLE contact MODIFY contactlist bigint NOT NULL;",
-"ALTER TABLE contact_history MODIFY contacttype bigint NOT NULL;",
-"ALTER TABLE contact_history MODIFY person bigint NOT NULL;",
-"ALTER TABLE contact_history MODIFY contactlist bigint NOT NULL;",
-"ALTER TABLE rr MODIFY zone bigint NOT NULL;",
-"ALTER TABLE floorpicture MODIFY floor bigint NOT NULL;",
-"ALTER TABLE sitelink MODIFY farend bigint NOT NULL;",
-"ALTER TABLE sitelink MODIFY nearend bigint NOT NULL;",
-"ALTER TABLE sitelink_history MODIFY farend bigint NOT NULL;",
-"ALTER TABLE sitelink_history MODIFY nearend bigint NOT NULL;",
-"ALTER TABLE rrds MODIFY rr bigint NOT NULL;",
-"ALTER TABLE deviceattr MODIFY name bigint NOT NULL;",
-"ALTER TABLE deviceattr MODIFY device bigint NOT NULL;",
-"ALTER TABLE product MODIFY type bigint NOT NULL;",
-"ALTER TABLE product_history MODIFY type bigint NOT NULL;",
-"ALTER TABLE product MODIFY manufacturer bigint NOT NULL;",
-"ALTER TABLE product_history MODIFY manufacturer bigint NOT NULL;",
-"ALTER TABLE closet MODIFY room bigint NOT NULL;",
-"ALTER TABLE fwtable MODIFY device bigint NOT NULL;",
-"ALTER TABLE physaddrattr MODIFY physaddr bigint NOT NULL;",
-"ALTER TABLE physaddrattr MODIFY name bigint NOT NULL;",
-"ALTER TABLE floor MODIFY site bigint NOT NULL;",
-"ALTER TABLE interfacevlan MODIFY interface bigint NOT NULL;",
-"ALTER TABLE interfacevlan MODIFY vlan bigint NOT NULL;",
-"ALTER TABLE rrcname MODIFY rr bigint NOT NULL;",
-"ALTER TABLE dhcpattr MODIFY name bigint NOT NULL;",
-"ALTER TABLE dhcpattr MODIFY scope bigint NOT NULL;",
-"ALTER TABLE devicemodule MODIFY device bigint NOT NULL;",
-"ALTER TABLE backbonecable MODIFY end_closet bigint NOT NULL;",
-"ALTER TABLE backbonecable MODIFY type bigint NOT NULL;",
-"ALTER TABLE backbonecable MODIFY start_closet bigint NOT NULL;",
-"ALTER TABLE backbonecable_history MODIFY end_closet bigint NOT NULL;",
-"ALTER TABLE backbonecable_history MODIFY start_closet bigint NOT NULL;",
-"ALTER TABLE backbonecable_history MODIFY type bigint NOT NULL;",
-"ALTER TABLE entitysite MODIFY entity bigint NOT NULL;",
-"ALTER TABLE entitysite MODIFY site bigint NOT NULL;",
-"ALTER TABLE rraddr MODIFY ipblock bigint NOT NULL;",
-"ALTER TABLE rraddr MODIFY rr bigint NOT NULL;",
-"ALTER TABLE splice MODIFY strand2 bigint NOT NULL;",
-"ALTER TABLE splice MODIFY strand1 bigint NOT NULL;",
-"ALTER TABLE userright MODIFY person bigint NOT NULL;",
-"ALTER TABLE userright MODIFY accessright bigint NOT NULL;",
-"ALTER TABLE groupright MODIFY contactlist bigint NOT NULL;",
-"ALTER TABLE groupright MODIFY accessright bigint NOT NULL;",
-"ALTER TABLE ipblock MODIFY status bigint NOT NULL;",
-"ALTER TABLE device MODIFY name bigint NOT NULL;",
-"ALTER TABLE device_history MODIFY name bigint NOT NULL;",
-"ALTER TABLE savedqueries MODIFY querytext text NOT NULL;"
-    );
-
-push @statements, 
-    "SET FOREIGN_KEY_CHECKS = 1;",
-    "COMMIT;";
-
 
 &processdata(\@statements);
 

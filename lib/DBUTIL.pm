@@ -387,7 +387,7 @@ sub processdata {
     while (my $cmd = shift @$lines ){
 	$cmd  =~ /^(.*)$/;
 	chomp($cmd);
-	print "DEBUG: ($cmd): " if $CONFIG{DEBUG};
+	print "DEBUG: ($cmd): \n" if $CONFIG{DEBUG};
 	eval {
 	    $rows = $dbh->do( $cmd );
 	};

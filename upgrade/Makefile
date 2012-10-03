@@ -18,7 +18,6 @@ all: db tasks
 db:
 	@echo
 	@echo "Upgrading schema and data..."
-	$(PERL) pre_updatedb 2>error.log # Remove after 1.0
 	$(PERL) updatedb 2>>error.log 
 
 tasks:
