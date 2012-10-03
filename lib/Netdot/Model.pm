@@ -978,7 +978,7 @@ sub get_label {
 }
 
 ############################################################################
-=head2 ge_history - Get a list of history objects for a given object
+=head2 get_history - Get a list of history objects for a given object
 
   Arguments:
     None

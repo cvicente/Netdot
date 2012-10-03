@@ -313,16 +313,15 @@ You can find documentation for this module with the perldoc command.
 
     perldoc Netdot
 
-You can also look for information at:
+You can also use the mailing lists:
 
-=over 4
+=over 
 
-=item * Netdot mailing lists
+=item L<netdot-users|https://osl.uoregon.edu/mailman/listinfo/netdot-users>
+
+=item L<netdot-devel|https://osl.uoregon.edu/mailman/listinfo/netdot-devel>
 
 =back
-
-L<http://ns.uoregon.edu/mailman/netdot-users>
-
 
 =head1 ACKNOWLEDGEMENTS
 
