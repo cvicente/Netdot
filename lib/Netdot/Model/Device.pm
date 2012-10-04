@@ -5651,7 +5651,6 @@ sub _update_interfaces {
     my ($self, %argv) = @_;
 
     my $host = $self->fqdn;
-
     my $info = $argv{info};
 
     # Do not update interfaces for these devices
@@ -5696,6 +5695,39 @@ sub _update_interfaces {
     # Index by object id. 	
     map { $oldifs{$_->id} = $_ } $self->interfaces();
     
+    if ( $ENV{REMOTE_USER} eq 'netdot' ){
+
+	# Avoid a situation in which the SNMP query fails or data
+	# is truncated, resulting in too many interfaces being
+	# incorrectly removed. This in turn causes IP addresses
+	# and A/AAAA and PTR records to be removed, which then
+	# causes all sorts of other problems
+
+	# Cron jobs run as user 'netdot'
+	# This would not work if there is an actual user (person)
+	# whose username is netdot, running the update
+
+	my $int_thold = $self->config->get('IF_COUNT_THRESHOLD');
+	if ( $int_thold >= 1 ){
+	    $self->throw_fatal('Incorrect value for IF_COUNT_THRESHOLD in config file');
+	}
+
+	my %old_snmp_ifs;
+	map { $old_snmp_ifs{$_->id} = $_ } 
+	grep { $_->doc_status eq 'snmp' } values %oldifs;
+
+	my $num_old = scalar(keys(%old_snmp_ifs));
+	my $num_new = scalar(keys(%{$info->{interface}}));
+	
+	if ( ($num_old && !$num_new) || ($num_new && ($num_new < $num_old) && 
+	     ($num_new / $num_old) <= $int_thold) ){
+	    $logger->warn("The ratio of new to old interfaces is below the configured".
+			  " threshold (IF_COUNT_THRESHOLD). Skipping interface update.". 
+			  " Please re-discover device manually if needed.");
+	    return;
+	}
+    }
+
     # Index by interface name (ifDescr) and number (ifIndex)
     foreach my $id ( keys %oldifs ){
 	$oldifsbynumber{$oldifs{$id}->number} = $oldifs{$id}
