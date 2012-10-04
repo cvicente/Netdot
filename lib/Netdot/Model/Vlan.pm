@@ -6,25 +6,25 @@ use strict;
 
 my $logger = Netdot->log->get_logger('Netdot::Model::Device');
 
-# Make sure to return 1
-1;
-
 =head1 NAME
 
 Netdot::Model::Vlan
 
 =head1 SYNOPSIS
 
-Netdot Vlan Class
+Netdot VLAN Class
 
 =head1 CLASS METHODS
 =cut
+
+######################################################################################
 
 =head2 insert - insert vlan objects
     
     We override the base method to:
     - Automatically assign Vlan to a VLAN group if it applies
-    
+    - Validate input
+
   Arguments:
     hash ref with field/value pairs
   Returns:
@@ -33,7 +33,7 @@ Netdot Vlan Class
     $nevlan = Vlan->insert({vid=>'100', description=>'Vlan 100'});
 
 =cut
-######################################################################################
+
 sub insert{
     my ($class, $argv) = @_;
     $class->isa_class_method('insert');
@@ -47,6 +47,22 @@ sub insert{
     my $new = $class->SUPER::insert($argv);
     return $new;
 }
+
+######################################################################################
+
+=head2 search
+    
+    We override the base method to:
+    - Validate input
+    
+  Arguments:
+    array
+  Returns:
+    See Class::DBI::search()
+  Examples:
+    my @vlans = Vlan->search(vid=>$number);
+
+=cut
 
 sub search {
     my ($class, @args) = @_;
@@ -69,7 +85,8 @@ sub search {
 =cut
 
 ######################################################################################
-=head2 update - update vlan objects
+
+=head2 update - update VLAN objects
     
     We override the base method to:
     - Automatically assign Vlan to a VLAN group if needed
@@ -81,6 +98,7 @@ sub search {
   Examples:
     
 =cut
+
 sub update{
     my ($self, $argv) = @_;
     $self->isa_object_method('update');
@@ -141,7 +159,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -159,3 +177,4 @@ Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 =cut
 
+1;

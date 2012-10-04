@@ -21,10 +21,6 @@ my %ABBR = ('Ethernet'           => 'e-',
     
 my $logger = Netdot->log->get_logger('Netdot::Model::Device');
 
-#Be sure to return 1
-1;
-
-
 =head1 NAME
 
 Netdot::Model::Plugins::DeviceIpNamesByInt;
@@ -42,11 +38,11 @@ Netdot::Model::Plugins::DeviceIpNamesByInt;
     Netdot::Model::Plugins::DeviceIpNamesByInt->new();
     my $name = Netdot::Model::Plugins::DeviceIpNamesByInt->get_name($ipblock);
 
-
 =head1 METHODS
 
 =cut
 ############################################################################
+
 =head2 new - Class constructor
 
   Arguments:
@@ -55,6 +51,7 @@ Netdot::Model::Plugins::DeviceIpNamesByInt;
     Plugin object
     
 =cut
+
 sub new{
     my ($proto, %argv) = @_;
     my $class = ref($proto) || $proto;
@@ -63,6 +60,7 @@ sub new{
 }
 
 ############################################################################
+
 =head2 get_name - Return name for given IP
 
   Arguments:
@@ -71,6 +69,7 @@ sub new{
     String
     
 =cut
+
 sub get_name {
     my ($self, $ip) = @_;
     my $name;
@@ -91,6 +90,17 @@ sub get_name {
     $logger->debug("Plugins::DeviceIpNamesByInt::get_name: $ipaddr: Generated name: $name");
     return $name;
 }
+
+############################################################################
+
+=head2 get_name_from_interface
+
+  Arguments:
+    Ipblock object
+  Returns:
+    String
+    
+=cut
 
 sub get_name_from_interface {
     my ($self, $ip) = @_;
@@ -145,7 +155,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2009 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

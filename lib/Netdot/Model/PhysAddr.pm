@@ -20,6 +20,7 @@ Netdot::Model::PhysAddr - Physical Address Class
 =cut
 
 ################################################################
+
 =head2 search - Search PhysAddr objects
 
     Formats address before searching
@@ -48,6 +49,7 @@ sub search {
 
 
 ################################################################
+
 =head2 search_like - Search PhysAddr objects
 
     Formats address before searching
@@ -76,6 +78,7 @@ sub search_like {
 
 
 ################################################################
+
 =head2 insert - Insert PhysAddr object
 
     We override the insert method for extra functionality
@@ -98,6 +101,7 @@ sub insert {
 }
 
 ############################################################################
+
 =head2 retrieve_all_hashref - Build a hash with all addresses
 
     Retrieves all macs from the DB
@@ -113,6 +117,7 @@ sub insert {
 
 
 =cut
+
 sub retrieve_all_hashref {
     my ($class) = @_;
     $class->isa_class_method('retrieve_all_hashref');
@@ -141,6 +146,7 @@ sub retrieve_all_hashref {
 }
 
 ##################################################################
+
 =head2 fast_update - Faster updates for specific cases
 
     This method will traverse a list of hashes containing a MAC address
@@ -162,6 +168,7 @@ sub retrieve_all_hashref {
     PhysAddr->fast_update(\%macs);
 
 =cut
+
 sub fast_update {
     my ($class, $macs, $timestamp) = @_;
     $class->isa_class_method('fast_update');
@@ -211,6 +218,7 @@ sub fast_update {
 }
 
 ################################################################
+
 =head2 validate - Format and validate MAC address strings
 
     Assumes that "000000000000", "111111111111" ... "FFFFFFFFFF" 
@@ -224,6 +232,7 @@ sub fast_update {
     my $validmac = PhysAddr->validate('DEADDEADBEEF');
 
 =cut
+
 sub validate {
     my ($self, $addr) = @_;
     $self->isa_class_method('validate');
@@ -273,6 +282,7 @@ sub validate {
 }
 
 #################################################################
+
 =head2 from_interfaces - Get addresses that belong to interfaces
 
   Arguments: 
@@ -283,6 +293,7 @@ sub validate {
     my $intmacs = PhysAddr->from_interfaces();
 
 =cut
+
 sub from_interfaces {
     my ($class) = @_;
     $class->isa_class_method('from_interfaces');
@@ -314,6 +325,7 @@ sub from_interfaces {
 }
 
 #################################################################
+
 =head2 map_all_to_ints - Map all MAC addresses to their interfaces
 
   Arguments: 
@@ -326,6 +338,7 @@ sub from_interfaces {
     my $macs_to_ints = PhysAddr->map_all_to_ints();
 
 =cut
+
 sub map_all_to_ints {
     my ($class) = @_;
     $class->isa_class_method('map_all_to_ints');
@@ -353,6 +366,7 @@ sub map_all_to_ints {
 }
 
 #################################################################
+
 =head2 from_devices - Get addresses that are devices' base MACs
 
   Arguments: 
@@ -363,6 +377,7 @@ sub map_all_to_ints {
     my $intmacs = PhysAddr->from_devices();
 
 =cut
+
 sub from_devices {
     my ($class) = @_;
     $class->isa_class_method('from_devices');
@@ -394,6 +409,7 @@ sub from_devices {
 }
 
 #################################################################
+
 =head2 infrastructure - Get all infrastructure MACs
 
   Arguments: 
@@ -404,6 +420,7 @@ sub from_devices {
     my $intmacs = PhysAddr->infrastructure();
 
 =cut
+
 sub infrastructure {
     my ($class) = @_;
     $class->isa_class_method('infrastructure');
@@ -418,6 +435,7 @@ sub infrastructure {
 }
 
 ################################################################
+
 =head2 vendor_count - Count MACs by vendor
     
   Arguments:
@@ -430,6 +448,7 @@ sub infrastructure {
     my %count = PhysAddr->vendor_count();
 
 =cut
+
 sub vendor_count{
     my ($self, $type) = @_;
     $self->isa_class_method('vendor_count');
@@ -461,6 +480,7 @@ sub vendor_count{
 }
 
 ################################################################
+
 =head2 - is_broad_multi - Check for broadcast/multicast bit
 
     IEEE 802.3 specifies that the lowest order bit in the first
@@ -476,6 +496,7 @@ sub vendor_count{
     or 
      $physaddr->is_broad_multi();
 =cut
+
 sub is_broad_multi {
     my ($class, $address) = @_;
     my $self;
@@ -494,6 +515,7 @@ sub is_broad_multi {
 =cut
 
 ################################################################
+
 =head2 colon_address - Return address with octets separated by colons
 
     This can be either an instance method or class method
@@ -508,6 +530,7 @@ sub is_broad_multi {
     print PhysAddr->colon_address('DEADDEADBEEF');
 
 =cut
+
 sub colon_address {
     my ($self, $address) = @_;
     my $class = ref($self);
@@ -523,6 +546,7 @@ sub colon_address {
 }
 
 ################################################################
+
 =head2 oui - Return Organizationally Unique Identifier for a given PhysAddr object
 
   Arguments: 
@@ -533,6 +557,7 @@ sub colon_address {
     print $physaddr->oui;
 
 =cut
+
 sub oui {
     my ($self) = @_;
     $self->isa_object_method('oui');
@@ -540,6 +565,7 @@ sub oui {
 }
 
 ################################################################
+
 =head2 vendor - Return OUI vendor name
 
   Arguments: 
@@ -552,6 +578,7 @@ sub oui {
     print PhysAddr->vendor('DEADEADBEEF');
 
 =cut
+
 sub vendor {
     my ($self, $address) = @_;
     my $class = ref($self) || $self;
@@ -568,6 +595,7 @@ sub vendor {
 }
 
 ################################################################
+
 =head2 find_edge_port - Find edge port where this MAC is located
 
     The idea is to get all device ports whose latest forwarding 
@@ -583,6 +611,7 @@ sub vendor {
     print $physaddr->find_edge_port;
 
 =cut
+
 sub find_edge_port {
     my ($self) = @_;
     $self->isa_object_method('find_edge_port');
@@ -628,6 +657,7 @@ sub find_edge_port {
 
 
 ################################################################
+
 =head2 get_last_n_fte - Get last N forwarding table entries
 
   Arguments: 
@@ -638,6 +668,7 @@ sub find_edge_port {
     print $physaddr->get_last_n_fte(10);
 
 =cut
+
 sub get_last_n_fte {
     my ($self, $limit) = @_;
     $self->isa_object_method('get_last_n_fte');
@@ -670,6 +701,7 @@ sub get_last_n_fte {
 }
 
 ################################################################
+
 =head2 get_last_n_arp - Get last N ARP entries
 
   Arguments: 
@@ -680,6 +712,7 @@ sub get_last_n_fte {
     print $physaddr->get_last_n_arp(10);
 
 =cut
+
 sub get_last_n_arp {
     my ($self, $limit) = @_;
     $self->isa_object_method('get_last_n_arp');
@@ -712,6 +745,7 @@ sub get_last_n_arp {
 }
 
 ################################################################
+
 =head2 devices - Return devices whose base mac is this one
 
   Arguments: None
@@ -720,12 +754,14 @@ sub get_last_n_arp {
     my @devs = $physaddr->devices;
 
 =cut
+
 sub devices { 
     my ($self) = @_;
     map { $_->devices if ($_->devices) } $self->assets;
 }
 
 ################################################################
+
 =head2 search_interface_macs
 
   Arguments: 
@@ -737,6 +773,7 @@ sub devices {
     my @macs = PhysAddr->search_interface_macs($iid, $tstamp)
 
 =cut
+
 __PACKAGE__->set_sql(interface_macs => qq{
 SELECT p.id
 FROM     physaddr p, interface i, fwtable ft, fwtableentry fte 
@@ -784,10 +821,15 @@ sub _canonicalize {
 
 
 #################################################
-# format_address - Format MAC address
-#    - Removes usual separators
-#    - Converts to all uppercase
-#
+
+=head2 format_address
+
+    Format MAC address
+    - Removes usual separators
+    - Converts to all uppercase
+
+=cut
+
 sub format_address {
     my ($self, $address) = @_;
     $self->throw_user("Missing address")
@@ -821,7 +863,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

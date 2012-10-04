@@ -9,7 +9,7 @@ my $logger = Netdot->log->get_logger('Netdot::Model::Device');
 
 =head1 NAME
 
-Netdot::Model::Device::CLI - Base class for classes dealing with Device CLI interaction
+Netdot::Model::Device::CLI - Base class to deal with Device CLI interaction
 
 =head1 SYNOPSIS
 
@@ -17,10 +17,6 @@ Provides common functions for CLI access
 
 =head1 CLASS METHODS
 =cut
-
-=head1 INSTANCE METHODS
-=cut
-
 
 ############################################################################
 # Get CLI login credentials from config file

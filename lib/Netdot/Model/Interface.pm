@@ -31,13 +31,11 @@ my %SPEED_MAP = ('1536000'     => 'T1',
 
 Netdot::Model::Interface
 
-=head1 SYNOPSIS
-
-
 =head1 CLASS METHODS
 =cut
 
 ################################################################
+
 =head2 insert - Insert Interface object
 
     We override the insert method for extra functionality
@@ -49,6 +47,7 @@ Netdot::Model::Interface
   Examples:
 
 =cut
+
 sub insert {
     my ($class, $argv) = @_;
     $class->isa_class_method('insert');
@@ -75,6 +74,7 @@ sub insert {
 }
 
 ################################################################
+
 =head2 - find_duplex_mismatches - Finds pairs of interfaces with duplex and/or speed mismatch
 
   Arguments: 
@@ -84,6 +84,7 @@ sub insert {
   Examples:
     my @list = Interface->find_duplex_mismatches();
 =cut
+
 sub find_duplex_mismatches {
     my ($class) = @_;
     $class->isa_class_method('find_duplex_mismatches');
@@ -135,6 +136,7 @@ sub find_duplex_mismatches {
 
 
 ################################################################
+
 =head2 - find_vlan_mismatches
 
     Use topology information to determine if VLAN memmbership
@@ -147,6 +149,7 @@ sub find_duplex_mismatches {
   Examples:
     my $v = Interface->find_vlan_mismatches();
 =cut
+
 sub find_vlan_mismatches {
     my ($class) = @_;
     my $dbh = $class->db_Main;
@@ -199,6 +202,7 @@ sub find_vlan_mismatches {
 
 
 #################################################################
+
 =head2 - dev_name_number - Hash all interfaces by device, name and number
 
   Arguments: 
@@ -209,6 +213,7 @@ sub find_vlan_mismatches {
     my $map = Interface->dev_name_number();
 
 =cut
+
 sub dev_name_number {
     my ($class) = @_;
     $class->isa_class_method('dev_name_number');
@@ -239,7 +244,9 @@ sub dev_name_number {
 
 =head1 OBJECT METHODS
 =cut
+
 ################################################################
+
 =head2 delete - Delete object
 
     We override the delete method for extra functionality
@@ -252,6 +259,7 @@ sub dev_name_number {
     $interface->delete();
 
 =cut
+
 sub delete {
     my $self = shift;
     $self->isa_object_method('delete');
@@ -264,6 +272,7 @@ sub delete {
 }
 
 ############################################################################
+
 =head2 add_neighbor
     
   Arguments:
@@ -277,6 +286,7 @@ sub delete {
     $interface->add_neighbor($id);
 
 =cut
+
 sub add_neighbor{
     my ($self, %argv) = @_;
     $self->isa_object_method('add_neighbor');
@@ -330,6 +340,7 @@ sub add_neighbor{
 
 
 ############################################################################
+
 =head2 remove_neighbor
     
   Arguments:
@@ -340,6 +351,7 @@ sub add_neighbor{
     $interface->remove_neighbor();
 
 =cut
+
 sub remove_neighbor{
     my ($self) = @_;
 
@@ -358,6 +370,7 @@ sub remove_neighbor{
 }
 
 ############################################################################
+
 =head2 update - Update Interface
     
   Arguments:
@@ -368,6 +381,7 @@ sub remove_neighbor{
     $interface->update( \%data );
 
 =cut
+
 sub update {
     my ($self, $argv) = @_;
     $self->isa_object_method('update');    
@@ -386,6 +400,7 @@ sub update {
 }
 
 ############################################################################
+
 =head2 snmp_update - Insert/Update Interface using SNMP info
 
   Arguments:  
@@ -407,6 +422,7 @@ sub update {
     my $new = Ipblock->snmp_update(%args, snmp_info=>$info, ...);
 
 =cut
+
 sub snmp_update {
     my ($self, %args) = @_;
     my $info  = $args{snmp_info};
@@ -594,6 +610,7 @@ sub snmp_update {
 }
 
 ############################################################################
+
 =head2 update_ip - Update IP adddress for this interface
 
   Arguments:
@@ -610,6 +627,7 @@ sub snmp_update {
   Example:
     
 =cut
+
 sub update_ip {
     my ($self, %args) = @_;
     $self->isa_object_method('update_ip');
@@ -740,6 +758,7 @@ sub update_ip {
 }
 
 ############################################################################
+
 =head2 speed_pretty - Convert ifSpeed to something more readable
 
   Arguments:  
@@ -789,6 +808,13 @@ sub speed_pretty {
 }
 
 ############################################################################
+
+=head2 get_label
+
+    Override get_label from base class
+
+=cut
+
 sub get_label{
     my ($self) = @_;
     $self->isa_object_method('get_label');
@@ -804,7 +830,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

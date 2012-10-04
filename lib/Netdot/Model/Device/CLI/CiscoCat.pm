@@ -28,6 +28,7 @@ Netdot::Model::Device::CLI::CiscoCat - Cisco IOS (Catalyst) Class
 =cut
 
 ############################################################################
+
 =head2 get_arp - Fetch ARP tables
 
   Arguments:
@@ -37,6 +38,7 @@ Netdot::Model::Device::CLI::CiscoCat - Cisco IOS (Catalyst) Class
   Examples:
     my $cache = $self->get_arp(%args)
 =cut
+
 sub get_arp {
     my ($self, %argv) = @_;
     $self->isa_object_method('get_arp');
@@ -92,6 +94,7 @@ sub get_arp {
 }
 
 ############################################################################
+
 =head2 get_fwt - Fetch forwarding tables
 
   Arguments:
@@ -101,6 +104,7 @@ sub get_arp {
   Examples:
     my $fwt = $self->get_fwt(%args)
 =cut
+
 sub get_fwt {
     my ($self, %argv) = @_;
     $self->isa_object_method('get_fwt');

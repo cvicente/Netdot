@@ -21,6 +21,7 @@ Netdot::Exporter::Smokeping - Read relevant info from Netdot and build Smokeping
 =cut
 
 ############################################################################
+
 =head2 new - Class constructor
 
   Arguments:
@@ -30,6 +31,7 @@ Netdot::Exporter::Smokeping - Read relevant info from Netdot and build Smokeping
   Examples:
     my $smokeping = Netdot::Exporter->new(type=>'Smokeping');
 =cut
+
 sub new{
     my ($class, %argv) = @_;
     my $self = {};
@@ -43,6 +45,7 @@ sub new{
 }
 
 ############################################################################
+
 =head2 generate_configs - Generate configuration files for SMOKEPING
 
   Arguments:
@@ -52,6 +55,7 @@ sub new{
   Examples:
     $smokeping->generate_configs();
 =cut
+
 sub generate_configs {
     my ($self) = @_;
 

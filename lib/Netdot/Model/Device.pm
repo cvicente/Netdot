@@ -9,6 +9,17 @@ use Netdot::Topology;
 use Parallel::ForkManager;
 use Data::Dumper;
 
+=head1 NAME
+
+Netdot::Model::Device - Network Device Class
+
+=head1 SYNOPSIS
+
+ my $device = Device->retrieve($id);
+ $device->snmp_update();
+
+=cut
+
 # Timeout seconds for SNMP queries 
 # (different from SNMP connections)
 my $TIMEOUT = Netdot->config->get('SNMP_QUERY_TIMEOUT');
@@ -63,19 +74,11 @@ my @SMETHODS = qw(
 );
 
 
-=head1 NAME
-
-Netdot::Model::Device - Network Device Class
-
-=head1 SYNOPSIS
-
- my $device = Device->retrieve($id);
- $device->snmp_update();
-
 =head1 CLASS METHODS
-=cuts
+=cut
 
 ############################################################################
+
 =head2 search - Search Devices
 
     Overrides base method to extend functionality:
@@ -94,6 +97,7 @@ Netdot::Model::Device - Network Device Class
     my @devs = Device->search(name=>'localhost.localdomain');
 
 =cut
+
 sub search {
     my ($class, @args) = @_;
     $class->isa_class_method('search');
@@ -170,6 +174,7 @@ sub search {
 }
 
 ############################################################################
+
 =head2 search_address_live
     
     Query relevant devices for ARP and FWT entries in order to locate 
@@ -188,6 +193,7 @@ sub search {
     my $info = Device->search_address_live(mac=>'DEADDEADBEEF', vlan=60);
 
 =cut
+
 sub search_address_live {
     my ($class, %argv) = @_;
     $class->isa_class_method('search_address_live');
@@ -332,6 +338,7 @@ sub search_address_live {
 
 
 ############################################################################
+
 =head2 search_like -  Search for device objects.  Allow substrings
 
     We override the base class to:
@@ -349,6 +356,7 @@ sub search_address_live {
     my @switches = Device->search_like(name=>'-sw');
 
 =cut
+
 sub search_like {
     my ($class, %argv) = @_;
     $class->isa_class_method('search_like');
@@ -397,6 +405,7 @@ sub search_like {
 
 
 ############################################################################
+
 =head2 assign_name - Determine and assign correct name to device
 
     This method will try to find or create an appropriate 
@@ -413,6 +422,7 @@ sub search_like {
   Examples:
     my $rr = Device->assign_name($host)
 =cut
+
 sub assign_name {
     my ($class, %argv) = @_;
     $class->isa_class_method('assign_name');
@@ -514,6 +524,7 @@ sub assign_name {
 }
 
 ############################################################################
+
 =head2 insert - Insert new Device
     
     We override the insert method for extra functionality:
@@ -531,6 +542,7 @@ sub assign_name {
     my $newdevice = Device->insert(\%args);
 
 =cut
+
 sub insert {
     my ($class, $argv) = @_;
     $class->isa_class_method('insert');
@@ -625,6 +637,7 @@ sub insert {
 }
 
 ############################################################################
+
 =head2 get_snmp_info - SNMP-query a Device for general information
     
     This method can either be called on an existing object, or as a 
@@ -656,6 +669,7 @@ sub insert {
     my $info = Device->get_snmp_info(host=>$hostname, communities=>['public']);
 
 =cut
+
 sub get_snmp_info {
     my ($self, %args) = @_;
     my $class = ref($self) || $self;
@@ -1194,6 +1208,7 @@ sub get_snmp_info {
 
 
 #########################################################################
+
 =head2 snmp_update_all - Update SNMP info for every device in DB
     
   Arguments:
@@ -1216,13 +1231,14 @@ sub get_snmp_info {
     Device->snmp_update_all();
 
 =cut
+
 sub snmp_update_all {
     my ($class, %argv) = @_;
     $class->isa_class_method('snmp_update_all');
     my $start = time;
 
     my @devs   = $class->retrieve_all();
-    my $device_count = $class->snmp_update_parallel(devs=>\@devs, %argv);
+    my $device_count = $class->_snmp_update_parallel(devs=>\@devs, %argv);
     my $end = time;
     $logger->info(sprintf("All Devices updated. %d devices in %s", 
 			  $device_count, $class->sec2dhms($end-$start) ));
@@ -1230,6 +1246,7 @@ sub snmp_update_all {
 }
 
 ####################################################################################
+
 =head2 snmp_update_block - Discover and/or update all devices in given IP blocks
     
   Arguments:
@@ -1255,6 +1272,7 @@ sub snmp_update_all {
     Device->snmp_update_block(blocks=>"192.168.0.0/24");
 
 =cut
+
 sub snmp_update_block {
     my ($class, %argv) = @_;
     $class->isa_class_method('snmp_update_block');
@@ -1280,7 +1298,7 @@ sub snmp_update_block {
 
     # Call the more generic method
     $argv{hosts} = \%h;
-    my $device_count = $class->snmp_update_parallel(%argv);
+    my $device_count = $class->_snmp_update_parallel(%argv);
 
     my $end = time;
     $logger->info(sprintf("Devices in $blist updated. %d devices in %s", 
@@ -1289,6 +1307,7 @@ sub snmp_update_block {
 }
 
 ####################################################################################
+
 =head2 snmp_update_from_file - Discover and/or update all devices in a given file
     
   Arguments:
@@ -1311,6 +1330,7 @@ sub snmp_update_block {
     Device->snmp_update_from_file("/path/to/file");
 
 =cut
+
 sub snmp_update_from_file {
     my ($class, %argv) = @_;
     $class->isa_class_method('snmp_update_from_file');
@@ -1328,7 +1348,7 @@ sub snmp_update_from_file {
     
     # Call the more generic method
     $argv{hosts} = $hosts;
-    my $device_count = $class->snmp_update_parallel(%argv);
+    my $device_count = $class->_snmp_update_parallel(%argv);
 
     my $end = time;
     $logger->info(sprintf("Devices in %s updated. %d devices in %s", 
@@ -1338,6 +1358,7 @@ sub snmp_update_from_file {
 
 
 #########################################################################
+
 =head2 discover - Insert or update a device after getting its SNMP info.
 
     Adjusts a number of settings when inserting, based on certain
@@ -1374,6 +1395,7 @@ sub snmp_update_from_file {
     Device->discover(name=>$hostname, info=>$info);
 
 =cut
+
 sub discover {
     my ($class, %argv) = @_;
     
@@ -1526,6 +1548,7 @@ sub discover {
 }
 
 #########################################################################
+
 =head2 get_all_from_block - Retrieve devices with addresses within an IP block
 
   Arguments:
@@ -1536,6 +1559,7 @@ sub discover {
     my $devs = Device->get_all_from_block('192.168.1.0/24');
 
 =cut
+
 sub get_all_from_block {
     my ($class, $block) = @_;
     $class->isa_class_method('get_all_from_block');
@@ -1565,6 +1589,7 @@ sub get_all_from_block {
 }
 
 #################################################################
+
 =head2 get_base_macs_from_all - Retrieve base MACs from all devices
 
   Arguments: 
@@ -1575,6 +1600,7 @@ sub get_all_from_block {
    my $devmacs = Device->get_base_macs_from_all();
 
 =cut
+
 sub get_base_macs_from_all {
     my ($class) = @_;
     $class->isa_class_method('get_base_macs_from_all');
@@ -1598,6 +1624,7 @@ sub get_base_macs_from_all {
 }
 
 #################################################################
+
 =head2 get_if_macs_from_all - Retrieve MACs from all device interfaces
 
   Arguments: 
@@ -1608,6 +1635,7 @@ sub get_base_macs_from_all {
    my $devmacs = Device->get_if_macs_from_all();
 
 =cut
+
 sub get_if_macs_from_all {
     my ($class) = @_;
     $class->isa_class_method('get_if_macs_from_all');
@@ -1630,6 +1658,7 @@ sub get_if_macs_from_all {
 }
 
 #################################################################
+
 =head2 get_macs_from_all
     
     Retrieve all MAC addresses that belong to Devices
@@ -1642,6 +1671,7 @@ sub get_if_macs_from_all {
    my $devmacs = Device->get_macs_from_all();
 
 =cut
+
 sub get_macs_from_all {
     my ($class) = @_;
     $class->isa_class_method('get_macs_from_all');
@@ -1656,6 +1686,7 @@ sub get_macs_from_all {
 }
 
 #################################################################
+
 =head2 get_within_downtime
     
     Get the devices within downtime.
@@ -1668,6 +1699,7 @@ sub get_macs_from_all {
     my @devices = Device->get_within_downtime();
 
 =cut
+
 sub get_within_downtime {
     my ($class) = @_;
     $class->isa_class_method('get_within_downtime');
@@ -1681,6 +1713,7 @@ sub get_within_downtime {
 }
 
 #################################################################
+
 =head2 get_ips_from_all
     
     Retrieve all IP addresses that belong to Devices
@@ -1693,6 +1726,7 @@ sub get_within_downtime {
    my $devips = Device->get_ips_from_all();
 
 =cut
+
 sub get_ips_from_all {
     my ($class) = @_;
     $class->isa_class_method('get_ips_from_all');
@@ -1721,6 +1755,7 @@ sub get_ips_from_all {
 }
 
 ###################################################################################################
+
 =head2 get_device_graph - Returns the graph of devices - Maps Device IDs
 
   Arguments:
@@ -1731,6 +1766,7 @@ sub get_ips_from_all {
     my $graph = Device::get_device_graph()
 
 =cut
+
 sub get_device_graph {
     my ($class) = @_;
     $class->isa_class_method('get_device_graph');
@@ -1757,6 +1793,7 @@ sub get_device_graph {
 }
 
 ###################################################################################################
+
 =head2 get_device_i_graph - Returns the graph of devices - Maps device and interface IDs
 
   Arguments:
@@ -1768,6 +1805,7 @@ sub get_device_graph {
     my $graph = Device::get_device_i_graph()
 
 =cut
+
 sub get_device_i_graph {
     my ($class) = @_;
     $class->isa_class_method('get_device_i_graph');
@@ -1795,6 +1833,7 @@ sub get_device_i_graph {
 
 
 ###################################################################################################
+
 =head2 shortest_path_parents - A variation of Dijkstra's single-source shortest paths algorithm
 
     Determines all the possible parents of each node that are in the shortest paths between 
@@ -1807,6 +1846,7 @@ sub get_device_i_graph {
   Example:
     $parents = Device::shortest_path_parents($s)
 =cut
+
 sub shortest_path_parents {
     my ($class, $s) = @_;
     $class->isa_class_method('shortest_path_parents');
@@ -1892,6 +1932,7 @@ sub shortest_path_parents {
 
 
 ############################################################################
+
 =head2 add_contact_lists - Add Contact Lists to Device
     
   Arguments:
@@ -1904,6 +1945,7 @@ sub shortest_path_parents {
     $self->add_contact_lists(\@cl);
     
 =cut
+
 sub add_contact_lists{
     my ($self, $argv) = @_;
     $self->isa_object_method('add_contact_lists');
@@ -1933,6 +1975,7 @@ sub add_contact_lists{
 }
 
 ############################################################################
+
 =head2 has_layer - Determine if Device performs a given OSI layer function
     
 
@@ -1945,6 +1988,7 @@ sub add_contact_lists{
     $device->has_layer(2);
 
 =cut
+
 sub has_layer {
     my ($self, $layer) = @_;
     $self->isa_object_method('has_layer');
@@ -1956,6 +2000,7 @@ sub has_layer {
 }
 
 ############################################################################
+
 =head2 list_layers - Return a list of active OSI layers
     
   Arguments:
@@ -1966,6 +2011,7 @@ sub has_layer {
     $device->list_layers();
 
 =cut
+
 sub list_layers {
     my ($self) = @_;
     $self->isa_object_method('list_layers');
@@ -1977,6 +2023,7 @@ sub list_layers {
 }
 
 #########################################################################
+
 =head2 arp_update - Update ARP cache in DB
     
   Arguments:
@@ -1993,6 +2040,7 @@ sub list_layers {
     $self->arp_update();
 
 =cut
+
 sub arp_update {
     my ($self, %argv) = @_;
     $self->isa_object_method('arp_update');
@@ -2081,6 +2129,7 @@ sub arp_update {
 }
 
 ############################################################################
+
 =head2 get_arp - Fetch ARP and IPv6 ND tables
 
   Arguments:
@@ -2091,6 +2140,7 @@ sub arp_update {
   Examples:
     my $cache = $self->get_arp(%args)
 =cut
+
 sub get_arp {
     my ($self, %argv) = @_;
     $self->isa_object_method('get_arp');
@@ -2144,6 +2194,7 @@ sub get_arp {
 
 
 #########################################################################
+
 =head2 fwt_update - Update Forwarding Table in DB
     
   Arguments:
@@ -2159,6 +2210,7 @@ sub get_arp {
     $self->fwt_update();
 
 =cut
+
 sub fwt_update {
     my ($self, %argv) = @_;
     $self->isa_object_method('fwt_update');
@@ -2235,6 +2287,7 @@ sub fwt_update {
 
 
 ############################################################################
+
 =head2 get_fwt - Fetch forwarding tables
 
   Arguments:
@@ -2244,6 +2297,7 @@ sub fwt_update {
   Examples:
     my $fwt = $self->get_fwt(%args)
 =cut
+
 sub get_fwt {
     my ($self, %argv) = @_;
     $self->isa_object_method('get_fwt');
@@ -2272,6 +2326,7 @@ sub get_fwt {
 
 
 ############################################################################
+
 =head2 delete - Delete Device object
     
     We override the insert method for extra functionality:
@@ -2287,6 +2342,7 @@ sub get_fwt {
     $device->delete();
 
 =cut
+
 sub delete {
     my ($self) = @_;
     $self->isa_object_method('delete');
@@ -2314,6 +2370,7 @@ sub delete {
 }
 
 ############################################################################
+
 =head2 short_name - Get/Set name of Device
    
     The device name is actually a pointer to the Resorce Record (RR) table
@@ -2326,6 +2383,7 @@ sub delete {
     $device->short_name('switch1');
 
 =cut
+
 sub short_name {
     my ($self, $name) = @_;
     $self->isa_object_method('short_name');
@@ -2341,6 +2399,7 @@ sub short_name {
 }
 
 ############################################################################
+
 =head2 product - Get Device Product
    
   Arguments:
@@ -2351,6 +2410,7 @@ sub short_name {
     my $product_object = $device->product;
 
 =cut
+
 sub product {
     my ($self) = @_;
     $self->isa_object_method('product');
@@ -2360,6 +2420,7 @@ sub product {
 }
 
 ############################################################################
+
 =head2 fqdn - Get Fully Qualified Domain Name
    
   Arguments:
@@ -2378,6 +2439,7 @@ sub fqdn {
 }
 
 ############################################################################
+
 =head2 get_label - Overrides label method
    
   Arguments:
@@ -2396,6 +2458,7 @@ sub get_label {
 }
 
 ############################################################################
+
 =head2 is_in_downtime - Is this device within downtime period?
 
   Arguments:
@@ -2406,6 +2469,7 @@ sub get_label {
     if ( $device->is_in_downtime ) ...
 
 =cut
+
 sub is_in_downtime {
     my ($self) = @_;
 
@@ -2422,6 +2486,7 @@ sub is_in_downtime {
 }
 
 ############################################################################
+
 =head2 update - Update Device in Database
     
     We override the update method for extra functionality:
@@ -2457,6 +2522,7 @@ sub update {
 }
 
 ############################################################################
+
 =head2 update_bgp_peering - Update/Insert BGP Peering information using SNMP info
 
     
@@ -2583,6 +2649,7 @@ sub update_bgp_peering {
 
 
 ############################################################################
+
 =head2 snmp_update - Update Devices using SNMP information
 
 
@@ -2704,6 +2771,7 @@ sub snmp_update {
 
 
 ############################################################################
+
 =head2 info_update - Update Device in Database using SNMP info
 
     Updates an existing Device based on information gathered via SNMP.  
@@ -2737,6 +2805,7 @@ sub snmp_update {
     my $device = $device->info_update();
 
 =cut
+
 sub info_update {
     my ($self, %argv) = @_;
     $self->isa_object_method('info_update');
@@ -2921,6 +2990,7 @@ sub info_update {
 }
 
 ############################################################################
+
 =head2 add_ip - Add an IP address
    
   Arguments:
@@ -2932,6 +3002,7 @@ sub info_update {
     $device->add_ip('10.0.0.1', $int);
 
 =cut
+
 sub add_ip {
     my ($self, $address, $int) = @_;
     $self->isa_object_method('add_ip');
@@ -2961,6 +3032,7 @@ sub add_ip {
     return $ipb;
 }
 ############################################################################
+
 =head2 get_ips - Get all IP addresses from a device
    
   Arguments:
@@ -2972,6 +3044,7 @@ sub add_ip {
     print $_->address, "\n" foreach $device->get_ips( sort_by => 'address' );
 
 =cut
+
 sub get_ips {
     my ($self, %argv) = @_;
     $self->isa_object_method('get_ips');
@@ -2990,6 +3063,7 @@ sub get_ips {
 }
 
 ############################################################################
+
 =head2 get_neighbors - Get all Interface neighbors
 
   Arguments:
@@ -2999,6 +3073,7 @@ sub get_ips {
   Examples:
     my $neighbors = $device->get_neighbors();
 =cut
+
 sub get_neighbors {
     my ($self, $devs) = @_;
     $self->isa_object_method('get_neighbors');
@@ -3012,6 +3087,7 @@ sub get_neighbors {
 }
 
 ############################################################################
+
 =head2 get_circuits - Get all Interface circuits
 
   Arguments:
@@ -3021,6 +3097,7 @@ sub get_neighbors {
   Examples:
     my @circuits = $device->get_circuits();
 =cut
+
 sub get_circuits {
     my ($self) = @_;
     $self->isa_object_method('get_circuits');
@@ -3035,6 +3112,7 @@ sub get_circuits {
 }
 
 ############################################################################
+
 =head2 remove_neighbors - Remove neighbors from all interfaces
    
   Arguments:
@@ -3044,6 +3122,7 @@ sub get_circuits {
   Examples:
     $device->remove_neighbors();
 =cut
+
 sub remove_neighbors {
     my ($self) = @_;
     foreach my $int ( $self->interfaces ){
@@ -3052,6 +3131,7 @@ sub remove_neighbors {
 }
 
 ############################################################################
+
 =head2 get_subnets  - Get all the subnets in which this device has any addresses
    
   Arguments:
@@ -3063,6 +3143,7 @@ sub remove_neighbors {
     print $s{$_}->address, "\n" foreach keys %s;
 
 =cut
+
 sub get_subnets {
     my $self = shift;
     $self->isa_object_method('get_subnets');
@@ -3080,6 +3161,7 @@ sub get_subnets {
 }
 
 ############################################################################
+
 =head2 add_interfaces - Manually add a number of interfaces to an existing device
 
     The new interfaces will be added with numbers starting after the highest existing 
@@ -3122,6 +3204,7 @@ sub add_interfaces {
 }
 
 ############################################################################
+
 =head2 ints_by_number - Retrieve interfaces from a Device and sort by number.  
 
     The number field can actually contain alpha characters. If so, 
@@ -3173,6 +3256,7 @@ sub ints_by_number {
 }
 
 ############################################################################
+
 =head2 ints_by_name - Retrieve interfaces from a Device and sort by name.  
 
     This method deals with the problem of sorting Interface names that contain numbers.
@@ -3212,6 +3296,7 @@ sub ints_by_name {
 }
 
 ############################################################################
+
 =head2 ints_by_speed - Retrieve interfaces from a Device and sort by speed.  
 
   Arguments:  
@@ -3231,7 +3316,8 @@ sub ints_by_speed {
 }
 
 ############################################################################
-=head2 interfaces_by_vlan - Retrieve interfaces from a Device and sort by vlan ID
+
+=head2 ints_by_vlan - Retrieve interfaces from a Device and sort by vlan ID
 
 Arguments:  None
 Returns:    Sorted arrayref of interface objects
@@ -3253,6 +3339,7 @@ sub ints_by_vlan {
 }
 
 ############################################################################
+
 =head2 ints_by_jack - Retrieve interfaces from a Device and sort by Jack id
 
 Arguments:  None
@@ -3274,6 +3361,7 @@ sub ints_by_jack {
 }
 
 ############################################################################
+
 =head2 ints_by_descr - Retrieve interfaces from a Device and sort by description
 
 Arguments:  None
@@ -3291,6 +3379,7 @@ sub ints_by_descr {
 }
 
 ############################################################################
+
 =head2 ints_by_monitored - Retrieve interfaces from a Device and sort by 'monitored' field
 
 Arguments:  None
@@ -3308,6 +3397,7 @@ sub ints_by_monitored {
 }
 
 ############################################################################
+
 =head2 ints_by_status - Retrieve interfaces from a Device and sort by 'status' field
 
 Arguments:  None
@@ -3325,6 +3415,7 @@ sub ints_by_status {
 }
 
 ############################################################################
+
 =head2 ints_by_snmp - Retrieve interfaces from a Device and sort by 'snmp_managed' field
 
 Arguments:  None
@@ -3342,6 +3433,7 @@ sub ints_by_snmp {
 }
 
 ############################################################################
+
 =head2 interfaces_by - Retrieve sorted list of interfaces from a Device
 
     This will call different methods depending on the sort field specified
@@ -3386,6 +3478,7 @@ sub interfaces_by {
 }
 
 ############################################################################
+
 =head2 bgppeers_by_ip - Sort by remote IP
 
   Arguments:  
@@ -3393,6 +3486,7 @@ sub interfaces_by {
   Returns:    
     Sorted arrayref of BGPPeering objects
 =cut
+
 sub bgppeers_by_ip {
     my ( $self, $peers ) = @_;
     $self->isa_object_method('bgppeers_by_ip');
@@ -3407,6 +3501,7 @@ sub bgppeers_by_ip {
 }
 
 ############################################################################
+
 =head2 bgppeers_by_id - Sort by BGP ID
 
   Arguments:  
@@ -3429,6 +3524,7 @@ sub bgppeers_by_id {
 }
 
 ############################################################################
+
 =head2 bgppeers_by_entity - Sort by Entity name, AS number or AS Name
 
   Arguments:  
@@ -3438,6 +3534,7 @@ sub bgppeers_by_id {
     Sorted array of BGPPeering objects
 
 =cut
+
 sub bgppeers_by_entity {
     my ( $self, $peers, $sort ) = @_;
     $self->isa_object_method('bgppeers_by_id');
@@ -3457,6 +3554,7 @@ sub bgppeers_by_entity {
 
 
 ############################################################################
+
 =head2 get_bgp_peers - Retrieve BGP peers that match certain criteria and sort them
 
     This overrides the method auto-generated by Class::DBI
@@ -3478,6 +3576,7 @@ sub bgppeers_by_entity {
     print $_->entity->name, "\n" foreach @{ $device->get_bgp_peers() };
 
 =cut
+
 sub get_bgp_peers {
     my ( $self, %argv ) = @_;
     $self->isa_object_method('get_bgp_peers');
@@ -3522,6 +3621,7 @@ sub get_bgp_peers {
 }
 
 ###################################################################################################
+
 =head2 set_overwrite_if_descr - Set the overwrite_description flag in all interfaces of this device
 
     This flag controls whether the ifAlias value returned from the Device should
@@ -3535,8 +3635,9 @@ sub get_bgp_peers {
     True if successful
   Example:
     $device->set_overwrite_if_descr(1);
-$logger->info
+
 =cut
+
 sub set_overwrite_if_descr {
     my ($self, $value) = @_;
     $self->isa_object_method("set_overwrite_if_descr");
@@ -3552,6 +3653,7 @@ sub set_overwrite_if_descr {
 }
 
 ###################################################################################################
+
 =head2 set_interfaces_auto_dns - Sets auto_dns flag on all IP interfaces of this device
 
   Arguments:  
@@ -3560,8 +3662,9 @@ sub set_overwrite_if_descr {
     True if successful
   Example:
     $device->set_interfaces_auto_dns(1);
-$logger->info
+
 =cut
+
 sub set_interfaces_auto_dns {
     my ($self, $value) = @_;
     $self->isa_object_method("set_interfaces_auto_dns");
@@ -4169,7 +4272,7 @@ sub _fork_end {
 }
 
 ####################################################################################
-# snmp_update_parallel - Discover and/or update all devices in given list concurrently
+# _snmp_update_parallel - Discover and/or update all devices in given list concurrently
 #    
 #   Arguments:
 #     Hash with the following keys:
@@ -4190,17 +4293,17 @@ sub _fork_end {
 #   Returns: 
 #     Device count
 #
-sub snmp_update_parallel {
+sub _snmp_update_parallel {
     my ($class, %argv) = @_;
-    $class->isa_class_method('snmp_update_parallel');
+    $class->isa_class_method('_snmp_update_parallel');
 
     my ($hosts, $devs);
     if ( defined $argv{hosts} ){
-	$class->throw_fatal("Model::Device::snmp_update_parallel: Invalid hosts hash") 
+	$class->throw_fatal("Model::Device::_snmp_update_parallel: Invalid hosts hash") 
 	    if ( ref($argv{hosts}) ne "HASH" );
 	$hosts = $argv{hosts};
     }elsif ( defined $argv{devs} ){
-	$class->throw_fatal("Model::Device::snmp_update_parallel: Invalid devs array") 
+	$class->throw_fatal("Model::Device::_snmp_update_parallel: Invalid devs array") 
 	    if ( ref($argv{devs}) ne "ARRAY" );
 	$devs = $argv{devs};
     }else{
@@ -5993,7 +6096,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

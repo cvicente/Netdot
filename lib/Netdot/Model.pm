@@ -16,6 +16,7 @@ Netdot::Model - Netdot implementation of the Model layer (of the MVC architectur
 
 =head1 SYNOPSIS
     
+    use Netdot::Model;
     
 =cut
 
@@ -417,8 +418,11 @@ BEGIN {
 }
 
 =head1 CLASS METHODS
+
 =cut
+
 ############################################################################
+
 =head2 insert - Insert (create) a new object
 
   Arguments:
@@ -429,6 +433,7 @@ BEGIN {
     my $newobj = SomeClass->insert({field1=>val1, field2=>val2});
 
 =cut
+
 sub insert {
     my ($class, $argv) = @_;
     $class->isa_class_method('insert');
@@ -465,6 +470,7 @@ sub insert {
 }
 
 ############################################################################
+
 =head2 search_like - Search with wildcards
 
     We override the base method to add wildcard characters at the beginning
@@ -481,6 +487,7 @@ sub insert {
     my @objs = SomeClass->search_like(field1=>val1, field2=>val2);
 
 =cut
+
 sub search_like {
     my ($class, @args) = @_;
     $class->isa_class_method('search_like');
@@ -552,6 +559,7 @@ sub search_like {
     $lastseen = $obj->timestamp();
 
 =cut
+
 sub timestamp {
     my $class  = shift;
     my ($seconds, $minutes, $hours, $day_of_month, 
@@ -562,6 +570,7 @@ sub timestamp {
 }
 
 ############################################################################
+
 =head2 date - Get date in DB 'date' format
 
   Arguments:
@@ -572,6 +581,7 @@ sub timestamp {
     $lastupdated = $obj->date();
 
 =cut
+
 sub date {
     my $class  = shift;
     my ($seconds, $minutes, $hours, $day_of_month, $month, $year,
@@ -583,6 +593,7 @@ sub date {
 
 
 ############################################################################
+
 =head2 meta_data - Return Meta::Table object associated with this object or class
 
   Arguments:
@@ -593,6 +604,7 @@ sub date {
     my @device_columns = $dev->meta_data->get_column_names();
 
 =cut
+
 sub meta_data {
     my $self = shift;
     my $table;
@@ -601,6 +613,7 @@ sub meta_data {
 }
 
 ############################################################################
+
 =head2 short_class - Return the short version of a class name.  It can also be called as a Class method.
     
   Arguments:
@@ -611,6 +624,7 @@ sub meta_data {
     # This returns 'Device' instead of Netdot::Model::Device
     $class = $dev->short_class();
 =cut
+
 sub short_class {
     my $self = shift;
 
@@ -622,6 +636,7 @@ sub short_class {
 }
 
 ############################################################################
+
 =head2 raw_sql - Issue SQL queries directly
 
     Returns results from an SQL query
@@ -647,6 +662,7 @@ sub short_class {
     <& /generic/data_table.mhtml, field_headers=>@headers, data=>@rows &>
 
 =cut
+
 sub raw_sql {
     my ($self, $sql) = @_;
     my $dbh = $self->db_Main;
@@ -685,6 +701,7 @@ sub raw_sql {
 }
 
 ############################################################################
+
 =head2 do_transaction - Perform an operation "atomically".
     
     A reference to a subroutine is passed, together with its arguments.
@@ -758,12 +775,14 @@ sub do_transaction {
 } 
 
 ############################################################################
+
 =head2 db_auto_commit - Set the AutoCommit flag in DBI for the current db handle
 
  Arguments: Flag value to be set (1 or 0)
  Returns:   Current value of the flag (1 or 0)
 
 =cut
+
 sub db_auto_commit {
     my $self = shift;
     $self->isa_class_method('db_auto_commit');
@@ -774,9 +793,11 @@ sub db_auto_commit {
 }
 
 =head1 INSTANCE METHODS
+
 =cut
 
 ############################################################################
+
 =head2 update - Update object in DB
 
   We combine Class::DBI\'s set() and update() into one method.  
@@ -790,6 +811,7 @@ sub db_auto_commit {
     $obj->update({field1=>value1, field2=>value2});
 
 =cut
+
 sub update {
     my ($self, $argv) = @_;
     $self->isa_object_method('update');
@@ -830,6 +852,7 @@ sub update {
 }
 
 ############################################################################
+
 =head2 delete - Delete an existing object
 
   Arguments:
@@ -840,6 +863,7 @@ sub update {
     $obj->delete();
 
 =cut
+
 sub delete {
     my $self = shift;
     my $class = ref($self);
@@ -875,6 +899,7 @@ sub delete {
 }
 
 ############################################################################
+
 =head2 get_state - Get current state of an object
 
     Get a hash with column/value pairs from this object.
@@ -890,6 +915,7 @@ sub delete {
     my %state = $obj->get_state;
 
 =cut
+
 sub get_state {
     my ($self) = @_;
     $self->isa_object_method('get_state');
@@ -910,6 +936,7 @@ sub get_state {
 }
 
 ############################################################################
+
 =head2 get_digest - Calculate MD5 digest of object's current data
 
   Arguments:
@@ -920,6 +947,7 @@ sub get_state {
     my %digest = $obj->get_state_digest;
 
 =cut
+
 sub get_digest {
     my ($self) = @_;
     
@@ -934,6 +962,7 @@ sub get_digest {
 }
 
 ##################################################################
+
 =head2 get_label - Get label string
 
     Returns an object\'s label string, composed of the values 
@@ -949,6 +978,7 @@ Examples:
     print $obj->get_label();
 
 =cut
+
 sub get_label {
     my ($self, $delim) = @_;
     $self->isa_object_method('get_label');
@@ -978,6 +1008,7 @@ sub get_label {
 }
 
 ############################################################################
+
 =head2 get_history - Get a list of history objects for a given object
 
   Arguments:
@@ -989,6 +1020,7 @@ sub get_label {
     my @h = $obj->get_history();
 
 =cut
+
 sub get_history {
     my ($self, $o) = @_;
     $self->isa_object_method('get_history');
@@ -1008,6 +1040,7 @@ sub get_history {
 }
 
 ############################################################################
+
 =head2 search_all_tables - Search for a string in all text fields from all tables
     
     If query has the format <table:keyword>, then only fields of that table
@@ -1063,6 +1096,7 @@ sub search_all_tables {
 
 
 ############################################################################
+
 =head2 sqldate2time - Convert SQL date or timestamp into epoch value
 
   Arguments:  
@@ -1071,6 +1105,7 @@ sub search_all_tables {
     Seconds since epoch (compatible with Perls time function)
 
 =cut
+
 sub sqldate2time {
     my ($self, $date) = @_;
     if ( $date =~ /^(\d{4})-(\d{2})-(\d{2})(?: (\d{2}):(\d{2}):(\d{2}))?$/ ){
@@ -1087,6 +1122,7 @@ sub sqldate2time {
 }
 
 ############################################################################
+
 =head2 sqldate_days_ago - N days ago in SQL date format
 
   Arguments:  
@@ -1095,6 +1131,7 @@ sub sqldate2time {
     SQL date num_days ago
 
 =cut
+
 sub sqldate_days_ago {
     my ($self, $num_days) = @_;
     my $epochdate = time-($num_days*24*60*60);
@@ -1104,6 +1141,7 @@ sub sqldate_days_ago {
 }
 
 ############################################################################
+
 =head2 sqldate_today - Today's date in SQL date format
 
   Arguments:  
@@ -1112,6 +1150,7 @@ sub sqldate_days_ago {
     Today's date in SQL format
 
 =cut
+
 sub sqldate_today {
     my ($self) = @_;
     my $epochdate = time;
@@ -1121,6 +1160,7 @@ sub sqldate_today {
 }
 
 ############################################################################
+
 =head2 time2sqldate
 
   Arguments:  
@@ -1129,6 +1169,7 @@ sub sqldate_today {
     Date string in SQL format (YYYY-MM-DD)
 
 =cut
+
 sub time2sqldate {
     my ($self, $time) = @_;
     $time ||= time;
@@ -1264,7 +1305,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

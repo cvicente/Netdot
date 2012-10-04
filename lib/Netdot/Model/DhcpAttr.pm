@@ -10,13 +10,11 @@ my $logger = Netdot->log->get_logger('Netdot::Model::DHCP');
 
 Netdot::Model::DhcpAttr - DHCP Attribute Class
 
-=head1 SYNOPSIS
-
-
 =head1 CLASS METHODS
 =cut
 
 ############################################################################
+
 =head2 search
 
     We override the base method to:
@@ -48,6 +46,7 @@ sub search {
 }
 
 ############################################################################
+
 =head2 insert - Insert new Scope
 
     We override the base method to:
@@ -76,6 +75,7 @@ sub insert {
 =cut
 
 ############################################################################
+
 =head2 update
 
     We override the base method to:
@@ -104,19 +104,19 @@ sub update {
 ############################################################################
 
 ############################################################################
-=head2 _objectify_args
-
-    Convert following arguments into objects:
-    - name
-   
-  Args: 
-    hashref
-  Returns: 
-    True
-  Examples:
-    $class->_objectify_args($argv);
-
-=cut
+# objectify_args
+#
+#     Convert following arguments into objects:
+#     - name
+#   
+#   Args: 
+#     hashref
+#   Returns: 
+#     True
+#   Examples:
+#     $class->_objectify_args($argv);
+#
+# 
 sub _objectify_args {
     my ($self, $argv) = @_;
 
@@ -143,7 +143,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2009 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

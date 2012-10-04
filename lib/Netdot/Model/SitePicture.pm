@@ -4,18 +4,15 @@ use base 'Netdot::Model::Picture';
 use warnings;
 use strict;
 
-# Make sure to return 1
-1;
-
 =head1 NAME
 
-Netdot::Module::SitePicture
-
-=head1 SYNOPSIS
-
-See Netdot::Model::Picture
+    Netdot::Model::Picture
 
 =head1 CLASS METHODS
+=cut
+
+=head2 insert
+
 =cut
 
 sub insert {
@@ -32,7 +29,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

@@ -27,6 +27,7 @@ Netdot::Model::AccessRight
 =cut
 
 ########################################################################
+
 =head2 get_classes - Get a list of classes with access rights
 
     This is useful in places like Model::delete() where we can avoid
@@ -41,6 +42,7 @@ Netdot::Model::AccessRight
     my %aclasses = AccessRight->get_classes();
 
 =cut
+
 sub get_classes{
     my ($self) = @_;
     return %CLASSES;
@@ -51,6 +53,7 @@ sub get_classes{
 =cut
 
 ########################################################################
+
 =head2 get_label - Get object label
 
   Arguments: 
@@ -61,6 +64,7 @@ sub get_classes{
     print $accessright->get_label();
 
 =cut
+
 sub get_label{
     my ($self) = @_;
     $self->isa_object_method('get_label');

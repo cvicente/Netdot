@@ -9,7 +9,11 @@ my $logger = Netdot->log->get_logger('Netdot::Exporter');
 
 =head1 NAME
 
-Netdot::Exporter::Nagios - Read relevant info from Netdot and build Nagios2 configuration
+Netdot::Exporter::Nagios
+
+=head1 DESCRIPTION
+
+Read relevant info from Netdot and build Nagios2 configuration
 
 =head1 SYNOPSIS
 
@@ -20,6 +24,7 @@ Netdot::Exporter::Nagios - Read relevant info from Netdot and build Nagios2 conf
 =cut
 
 ############################################################################
+
 =head2 new - Class constructor
 
   Arguments:
@@ -34,8 +39,9 @@ sub new{
     my ($class, %argv) = @_;
     my $self = {};
 
-    foreach my $key ( qw /NMS_DEVICE NAGIOS_CHECKS NAGIOS_TIMEPERIODS NAGIOS_DIR NAGIOS_FILE NAGIOS_NOTIF_FIRST 
-                          NAGIOS_NOTIF_LAST NAGIOS_NOTIF_INTERVAL NAGIOS_TRAPS NAGIOS_STRIP_DOMAIN/ ){
+    foreach my $key ( qw /NMS_DEVICE NAGIOS_CHECKS NAGIOS_TIMEPERIODS NAGIOS_DIR 
+                          NAGIOS_FILE NAGIOS_NOTIF_FIRST NAGIOS_NOTIF_LAST 
+                          NAGIOS_NOTIF_INTERVAL NAGIOS_TRAPS NAGIOS_STRIP_DOMAIN/ ){
 	$self->{$key} = Netdot->config->get($key);
     }
      
@@ -46,7 +52,8 @@ sub new{
 	$self->throw_user("Netdot::Exporter::Nagios: NMS_DEVICE not defined");
 
     $self->{ROOT} = Device->search(name=>$self->{NMS_DEVICE})->first ||
-	$class->throw_user("Netdot::Exporter::Nagios: Monitoring device '" . $self->{NMS_DEVICE}. "' not found in DB");
+	$class->throw_user("Netdot::Exporter::Nagios: Monitoring device '" . $self->{NMS_DEVICE}. 
+			   "' not found in DB");
     
     $self->{NAGIOS_FILE} || 
 	$class->throw_user("Netdot::Exporter::Nagios: NAGIOS_FILE not defined");
@@ -61,6 +68,7 @@ sub new{
 }
 
 ############################################################################
+
 =head2 generate_configs - Generate configuration files for Nagios
 
   Arguments:
@@ -70,6 +78,7 @@ sub new{
   Examples:
     $nagios->generate_configs();
 =cut
+
 sub generate_configs {
     my ($self) = @_;
     
@@ -353,6 +362,13 @@ sub generate_configs {
 
 
 #####################################################################################
+
+=head2 print_host
+
+    Generate host section
+
+=cut
+
 sub print_host {
     my ($self, %argv) = @_;
 
@@ -462,6 +478,13 @@ sub print_host {
 }
 
 #####################################################################################
+
+=head2 print_service
+
+    Generate service section
+
+=cut
+
 sub print_service {
     my ($self, %argv) = @_;
     my ($hostname, $srvname) = @argv{'hostname', 'srvname'};
@@ -574,6 +597,13 @@ sub print_service {
 }
 
 #####################################################################################
+
+=head2 print_contacts
+
+    Generate contacts section
+
+=cut
+
 sub print_contacts {
     my($self) = @_;
     my $out = $self->{out};
@@ -657,6 +687,11 @@ sub print_contacts {
 
 
 #####################################################################################
+
+=head2 print_hostgroups
+
+=cut
+
 sub print_hostgroups{
     my ($self, $groups) = @_;
 
@@ -672,6 +707,11 @@ sub print_hostgroups{
 }
 
 #####################################################################################
+
+=head2 print_servicegroups
+
+=cut
+
 sub print_servicegroups{
     my ($self, $groups) = @_;
 
@@ -689,6 +729,11 @@ sub print_servicegroups{
 }
 
 #####################################################################################
+
+=head2 print_servicedep
+
+=cut
+
 sub print_servicedep{
     my ($self, $hostname, $service, $parent_hostname, $parent_service) = @_;
 
@@ -705,6 +750,7 @@ sub print_servicedep{
 }
 
 ############################################################################
+
 =head2 get_interface_graph
 
   Arguments:
@@ -714,6 +760,7 @@ sub print_servicedep{
   Examples:
 
 =cut
+
 sub get_interface_graph {
     my ($self) = @_;
 
@@ -734,6 +781,7 @@ sub get_interface_graph {
 }
 
 ########################################################################
+
 =head2 get_int2device - Interface id to Device id mapping
 
   Arguments:
@@ -743,6 +791,7 @@ sub get_interface_graph {
   Examples:
     
 =cut
+
 sub get_int2device {
     my ($self) = @_;
 
@@ -757,6 +806,7 @@ sub get_int2device {
 }
 
 ########################################################################
+
 =head2 get_intid2ifindex - Interface id to ifIndex mapping
 
   Arguments:
@@ -766,6 +816,7 @@ sub get_int2device {
   Examples:
     
 =cut
+
 sub get_intid2ifindex {
     my ($self) = @_;
 
@@ -780,6 +831,7 @@ sub get_intid2ifindex {
 }
 
 ########################################################################
+
 =head2 strip_domain - Strip domain name from hostname if necessary
 
   Arguments:
@@ -789,6 +841,7 @@ sub get_intid2ifindex {
   Examples:
     
 =cut
+
 sub strip_domain {
     my ($self, $hostname) = @_;
 
@@ -806,7 +859,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2009 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

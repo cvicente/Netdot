@@ -9,13 +9,11 @@ my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
 
 =head1 Netdot::Model::RRPTR - DNS PTR record Class
 
-=head1 SYNOPSIS
-
-
 =head1 CLASS METHODS
 =cut
 
 ##################################################################
+
 =head2 insert
 
     Override the base method to:
@@ -32,6 +30,7 @@ my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
     $rrptr->insert(ipblock=>$ip);
 
 =cut
+
 sub insert {
     my($class, $argv) = @_;
     $class->isa_class_method('insert');
@@ -93,6 +92,7 @@ sub insert {
 }
 
 ##################################################################
+
 =head2 get_name - Figure out record name given IP
 
   Arguments:
@@ -103,6 +103,7 @@ sub insert {
   Examples:
     my $name = RRPTR->get_name(ipblock=>$ipb);
 =cut
+
 sub get_name {
     my ($class, %argv) = @_;
     
@@ -128,6 +129,7 @@ sub get_name {
 =cut
 
 ############################################################################
+
 =head2 update
 
     We override the base method to:
@@ -141,6 +143,7 @@ sub get_name {
     $record->update(\%args)
 
 =cut
+
 sub update {
     my($self, $argv) = @_;
     $self->isa_object_method('update');
@@ -167,6 +170,7 @@ sub update {
 }
 
 ############################################################################
+
 =head2 delete - Delete object
     
     We override the delete method for extra functionality:
@@ -181,6 +185,7 @@ sub update {
     $rrptr->delete;
 
 =cut
+
 sub delete {
     my ($self, $argv) = @_;
     $self->isa_object_method('delete');
@@ -198,6 +203,7 @@ sub delete {
 
 
 ##################################################################
+
 =head2 as_text
 
     Returns the text representation of this record
@@ -210,6 +216,7 @@ sub delete {
     print $rr->as_text();
 
 =cut
+
 sub as_text {
     my $self = shift;
     $self->isa_object_method('as_text');
@@ -292,7 +299,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2009 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

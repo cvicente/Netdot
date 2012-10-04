@@ -10,19 +10,19 @@ my $logger = Netdot->log->get_logger('Netdot::Model::Device');
 # Make sure to return 1
 1;
 
-=head1 NAME
+=head1 NAME 
 
-Netdot::Model::ArpCacheEntry - 
+Netdot::Model::ArpCacheEntry
 
 =head1 SYNOPSIS
 
-Arp Cache Entry class
-
+ARP Cache Entry class
 
 =head1 CLASS METHODS
 =cut
 
 ##################################################################
+
 =head2 fast_insert - Faster inserts for specific cases
 
     This method will traverse a list of hashes containing ARP cache
@@ -42,6 +42,7 @@ Arp Cache Entry class
     ArpCacheEntry->fast_insert(list=>\@list);
 
 =cut
+
 sub fast_insert{
     my ($class, %argv) = @_;
     $class->isa_class_method('fast_insert');
@@ -119,6 +120,7 @@ __PACKAGE__->set_sql(by_ip => qq{
     ArpCacheEntry->->search_interface($int->id, $tstamp)
 
 =cut
+
 __PACKAGE__->set_sql(interface => qq{
 SELECT arpe.id
 FROM   interface i, arpcache arp, arpcacheentry arpe

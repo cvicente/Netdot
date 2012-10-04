@@ -17,11 +17,11 @@ Netdot::Model::BackboneCable
 
 =head1 SYNOPSIS
 
-
 =head1 CLASS METHODS
 =cut
 
 ##################################################################
+
 =head2 get_graph - Backbone cable to site graph
 
   Arguments:
@@ -31,6 +31,7 @@ Netdot::Model::BackboneCable
   Examples:
     BackboneCable->get_graph();
 =cut
+
 sub get_graph {
     my ($class) = @_;
 
@@ -57,6 +58,7 @@ sub get_graph {
 }
 
 ##################################################################
+
 =head2 search_by_site - Search backbone cables by start and/or end sites
 
   Arguments:
@@ -69,6 +71,7 @@ sub get_graph {
   Examples:
     BackboneCable->search_by_site(site1=>$a,site2=>$b);
 =cut
+
 sub search_by_site {
     my ($class, %argv) = @_;
 
@@ -113,6 +116,7 @@ sub search_by_site {
 }
 
 ##################################################################
+
 =head2 get_site_graph - Graph of sites connected by backbone cables
 
   Arguments:
@@ -122,6 +126,7 @@ sub search_by_site {
   Examples:
     BackboneCable->get_site_graph();
 =cut
+
 sub get_site_graph {
     my ($class) = @_;
 
@@ -154,6 +159,7 @@ sub get_site_graph {
 
 
 ##################################################################
+
 =head2 insert
 
   Arguments:
@@ -165,6 +171,7 @@ sub get_site_graph {
      my $bc = BackboneCable->insert(\%args);
 
 =cut
+
 sub insert {
     my ($class, $argv) = @_;
 
@@ -184,6 +191,7 @@ sub insert {
 
 
 ##################################################################
+
 =head2 insert_strands
     
     
@@ -198,6 +206,7 @@ sub insert {
      $n = $bbcable->insert_strands($number_strands);
 
 =cut
+
 sub insert_strands {
     my ($self, $number, $type, $status) = @_;
 
@@ -226,6 +235,7 @@ sub insert_strands {
 
 
 ##################################################################
+
 =head2 update_range - Update a range of strands
 
   Arguments:
@@ -238,6 +248,7 @@ sub insert_strands {
      $bbcable->update_range(%argv);
 
 =cut
+
 sub update_range{
     my ($self, %argv) = @_;
     $self->isa_object_method('update_range');
@@ -263,7 +274,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

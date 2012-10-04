@@ -22,13 +22,11 @@ Netdot::Model::Device::CLI::CiscoIOS - Cisco IOS Class
  this class try to obtain forwarding tables and ARP/ND caches via CLI
  instead of via SNMP.
 
-=head1 CLASS METHODS
-=cut
-
 =head1 INSTANCE METHODS
 =cut
 
 ############################################################################
+
 =head2 get_arp - Fetch ARP tables
 
   Arguments:
@@ -38,6 +36,7 @@ Netdot::Model::Device::CLI::CiscoIOS - Cisco IOS Class
   Examples:
     my $cache = $self->get_arp(%args)
 =cut
+
 sub get_arp {
     my ($self, %argv) = @_;
     $self->isa_object_method('get_arp');
@@ -92,6 +91,7 @@ sub get_arp {
 }
 
 ############################################################################
+
 =head2 get_fwt - Fetch forwarding tables
 
   Arguments:
@@ -101,6 +101,7 @@ sub get_arp {
   Examples:
     my $fwt = $self->get_fwt(%args)
 =cut
+
 sub get_fwt {
     my ($self, %argv) = @_;
     $self->isa_object_method('get_fwt');

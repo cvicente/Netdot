@@ -20,6 +20,7 @@ Netdot::Exporter::DHCPD - Read relevant info from Netdot and build ISC DHCPD con
 =cut
 
 ############################################################################
+
 =head2 new - Class constructor
 
   Arguments:
@@ -39,6 +40,7 @@ sub new{
 }
 
 ############################################################################
+
 =head2 generate_configs - Generate config file for DHCPD
 
   Arguments:
@@ -49,6 +51,7 @@ sub new{
   Examples:
     $dhcpd->generate_configs();
 =cut
+
 sub generate_configs {
     my ($self, %argv) = @_;
     
@@ -75,7 +78,8 @@ sub generate_configs {
 		}
 		$s->print_to_file();
 	    }else{
-		$logger->debug("Exporter::DHCPD::generate_configs: ".$s->name.": No pending changes.  Use -f to force.");
+		$logger->debug("Exporter::DHCPD::generate_configs: ".$s->name.
+			       ": No pending changes.  Use -f to force.");
 	    }
 				      });
     }
@@ -87,7 +91,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2009 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

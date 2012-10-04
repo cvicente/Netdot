@@ -34,7 +34,7 @@ BEGIN{
 	die $e;
     }
     
-    sub load_ip_name_plugin{
+    sub _load_ip_name_plugin{
 	$logger->debug("Loading IP_NAME_PLUGIN: $ip_name_plugin_class");
 	return $ip_name_plugin_class->new();
     }
@@ -45,7 +45,7 @@ BEGIN{
 	die $e;
     }
     
-    sub load_range_dns_plugin{
+    sub _load_range_dns_plugin{
 	$logger->debug("Loading IP_RANGE_DNS_PLUGIN: $range_dns_plugin_class");
 	return $range_dns_plugin_class->new();
     }
@@ -54,13 +54,15 @@ BEGIN{
 my $IPV4 = Netdot->get_ipv4_regex();
 my $IPV6 = Netdot->get_ipv6_regex();
 
-my $ip_name_plugin   = __PACKAGE__->load_ip_name_plugin();
-my $range_dns_plugin = __PACKAGE__->load_range_dns_plugin();
+my $ip_name_plugin   = __PACKAGE__->_load_ip_name_plugin();
+my $range_dns_plugin = __PACKAGE__->_load_range_dns_plugin();
 
 =head1 CLASS METHODS
+
 =cut
 
 ##################################################################
+
 =head2 int2ip - Convert a decimal IP into a string address
 
   Arguments:
@@ -72,6 +74,7 @@ my $range_dns_plugin = __PACKAGE__->load_range_dns_plugin();
     my $address = Ipblock->int2ip($number, $version);
 
 =cut
+
 sub int2ip {
     my ($class, $address, $version) = @_;
     
@@ -100,6 +103,7 @@ sub int2ip {
 }
 
 ##################################################################
+
 =head2 search - Search Ipblock objects
 
     We override the base search method for these reasons:
@@ -174,6 +178,7 @@ sub search {
 }
 
 ##################################################################
+
 =head2 search_like - Search IP Blocks that match the specified regular expression
 
     We override the base method to adapt to the specific nature of Ipblock objects.
@@ -303,6 +308,7 @@ sub search_like {
 }
 
 ##################################################################
+
 =head2 keyword_search - Search by keyword
     
     The list of search fields includes Entity, Site, Description and Comments
@@ -316,6 +322,7 @@ sub search_like {
     Ipblock->keyword_search('Administration');
 
 =cut
+
 sub keyword_search {
     my ($class, $string) = @_;
     $class->isa_class_method('keyword_search');
@@ -350,6 +357,7 @@ sub keyword_search {
 
 
 ##################################################################
+
 =head2 get_unused_subnets - Retrieve subnets with no addresses
 
   Arguments:
@@ -409,6 +417,7 @@ sub get_unused_subnets {
 
 
 ##################################################################
+
 =head2 get_subnet_addr - Get subnet address for a given address
 
 
@@ -439,6 +448,7 @@ sub get_subnet_addr {
 }
 
 ##################################################################
+
 =head2 is_loopback - Check if address is a loopback address
 
   Arguments:
@@ -452,6 +462,7 @@ sub get_subnet_addr {
     my $flag = Ipblock->is_loopback('127.0.0.1');
 
 =cut
+
 sub is_loopback{
     my ( $class, $address, $prefix ) = @_;
     $class->isa_class_method('is_loopback');
@@ -475,6 +486,7 @@ sub is_loopback{
 }
 
 ##################################################################
+
 =head2 is_link_local - Check if address is v6 Link Local
 
     Can be called as either class or instance method
@@ -489,6 +501,7 @@ sub is_loopback{
     my $flag = $ipblock->is_link_local();
 
 =cut
+
 sub is_link_local{
     my ( $self, $address, $prefix ) = @_;
     my $class = ref($self);
@@ -511,6 +524,7 @@ sub is_link_local{
 }
 
 ##################################################################
+
 =head2 within - Check if address is within block
 
   Arguments:
@@ -523,6 +537,7 @@ sub is_link_local{
     Ipblock->within('127.0.0.1', '127.0.0.0/8');
 
 =cut
+
 sub within{
     my ($class, $address, $block) = @_;
     $class->isa_class_method('within');
@@ -545,6 +560,7 @@ sub within{
 }
 
 ##################################################################
+
 =head2 insert - Insert a new block
 
   Modified Arguments:
@@ -558,6 +574,7 @@ sub within{
     
 
 =cut
+
 sub insert {
     my ($class, $argv) = @_;
     $class->isa_class_method('insert');
@@ -680,6 +697,7 @@ sub insert {
 }
 
 #########################################################################
+
 =head2 reserve_first_n - Reserve first (or last) N addresses in subnet
 
  Based on config option SUBNET_AUTO_RESERVE
@@ -692,6 +710,7 @@ sub insert {
     $block->reserve_first_n();
 
 =cut
+
 sub reserve_first_n {
     my ($self) = @_;
     $self->isa_object_method('reserve_first_n');
@@ -716,6 +735,7 @@ sub reserve_first_n {
 }
 
 ##################################################################
+
 =head2 get_covering_block - Get the closest available block that contains a given block
 
     When a block is searched and not found, it is useful in some cases to show 
@@ -729,6 +749,7 @@ sub reserve_first_n {
     my $ip = Ipblock->get_covering_block(address=>$address, prefix=>$prefix);
 
 =cut
+
 sub get_covering_block {
     my ($class, %args) = @_;
     $class->isa_class_method('get_covering_block');
@@ -757,6 +778,7 @@ sub get_covering_block {
 
 
 ##################################################################
+
 =head2 get_roots - Get a list of root IP blocks
 
     Root IP blocks are blocks at the top of the hierarchy.  
@@ -770,6 +792,7 @@ sub get_covering_block {
     @list = Ipblock->get_roots($rootversion);
 
 =cut
+
 sub get_roots {
     my ($class, $version) = @_;
     $class->isa_class_method('get_roots');
@@ -797,6 +820,7 @@ sub get_roots {
 }
 
 ##################################################################
+
 =head2 numhosts - Number of hosts (/32s) in a subnet. 
 
     Including network and broadcast addresses
@@ -817,6 +841,7 @@ sub numhosts {
 }
 
 ##################################################################
+
 =head2 numhosts_v6 - Number of hosts (/128s) in a v6 block. 
 
 
@@ -834,6 +859,7 @@ sub numhosts_v6 {
 }
 
 ##################################################################
+
 =head2 shorten - Hide the unimportant octets from an ip address, based on the subnet
 
   Arguments:
@@ -847,6 +873,7 @@ sub numhosts_v6 {
   Note: No support for IPv6 yet.
 
 =cut
+
 sub shorten {
     my ($class, %args) = @_;
     $class->isa_class_method('shorten');
@@ -872,6 +899,7 @@ sub shorten {
 }
 
 ##################################################################
+
 =head2 subnetmask - Mask length of a subnet that can hold $x hosts
 
   Arguments:
@@ -880,9 +908,10 @@ sub shorten {
     integer, 0-32
   Examples:
     my $mask = Ipblock->subnetmask(256)    
+
 =cut
+
 sub subnetmask {
-    ## expects as a parameter an integer power of 2
     my ($class, $x) = @_;
     $class->isa_class_method('subnetmask');
 
@@ -890,9 +919,16 @@ sub subnetmask {
 }
 
 ##################################################################
+
 =head2 subnetmask_v6 - IPv6 version of subnetmask
 
+  Arguments:
+    An integer power of 2
+  Returns:
+    integer, 0-128
+
 =cut
+
 sub subnetmask_v6 {
     my ($class, $x) = @_;
     $class->isa_class_method('subnetmask_v6');
@@ -901,6 +937,7 @@ sub subnetmask_v6 {
 }
 
 ##################################################################
+
 =head2 build_tree -  Saves IPv4 or IPv6 hierarchy in the DB
 
   Arguments: 
@@ -911,6 +948,7 @@ sub subnetmask_v6 {
     Ipblock->build_tree('4');
 
 =cut
+
 sub build_tree {
     my ($class, $version) = @_;
     $class->isa_class_method('build_tree');
@@ -944,6 +982,7 @@ sub build_tree {
 
 
 ##################################################################
+
 =head2 fast_update - Faster updates for specific cases
 
     This method will traverse a list of hashes containing an IP address
@@ -968,6 +1007,7 @@ sub build_tree {
     Ipblock->fast_update(\%ips);
 
 =cut
+
 sub fast_update{
     my ($class, $ips) = @_;
     $class->isa_class_method('fast_update');
@@ -1030,6 +1070,7 @@ sub fast_update{
 
 
 ##################################################################
+
 =head2 get_maxed_out_subnets - 
 
   Arguments:
@@ -1040,6 +1081,7 @@ sub fast_update{
     my @maxed_out = Ipblock->get_maxed_out_subnets();
 
 =cut
+
 sub get_maxed_out_subnets {
     my ($self, %args) = @_;
     $self->isa_class_method('get_maxed_out_subnets');
@@ -1088,6 +1130,7 @@ sub get_maxed_out_subnets {
 }
 
 ################################################################
+
 =head2 add_range - Add or update a range of addresses
     
   Arguments: 
@@ -1104,6 +1147,7 @@ sub get_maxed_out_subnets {
   Examples:
 
 =cut
+
 sub add_range{
     my ($self, %argv) = @_;
     $self->isa_object_method('add_range');
@@ -1174,9 +1218,9 @@ sub add_range{
 }
 
 ################################################################
+
 =head2 remove_range - Remove a range of addresses
     
-
   Arguments: 
     Hash with following keys:
       start   - First IP in range
@@ -1186,6 +1230,7 @@ sub add_range{
   Examples:
     $ipb->remove_range(start=>$addr1, end=>addr2);
 =cut
+
 sub remove_range{
     my ($self, %argv) = @_;
     $self->isa_object_method('remove_range');
@@ -1212,6 +1257,7 @@ sub remove_range{
 }
 
 ##################################################################
+
 =head2 matches_cidr - Does the given string match an IPv4 or IPv6 CIDR address
 
  Arguments: 
@@ -1222,6 +1268,7 @@ sub remove_range{
     Ipblock->matches_cidr('192.168.1.0/16');
 
 =cut
+
 sub matches_cidr {
     my ($class, $string) = @_;
 
@@ -1235,6 +1282,7 @@ sub matches_cidr {
 }
 
 ##################################################################
+
 =head2 matches_ip - Does the given string match an IPv4 or IPv6 address
 
  Arguments: 
@@ -1245,6 +1293,7 @@ sub matches_cidr {
     Ipblock->matches_ip('192.168.1.0');
 
 =cut
+
 sub matches_ip {
     my ($class, $string) = @_;
 
@@ -1257,6 +1306,7 @@ sub matches_ip {
 
 
 ##################################################################
+
 =head2 matches_v4 - Does the given string match an IPv4 address
 
  Arguments: 
@@ -1267,6 +1317,7 @@ sub matches_ip {
     Ipblock->matches_v4('192.168.1.0');
 
 =cut
+
 sub matches_v4 {
     my ($class, $string) = @_;
 
@@ -1276,7 +1327,8 @@ sub matches_v4 {
     return 0;
 }
 ##################################################################
-=head2 matches_ip - Does the given string match an IPv6 address
+
+=head2 matches_v6 - Does the given string match an IPv6 address
 
  Arguments: 
     string
@@ -1286,6 +1338,7 @@ sub matches_v4 {
     Ipblock->matches_v6('192.168.1.0');
 
 =cut
+
 sub matches_v6 {
     my ($class, $string) = @_;
 
@@ -1296,6 +1349,7 @@ sub matches_v6 {
 }
 
 ############################################################################
+
 =head2 - objectify - Convert to object as needed
 
   Args: 
@@ -1306,6 +1360,7 @@ sub matches_v6 {
     my $ipb = Ipblock->objectify($zonestr);
 
 =cut
+
 sub objectify{
     my ($class, $b) = @_;
     if ( (ref($b) =~ /Ipblock/) ){
@@ -1322,6 +1377,7 @@ sub objectify{
 =cut
 
 ##################################################################
+
 =head2 address_numeric - Return IP address in decimal
 
     Addresses are stored in decimal format in the DB, and converted
@@ -1337,6 +1393,7 @@ sub objectify{
     my $number = $ipblock->address_numeric();
 
 =cut
+
 sub address_numeric {
     my $self = shift;
     $self->isa_object_method('address_numeric');
@@ -1345,6 +1402,7 @@ sub address_numeric {
 }
 
 ##################################################################
+
 =head2 cidr - Return CIDR version of the address
 
     Returns the address in CIDR notation:
@@ -1359,6 +1417,7 @@ sub address_numeric {
     print $ipblock->cidr();
 
 =cut
+
 sub cidr {
     my $self = shift;
     $self->isa_object_method('cidr');
@@ -1370,6 +1429,7 @@ sub cidr {
 }
 
 ##################################################################
+
 =head2 full_address
 
     Returns the address part in FULL notation for IPv6. 
@@ -1383,6 +1443,7 @@ sub cidr {
     print $ipblock->full_address();
 
 =cut
+
 sub full_address {
     my $self = shift;
     $self->isa_object_method('full_address');
@@ -1394,15 +1455,16 @@ sub full_address {
 }
 
 ##################################################################
+
 =head2 get_label - Override get_label method
 
     Returns the address in CIDR notation if it is a net address:
-           
-               192.168.0.0/24
+    
+      192.168.0.0/24
 
     or a plain dotted-quad if it is a host address:
-           
-               192.168.0.1
+    
+      192.168.0.1
 
   Arguments:
     None
@@ -1412,6 +1474,7 @@ sub full_address {
     print $ipblock->get_label();
 
 =cut
+
 sub get_label {
     my $self = shift;
     return $self->address if $self->is_address;
@@ -1419,10 +1482,11 @@ sub get_label {
 }
 
 ##################################################################
+
 =head2 is_address - Is this a host address?  
 
     Host addresses are v4 blocks with a /32 prefix or v6 blocks with a /128 prefix
-
+    
  Arguments: 
     None
  Returns:   
@@ -1443,6 +1507,7 @@ sub is_address {
 }
 
 ##################################################################
+
 =head2 update - Update an Ipblock object in DB
 
     Modify given fields of an Ipblock and (optionally) all its descendants.
@@ -1464,6 +1529,7 @@ sub is_address {
     $ipblock->update({field1=>value1, field2=>value2, recursive=>1});
 
 =cut
+
 sub update {
     my ($self, $argv) = @_;
     $self->isa_object_method('update');
@@ -1580,6 +1646,7 @@ sub update {
 
 
 ##################################################################
+
 =head2 delete - Delete Ipblock object
 
     We override delete to allow deleting children recursively as an option.
@@ -1593,6 +1660,7 @@ sub update {
     $ipblock->delete(recursive=>1);
 
 =cut
+
 sub delete {
     my ($self, %args) = @_;
     $self->isa_object_method('delete');
@@ -1630,6 +1698,7 @@ sub delete {
     return 1;
 }
 ##################################################################
+
 =head2 get_ancestors - Get parents recursively
     
  Arguments: 
@@ -1640,6 +1709,7 @@ sub delete {
     my @ancestors = $ip->get_ancestors();
 
 =cut
+
 sub get_ancestors {
     my ($self, $parents) = @_;
     $self->isa_object_method('get_ancestors');
@@ -1663,6 +1733,7 @@ sub get_ancestors {
 }
 
 ##################################################################
+
 =head2 get_descendants
 
 
@@ -1675,6 +1746,7 @@ sub get_ancestors {
     my $desc = $block->get_descendants();
 
 =cut
+
 sub get_descendants {
     my ($self, %argv) = @_;
     
@@ -1704,6 +1776,7 @@ sub get_descendants {
 }
 
 ##################################################################
+
 =head2 num_addr - Return the number of usable addresses in a subnet
 
  Arguments:
@@ -1734,6 +1807,7 @@ sub num_addr {
 }
 
 ##################################################################
+
 =head2 num_children - Count number of children
 
   Arguments:
@@ -1742,6 +1816,7 @@ sub num_addr {
     Integer
 
 =cut
+
 sub num_children {
     my ($self) = @_;
     $self->isa_object_method('num_children');
@@ -1758,6 +1833,7 @@ sub num_children {
 
 
 ##################################################################
+
 =head2 address_usage -  Returns the number of hosts in a given container or subnet
 
   Arguments:
@@ -1801,6 +1877,7 @@ sub address_usage {
 }
 
 ##################################################################
+
 =head2 free_space - The free space in this ipblock
 
   Arguments:
@@ -1817,16 +1894,16 @@ sub free_space {
     $self->isa_object_method('free_space');
     my $class = ref($self);
     
-    sub find_first_one {
+    sub _find_first_one {
         my $num = shift;
         if ($num & 1 || $num == 0) { 
             return 0; 
         } else { 
-            return 1 + find_first_one($num >> 1); 
+            return 1 + &_find_first_one($num >> 1); 
         }
     }
 
-    sub fill { 
+    sub _fill { 
         # Fill from the given address to the beginning of the given netblock
         # The block will INCLUDE the first address and EXCLUDE the final block
         my ($class, $from, $to, $divide, $version) = @_;
@@ -1839,7 +1916,7 @@ sub free_space {
         # The first argument needs to be an address and not a subnet.
         my $curr_addr = $from->numeric;
         my $max_masklen = $from->masklen;
-        my $numbits = find_first_one($curr_addr);
+        my $numbits = &_find_first_one($curr_addr);
 
         my $mask = $max_masklen - $numbits;
         $mask = $divide if ( $divide && $divide =~ /\d+/ && $divide > $mask && 
@@ -1859,7 +1936,7 @@ sub free_space {
 	    version=>$version,
             );
 	
-        return ($subnet, fill($class, $newfrom, $to, $divide, $version));
+        return ($subnet, &_fill($class, $newfrom, $to, $divide, $version));
     }
 
     my @kids = map { $_->netaddr } $self->children;
@@ -1872,7 +1949,7 @@ sub free_space {
 	    next;
 	}
 	if ( !$kid->contains($curr_nip) ){
-	    foreach my $space (&fill($class, $curr_nip, $kid, $divide, $self->version)) {
+	    foreach my $space (&_fill($class, $curr_nip, $kid, $divide, $self->version)) {
 		push @freespace, $space;
 	    }
 	}
@@ -1881,12 +1958,13 @@ sub free_space {
 
     my $end = $class->netaddr(address=>$self->netaddr->broadcast->numeric + 1, version=>$self->version);
     my $curr_nip = $class->netaddr(address=>$curr, version=>$self->version);
-    map { push @freespace, $_ } &fill($class, $curr_nip, $end, $divide, $self->version);
+    map { push @freespace, $_ } &_fill($class, $curr_nip, $end, $divide, $self->version);
 
     return @freespace;
 }
 
 ##################################################################
+
 =head2 subnet_usage - Number of hosts covered by subnets in a container
 
   Arguments:
@@ -1937,6 +2015,7 @@ sub subnet_usage {
 }
 
 ############################################################################
+
 =head2 update_a_records -  Update DNS A record(s) for this ip 
 
     Creates or updates DNS records based on the output of configured plugin,
@@ -1952,6 +2031,7 @@ sub subnet_usage {
     $self->update_a_records(hostname_ips=>\@ips, num_ips=>$num);
 
 =cut
+
 sub update_a_records {
     my ($self, %argv) = @_;
     $self->isa_object_method('update_a_records');
@@ -2098,6 +2178,7 @@ sub update_a_records {
 }
 
 #################################################################
+
 =head2 ip2int - Convert IP(v4/v6) address string into its decimal value
 
  Arguments: 
@@ -2108,6 +2189,7 @@ sub update_a_records {
     my $integer_addr = Ipblock->ip2int('192.168.0.1');
 
 =cut
+
 sub ip2int {
     my ($self, $address) = @_;
     my $ipobj;
@@ -2119,6 +2201,7 @@ sub ip2int {
 
 
 #################################################################
+
 =head2 validate - Basic validation of IP address
 
  Arguments: 
@@ -2130,6 +2213,7 @@ sub ip2int {
     if ( Ipblock->validate($address) ){ } 
 
 =cut
+
 sub validate {
     my ($self, $address, $prefix) = @_;
     
@@ -2143,6 +2227,7 @@ sub validate {
 }
 
 ##################################################################
+
 =head2 get_devices - Get all devices with IPs within this block
 
   Arguments:
@@ -2153,6 +2238,7 @@ sub validate {
     my $devs = $subnet->get_devices();
 
 =cut
+
 sub get_devices {
     my ($self) = @_;
     $self->isa_object_method('get_devices');
@@ -2177,6 +2263,7 @@ sub get_devices {
 
 
 ################################################################
+
 =head2 get_last_n_arp - Get last N ARP entries
 
   Arguments: 
@@ -2187,6 +2274,7 @@ sub get_devices {
     print $ip->get_last_n_arp(10);
 
 =cut
+
 sub get_last_n_arp {
     my ($self, $limit) = @_;
     $self->isa_object_method('get_last_n_arp');
@@ -2221,6 +2309,7 @@ sub get_last_n_arp {
 }
 
 ################################################################
+
 =head2 shared_network_subnets
 
     Determine if this subnet shares a physical link with another
@@ -2233,6 +2322,7 @@ sub get_last_n_arp {
   Examples:
     my @shared = $subnet->shared_network_subnets();
 =cut
+
 sub shared_network_subnets{
     my ($self, %argv) = @_;
     $self->isa_object_method('shared_network_subnets');
@@ -2265,6 +2355,7 @@ sub shared_network_subnets{
 }
 
 ################################################################
+
 =head2 enable_dhcp
     
     Create a subnet dhcp scope and assign given attributes.
@@ -2283,6 +2374,7 @@ sub shared_network_subnets{
     $subnet->enable_dhcp(%options);
 
 =cut
+
 sub enable_dhcp{
     my ($self, %argv) = @_;
     $self->isa_object_method('enable_dhcp');
@@ -2347,6 +2439,7 @@ sub enable_dhcp{
 }
 
 ################################################################
+
 =head2 get_dynamic_ranges - List of dynamic ip address ranges for a given subnet
     
     Used by DHCPD configs
@@ -2358,6 +2451,7 @@ sub enable_dhcp{
   Examples:
     my @ranges = $subnet->get_dynamic_ranges();
 =cut
+
 sub get_dynamic_ranges {
     my ($self) = @_;
     $self->isa_object_method('get_dynamic_ranges');
@@ -2402,6 +2496,7 @@ sub get_dynamic_ranges {
 }
 
 ################################################################
+
 =head2 dns_zones - Get DNS zones related to this block
     
     If this block does not have zones assigned via the SubnetZone
@@ -2415,6 +2510,7 @@ sub get_dynamic_ranges {
   Examples:
     my @zones = $ipblock->dns_zones;
 =cut
+
 sub dns_zones {
     my ($self) = @_;
     $self->isa_object_method('dns_zones');
@@ -2433,6 +2529,7 @@ sub dns_zones {
 }
 
 ################################################################
+
 =head2 forward_zone - Find the forward zone for this ip or block
     
   Arguments: 
@@ -2442,6 +2539,7 @@ sub dns_zones {
   Examples:
     my $zone = $ipb->forward_zone();
 =cut
+
 sub forward_zone {
     my ($self) = @_;
     $self->isa_object_method('forward_zone');
@@ -2458,6 +2556,7 @@ sub forward_zone {
 }
 
 ################################################################
+
 =head2 reverse_zone - Find the in-addr.arpa zone for this ip or block
     
   Arguments: 
@@ -2467,6 +2566,7 @@ sub forward_zone {
   Examples:
     my $r_zone = $ipb->reverse_zone();
 =cut
+
 sub reverse_zone {
     my ($self) = @_;
     $self->isa_object_method('reverse_zone');
@@ -2477,6 +2577,7 @@ sub reverse_zone {
 }
 
 ############################################################################
+
 =head2 - get_dot_arpa_names
 
     Return the corresponding in-addr.arpa or ip6.arpa zone names 
@@ -2490,6 +2591,7 @@ sub reverse_zone {
     my $name = $block->get_dot_arpa_names()
 
 =cut
+
 sub get_dot_arpa_names {
     my ($self, %argv) = @_;
     $self->isa_object_method('get_dot_arpa_names');
@@ -2550,6 +2652,7 @@ sub get_dot_arpa_names {
 }
 
 ##################################################################
+
 =head2 get_host_addrs - Get host addresses for a given block
 
   Note: This returns the list of possible host addresses in any 
@@ -2566,6 +2669,7 @@ sub get_dot_arpa_names {
       my $hosts = $subnet->get_host_addrs();
 
 =cut
+
 sub get_host_addrs {
     my ($self) = shift;
     my $class = ref($self);
@@ -2595,6 +2699,7 @@ sub get_host_addrs {
 }
 
 ################################################################
+
 =head2 get_next_free - Get next free address in this subnet
 
   Arguments: 
@@ -2605,6 +2710,7 @@ sub get_host_addrs {
   Examples:
     my $address = $subnet->get_next_free()
 =cut
+
 sub get_next_free {
     my ($self, %argv) = @_;
     $self->isa_object_method('get_next_free');
@@ -2663,6 +2769,7 @@ sub get_next_free {
 }
 
 ##################################################################
+
 =head2 get_addresses_by - Different sorts for ipblock_list page
 
    Arguments: 
@@ -2673,6 +2780,7 @@ sub get_next_free {
     my $rows = $subnet->get_addresses_by('Address')
 
 =cut
+
 sub get_addresses_by {
     my ($self, $sort) = @_;
     $self->isa_object_method('get_addresses_by');
@@ -2709,7 +2817,10 @@ sub get_addresses_by {
 }
 
 ##################################################################
-=head2 Create a NetAddr::IP object
+
+=head2 netaddr
+    
+    Create NetAddr::IP object
 
   Arguments:
     address & prefix, unless called as instance method
@@ -2720,6 +2831,7 @@ sub get_addresses_by {
     print $ipblock->netaddr->broadcast();
     print Ipblock->netaddr(address=>$ip, prefix=>$prefix)->addr;
 =cut
+
 sub netaddr {
     my ($self, %argv) = @_ ;
     if ( ref($self) ){
@@ -3423,7 +3535,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >> with contributions from Nath
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2009 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

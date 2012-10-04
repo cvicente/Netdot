@@ -10,16 +10,11 @@ my $logger = Netdot->log->get_logger('Netdot::Model');
 
 Netdot::Model::Splice
 
-=head1 SYNOPSIS
-
 =head1 CLASS METHODS
 =cut
 
-=head1 INSTANCE METHODS
-=cut
-
-
 ##################################################################
+
 =head2 insert
     
     Splice together strand1 and strand2.
@@ -33,6 +28,7 @@ Netdot::Model::Splice
     Splice->insert({strand1=>$strand1, strand2=>$strand2})
     
 =cut
+
 sub insert {
     my ($class, $argv) = @_;
     $class->isa_class_method('insert');
@@ -49,14 +45,13 @@ sub insert {
     return $class->SUPER::insert($argv);
 }
 
-=head1 AUTHOR
+=head1 AUTHORS
 
-Kai Waldron
-Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
+Kai Waldron & Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

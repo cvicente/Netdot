@@ -9,16 +9,12 @@ use strict;
 
 =head1 NAME
 
-Netdot::Module::Site
-
-=head1 SYNOPSIS
-
-See Netdot::Model::Site
+Netdot::Model::Site
 
 =head1 CLASS METHODS
 =cut
 
-=head2 with_backbones
+=head2 search_with_backbones
 
 =cut
 
@@ -30,6 +26,10 @@ WHERE    (backbonecable.start_closet=closet.id OR backbonecable.end_closet=close
 GROUP BY site.id, site.name    
 ORDER BY site.name
 });
+
+=head2 search_with_closets
+
+=cut
 
 __PACKAGE__->set_sql(with_closets => qq{
 SELECT   site.id 
@@ -43,6 +43,7 @@ ORDER BY site.name
 =cut
 
 ############################################################################
+
 =head2 rooms - Get list of rooms
    
   Arguments:
@@ -65,6 +66,7 @@ sub rooms {
 }
 
 #############################################################################
+
 =head2 closets - Get list of closets
   
   Arguments:
@@ -88,6 +90,7 @@ sub closets {
 }
 
 ##################################################################
+
 =head2 get_label - Override get_label method
 
     Appends site number if available
@@ -100,6 +103,7 @@ sub closets {
     print $site->get_label();
 
 =cut
+
 sub get_label {
     my $self = shift;
     $self->isa_object_method('get_label');
@@ -119,7 +123,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

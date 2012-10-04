@@ -18,6 +18,7 @@ Netdot::Model::CableStrand
 =cut
 
 ##################################################################
+
 =head2 get_graph - Returns a graph of CableStrands
 
     Maps cablestrands to cablestrands and sites
@@ -30,6 +31,7 @@ Netdot::Model::CableStrand
     CableStrand->get_graph();
 
 =cut
+
 sub get_graph {
     my ($class) = @_;
     
@@ -65,6 +67,7 @@ sub get_graph {
 }
 
 ##################################################################
+
 =head2 find_sequences - Fetch available sequences of strands between sites
 
   Arguments:
@@ -79,6 +82,7 @@ sub get_graph {
     $sequences = CableStrand->find_sequences($start, $end);
 
 =cut
+
 sub find_sequences {
     my ($class, $site_a, $site_b) = @_;
 
@@ -87,7 +91,7 @@ sub find_sequences {
     # Depth-first search (recursive) subroutine 
     # returns an arrayref of cablestrand IDs
     # for each sequence of strands that goes from A to B
-    sub dfs {
+    sub _dfs {
 	my ($g, $csid, $end, $seen, $path) = @_;
 	push @$path, $csid;
 	# check if this strand ends in $end
@@ -99,7 +103,7 @@ sub find_sequences {
 		next if ($seen->{$csid}{$cs} || $seen->{$cs}{$csid});
 		$seen->{$csid}{$cs} = 1;
 		$seen->{$cs}{$csid} = 1;
-		return &dfs($g, $cs, $end, $seen, $path);
+		return &_dfs($g, $cs, $end, $seen, $path);
 	    }
 	}
 	# Return undef because we did not reach $end
@@ -115,7 +119,7 @@ sub find_sequences {
 	# depth first search
 	my $seen = {};
 	my $path = [];
-	if ( my $p = &dfs($g, $csid, $site_b, $seen, $path) ){
+	if ( my $p = &_dfs($g, $csid, $site_b, $seen, $path) ){
 	    # We have a valid path vector
 	    push @seq, $class->_get_sequence_names($p);
 	}
@@ -127,6 +131,7 @@ sub find_sequences {
 =cut
 
 ##################################################################
+
 =head2 delete_splices
     
   Arguments:
@@ -137,6 +142,7 @@ sub find_sequences {
     $strand->delete_splices();
     
 =cut
+
 sub delete_splices{
     my ($self) = @_;
     $self->isa_object_method('delete_splices');
@@ -152,6 +158,7 @@ sub delete_splices{
 }
 
 ##################################################################
+
 =head2 find_endpoint
 
   Finds the endpoint splice for the specified strand (anything but the middle)
@@ -164,28 +171,30 @@ sub delete_splices{
     $endpoint = $strand->find_endpoint();
 
 =cut
+
 sub find_endpoint {
     my ($self) = @_;
     
     # Get graph structure
     my $g = $self->get_graph();
     
-    sub _dfs {
+    sub _fe_dfs {
 	my ($g, $csid, $seen) = @_;
 	foreach my $cs ( keys %{$g->{SPLICE}{$csid}} ){
 	    next if ($seen->{$csid}{$cs} || $seen->{$cs}{$csid});
 	    $seen->{$csid}{$cs} = 1;
 	    $seen->{$cs}{$csid} = 1;
-	    return $cs unless &_dfs($g, $cs, $seen);
+	    return $cs unless &_fe_dfs($g, $cs, $seen);
 	}
     }
 
     my $path = [];
     my $seen = {};
-    return &_dfs($g, $self->id, $seen) || $self->id;
+    return &_fe_dfs($g, $self->id, $seen) || $self->id;
 }
 
 ##################################################################
+
 =head2 get_sequence_path
 
   Arguments:
@@ -196,17 +205,18 @@ sub find_endpoint {
     my @seq_path = $strand->get_sequence_path();
 
 =cut
+
 sub get_sequence_path {
     my ($self) = @_;
     
-    sub __dfs {
+    sub _gsp_dfs {
 	my ($g, $csid, $seen, $path) = @_;
 	foreach my $cs ( keys %{$g->{SPLICE}{$csid}} ){
 	    next if ($seen->{$csid}{$cs} || $seen->{$cs}{$csid});
 	    $seen->{$csid}{$cs} = 1;
 	    $seen->{$cs}{$csid} = 1;
 	    push @$path, $cs;
-	    &__dfs($g, $cs, $seen, $path);
+	    &_gsp_dfs($g, $cs, $seen, $path);
 	}
 	return $path;
     }
@@ -217,7 +227,7 @@ sub get_sequence_path {
     my $endpoint = $self->find_endpoint($self->id);
     my $path = [$endpoint]; # The path starts with this endpoint
     my $seen = {};
-    my $r = &__dfs($g, $endpoint, $seen, $path);
+    my $r = &_gsp_dfs($g, $endpoint, $seen, $path);
     my @res = @$r;
     # Make the order predictable by always starting from the
     # endpoint with the lowest id value
@@ -228,6 +238,7 @@ sub get_sequence_path {
 }
 
 ##################################################################
+
 =head2 get_sequence - Return the sequence for a given strand
 
   Arguments:
@@ -237,6 +248,7 @@ sub get_sequence_path {
   Examples:
   my $seq = $strand->get_sequence();
 =cut
+
 sub get_sequence {
     my ($self) = @_;
     my $class = ref($self);
@@ -260,6 +272,7 @@ sub get_sequence {
 #    Array ref of array refs containing strand id and name
 #  Examples:
 #  my $result = CableStrand->_get_sequence_names($seq);
+
 sub _get_sequence_names {
     my ($class, $path) = @_;
     $class->isa_class_method('_get_sequence_names');

@@ -22,6 +22,7 @@ Netdot::Model::RR - DNS Resource Record Class
 =cut
 
 ############################################################################
+
 =head2 search - Search Resource Records
 
     We override the base class to extend functionality:
@@ -38,6 +39,7 @@ Netdot::Model::RR - DNS Resource Record Class
     RR->search(name=>'foo.bar')
 
 =cut
+
 sub search {
     my ($class, @args) = @_;
     $class->isa_class_method('search');
@@ -64,6 +66,7 @@ sub search {
 }
 
 ############################################################################
+
 =head2 search_like - Search Resource Records with wildcards
 
     We override the base class to extend functionality:
@@ -80,6 +83,7 @@ sub search {
     RR->search_like(name=>"foo*.bar")
 
 =cut
+
 sub search_like {
     my ($class, %argv) = @_;
     $class->isa_class_method('search_like');
@@ -119,6 +123,7 @@ sub search_like {
 
 
 ############################################################################
+
 =head2 insert - Insert new RR
 
     We override the common insert method for extra functionality
@@ -266,6 +271,7 @@ sub insert {
 =cut
 
 ##################################################################
+
 =head2 update
 
     Override base method to:
@@ -279,6 +285,7 @@ sub insert {
     $rr->update(\%args)
 
 =cut
+
 sub update {
     my ($self, $argv) = @_;
     $self->isa_object_method('update');
@@ -310,6 +317,7 @@ sub update {
 }
 
 ##################################################################
+
 =head2 update_ptr - Update corresponding PTR record
 
   Arguments:
@@ -320,6 +328,7 @@ sub update {
     $rr->update_ptr()
 
 =cut
+
 sub update_ptr {
     my ($self) = @_;
     $self->isa_object_method('update_ptr');
@@ -338,6 +347,7 @@ sub update_ptr {
 }
 
 ##################################################################
+
 =head2 delete - Override delete method
 
     * Removes any matching CNAMEs
@@ -350,6 +360,7 @@ sub update_ptr {
     $rr->delete();
 
 =cut
+
 sub delete {
     my $self = shift;
     $self->isa_object_method('delete');
@@ -362,6 +373,7 @@ sub delete {
 }
 
 ##################################################################
+
 =head2 get_label - Override get_label method
 
     Returns the full Resource Record name
@@ -374,6 +386,7 @@ sub delete {
     print $rr->get_label();
 
 =cut
+
 sub get_label {
     my $self = shift;
     $self->isa_object_method('get_label');
@@ -390,6 +403,7 @@ sub get_label {
 }
 
 ##################################################################
+
 =head2 as_text
 
     Returns text representation of this RR (owner) and all its 
@@ -403,6 +417,7 @@ sub get_label {
     print $rr->as_text();
 
 =cut
+
 sub as_text {
     my $self = shift;
     $self->isa_object_method('as_text');
@@ -418,6 +433,7 @@ sub as_text {
 }
 
 ##################################################################
+
 =head2 add_host - Add hostname and several other things
     
     Combine RR, RRADDR, RRCNAME, RRHINFO and DHCP scope creation
@@ -581,6 +597,7 @@ sub add_host {
 }
 
 ############################################################################
+
 =head2 validate_name - Name validation for unprivileged users
     
     This method is called from specific UI components that take
@@ -595,6 +612,7 @@ sub add_host {
     RR->validate_name($name);
 
 =cut
+
 sub validate_name {
     my ($self, $name) = @_;
     
@@ -612,6 +630,7 @@ sub validate_name {
 
 
 ############################################################################
+
 =head2 sub_records - Returns all subrecords pointing to this RR
     
   Args: 
@@ -622,6 +641,7 @@ sub validate_name {
     my @subrecs = $rr->sub_records()
 
 =cut
+
 sub sub_records {
     my ($self) = @_;
 
@@ -709,7 +729,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2009 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

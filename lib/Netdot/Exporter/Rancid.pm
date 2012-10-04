@@ -21,6 +21,7 @@ Netdot::Exporter::Rancid - Read relevant info from Netdot and build Rancid confi
 =cut
 
 ############################################################################
+
 =head2 new - Class constructor
 
   Arguments:
@@ -30,6 +31,7 @@ Netdot::Exporter::Rancid - Read relevant info from Netdot and build Rancid confi
   Examples:
     my $rancid = Netdot::Exporter->new(type=>'Rancid');
 =cut
+
 sub new{
     my ($class, %argv) = @_;
     my $self = {};
@@ -58,6 +60,7 @@ sub new{
 }
 
 ############################################################################
+
 =head2 generate_configs - Generate configuration files for RANCID
 
   Arguments:
@@ -67,6 +70,7 @@ sub new{
   Examples:
     $rancid->generate_configs();
 =cut
+
 sub generate_configs {
     my ($self) = @_;
 
@@ -160,6 +164,7 @@ sub generate_configs {
 
 ############################################################################
 # Choose the RANCID device type
+
 sub _convert_mfg {
     my ($self, %argv) = @_;
     my ($vendor, $v_ctype, $p_ctype, $sysdescr) = 
@@ -191,3 +196,28 @@ sub _convert_mfg {
     return $mfg;
 }
   
+=head1 AUTHORS
+
+Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
+
+=head1 COPYRIGHT & LICENSE
+
+Copyright 2012 University of Oregon, all rights reserved.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTIBILITY
+or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software Foundation,
+Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+=cut
+
+1;

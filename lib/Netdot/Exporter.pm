@@ -31,6 +31,7 @@ Netdot::Exporter - Base class and object factory for Netdot exports
 =cut
 
 ############################################################################
+
 =head2 new - Class constructor
 
   Arguments:
@@ -40,6 +41,7 @@ Netdot::Exporter - Base class and object factory for Netdot exports
   Examples:
     my $export = Netdot::Exporter->new(type=>'Nagios');
 =cut
+
 sub new{
     my ($proto, %argv) = @_;
     my $class = ref($proto) || $proto;
@@ -62,6 +64,7 @@ sub new{
 }
 
 ########################################################################
+
 =head2 get_device_info
 
   Arguments:
@@ -71,6 +74,7 @@ sub new{
   Examples:
     my $ips = Netdot::Model::Exporter->get_device_info();
 =cut
+
 sub get_device_info {
     my ($self) = @_;
     
@@ -126,6 +130,7 @@ sub get_device_info {
 }
 
 ########################################################################
+
 =head2 get_device_main_ip 
 
   Arguments:
@@ -136,6 +141,7 @@ sub get_device_info {
     my $ip = Netdot::Exporter->get_device_main_ip($devid);
 
 =cut
+
 sub get_device_main_ip {
     my ($self, $devid) = @_;
 
@@ -162,6 +168,7 @@ sub get_device_main_ip {
 }
 
 ########################################################################
+
 =head2 get_device_parents
 
   Arguments:
@@ -171,6 +178,7 @@ sub get_device_main_ip {
   Examples:
 
 =cut
+
 sub get_device_parents {
     my ($self, $nms) = @_;
 
@@ -181,6 +189,7 @@ sub get_device_parents {
 }
 
 ########################################################################
+
 =head2 - get_monitored_ancestors
 
   Arguments:
@@ -190,6 +199,7 @@ sub get_device_parents {
   Examples:
 
 =cut
+
 sub get_monitored_ancestors {
     my ($self, $devid, $device_parents) = @_;
     
@@ -214,6 +224,7 @@ sub get_monitored_ancestors {
 }
 
 ########################################################################
+
 =head2 open_and_lock - Open and lock file for writing
 
 
@@ -223,6 +234,7 @@ sub get_monitored_ancestors {
     File handle reference
 
 =cut
+
 sub open_and_lock {
     my ($self, $filename) = @_;
 
@@ -238,6 +250,7 @@ sub open_and_lock {
 }
 
 ########################################################################
+
 =head2 in_downtime - Check if device is within scheduled downtime
 
  Arguments: 
@@ -246,6 +259,7 @@ sub open_and_lock {
     1 or 0
 
 =cut
+
 sub in_downtime{
     my ($self, $devid) = @_;
     
@@ -273,7 +287,7 @@ Peter Boothe
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2009 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

@@ -6,6 +6,14 @@ use File::Spec::Functions qw( catpath splitpath rel2abs );
 use strict;
 use Carp;
 
+=head1 NAME
+
+Netdot::Meta - Metainformation Class for Netdot
+
+=head1 SYNOPSIS
+
+=cut
+
 # Default name of the file that contains Meta Information
 my $DEFAULT_META_FILE = "<<Make:PREFIX>>/etc/netdot.meta";
 my $ALT_META_FILE     = catpath( ( splitpath( rel2abs $0 ) )[ 0, 1 ], '' ) . "../etc/netdot.meta";
@@ -39,23 +47,16 @@ my %DERIVED_CLASSES = (
     }
 }
 
-#Be sure to return 1
-1;
-
-=head1 NAME
-
-Netdot::Meta - Metainformation Class for Netdot
-
-=head1 SYNOPSIS
-
-
 =head1 PUBLIC METHODS
+
+##################################################
 
 =head2 new - Class Constructor
     
     my $metainfo = Netdot::Meta->new(meta_file => "path/to/meta_file");
     
 =cut
+
 sub new {
     my ($proto, %argv) = @_;
     my $class = ref($proto) || $proto;
@@ -79,6 +80,7 @@ sub new {
 }
 
 ##################################################
+
 =head2 get_table_names -  Returns an array of table names
     
   Arguments:
@@ -90,6 +92,7 @@ sub new {
     @tables = $meta->get_table_names();
 
 =cut
+
 sub get_table_names{
     my $self = shift;
     my @names = sort keys %{$self->_get_tables_hash()};
@@ -97,6 +100,7 @@ sub get_table_names{
 }
 
 ##################################################
+
 =head2 get_table -  Get new Table object
     
   Arguments:
@@ -107,6 +111,7 @@ sub get_table_names{
     my $mdevice = $meta->get_table('Device');
     
 =cut
+
 sub get_table{
     my ($self, $name) = @_;
     my $newtable;
@@ -135,6 +140,7 @@ sub get_table{
 }
 
 ##################################################
+
 =head2 get_tables - Get a list of all Table objects
 
   Arguments:
@@ -145,6 +151,7 @@ sub get_table{
     my @meta_tables = $meta->get_tables;
 
 =cut
+
 sub get_tables {
     my ($self, %argv) = @_;
     my @tables;
@@ -163,6 +170,7 @@ sub get_tables {
 }
 
 ##################################################
+
 =head2 cdbi_class - Produce Class::DBI subclass
     
   Arguments:
@@ -176,6 +184,7 @@ sub get_tables {
     my $subclass = $meta->cdbi_class(table => $table, base => "Some::Package");
 
 =cut
+
 sub cdbi_class{
     my ($self, %argv) = @_;
     my %classes;
@@ -263,6 +272,7 @@ sub cdbi_class{
 
 
 ##################################################
+
 =head2 get_history_suffix - Get suffix used to name history tables;
     
   Arguments:
@@ -272,6 +282,7 @@ sub cdbi_class{
   Example: 
 
 =cut
+
 sub get_history_suffix{
     my $self = shift;
     my $HIST = '_history';
@@ -280,8 +291,14 @@ sub get_history_suffix{
 
 
 ##################################################################
-# Return hash containing mapping between derived classes and 
-# their SUPER class
+
+=head2 get_derived_classes
+
+ Return hash containing mapping between derived classes and 
+ their SUPER class
+
+=cut
+
 sub get_derived_classes {
     return %DERIVED_CLASSES;
 }
@@ -343,4 +360,32 @@ sub _get_table_info{
 
     return \%info;
 }
+
+=head1 AUTHORS
+
+Carlos Vicente
+
+=head1 COPYRIGHT & LICENSE
+
+Copyright 2012 University of Oregon, all rights reserved.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTIBILITY
+or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software Foundation,
+Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+=cut
+
+#Be sure to return 1
+1;
+
 

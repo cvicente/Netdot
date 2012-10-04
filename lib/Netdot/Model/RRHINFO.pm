@@ -8,13 +8,11 @@ my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
 
 =head1 Netdot::Model::RRHINFO - DNS HINFO record Class
 
-=head1 SYNOPSIS
-
-
 =head1 CLASS METHODS
 =cut
 
 ############################################################################
+
 =head2 insert - Insert new RRHINFO object
 
     We override the base method to:
@@ -29,6 +27,7 @@ my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
     my $record = RRHINFO->insert(\%args)
 
 =cut
+
 sub insert {
     my($class, $argv) = @_;
     $class->isa_class_method('insert');
@@ -78,7 +77,9 @@ sub insert {
 
 =head1 INSTANCE METHODS
 =cut
+
 ############################################################################
+
 =head2 update
 
     We override the base method to:
@@ -92,6 +93,7 @@ sub insert {
     $record->update(\%args)
 
 =cut
+
 sub update {
     my($self, $argv) = @_;
     $self->isa_object_method('update');
@@ -106,6 +108,7 @@ sub update {
 }
 
 ##################################################################
+
 =head2 as_text
 
     Returns the text representation of this record
@@ -118,6 +121,7 @@ sub update {
     print $rr->as_text();
 
 =cut
+
 sub as_text {
     my $self = shift;
     $self->isa_object_method('as_text');

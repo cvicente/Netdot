@@ -6,9 +6,6 @@ use strict;
 
 my $logger = Netdot->log->get_logger("Netdot::Model");
 
-# Make sure to return 1
-1;
-
 =head1 NAME
 
 Netdot::Model::DataCache
@@ -72,7 +69,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2010 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

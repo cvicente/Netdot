@@ -19,6 +19,7 @@ Netdot::Util::DNS - DNS utilities class
 =cut
 
 ############################################################################
+
 =head2 new - Class constructor
 
   Arguments:
@@ -28,6 +29,7 @@ Netdot::Util::DNS - DNS utilities class
   Examples:
     my $dns = Netdot::Util::DNS->new();
 =cut
+
 sub new{
     my ($proto, %argv) = @_;
     my $class = ref($proto) || $proto;
@@ -40,6 +42,7 @@ sub new{
 }
 
 ############################################################################
+
 =head2 resolve_name - Resolve name to IPv4 or IPv6 address(es)
 
   Arguments:
@@ -53,6 +56,7 @@ sub new{
     my @addrs = Netdot::Util::DNS->resolve_name($name)
    
 =cut 
+
 sub resolve_name {
     my ($self, $name, $opts) = @_;
     return unless $name;
@@ -81,6 +85,7 @@ sub resolve_name {
 
 
 ############################################################################
+
 =head2 resolve_ip - Resolve ip (v4 or v6) adress to name
 
   Arguments:
@@ -91,6 +96,7 @@ sub resolve_name {
     my $name = Netdot::Util::DNS->resolve_ip($ip);
 
 =cut 
+
 sub resolve_ip {
     my ($self, $ip) = @_;
     return unless $ip;
@@ -123,6 +129,7 @@ sub resolve_ip {
 }
 
 ############################################################################
+
 =head2 resolve_any - Resolve ip or name
 
   Arguments:
@@ -133,6 +140,7 @@ sub resolve_ip {
     my ($ip, $name) = Netdot::Util::DNS->resolve_any('blah');
 
 =cut 
+
 sub resolve_any {
     my ($self, $host) = @_;
     return unless $host;
@@ -157,7 +165,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2010 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

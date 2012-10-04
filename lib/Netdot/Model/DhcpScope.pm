@@ -10,15 +10,12 @@ my $logger = Netdot->log->get_logger('Netdot::Model::DHCP');
 
 Netdot::Model::DhcpScope - DHCP scope Class
 
-=head1 SYNOPSIS
-
-
 =head1 CLASS METHODS
 =cut
 
 ############################################################################
-=head2 search
 
+=head2 search
 
   Argsuments: 
     Hash with search criteria
@@ -49,6 +46,7 @@ sub search {
 }
 
 ############################################################################
+
 =head2 insert - Insert new Scope
 
     Override base method to:
@@ -73,6 +71,7 @@ sub search {
                                   physaddr  => $mac,
 				  });
 =cut
+
 sub insert {
     my ($class, $argv) = @_;
     $class->isa_class_method('insert');
@@ -126,6 +125,7 @@ sub insert {
 
 
 ############################################################################
+
 =head2 get_containers
 
     This method returns all scopes which can contain other scopes.  
@@ -143,6 +143,7 @@ sub insert {
     DhcpScope->get_containers();
 
 =cut
+
 sub get_containers {
     my ($class) = @_;
     $class->isa_class_method('get_containers');
@@ -174,6 +175,7 @@ sub get_containers {
 =cut
 
 ############################################################################
+
 =head2 update 
     
     Override parent method to:
@@ -188,6 +190,7 @@ sub get_containers {
   Examples:
     $dhcp_scope->update(\%args);
 =cut
+
 sub update{
     my ($self, $argv) = @_;
 
@@ -217,18 +220,22 @@ sub update{
 }
 
 ############################################################################
+
 =head2 delete 
     
     Override parent method to:
+    
     - Remove shared-network scope when deleting its last subnet
-
-  Args: 
+    
+  Arguments: 
     None
   Returns: 
     True if successful
   Examples:
     $dhcp_scope->delete();
+
 =cut
+
 sub delete{
     my ($self, $argv) = @_;
     $self->isa_object_method('delete');
@@ -255,6 +262,7 @@ sub delete{
 }
 
 ############################################################################
+
 =head2 print_to_file -  Print the config file as text (ISC DHCPD format)
 
   Args: 
@@ -266,6 +274,7 @@ sub delete{
     $scope->print_to_file();
 
 =cut
+
 sub print_to_file{
     my ($self, %argv) = @_;
     $self->isa_object_method('print_to_file');
@@ -313,6 +322,7 @@ sub print_to_file{
 
 
 ############################################################################
+
 =head2 import_hosts
     
   Args: 
@@ -323,6 +333,7 @@ sub print_to_file{
   Examples:
     $dhcp_scope->import_hosts(text=>$data);
 =cut
+
 sub import_hosts{
     my ($self, %argv) = @_;
     $self->isa_object_method('import_hosts');
@@ -367,6 +378,7 @@ sub import_hosts{
 }
 
 ############################################################################
+
 =head2 get_global - Return the global scope where this scope belongs
     
   Args: 
@@ -376,6 +388,7 @@ sub import_hosts{
   Examples:
     $dhcp_scope->get_global();
 =cut
+
 sub get_global {
     my ($self, %argv) = @_;
     $self->isa_object_method('get_global');
@@ -403,6 +416,7 @@ sub get_global {
 ############################################################################
 
 ############################################################################
+
 =head2 _objectify_args
 
     Convert following arguments into objects:
@@ -418,6 +432,7 @@ sub get_global {
     $class->_objectify_args($argv);
 
 =cut
+
 sub _objectify_args {
     my ($self, $argv) = @_;
 
@@ -486,6 +501,7 @@ sub _objectify_args {
 }
 
 ############################################################################
+
 =head2 _validate_args
 
   Args: 
@@ -496,6 +512,7 @@ sub _objectify_args {
     $class->_validate_args($argv);
 
 =cut
+
 sub _validate_args {
     my ($self, $argv) = @_;
     
@@ -972,7 +989,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2009 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

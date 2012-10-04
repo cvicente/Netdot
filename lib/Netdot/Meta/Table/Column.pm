@@ -11,17 +11,18 @@ Netdot::Meta::Table::Column
 
 =head1 SYNOPSIS
 
-
 =head1 PUBLIC METHODS
 
 =cut
 
 ##################################################
+
 =head2 new - Class Constructor
     
     my $mcol = Netdot::Meta::Table::Column->new($info);
 
 =cut
+
 sub new {
     my ($class, $info) = @_;
     croak "Incorrect call to new as an object method" 
@@ -31,6 +32,7 @@ sub new {
 }
 
 ##################################################
+
 =head2 name - Returns the name of this column
 
   Arguments:
@@ -41,12 +43,14 @@ sub new {
     my $column_name = $mcol->name;
 
 =cut
+
 sub name {
     my $self = shift;
     return $self->_get_attr('name');
 }
 
 ##################################################
+
 =head2 sql_type - Returns the SQL type as defined in the schema
 
   Arguments:
@@ -57,12 +61,14 @@ sub name {
     $type = $mcol->sql_type();
 
 =cut
+
 sub sql_type {
     my $self = shift;
     return $self->_get_attr('type');
 }
 
 ##################################################
+
 =head2 descr -  Get column description
 
   Arguments:
@@ -73,12 +79,14 @@ sub sql_type {
     $descr = $mcol->descr();
 
 =cut
+
 sub descr {
     my $self = shift;
     return $self->_get_attr('description');
 }
 
 ##################################################
+
 =head2 length - Get the DB length for this column
 
   Arguments:
@@ -89,12 +97,14 @@ sub descr {
     $len = $mcol->length();
 
 =cut
+
 sub length {
     my $self = shift;
     return $self->_get_attr('length');
 }
 
 ##################################################
+
 =head2 default - Get the default value for this column
 
   Arguments:
@@ -105,12 +115,14 @@ sub length {
     $len = $mcol->default();
 
 =cut
+
 sub default {
     my $self = shift;
     return $self->_get_attr('default');
 }
 
 ##################################################
+
 =head2 is_nullable - Get 'nullable' nature for this column as defined in the DB
 
   Arguments:
@@ -121,12 +133,14 @@ sub default {
     $null = $mcol->nullable;
 
 =cut
+
 sub is_nullable {
     my $self = shift;
     return $self->_get_attr('nullable');
 }
 
 ##################################################
+
 =head2 tag - Get the tag for this column
 
     A column tag is the user-friendly name for the column displayed in the 
@@ -140,12 +154,14 @@ sub is_nullable {
     $tag = $mcol->tag();
 
 =cut
+
 sub tag {
     my $self = shift;
     return $self->_get_attr('tag');
 }
 
 ##################################################
+
 =head2 is_unique -  Get a flag with the 'uniqueness' nature of this column.
 
     This is basically used to determine if the column is required when showing a form.
@@ -161,6 +177,7 @@ sub tag {
     $unique = $mcol->is_unique();
 
 =cut
+
 sub is_unique {
     my $self = shift;
     my $unique = $self->{table}->get_unique_columns();
@@ -183,6 +200,7 @@ sub is_unique {
 }
 
 ##################################################
+
 =head2 links_to_attrs - Get the attributes for this column\'s foreign key relationship
 
   Arguments:
@@ -194,12 +212,14 @@ sub is_unique {
     my $attrs = $col->links_to_attrs
 
 =cut
+
 sub links_to_attrs{
     my $self = shift;
     return $self->{'linksto'} if exists $self->{'linksto'};
 }
 
 ##################################################
+
 =head2 links_to
 
     Get foreign table that this column points to
@@ -213,6 +233,7 @@ sub links_to_attrs{
     my $foreign_table = $mcol->links_to();
 
 =cut
+
 sub links_to{
     my $self = shift;
     my $lt = $self->links_to_attrs();
@@ -240,4 +261,31 @@ sub _get_attr{
 	unless exists $self->{$attr};
     return $self->{$attr};
 }
+
+=head1 AUTHORS
+
+Carlos Vicente
+
+=head1 COPYRIGHT & LICENSE
+
+Copyright 2012 University of Oregon, all rights reserved.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTIBILITY
+or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software Foundation,
+Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+=cut
+
+#Be sure to return 1
+1;
 

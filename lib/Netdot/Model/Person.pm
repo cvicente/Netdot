@@ -22,6 +22,7 @@ my $logger = Netdot->log->get_logger('Netdot::Model');
 
 
 ############################################################################
+
 =head2 insert - Insert new Person object
 
     We override the base method to:
@@ -34,6 +35,7 @@ my $logger = Netdot->log->get_logger('Netdot::Model');
     my $person = Person->insert(\%args)
 
 =cut
+
 sub insert {
     my($class, $argv) = @_;
     $class->isa_class_method('insert');
@@ -53,6 +55,7 @@ sub insert {
 =cut
 
 ##################################################################
+
 =head2 delete - Delete Person object
 
     We make sure the last admin is not deletable.
@@ -65,6 +68,7 @@ sub insert {
     $person->delete();
 
 =cut
+
 sub delete {
     my ($self, %args) = @_;
     $self->isa_object_method('delete');
@@ -85,6 +89,7 @@ sub delete {
 }
 
 ##################################################################
+
 =head2 verify_passwd - Verify password for this person
 
   Arguments:
@@ -96,6 +101,7 @@ sub delete {
     ...
 
 =cut
+
 sub verify_passwd {
     my ($self, $plaintext) = @_;
 
@@ -104,6 +110,7 @@ sub verify_passwd {
 }
 
 ##################################################################
+
 =head2 get_allowed_objects
 
     'Allowed' objects are objects for which this Person, or a group
@@ -117,6 +124,7 @@ sub verify_passwd {
     my $hashref = $person->get_allowed_objects();
 
 =cut
+
 sub get_allowed_objects {
     my ($self, %argv) = @_;
     
@@ -188,6 +196,7 @@ sub get_allowed_objects {
 }
 
 ##################################################################
+
 =head2 get_user_type
 
     This attribute can be loaded from the Netdot
@@ -202,6 +211,7 @@ sub get_allowed_objects {
     my $user_type = $person->get_user_type();
 
 =cut
+
 sub get_user_type {
     my ($self, $r) = @_;
 
@@ -247,7 +257,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2009 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

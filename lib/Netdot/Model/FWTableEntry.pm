@@ -17,11 +17,11 @@ Netdot::Model::FWTableEntry -
 
 Forwarding Table Entry class
 
-
 =head1 CLASS METHODS
 =cut
 
 ##################################################################
+
 =head2 fast_insert - Faster inserts for specific cases
 
     This method will traverse a list of hashes containing FWT
@@ -40,6 +40,7 @@ Forwarding Table Entry class
     ArpCacheEntry->fast_insert(list=>\@list);
 
 =cut
+
 sub fast_insert{
     my ($class, %argv) = @_;
     $class->isa_class_method('fast_insert');
@@ -76,7 +77,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

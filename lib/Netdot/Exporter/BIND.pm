@@ -20,6 +20,7 @@ Netdot::Exporter::BIND - Read relevant info from Netdot and build BIND zone file
 =cut
 
 ############################################################################
+
 =head2 new - Class constructor
 
   Arguments:
@@ -39,6 +40,7 @@ sub new{
 }
 
 ############################################################################
+
 =head2 generate_configs - Generate zone files for BIND
 
   Arguments:
@@ -50,6 +52,7 @@ sub new{
   Examples:
     $bind->generate_configs();
 =cut
+
 sub generate_configs {
     my ($self, %argv) = @_;
     
@@ -96,7 +99,8 @@ sub generate_configs {
 			$logger->info("Zone ".$zone->name." written to file: $path");
 		    }
 		}else{
-		    $logger->debug("Exporter::BIND::generate_configs: ".$zone->name.": No pending changes.  Use -f to force.");
+		    $logger->debug("Exporter::BIND::generate_configs: ".$zone->name.
+				   ": No pending changes.  Use -f to force.");
 		}
 					  });
 	};
@@ -105,6 +109,7 @@ sub generate_configs {
 }
 
 ############################################################################
+
 =head2 print_zone_to_file -  Print the zone file using BIND syntax
 
  Args: 
@@ -117,6 +122,7 @@ sub generate_configs {
     my $path = $bind->print_to_file(zone=>$zone, nopriv=>1);
 
 =cut
+
 sub print_zone_to_file {
     my ($self, %argv) = @_;
 
@@ -216,7 +222,7 @@ Dongting Yu, C<< <dongting at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2009 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
