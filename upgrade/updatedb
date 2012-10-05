@@ -59,7 +59,8 @@ if ( $schema_version eq '1.0.1' ){
 	'ALTER TABLE device ADD INDEX `Device8` (`down_until`);',
 	'ALTER TABLE device ADD INDEX `Device9` (`extension`);',
 	
-	"UPDATE schemainfo SET version='1.0.2' WHERE id=1;";
+	"UPDATE schemainfo SET version='1.0.2' WHERE id=1;",
+	"DELETE FROM datacache;";
 	
 	# Restore checks
 	push @statements, "SET FOREIGN_KEY_CHECKS = 1;", "COMMIT;";
@@ -93,7 +94,8 @@ if ( $schema_version eq '1.0.1' ){
 	'CREATE INDEX "Device8" on "device" ("down_until");',
 	'CREATE INDEX "Device9" on "device" ("extension");',
 
-	"UPDATE schemainfo SET version='1.0.2' WHERE id=1;";
+	"UPDATE schemainfo SET version='1.0.2' WHERE id=1;",
+	"DELETE FROM datacache;";
 	
     }else{
 	die "Unsupported DB type: $dbms\n";
