@@ -277,6 +277,14 @@ sub install_modules_cpan{
     foreach my $anon_hash (@DEPS){
 	my $module = $anon_hash->{'cpan'};
 	next unless $module;
+
+	# This is temporary until Net::Patricia is patched upstream
+	if ( $module =~ /^Net::Patricia/ ){
+	    &cmd("cd thirdparty/; tar xzvf Net-Patricia-1.19_01.tar.gz;".
+		 "cd Net-Patricia-1.19_01; perl Makefile.PL; ".
+		 "make all && make test && make install");
+	}
+	
 	eval "use $module";
 	if ( $@ ){
 	    $module =~ s/^(.*)\s+.*/$1/;
