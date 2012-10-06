@@ -49,6 +49,8 @@ $show_ch_util      => 0
 $state_digest      => undef
 @link_zones        => undef
 @new_rev_zones     => undef
+$new_a_name        => undef
+$new_a_zone        => undef
 $template_zone_for_rev => undef
 $new_blocks_list   => undef
 $new_blocks_status => undef
@@ -568,6 +570,30 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
     }
 
 #######################################################################################
+# ADD_A_RECORD
+#
+#######################################################################################
+}elsif ( $_action eq 'ADD_A_RECORD' ){
+
+    unless ( $manager && $manager->can($user, "edit", $o) ){
+        $m->comp('/generic/error.mhtml', error=>"You don't have permission to edit this object");
+    }
+
+    unless ( $new_a_name && $new_a_zone ){
+	$m->comp('/generic/error.mhtml', error=>"Adding a DNS record requires both a name and a zone");
+    }
+    eval {
+	RR->insert({type=>"A", name=>$new_a_name, zone=>$new_a_zone, ipblock=>$o});
+    };
+    if ( my $e = $@ ){
+	$m->comp('/generic/error.mhtml', error=>$e);
+    }else{
+	$m->comp('.show_message', title=>"Action Message", msg=>"A or AAAA record added successfully");
+    }
+    
+    
+
+#######################################################################################
 # REBUILD_TREE
 #
 #######################################################################################
@@ -660,8 +686,10 @@ if ( my @parents = $o->get_ancestors ){
        my @field_headers;
        my @cell_data;
 
-       # Address:
-       my %addr_tmp = $ui->form_field(object=>$o, column=>"address", edit=>$edit_ip, htmlExtra=>"style='width: 15em'");
+################################################################
+# Address
+       my %addr_tmp = $ui->form_field(object=>$o, column=>"address", edit=>$edit_ip, 
+				      htmlExtra=>"style='width: 15em'");
        push( @field_headers, $addr_tmp{'label'} );
        push( @cell_data, $addr_tmp{'value'} );
 
@@ -715,6 +743,7 @@ if ( my @parents = $o->get_ancestors ){
 
     </div>
 
+%################################################################
 %# Comments section
 <div class="container">
     <div class="containerheadleft">
@@ -744,22 +773,57 @@ print $tmp{value};
  </div>
 
 
+%################################################################
 <%perl>
-
 if (!$edit){
-    my @rraddrs = $o->a_records();
-    my @rrs = map { $_->rr } @rraddrs;
     print '<div class="container">';
     print '<div class="containerheadleft">DNS A Records</div>';
     print '<div class="containerheadright">';
-    if ( $manager && $manager->can($user, 'edit', $o->parent) ){
-	print "<a href=\"host.html?ipblock=$o&action=new\">[add]</a>";
+    if ( ($_action ne 'VIEW_ADD_A_RECORD') && $manager && $manager->can($user, 'edit', $o) ){
+	print "<a href=\"ip.html?id=$o&_action=VIEW_ADD_A_RECORD\">[add]</a>";
     }else{
 	print '&nbsp;';
     }
     print '</div>';
     print '<div class="containerbody">';
-    $m->comp('/generic/sortresults.mhtml', object=>\@rrs);
+    if ( $_action eq 'VIEW_ADD_A_RECORD' ){
+	my $zone = $o->forward_zone();
+	# Make sure that user does not add a record to a zone for which
+	# they don't have permissions
+	my @zone_list;
+	if ( $zone ){
+	    @zone_list = ( $zone );
+	}
+	foreach my $z ( sort { $a->name cmp $b->name } Zone->retrieve_all ){
+	    next if $z->is_dot_arpa;
+	    next unless $z->active;
+	    next if $zone && ($z->id == $zone->id);
+	    if ( $manager && $manager->can($user, 'edit', $z) ){
+		push @zone_list, $z;
+	    }
+	}
+
+</%perl>
+      <div class="containerbody">
+	  <form name="netdotform" action="ip.html" method="POST">
+	    <input type="hidden" name="id" value="<% $o->id %>">
+	    <input type="hidden" name="_action" value="ADD_A_RECORD">
+            Name: <input type="text" name="new_a_name" value="">
+	    <select name="new_a_zone">
+            <option value=""> - select - </option>
+%	    foreach my $zone ( @zone_list ){
+                <option value="<% $zone->id %>"><% $zone->get_label %></option>
+%	    }
+            </select>
+            <p><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+            <input type="submit" name="submit" value="add">
+	  </form>
+<%perl>	  
+    }else{
+        my @rraddrs = $o->a_records();
+        my @rrs = map { $_->rr } @rraddrs;
+	$m->comp('/generic/sortresults.mhtml', object=>\@rrs);
+    }
     print '</div>';
     print '</div>';
 
@@ -800,6 +864,8 @@ if ( $edit ){
 </%perl>
 % if ( $manager && $manager->can($user, "access_section", 'ip.html:edit_ipinfo') ){
 
+
+%################################################################
 <div class="container">
     <div class="containerheadleft">Services</div>
     <div class="containerheadright">
@@ -837,8 +903,6 @@ if ( $edit ){
 % }
 
 %################################################################
-%# Custom Attributes
-%################################################################
 <!-- Display Custom Attributes -->
 % my @attributes = $o->attributes;
   <div class="container">
@@ -860,6 +924,7 @@ if ( $edit ){
 <!-- End Display Custom Attributes -->
 
 
+%################################################################
 <!-- Display ARP -->
 <%perl>
 # Get latest arp entries
@@ -966,6 +1031,11 @@ if ( $edit ){
               <li><span>Access Rights</span></li>
 %         } else {
             <li><a href="ip.html?id=<% $id %>&view=Rights">Access Rights</a></li>
+%         }
+%         if( $view eq "Attributes" ) {
+              <li><span>Attributes</span></li>
+%         } else {
+            <li><a href="ip.html?id=<% $id %>&view=Attributes">Attributes</a></li>
 %         }
 %         if( $view eq "Comments" ) {
               <li><span>Comments</span></li>
@@ -1187,12 +1257,12 @@ if ( $o->status->name eq 'Subnet' ){
 # Owner
 # For some fields, we will provide a way to update the values recursively in all 
 # descendant blocks.
-my %owner_tmp = $ui->form_field(object=>$o, column=>"owner", edit=>$edit_block, linkPage=>"view.html");
+my %owner_tmp = $ui->form_field(object=>$o, column=>"owner", edit=>0, linkPage=>"view.html");
 my $owner = $owner_tmp{value};
 
 if ( ! $edit_block ){
-    if ( $manager && $manager->can($user, 'access_admin_section', 'ip.html:edit_recursive') ){
-	$owner .= '<a href="#" onClick="edit_recursive(' . $o->id . ',\'owner\', \'1\')">[edit]</a>';
+    if ( $manager && $manager->can($user, 'access_admin_section', 'ip.html:edit_owner') ){
+	$owner .= '<a href="#" onClick="edit_recursive(' . $o->id . ',\'owner\', \'0\')">[edit]</a>';
     }
 }
 push( @field_headers, $owner_tmp{label} );
@@ -1200,10 +1270,20 @@ push( @cell_data, $owner );
 
 ################
 # Used by    
-my %usedby_tmp = $ui->form_field(object=>$o, column=>"used_by", edit=>$edit_block, linkPage=>"view.html");
-push( @field_headers, $usedby_tmp{'label'} );
-push( @cell_data, $usedby_tmp{'value'} );
+my %used_by_tmp = $ui->form_field(object=>$o, column=>"used_by", edit=>0, linkPage=>"view.html");
+my $used_by = $used_by_tmp{value};
+if ( ! $edit_block ){
+    if ( $manager && $manager->can($user, 'access_admin_section', 'ip.html:edit_used_by') ){
+	$used_by .= '<a href="#" onClick="edit_recursive(' . $o->id . ',\'used_by\', \'0\')">[edit]</a>';
+    }
+}
 
+push( @field_headers, $used_by_tmp{'label'} );
+push( @cell_data, $used_by );
+
+
+################
+# Netmask/broadcast
 my $ip = new NetAddr::IP($o->address, $o->prefix);
 
 push( @field_headers, "Netmask:", "Broadcast:" );
@@ -1577,6 +1657,30 @@ if ( $_action eq 'VIEW_ADD_RIGHTS' ){
 %  }
 % }
 
+%################################################################
+<!-- Display Custom Attributes -->
+% if ( $view eq 'Attributes' || $view eq 'All' ){
+%  if ( $manager && $manager->can($user, "access_section", 'ip.html:edit_attributes') ){
+%      my @attributes = $o->attributes;
+  <div class="container">
+    <div class="containerheadleft"><strong>Custom Attributes</strong></div>
+    <div class="containerheadright">
+%     if ( @attributes ) {
+        <a href="ip.html?id=<% $o %>&editattr=1">[edit]</a>
+%     }
+%   if ( $manager && $manager->can($user, 'edit', $o) ){
+        <a href="edit.html?table=IpblockAttr&ipblock=<% $o %>">[add]</a>
+%   }else{
+        &nbsp;
+%   }
+    </div>
+    <div class="containerbody">
+        <& /generic/sortresults.mhtml, object=>\@attributes, withedit=>$editattr, return_args=>"?id=$id" &>
+    </div>
+  </div>
+<!-- End Display Custom Attributes -->
+% }
+%}
 
 %################################################################
 %# Graphical Views

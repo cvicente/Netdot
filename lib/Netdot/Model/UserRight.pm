@@ -8,9 +8,6 @@ use strict;
 
 Netdot::Model::UserRight - Manipulate UserRight objects
 
-=head1 SYNOPSIS
-    
-    
 =cut
 
 my $logger = Netdot->log->get_logger('Netdot::Model');
@@ -18,8 +15,8 @@ my $logger = Netdot->log->get_logger('Netdot::Model');
 =head1 CLASS METHODS
 =cut
 
-
 #########################################################################
+
 =head2 insert - Insert a new UserRight object
 
     We override the insert method for extra functionality
@@ -36,6 +33,7 @@ my $logger = Netdot->log->get_logger('Netdot::Model');
     UserRight->insert({person=>$person_id, accessright=>$ar_id });
 
 =cut
+
 sub insert {
     my ($class, $argv) = @_;
     $class->throw_fatal("Model::UserRight::insert: Missing required arguments")
@@ -57,7 +55,8 @@ sub insert {
 		$class->throw_user("Cannot add other rights while 'none' right exists");
 
 	    }elsif ( $accessright->access eq 'none' && $ar->access ne 'none' ){
-		$logger->debug("UserRight::insert: Removing ".$ar->access." access on ".$ar->object_class." id ".$ar->object_id);
+		$logger->debug("UserRight::insert: Removing ".$ar->access." access on ".
+			       $ar->object_class." id ".$ar->object_id);
 		$ar->delete();
 	    }
 	}
@@ -65,3 +64,29 @@ sub insert {
     return $class->SUPER::insert($argv);
 }
 
+=head1 AUTHOR
+
+Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
+
+=head1 COPYRIGHT & LICENSE
+
+Copyright 2012 University of Oregon, all rights reserved.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTIBILITY
+or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software Foundation,
+Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+=cut
+
+#Be sure to return 1
+1;

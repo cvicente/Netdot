@@ -9,14 +9,17 @@ my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
 
 =head1 NAME
 
-Netdot::Model::Zone - DNS Zone Class
+Netdot::Model::Zone
 
 =head1 SYNOPSIS
-
+    
+DNS Zone Class
+    
 =head1 CLASS METHODS
 =cut
 
 ############################################################################
+
 =head2 search - Search for Zone objects
 
     We override the base method to add functionality:
@@ -44,6 +47,7 @@ Netdot::Model::Zone - DNS Zone Class
     Zone->search(name=>'some.domain.name')
 
 =cut
+
 sub search {
     my ($class, @args) = @_;
     $class->isa_class_method('search');
@@ -88,6 +92,7 @@ sub search {
 }
 
 ############################################################################
+
 =head2 search_like - Search for Zone objects
 
     We override the base method to add functionality:
@@ -102,6 +107,7 @@ sub search {
     Zone->search_like(name=>$search)
 
 =cut
+
 sub search_like {
     my ($class, @args) = @_;
     $class->isa_class_method('search_like');
@@ -129,6 +135,7 @@ sub search_like {
 
 
 #########################################################################
+
 =head2 insert - Insert a new DNS Zone (SOA Record)
 
     We override the insert method for extra functionality.
@@ -149,6 +156,7 @@ sub search_like {
     my $zone = Zone->insert({name=>'newzone.domain'});
 
 =cut
+
 sub insert {
     my ($class, $argv) = @_;
     $class->throw_fatal("Model::Zone::insert: Missing required arguments")
@@ -218,6 +226,7 @@ sub insert {
 }
 
 ############################################################################
+
 =head2 - add_ptrs - Given a .arpa zone, add all the missing PTR records
 
   Args: 
@@ -228,6 +237,7 @@ sub insert {
     $newzone->add_ptrs() if $newzone->is_dot_arpa();
 
 =cut
+
 sub add_ptrs {
     my ($self) = @_;
     $self->isa_object_method('add_ptrs');
@@ -252,6 +262,7 @@ sub add_ptrs {
 }
 
 ############################################################################
+
 =head2 - objectify - Convert to object as needed
 
   Args: 
@@ -262,6 +273,7 @@ sub add_ptrs {
     my $zone = Zone->objectify($zonestr);
 
 =cut
+
 sub objectify {
     my ($class, $z) = @_;
     $class->isa_class_method('objectify');
@@ -281,6 +293,7 @@ sub objectify {
 =cut
 
 #########################################################################
+
 =head2 update - Update Zone object
 
     Override the base method to:
@@ -294,6 +307,7 @@ sub objectify {
     $zone->update(\%args);
 
 =cut
+
 sub update {
     my ($self, $argv) = @_;
     $self->isa_object_method('update');
@@ -316,6 +330,7 @@ sub update {
 
 
 #########################################################################
+
 =head2 as_text
     
     Return the text representation (BIND syntax) of the Zone file. 
@@ -329,6 +344,7 @@ sub update {
     $zone->as_text();
 
 =cut
+
 sub as_text {
     my ($self, $argv) = @_;
     $self->isa_object_method('as_text');
@@ -342,6 +358,7 @@ sub as_text {
 }
 
 ############################################################################
+
 =head2 soa_string - Return SOA record as text
 
  Args: 
@@ -352,6 +369,7 @@ sub as_text {
     my $text = $zone->soa_string();
 
 =cut
+
 sub soa_string{
     my $self = shift;
     $self->isa_object_method('soa_string');
@@ -378,6 +396,7 @@ sub soa_string{
 }
 
 #########################################################################
+
 =head2 update_serial - Update zone serial number based on configured format
 
     Netdot will initialize and update the Zone's SOA serial number 
@@ -396,6 +415,7 @@ sub soa_string{
     $zone->update_serial();
 
 =cut
+
 sub update_serial {
     my ($self, $argv) = @_;
     $self->isa_object_method('update_serial');
@@ -437,6 +457,7 @@ sub update_serial {
 
 
 ############################################################################
+
 =head2 get_all_records - Get all records for export
 
    Iterating over each RR and its sub-RRs and calling as_text is too slow
@@ -450,6 +471,7 @@ sub update_serial {
     $zone->get_all_records();
 
 =cut
+
 sub get_all_records {
     my ($self, %argv) = @_;
     $self->isa_object_method('get_all_records');
@@ -521,6 +543,7 @@ sub get_all_records {
 
 
 ############################################################################
+
 =head2 get_record_count
     
   Args: 
@@ -531,6 +554,7 @@ sub get_all_records {
     $zone->get_record_count();
 
 =cut
+
 sub get_record_count {
     my ($self, %argv) = @_;
     $self->isa_object_method('get_record_count');
@@ -581,6 +605,7 @@ sub get_record_count {
 
 
 ############################################################################
+
 =head2 import_records - Import records into zone
     
   Args: 
@@ -593,6 +618,7 @@ sub get_record_count {
     $zone->import_records(text=>$text);
 
 =cut
+
 sub import_records {
     my ($self, %argv) = @_;
     $self->isa_object_method('import_records');
@@ -626,7 +652,7 @@ sub import_records {
 	$nrrs{$r->name} = $r;
     }
     
-    my $new_ips = 0;
+    my %new_ips;
 
     foreach my $rr ( @$rrs ){
 	my $name = $rr->name;
@@ -672,7 +698,7 @@ sub import_records {
 		$ipb = Ipblock->insert({ address        => $address,
 					 status         => 'Static',
 					 no_update_tree => 1});
-		$new_ips++;
+		$new_ips{$ipb->version}++;
 	    }
 	    my $rraddr;
 	    my %args = (rr=>$nrr, ipblock=>$ipb);
@@ -751,7 +777,7 @@ sub import_records {
 		$ipb = Ipblock->insert({ address        => $ipaddr,
 					 status         => 'Static',
 					 no_update_tree => 1 });
-		$new_ips++;
+		$new_ips{$ipb->version}++;
 	    }
 	    my %args = (rr=>$nrr, ptrdname=>$rr->ptrdname, ipblock=>$ipb);
 	    if ( $argv{overwrite} || !($rrptr = RRPTR->search(%args)->first) ){
@@ -806,16 +832,17 @@ sub import_records {
 	}
     }
 
-    if ( $new_ips ){
+    if ( %new_ips ){
 	# Update IP space hierarchy
-	Ipblock->build_tree(4);
-	Ipblock->build_tree(6);
+	Ipblock->build_tree(4) if exists $new_ips{4};
+	Ipblock->build_tree(6) if exists $new_ips{6};
     }
 
     1;
 }
 
 ############################################################################
+
 =head2 get_hosts - Retrieve a list of hosts in a given subnet or in all subnets.  
 
     For forward zones, the rows contain:
@@ -825,13 +852,14 @@ sub import_records {
     rr.id, rr.name, ip.id, ip.address, ip.version, rrptr.ptrdname
 
   Args: 
-    ipblock object or ID  (optional)
+    ipblock object or ID (optional)
   Returns: 
     Arrayref of arrayrefs
   Examples:
     $zone->get_hosts_in_ipblock();
 
 =cut
+
 sub get_hosts {
     my ($self, $ipblock) = @_;
     $self->isa_object_method('get_hosts');
@@ -870,6 +898,7 @@ sub get_hosts {
 }
 
 ############################################################################
+
 =head2 - is_dot_arpa - Check if zone is in-addr.arpa or ip6.arpa
 
   Args: 
@@ -880,6 +909,7 @@ sub get_hosts {
     if ( $zone->is_dot_arpa() ) { }
 
 =cut
+
 sub is_dot_arpa {
     my ($self) = @_;
     $self->isa_object_method('is_dot_arpa');
@@ -1027,7 +1057,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2009 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

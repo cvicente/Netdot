@@ -22,6 +22,7 @@ Netdot::Model::Device::Airespace - Cisco Wireless Controller Class
 =cut
 
 ############################################################################
+
 =head2 info_update - Update Device in Database using SNMP info
 
     Updates an existing Device based on information gathered via SNMP.  
@@ -56,6 +57,7 @@ Netdot::Model::Device::Airespace - Cisco Wireless Controller Class
     my $device = $device->info_update();
 
 =cut
+
 sub info_update {
     my ($self, %argv) = @_;
     $self->isa_object_method('info_update');
@@ -388,3 +390,29 @@ sub _get_ap_info {
     return 1;
 }
 
+=head1 AUTHORS
+
+Carlos Vicente
+
+=head1 COPYRIGHT & LICENSE
+
+Copyright 2012 University of Oregon, all rights reserved.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTIBILITY
+or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software Foundation,
+Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+=cut
+
+#Be sure to return 1
+1;

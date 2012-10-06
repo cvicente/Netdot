@@ -1,13 +1,26 @@
 package DBUTIL;
-#
-# A few subroutines shared by scripts
-# for database initialization and maintenance
-#
 use strict;
 use DBI;
 use Netdot::Meta::SQLT;
 use Data::Dumper;
 use Netdot::Config;
+
+=head1 NAME
+
+DBUTIL - Database Utilites
+
+ A few subroutines shared by scripts for database initialization and maintenance
+
+=head1 SYNOPSIS
+    
+    use DBUTIL;
+
+    my $dbh = &dbconnect();
+    &processdata(\@statements);
+    &dbdisconnect();
+ 
+=cut
+
 $|=1; #unbuffer output.
 
 my %CONFIG;
@@ -47,6 +60,26 @@ generate_schema_from_metadata generate_schema_file insert_schema create_db _yesn
 initacls_mysql initacls_pg insert_default_data insert_oui db_query );
 
 ##################################################
+
+=head2 build_dsn - Construct the DSN for DB connection
+
+  Arguments:
+    Hash with following keys (optional if using config file):
+      DB_TYPE
+      DB_DATABASE
+      DB_HOST
+      DB_PORT
+  Returns:    
+    DSN string
+  Examples:
+
+    my $dsn = &build_dsn(DB_TYPE     => $db_args{DB_TYPE}, 
+                         DB_DATABASE => $db_args{DB_DATABASE}, 
+                         DB_HOST     => $db_args{DB_HOST}, 
+                         DB_PORT     => $db_args{DB_PORT});
+
+=cut
+
 sub build_dsn { 
     my (%argv) = @_;
 
@@ -68,6 +101,22 @@ sub build_dsn {
 }
 
 ##################################################
+
+=head2 dbconnect - Connect to database
+
+  Arguments:
+    Hash with following keys (optional if using config file):
+      DB_TYPE
+      DB_DATABASE
+      DB_HOST
+      DB_PORT    
+  Returns:   
+    DBI handle
+  Examples:
+    my $dbh = &dbconnect();
+
+=cut
+
 sub dbconnect {
     my (%argv) = @_;
 
@@ -95,6 +144,18 @@ sub dbconnect {
 
 
 ##################################################
+
+=head2 dbdisconnect - Name says it
+
+  Arguments:
+    None
+  Returns:
+    true if successful
+  Examples:
+    &dbdisconnect();
+
+=cut
+
 sub dbdisconnect {
     if( $dbh->disconnect ) {
 	print "DEBUG: Disconnected successfully\n" if $CONFIG{DEBUG};
@@ -107,6 +168,17 @@ sub dbdisconnect {
 
 
 ##################################################
+
+=head2 init_db - Initialize database
+
+  Arguments:
+    None
+  Returns:
+    Nothing
+  Examples:
+    
+=cut
+
 # This does it all at once, in the right order
 sub init_db {
     if ( $CONFIG{DB_TYPE} eq "mysql" ){
@@ -128,6 +200,17 @@ sub init_db {
 }
 
 ##################################################
+
+=head2 drop_db - Delete Netdot database
+
+  Arguments:
+    None
+  Returns:
+    Nothing
+  Examples:
+
+=cut
+
 sub drop_db {
     
     my $dsn = &build_dsn();
@@ -158,6 +241,20 @@ END
 
 
 ##################################################
+
+=head2 generate_schema_from_metadata
+
+    Uses SQL::Translator to generate a schema
+    file from Netdot metadata
+
+  Arguments:
+    None
+  Returns:
+    Array containing statements to create schema
+  Examples:
+
+=cut
+
 sub generate_schema_from_metadata {
 
     # SQLT uses slightly different names for the db types
@@ -174,6 +271,19 @@ sub generate_schema_from_metadata {
 }
 
 ##################################################
+
+=head2 generate_schema_file
+    
+    Writes file to disk with schema statements
+
+  Arguments:
+    None
+  Returns:
+    Nothing
+  Examples:
+
+=cut
+
 sub generate_schema_file {
     my @schema = &generate_schema_from_metadata();
     print "Generating schema for $CONFIG{DB_TYPE}...";
@@ -192,6 +302,20 @@ sub generate_schema_file {
 
 
 ##################################################
+
+=head2 insert_schema
+
+    Creates schema by passing schema statements
+    to database
+
+  Arguments:
+    None
+  Returns:
+    Nothing
+  Examples:
+
+=cut
+
 sub insert_schema {
     my @schema;
     print "\nCreating database schema.\n";
@@ -212,7 +336,15 @@ sub insert_schema {
 
 
 ##################################################
-#
+
+=head2 
+
+  Arguments:
+  Returns:    
+  Examples:
+
+=cut
+
 sub create_db {
     my $dsn = &build_dsn();
     print "\nCreating $CONFIG{DB_TYPE} database $CONFIG{DB_DATABASE}.\n";
@@ -233,7 +365,7 @@ sub create_db {
 
 
 ##################################################
-#
+# Prompt for user input
 sub _yesno {
     print "Proceed [y/N]:";
     my $x = scalar(<STDIN>);
@@ -241,7 +373,19 @@ sub _yesno {
 }
 
 ##################################################
-#
+
+=head2 initacls_mysql
+
+    Assign appropriate ACLs to MySQL
+
+  Arguments:
+    None
+  Returns:
+    Nothing
+  Examples:
+
+=cut
+
 sub initacls_mysql {
     print "Setting up privileges for MySQL.\n";
     my @acl;
@@ -262,6 +406,17 @@ sub initacls_mysql {
 # 
 # TODO: Test this.  It might be unnecessary
 #
+
+=head2 initacls_pg
+
+    Assign appropriate ACLs to PostgreSQL
+
+  Arguments:
+  Returns:    
+  Examples:
+
+=cut
+
 sub initacls_pg {
 
     my $schema = "$CONFIG{CONFIG_DIR}/schema.Pg";
@@ -288,7 +443,17 @@ CREATE USER $CONFIG{DB_NETDOT_USER} WITH PASSWORD '$CONFIG{DB_NETDOT_PASS}' NOCR
 }
 
 ##################################################
-#
+
+=head2 insert_default_data
+
+    Insert default data into database
+
+  Arguments:
+  Returns:    
+  Examples:
+
+=cut
+
 sub insert_default_data{
     my @data;
     my $file = "$CONFIG{CONFIG_DIR}/$CONFIG{DEFAULT_DATA}";
@@ -311,7 +476,17 @@ sub insert_default_data{
 }
 
 ##################################################
-#
+
+=head2 insert_oui
+    
+    Insert IEEE OUI data into database
+
+  Arguments:
+  Returns:    
+  Examples:
+
+=cut
+
 sub insert_oui{
     my $oui_file = "oui.txt";
     unless ( -r $oui_file ){
@@ -362,8 +537,19 @@ sub insert_oui{
 }
 
 ##################################################
-# Convert lines into complete statements if needed
-# $lines must be an arrayref
+
+=head2 build_statements
+
+    Convert lines into complete statements if needed
+    
+  Arguments:
+    Arrayref with SQL statements
+  Returns:
+    Arrayref
+  Examples:
+
+=cut
+
 sub build_statements{
     my ($lines) = @_;
     my @statements;
@@ -380,6 +566,17 @@ sub build_statements{
 }
 
 ##################################################
+
+=head2 processdata - Pass statements to database
+
+  Arguments:
+    Arrayref of SQL statements
+  Returns:    
+    True
+  Examples:
+
+=cut
+
 sub processdata {
     my ($lines) = @_;
     $lines = &build_statements($lines);
@@ -387,7 +584,7 @@ sub processdata {
     while (my $cmd = shift @$lines ){
 	$cmd  =~ /^(.*)$/;
 	chomp($cmd);
-	print "DEBUG: ($cmd): " if $CONFIG{DEBUG};
+	print "DEBUG: ($cmd): \n" if $CONFIG{DEBUG};
 	eval {
 	    $rows = $dbh->do( $cmd );
 	};
@@ -402,13 +599,20 @@ sub processdata {
 }
 
 ##################################################
-# Connect, issue queries and disconnect all at once
-#
-# Arguments
-#   $query - arrayref of SQL statements
-# Returns
-#   nothing
-#
+
+=head2 db_query
+
+    Connect, issue queries and disconnect all at once
+
+
+  Arguments
+    $query - arrayref of SQL statements
+    $db    - Database name
+  Returns
+    nothing
+
+=cut
+
 sub db_query{
     my ($query, $db) = @_;
     $db ||= $CONFIG{DB_DATABASE};
@@ -418,5 +622,29 @@ sub db_query{
     }
 }
 
-# Return true
 1;
+
+=head1 AUTHOR
+
+Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
+
+=head1 COPYRIGHT & LICENSE
+
+Copyright 2012 University of Oregon, all rights reserved.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTIBILITY
+or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software Foundation,
+Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+=cut
+

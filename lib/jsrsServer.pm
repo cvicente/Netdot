@@ -15,8 +15,19 @@ use URI::Escape;
 use CGI;
 use warnings;
 
+=head1 NAME
+
+jsrsServer
+
+=cut
+
 $jsrsQuery = CGI::new();
 # print "Content-type: text/html\n\n";
+
+=head2 jsrsDispatch
+
+=cut
+
 sub jsrsDispatch {
 	my $validFuncs = $_[0];
 	my $func = jsrsBuildFunc($validFuncs);
@@ -28,6 +39,10 @@ sub jsrsDispatch {
 	}
 }
 
+=head2 jsrsReturn
+
+=cut
+
 sub jsrsReturn {
 	my $payload = $_[0];
 	print "Content-type: text/html\n\n";
@@ -36,6 +51,10 @@ sub jsrsReturn {
 	print "<form name=\"jsrs_Form\"><textarea name=\"jsrs_Payload\" id=\"jsrs_Payload\">";
 	print jsrsEscape( $payload ) . "</textarea></form></body></html>";
 }
+
+=head2 jsrsEscape
+
+=cut
 
 sub jsrsEscape {
 	my $str = $_[0];
@@ -47,6 +66,10 @@ sub jsrsEscape {
 # *
 # * user functions
 
+=head2 jsrsReturnError
+
+=cut
+
 sub jsrsReturnError {
 	my $str = $_[0];
 	my $cleanStr = Replace($str,"'","\\'");
@@ -55,6 +78,10 @@ sub jsrsReturnError {
 	print "onload=" . chr(34) . "p=document.layers?parentlayer:window.parent;p.jsrsError(\'" . $jsrsQuery->param("C");
 	print "','" . uri_unescape($str) . "\');" . chr(34) . ">" . $cleanStr . "</body></html>";
 }
+
+=head2 jsrsBuildFunc
+
+=cut
 
 sub jsrsBuildFunc {
 	my $validFuncs = $_[0];
@@ -81,6 +108,10 @@ sub jsrsBuildFunc {
 	}
 }
 
+=head2 jsrsEvalEscape
+
+=cut
+
 sub jsrsEvalEscape {
 	my $thing = $_[0];
 	$tmp = Replace($thing, chr(13), chr(92) . "n");
@@ -91,6 +122,10 @@ sub jsrsEvalEscape {
 # **************************************************************
 # *
 # * other compatibility functions
+
+=head2 Replace
+
+=cut
 
 sub Replace {
 	my $sSource = $_[0];

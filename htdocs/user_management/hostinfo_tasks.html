@@ -69,13 +69,9 @@ if ( exists $ao->{Ipblock} ){
 	    if ( $ip->status->name eq 'Subnet' ){
 		$ipblocks{$id} = $ip;
 	    }elsif ( $ip->status->name eq 'Container' ){
-		foreach my $n ( @{$ip->get_descendants_trie} ){
-		    next unless defined $n;
-		    my $chid = $n->data;
-		    if ( my $ch = Ipblock->retrieve($chid) ){
-			if ( $ch->status->name eq 'Subnet' ){
-			    $ipblocks{$chid} = $ch;
-			}
+		foreach my $ch ( @{ $ip->get_descendants(no_addresses=>1) } ){
+		    if ( $ch->status->name eq 'Subnet' ){
+			$ipblocks{$ch->id} = $ch;
 		    }
 		}
 	    }

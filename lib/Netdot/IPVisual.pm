@@ -1,6 +1,3 @@
-#Author: Clayton Parker Coleman
-#July 8th, 2010
-
 package Netdot::IPVisual;
 
 use base 'Netdot';
@@ -8,6 +5,16 @@ use bigint;
 use warnings;
 use strict;
 use Data::Dumper;
+
+=head1 NAME
+
+    Netdot::IPVisual
+
+##########################################################################################
+
+=head2 create_tree
+
+=cut 
 
 sub create_tree{
 	my ($class, $input_ids_ref, $C, $GD, $CC, $Chunk_Value, $n_addr_bits, $parent_addr_id, $return_lnk) = @_;
@@ -58,8 +65,15 @@ sub create_tree{
 	return $graphHTML;
 }
 
-#designed to build a quad tree of a specified depth, comparing 
-#portions of addresses equal in bit length to that depth
+##########################################################################################
+
+=head2 build_tree
+
+    Designed to build a quad tree of a specified depth, comparing 
+    portions of addresses equal in bit length to that depth
+
+=cut
+
 sub build_tree{
 	my ($class, $sector,$cdepth, $depth) = @_;
 	$class->isa_class_method('build_tree');
@@ -115,8 +129,14 @@ sub build_tree{
 }
 
 
+##########################################################################################
 
-#takes a quad tree built with buildTree and creates the HTML to render it
+=head2 build_graph
+
+    takes a quad tree built with buildTree and creates the HTML to render it
+
+=cut
+
 sub build_graph{
 
 	#$s is an array reference to the 4 sectors that will make up the current level
@@ -255,7 +275,11 @@ sub build_graph{
 	return ("#FFFFFF", $o);
 }
 
+##########################################################################################
 
+=head2 ipv6_to_bin_and_sub
+
+=cut
 
 sub ipv6_to_bin_and_sub{
         #address and current chunk of the address we're interested in
@@ -274,6 +298,12 @@ sub ipv6_to_bin_and_sub{
         return ($a, $s);
 }
 
+##########################################################################################
+
+=head2 num_bits
+
+=cut
+
 sub num_bits{
         my ($num) = @_;
         my $b = 0;
@@ -283,5 +313,29 @@ sub num_bits{
         return $b;
 }
 
+=head1 AUTHORS
+
+Author: Clayton Parker Coleman
+July 8th, 2010
+
+=head1 COPYRIGHT & LICENSE
+
+Copyright 2012 University of Oregon, all rights reserved.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTIBILITY
+or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software Foundation,
+Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+=cut
 
 1;

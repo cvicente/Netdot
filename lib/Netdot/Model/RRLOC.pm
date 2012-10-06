@@ -8,13 +8,11 @@ my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
 
 =head1 Netdot::Model::RRLOC - DNS LOC record Class
 
-=head1 SYNOPSIS
-
-
 =head1 CLASS METHODS
 =cut
 
 ############################################################################
+
 =head2 insert - Insert new RRLOC object
 
     We override the base method to:
@@ -29,6 +27,7 @@ my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
     my $record = RRLOC->insert(\%args)
 
 =cut
+
 sub insert {
     my($class, $argv) = @_;
     $class->isa_class_method('insert');
@@ -76,7 +75,9 @@ sub insert {
 
 =head1 INSTANCE METHODS
 =cut
+
 ############################################################################
+
 =head2 update
 
     We override the base method to:
@@ -90,6 +91,7 @@ sub insert {
     $record->update(\%args)
 
 =cut
+
 sub update {
     my($self, $argv) = @_;
     $self->isa_object_method('update');
@@ -104,6 +106,7 @@ sub update {
 }
 
 ##################################################################
+
 =head2 as_text
 
     Returns the text representation of this record
@@ -116,6 +119,7 @@ sub update {
     print $rr->as_text();
 
 =cut
+
 sub as_text {
     my $self = shift;
     $self->isa_object_method('as_text');
@@ -156,7 +160,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2009 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

@@ -18,6 +18,7 @@ Netdot::Model::Room
 =cut
 
 ##################################################################
+
 =head2 insert - Insert new object
 
   Arguments:
@@ -28,6 +29,7 @@ Netdot::Model::Room
     my $room = Room->insert(\%args);
 
 =cut
+
 sub insert {
     my ($class, $argv) = @_;
     $class->_validate_args($argv);
@@ -39,6 +41,7 @@ sub insert {
 =cut
 
 ##################################################################
+
 =head2 update - Update object's values
 
   Arguments:
@@ -49,6 +52,7 @@ sub insert {
     $room->update(\%args);
 
 =cut
+
 sub update {
     my ($self, $argv) = @_;
     $self->isa_object_method('update');
@@ -57,6 +61,7 @@ sub update {
 }
 
 ##################################################################
+
 =head2 get_label - Override get_label method
 
     Combines room number and site name
@@ -69,6 +74,7 @@ sub update {
     print $room->get_label();
 
 =cut
+
 sub get_label {
     my $self = shift;
     $self->isa_object_method('get_label');
@@ -101,7 +107,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2010 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

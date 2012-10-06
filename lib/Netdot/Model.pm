@@ -16,11 +16,13 @@ Netdot::Model - Netdot implementation of the Model layer (of the MVC architectur
 
 =head1 SYNOPSIS
     
+    use Netdot::Model;
     
 =cut
 
 my %defaults; 
 my $logger = Netdot->log->get_logger("Netdot::Model");
+my $db_type = __PACKAGE__->config->get('DB_TYPE');
 
 # Tables to exclude from audit
 my %EXCLUDE_AUDIT = (
@@ -40,7 +42,7 @@ BEGIN {
     $defaults{dsn} .= ";port=$port" if defined ($port); 
     $defaults{user}        = __PACKAGE__->config->get('DB_NETDOT_USER');
     $defaults{password}    = __PACKAGE__->config->get('DB_NETDOT_PASS');
-    $defaults{dbi_options} = { __PACKAGE__->_default_attributes };
+    $defaults{dbi_options} = {};
     if ($db_type eq "mysql") {
         $defaults{dbi_options}->{AutoCommit} = 1;
         $defaults{dbi_options}->{mysql_enable_utf8} = 1;
@@ -59,10 +61,10 @@ BEGIN {
     my $dbh = __PACKAGE__->db_Main();
     my ($schema_version) = $dbh->selectrow_array("SELECT version FROM schemainfo");
     if ( $schema_version ne $Netdot::VERSION ){
-     	Netdot::Model->_croak(sprintf("Netdot DB schema version mismatch: Netdot version '%s' != Schema version '%s'", 
+     	Netdot::Model->_croak(sprintf("Netdot DB schema version mismatch: ".
+				      "Netdot version '%s' != Schema version '%s'", 
 				      $Netdot::VERSION, $schema_version));
     }
-
 
 ###########################################################
 # Copy stored object in corresponding history table 
@@ -416,8 +418,11 @@ BEGIN {
 }
 
 =head1 CLASS METHODS
+
 =cut
+
 ############################################################################
+
 =head2 insert - Insert (create) a new object
 
   Arguments:
@@ -428,6 +433,7 @@ BEGIN {
     my $newobj = SomeClass->insert({field1=>val1, field2=>val2});
 
 =cut
+
 sub insert {
     my ($class, $argv) = @_;
     $class->isa_class_method('insert');
@@ -453,20 +459,7 @@ sub insert {
 	}else{
 	    $error = $e;
 	}
-	my $msg = "Error while inserting $class: ";
-	if ( $e =~ /Duplicate entry/i ){
-	    $msg .= "Some values are duplicated\n\n";
-	    $msg .= "Error details: ".$error;
-	}elsif ( $e =~ /cannot be null|not-null constraint/i ){
-	    $msg .= "Some fields cannot be null\n\n";
-	    $msg .= "Error details: ".$error;
-	}elsif ( $e =~ /invalid input syntax/i ){
-	    $msg .= "Some fields have invalid input syntax.";
-	}elsif ( $e =~ /out of range/i ){
-	    $msg .= "Some values are out of valid range.";
-	}else{
-	    $msg .= $error;
-	}
+	my $msg = "Error while inserting $class: $error";
 	$class->throw_user("$msg");
     }
 
@@ -477,6 +470,7 @@ sub insert {
 }
 
 ############################################################################
+
 =head2 search_like - Search with wildcards
 
     We override the base method to add wildcard characters at the beginning
@@ -493,6 +487,7 @@ sub insert {
     my @objs = SomeClass->search_like(field1=>val1, field2=>val2);
 
 =cut
+
 sub search_like {
     my ($class, @args) = @_;
     $class->isa_class_method('search_like');
@@ -530,8 +525,8 @@ sub search_like {
             # Not a foreign key, regex this sucker
             } else {
                 # Fix lack of typecast introduced in Pg 8.x
-                if (Netdot->config->get('DB_TYPE') eq "Pg") {
-                    push @qual, "CAST($column AS text) LIKE ?";
+                if ( $db_type eq 'Pg' ) {
+		    push @qual, "UPPER(CAST($column AS text)) LIKE UPPER(?)";
                     push @bind, $value;
                 } else {
                     push @qual, "$column LIKE ?";
@@ -564,6 +559,7 @@ sub search_like {
     $lastseen = $obj->timestamp();
 
 =cut
+
 sub timestamp {
     my $class  = shift;
     my ($seconds, $minutes, $hours, $day_of_month, 
@@ -574,6 +570,7 @@ sub timestamp {
 }
 
 ############################################################################
+
 =head2 date - Get date in DB 'date' format
 
   Arguments:
@@ -584,6 +581,7 @@ sub timestamp {
     $lastupdated = $obj->date();
 
 =cut
+
 sub date {
     my $class  = shift;
     my ($seconds, $minutes, $hours, $day_of_month, $month, $year,
@@ -595,6 +593,7 @@ sub date {
 
 
 ############################################################################
+
 =head2 meta_data - Return Meta::Table object associated with this object or class
 
   Arguments:
@@ -605,6 +604,7 @@ sub date {
     my @device_columns = $dev->meta_data->get_column_names();
 
 =cut
+
 sub meta_data {
     my $self = shift;
     my $table;
@@ -613,6 +613,7 @@ sub meta_data {
 }
 
 ############################################################################
+
 =head2 short_class - Return the short version of a class name.  It can also be called as a Class method.
     
   Arguments:
@@ -623,6 +624,7 @@ sub meta_data {
     # This returns 'Device' instead of Netdot::Model::Device
     $class = $dev->short_class();
 =cut
+
 sub short_class {
     my $self = shift;
 
@@ -634,6 +636,7 @@ sub short_class {
 }
 
 ############################################################################
+
 =head2 raw_sql - Issue SQL queries directly
 
     Returns results from an SQL query
@@ -659,6 +662,7 @@ sub short_class {
     <& /generic/data_table.mhtml, field_headers=>@headers, data=>@rows &>
 
 =cut
+
 sub raw_sql {
     my ($self, $sql) = @_;
     my $dbh = $self->db_Main;
@@ -670,8 +674,6 @@ sub raw_sql {
     	    $st->execute();
     	};
     	if ( my $e = $@ ){
-            # parse out SQL error message from the entire error
-            $e =~ s/execute failed:(.*)\"] at/$1/io;
     	    $self->throw_user("SQL Error: $e");
     	}
         $result{headers} = $st->{"NAME_lc"};
@@ -699,6 +701,7 @@ sub raw_sql {
 }
 
 ############################################################################
+
 =head2 do_transaction - Perform an operation "atomically".
     
     A reference to a subroutine is passed, together with its arguments.
@@ -772,12 +775,14 @@ sub do_transaction {
 } 
 
 ############################################################################
+
 =head2 db_auto_commit - Set the AutoCommit flag in DBI for the current db handle
 
  Arguments: Flag value to be set (1 or 0)
  Returns:   Current value of the flag (1 or 0)
 
 =cut
+
 sub db_auto_commit {
     my $self = shift;
     $self->isa_class_method('db_auto_commit');
@@ -788,9 +793,11 @@ sub db_auto_commit {
 }
 
 =head1 INSTANCE METHODS
+
 =cut
 
 ############################################################################
+
 =head2 update - Update object in DB
 
   We combine Class::DBI\'s set() and update() into one method.  
@@ -804,6 +811,7 @@ sub db_auto_commit {
     $obj->update({field1=>value1, field2=>value2});
 
 =cut
+
 sub update {
     my ($self, $argv) = @_;
     $self->isa_object_method('update');
@@ -813,12 +821,13 @@ sub update {
 
 	$class->_adjust_vals(args=>$argv, action=>'update');
 	
-	while ( my ($col, $val) = each %$argv ){
-	    my $a = blessed($self->$col) ? $self->$col->id : $self->$col;
-	    my $b = blessed($val)        ? $val->id        : $val;
-	    if ( (!defined $a || !defined $b) || (defined $a && defined $b && $a ne $b) ){
-		$self->set($col=>$b);
-		push @changed_keys, $col;
+	{   # Avoid warnings when comparing to undef
+	    no warnings 'uninitialized';
+	    while ( my ($col, $val) = each %$argv ){
+		if ( $self->$col ne $val ){
+		    $self->set($col=>$val);
+		    push @changed_keys, $col;
+		}
 	    }
 	}
     }
@@ -828,18 +837,7 @@ sub update {
 	$res = $self->SUPER::update();
     };
     if ( my $e = $@ ){
-	my $msg = "Error while updating $class: ";
-	# Class::DBI shows a full stack trace
-	# Try to make it less frightening for the user
-	if ( $e =~ /Duplicate/i ){
-	    $msg .= "Some values are duplicated. Full error: $e";
-	}elsif ( $e =~ /invalid input syntax/i ){
-	    $msg .= "Some fields have invalid input syntax";
-	}elsif ( $e =~ /out of range/i ){
-	    $msg .= "Some values are out of valid range.";
-	}else{ 
-	    $msg .= $e;
-	}
+	my $msg = "Error while updating $class: $e";
 	$self->throw_user("$msg");
     }
     if ( @changed_keys ){
@@ -854,6 +852,7 @@ sub update {
 }
 
 ############################################################################
+
 =head2 delete - Delete an existing object
 
   Arguments:
@@ -864,6 +863,7 @@ sub update {
     $obj->delete();
 
 =cut
+
 sub delete {
     my $self = shift;
     my $class = ref($self);
@@ -876,11 +876,7 @@ sub delete {
 	$self->SUPER::delete();
     };
     if ( my $e = $@ ){
-	my $msg;
-	if ( $e =~ /objects still refer to/i ){
-	    $msg = "Other objects refer to this object ($class id $id).  Delete failed.";
-	}
-	$self->throw_user($msg);
+	$self->throw_user($e);
     }
     $logger->debug( sub { sprintf("Model::delete: Deleted %s id %i", 
 				  $class, $id) } );
@@ -903,6 +899,7 @@ sub delete {
 }
 
 ############################################################################
+
 =head2 get_state - Get current state of an object
 
     Get a hash with column/value pairs from this object.
@@ -918,6 +915,7 @@ sub delete {
     my %state = $obj->get_state;
 
 =cut
+
 sub get_state {
     my ($self) = @_;
     $self->isa_object_method('get_state');
@@ -938,6 +936,7 @@ sub get_state {
 }
 
 ############################################################################
+
 =head2 get_digest - Calculate MD5 digest of object's current data
 
   Arguments:
@@ -948,6 +947,7 @@ sub get_state {
     my %digest = $obj->get_state_digest;
 
 =cut
+
 sub get_digest {
     my ($self) = @_;
     
@@ -962,6 +962,7 @@ sub get_digest {
 }
 
 ##################################################################
+
 =head2 get_label - Get label string
 
     Returns an object\'s label string, composed of the values 
@@ -977,6 +978,7 @@ Examples:
     print $obj->get_label();
 
 =cut
+
 sub get_label {
     my ($self, $delim) = @_;
     $self->isa_object_method('get_label');
@@ -1006,7 +1008,8 @@ sub get_label {
 }
 
 ############################################################################
-=head2 ge_history - Get a list of history objects for a given object
+
+=head2 get_history - Get a list of history objects for a given object
 
   Arguments:
     None
@@ -1017,6 +1020,7 @@ sub get_label {
     my @h = $obj->get_history();
 
 =cut
+
 sub get_history {
     my ($self, $o) = @_;
     $self->isa_object_method('get_history');
@@ -1036,6 +1040,7 @@ sub get_history {
 }
 
 ############################################################################
+
 =head2 search_all_tables - Search for a string in all text fields from all tables
     
     If query has the format <table:keyword>, then only fields of that table
@@ -1091,6 +1096,7 @@ sub search_all_tables {
 
 
 ############################################################################
+
 =head2 sqldate2time - Convert SQL date or timestamp into epoch value
 
   Arguments:  
@@ -1099,6 +1105,7 @@ sub search_all_tables {
     Seconds since epoch (compatible with Perls time function)
 
 =cut
+
 sub sqldate2time {
     my ($self, $date) = @_;
     if ( $date =~ /^(\d{4})-(\d{2})-(\d{2})(?: (\d{2}):(\d{2}):(\d{2}))?$/ ){
@@ -1115,6 +1122,7 @@ sub sqldate2time {
 }
 
 ############################################################################
+
 =head2 sqldate_days_ago - N days ago in SQL date format
 
   Arguments:  
@@ -1123,6 +1131,7 @@ sub sqldate2time {
     SQL date num_days ago
 
 =cut
+
 sub sqldate_days_ago {
     my ($self, $num_days) = @_;
     my $epochdate = time-($num_days*24*60*60);
@@ -1132,6 +1141,7 @@ sub sqldate_days_ago {
 }
 
 ############################################################################
+
 =head2 sqldate_today - Today's date in SQL date format
 
   Arguments:  
@@ -1140,6 +1150,7 @@ sub sqldate_days_ago {
     Today's date in SQL format
 
 =cut
+
 sub sqldate_today {
     my ($self) = @_;
     my $epochdate = time;
@@ -1149,6 +1160,7 @@ sub sqldate_today {
 }
 
 ############################################################################
+
 =head2 time2sqldate
 
   Arguments:  
@@ -1157,6 +1169,7 @@ sub sqldate_today {
     Date string in SQL format (YYYY-MM-DD)
 
 =cut
+
 sub time2sqldate {
     my ($self, $time) = @_;
     $time ||= time;
@@ -1195,7 +1208,17 @@ sub _adjust_vals{
     my %meta_columns;
     map { $meta_columns{$_->name} = $_ } $class->meta_data->get_columns;
     foreach my $field ( keys %$args ){
-	my $mcol = $meta_columns{$field} || $class->throw_fatal("Cannot find $field in $class metadata");
+	my $mcol = $meta_columns{$field} || 
+	    $class->throw_fatal("Cannot find $field in $class metadata");
+	
+	# Shorten string if necessary (affects Pg only)
+	# This has effect when the values are not the result of user input
+	# In that case, user gets an error message
+	if ( $mcol->sql_type eq 'varchar' && 
+	     defined $mcol->length && ($mcol->length < length($args->{$field})) ){
+	    $args->{$field} = substr($args->{$field}, 0, $mcol->length);
+	}
+	# Deal with NULL values properly
 	if ( !blessed($args->{$field}) && 
 	     (!defined($args->{$field}) || $args->{$field} eq '' || 
 	      $args->{$field} eq 'null' || $args->{$field} eq 'NULL' ) ){
@@ -1207,8 +1230,8 @@ sub _adjust_vals{
 		    $class->throw_fatal("Netdot::Model::_adjust_vals: sql_type not defined for $field");
 		}
 		if ( $mcol->sql_type =~ /^integer|bigint|bool$/o ) {
-		    $logger->debug(sub{sprintf("Model::_adjust_vals: Setting empty field '%s' type '%s' to 0.", 
-					       $field, $mcol->sql_type) });
+		    $logger->debug(sub{sprintf("Model::_adjust_vals: Setting empty field '%s' ".
+					       "type '%s' to 0.", $field, $mcol->sql_type) });
 		    $args->{$field} = 0;
 		}else{
 		    # Insert NULL instead of ""
@@ -1282,7 +1305,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

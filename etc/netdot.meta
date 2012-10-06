@@ -521,7 +521,7 @@ $meta = {
     index => [ ['serial_number'], ['inventory_number'], ['po_number'] ],
     isjoin => '0',
     primary_key => 'id',
-    label => ['serial_number', 'physaddr', 'product_id' ],
+    label => ['product_id', 'serial_number', 'physaddr' ],
     unique => [ ['physaddr'], ['product_id', 'serial_number'] ]
   },
   Availability => {
@@ -2417,7 +2417,7 @@ $meta = {
       'name'
     ],
     primary_key => 'id',
-    unique => [ ['name', 'asset_id'] ],
+    unique => [ ['name', 'asset_id'], ['name'] ],
     views => {
       all => [
         'name',
@@ -7268,7 +7268,7 @@ $meta = {
     ],
     isjoin => '0',
     label => [
-      'name'
+      'name', 'aliases'
     ],
     primary_key => 'id',
     unique => [ ['name'], ['number'] ],

@@ -10,7 +10,11 @@ my $logger = Netdot->log->get_logger('Netdot::Exporter');
 
 =head1 NAME
 
-Netdot::Exporter::Sysmon - Read relevant info from Netdot and build Sysmon configuration
+Netdot::Exporter::Sysmon
+
+=head1 DESCRIPTION
+
+    Read relevant info from Netdot and build Sysmon configuration
 
 =head1 SYNOPSIS
 
@@ -21,6 +25,7 @@ Netdot::Exporter::Sysmon - Read relevant info from Netdot and build Sysmon confi
 =cut
 
 ############################################################################
+
 =head2 new - Class constructor
 
   Arguments:
@@ -51,6 +56,7 @@ sub new{
 }
 
 ############################################################################
+
 =head2 generate_configs - Generate configuration files for Sysmon
 
   Arguments:
@@ -60,6 +66,7 @@ sub new{
   Examples:
     $sysmon->generate_configs();
 =cut
+
 sub generate_configs {
     my ($self) = @_;
 
@@ -148,6 +155,7 @@ EOP
 }
 
 ########################################################################
+
 =head2 strip_domain - Strip domain name from hostname if necessary
 
   Arguments:
@@ -157,6 +165,7 @@ EOP
   Examples:
     
 =cut
+
 sub strip_domain {
     my ($self, $hostname) = @_;
 
@@ -175,7 +184,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2008 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

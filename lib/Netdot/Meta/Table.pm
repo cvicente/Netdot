@@ -5,17 +5,25 @@ use Netdot::Meta::Table::Column;
 use strict;
 use Carp;
 
+=head1 NAME
+
+Netdot::Meta::Table
+
+=head1 SYNOPSIS
+
+=cut
+
 # Some private class data and related methods
 {
     # Cache Meta::Table::Column objects
     my %_column_cache;
 
-    sub cache_column {
+    sub _cache_column {
 	my ($self, $table, $obj) = @_;
 	$_column_cache{$table}{$obj->name} = $obj;
 	return 1;
     }
-    sub get_cached_column{
+    sub _get_cached_column{
 	my ($self, $table, $name) = @_;
 	return $_column_cache{$table}{$name} 
 	if exists $_column_cache{$table}{$name};
@@ -24,18 +32,16 @@ use Carp;
 
 1;
 
-=head1 NAME
-
-Netdot::Meta::Table
-
-=head1 SYNOPSIS
-
-
 =head1 PUBLIC METHODS
 
 =cut
 
 ##################################################
+
+=head2 new - Class constructor
+
+=cut
+
 sub new {
     my ($class, $info) = @_;
     croak "Incorrect call to new as an object method" 
@@ -45,6 +51,7 @@ sub new {
 }
 
 ##################################################
+
 =head2 name - Returns the name of this table
 
   Arguments:
@@ -55,12 +62,14 @@ sub new {
     my $table_name = $mtable->name;
 
 =cut
+
 sub name {
     my $self = shift;
     return $self->_get_attr('name');
 }
 
 ##################################################
+
 =head2 db_name - Returns the actual name of this table in the database
 
   Arguments:
@@ -71,12 +80,14 @@ sub name {
     my $db_name = $mtable->db_name;
 
 =cut
+
 sub db_name {
     my $self = shift;
     return $self->_get_attr('table_db_name');
 }
 
 ##################################################
+
 =head2 descr -  Get Table description
 
   Arguments:
@@ -87,12 +98,14 @@ sub db_name {
     $descr = $mtable->descr();
 
 =cut
+
 sub descr {
     my $self = shift;
     return $self->_get_attr('description');
 }
 
 ##################################################
+
 =head2 get_column_names
 
   Arguments:
@@ -103,6 +116,7 @@ sub descr {
     my @tables = Netdot::Meta::Table->get_table_names();
 
 =cut
+
 sub get_column_names{
     my $self = shift;
     my @names = sort keys %{$self->_get_columns_hash()};
@@ -110,6 +124,7 @@ sub get_column_names{
 }
 
 ##################################################
+
 =head2 get_column - Get new Column object
 
   Arguments:
@@ -119,22 +134,24 @@ sub get_column_names{
   Example: 
     my $mc = Device->meta_data->get_column('sysdescription');
 =cut
+
 sub get_column {
     my ($self, $name) = @_;
     my $newcolumn;
-    if ( $newcolumn = $self->get_cached_column($self->name, $name) ){
+    if ( $newcolumn = $self->_get_cached_column($self->name, $name) ){
 	return $newcolumn;
     }else{
 	my $info = $self->_get_column_info($name);
 	$info->{name}  = $name;
 	$info->{table} = $self;
 	$newcolumn = Netdot::Meta::Table::Column->new($info);
-	$self->cache_column($self->name, $newcolumn);
+	$self->_cache_column($self->name, $newcolumn);
     }
     return $newcolumn;
 }
 
 ##################################################
+
 =head2 get_columns - Get a list of all Column objects for this table
 
   Arguments:    None
@@ -144,6 +161,7 @@ sub get_column {
     my @meta_columns = $mtable->get_columns;
 
 =cut
+
 sub get_columns {
     my $self = shift;
     my @ret;
@@ -165,6 +183,7 @@ Keep the arrow head (-->) in mind, otherwise the names would be ambiguous.
 =cut
 
 ##################################################
+
 =head2 get_links_to
 
     Get foreign key relationships for a given table,
@@ -179,6 +198,7 @@ Keep the arrow head (-->) in mind, otherwise the names would be ambiguous.
     %linksto = $mtable->get_links_to();
 
 =cut
+
 sub get_links_to{
     my $self = shift;
     my %ret;
@@ -191,6 +211,7 @@ sub get_links_to{
 }
 
 ##################################################
+
 =head2 get_links_from
 
     Get one-to-many relationships for a given table, this table being on the "one" side 
@@ -208,6 +229,7 @@ sub get_links_to{
     %links = $mtable->get_links_from();
 
 =cut
+
 sub get_links_from{
     my $self = shift;
     my %ret;
@@ -232,6 +254,7 @@ sub get_links_from{
 }
 
 ##################################################
+
 =head2 get_column_order
     
     Provide the position of all columns in this table, in the order they are 
@@ -249,6 +272,7 @@ sub get_links_from{
      ...
 
 =cut
+
 sub get_column_order{
     my ($self, %argv) = @_;
     my $views = $self->_get_attr('views');
@@ -268,6 +292,7 @@ sub get_column_order{
 }
 
 ##################################################
+
 =head2 get_column_order_brief
 
     Provide the position of most relevant columns in this table, in the order they are 
@@ -284,6 +309,7 @@ sub get_column_order{
 
 
 =cut
+
 sub get_column_order_brief {
     my $self = shift;
     my @tmp;
@@ -302,6 +328,7 @@ sub get_column_order_brief {
 }
 
 ##################################################
+
 =head2 get_labels -  Get labels this table. 
 
     Labels are one or more columns used as hyperlinks to retrieve
@@ -316,6 +343,7 @@ sub get_column_order_brief {
 
 
 =cut
+
 sub get_labels{
     my $self = shift;
     my @labels = @{$self->_get_attr('label')};
@@ -323,6 +351,7 @@ sub get_labels{
 }
 
 ##################################################
+
 =head2 get_unique_columns - Get list of unique columns
 
   Arguments:
@@ -334,12 +363,14 @@ sub get_labels{
     $unique = $mtable->get_unique_columns();
 
 =cut
+
 sub get_unique_columns {
     my $self = shift;
     return $self->_get_attr('unique');
 }
 
 ##################################################
+
 =head2 get_indexed_columns - Get list of indexed columns for this table
 
   Arguments:
@@ -351,6 +382,7 @@ sub get_unique_columns {
     $unique = $mtable->get_indexed_columns();
 
 =cut
+
 sub get_indexed_columns {
     my $self = shift;
     my $idx = []; 
@@ -368,6 +400,7 @@ sub get_indexed_columns {
 }
 
 ##################################################
+
 =head2 is_join - Check if table is a join table
 
   Arguments:
@@ -378,12 +411,14 @@ sub get_indexed_columns {
   $flag = $mtable->is_join();
 
 =cut
+
 sub is_join {
     my $self = shift;
     return $self->_get_attr('isjoin');
 }
 
 ##################################################
+
 =head2 has_history - Check if this table has a corresponding history table
 
   Arguments:
@@ -394,12 +429,14 @@ sub is_join {
   $flag = $mtable->has_history();
 
 =cut
+
 sub has_history {
     my ($self) = @_;
     return $self->_get_attr('has_history');
 }
 
 ##################################################
+
 =head2 get_history_table_name - Return the name of the history table that corresponds to this table
 
   Arguments:
@@ -409,6 +446,7 @@ sub has_history {
   Example: 
 
 =cut
+
 sub get_history_table_name {
     my ($self) = @_;
     if ( $self->has_history && !$self->is_history ){
@@ -418,6 +456,7 @@ sub get_history_table_name {
 }
 
 ##################################################
+
 =head2 is_history - Check if this table is a history table
 
   Arguments:
@@ -428,12 +467,14 @@ sub get_history_table_name {
   $flag = $mtable->is_history();
 
 =cut
+
 sub is_history {
     my ($self) = @_;
     return $self->_get_attr('is_history');
 }
 
 ##################################################
+
 =head2 original_table - Return name of original table if this is a history table
 
   Arguments:
@@ -444,6 +485,7 @@ sub is_history {
   $orig = $mtable->original_table();
 
 =cut
+
 sub original_table {
     my ($self) = @_;
     return $self->_get_attr('original_table')
@@ -533,3 +575,29 @@ sub _get_column_info {
     return \%info;
 }
 
+=head1 AUTHORS
+
+Carlos Vicente
+
+=head1 COPYRIGHT & LICENSE
+
+Copyright 2012 University of Oregon, all rights reserved.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTIBILITY
+or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software Foundation,
+Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+
+=cut
+
+#Be sure to return 1
+1;

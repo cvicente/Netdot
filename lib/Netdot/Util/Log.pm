@@ -22,6 +22,7 @@ Netdot::Util::Log
 =cut
 
 ############################################################################
+
 =head2 new - Class constructor
 
   Arguments:
@@ -34,6 +35,7 @@ Netdot::Util::Log
 
 
 =cut
+
 sub new{
     my ($proto, %argv) = @_;
     my $class = ref($proto) || $proto;
@@ -48,6 +50,7 @@ sub new{
 =cut
 
 ############################################################################
+
 =head2 get_logger - Return logger object
 
   Arguments:
@@ -58,6 +61,7 @@ sub new{
     $log->get_logger("Netdot::Class");
 
 =cut
+
 sub get_logger{
     my ($self, $name) = @_;
     croak "Need to pass logger name" unless $name;
@@ -65,6 +69,7 @@ sub get_logger{
 }
 
 ############################################################################
+
 =head2 new_appender
 
   Arguments:
@@ -76,6 +81,7 @@ sub get_logger{
     my $logstr = Netdot::Util::Log->new_appender('String', 'logstr');
 
 =cut
+
 sub new_appender{
     my ($self, $type, %args) = @_;
 
@@ -91,7 +97,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

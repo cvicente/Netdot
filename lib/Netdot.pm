@@ -40,11 +40,11 @@ Netdot - Network Documentation Tool
 
 =head1 VERSION
 
-Version 1.0.1
+Version 1.0.2
 
 =cut
 
-our $VERSION = "1.0.1";
+our $VERSION = "1.0.2";
 
 =head1 SYNOPSIS
 
@@ -52,22 +52,39 @@ This module groups common functions used by Netdot\'s classes.
     
 =head1 METHODS
 
+############################################################################
+
 =head2 meta - Get Netdot::Meta object
 
 =cut
+
 sub meta   { return $class->{_meta}  }
+
+############################################################################
 
 =head2 config - Get Netdot::Config object
 =cut
+
 sub config { return $class->{_config} }
+
+############################################################################
 
 =head2 log - Get Netdot::Util::Log object
 =cut
+
 sub log { return $class->{_log} }
+
+############################################################################
 
 =head2 dns - Get Netdot::Util::DNS object
 =cut
+
 sub dns { return $class->{_dns} }
+
+############################################################################
+
+=head2 throw_user - Throw a user exception
+=cut
 
 sub throw_user {
     my ($self, $msg) = @_;
@@ -76,12 +93,22 @@ sub throw_user {
     return Netdot::Util::Exception::User->throw(message=>$msg);
 }
 
+############################################################################
+
+=head2 throw_fatal - Throw a fatal exception
+=cut
+
 sub throw_fatal {
     my ($self, $msg) = @_;
     my $logger = $class->{_log}->get_logger('Netdot');
     $logger->fatal($msg);
     return Netdot::Util::Exception::Fatal->throw(message=>$msg);
 }
+
+############################################################################
+
+=head2 throw_rest - Throw a REST exception
+=cut
 
 sub throw_rest {
     my ($self, %argv) = @_;
@@ -90,6 +117,11 @@ sub throw_rest {
     return Netdot::Util::Exception::REST->throw(code=>$argv{code}, message=>$argv{msg});
 }
 
+############################################################################
+
+=head2 isa_class_method - Make sure that method is being called as class
+=cut
+
 sub isa_class_method {
     my ($class, $method) = @_;
     if ( my $classname = ref($class) ){
@@ -97,26 +129,59 @@ sub isa_class_method {
     }
     return 1;
 }
+
+############################################################################
+
+=head2 isa_object_method - Make sure that method is being called as object
+=cut
+
 sub isa_object_method {
     my ($self, $method) = @_;
     __PACKAGE__->throw_fatal("Invalid class method call to ".$self."::".$method)
 	unless ref($self);
     return 1;
 }
+
+############################################################################
+
+=head2 isa_netdot_exception - Test if exception is a Netdot exception
+=cut
+
 sub isa_netdot_exception {
     my $self = shift;
     return Netdot::Util::Exception->isa_netdot_exception(@_);
 }
 
+############################################################################
+
+=head2 Dump - Show a data structure using Data::Dumper
+=cut
+
 sub Dump { return Dumper(@_) };
+
+############################################################################
+
+=head2 get_ipv4_regex - Return IPv4 regular expression
+=cut
 
 sub get_ipv4_regex { return $IPV4 }
 
+############################################################################
+
+=head2 get_ipv6_regex - Return IPv6 regular expression
+=cut
+
 sub get_ipv6_regex { return $IPV6 }
+
+############################################################################
+
+=head2 get_mac_regex - Return Ethernet MAC regular expression
+=cut
 
 sub get_mac_regex { return $MAC }
 
 ######################################################################
+
 =head2 ttl_from_text - Convert string DNS record TTL into integer value
 	
   Arguments: 
@@ -126,6 +191,7 @@ sub get_mac_regex { return $MAC }
   Example:
     $ttl = Netdot->ttl_from_text($ttl_string)
 =cut
+
 sub ttl_from_text {
     my ($self, $t) = @_;
 
@@ -157,6 +223,7 @@ sub ttl_from_text {
 }
 
 ######################################################################
+
 =head2 sec2dhms - Translate seconds into days, minutes, hours, seconds
 	
    Arguments: 
@@ -166,6 +233,7 @@ sub ttl_from_text {
    Example:
     print Netdot->sec2dhms($seconds);
 =cut   
+
 sub sec2dhms {
     my ($self, $seconds) = @_;
     my @parts = gmtime($seconds);
@@ -179,6 +247,7 @@ sub sec2dhms {
 }
 
 ######################################################################
+
 =head2 send_mail - Send mail to desired destination
 
     Useful to e-mail output from automatic processes
@@ -192,6 +261,7 @@ sub sec2dhms {
     Returns true/false for success/failure
 
 =cut
+
 sub send_mail {
     my ($self, %args) = @_;
     my ($to, $from, $subject, $body) = 	@args{'to', 'from', 'subject', 'body'};
@@ -220,6 +290,7 @@ close(SENDMAIL);
 }
 
 ######################################################################
+
 =head2 rem_lt_sp - Remove leading and trailing space from string
 	
    Arguments: 
@@ -229,6 +300,7 @@ close(SENDMAIL);
    Example:
     $str = $self->rem_lt_sp($str);
 =cut   
+
 sub rem_lt_sp {
     my ($self, $str) = @_;
     return unless $str;
@@ -239,6 +311,7 @@ sub rem_lt_sp {
 }
 
 ######################################################################
+
 =head2 is_ascii - Determine if value is ascii only
 
     If value has non-ascii characters, returns 0
@@ -250,6 +323,7 @@ sub rem_lt_sp {
    Example:
     if $self->is_ascii($str);
 =cut   
+
 sub is_ascii {
     my ($self, $v) = @_;
     return unless $v;
@@ -259,21 +333,23 @@ sub is_ascii {
 
 
 ############################################################################
-# cache - Get or set memory data cache
-#
-#  Values time out after $_cache_timeout seconds
-#
-#  Arguments:
-#    cache key    unique key to identify the data
-#    cache data   Required for set
-#    timeout      defaults to 60 seconds
-#  Returns:
-#    cache data or undef if timed out
-#  Examples:
-#    my $graph = $self->_cache('graph');
-#    $self->_cache('graph', $data);
-#
-#
+
+=head2 cache - Get or set memory data cache
+
+    Values time out after $_cache_timeout seconds
+
+  Arguments:
+    cache key    unique key to identify the data
+    cache data   Required for set
+    timeout      defaults to 60 seconds
+  Returns:
+    cache data or undef if timed out
+  Examples:
+    my $graph = $self->_cache('graph');
+    $self->_cache('graph', $data);
+
+=cut
+
 sub cache {
     my ($self, $key, $data, $timeout) = @_;
 
@@ -313,24 +389,24 @@ You can find documentation for this module with the perldoc command.
 
     perldoc Netdot
 
-You can also look for information at:
+You can also use the mailing lists:
 
-=over 4
+=over 
 
-=item * Netdot mailing lists
+=item L<netdot-users|https://osl.uoregon.edu/mailman/listinfo/netdot-users>
+
+=item L<netdot-devel|https://osl.uoregon.edu/mailman/listinfo/netdot-devel>
 
 =back
 
-L<http://ns.uoregon.edu/mailman/netdot-users>
-
-
 =head1 ACKNOWLEDGEMENTS
 
-The Network Services group at the University of Oregon and multiple other contributors.
+The Network & Telecom Services group at the University of Oregon and 
+multiple other contributors.
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

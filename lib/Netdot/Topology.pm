@@ -25,6 +25,7 @@ Netdot Device Topology Class
 =cut
 
 ######################################################################################
+
 =head2 discover - Discover Topology
 
   Arguments:
@@ -41,6 +42,7 @@ Netdot Device Topology Class
     Netdot::Topology->discover();
 
 =cut
+
 sub discover {
     my ($class, %argv) = @_;
     $class->isa_class_method('discover');
@@ -98,6 +100,7 @@ sub discover {
 }
 
 ######################################################################################
+
 =head2 update_links - Update links between Device Interfaces
     
     The different sources of topology information are assigned specific weights to
@@ -117,6 +120,7 @@ sub discover {
     Netdot::Topology->update_links(db_links=>$links);
 
 =cut
+
 sub update_links {
     my ($class, %argv) = @_;
     my %WEIGHTS;
@@ -303,6 +307,7 @@ sub update_links {
 }
 
 ###################################################################################################
+
 =head2 get_dp_links - Get links between devices based on Discovery Protocol (CDP/LLDP) Info 
 
   Arguments:  
@@ -315,6 +320,7 @@ sub update_links {
     my $links = Netdot::Topology->get_dp_links(\@interfaces);
 
 =cut
+
 sub get_dp_links {
     my ($class, %argv) = @_;
     $class->isa_class_method('get_dp_links');
@@ -573,6 +579,7 @@ sub get_dp_links {
 }
 
 ###################################################################################################
+
 =head2 get_fdb_links - Get links between devices based on Forwarding Database (FDB) information
 
   Arguments:  
@@ -583,6 +590,7 @@ sub get_dp_links {
     my $links = Netdot::Topology->get_fdb_links;
 
 =cut
+
 sub get_fdb_links {
     my ($class, %argv) = @_;
     $class->isa_class_method('get_fdb_links');
@@ -684,7 +692,7 @@ sub get_fdb_links {
 
     # Some utility functions
     #
-    sub hash_intersection {
+    sub _hash_intersection {
 	my ($a, $b) = @_;
 	my %combo = ();
 	my $smallest = (scalar keys %$a < scalar keys %$b)? $a : $b;
@@ -692,7 +700,7 @@ sub get_fdb_links {
 	for my $k (keys %$smallest) { $combo{$k} = 1 if ( exists $largest->{$k} ) }
 	return \%combo;
     }
-    sub hash_union {
+    sub _hash_union {
 	my ($a, $b) = @_;
 	my %combo = ();
 	for my $k (keys %$a) { $combo{$k} = 1 }
@@ -700,7 +708,7 @@ sub get_fdb_links {
 	return \%combo;
     }
     # Returns true if hashes have at least one key in common
-    sub hash_match {
+    sub _hash_match {
 	my ($a, $b) = @_;
 	my $smallest = (scalar keys %$a < scalar keys %$b)? $a : $b;
 	my $largest = ( $smallest == $a )? $b : $a;
@@ -710,7 +718,7 @@ sub get_fdb_links {
     
     # Find groups of devices on the same physical segment by checking to 
     # see if they have addresses in common
-    sub break_into_groups {
+    sub _break_into_groups {
 	my (%argv) = @_;
 	my ($class, $device_addresses, $device_names, $infrastructure_macs, $excluded_devices, $excluded_macs) 
 	    = @argv{'class', 'device_addresses', 'device_names', 'infrastructure_macs', 'excluded_devices', 'excluded_macs'};
@@ -827,7 +835,7 @@ sub get_fdb_links {
 			}
 		    }
 		}elsif ( $num_addresses ){
-		    my $intersection = &hash_intersection($d->{$device}{$interface},
+		    my $intersection = &_hash_intersection($d->{$device}{$interface},
 							  \%layer1_ints);
 
 		    foreach my $address ( keys %$intersection ){
@@ -836,7 +844,7 @@ sub get_fdb_links {
 		}else{
 		    next;
 		}
-		$device_addresses->{$device} = &hash_union($device_addresses->{$device}, 
+		$device_addresses->{$device} = &_hash_union($device_addresses->{$device}, 
 							   $d->{$device}{$interface})
 	    }
 	}
@@ -858,12 +866,12 @@ sub get_fdb_links {
 	
 	my $groups;
 	$logger->debug("  Breaking devices up into separate layer2 networks");
-	$groups = &break_into_groups(class               => $class, 
-				     device_addresses    => $device_addresses, 
-				     device_names        => \%device_names, 
-				     infrastructure_macs => \%infrastructure_macs, 
-				     excluded_devices    => \%excluded_devices,
-				     excluded_macs       => \%excluded_macs,
+	$groups = &_break_into_groups(class               => $class, 
+				      device_addresses    => $device_addresses, 
+				      device_names        => \%device_names, 
+				      infrastructure_macs => \%infrastructure_macs, 
+				      excluded_devices    => \%excluded_devices,
+				      excluded_macs       => \%excluded_macs,
 	    );
 	
 	$logger->debug("  We now have " . scalar @$groups . " groups");
@@ -893,16 +901,16 @@ sub get_fdb_links {
 			my $ihash = $d->{$device}{$interface};
 			next if ( 0 == scalar keys %$ihash );
 
-			my $r_ihash = &hash_intersection($ihash, \%universal);
+			my $r_ihash = &_hash_intersection($ihash, \%universal);
 
 			foreach my $interface2 (keys %{$d->{$device2}}) {
 			    my $ihash2 = $d->{$device2}{$interface2};
 			    next if (0 == scalar keys %$ihash2);
 
-			    if ( 0 == scalar keys %{&hash_intersection($ihash2, $ihash)} ){
+			    if ( 0 == scalar keys %{&_hash_intersection($ihash2, $ihash)} ){
 
-				my $r_ihash2        = &hash_intersection($ihash2, \%universal);
-				my $i_address_union = &hash_union($r_ihash, $r_ihash2);
+				my $r_ihash2        = &_hash_intersection($ihash2, \%universal);
+				my $i_address_union = &_hash_union($r_ihash, $r_ihash2);
 				my $combo_size      = scalar keys %$i_address_union;
 				my $percentage      = $combo_size / $universal_size;
 				
@@ -957,6 +965,7 @@ sub get_fdb_links {
 }
 
 ###################################################################################################
+
 =head2 get_stp_links - Get links between all devices based on STP information
 
   Arguments:  
@@ -967,6 +976,7 @@ sub get_fdb_links {
     my $links =Netdot::Topology->get_stp_links();
 
 =cut
+
 sub get_stp_links {
     my ($class, %argv) = @_;
     $class->isa_class_method('get_stp_links');
@@ -993,6 +1003,7 @@ sub get_stp_links {
 }
 
 ###################################################################################################
+
 =head2 get_tree_stp_links - Get links between devices in a Spanning Tree
 
   Arguments:  
@@ -1005,6 +1016,7 @@ sub get_stp_links {
     my $links = Netdot::Topology->get_tree_stp_links(root=>'DEADDEADBEEF');
 
 =cut
+
 sub get_tree_stp_links {
     my ($class, %argv) = @_;
     $class->isa_class_method('get_tree_stp_links');
@@ -1086,6 +1098,7 @@ sub get_tree_stp_links {
 }
 
 ###################################################################################################
+
 =head2 get_p2p_links - Get Point-to-Point links based on network prefix
 
     Take advantage of the fact that point to point links between routers are usually configured
@@ -1099,6 +1112,7 @@ sub get_tree_stp_links {
     my $links = Netdot::Topology->get_p2p_links();
 
 =cut
+
 sub get_p2p_links {
     my ($class, %argv) = @_;
     $class->isa_class_method('get_p2p_links');
@@ -1181,7 +1195,9 @@ sub _cmp_des_p {
     return 0;
 }
 
-#takes a list of interface ids and builds the sql needed to limit a query on interface to only use those interfaces
+#####################################################################################
+# Takes a list of interface ids and builds the sql needed to limit a query on interface 
+# to only use those interfaces
 sub _return_sql_filter{
     my @interfaces = @_;
     my $sql_query_modifier = "(";
@@ -1214,7 +1230,7 @@ Peter Boothe
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

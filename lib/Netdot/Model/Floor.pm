@@ -10,12 +10,11 @@ my $logger = Netdot->log->get_logger('Netdot::Model');
 
 Netdot::Model::Floor
 
-=head1 SYNOPSIS
-
 =head1 CLASS METHODS
 =cut
 
 ##################################################################
+
 =head2 insert - Insert new object
 
   Arguments:
@@ -26,6 +25,7 @@ Netdot::Model::Floor
     my $floor = Floor->insert(\%args);
 
 =cut
+
 sub insert {
     my ($class, $argv) = @_;
     $class->_validate_args($argv);
@@ -37,6 +37,7 @@ sub insert {
 =cut
 
 ##################################################################
+
 =head2 update - Update object's values
 
   Arguments:
@@ -47,6 +48,7 @@ sub insert {
     $floor->update(\%args);
 
 =cut
+
 sub update {
     my ($self, $argv) = @_;
     $self->isa_object_method('update');
@@ -77,7 +79,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2010 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

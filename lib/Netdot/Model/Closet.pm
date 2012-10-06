@@ -12,11 +12,10 @@ my $logger = Netdot->log->get_logger("Netdot::Model");
 
 Netdot::Module::Closet
 
-=head1 SYNOPSIS
-
 =head1 CLASS METHODS
 
 #############################################################################
+
 =head2 insert - Inserts a closet into the DB.
 
   Arguments:
@@ -27,6 +26,7 @@ Netdot::Module::Closet
     $newobj = Closet->insert({name=>'A', floor=>'2'});
 
 =cut
+
 sub insert {
     my ($self, $argv) = @_;
     
@@ -35,8 +35,10 @@ sub insert {
 }
 
 =head1 INSTANCE METHODS
+=cut
 
 #############################################################################
+
 =head2 update - Updates a closet object.
 
   Arguments:
@@ -47,6 +49,7 @@ sub insert {
     $closet->update({name=>'A', floor=>'2'});
 
 =cut
+
 sub update {
     my ($self, $argv) = @_;
     
@@ -85,7 +88,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

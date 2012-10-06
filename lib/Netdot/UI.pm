@@ -1,5 +1,16 @@
 package Netdot::UI;
 
+use lib "<<Make:LIB>>";
+use base qw( Netdot );
+use Netdot::Model;
+use Apache::Session::File;
+use Apache::Session::Lock::File;
+use GraphViz;
+use Apache2::SiteControl;
+use strict;
+
+my $logger = Netdot->log->get_logger("Netdot::UI");
+
 =head1 NAME
 
 Netdot::UI - Group of user interface functions for the Network Documentation Tool (Netdot)
@@ -17,16 +28,6 @@ Netdot::UI groups common methods and variables related to Netdot's user interfac
   print $ui->text_area(object=>$o, column=>"info", edit=>1, htmlExtra=>"cols=60");
 
 =cut
-use lib "<<Make:LIB>>";
-use base qw( Netdot );
-use Netdot::Model;
-use Apache::Session::File;
-use Apache::Session::Lock::File;
-use GraphViz;
-use Apache2::SiteControl;
-use strict;
-
-my $logger = Netdot->log->get_logger("Netdot::UI");
 
 # Some tables have a specific view page. 
 #
@@ -48,8 +49,8 @@ my %VIEWPAGE = ( BinFile       => "../generic/display_bin.html",
 
 =head1 METHODS
 
-
 ############################################################################
+
 =head2 new
 
   $ui = Netot::UI->new();
@@ -70,6 +71,7 @@ sub new {
  
 
 #############################################################################
+
 =head2 mk_session - create state for a session across multiple pages
     Creates a state session that can be used to store data across multiple 
     web pages for a given session.  Returns a hash reference to store said data
@@ -84,6 +86,7 @@ sub new {
     $session = $ui->mk_session();
 
 =cut
+
 sub mk_session {
     my($self) = @_;
     my (%session, $sid);
@@ -95,6 +98,7 @@ sub mk_session {
 }
 
 #############################################################################
+
 =head2 get_session - fetch state for a session across multiple pages
 
     Fetches a state session and its accompanying data.  Returns a hash ref.  
@@ -110,6 +114,7 @@ sub mk_session {
     $session = $ui->get_session($sid);
 
 =cut
+
 sub get_session {
     my($self, $sid) = @_;
     my %session;
@@ -120,6 +125,7 @@ sub get_session {
 }
 
 ############################################################################
+
 =head2 rm_session
 
     Removes specific session associated with the hash %session.
@@ -132,12 +138,14 @@ sub get_session {
     $ui->rm_session($session);
 
 =cut
+
 sub rm_session {
   my( $self, $session ) = @_;
   tied(%{$session})->delete();
 }
 
 ############################################################################
+
 =head2 rmsessions
 
     Removes state older than $age (the supplied argument) from the directory $dir.  
@@ -153,6 +161,7 @@ sub rm_session {
     $ui->rmsessions( $dir, $age );
 
 =cut
+
 sub rmsessions {
     my( $self, $dir, $age ) = @_;
     my $locker = new Apache::Session::Lock::File ;
@@ -161,6 +170,7 @@ sub rmsessions {
 
 
 ############################################################################
+
 =head2 form_to_db
 
 Generalized code for updating columns in different tables. 
@@ -196,6 +206,7 @@ Generalized code for updating columns in different tables.
     %info = $ui->form_to_db(%ARGS);
 
 =cut
+
 sub form_to_db{
     my($self, %argv) = @_;
     my %ret;
@@ -274,12 +285,15 @@ sub form_to_db{
 
 
 ############################################################################
+
 =head2 form_field - Generate a HTML form field.
 
-    This method detects the type of form input required for the object, and then calls the appropriate
-    method in UI.pm. Either select_lookup, select_multiple, radio_group_boolean/checkbox_boolean, text_field, or text_area.
-    If the interface is in "edit" mode, the user will see a form element specific to the type of data
-    being viewed, otherwise, the user will see the value of the object in plain text.
+    This method detects the type of form input required for the object, 
+    and then calls the appropriate method in UI.pm. Either select_lookup, 
+    select_multiple, radio_group_boolean/checkbox_boolean, text_field, or text_area.
+    If the interface is in "edit" mode, the user will see a form element specific to 
+    the type of data being viewed, otherwise, the user will see the value of the object 
+    in plain text.
     
   Arguments: 
     - object:         DBI object, can be null if a table object is included
@@ -306,6 +320,7 @@ sub form_to_db{
     %tmp = $ui->form_field(object=>$o, column=>"info", edit=>1, htmlExtra=>'cols="60"');
 
 =cut
+
 sub form_field {
     my ($self, %args) = @_;
     my ($o, $column) = @args{'object', 'column'};
@@ -400,6 +415,7 @@ sub form_field {
 }
 
 ############################################################################
+
 =head2 table_descr_link - Generate link to display a table\'s description
 
   Arguments:
@@ -411,12 +427,14 @@ sub form_field {
     print $ui->table_descr_link($table, $text);
     
 =cut
+
 sub table_descr_link{
     my ($self, $table, $text) = @_;
     return $self->help_link("descr.html?table=$table&showheader=0", 'Help', 'width=600,height=200', $text);
 }
 
 ############################################################################
+
 =head2 col_descr_link - Generate link to display a column\'s description
 
   Arguments:
@@ -429,13 +447,16 @@ sub table_descr_link{
     print $ui->col_descr_link($table, $col, $text);
     
 =cut
+
 sub col_descr_link{
     my ($self, $table, $column, $text) = @_;
-    return $self->help_link("descr.html?table=$table&col=$column&showheader=0", 'Help', 'width=600,height=200', $text);
+    return $self->help_link("descr.html?table=$table&col=$column&showheader=0", 
+			    'Help', 'width=600,height=200', $text);
 }
 
 ############################################################################
-=head2 help_link - Generate link for help popop page
+
+=head2 help_link - Generate link for help popup page
 
   Arguments:
     url
@@ -446,6 +467,7 @@ sub col_descr_link{
     HTML link string
     
 =cut
+
 sub help_link {
     my ($self, $url, $title, $size, $text) = @_;
     $title ||= 'Netdot Help Window';
@@ -459,6 +481,7 @@ sub help_link {
 }
 
 ############################################################################
+
 =head2 select_lookup
 
     This method deals with fields that are foreign keys.  When the interface is in "edit" mode, the user
@@ -507,7 +530,8 @@ sub select_lookup{
     my $table  = ($o ? $o->short_class : $args{table});
     $self->throw_fatal("Need to specify table and field to look up") unless ( $args{lookup} && $column );
 
-    my @defaults = @{$args{defaults}} if $args{defaults};
+    my @defaults;
+    @defaults = @{$args{defaults}} if (defined $args{defaults} && ref($args{defaults}) eq 'ARRAY');
 
     my $output;
     
@@ -639,10 +663,12 @@ sub select_lookup{
 }
 
 ############################################################################
+
 =head2 select_multiple - Create <select> form tag with MULTIPLE flag
 
     Meant to be used with Many-to-Many relationships.
-    When editing, creates a <select> form input with the MULTIPLE flag to allow user to select more than one object.
+    When editing, creates a <select> form input with the MULTIPLE flag to 
+    allow user to select more than one object.
     It also presents a [add] button to allow user to insert another join.
     The idea is to present the objects from the 'other' table but act on the join table objects.
     
@@ -686,7 +712,8 @@ sub select_multiple {
     my ($o, $joins, $join_table, $this_field, $other_table, 
 	$other_field, $isEditing, $action, $makeLink, $linkPage, $returnAsVar ) = 
 	    ($args{object}, $args{joins}, $args{join_table}, $args{this_field}, $args{other_table}, 
-	     $args{other_field}, $args{isEditing}, $args{action}, $args{makeLink}, $args{linkPage}, $args{returnAsVar});
+	     $args{other_field}, $args{isEditing}, $args{action}, $args{makeLink}, $args{linkPage}, 
+	     $args{returnAsVar});
 
     $linkPage ||= "view.html";
     $action   ||= "delete";
@@ -746,6 +773,7 @@ sub select_multiple {
 
 
 ############################################################################
+
 =head2 radio_group_boolean - Create simple yes/no radio button group. 
 
  Arguments:
@@ -802,6 +830,7 @@ sub radio_group_boolean{
 }
 
 ############################################################################
+
 =head2 checkbox_boolean
 
     A yes/no checkbox, which gets around the problem of an unchecked box sending nothing instead of "no".
@@ -856,6 +885,7 @@ sub checkbox_boolean{
 
 
 ############################################################################
+
 =head2 text_field
 
 Text field widget. If "edit" is true then a text field is displayed with
@@ -926,7 +956,8 @@ sub text_field($@){
 	    $output .= '</select>';
 	}else{
 	    $value =~ s/"/&quot;/g;
-	    $output .= sprintf("<input type=\"%s\" name=\"%s\" value=\"%s\" %s>\n", $input_type, $name, $value, $htmlExtra);
+	    $output .= sprintf("<input type=\"%s\" name=\"%s\" value=\"%s\" %s>\n", 
+			       $input_type, $name, $value, $htmlExtra);
 	}
     }elsif ( $linkPage && $value ){
 	$value =~ s/</&lt;/g;
@@ -952,6 +983,7 @@ sub text_field($@){
 }
 
 ############################################################################
+
 =head2 date_field
 
  Arguments:
@@ -1013,6 +1045,7 @@ sub date_field($@){
 
 
 ############################################################################
+
 =head2 text_area
     
     Text area widget. If "edit" is true then a textarea is displayed with
@@ -1072,6 +1105,7 @@ sub text_area($@){
 
 
 ############################################################################
+
 =head2 percent_bar
 
     Generates a graphical representation of a percentage as a progress bar.
@@ -1089,6 +1123,7 @@ sub text_area($@){
     $ui->percent_bar(percent=>$percent)
 
 =cut
+
 sub percent_bar {
     my ($self, %args) = @_;
     my ($percent, $numerator, $denominator) = ($args{percent}, $args{numerator}, $args{denominator});
@@ -1126,6 +1161,7 @@ sub percent_bar {
 
 
 ############################################################################
+
 =head2 percent_bar2
 
     Generates a graphical representation of two percentages as a progress bar.
@@ -1147,6 +1183,7 @@ sub percent_bar {
 		       percent1=>$percent1, percent2=>$percent2 ) 
     
 =cut
+
 sub percent_bar2 {
     my ($self, %args) = @_;
     my ($percent1, $numerator1, $denominator1, $title1) = 
@@ -1214,6 +1251,7 @@ sub percent_bar2 {
 
 
 ############################################################################
+
 =head2 color_mix - Mix two hex colors by the amount specified.
 
  Arguments:
@@ -1251,6 +1289,7 @@ sub color_mix {
 
 
 ############################################################################
+
 =head2 friendly_percent
 
     Returns a string representation of the integer percentage of a/b
@@ -1266,6 +1305,7 @@ sub color_mix {
     $ui->friendly_percent(value=>$avail,total=>$total)
 
 =cut
+
 sub friendly_percent {
     my ($self, %args) = @_;
     my ($value, $total) = ($args{value}, $args{total});
@@ -1289,6 +1329,7 @@ sub friendly_percent {
 }
 
 ############################################################################
+
 =head2 format_size
 
     Turns "1048576" into "1MB". Allows user to specify maximum unit to show.
@@ -1302,6 +1343,7 @@ sub friendly_percent {
     $ui->format_size($data_len)
 
 =cut
+
 sub format_size {
     my ($self, $bytes, $max_unit) = @_;
     my $size_index = 0;
@@ -1319,6 +1361,7 @@ sub format_size {
 }
 
 ############################################################################
+
 =head2 add_to_fields
 
     Used as a shortcut for adding data to an attribute table in pages such as device.html.
@@ -1350,6 +1393,7 @@ sub format_size {
     
 
 =cut
+
 sub add_to_fields {
     my ($self, %args) = @_;
     my ($o, $table, $edit, $fields, $linkpages, $defaults, $default,
@@ -1386,6 +1430,7 @@ sub add_to_fields {
 
 
 ############################################################################
+
 =head2 select_query - Search keywords in a tables label fields.
 
     If label field is a foreign key, recursively search for same keywords in foreign table.
@@ -1400,6 +1445,7 @@ sub add_to_fields {
   $r = $ui->select_query(table => $table, terms => \@terms, max => $max);
 
 =cut
+
 sub select_query {
     my ($self, %args) = @_;
     my ($table, $terms) = @args{'table', 'terms'};
@@ -1444,6 +1490,7 @@ sub select_query {
 }
 
 ############################################################################
+
 =head2 table_view_page - Get custom component for viewing a particular table
 
   Arguments:
@@ -1454,6 +1501,7 @@ sub select_query {
     my $page = $ui->table_view_page($table);
 
 =cut
+
 sub table_view_page {
     my ($self, $table) = @_;
     
@@ -1464,6 +1512,7 @@ sub table_view_page {
     }
 }
 ############################################################################
+
 =head2 build_backbone_graph
 
   Arguments:
@@ -1474,6 +1523,7 @@ sub table_view_page {
     my $g = $ui->build_backbone_graph(%argv);
 
 =cut
+
 sub build_backbone_graph {
     my ($self, %argv) = @_;
     my ($filename) = @argv{'filename'};
@@ -1550,6 +1600,7 @@ sub build_backbone_graph {
 }
 
 ############################################################################
+
 =head2 build_backbone_graph_html
 
   Arguments:
@@ -1561,6 +1612,7 @@ sub build_backbone_graph {
     print $ui->build_backbone_graph_html(web_path=>$r->dir_config('NetdotPath'));
 
 =cut
+
 sub build_backbone_graph_html {
     my ($self, %argv) = @_;
     my ($web_path, $filename) = 
@@ -1574,10 +1626,12 @@ sub build_backbone_graph_html {
     
     my $g = $self->build_backbone_graph(%argv);
 
-    return "<img alt=\"Backbone Graph\" style=\"max-width:100%;\" src=\"$img\" usemap=\"#test\" border=\"0\">" . $g->as_cmapx;
+    return "<img alt=\"Backbone Graph\" style=\"max-width:100%;\" src=\"$img\" usemap=\"#test\" border=\"0\">".
+	$g->as_cmapx;
 }
 
 ############################################################################
+
 =head2 build_ip_tree_graph
 
   Arguments:
@@ -1590,6 +1644,7 @@ sub build_backbone_graph_html {
     my $g = $ui->build_ip_tree_graph(%argv);
 
 =cut
+
 sub build_ip_tree_graph {
     my ($self, %argv) = @_;
     my ($list, $filename) = @argv{'list', 'filename'};
@@ -1608,9 +1663,8 @@ sub build_ip_tree_graph {
     
     my %seen;
 
-    foreach my $n ( @$list ){
-	next unless defined $n;
-	my $ip = Ipblock->retrieve($n->data) or next;
+    foreach my $ip ( @$list ){
+	next unless defined $ip;
 	
 	# Make sure we don't include end addresses in the tree
 	next if $ip->is_address;
@@ -1632,7 +1686,7 @@ sub build_ip_tree_graph {
 	    URL       => "ip.html?id=".$ip->id,
 	    );
 	
-	if ( $n->parent && (my $parent = Ipblock->retrieve($n->parent->data)) ){
+	if ( my $parent = $ip->parent ){
 	    
 	    my @lbls;
 	    push @lbls, $parent->get_label;
@@ -1661,19 +1715,22 @@ sub build_ip_tree_graph {
 }
 
 ############################################################################
+
 =head2 build_ip_tree_graph_html
 
   Arguments:
-    ipblock id
-    Arrayref of Net::IPTrie nodes
-    web_path string
-    filename
+    Hash with keys:
+      id       - ipblock id
+      list     - Arrayref of Ipblock objects
+      web_path - web_path string
+      filename - File name for graph
   Returns:
     html img code
   Examples:
     print $ui->build_ip_tree_graph_html(list=>$list, web_path=>$r->dir_config('NetdotPath'));
 
 =cut
+
 sub build_ip_tree_graph_html {
     my ($self, %argv) = @_;
     my ($id, $list, $web_path, $filename) = 
@@ -1692,6 +1749,7 @@ sub build_ip_tree_graph_html {
 
 
 ############################################################################
+
 =head2 build_device_topology_graph
 
   Arguments:
@@ -1713,6 +1771,7 @@ sub build_ip_tree_graph_html {
     my $g = $ui->build_device_topology_graph(%argv);
 
 =cut
+
 sub build_device_topology_graph {
     my ($self, %argv) = @_;
     my ($id, $root, $depth, $depth_up, $depth_down, $view, $show_vlans, $show_names, 
@@ -1740,7 +1799,7 @@ sub build_device_topology_graph {
     }
 
     # Declare some useful functions
-    sub add_topo_node {
+    sub _add_topo_node {
         my (%argv) = @_;
 	my ($g, $device, $view, $show_names, $show_vlans, $nodeoptions) = 
 	    @argv{'graph', 'device', 'view', 'show_names', 'show_vlans', 'nodeoptions'};
@@ -1756,11 +1815,11 @@ sub build_device_topology_graph {
     # Tried to be fancy and add lots of port information.  EPIC FAIL.  There's no
     # good way to do it.  A nice tarpit for others to avoid.
 
-    sub randomcolor {
+    sub _randomcolor {
         return sprintf("#%02X%02X%02X", rand(128), rand(128), rand(128));
     }
 
-    sub dfs { # DEPTH FIRST SEARCH - recursive
+    sub _dfs { # DEPTH FIRST SEARCH - recursive
         my ($g, $igraph, $spp, $root, $device, $hopup, $hopdown, $prev_dir, $seen, $vlans, 
 	    $show_vlans, $show_names, $view, $specific_vlan) = @_;
 	return if ($hopup == 0 && $prev_dir eq "up");
@@ -1807,7 +1866,7 @@ sub build_device_topology_graph {
 			my $style = 'solid';
 			my $vname = $vlan->vlan->name || $vlan->vlan->vid;
 			if (!exists $vlans->{$vname}) {
-			    $vlans->{$vname} = { color=>&randomcolor, vlan=>$vlan->vlan->id };
+			    $vlans->{$vname} = { color=>&_randomcolor, vlan=>$vlan->vlan->id };
 			}
 			$color = $vlans->{$vname}{'color'};
 			
@@ -1843,7 +1902,7 @@ sub build_device_topology_graph {
 	    
 	    # also make sure we haven't seen this node before
 	    if ( $add_node == 1 && !(exists $seen->{'NODE'}{$nd->id}) ) {
-		&add_topo_node(graph      => $g, 
+		&_add_topo_node(graph      => $g, 
 			       device     => $nd, 
 			       view       => $view,
 			       show_names => $show_names, 
@@ -1859,13 +1918,13 @@ sub build_device_topology_graph {
             # If we haven't recursed across this edge before, then do so now.
 	    if ( $cont == 1 ) {
                 if ($dir eq 'up') {
-                    &dfs($g, $igraph, $spp, $root, $nd, $hopup-1, $hopdown, $dir, $seen, 
+                    &_dfs($g, $igraph, $spp, $root, $nd, $hopup-1, $hopdown, $dir, $seen, 
 			 $vlans, $show_vlans, $show_names, $view, $specific_vlan);
                 } elsif ($dir eq 'down') {
-                    &dfs($g, $igraph, $spp, $root, $nd, $hopup, $hopdown-1, $dir, $seen, 
+                    &_dfs($g, $igraph, $spp, $root, $nd, $hopup, $hopdown-1, $dir, $seen, 
 			 $vlans, $show_vlans, $show_names, $view, $specific_vlan);
                 } else {
-                    &dfs($g, $igraph, $spp, $root, $nd, $hopup-1, $hopdown-1, $dir, $seen, 
+                    &_dfs($g, $igraph, $spp, $root, $nd, $hopup-1, $hopdown-1, $dir, $seen, 
 			 $vlans, $show_vlans, $show_names, $view, $specific_vlan);
                 }
 	    }
@@ -1887,7 +1946,7 @@ sub build_device_topology_graph {
     my $spp = Device->shortest_path_parents($root);
   
     my $start = Device->retrieve($id);
-    &add_topo_node(graph       => $g,
+    &_add_topo_node(graph       => $g,
 		   device      => $start, 
 		   show_vlans  => $show_vlans,
 		   show_names  => $show_names, 
@@ -1899,10 +1958,10 @@ sub build_device_topology_graph {
     $seen->{'NODE'}{$start->id} = 1;
 
     if ( $depth_up && $depth_down ) {
-	&dfs($g, $igraph, $spp, $root, $start, $depth_up, $depth_down, "undef", $seen, $vlans, 
+	&_dfs($g, $igraph, $spp, $root, $start, $depth_up, $depth_down, "undef", $seen, $vlans, 
 	     $show_vlans, $show_names, $view, $specific_vlan);
     } else {
-	&dfs($g, $igraph, $spp, $root, $start, $depth, $depth, "undef", $seen, $vlans, 
+	&_dfs($g, $igraph, $spp, $root, $start, $depth, $depth, "undef", $seen, $vlans, 
 	     $show_vlans, $show_names, $view, $specific_vlan);
     }
 
@@ -1920,6 +1979,7 @@ sub build_device_topology_graph {
 
 
 ############################################################################
+
 =head2 build_device_topology_graph_html
 
   Arguments:
@@ -1933,6 +1993,7 @@ sub build_device_topology_graph {
                                                    show_vlans=>$topovlans, show_names=>$toponames);
 
 =cut
+
 sub build_device_topology_graph_html {
     my ($self, %argv) = @_;
     
@@ -1965,6 +2026,7 @@ sub build_device_topology_graph_html {
 
 
 ############################################################################
+
 =head2 build_device_stp_graph
 
   Arguments:
@@ -1975,6 +2037,7 @@ sub build_device_topology_graph_html {
     print $ui->build_device_stp_graph(%argv);
 
 =cut
+
 sub build_device_stp_graph {
     my ($self, %argv) = @_;
     my ($id, $number, $view, $web_path, $filename, $format, $direction) = 
@@ -1991,7 +2054,7 @@ sub build_device_stp_graph {
     my $start = Device->retrieve($id);
     my $stp_inst = STPInstance->search(device=>$id, number=>$number)->first;
     return $g unless defined($stp_inst);
-    my $start_root = $stp_inst->root_bridge;
+    my $start_root = $stp_inst->root_bridgse;
     return $g unless defined($start_root);
     
     my $devicemacs = Device->get_macs_from_all();
@@ -2001,7 +2064,7 @@ sub build_device_stp_graph {
     map { $links{$_} = $links->{$_} } keys %$links;
     
     
-    sub add_stp_node{
+    sub _add_stp_node{
 	my (%argv) = @_;
 	my ($g, $device_id, $view, $nodeoptions, $customlabel) =
 	    @argv{'graph', 'device_id', 'view', 'nodeoptions', 'custom_label'};
@@ -2069,7 +2132,7 @@ sub build_device_stp_graph {
     
     # add the nodes to the graph
     foreach my $dev_id (keys %{$seen->{'NODE'}}) {
-	&add_stp_node(graph        => $g,
+	&_add_stp_node(graph        => $g,
 		      device_id    => $dev_id,
 		      view         => $view,
 		      custom_label => $seen->{'NODE'}{$dev_id}
@@ -2113,6 +2176,7 @@ sub build_device_stp_graph {
 
 
 ############################################################################
+
 =head2 build_device_stp_graph_html
 
   Arguments:
@@ -2125,6 +2189,7 @@ sub build_device_stp_graph {
                                            );
 
 =cut
+
 sub build_device_stp_graph_html {
     my ($self, %argv) = @_;
     my ($id, $number, $view, $web_path, $filename) = 
@@ -2144,6 +2209,7 @@ sub build_device_stp_graph_html {
 
 
 ############################################################################
+
 =head2 rrd_graph - Create RRD graphs
 
   Arguments:
@@ -2158,6 +2224,7 @@ sub build_device_stp_graph_html {
     
 
 =cut
+
 sub rrd_graph{
     my ($class, %argv) = @_;
     die "UI::rrd_graph: Missing required arguments" 
@@ -2249,6 +2316,7 @@ sub rrd_graph{
 }
 
 ############################################################################
+
 =head2 get_current_user - Return current user object
 
   Arguments:
@@ -2259,12 +2327,14 @@ sub rrd_graph{
     $ui->get_current_user($r)
 
 =cut
+
 sub get_current_user{
     my ($self, $r) = @_;
     return Apache2::SiteControl->getCurrentUser($r);
 }
 
 ############################################################################
+
 =head2 get_permission_manager - Return PermissionManager object
 
   Arguments:
@@ -2275,6 +2345,7 @@ sub get_current_user{
     $ui->get_permission_manager($r)
 
 =cut
+
 sub get_permission_manager{
     my ($self, $r) = @_;
     return Apache2::SiteControl->getPermissionManager($r);
@@ -2282,6 +2353,7 @@ sub get_permission_manager{
 
 
 ############################################################################
+
 =head2 get_user_person - Get Person object associated with SiteControl user
 
 
@@ -2293,6 +2365,7 @@ sub get_permission_manager{
     my $person = $self->get_user_person($user);
 
 =cut
+
 sub get_user_person {
     my ($self, $user) = @_;
 
@@ -2322,6 +2395,7 @@ sub get_user_person {
 }
 
 ############################################################################
+
 =head2 set_user_type
 
     Store user type as an attribute of Apache2::SiteControl::User
@@ -2337,6 +2411,7 @@ sub get_user_person {
     $ui->set_user_type($user, $r)
 
 =cut
+
 sub set_user_type{
     my ($self, $r, $user) = @_;
 
@@ -2352,6 +2427,7 @@ sub set_user_type{
 }
 
 ############################################################################
+
 =head2 get_allowed_objects
 
     Retrieve list of objects for which user has access.
@@ -2366,6 +2442,7 @@ sub set_user_type{
     $ui->get_allowed_objects($user, 'Device')
 
 =cut
+
 sub get_allowed_objects{
     my ($self, $r, $user, $type) = @_;
 
@@ -2385,8 +2462,11 @@ sub get_allowed_objects{
 }
 
 ############################################################################
+
 =head2 get_access_names - Mapping of accessrights and their display names 
+
 =cut
+
 sub get_access_names {
     my ($self) = @_;
 
@@ -2401,6 +2481,7 @@ sub get_access_names {
 }
 
 ############################################################################
+
 =head2 url_encode
 
   Arguments:
@@ -2408,6 +2489,7 @@ sub get_access_names {
   Examples:
 
 =cut
+
 sub url_encode {
     my ($self, $url) = @_;
     $url =~ s/([\W])/"%" . uc(sprintf("%2.2x",ord($1)))/eg;
@@ -2415,6 +2497,7 @@ sub url_encode {
 }
 
 ############################################################################
+
 =head2 url_decode
 
   Arguments:
@@ -2422,6 +2505,7 @@ sub url_encode {
   Examples:
 
 =cut
+
 sub url_decode {
     my ($self, $url) = @_;
     $url =~ tr/+/ /;
@@ -2431,6 +2515,7 @@ sub url_decode {
 }
 
 ############################################################################
+
 =head2 localize_newlines - On text input, convert CRLF and CR into just LF
 
   Arguments: table, args hashref
@@ -2438,6 +2523,7 @@ sub url_decode {
   Examples: $ui->localize_newlines($table,\%args);
 
 =cut
+
 sub localize_newlines {
     my($self, $table, $args) = @_;
     foreach my $c ( keys %$args ){
@@ -2456,6 +2542,7 @@ sub localize_newlines {
 }
 
 ############################################################################
+
 =head2 check_value_lengths
 
   Arguments: table, args hashref
@@ -2463,6 +2550,7 @@ sub localize_newlines {
   Examples: $ui->check_value_lenghts(\%args);
 
 =cut
+
 sub check_value_lengths {
     my($self, $table, $args) = @_;
     foreach my $c ( keys %$args ){
@@ -2490,7 +2578,7 @@ Carlos Vicente, Nathan Collins, Aaron Parecki, Peter Boothe.
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2009 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

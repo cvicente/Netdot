@@ -5,25 +5,23 @@ use warnings;
 use strict;
 use APR::Base64;
 
-my %MIMETYPES = ("jpg" => "image/jpeg", "jpeg" => "image/jpeg", "gif" => "image/gif",
-		 "png" => "image/png",  "bmp"  => "image/bmp", "tiff" => "image/tiff",
-		 "tif" => "image/tiff", "pdf"  => "application/pdf");
-
-
-my $logger = Netdot->log->get_logger("Netdot::Model");
-
-# Make sure to return 1
-1;
-
 =head1 NAME
 
 Netdot::Module::Picture
 
-=head1 SYNOPSIS
+=cut
+
+my %MIMETYPES = (
+    "jpg" => "image/jpeg", "jpeg" => "image/jpeg", "gif" => "image/gif",
+    "png" => "image/png",  "bmp"  => "image/bmp", "tiff" => "image/tiff",
+    "tif" => "image/tiff", "pdf"  => "application/pdf");
+
+my $logger = Netdot->log->get_logger("Netdot::Model");
 
 =head1 CLASS METHODS
 
 #############################################################################
+
 =head2 insert - Inserts a picture into the DB.
 
   If filetype is not specified it will be (hopefully) determined automatically.
@@ -36,6 +34,7 @@ Netdot::Module::Picture
     $newobj = Picture->insert({filename=>'filename.ext'});
 
 =cut
+
 sub insert {
     my ($self, $argv) = @_;
     ( defined $argv->{filename} && defined $argv->{bindata} ) ||
@@ -109,7 +108,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

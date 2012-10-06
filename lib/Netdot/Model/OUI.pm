@@ -10,12 +10,11 @@ my $logger = Netdot->log->get_logger('Netdot::Model::Device');
 
 Netdot::Model::OUI - Organizational Unique Identifier (OUI) Class
 
-=head1 SYNOPSIS
-
-
 =head1 CLASS METHODS
 =cut
+
 ############################################################################
+
 =head2 retrieve_all_hashref - Build a hash with key=OUI, value=vendor
 
   Arguments: 
@@ -27,6 +26,7 @@ Netdot::Model::OUI - Organizational Unique Identifier (OUI) Class
 
 
 =cut
+
 sub retrieve_all_hashref {
     my ($class) = @_;
     $class->isa_class_method('retrieve_all_hashref');
@@ -57,7 +57,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

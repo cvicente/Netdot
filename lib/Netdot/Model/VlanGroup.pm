@@ -6,9 +6,6 @@ use strict;
 
 my $logger = Netdot->log->get_logger('Netdot::Model::Device');
 
-# Make sure to return 1
-1;
-
 =head1 NAME
 
 Netdot::Model::Vlan::Group
@@ -19,7 +16,9 @@ Netdot Vlan Group Class
 
 =head1 CLASS METHODS
 =cut
+
 ####################################################################################
+
 =head2 insert - Insert new VlanGroup
     
     Override the base class to:
@@ -34,6 +33,7 @@ Netdot Vlan Group Class
     my $newgroup = VlanGroup->insert({name=>$name, start_vid=>$start, end_vid=>$end});
 
 =cut
+
 sub insert{
     my ($class, $argv) = @_;
     $class->isa_class_method('insert');
@@ -53,8 +53,8 @@ sub insert{
     return $newgroup;
 }
 
-
 ####################################################################################
+
 =head2 assign_all - Traverse the list of vlans and assign them to groups 
     
   Arguments:
@@ -65,6 +65,7 @@ sub insert{
     VlanGroup->assign_all();
 
 =cut
+
 sub assign_all{
     my ($class) = @_;
     $class->isa_class_method('assign_all');
@@ -86,6 +87,7 @@ sub assign_all{
 
 =cut
 ####################################################################################
+
 =head2 assign_vlans - Traverse the list of vlans and assign them to this group
     
   Arguments:
@@ -96,6 +98,7 @@ sub assign_all{
     $group->assign_vlans();
 
 =cut
+
 sub assign_vlans{
     my $self = shift;
     $self->isa_object_method('assign_vlans');
@@ -126,6 +129,7 @@ sub assign_vlans{
 }
 
 ######################################################################################
+
 =head2 update - update VlanGroup objects
     
     We override the base method to:
@@ -139,6 +143,7 @@ sub assign_vlans{
   Examples:
 
 =cut
+
 sub update{
     my ($self, $argv) = @_;
     $self->isa_object_method('update');
@@ -227,7 +232,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -244,4 +249,7 @@ along with this program; if not, write to the Free Software Foundation,
 Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 =cut
+
+# Make sure to return 1
+1;
 

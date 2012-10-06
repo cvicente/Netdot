@@ -8,8 +8,6 @@ use strict;
 
 Netdot::Util::Exception
 
-=head1 SYNOPSIS
-
 =cut
     
 use Exception::Class ( 
@@ -48,9 +46,12 @@ See Exception::Class
 
 =head1 INSTANCE METHODS
 
-=head2 isa_netdot_exception - Determine if an exception object belongs to a certain subclass in our exception hierarchy
+=head2 isa_netdot_exception
+
+Determine if an exception object belongs to a certain subclass in our exception hierarchy
 
 =cut
+
 sub isa_netdot_exception{
     my ($self, $name) = @_;
     return unless defined $self;
@@ -62,19 +63,28 @@ sub isa_netdot_exception{
     }
 }
 
-=head2 caught - Returns an exception object if the last thrown exception is of the given class, or a subclass of that class
+=head2 caught
+
+Returns an exception object if the last thrown exception is of the given class, or a subclass of that class
 
     See Exception::Class::caught
 
 =cut
+
 sub caught{
     my ($self) = shift;
     return Exception::Class->caught(@_);
 }
 
-=head2 Also, See Exception::Class
+=head2 description
+
+    Somehow this is needed by POD::Coverage
 
 =cut
+
+=head2 SEE ALSO
+
+Exception::Class
 
 =head1 AUTHOR
 
@@ -82,7 +92,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -100,3 +110,4 @@ Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 =cut
 
+1;

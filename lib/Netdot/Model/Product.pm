@@ -6,15 +6,11 @@ use strict;
 
 my $logger = Netdot->log->get_logger('Netdot::Model::Device');
 
-# Make sure to return 1
-1;
-
 =head1 NAME
 
 Netdot::Model::Product - Netdot Device Product Class
 
 =head1 SYNOPSIS
-
     
     use Netdot::Model::Product;
 
@@ -27,6 +23,7 @@ Netdot::Model::Product - Netdot Device Product Class
 =cut
 
 ############################################################################
+
 =head2 insert - Insert product
 
     Override parent method to:
@@ -66,7 +63,7 @@ sub insert {
 		if ( $ent->oid ne $oid ) {
 		    # There is an entity with the same name and different oid
 		    # Use the OID as part of the name to make a unique new one
-		    my $entname = "$argv->{manufacturer} ($oid)";
+		    my $entname = $ent->name." ($oid)";
 		    $ent = Entity->insert({name=>$entname, oid=>$oid});
 		}
 	    }else{
@@ -150,6 +147,7 @@ __PACKAGE__->set_sql(by_device => qq{
 =cut
 
 ############################################################################
+
 =head2 get_label - Overrides label method
    
   Arguments:
@@ -191,4 +189,7 @@ along with this program; if not, write to the Free Software Foundation,
 Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 =cut
+
+# Make sure to return 1
+1;
 

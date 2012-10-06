@@ -9,6 +9,17 @@ use Netdot::Topology;
 use Parallel::ForkManager;
 use Data::Dumper;
 
+=head1 NAME
+
+Netdot::Model::Device - Network Device Class
+
+=head1 SYNOPSIS
+
+ my $device = Device->retrieve($id);
+ $device->snmp_update();
+
+=cut
+
 # Timeout seconds for SNMP queries 
 # (different from SNMP connections)
 my $TIMEOUT = Netdot->config->get('SNMP_QUERY_TIMEOUT');
@@ -63,19 +74,11 @@ my @SMETHODS = qw(
 );
 
 
-=head1 NAME
-
-Netdot::Model::Device - Network Device Class
-
-=head1 SYNOPSIS
-
- my $device = Device->retrieve($id);
- $device->snmp_update();
-
 =head1 CLASS METHODS
-=cuts
+=cut
 
 ############################################################################
+
 =head2 search - Search Devices
 
     Overrides base method to extend functionality:
@@ -94,6 +97,7 @@ Netdot::Model::Device - Network Device Class
     my @devs = Device->search(name=>'localhost.localdomain');
 
 =cut
+
 sub search {
     my ($class, @args) = @_;
     $class->isa_class_method('search');
@@ -118,7 +122,8 @@ sub search {
 		    $argv{name} = $dev->name;
 		    $foundname = 1;
 		}else{
-		    $logger->debug(sub{"Device::search: Address $argv{name} exists but no Device associated"});
+		    $logger->debug(sub{"Device::search: Address $argv{name} exists but ".
+					   "no Device associated"});
 		}
 	    }else{
 		$logger->debug(sub{"Device::search: $argv{name} not found in DB"});
@@ -169,6 +174,7 @@ sub search {
 }
 
 ############################################################################
+
 =head2 search_address_live
     
     Query relevant devices for ARP and FWT entries in order to locate 
@@ -187,6 +193,7 @@ sub search {
     my $info = Device->search_address_live(mac=>'DEADDEADBEEF', vlan=60);
 
 =cut
+
 sub search_address_live {
     my ($class, %argv) = @_;
     $class->isa_class_method('search_address_live');
@@ -243,7 +250,8 @@ sub search_address_live {
 	if ( $subnet && !@fwt_devs ){
 	    @fwt_devs = @{$subnet->get_devices()};
 	}else{
-	    $class->throw_user("Device::search_address_live: Cannot proceed without VLAN or IP information\n");
+	    $class->throw_user("Device::search_address_live: ".
+			       "Cannot proceed without VLAN or IP information\n");
 	}
     }
 
@@ -330,6 +338,7 @@ sub search_address_live {
 
 
 ############################################################################
+
 =head2 search_like -  Search for device objects.  Allow substrings
 
     We override the base class to:
@@ -347,6 +356,7 @@ sub search_address_live {
     my @switches = Device->search_like(name=>'-sw');
 
 =cut
+
 sub search_like {
     my ($class, %argv) = @_;
     $class->isa_class_method('search_like');
@@ -395,6 +405,7 @@ sub search_like {
 
 
 ############################################################################
+
 =head2 assign_name - Determine and assign correct name to device
 
     This method will try to find or create an appropriate 
@@ -411,6 +422,7 @@ sub search_like {
   Examples:
     my $rr = Device->assign_name($host)
 =cut
+
 sub assign_name {
     my ($class, %argv) = @_;
     $class->isa_class_method('assign_name');
@@ -433,7 +445,8 @@ sub assign_name {
 	# we were given an IP address
 	if ( my $ipb = Ipblock->search(address=>$host)->first ){
 	    if ( $ipb->interface && ( my $dev = $ipb->interface->device ) ){
-		$logger->debug("Device::assign_name: A Device with IP $host already exists: " . $dev->get_label);
+		$logger->debug("Device::assign_name: A Device with IP $host already exists: ".
+			       $dev->get_label);
 		return $dev->name;
 	    }
 	}
@@ -511,6 +524,7 @@ sub assign_name {
 }
 
 ############################################################################
+
 =head2 insert - Insert new Device
     
     We override the insert method for extra functionality:
@@ -528,6 +542,7 @@ sub assign_name {
     my $newdevice = Device->insert(\%args);
 
 =cut
+
 sub insert {
     my ($class, $argv) = @_;
     $class->isa_class_method('insert');
@@ -539,7 +554,8 @@ sub insert {
 
     # Get the default owner entity from config
     my $config_owner  = Netdot->config->get('DEFAULT_DEV_OWNER');
-    my $default_owner = Entity->search(name=>$config_owner)->first || Entity->search(name=>'Unknown')->first;
+    my $default_owner = Entity->search(name=>$config_owner)->first || 
+	Entity->search(name=>'Unknown')->first;
 
     # Assign defaults
     # These will be overridden by given arguments
@@ -621,6 +637,7 @@ sub insert {
 }
 
 ############################################################################
+
 =head2 get_snmp_info - SNMP-query a Device for general information
     
     This method can either be called on an existing object, or as a 
@@ -652,6 +669,7 @@ sub insert {
     my $info = Device->get_snmp_info(host=>$hostname, communities=>['public']);
 
 =cut
+
 sub get_snmp_info {
     my ($self, %args) = @_;
     my $class = ref($self) || $self;
@@ -696,7 +714,7 @@ sub get_snmp_info {
     $dev{snmp_version} = $sinfo->snmp_ver;
 
     my $name_src = ( $self->config->get('IFNAME_SHORT') eq '1' )? 
-	'i_name' : 'i_description';
+	'orig_i_name' : 'i_description';
     push @SMETHODS, $name_src;
 
     if ( $sinfo->can('ipv6_addr_prefix') ){
@@ -720,7 +738,7 @@ sub get_snmp_info {
 
     ################################################################
     # Device's global vars
-    $dev{layers}       = $sinfo->layers;
+    $dev{layers} = $sinfo->layers;
     my $ipf = $sinfo->ipforwarding || 'unknown';
     $dev{ipforwarding} = ( $ipf eq 'forwarding') ? 1 : 0;
     $dev{sysobjectid}  = $sinfo->id;
@@ -835,7 +853,8 @@ sub get_snmp_info {
 					sub{  return $self->_get_i_stp_info(sinfo=>$vsinfo) } );
 				};
 				if ( my $e = $@ ){
-				    $logger->error(sprintf("Could not get SNMP session for %s with community %s",
+				    $logger->error(sprintf("Could not get SNMP session for %s with ".
+							   "community %s",
 							   $args{host}, $comm));
 				    next;
 				}
@@ -869,14 +888,18 @@ sub get_snmp_info {
 								       'communities' => [$comm],
 								       'version'     => $sinfo->snmp_ver,
 								       'sclass'      => $sinfo->class);
-				my $stp_p_info = $class->_exec_timeout( $args{host}, 
-									sub{  return $self->_get_stp_info(sinfo=>$vsinfo) } );
+				my $stp_p_info = $class->_exec_timeout( 
+				    $args{host}, 
+				    sub{  return $self->_get_stp_info(sinfo=>$vsinfo) } );
+
 				foreach my $method ( keys %$stp_p_info ){
 				    $dev{stp_instances}{$vid}{$method} = $stp_p_info->{$method};
 				}
+				
+				my $i_stp_info = $class->_exec_timeout( 
+				    $args{host}, 
+				    sub{  return $self->_get_i_stp_info(sinfo=>$vsinfo) } );
 
-				my $i_stp_info = $class->_exec_timeout( $args{host}, 
-									sub{  return $self->_get_i_stp_info(sinfo=>$vsinfo) } );
 				foreach my $field ( keys %$i_stp_info ){
 				    foreach my $i ( keys %{$i_stp_info->{$field}} ){
 					$dev{interface}{$i}{$field} = $i_stp_info->{$field}->{$i};
@@ -944,7 +967,9 @@ sub get_snmp_info {
 
     if ( $self->config->get('GET_DEVICE_MODULE_INFO') ){
 	foreach my $key ( keys %{ $hashes{e_class} } ){
-	    $dev{module}{$key}{number} = $hashes{e_index}->{$key};
+	    # Notice that we use int() to avoid duplicate errors
+	    # in DB when number is like 01000000
+	    $dev{module}{$key}{number} = int($hashes{e_index}->{$key});
 	    foreach my $field ( keys %MFIELDS ){
 		my $method = $MFIELDS{$field};
 		my $v = $hashes{$method}->{$key};
@@ -1061,6 +1086,7 @@ sub get_snmp_info {
     # IPv4 addresses and masks 
     #
     while ( my($ip,$iid) = each %{ $hashes{'ip_index'} } ){
+ 	next unless (defined $dev{interface}{$iid});
 	next if &_check_if_status_down(\%dev, $iid);
 	next if Ipblock->is_loopback($ip);
 	next if ( $ip eq '0.0.0.0' || $ip eq '255.255.255.255' );
@@ -1101,6 +1127,7 @@ sub get_snmp_info {
 	    $pfx = $self->_octet_string_to_v6($2);
 	}
 	if ( $iid && $addr && $pfx && $len ){
+	    next unless (defined $dev{interface}{$iid});
 	    next if &_check_if_status_down(\%dev, $iid);
 	    next if ( Ipblock->is_link_local($addr) && $ignore_link_local );
 	    $dev{interface}{$iid}{ips}{$addr}{address} = $addr;
@@ -1114,7 +1141,7 @@ sub get_snmp_info {
 
     ################################################################
     # IPv6 link-local addresses
-    # It looks like in Cisco 'ipv6_index' contains a the addresses from
+    # It looks like in Cisco 'ipv6_index' contains all the addresses from
     # 'ipv6_addr_prefix', plus link locals, so we won't query it
     # unless we want those.
     unless ( $ignore_link_local ){
@@ -1125,6 +1152,7 @@ sub get_snmp_info {
 		$addr = $self->_octet_string_to_v6($1);
 		next unless Ipblock->is_link_local($addr);
 		$iid = $val;
+		next unless $iid; # Sometimes this can be 0
 		$dev{interface}{$iid}{ips}{$addr}{address} = $addr;
 		$dev{interface}{$iid}{ips}{$addr}{version} = 6;
 	    }else{
@@ -1180,6 +1208,7 @@ sub get_snmp_info {
 
 
 #########################################################################
+
 =head2 snmp_update_all - Update SNMP info for every device in DB
     
   Arguments:
@@ -1202,13 +1231,14 @@ sub get_snmp_info {
     Device->snmp_update_all();
 
 =cut
+
 sub snmp_update_all {
     my ($class, %argv) = @_;
     $class->isa_class_method('snmp_update_all');
     my $start = time;
 
     my @devs   = $class->retrieve_all();
-    my $device_count = $class->snmp_update_parallel(devs=>\@devs, %argv);
+    my $device_count = $class->_snmp_update_parallel(devs=>\@devs, %argv);
     my $end = time;
     $logger->info(sprintf("All Devices updated. %d devices in %s", 
 			  $device_count, $class->sec2dhms($end-$start) ));
@@ -1216,6 +1246,7 @@ sub snmp_update_all {
 }
 
 ####################################################################################
+
 =head2 snmp_update_block - Discover and/or update all devices in given IP blocks
     
   Arguments:
@@ -1241,6 +1272,7 @@ sub snmp_update_all {
     Device->snmp_update_block(blocks=>"192.168.0.0/24");
 
 =cut
+
 sub snmp_update_block {
     my ($class, %argv) = @_;
     $class->isa_class_method('snmp_update_block');
@@ -1266,7 +1298,7 @@ sub snmp_update_block {
 
     # Call the more generic method
     $argv{hosts} = \%h;
-    my $device_count = $class->snmp_update_parallel(%argv);
+    my $device_count = $class->_snmp_update_parallel(%argv);
 
     my $end = time;
     $logger->info(sprintf("Devices in $blist updated. %d devices in %s", 
@@ -1275,6 +1307,7 @@ sub snmp_update_block {
 }
 
 ####################################################################################
+
 =head2 snmp_update_from_file - Discover and/or update all devices in a given file
     
   Arguments:
@@ -1297,6 +1330,7 @@ sub snmp_update_block {
     Device->snmp_update_from_file("/path/to/file");
 
 =cut
+
 sub snmp_update_from_file {
     my ($class, %argv) = @_;
     $class->isa_class_method('snmp_update_from_file');
@@ -1314,7 +1348,7 @@ sub snmp_update_from_file {
     
     # Call the more generic method
     $argv{hosts} = $hosts;
-    my $device_count = $class->snmp_update_parallel(%argv);
+    my $device_count = $class->_snmp_update_parallel(%argv);
 
     my $end = time;
     $logger->info(sprintf("Devices in %s updated. %d devices in %s", 
@@ -1324,6 +1358,7 @@ sub snmp_update_from_file {
 
 
 #########################################################################
+
 =head2 discover - Insert or update a device after getting its SNMP info.
 
     Adjusts a number of settings when inserting, based on certain
@@ -1360,6 +1395,7 @@ sub snmp_update_from_file {
     Device->discover(name=>$hostname, info=>$info);
 
 =cut
+
 sub discover {
     my ($class, %argv) = @_;
     
@@ -1449,7 +1485,8 @@ sub discover {
 	if ( !$info->{type} && $info->{layers} ){
 	    $info->{type}  = "Hub"     if ( $class->_layer_active($info->{layers}, 1) );
 	    $info->{type}  = "Switch"  if ( $class->_layer_active($info->{layers}, 2) );
-	    $info->{type}  = "Router"  if ( $class->_layer_active($info->{layers}, 3) && $info->{ipforwarding} );
+	    $info->{type}  = "Router"  if ( $class->_layer_active($info->{layers}, 3) && 
+					    $info->{ipforwarding} );
 	    $info->{type}  = "Server"  if ( $class->_layer_active($info->{layers}, 7) );
 	    $info->{type}  = "Unknown" unless defined $info->{type};
 	}
@@ -1511,6 +1548,7 @@ sub discover {
 }
 
 #########################################################################
+
 =head2 get_all_from_block - Retrieve devices with addresses within an IP block
 
   Arguments:
@@ -1521,6 +1559,7 @@ sub discover {
     my $devs = Device->get_all_from_block('192.168.1.0/24');
 
 =cut
+
 sub get_all_from_block {
     my ($class, $block) = @_;
     $class->isa_class_method('get_all_from_block');
@@ -1550,6 +1589,7 @@ sub get_all_from_block {
 }
 
 #################################################################
+
 =head2 get_base_macs_from_all - Retrieve base MACs from all devices
 
   Arguments: 
@@ -1560,6 +1600,7 @@ sub get_all_from_block {
    my $devmacs = Device->get_base_macs_from_all();
 
 =cut
+
 sub get_base_macs_from_all {
     my ($class) = @_;
     $class->isa_class_method('get_base_macs_from_all');
@@ -1583,6 +1624,7 @@ sub get_base_macs_from_all {
 }
 
 #################################################################
+
 =head2 get_if_macs_from_all - Retrieve MACs from all device interfaces
 
   Arguments: 
@@ -1593,6 +1635,7 @@ sub get_base_macs_from_all {
    my $devmacs = Device->get_if_macs_from_all();
 
 =cut
+
 sub get_if_macs_from_all {
     my ($class) = @_;
     $class->isa_class_method('get_if_macs_from_all');
@@ -1615,6 +1658,7 @@ sub get_if_macs_from_all {
 }
 
 #################################################################
+
 =head2 get_macs_from_all
     
     Retrieve all MAC addresses that belong to Devices
@@ -1627,6 +1671,7 @@ sub get_if_macs_from_all {
    my $devmacs = Device->get_macs_from_all();
 
 =cut
+
 sub get_macs_from_all {
     my ($class) = @_;
     $class->isa_class_method('get_macs_from_all');
@@ -1641,6 +1686,7 @@ sub get_macs_from_all {
 }
 
 #################################################################
+
 =head2 get_within_downtime
     
     Get the devices within downtime.
@@ -1653,6 +1699,7 @@ sub get_macs_from_all {
     my @devices = Device->get_within_downtime();
 
 =cut
+
 sub get_within_downtime {
     my ($class) = @_;
     $class->isa_class_method('get_within_downtime');
@@ -1666,6 +1713,7 @@ sub get_within_downtime {
 }
 
 #################################################################
+
 =head2 get_ips_from_all
     
     Retrieve all IP addresses that belong to Devices
@@ -1678,6 +1726,7 @@ sub get_within_downtime {
    my $devips = Device->get_ips_from_all();
 
 =cut
+
 sub get_ips_from_all {
     my ($class) = @_;
     $class->isa_class_method('get_ips_from_all');
@@ -1686,13 +1735,18 @@ sub get_ips_from_all {
     $logger->debug(sub{ "Device::get_ips_from_all: Retrieving all Device IPs..." });
 
     my $dbh = $class->db_Main;
-    my $aref = $dbh->selectall_arrayref("SELECT ip.address, d.id
-                                         FROM   ipblock ip, device d, interface i
-                                         WHERE  i.device=d.id AND ip.interface=i.id
+    my $aref1 = $dbh->selectall_arrayref("SELECT ip.address, d.id
+                                          FROM   ipblock ip, device d, interface i
+                                          WHERE  i.device=d.id AND ip.interface=i.id
                                          ");
+
+    my $aref2 = $dbh->selectall_arrayref("SELECT ip.address, d.id
+                                          FROM   ipblock ip, device d 
+                                          WHERE  d.snmp_target=ip.id;");
+
     # Build a hash of mac addresses to device ids
     my %dev_ips;
-    foreach my $row ( @$aref ){
+    foreach my $row ( @$aref1, @$aref2 ){
 	my ($address, $id) = @$row;
 	$dev_ips{$address} = $id;
     }
@@ -1701,6 +1755,7 @@ sub get_ips_from_all {
 }
 
 ###################################################################################################
+
 =head2 get_device_graph - Returns the graph of devices - Maps Device IDs
 
   Arguments:
@@ -1711,6 +1766,7 @@ sub get_ips_from_all {
     my $graph = Device::get_device_graph()
 
 =cut
+
 sub get_device_graph {
     my ($class) = @_;
     $class->isa_class_method('get_device_graph');
@@ -1737,6 +1793,7 @@ sub get_device_graph {
 }
 
 ###################################################################################################
+
 =head2 get_device_i_graph - Returns the graph of devices - Maps device and interface IDs
 
   Arguments:
@@ -1748,6 +1805,7 @@ sub get_device_graph {
     my $graph = Device::get_device_i_graph()
 
 =cut
+
 sub get_device_i_graph {
     my ($class) = @_;
     $class->isa_class_method('get_device_i_graph');
@@ -1775,6 +1833,7 @@ sub get_device_i_graph {
 
 
 ###################################################################################################
+
 =head2 shortest_path_parents - A variation of Dijkstra's single-source shortest paths algorithm
 
     Determines all the possible parents of each node that are in the shortest paths between 
@@ -1787,6 +1846,7 @@ sub get_device_i_graph {
   Example:
     $parents = Device::shortest_path_parents($s)
 =cut
+
 sub shortest_path_parents {
     my ($class, $s) = @_;
     $class->isa_class_method('shortest_path_parents');
@@ -1872,6 +1932,7 @@ sub shortest_path_parents {
 
 
 ############################################################################
+
 =head2 add_contact_lists - Add Contact Lists to Device
     
   Arguments:
@@ -1884,6 +1945,7 @@ sub shortest_path_parents {
     $self->add_contact_lists(\@cl);
     
 =cut
+
 sub add_contact_lists{
     my ($self, $argv) = @_;
     $self->isa_object_method('add_contact_lists');
@@ -1913,6 +1975,7 @@ sub add_contact_lists{
 }
 
 ############################################################################
+
 =head2 has_layer - Determine if Device performs a given OSI layer function
     
 
@@ -1925,6 +1988,7 @@ sub add_contact_lists{
     $device->has_layer(2);
 
 =cut
+
 sub has_layer {
     my ($self, $layer) = @_;
     $self->isa_object_method('has_layer');
@@ -1936,6 +2000,7 @@ sub has_layer {
 }
 
 ############################################################################
+
 =head2 list_layers - Return a list of active OSI layers
     
   Arguments:
@@ -1946,6 +2011,7 @@ sub has_layer {
     $device->list_layers();
 
 =cut
+
 sub list_layers {
     my ($self) = @_;
     $self->isa_object_method('list_layers');
@@ -1957,6 +2023,7 @@ sub list_layers {
 }
 
 #########################################################################
+
 =head2 arp_update - Update ARP cache in DB
     
   Arguments:
@@ -1973,6 +2040,7 @@ sub list_layers {
     $self->arp_update();
 
 =cut
+
 sub arp_update {
     my ($self, %argv) = @_;
     $self->isa_object_method('arp_update');
@@ -1991,7 +2059,9 @@ sub arp_update {
     }
 
     # Fetch from SNMP if necessary
-    my $cache = $argv{cache} || $class->_exec_timeout($host, sub{ return $self->get_arp(session=>$argv{session}) });
+    my $cache = $argv{cache} || $class->_exec_timeout(
+	$host, sub{ return $self->get_arp(session=>$argv{session}) }
+	);
     
     unless ( keys %$cache ){
 	$logger->debug("$host: ARP cache empty");
@@ -2009,7 +2079,8 @@ sub arp_update {
 	$ac = ArpCache->insert({device=>$self->id, tstamp=>$timestamp});
     };
     if ( my $e = $@ ){
-	$logger->warn(sprintf("Device %s: Could not insert ArpCache at %s: %s", $self->fqdn, $timestamp, $e));
+	$logger->warn(sprintf("Device %s: Could not insert ArpCache at %s: %s", $self->fqdn, 
+			      $timestamp, $e));
 	return;
     }
 	
@@ -2058,6 +2129,7 @@ sub arp_update {
 }
 
 ############################################################################
+
 =head2 get_arp - Fetch ARP and IPv6 ND tables
 
   Arguments:
@@ -2068,6 +2140,7 @@ sub arp_update {
   Examples:
     my $cache = $self->get_arp(%args)
 =cut
+
 sub get_arp {
     my ($self, %argv) = @_;
     $self->isa_object_method('get_arp');
@@ -2121,6 +2194,7 @@ sub get_arp {
 
 
 #########################################################################
+
 =head2 fwt_update - Update Forwarding Table in DB
     
   Arguments:
@@ -2136,6 +2210,7 @@ sub get_arp {
     $self->fwt_update();
 
 =cut
+
 sub fwt_update {
     my ($self, %argv) = @_;
     $self->isa_object_method('fwt_update');
@@ -2154,7 +2229,8 @@ sub fwt_update {
     }
 
     # Fetch from SNMP if necessary
-    my $fwt = $argv{fwt} || $class->_exec_timeout($host, sub{ return $self->get_fwt(session=>$argv{session}) } );
+    my $fwt = $argv{fwt} || 
+	$class->_exec_timeout($host, sub{ return $self->get_fwt(session=>$argv{session}) } );
 
     unless ( keys %$fwt ){
 	$logger->debug("$host: FWT empty");
@@ -2211,6 +2287,7 @@ sub fwt_update {
 
 
 ############################################################################
+
 =head2 get_fwt - Fetch forwarding tables
 
   Arguments:
@@ -2220,6 +2297,7 @@ sub fwt_update {
   Examples:
     my $fwt = $self->get_fwt(%args)
 =cut
+
 sub get_fwt {
     my ($self, %argv) = @_;
     $self->isa_object_method('get_fwt');
@@ -2248,6 +2326,7 @@ sub get_fwt {
 
 
 ############################################################################
+
 =head2 delete - Delete Device object
     
     We override the insert method for extra functionality:
@@ -2263,6 +2342,7 @@ sub get_fwt {
     $device->delete();
 
 =cut
+
 sub delete {
     my ($self) = @_;
     $self->isa_object_method('delete');
@@ -2290,6 +2370,7 @@ sub delete {
 }
 
 ############################################################################
+
 =head2 short_name - Get/Set name of Device
    
     The device name is actually a pointer to the Resorce Record (RR) table
@@ -2302,6 +2383,7 @@ sub delete {
     $device->short_name('switch1');
 
 =cut
+
 sub short_name {
     my ($self, $name) = @_;
     $self->isa_object_method('short_name');
@@ -2317,6 +2399,7 @@ sub short_name {
 }
 
 ############################################################################
+
 =head2 product - Get Device Product
    
   Arguments:
@@ -2327,6 +2410,7 @@ sub short_name {
     my $product_object = $device->product;
 
 =cut
+
 sub product {
     my ($self) = @_;
     $self->isa_object_method('product');
@@ -2336,6 +2420,7 @@ sub product {
 }
 
 ############################################################################
+
 =head2 fqdn - Get Fully Qualified Domain Name
    
   Arguments:
@@ -2354,6 +2439,7 @@ sub fqdn {
 }
 
 ############################################################################
+
 =head2 get_label - Overrides label method
    
   Arguments:
@@ -2372,6 +2458,7 @@ sub get_label {
 }
 
 ############################################################################
+
 =head2 is_in_downtime - Is this device within downtime period?
 
   Arguments:
@@ -2382,6 +2469,7 @@ sub get_label {
     if ( $device->is_in_downtime ) ...
 
 =cut
+
 sub is_in_downtime {
     my ($self) = @_;
 
@@ -2398,6 +2486,7 @@ sub is_in_downtime {
 }
 
 ############################################################################
+
 =head2 update - Update Device in Database
     
     We override the update method for extra functionality:
@@ -2433,6 +2522,7 @@ sub update {
 }
 
 ############################################################################
+
 =head2 update_bgp_peering - Update/Insert BGP Peering information using SNMP info
 
     
@@ -2559,6 +2649,7 @@ sub update_bgp_peering {
 
 
 ############################################################################
+
 =head2 snmp_update - Update Devices using SNMP information
 
 
@@ -2630,17 +2721,19 @@ sub snmp_update {
 
     if ( $argv{do_info} ){
 	my $info = $argv{info} || 
-	    $class->_exec_timeout($host, sub{ return $self->get_snmp_info(session   => $sinfo,
-									  bgp_peers => $argv{bgp_peers}) });
-
+	    $class->_exec_timeout($host, 
+				  sub{ return $self->get_snmp_info(session   => $sinfo,
+								   bgp_peers => $argv{bgp_peers}) });
+	
 	if ( $atomic && !$argv{pretend} ){
-	    Netdot::Model->do_transaction( sub{ return $self->info_update(add_subnets   => $argv{add_subnets},
-									  subs_inherit  => $argv{subs_inherit},
-									  bgp_peers     => $argv{bgp_peers},
-									  session       => $sinfo,
-									  info          => $info,
-									  device_is_new => $argv{device_is_new},
-						    ) } );
+	    Netdot::Model->do_transaction( 
+		sub{ return $self->info_update(add_subnets   => $argv{add_subnets},
+					       subs_inherit  => $argv{subs_inherit},
+					       bgp_peers     => $argv{bgp_peers},
+					       session       => $sinfo,
+					       info          => $info,
+					       device_is_new => $argv{device_is_new},
+			 ) } );
 	}else{
 	    $self->info_update(add_subnets   => $argv{add_subnets},
 			       subs_inherit  => $argv{subs_inherit},
@@ -2678,6 +2771,7 @@ sub snmp_update {
 
 
 ############################################################################
+
 =head2 info_update - Update Device in Database using SNMP info
 
     Updates an existing Device based on information gathered via SNMP.  
@@ -2711,6 +2805,7 @@ sub snmp_update {
     my $device = $device->info_update();
 
 =cut
+
 sub info_update {
     my ($self, %argv) = @_;
     $self->isa_object_method('info_update');
@@ -2736,26 +2831,34 @@ sub info_update {
 	    
 	    my $timeout     = $argv{timeout}     || $self->config->get('DEFAULT_SNMPTIMEOUT');
 	    my $retries     = $argv{retries}     || $self->config->get('DEFAULT_SNMPRETRIES');
-	    my $communities = $argv{communities} || [$self->community]        || $self->config->get('DEFAULT_SNMPCOMMUNITIES');
-	    my $sec_name    = $argv{sec_name}    || $self->snmp_securityname  || $self->config->get('DEFAULT_SNMP_SECNAME');
-	    my $sec_level   = $argv{sec_level}   || $self->snmp_securitylevel || $self->config->get('DEFAULT_SNMP_SECLEVEL');
-	    my $auth_proto  = $argv{auth_proto}  || $self->snmp_authprotocol  || $self->config->get('DEFAULT_SNMP_AUTHPROTO');
-	    my $auth_pass   = $argv{auth_pass}   || $self->snmp_authkey       || $self->config->get('DEFAULT_SNMP_AUTHPASS');
-	    my $priv_proto  = $argv{priv_proto}  || $self->snmp_privprotocol  || $self->config->get('DEFAULT_SNMP_PRIVPROTO');
-	    my $priv_pass   = $argv{priv_pass}   || $self->snmp_privkey       || $self->config->get('DEFAULT_SNMP_PRIVPASS');
+	    my $communities = $argv{communities} || [$self->community]        
+		|| $self->config->get('DEFAULT_SNMPCOMMUNITIES');
+	    my $sec_name    = $argv{sec_name}    || $self->snmp_securityname  
+		|| $self->config->get('DEFAULT_SNMP_SECNAME');
+	    my $sec_level   = $argv{sec_level}   || $self->snmp_securitylevel 
+		|| $self->config->get('DEFAULT_SNMP_SECLEVEL');
+	    my $auth_proto  = $argv{auth_proto}  || $self->snmp_authprotocol  
+		|| $self->config->get('DEFAULT_SNMP_AUTHPROTO');
+	    my $auth_pass   = $argv{auth_pass}   || $self->snmp_authkey       
+		|| $self->config->get('DEFAULT_SNMP_AUTHPASS');
+	    my $priv_proto  = $argv{priv_proto}  || $self->snmp_privprotocol  
+		|| $self->config->get('DEFAULT_SNMP_PRIVPROTO');
+	    my $priv_pass   = $argv{priv_pass}   || $self->snmp_privkey       
+		|| $self->config->get('DEFAULT_SNMP_PRIVPASS');
 	    $info = $class->_exec_timeout($host, 
-					  sub{ return $self->get_snmp_info(communities => $communities, 
-									   version     => $version,
-									   timeout     => $timeout,
-									   retries     => $retries,
-									   sec_name    => $sec_name,
-									   sec_level   => $sec_level,
-									   auth_proto  => $auth_proto,
-									   auth_pass   => $auth_pass,
-									   priv_proto  => $priv_proto,
-									   priv_pass   => $priv_pass,
-									   bgp_peers   => $argv{bgp_peers},
-						   ) });
+					  sub{ 
+					      return $self->get_snmp_info(communities => $communities, 
+									  version     => $version,
+									  timeout     => $timeout,
+									  retries     => $retries,
+									  sec_name    => $sec_name,
+									  sec_level   => $sec_level,
+									  auth_proto  => $auth_proto,
+									  auth_pass   => $auth_pass,
+									  priv_proto  => $priv_proto,
+									  priv_pass   => $priv_pass,
+									  bgp_peers   => $argv{bgp_peers},
+						  ) });
 	}
     }
     unless ( $info ){
@@ -2827,7 +2930,8 @@ sub info_update {
     }
 
     ##############################################################
-    if ( $argv{device_is_new} && (my $g = $self->_assign_monitor_config_group($info)) ){
+    if ( $argv{device_is_new} && 
+	 (my $g = $self->_assign_monitor_config_group($info)) ){
 	$devtmp{monitor_config}       = 1;
 	$devtmp{monitor_config_group} = $g;
     }
@@ -2886,6 +2990,7 @@ sub info_update {
 }
 
 ############################################################################
+
 =head2 add_ip - Add an IP address
    
   Arguments:
@@ -2897,6 +3002,7 @@ sub info_update {
     $device->add_ip('10.0.0.1', $int);
 
 =cut
+
 sub add_ip {
     my ($self, $address, $int) = @_;
     $self->isa_object_method('add_ip');
@@ -2926,6 +3032,7 @@ sub add_ip {
     return $ipb;
 }
 ############################################################################
+
 =head2 get_ips - Get all IP addresses from a device
    
   Arguments:
@@ -2937,6 +3044,7 @@ sub add_ip {
     print $_->address, "\n" foreach $device->get_ips( sort_by => 'address' );
 
 =cut
+
 sub get_ips {
     my ($self, %argv) = @_;
     $self->isa_object_method('get_ips');
@@ -2955,6 +3063,7 @@ sub get_ips {
 }
 
 ############################################################################
+
 =head2 get_neighbors - Get all Interface neighbors
 
   Arguments:
@@ -2964,6 +3073,7 @@ sub get_ips {
   Examples:
     my $neighbors = $device->get_neighbors();
 =cut
+
 sub get_neighbors {
     my ($self, $devs) = @_;
     $self->isa_object_method('get_neighbors');
@@ -2977,6 +3087,7 @@ sub get_neighbors {
 }
 
 ############################################################################
+
 =head2 get_circuits - Get all Interface circuits
 
   Arguments:
@@ -2986,6 +3097,7 @@ sub get_neighbors {
   Examples:
     my @circuits = $device->get_circuits();
 =cut
+
 sub get_circuits {
     my ($self) = @_;
     $self->isa_object_method('get_circuits');
@@ -3000,6 +3112,7 @@ sub get_circuits {
 }
 
 ############################################################################
+
 =head2 remove_neighbors - Remove neighbors from all interfaces
    
   Arguments:
@@ -3009,6 +3122,7 @@ sub get_circuits {
   Examples:
     $device->remove_neighbors();
 =cut
+
 sub remove_neighbors {
     my ($self) = @_;
     foreach my $int ( $self->interfaces ){
@@ -3017,6 +3131,7 @@ sub remove_neighbors {
 }
 
 ############################################################################
+
 =head2 get_subnets  - Get all the subnets in which this device has any addresses
    
   Arguments:
@@ -3028,6 +3143,7 @@ sub remove_neighbors {
     print $s{$_}->address, "\n" foreach keys %s;
 
 =cut
+
 sub get_subnets {
     my $self = shift;
     $self->isa_object_method('get_subnets');
@@ -3045,6 +3161,7 @@ sub get_subnets {
 }
 
 ############################################################################
+
 =head2 add_interfaces - Manually add a number of interfaces to an existing device
 
     The new interfaces will be added with numbers starting after the highest existing 
@@ -3087,6 +3204,7 @@ sub add_interfaces {
 }
 
 ############################################################################
+
 =head2 ints_by_number - Retrieve interfaces from a Device and sort by number.  
 
     The number field can actually contain alpha characters. If so, 
@@ -3138,6 +3256,7 @@ sub ints_by_number {
 }
 
 ############################################################################
+
 =head2 ints_by_name - Retrieve interfaces from a Device and sort by name.  
 
     This method deals with the problem of sorting Interface names that contain numbers.
@@ -3177,6 +3296,7 @@ sub ints_by_name {
 }
 
 ############################################################################
+
 =head2 ints_by_speed - Retrieve interfaces from a Device and sort by speed.  
 
   Arguments:  
@@ -3196,7 +3316,8 @@ sub ints_by_speed {
 }
 
 ############################################################################
-=head2 interfaces_by_vlan - Retrieve interfaces from a Device and sort by vlan ID
+
+=head2 ints_by_vlan - Retrieve interfaces from a Device and sort by vlan ID
 
 Arguments:  None
 Returns:    Sorted arrayref of interface objects
@@ -3218,6 +3339,7 @@ sub ints_by_vlan {
 }
 
 ############################################################################
+
 =head2 ints_by_jack - Retrieve interfaces from a Device and sort by Jack id
 
 Arguments:  None
@@ -3239,6 +3361,7 @@ sub ints_by_jack {
 }
 
 ############################################################################
+
 =head2 ints_by_descr - Retrieve interfaces from a Device and sort by description
 
 Arguments:  None
@@ -3256,6 +3379,7 @@ sub ints_by_descr {
 }
 
 ############################################################################
+
 =head2 ints_by_monitored - Retrieve interfaces from a Device and sort by 'monitored' field
 
 Arguments:  None
@@ -3273,6 +3397,7 @@ sub ints_by_monitored {
 }
 
 ############################################################################
+
 =head2 ints_by_status - Retrieve interfaces from a Device and sort by 'status' field
 
 Arguments:  None
@@ -3290,6 +3415,7 @@ sub ints_by_status {
 }
 
 ############################################################################
+
 =head2 ints_by_snmp - Retrieve interfaces from a Device and sort by 'snmp_managed' field
 
 Arguments:  None
@@ -3307,6 +3433,7 @@ sub ints_by_snmp {
 }
 
 ############################################################################
+
 =head2 interfaces_by - Retrieve sorted list of interfaces from a Device
 
     This will call different methods depending on the sort field specified
@@ -3351,6 +3478,7 @@ sub interfaces_by {
 }
 
 ############################################################################
+
 =head2 bgppeers_by_ip - Sort by remote IP
 
   Arguments:  
@@ -3358,6 +3486,7 @@ sub interfaces_by {
   Returns:    
     Sorted arrayref of BGPPeering objects
 =cut
+
 sub bgppeers_by_ip {
     my ( $self, $peers ) = @_;
     $self->isa_object_method('bgppeers_by_ip');
@@ -3372,6 +3501,7 @@ sub bgppeers_by_ip {
 }
 
 ############################################################################
+
 =head2 bgppeers_by_id - Sort by BGP ID
 
   Arguments:  
@@ -3394,6 +3524,7 @@ sub bgppeers_by_id {
 }
 
 ############################################################################
+
 =head2 bgppeers_by_entity - Sort by Entity name, AS number or AS Name
 
   Arguments:  
@@ -3403,6 +3534,7 @@ sub bgppeers_by_id {
     Sorted array of BGPPeering objects
 
 =cut
+
 sub bgppeers_by_entity {
     my ( $self, $peers, $sort ) = @_;
     $self->isa_object_method('bgppeers_by_id');
@@ -3422,6 +3554,7 @@ sub bgppeers_by_entity {
 
 
 ############################################################################
+
 =head2 get_bgp_peers - Retrieve BGP peers that match certain criteria and sort them
 
     This overrides the method auto-generated by Class::DBI
@@ -3443,6 +3576,7 @@ sub bgppeers_by_entity {
     print $_->entity->name, "\n" foreach @{ $device->get_bgp_peers() };
 
 =cut
+
 sub get_bgp_peers {
     my ( $self, %argv ) = @_;
     $self->isa_object_method('get_bgp_peers');
@@ -3487,6 +3621,7 @@ sub get_bgp_peers {
 }
 
 ###################################################################################################
+
 =head2 set_overwrite_if_descr - Set the overwrite_description flag in all interfaces of this device
 
     This flag controls whether the ifAlias value returned from the Device should
@@ -3500,8 +3635,9 @@ sub get_bgp_peers {
     True if successful
   Example:
     $device->set_overwrite_if_descr(1);
-$logger->info
+
 =cut
+
 sub set_overwrite_if_descr {
     my ($self, $value) = @_;
     $self->isa_object_method("set_overwrite_if_descr");
@@ -3517,6 +3653,7 @@ sub set_overwrite_if_descr {
 }
 
 ###################################################################################################
+
 =head2 set_interfaces_auto_dns - Sets auto_dns flag on all IP interfaces of this device
 
   Arguments:  
@@ -3525,8 +3662,9 @@ sub set_overwrite_if_descr {
     True if successful
   Example:
     $device->set_interfaces_auto_dns(1);
-$logger->info
+
 =cut
+
 sub set_interfaces_auto_dns {
     my ($self, $value) = @_;
     $self->isa_object_method("set_interfaces_auto_dns");
@@ -3722,13 +3860,13 @@ sub _get_snmp_session {
     
     # Set defaults
     my %sinfoargs = ( 
-	DestHost      => $argv{host},
-	Version       => $argv{version} || $self->config->get('DEFAULT_SNMPVERSION'),
-	Timeout       => (defined $argv{timeout}) ? $argv{timeout} : $self->config->get('DEFAULT_SNMPTIMEOUT'),
-	Retries       => (defined $argv{retries}) ? $argv{retries} : $self->config->get('DEFAULT_SNMPRETRIES'),
-	AutoSpecify   => 1,
-	Debug         => ( $logger->is_debug() )? 1 : 0,
-	BulkWalk      => (defined $argv{bulkwalk}) ? $argv{bulkwalk} :  $self->config->get('DEFAULT_SNMPBULK'),
+	DestHost => $argv{host},
+	Version  => $argv{version} || $self->config->get('DEFAULT_SNMPVERSION'),
+	Timeout  => (defined $argv{timeout})? $argv{timeout} : $self->config->get('DEFAULT_SNMPTIMEOUT'),
+	Retries  => (defined $argv{retries}) ? $argv{retries} : $self->config->get('DEFAULT_SNMPRETRIES'),
+	AutoSpecify => 1,
+	Debug       => ( $logger->is_debug() )? 1 : 0,
+	BulkWalk    => (defined $argv{bulkwalk}) ? $argv{bulkwalk} :  $self->config->get('DEFAULT_SNMPBULK'),
 	BulkRepeaters => $self->config->get('DEFAULT_SNMPBULK_MAX_REPEATERS'),
 	MibDirs       => \@MIBDIRS,
 	);
@@ -3740,7 +3878,7 @@ sub _get_snmp_session {
 	$sinfoargs{BulkWalk} = 0;
     }
 
-    my ($sinfo, $layers);
+    my $sinfo;
 
     # Deal with the number of connection attempts and the snmp_down flag
     # We need to do this in a couple of places
@@ -3782,11 +3920,6 @@ sub _get_snmp_session {
 					  $sinfoargs{Version}, $argv{host}, $err));
 	    }
 	    
-	    # Test for connectivity
-	    $layers = $sinfo->layers() || 
-		$self->throw_user(sprintf("Device::_get_snmp_session: %s: SNMPv%d failed: No sysServices", 
-					  $argv{host}, $sinfoargs{Version}));
-	    
 	}else {
 	    &_check_max_attempts($self, $argv{host});
 	    $self->throw_user(sprintf("Device::get_snmp_session: %s: SNMPv%d failed", 
@@ -3802,7 +3935,8 @@ sub _get_snmp_session {
 	foreach my $community ( @{$argv{communities}} ){
 
 	    $sinfoargs{Community} = $community;
-	    $logger->debug(sub{ sprintf("Device::_get_snmp_session: Trying SNMPv%d session with %s, community %s",
+	    $logger->debug(sub{ sprintf("Device::_get_snmp_session: Trying SNMPv%d session with %s, ".
+					"community %s",
 					$sinfoargs{Version}, $argv{host}, $sinfoargs{Community})});
 	    $sinfo = $sclass->new( %sinfoargs );
 	    
@@ -3817,18 +3951,15 @@ sub _get_snmp_session {
 	    if ( defined $sinfo ){
 		# Check for errors
 		if ( my $err = $sinfo->error ){
-		    $self->throw_user(sprintf("Device::_get_snmp_session: SNMPv%d error: device %s, community '%s': %s", 
+		    $self->throw_user(sprintf("Device::_get_snmp_session: SNMPv%d error: device %s, ".
+					      "community '%s': %s", 
 					      $sinfoargs{Version}, $argv{host}, $sinfoargs{Community}, $err));
 		}
-		# Test for connectivity
-		$layers = $sinfo->layers() || 
-		    $self->throw_user(sprintf("Device::_get_snmp_session: %s: SNMPv%d failed: No sysServices", 
-					      $argv{host}, $sinfoargs{Version}));
-
 		last; # If we made it here, we are fine.  Stop trying communities
 
 	    }else{
-		$logger->debug(sub{ sprintf("Device::_get_snmp_session: Failed SNMPv%s session with %s community '%s'", 
+		$logger->debug(sub{ sprintf("Device::_get_snmp_session: Failed SNMPv%s session with ".
+					    "%s community '%s'", 
 					    $sinfoargs{Version}, $argv{host}, $sinfoargs{Community})});
 	    }
 
@@ -3836,7 +3967,8 @@ sub _get_snmp_session {
 
 	unless ( defined $sinfo ){
 	    &_check_max_attempts($self, $argv{host});
-	    $self->throw_user(sprintf("Device::_get_snmp_session: Cannot connect to %s.  Tried communities: %s", 
+	    $self->throw_user(sprintf("Device::_get_snmp_session: Cannot connect to %s. ".
+				      "Tried communities: %s", 
 				      $argv{host}, (join ', ', @{$argv{communities}}) ));
 	}
     }
@@ -3855,28 +3987,38 @@ sub _get_snmp_session {
 	$uargs{snmp_conn_attempts} = 0; $uargs{snmp_down} = 0;
 
 	# We might have tried a different SNMP version and community above. Rectify DB if necessary
-	$uargs{snmp_version} = $sinfoargs{Version}   if ( !$self->snmp_version || $self->snmp_version ne $sinfoargs{Version}  );
-	$uargs{snmp_bulk}    = $sinfoargs{BulkWalk}  if ( !$self->snmp_bulk    || $self->snmp_bulk    ne $sinfoargs{BulkWalk} );
+	$uargs{snmp_version} = $sinfoargs{Version}   if ( !$self->snmp_version || 
+							  $self->snmp_version ne $sinfoargs{Version}  );
+	$uargs{snmp_bulk}    = $sinfoargs{BulkWalk}  if ( !$self->snmp_bulk    || 
+							  $self->snmp_bulk ne $sinfoargs{BulkWalk} );
 	if ( $sinfoargs{Version} == 3 ){
 	    # Store v3 parameters
-	    $uargs{snmp_securityname}  = $sinfoargs{SecName}   if (!$self->snmp_securityname  || 
-								   $self->snmp_securityname  ne $sinfoargs{SecName});
-	    $uargs{snmp_securitylevel} = $sinfoargs{SecLevel}  if (!$self->snmp_securitylevel || 
-								   $self->snmp_securitylevel ne $sinfoargs{SecLevel});
-	    $uargs{snmp_authprotocol}  = $sinfoargs{AuthProto} if (!$self->snmp_authprotocol  || 
-								   $self->snmp_authprotocol  ne $sinfoargs{AuthProto});
-	    $uargs{snmp_authkey}       = $sinfoargs{AuthPass}  if (!$self->snmp_authkey       || 
-								   $self->snmp_authkey       ne $sinfoargs{AuthPass});
-	    $uargs{snmp_privprotocol}  = $sinfoargs{PrivProto} if (!$self->snmp_privprotocol  || 
-								   $self->snmp_privprotocol  ne $sinfoargs{PrivProto});
-	    $uargs{snmp_privkey}       = $sinfoargs{PrivPass}  if (!$self->snmp_privkey       || 
-								   $self->snmp_privkey       ne $sinfoargs{PrivPass});
+	    $uargs{snmp_securityname} = $sinfoargs{SecName} if (
+		!$self->snmp_securityname  || $self->snmp_securityname  ne $sinfoargs{SecName});
+	    
+	    $uargs{snmp_securitylevel} = $sinfoargs{SecLevel}  if (
+		!$self->snmp_securitylevel || $self->snmp_securitylevel ne $sinfoargs{SecLevel});
+
+	    $uargs{snmp_authprotocol} = $sinfoargs{AuthProto} if (
+		!$self->snmp_authprotocol || $self->snmp_authprotocol ne $sinfoargs{AuthProto});
+
+	    $uargs{snmp_authkey} = $sinfoargs{AuthPass}  if (
+		!$self->snmp_authkey || $self->snmp_authkey ne $sinfoargs{AuthPass});
+
+	    $uargs{snmp_privprotocol}  = $sinfoargs{PrivProto} if (
+		!$self->snmp_privprotocol || $self->snmp_privprotocol ne $sinfoargs{PrivProto});
+
+	    $uargs{snmp_privkey} = $sinfoargs{PrivPass}  if (
+		!$self->snmp_privkey || $self->snmp_privkey ne $sinfoargs{PrivPass});
+
 	}else{
-	    $uargs{community} = $sinfoargs{Community} if (!$self->community || $self->community ne $sinfoargs{Community});
+	    $uargs{community} = $sinfoargs{Community} if (!$self->community || 
+							  $self->community ne $sinfoargs{Community});
 	}
 	$self->update(\%uargs) if ( keys %uargs );
     }
-    $logger->debug(sub{ sprintf("SNMPv%d session with host %s established", $sinfoargs{Version}, $argv{host}) });
+    $logger->debug(sub{ sprintf("SNMPv%d session with host %s established", 
+				$sinfoargs{Version}, $argv{host}) });
 
     # We want to do our own 'munging' for certain things
     my $munge = $sinfo->munge();
@@ -3900,7 +4042,8 @@ sub _get_main_ip {
     $class->throw_fatal("Model::Device::_get_main_ip: Missing required argument (info)")
 	unless $info;
     my @methods = @{$class->config->get('DEVICE_NAMING_METHOD_ORDER')};
-    $class->throw_fatal("Model::Device::_get_main_ip: Missing or invalid configuration variable: DEVICE_NAMING_METHOD_ORDER")
+    $class->throw_fatal("Model::Device::_get_main_ip: Missing or invalid configuration variable: ".
+			"DEVICE_NAMING_METHOD_ORDER")
 	unless scalar @methods;
 
     my %allips;
@@ -4032,7 +4175,8 @@ sub _get_devs_from_file {
 	    $logger->info("Device $host does not yet exist in the Database.");
 	}
     }
-    $class->throw_user("Device::_get_devs_from_file: No existing devices in list.  You might need to run a discover first.")
+    $class->throw_user("Device::_get_devs_from_file: No existing devices in list. ".
+		       "You might need to run a discover first.")
 	unless ( scalar @devs );
 
     return \@devs;
@@ -4128,7 +4272,7 @@ sub _fork_end {
 }
 
 ####################################################################################
-# snmp_update_parallel - Discover and/or update all devices in given list concurrently
+# _snmp_update_parallel - Discover and/or update all devices in given list concurrently
 #    
 #   Arguments:
 #     Hash with the following keys:
@@ -4149,21 +4293,22 @@ sub _fork_end {
 #   Returns: 
 #     Device count
 #
-sub snmp_update_parallel {
+sub _snmp_update_parallel {
     my ($class, %argv) = @_;
-    $class->isa_class_method('snmp_update_parallel');
+    $class->isa_class_method('_snmp_update_parallel');
 
     my ($hosts, $devs);
     if ( defined $argv{hosts} ){
-	$class->throw_fatal("Model::Device::snmp_update_parallel: Invalid hosts hash") 
+	$class->throw_fatal("Model::Device::_snmp_update_parallel: Invalid hosts hash") 
 	    if ( ref($argv{hosts}) ne "HASH" );
 	$hosts = $argv{hosts};
     }elsif ( defined $argv{devs} ){
-	$class->throw_fatal("Model::Device::snmp_update_parallel: Invalid devs array") 
+	$class->throw_fatal("Model::Device::_snmp_update_parallel: Invalid devs array") 
 	    if ( ref($argv{devs}) ne "ARRAY" );
 	$devs = $argv{devs};
     }else{
-	$class->throw_fatal("Model::Device::_snmp_update_parallel: Missing required parameters: hosts or devs");
+	$class->throw_fatal("Model::Device::_snmp_update_parallel: Missing required parameters: ".
+			    "hosts or devs");
     }
     
     my %uargs;
@@ -4228,7 +4373,8 @@ sub snmp_update_parallel {
 	}
 	# Make sure we don't launch a process unless necessary
 	if ( $dev->is_in_downtime() ){
-	    $logger->debug(sub{ sprintf("Model::Device::_snmp_update_parallel: %s in downtime.  Skipping", $dev->fqdn) });
+	    $logger->debug(sub{ sprintf("Model::Device::_snmp_update_parallel: %s in downtime. Skipping", 
+					$dev->fqdn) });
 	    next;
 	}
 	my %args = %uargs;
@@ -4543,15 +4689,6 @@ sub _validate_arp {
     my $host = $self->fqdn();
 
     my $ign_non_subnet = Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET');
-    
-    # Cisco Firewalls do not return subnet prefix information via SNMP
-    # as of 27/07/2012. But we can get ARP info from them, so if we are
-    # configured to ignore IPs which are not within known subnets, then
-    # we'll have to disable that if we want to get v6 ARP from them.
-    # This block must be removed later if the SNMP values are supported
-    if ( $version == 6 && ref($self) =~ /CiscoFW$/o ){
-	$ign_non_subnet = 0;
-    }
 
     # Get all interfaces and IPs
     my %devints; my %devsubnets;
@@ -4751,19 +4888,22 @@ sub _walk_fwt {
 
 	    my $mac = $fw_mac->{$fw_index};
 	    unless ( defined $mac ) {
-		$logger->debug(sub{"Device::_walk_fwt: $host: MAC not defined at index $fw_index.  Skipping" });
+		$logger->debug(
+		    sub{"Device::_walk_fwt: $host: MAC not defined at index $fw_index. Skipping" });
 		next;
 	    }
 
 	    my $bp_id  = $fw_port->{$fw_index};
 	    unless ( defined $bp_id ) {
-		$logger->debug(sub{"Device::_walk_fwt: $host: Port $fw_index has no fw_port mapping.  Skipping" });
+		$logger->debug(
+		    sub{"Device::_walk_fwt: $host: Port $fw_index has no fw_port mapping. Skipping" });
 		next;
 	    }
 	    
 	    my $iid = $bp_index->{$bp_id};
 	    unless ( defined $iid ) {
-		$logger->debug(sub{"Device::_walk_fwt: $host: Interface $bp_id has no bp_index mapping. Skipping" });
+		$logger->debug(
+		    sub{"Device::_walk_fwt: $host: Interface $bp_id has no bp_index mapping. Skipping" });
 		next;
 	    }
 	    
@@ -4775,7 +4915,8 @@ sub _walk_fwt {
 	foreach my $iid ( keys %{ $last_src } ){
 	    my $mac = $last_src->{$iid};
 	    unless ( defined $mac ) {
-		$logger->debug(sub{"Device::_walk_fwt: $host: MAC not defined at rptr index $iid. Skipping" });
+		$logger->debug(
+		    sub{"Device::_walk_fwt: $host: MAC not defined at rptr index $iid. Skipping" });
 		next;
 	    }
 	    
@@ -4788,7 +4929,8 @@ sub _walk_fwt {
     foreach my $iid ( keys %tmp ){
 	my $descr = $sints->{$iid};
 	unless ( defined $descr ) {
-	    $logger->debug(sub{"Device::_walk_fwt: $host: SNMP iid $iid has no physical port matching. Skipping" });
+	    $logger->debug(
+		sub{"Device::_walk_fwt: $host: SNMP iid $iid has no physical port matching. Skipping" });
 	    next;
 	}
 	
@@ -4836,7 +4978,8 @@ sub _exec_timeout {
     $class->isa_class_method("_exec_timeout");
 
     $class->throw_fatal("Model::Device::_exec_timeout: Missing required argument: code") unless $code;
-    $class->throw_fatal("Model::Device::_exec_timeout: Invalid code reference") unless ( ref($code) eq 'CODE' );
+    $class->throw_fatal("Model::Device::_exec_timeout: Invalid code reference") 
+	unless ( ref($code) eq 'CODE' );
     my @result;
     eval {
 	alarm($TIMEOUT);
@@ -5347,9 +5490,11 @@ sub _update_stp_info {
 	    }
 	    # Finally, just get the priority
 	    $uargs{bridge_priority} = $info->{stp_instances}->{$instn}->{stp_priority};
-	    if ( defined $stpinst->bridge_priority && $stpinst->bridge_priority ne $uargs{bridge_priority} ){
+	    if ( defined $stpinst->bridge_priority && 
+		 $stpinst->bridge_priority ne $uargs{bridge_priority} ){
 		$logger->warn(sprintf("%s: STP instance %s: Bridge Priority Changed: %s -> %s", 
-				      $host, $stpinst->number, $stpinst->bridge_priority, $uargs{bridge_priority}));
+				      $host, $stpinst->number, $stpinst->bridge_priority, 
+				      $uargs{bridge_priority}));
 	    }
 	    
 	    # Update the instance
@@ -5393,8 +5538,9 @@ sub _update_modules {
     my %oldmodules;
     map { $oldmodules{$_->number} = $_ } $self->modules();
 
-    foreach my $number ( sort { $a <=> $b } keys %{$modules} ){
-	my %mod_args = %{$modules->{$number}};
+    foreach my $key ( keys %{$modules} ){
+	my $number = $modules->{$key}->{number};
+	my %mod_args = %{$modules->{$key}};
 	$mod_args{device} = $self->id;
 	my $show_name = $mod_args{name} || $number;
 	# find or create asset object for given serial number and product
@@ -5410,6 +5556,12 @@ sub _update_modules {
 	    # learned from device info can vary slightly
 	    # from the name in the module information
 	    $asset = Asset->search_sn_mf($serial, $mf)->first;
+
+	    # The asset can unfortunately be from a different
+	    # manufacturer. We run the risk of assigning the
+	    # wrong asset, but the alternative may be worse
+	    $asset = Asset->search(serial_number=>$serial)->first
+		unless $asset;
 
 	    if ( !$asset && (my $model = $mod_args{model}) ){
 		# Now, search for the asset based on the match
@@ -5427,16 +5579,20 @@ sub _update_modules {
 		    -or => [part_number => $model,  name => $model],
 						 })->first;
 		
-		$product ||= Product->insert({part_number  => $model,
-					      name         => $model,
-					      manufacturer => $mf,
-					     });
+		my $type = ProductType->find_or_create({name=>'Module'});
 		
-		if ( !$product->type || $product->type->name eq 'Unknown' ){
-		    my $type = ProductType->find_or_create({name=>'Module'});
-		    $product->update({type => $type});
+		if ( $product ){
+		    if ( !$product->type || $product->type->name eq 'Unknown' ){
+			$product->update({type => $type});
+		    }
+		}else{
+		    $product = Product->insert({part_number  => $model,
+						name         => $model,
+						manufacturer => $mf,
+						type         => $type,
+					       });
 		}
-		
+				
 		# Find or create asset
 		$asset = Asset->find_or_create({product_id    => $product,
 						serial_number => $serial,
@@ -5495,7 +5651,6 @@ sub _update_interfaces {
     my ($self, %argv) = @_;
 
     my $host = $self->fqdn;
-
     my $info = $argv{info};
 
     # Do not update interfaces for these devices
@@ -5503,7 +5658,8 @@ sub _update_interfaces {
     my %IGNORED;
     map { $IGNORED{$_}++ } @{ $self->config->get('IGNOREPORTS') };
     if ( defined $info->{sysobjectid} && exists $IGNORED{$info->{sysobjectid}} ){
-	$logger->debug(sub{"Device::_update_interfaces: $host ports ignored per configuration option (IGNOREPORTS)"});
+	$logger->debug(
+	    sub{"Device::_update_interfaces: $host ports ignored per configuration option (IGNOREPORTS)"});
 	return;
     }
     
@@ -5539,6 +5695,39 @@ sub _update_interfaces {
     # Index by object id. 	
     map { $oldifs{$_->id} = $_ } $self->interfaces();
     
+    if ( $ENV{REMOTE_USER} eq 'netdot' ){
+
+	# Avoid a situation in which the SNMP query fails or data
+	# is truncated, resulting in too many interfaces being
+	# incorrectly removed. This in turn causes IP addresses
+	# and A/AAAA and PTR records to be removed, which then
+	# causes all sorts of other problems
+
+	# Cron jobs run as user 'netdot'
+	# This would not work if there is an actual user (person)
+	# whose username is netdot, running the update
+
+	my $int_thold = $self->config->get('IF_COUNT_THRESHOLD');
+	if ( $int_thold >= 1 ){
+	    $self->throw_fatal('Incorrect value for IF_COUNT_THRESHOLD in config file');
+	}
+
+	my %old_snmp_ifs;
+	map { $old_snmp_ifs{$_->id} = $_ } 
+	grep { $_->doc_status eq 'snmp' } values %oldifs;
+
+	my $num_old = scalar(keys(%old_snmp_ifs));
+	my $num_new = scalar(keys(%{$info->{interface}}));
+	
+	if ( ($num_old && !$num_new) || ($num_new && ($num_new < $num_old) && 
+	     ($num_new / $num_old) <= $int_thold) ){
+	    $logger->warn("The ratio of new to old interfaces is below the configured".
+			  " threshold (IF_COUNT_THRESHOLD). Skipping interface update.". 
+			  " Please re-discover device manually if needed.");
+	    return;
+	}
+    }
+
     # Index by interface name (ifDescr) and number (ifIndex)
     foreach my $id ( keys %oldifs ){
 	$oldifsbynumber{$oldifs{$id}->number} = $oldifs{$id}
@@ -5939,7 +6128,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

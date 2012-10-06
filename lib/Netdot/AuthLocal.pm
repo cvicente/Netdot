@@ -4,6 +4,39 @@ use strict;
 use warnings;
 use Netdot::Model;
 
+=head1 NAME
+
+Netdot::AuthLocal - Local authentication module for Netdot via Apache2::SiteControl
+
+=head1 SYNOPSIS
+
+In Apache configuration:
+    
+=over 4
+
+   PerlSetVar SiteControlMethod Netdot::AuthLocal
+    
+=back
+
+=head1 SEE ALSO
+
+Apache2::SiteControl
+
+=cut
+
+=head2 check_credentials
+
+  Arguments:
+    Apache Request Object
+    Username
+    Password
+  Returns:
+    True or false
+  Examples:
+    if ( Netdot::Radius::check_credentials($r, $user, $pass) {...}
+
+=cut
+
 sub check_credentials {
     my ($r, $username, $password) = @_;
     
@@ -30,28 +63,6 @@ sub check_credentials {
 1;
 
 __END__
-
-=head1 NAME
-
-Netdot::AuthLocal - Local authentication module for Netdot via Apache2::SiteControl
-
-
-=head1 SYNOPSIS
-
-In Apache configuration:
-    
-=over 4
-
-   PerlSetVar SiteControlMethod Netdot::AuthLocal
-    
-=back
-
-=head1 DESCRIPTION
-
-
-=head1 SEE ALSO
-
-Apache2::SiteControl
 
 =head1 AUTHORS
 

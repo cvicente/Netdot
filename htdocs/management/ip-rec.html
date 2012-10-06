@@ -1,17 +1,12 @@
 <%doc>
-
 In a separate window, allow user to modify one of the fields in Ipblock recursively (or not)
-Uses the 'update_recursive()' method from IPManager.  Some restrictions apply regarding
+Some restrictions apply regarding
 which fields can be updated in a recursive way.
-
 </%doc>
-%
 %
 <%flags>
 inherit => undef 
 </%flags>
-%
-%
 %
 <%args>
 $id
@@ -21,11 +16,9 @@ $submit    => undef
 $cancel    => undef
 </%args>
 %
-%
 <%init>
-my $bodyargs;
 my %state;
-my %reserved = (submit    => "", cancel    => "");
+my %reserved = (submit => "", cancel => "");
 my $msg;
 my (@field_headers, @cell_data) = ();
 
@@ -53,11 +46,11 @@ if ( $submit ){
     if ( my $e = $@ ){
 	$m->comp('/generic/error.mhtml', error=>$e);
     }else{
-	$msg = "OK.";
+	$msg = 'OK.';
  	if ( $recursive ){
- 	    $msg .= " All blocks updated successfully";
+ 	    $msg .= ' All blocks updated successfully.';
  	}
- 	$bodyargs = 'onUnload="opener.location.reload()"';
+	$msg .= ' You might need to refresh the parent window to see the new values.'; 
     }
 
 }else{
@@ -65,20 +58,21 @@ if ( $submit ){
     push( @cell_data, $ui->form_field(object=>$o, column=>$field, edit=>1, returnValOnly=>1) );
 
     push( @field_headers, "Options:" );
-    push( @cell_data, 'Apply to children blocks <input type="checkbox" name="recursive"'.($recursive?' CHECKED':'').'>' );
+    push( @cell_data, 'Apply to all descendants <input type="checkbox" name="recursive"'.($recursive?' CHECKED':'').'>' );
 }
+my $netdot_path = $r->dir_config('NetdotPath');
 </%init>
 
 <html>
 <head>
-    <link rel="stylesheet" href="<% $r->dir_config('NetdotPath') %>css/style.css" type="text/css">
+    <link rel="stylesheet" href="<% $netdot_path %>css/style.css" type="text/css">
     <title>Edit IP block Recursively</title>
 </head> 
-<script language="JavaScript" src="select.js"></script>
-<script language="JavaScript" src="insertentry.js"></script>
-<script language="JavaScript" src="jsrsClient.js"></script>
+<script language="JavaScript" src="<% $netdot_path %>java_script/select.js"></script>
+<script language="JavaScript" src="<% $netdot_path %>java_script/insertentry.js"></script>
+<script language="JavaScript" src="<% $netdot_path %>java_script/jsrsClient.js"></script>
 
-<body class="bodytag" <% $bodyargs %>>
+<body class="bodytag">
 
 <div class="container">
 
@@ -89,7 +83,7 @@ if ( $submit ){
 
   <div class="containerbody">
       <% $msg %>
-      <p><a href="#" onClick="window.close();window.opener.location.reload()">[close]</a><br>
+      <p><a href="#" onClick="window.close();">[close]</a><br>
     
 %}else{
 

@@ -11,13 +11,11 @@ my $logger = Netdot->log->get_logger('Netdot::Model::Device');
 
 Netdot::Model::DeviceModule - Device Module Class
 
-=head1 SYNOPSIS
-
-
 =head1 CLASS METHODS
 =cut
 
 ################################################################
+
 =head2 insert - Insert DeviceModule object
 
     We override the insert method for extra functionality
@@ -42,6 +40,7 @@ sub insert {
 =cut
 
 ################################################################
+
 =head2 update - Update DeviceModule object
 
     We override the update method for extra functionality
@@ -67,7 +66,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

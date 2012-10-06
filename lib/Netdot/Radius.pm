@@ -42,6 +42,7 @@ In Apache configuration:
 
 
 ############################################################################
+
 =head2 check_credentials
     
   Arguments:
@@ -54,6 +55,7 @@ In Apache configuration:
     if ( Netdot::Radius::check_credentials($r, $user, $pass) {...}
 
 =cut
+
 sub check_credentials {
     my ($r, $username, $password) = @_;
     unless ( $username && $password ){
@@ -143,7 +145,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2009 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

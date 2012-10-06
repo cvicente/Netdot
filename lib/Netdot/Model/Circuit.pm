@@ -10,15 +10,11 @@ my $logger = Netdot->log->get_logger('Netdot::Model');
 
 Netdot::Model::Circuit
 
-=head1 SYNOPSIS
-
-=head1 CLASS METHODS
-=cut
-
 =head1 INSTANCE METHODS
 =cut
 
 ###################################################################################
+
 =head2 search_by_keyword - Search Circuits by keywords
 
     Relevant fields include: CID, SiteLink name, Site names, SiteLink Entity
@@ -29,8 +25,8 @@ Netdot::Model::Circuit
     array of Circuit objects
   Examples:
     
-
 =cut
+
 sub search_by_keyword {
     my ($class, $string) = @_;
     my $crit = "%" . $string . "%";
@@ -59,7 +55,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

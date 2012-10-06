@@ -8,14 +8,13 @@ use strict;
 
 Netdot::Util::Math - Various Math utilities
 
-=head1 SYNOPSIS
-
-
 =head1 CLASS METHODS
 =cut
+
 1;
 
 ############################################################################
+
 =head2 new - Class constructor
 
   Arguments:
@@ -25,6 +24,7 @@ Netdot::Util::Math - Various Math utilities
   Examples:
     my $math = Netdot::Util::Math->new();
 =cut
+
 sub new{
     my ($proto, %argv) = @_;
     my $class = ref($proto) || $proto;
@@ -34,6 +34,7 @@ sub new{
 }
 
 ############################################################################
+
 =head2 within
 
     Checks if a value is between two other values
@@ -44,12 +45,14 @@ sub new{
     Returns true/false whether val is between beg and end, inclusive
 
 =cut
+
 sub within {
     my ($self, $val, $beg, $end) = @_;
     return( $beg <= $val && $val <= $end );
 }
 
 ############################################################################
+
 =head2 powerof2lo
 
     Returns the next lowest power of 2 from x
@@ -60,6 +63,7 @@ sub within {
     Returns a power of 2
 
 =cut
+
 sub powerof2lo {
     my ($self, $x) = @_;
     $x |= $x >> 1;
@@ -73,21 +77,25 @@ sub powerof2lo {
 }
 
 ############################################################################
+
 =head2 ceil
 
-	There is no ceiling function built in to perl. 
-
-	Arguments:
-		- x: a floating point number
-	Returns the smallest integer greater than or equal to x.	
-	(Also works for negative numbers, although we don\'t 
-	really need that here.)
-
+    There is no ceiling function built in to perl. 
+    
+  Arguments:
+    - x: a floating point number
+    Returns the smallest integer greater than or equal to x.	
+    (Also works for negative numbers, although we don\'t 
+    really need that here.)
+    
 =cut
+
 sub ceil {
     my ($self, $x) = @_;
 	return int($x-(int($x)+1)) + int($x) + 1;
 }
+
+############################################################################
 
 =head2 floor
 
@@ -100,6 +108,7 @@ sub ceil {
 		- x: a floating point number
 	Return the largest integer less than or equal to x.	
 =cut
+
 sub floor {
     my ($self, $x) = @_;
 	return int($x);
@@ -111,7 +120,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >> with contributions from Nath
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2006 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

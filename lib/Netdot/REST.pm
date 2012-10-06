@@ -1,5 +1,13 @@
 package Netdot::REST;
 
+use base qw( Netdot );
+use Netdot::Model;
+use XML::Simple;
+use Data::Dumper;
+use Apache2::Const -compile => qw(FORBIDDEN HTTP_UNAUTHORIZED OK NOT_FOUND 
+                                  HTTP_BAD_REQUEST HTTP_NOT_ACCEPTABLE);
+use strict;
+
 =head1 NAME
 
 Netdot::REST - Server-side RESTful interface
@@ -16,19 +24,13 @@ The RESTful interface provides access to the Netdot database over the HTTP/HTTPS
     $rest->handle_resource(resource=>$resource, r=>$r, %ARGS);
 
 =cut
-use base qw( Netdot );
-use Netdot::Model;
-use XML::Simple;
-use Data::Dumper;
-use Apache2::Const -compile => qw(FORBIDDEN HTTP_UNAUTHORIZED OK NOT_FOUND 
-                                  HTTP_BAD_REQUEST HTTP_NOT_ACCEPTABLE);
-use strict;
 
 my $logger = Netdot->log->get_logger("Netdot::REST");
 
 =head1 METHODS
 
 ############################################################################
+
 =head2 new - Constructor
 
   Arguments:
@@ -40,6 +42,7 @@ my $logger = Netdot->log->get_logger("Netdot::REST");
     $rest = Netot::REST->new(user=>$user, manager=>$manager);
 
 =cut
+
 sub new { 
     my ($proto, %argv) = @_;
     my $class = ref( $proto ) || $proto;
@@ -56,6 +59,7 @@ sub new {
  
 
 ############################################################################
+
 =head2 handle_resource - Calls appropriate REST operation based on request
     
     A resource is the part of the URI between the Netdot URL and any arguments.
@@ -108,6 +112,7 @@ sub new {
     $nr->handle_resource(resource=>'Device', r=>$r, sysname=>host1, site=>2);
 
 =cut
+
 sub handle_resource {
     my ($self, %argv) = @_;
     
@@ -215,6 +220,7 @@ sub handle_resource {
 }
 
 ############################################################################
+
 =head2 get - Retrieves a hashref containing object information
     
     In the case of foreign key fields, this method will return two hash keys:
@@ -248,6 +254,7 @@ sub handle_resource {
     Examples:
        $rest->get(table=>'device', id=>1);
 =cut
+
 sub get{
     my ($self, %argv) = @_;
     $self->isa_object_method('get');
@@ -314,6 +321,7 @@ sub get{
 
 
 ############################################################################
+
 =head2 post - Inserts or updates a Netdot object
 
   Arguments:
@@ -327,6 +335,7 @@ sub get{
   Examples:
     my $o = $rest->post(table=>'device', id=>1, field1=>value1, field2=>value2);
 =cut
+
 sub post{
     my ($self, %argv) = @_;
     $self->isa_object_method('post');
@@ -379,6 +388,7 @@ sub post{
 }
 
 ############################################################################
+
 =head2 delete - Delete a Netdot object
 
     Arguments:
@@ -391,6 +401,7 @@ sub post{
     Examples:
        $rest->delete(table=>'device', id=>1);
 =cut
+
 sub delete{
     my ($self, %argv) = @_;
     $self->isa_object_method('delete');
@@ -419,8 +430,8 @@ sub delete{
 
 }
 
-
 ##################################################################
+
 =head2 request - Get/Set request attribute
 
   Arguments: 
@@ -430,6 +441,7 @@ sub delete{
   Examples:
     $rest->request($r);
 =cut
+
 sub request {
     my ($self, $r) = @_;
     $self->{request} = $r if $r;
@@ -437,6 +449,7 @@ sub request {
 }
 
 ##################################################################
+
 =head2 media_type - Get/Set media_type attribute
 
   Arguments: 
@@ -446,6 +459,7 @@ sub request {
   Examples:
     $rest->media_type('xml');
 =cut
+
 sub media_type {
     my ($self, $r) = @_;
     $self->{request} = $r if $r;
@@ -454,6 +468,7 @@ sub media_type {
 
 
 ##################################################################
+
 =head2 print_formatted - Print formatted data to stdout
 
   Arguments: 
@@ -463,6 +478,7 @@ sub media_type {
   Examples:
     $rest->print_formatted(\%hash);
 =cut
+
 sub print_formatted {
     my ($self, $data) = @_;
     
@@ -488,6 +504,7 @@ sub print_formatted {
 }
 
 ##################################################################
+
 =head2 check_accept_header - Sets and validates media_type and version
 
   Arguments: 
@@ -497,6 +514,7 @@ sub print_formatted {
   Examples:
     $rest->check_accept_header($headers->{Accept});
 =cut
+
 sub check_accept_header{
     my ($self, $accept) = @_;
     $logger->debug(sprintf("Netdot::REST::handle_resource: %s, Accept: %s", 
@@ -524,6 +542,7 @@ sub check_accept_header{
 }
 
 ##################################################################
+
 =head2 throw - Call SUPER::throw_rest
 
     Prettier than calling $rest->throw_rest :-)
@@ -535,6 +554,7 @@ sub check_accept_header{
   Examples:
     $rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, msg=>"Bad request: $e"); 
 =cut
+
 sub throw {
     my ($self, %args) = @_;
     return $self->SUPER::throw_rest(%args);
@@ -604,4 +624,5 @@ along with this program; if not, write to the Free Software Foundation,
 Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 =cut
+
 1;

@@ -40,6 +40,7 @@ if ( $id ) {
 	@tmp = @$rr;
     }else {
 	push @tmp, $rr;
+	$id = $rr;
     }
     foreach ( @tmp ){
 	$_ = RR->retrieve($_) unless ref($_);
@@ -123,7 +124,8 @@ if ( $submit ){
 		    # Also, if RR was just updated, this re-reads it from the DB
 		    # to avoid the old values from showing up
 		    my $newrr = RR->retrieve($newid);
-		    $rrs{$newrr->id} = $newrr if defined $newrr;
+		    $rrs{$newrr->id} = $newrr if ( defined $newrr && 
+						   $id == $newid );
 		    
 		}
 					  })

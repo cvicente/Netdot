@@ -9,7 +9,7 @@ my $logger = Netdot->log->get_logger('Netdot::Model::Device');
 
 =head1 NAME
 
-Netdot::Model::Device::CLI - Base class for classes dealing with Device CLI interaction
+Netdot::Model::Device::CLI - Base class to deal with Device CLI interaction
 
 =head1 SYNOPSIS
 
@@ -17,10 +17,6 @@ Provides common functions for CLI access
 
 =head1 CLASS METHODS
 =cut
-
-=head1 INSTANCE METHODS
-=cut
-
 
 ############################################################################
 # Get CLI login credentials from config file
@@ -153,6 +149,17 @@ sub _validate_arp {
 
     my $host = $self->fqdn();
 
+    my $ign_non_subnet = Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET');
+    
+    # Cisco Firewalls do not return subnet prefix information via SNMP
+    # as of 27/07/2012. But we can get ARP info from them, so if we are
+    # configured to ignore IPs which are not within known subnets, then
+    # we'll have to disable that if we want to get ND neighbors.
+    # This block must be removed later if the SNMP values are supported
+    if ( $version == 6 && ref($self) =~ /CiscoFW$/o ){
+	$ign_non_subnet = 0;
+    }
+
     # MAP interface names to IDs
     # Get all interface IPs for subnet validation
     my %int_names;
@@ -160,7 +167,7 @@ sub _validate_arp {
     foreach my $int ( $self->interfaces ){
 	my $name = $self->_reduce_iname($int->name);
 	$int_names{$name} = $int->id;
-	if ( Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET') ){
+	if ( $ign_non_subnet ){
 	    foreach my $ip ( $int->ips ){
 		next unless ($ip->version == $version);
 		push @{$devsubnets{$int->id}}, $ip->parent->netaddr 
@@ -168,9 +175,9 @@ sub _validate_arp {
 	    }
 	}
     }
-    if ( Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET') ){
-	$logger->warn("We have no subnet information. ARP validation will fail except for ".
-		      "link-local addresses")
+    if ( $ign_non_subnet ){
+	$logger->warn("Device::CLI::_validate_arp: We have no subnet information. ".
+		      "ARP validation will fail except for link-local addresses")
 	    unless %devsubnets;
     }
 
@@ -195,7 +202,7 @@ sub _validate_arp {
 		next;
 	    }
 	    $mac = $validmac;
-	    if ( Netdot->config->get('IGNORE_IPS_FROM_ARP_NOT_WITHIN_SUBNET') ){
+	    if ( $ign_non_subnet ){
 		# This check does not work with link-local, so if user wants those
 		# just validate them
 		if ( $version == 6 && Ipblock->is_link_local($ip) ){

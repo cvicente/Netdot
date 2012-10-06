@@ -5,8 +5,19 @@ use warnings;
 use strict;
 use Math::BigInt;
 
+=head1 NAME
+
+Netdot::Model::Plugins::IPRangeDNS
+
+=head1 DESCRIPTION
+    
+    Generates DNS records based on the IP address. It can also 
+    add given prefix and suffix strings.
+
+=cut
 
 ############################################################################
+
 =head2 new - Class constructor
 
   Arguments:
@@ -16,6 +27,7 @@ use Math::BigInt;
   Examples:
     
 =cut
+
 sub new{
     my ($proto, %argv) = @_;
     my $class = ref($proto) || $proto;
@@ -25,6 +37,7 @@ sub new{
 }
 
 ############################################################################
+
 =head2 generate_records - Generates A/AAAA & PTR records
 
     Generates label based on IP address and adds the given prefix and suffix strings
@@ -49,6 +62,7 @@ sub new{
        fzone=>$fzone );
 
 =cut 
+
 sub generate_records {
     my ($self, %argv) = @_;
     my($prefix, $suffix, $ip_list, $fzone) 
@@ -108,7 +122,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2009 University of Oregon, all rights reserved.
+Copyright 2012 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
