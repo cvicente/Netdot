@@ -2,6 +2,7 @@ package Netdot::LDAP;
 use strict;
 use warnings;
 use Net::LDAP;
+use Net::LDAP::Constant qw(LDAP_EXTENSION_START_TLS);
 use Netdot::AuthLocal;
 
 =head1 NAME
@@ -120,7 +121,7 @@ sub check_credentials {
     # start TLS
     my $scheme = $ldap->scheme();
     my $dse = $ldap->root_dse();
-    my $does_support_tls = $dse->supported_extension('LDAP_EXTENSION_START_TLS');
+    my $does_support_tls = $dse->supported_extension(LDAP_EXTENSION_START_TLS);
     my $require_tls = ($r->dir_config("NetdotLDAPRequireTLS") eq "yes")? 1 : 0;
     if ( $scheme eq "ldap" && ( $require_tls || $does_support_tls ) ) {
         my $tls = $ldap->start_tls();
