@@ -18,7 +18,7 @@ all: db tasks
 db:
 	@echo
 	@echo "Upgrading schema and data..."
-	$(PERL) updatedb 2>>error.log 
+	$(PERL) updatedb 2>error.log 
 
 tasks:
 	@echo	

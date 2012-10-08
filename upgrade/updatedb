@@ -41,6 +41,10 @@ if ( $schema_version eq '1.0.1' ){
 	# Requires renaming existing indexes to be consistent with newly generated 
 	# schema in this version
 	push @statements, 
+
+	'ALTER TABLE device DROP foreign key fk_used_by;',
+	'ALTER TABLE device DROP foreign key fk_owner_1;',
+
 	'ALTER TABLE device DROP INDEX `Device2`;',
 	'ALTER TABLE device DROP INDEX `Device3`;',
 	'ALTER TABLE device DROP INDEX `Device4`;',
@@ -48,7 +52,7 @@ if ( $schema_version eq '1.0.1' ){
 	'ALTER TABLE device DROP INDEX `Device6`;',
 	'ALTER TABLE device DROP INDEX `Device7`;',
 	'ALTER TABLE device DROP INDEX `Device8`;',
-	
+
 	'ALTER TABLE device ADD UNIQUE INDEX `device2` (`name`);',
 	
 	'ALTER TABLE device ADD INDEX `Device3` (`used_by`);',
@@ -58,7 +62,10 @@ if ( $schema_version eq '1.0.1' ){
 	'ALTER TABLE device ADD INDEX `Device7` (`down_from`);',
 	'ALTER TABLE device ADD INDEX `Device8` (`down_until`);',
 	'ALTER TABLE device ADD INDEX `Device9` (`extension`);',
-	
+
+	'ALTER TABLE device ADD CONSTRAINT `fk_owner_1` FOREIGN KEY (`owner`) REFERENCES `entity` (`id`);',
+	'ALTER TABLE device ADD CONSTRAINT `fk_used_by` FOREIGN KEY (`used_by`) REFERENCES `entity` (`id`);',
+
 	"UPDATE schemainfo SET version='1.0.2' WHERE id=1;",
 	"DELETE FROM datacache;";
 	
