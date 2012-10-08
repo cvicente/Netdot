@@ -1,64 +1,53 @@
 
-           == Instructions for Upgrading Netdot 0.9.10 to 1.0.x ==
+           == Instructions for Upgrading Netdot 1.0.1 to 1.0.2 ==
 
 
 1. You will need to update the database schema in addition to the application.
 
 IMPORTANT: MAKE SURE YOU MAKE A BACKUP COPY OF YOUR DATABASE BEFORE UPGRADING
 
-This new version of Netdot fixes a number of lax database constraints. 
-This means that table columns were previously defined in such a way that 
-their values could be undefined (NULL) or zero when they should not. 
-In additiion, the new version adds UNIQUE constraints to some fields.
-
-It is very likely that applying these constraints to your current schema now 
-will fail because there are cases where columns were set to "NULL" or zero, 
-or cases where there are duplicate values. This means that you may end up
-with an inconsistent schema, hence the importance of having a backup copy
-of your database.
+This new version of Netdot fixes an incorrect UNIQUE constraint in the device
+table. It is possible that your database contains two or more devices using the 
+same name (RR). This means that the addition of the unique index to the device
+table may fail.
 
 After making a backup copy of your database, please execute the following command:
 
-    make upgrade
+    # make upgrade
 
 This will call a script that updates your current database to the schema required 
-by the version you are upgrading to. This may take a long time, depending on the 
-size of your database.
+by the version you are upgrading to. 
 
 Any errors found while applying these schema changes will be written to a file
 called "error.log". You will need to inspect this file and make sure to correct
 any problems before continuing. You may have to restore your database from backup,
 fix the data and start over.
 
-2. Run 'make testdeps' to make sure that you satisfy the new dependencies
+2. Check for new requirements:
 
-3. At this point you can do a 'make install'
+   # make testdeps
 
-4. Be aware that Netdot does not include MIB files in the mibs/ directory any more. 
-This helps make Netdot more tolerant of changes in the aSNMP libraries (SNMP::Info).
-You will need to download the latest version of the 'netdisco-mibs' package, available
-here:
+You will notice that Netdot version 1.0.2 requires a specific version of the 
+Net::Patricia Perl module. The module has been patched to satisfy our requirements,
+but at the time of this writing, the patch has not been applied to the public version. 
+Therefore, we have included a patched version of the module. Netdot can install it
+for you by doing:
 
-    http://sourceforge.net/projects/netdisco/files/netdisco-mibs/
+    # make installdeps
 
-By default, Netdot expects each vendor directory in the following path:
+* Side Note:
 
-    /usr/share/netdisco/mibs
+There is a bug ticket open for Net::Patricia:
 
-So, for example, you can do something like:
+      https://rt.cpan.org/Public/Bug/Display.html?id=79480
 
-    cd /tmp
-    wget http://path-to-latest/netdisco-mibs.tar.gz
-    mkdir -p /usr/share/netdisco/
-    cd /usr/share/netdisco
-    tar xzvf /tmp/netisco-mibs.tar.gz
-    mv netdisco-mibs mibs
+It would be helpful if you could write the author of the module asking that the patch
+be applied.
 
-5. Adjust your Site.conf file to reflect some changes:
+3. At this point you can do a 
 
-* Modify SNMP_MIBS_PATH and SNMP_MIBS_DIRS to match the actual path where
-  you installed the mibs
+   # make install
 
-
+4. Restart Apache
 
 

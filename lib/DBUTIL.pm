@@ -456,7 +456,7 @@ CREATE USER $CONFIG{DB_NETDOT_USER} WITH PASSWORD '$CONFIG{DB_NETDOT_PASS}' NOCR
 
 sub insert_default_data{
     my @data;
-    my $file = "$CONFIG{CONFIG_DIR}/$CONFIG{DEFAULT_DATA}";
+    my $file = $CONFIG{DEFAULT_DATA};
     if ( -f $file) {
 	print "Inserting default data\n";
 	open (DEFAULT, "<$file") or die "Can't open $file: $!";
