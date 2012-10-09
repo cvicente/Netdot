@@ -2054,7 +2054,7 @@ sub build_device_stp_graph {
     my $start = Device->retrieve($id);
     my $stp_inst = STPInstance->search(device=>$id, number=>$number)->first;
     return $g unless defined($stp_inst);
-    my $start_root = $stp_inst->root_bridgse;
+    my $start_root = $stp_inst->root_bridge;
     return $g unless defined($start_root);
     
     my $devicemacs = Device->get_macs_from_all();
