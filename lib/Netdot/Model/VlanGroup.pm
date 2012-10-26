@@ -8,7 +8,7 @@ my $logger = Netdot->log->get_logger('Netdot::Model::Device');
 
 =head1 NAME
 
-Netdot::Model::Vlan::Group
+Netdot::Model::VlanGroup
 
 =head1 SYNOPSIS
 
@@ -120,7 +120,7 @@ sub assign_vlans{
 	    # Remove from my members if necessary
 	    if ( exists $myvlans{$vlan->id} ){
 		$logger->debug(sprintf("VlanGroup %s: Vlan %s no longer within my range. Updating.", 
-				      $vlan->vid, $self->name));
+				      $self->name, $vlan->vid));
 		$vlan->update({vlangroup=>undef});
 	    }
 	}
