@@ -89,6 +89,7 @@ sub search {
 =head2 update - update VLAN objects
     
     We override the base method to:
+    - Validate VID
     - Automatically assign Vlan to a VLAN group if needed
     
   Arguments:
@@ -105,15 +106,11 @@ sub update{
     
     $self->_validate_vid($argv->{vid}) if exists $argv->{vid};
 
-    return $self->SUPER::update($argv);
-
-    # We'll reassign only if vid changed and if vlangroup is not the same
     if ( exists $argv->{vid} && $argv->{vid} != $self->vid ){
-
-	my $group = $self->_find_group($self->vid);
-	$self->SUPER::update({vlangroup=>$group}) unless ( $self->vlangroup == $group->id );
+	# reassign group
+	$argv->{vlangroup} = $self->_find_group($argv->{vid});
     }
-
+    return $self->SUPER::update($argv);
 }
 #########################################################################################
 #
