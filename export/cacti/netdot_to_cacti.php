@@ -311,8 +311,7 @@ foreach ($groups as $group => $hosts){
 			      $snmp_port, $snmp_timeout, $disable, $avail, $ping_method,
 			      $ping_port, $ping_timeout, $ping_retries, $notes,
 			      $snmp_auth_protocol, $snmp_priv_passphrase,
-			      $snmp_priv_protocol, $snmp_context, $max_oids, 
-			      $device_threads);
+			      $snmp_priv_protocol, $snmp_context, $max_oids, 1);
   
     if (is_error_message()) {
       echo "ERROR: $description: Failed device save\n";
