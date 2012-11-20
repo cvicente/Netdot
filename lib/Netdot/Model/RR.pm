@@ -350,7 +350,7 @@ sub update_ptr {
 
 =head2 delete - Override delete method
 
-    * Removes any matching CNAMEs
+    * Removes any matching CNAMEs and MX records
 
   Arguments:
     None
@@ -366,8 +366,9 @@ sub delete {
     $self->isa_object_method('delete');
     my $class = ref($self);
     my @cnames = RRCNAME->search(cname=>$self->get_label);
-    foreach my $cname ( @cnames ){
-	$cname->rr->delete();
+    my @mxs = RRMX->search(exchange=>$self->get_label);
+    foreach my $o ( @cnames, @mxs ){
+	$o->rr->delete();
     }
     return $self->SUPER::delete();
 }
