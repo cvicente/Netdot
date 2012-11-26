@@ -431,7 +431,11 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
     }
     my $container = delete $ARGS{dhcp_global_scope};
     my %args = (container=>$container);
-    
+
+    # Active flag
+    my $active = delete $ARGS{dhcp_active};
+    $args{active} = (defined $active && $active eq 'on')? 1 : 0;
+
     # Grab all the dhcp options & declarations
     foreach my $arg ( %ARGS ){
 	if ( $arg =~ /^dhcp_/ ){
@@ -1176,7 +1180,8 @@ if ( $edit ){
 	    $x .= '<option value="'. $ent->id .'">'. $ent->name .'</option>';
 	}
 	$x .= '</select>';
-	$x .= '<a class="hand" onClick="openinsertwindow(\'table=DhcpScope&select_id=dhcp_global_scope&selected=1&dowindow=1\')">[new]</a>';
+	$x .= '<a class="hand" onClick="openinsertwindow(\'table=DhcpScope&select_id='.
+	    'dhcp_global_scope&selected=1&dowindow=1\')">[new]</a>';
 	$x;
     }});
 
@@ -1188,6 +1193,10 @@ if ( $edit ){
 	push @fields, 'Option routers:';
 	push @data,   '<input type="text" name="dhcp_option_routers" class="txt" value="'.$o->netaddr->first->addr.'">';
     }
+    push @fields, 'Active?:';
+    push @data, '<input type="checkbox" name="dhcp_active" checked="checked"> (Uncheck if you do not want this scope'.
+	' included in the DHCP configuration)';
+
     
 </%perl>	
 

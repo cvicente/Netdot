@@ -79,7 +79,7 @@ sub insert {
 	unless ( defined $argv->{type} );
 
     # Make it active unless told otherwise
-    $argv->{active} = 1 unless defined $argv->{active};
+    $argv->{active} = 1 unless exists $argv->{active};
 
     my @shared_subnets = @{$argv->{subnets}} if $argv->{subnets};
 

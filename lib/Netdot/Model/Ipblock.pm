@@ -2367,6 +2367,7 @@ sub shared_network_subnets{
       attributes      - Optional.  This must be a hashref with:
                           key   = attribute name, 
                           value = attribute value
+      active          - Whether it should be exported or not
  
   Returns:   
     Scope object (subnet or shared-network)
@@ -2385,10 +2386,12 @@ sub enable_dhcp{
     $self->throw_user("Trying to enable DHCP on a non-subnet block")
 	if ( $self->status->name ne 'Subnet' );
     
-    my %args = (container => $argv{container},
-		type      =>'subnet', 
-		ipblock   => $self);
-    $args{attributes} = $argv{attributes};
+    my %args = (container  => $argv{container},
+		active     => $argv{active},
+		attributes => $argv{attributes},
+		type       =>'subnet', 
+		ipblock    => $self,
+	);
     my $scope = DhcpScope->insert(\%args);
 
     if ( my @shared = $self->shared_network_subnets ){
