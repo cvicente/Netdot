@@ -187,9 +187,7 @@ sub _convert_mfg {
     }
     # More granularity for some vendors
     if ( defined($mfg) && $mfg eq 'cisco' ){
-	if ( $sysdescr =~ /IOS-XE/o ){
-	    $mfg = 'cisco-xr';
-	}elsif ( $sysdescr =~ /NX-OS/o ){
+	if ( $sysdescr =~ /NX-OS/o ){
 	    $mfg = 'cisco-nx';
 	}
     }
