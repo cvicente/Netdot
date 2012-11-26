@@ -175,7 +175,7 @@ sub insert {
 	    );
 
 	# Copy values from template zone
-	foreach my $field ( qw(mname rname refresh retry expire minimum default_ttl) ){
+	foreach my $field ( qw(mname rname refresh retry expire minimum default_ttl include) ){
 	    $state{$field} = $tzone->$field;
 	}
 	$newzone = $class->SUPER::insert( \%state );
