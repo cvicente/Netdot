@@ -1087,7 +1087,7 @@ sub get_snmp_info {
     #
 
     # This table is critical, so if we didn't get anything, ask again
-    if ( !defined($hashes{'ip_index'}) || !(keys $hashes{'ip_index'}) ){
+    if ( !defined($hashes{'ip_index'}) || !(keys %{ $hashes{'ip_index'} }) ){
 	$hashes{'ip_index'} = $sinfo->ip_index();
     }
     while ( my($ip,$iid) = each %{ $hashes{'ip_index'} } ){
