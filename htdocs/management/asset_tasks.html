@@ -237,7 +237,7 @@ if ( $submit ){
 	    # Search for other fields in Asset table
 	    my @where;
 	    foreach my $field ( qw/custom_serial inventory_number reserved_for 
-                               description info po_number maint_contract/ ){
+                               description info po_number/ ){
 		push @where, { $field => { '-like' => '%'.$search.'%' } };
 	    }
 	    push @assets, Asset->search_where(\@where);
