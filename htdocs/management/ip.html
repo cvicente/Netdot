@@ -854,7 +854,20 @@ if ($o->parent && $o->parent->dhcp_scopes) {
     my @scopes  = $o->dhcp_scopes;
     
     print '<div class="container">';
-    print '<div class="containerhead"><b>DHCP Host</b></div>';
+    print '<div class="containerheadleft"><b>DHCP Host</b></div>';
+    print '<div class="containerheadright">';
+    if ( @scopes ){
+	print '&nbsp;';
+    }else{
+	# Let user add a scope (takes user to another page)
+	print '&nbsp;';
+	if ( !$edit ){
+	    if ( $manager && $manager->can($user, 'edit', $o) ){
+		print '<a href="host.html?ipblock='.$o.'&add_dhcp='.$o.'">[add]</a>';
+	    }
+	}
+    }
+    print '</div>';
     print '<div class="containerbody">';
     $m->comp('/generic/sortresults.mhtml', object=>\@scopes);
     print '</div>'; #close containerbody of DHCP

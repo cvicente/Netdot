@@ -390,7 +390,7 @@ foreach my $o ( values %rrs ) {
 
 	foreach my $ipblock ( @ips ){
 	    my $gscope; # global scope
-	    if ( int($ipblock->parent) != 0 && $ipblock->parent->dhcp_scopes ) {
+	    if ( $ipblock->parent && $ipblock->parent->dhcp_scopes ) {
 		# Subnet is in DHCP
 		$gscope = $ipblock->parent->dhcp_scopes->first->get_global;
 		$m->comp('/generic/error.mhtml', error=>"Could not determine global scope for IP ".
