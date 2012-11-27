@@ -1085,6 +1085,11 @@ sub get_snmp_info {
     ################################################################
     # IPv4 addresses and masks 
     #
+
+    # This table is critical, so if we didn't get anything, ask again
+    if ( !defined($hashes{'ip_index'}) || !(keys $hashes{'ip_index'}) ){
+	$hashes{'ip_index'} = $sinfo->ip_index();
+    }
     while ( my($ip,$iid) = each %{ $hashes{'ip_index'} } ){
  	next unless (defined $dev{interface}{$iid});
 	next if &_check_if_status_down(\%dev, $iid);
@@ -5708,7 +5713,7 @@ sub _update_interfaces {
 	# whose username is netdot, running the update
 
 	my $int_thold = $self->config->get('IF_COUNT_THRESHOLD');
-	if ( $int_thold >= 1 ){
+	if ( $int_thold <= 0 || $int_thold >= 1 ){
 	    $self->throw_fatal('Incorrect value for IF_COUNT_THRESHOLD in config file');
 	}
 
@@ -5716,16 +5721,30 @@ sub _update_interfaces {
 	map { $old_snmp_ifs{$_->id} = $_ } 
 	grep { $_->doc_status eq 'snmp' } values %oldifs;
 
-	my $num_old = scalar(keys(%old_snmp_ifs));
-	my $num_new = scalar(keys(%{$info->{interface}}));
+	my $ifs_old = scalar(keys(%old_snmp_ifs));
+	my $ifs_new = scalar(keys(%{$info->{interface}}));
 	
-	if ( ($num_old && !$num_new) || ($num_new && ($num_new < $num_old) && 
-	     ($num_new / $num_old) <= $int_thold) ){
+	if ( ($ifs_old && !$ifs_new) || ($ifs_new && ($ifs_new < $ifs_old) && 
+	     ($ifs_new / $ifs_old) <= $int_thold) ){
 	    $logger->warn("The ratio of new to old interfaces is below the configured".
 			  " threshold (IF_COUNT_THRESHOLD). Skipping interface update.". 
 			  " Please re-discover device manually if needed.");
 	    return;
 	}
+
+	# Do the same for IP addresses
+
+	my $ips_old = scalar(keys(%old_ips));
+	my $ips_new = scalar(keys(%{$info->{ips}}));
+	
+	if ( ($ips_old && !$ips_new) || ($ips_new && ($ips_new < $ips_old) && 
+	     ($ips_new / $ips_old) <= $int_thold) ){
+	    $logger->warn("The ratio of new to old IP addresses is below the configured".
+			  " threshold (IF_COUNT_THRESHOLD). Skipping IP update.". 
+			  " Please re-discover device manually if needed.");
+	    return;
+	}
+
     }
 
     # Index by interface name (ifDescr) and number (ifIndex)
@@ -5888,6 +5907,14 @@ sub _update_interfaces {
 	if ( $obj->interface && $obj->interface->ignore_ip ){
 	    $logger->debug(sub{sprintf("%s: IP %s not deleted: %s set to Ignore IP", 
 				       $host, $obj->address, $obj->interface->get_label)});
+	    next;
+	}
+
+	# Don't delete snmp_target address unless updating via UI
+	if ( $ENV{REMOTE_USER} eq 'netdot' && 
+	     $self->snmp_target->id == $obj->id ){
+	    $logger->debug(sub{sprintf("%s: IP %s is snmp target. Skipping delete", 
+				       $host, $obj->address)});
 	    next;
 	}
 
