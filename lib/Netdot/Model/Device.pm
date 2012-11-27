@@ -3534,7 +3534,7 @@ sub bgppeers_by_id {
 
   Arguments:  
     Array ref of BGPPeering objects, 
-    Entity table field to sort by [name*|asnumber|asname]
+    Entity table field to sort by [name|asnumber|asname]
   Returns:    
     Sorted array of BGPPeering objects
 
@@ -3545,7 +3545,7 @@ sub bgppeers_by_entity {
     $self->isa_object_method('bgppeers_by_id');
 
     $sort ||= "name";
-    unless ( $sort =~ /name|asnumber|asname/ ){
+    unless ( $sort =~ /^name|asnumber|asname$/o ){
 	$self->throw_fatal("Model::Device::bgppeers_by_entity: Invalid Entity field: $sort");
     }
     my $sortsub = ($sort eq "asnumber") ? 
