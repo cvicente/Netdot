@@ -1652,6 +1652,18 @@ sub update {
 	    $scope->update({ipblock=>$self});
 	}
     }
+
+    # Update PTR records if needed
+    if ( $self->address ne $bak{address} ){
+	my $name = RRPTR->get_name(ipblock=>$self);
+	foreach my $pr ( $self->ptr_records ){
+	    my $rr = $pr->rr;
+	    my $domain = $rr->zone->name;
+	    $name =~ s/\.$domain\.?$//i;
+	    $rr->update({name=>$name});
+	}
+    }
+
     # Generate hostaudit entry if needed
     if ( $self->parent && $self->parent->dhcp_scopes
 	 && ($bak{status}->id != $state{status}) ){
