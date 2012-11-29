@@ -5716,45 +5716,35 @@ sub _update_interfaces {
 	if ( $int_thold <= 0 || $int_thold >= 1 ){
 	    $self->throw_fatal('Incorrect value for IF_COUNT_THRESHOLD in config file');
 	}
-	
+
 	my %old_snmp_ifs;
 	map { $old_snmp_ifs{$_->id} = $_ } 
 	grep { $_->doc_status eq 'snmp' } values %oldifs;
-	
+
 	my $ifs_old = scalar(keys(%old_snmp_ifs));
 	my $ifs_new = scalar(keys(%{$info->{interface}}));
 	
-	$logger->debug("$host: Old Ifs: $ifs_old, New Ifs: $ifs_new");
-
 	if ( ($ifs_old && !$ifs_new) || ($ifs_new && ($ifs_new < $ifs_old) && 
-					 ($ifs_new / $ifs_old) <= $int_thold) ){
-	    $logger->warn(sprintf("%s: new/old interface ratio: %d is below INT_COUNT_THRESHOLD".
-				  "Skipping interface update. Re-discover manually if needed.",
-				  $host, $ifs_new/$ifs_old));
+	     ($ifs_new / $ifs_old) <= $int_thold) ){
+	    $logger->warn("The ratio of new to old interfaces is below the configured".
+			  " threshold (IF_COUNT_THRESHOLD). Skipping interface update.". 
+			  " Please re-discover device manually if needed.");
 	    return;
 	}
-	
-	# Do the same for IP addresses
-	my $ips_old = scalar(keys(%old_ips));
-	my $ips_new = 0;
-	foreach my $i ( values %{ $info->{interface} } ){
-	    foreach my $ip ( values %{ $i->{ips} } ){
-		my $address = $ip->{address};
-		next if Ipblock->is_loopback($address);
-		$ips_new++;
-	    }
-	}
-	
-	$logger->debug("$host: Old IPs: $ips_old, New IPs: $ips_new");
 
+	# Do the same for IP addresses
+
+	my $ips_old = scalar(keys(%old_ips));
+	my $ips_new = scalar(keys(%{$info->{ips}}));
+	
 	if ( ($ips_old && !$ips_new) || ($ips_new && ($ips_new < $ips_old) && 
-					 ($ips_new / $ips_old) <= $int_thold) ){
-	    $logger->warn(sprintf("%s: new/old IP ratio: %d is below INT_COUNT_THRESHOLD".
-				  "Skipping interface update. Re-discover manually if needed.",
-				  $host, $ips_new/$ips_old));
+	     ($ips_new / $ips_old) <= $int_thold) ){
+	    $logger->warn("The ratio of new to old IP addresses is below the configured".
+			  " threshold (IF_COUNT_THRESHOLD). Skipping IP update.". 
+			  " Please re-discover device manually if needed.");
 	    return;
 	}
-	
+
     }
 
     # Index by interface name (ifDescr) and number (ifIndex)
