@@ -2250,6 +2250,12 @@ sub update_a_records {
 sub ip2int {
     my ($self, $address) = @_;
     my $ipobj;
+    
+    # Transform RFC2317 format to a real IP
+    if ( $address =~/^(.+)-(\d+)/ ) {
+	$address = $1;
+    }
+
     unless ( $ipobj = NetAddr::IP->new($address) ){
 	$self->throw_user("Invalid IP address: $address");
     }
@@ -2273,6 +2279,11 @@ sub ip2int {
 
 sub validate {
     my ($self, $address, $prefix) = @_;
+    
+    # Transform RFC2317 format to a real ip
+    if ( $address =~/^(.+)-(\d+)/ ) {
+	$address = $1;
+    }
     
     eval {
 	$self->_prevalidate($address, $prefix);
