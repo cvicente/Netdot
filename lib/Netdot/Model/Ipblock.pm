@@ -2606,9 +2606,10 @@ sub dns_zones {
   Arguments: 
     None
   Returns:   
-    Zone object
+    Zone object or array of zone objects, depending on context
   Examples:
     my $zone = $ipb->forward_zone();
+    my @zones = $ibp->forward_zone();
 =cut
 
 sub forward_zone {

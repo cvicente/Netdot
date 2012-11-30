@@ -1540,6 +1540,7 @@ print $tmp{value};
       </div>
       <div class="containerbody">
 %     if ( $_action eq 'VIEW_ADD_FZONES' ){
+%         my $czone = ($o->forward_zone)? $o->forward_zone->name : "none";
 %         my @all_zones = sort { $a->name cmp $b->name } Zone->retrieve_all;
 %         my %cur_zones;
 %         map { $cur_zones{$_->zone->id} = 1 } @sz; 
@@ -1547,7 +1548,10 @@ print $tmp{value};
 	    <input type="hidden" name="id" value="<% $o->id %>">
 	    <input type="hidden" name="_action" value="LINK_ZONES">
 	    <input type="hidden" name="view" value="Zones">
-            Link this block with existing forward zones:
+	    <p>Zones are inherited from superior blocks. The current forward zone for this block is:
+	    <p>
+%	    print "&nbsp;&nbsp;$czone";
+            <p>Link this block with existing forward zones:
 	    <p><select name="link_zones" multiple="multiple">
             <option value=""> - select - </option>
 %	    foreach my $zone ( grep { $_->active == 1 && $_->name !~ /\.arpa$/ } @all_zones ){
