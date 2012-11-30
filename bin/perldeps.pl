@@ -49,7 +49,7 @@ my @DEPS = (
     {cpan=>'Log::Log4perl', apt=>'liblog-log4perl-perl', rpm=>'perl-Log-Log4perl'},
     {cpan=>'Parallel::ForkManager', apt=>'libparallel-forkmanager-perl', 
      rpm=>'perl-Parallel-ForkManager'},
-    {cpan=>'Net::Patricia 1.19_01', apt=> 'libnet-patricia-perl', rpm=>''},
+    {cpan=>'Net::Patricia 1.20', apt=> 'libnet-patricia-perl', rpm=>''},
     {cpan=>'Authen::Radius', apt=>'libauthen-radius-perl', rpm=>'perl-Authen-Radius'},
     {cpan=>'Test::Simple' , apt=> 'libtest-simple-perl', rpm=>''},
     {cpan=>'Net::IRR', apt=> 'libnet-irr-perl', rpm=>''},
@@ -278,13 +278,6 @@ sub install_modules_cpan{
 	my $module = $anon_hash->{'cpan'};
 	next unless $module;
 
-	# This is temporary until Net::Patricia is patched upstream
-	if ( $module =~ /^Net::Patricia/ ){
-	    &cmd("cd thirdparty/; tar xzvf Net-Patricia-1.19_01.tar.gz;".
-		 "cd Net-Patricia-1.19_01; perl Makefile.PL; ".
-		 "make all && make test && make install");
-	}
-	
 	eval "use $module";
 	if ( $@ ){
 	    $module =~ s/^(.*)\s+.*/$1/;
