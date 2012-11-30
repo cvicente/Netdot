@@ -699,7 +699,9 @@ sub get_snmp_info {
 	    $sess_args{$arg} = $args{$arg} if defined $args{$arg};
 	}
 	$sinfo = $self->_get_snmp_session(%sess_args);
+	return unless $sinfo;
     }
+
 
     $dev{_sclass} = $sinfo->class();
 
@@ -842,7 +844,9 @@ sub get_snmp_info {
 									   'communities' => [$comm],
 									   'version'     => $sinfo->snmp_ver,
 									   'sclass'      => $sinfo->class);
-				    
+
+				    return unless $vsinfo;
+  
 				    $stp_p_info = $class->_exec_timeout( 
 					$args{host}, 
 					sub{  return $self->_get_stp_info(sinfo=>$vsinfo) } 
@@ -888,6 +892,9 @@ sub get_snmp_info {
 								       'communities' => [$comm],
 								       'version'     => $sinfo->snmp_ver,
 								       'sclass'      => $sinfo->class);
+				
+				return unless $vsinfo;
+				
 				my $stp_p_info = $class->_exec_timeout( 
 				    $args{host}, 
 				    sub{  return $self->_get_stp_info(sinfo=>$vsinfo) } );
@@ -1436,6 +1443,8 @@ sub discover {
 						   priv_proto  => $argv{priv_proto},
 						   priv_pass   => $argv{priv_pass},
 		    );
+
+		return unless $sinfo;
 	    }
 	    $info = $class->_exec_timeout($name, 
 					  sub{ return $class->get_snmp_info(session   => $sinfo,
@@ -2711,6 +2720,9 @@ sub snmp_update {
 					  priv_proto  => $argv{priv_proto},
 					  priv_pass   => $argv{priv_pass},
 	    );
+
+	return unless $sinfo;
+
     }
     
     # Re-bless into appropriate sub-class if needed
@@ -3820,12 +3832,16 @@ sub _get_snmp_session {
 	# Being called as an instance method
 
 	# Do not continue unless snmp_managed flag is on
-	$self->throw_user(sprintf("Device %s not SNMP-managed. Aborting.", $self->fqdn))
-	    unless $self->snmp_managed;
+	unless ( $self->snmp_managed ){
+	    $logger->debug(sprintf("Device %s not SNMP-managed. Aborting.", $self->fqdn));
+	    return;
+	}
 
 	# Do not continue if we've exceeded the connection attempts threshold
-	$self->throw_user(sprintf("Device %s has been marked as snmp_down. Aborting.", $self->fqdn))
-	    if ( $self->snmp_down == 1 );
+	if ( $self->snmp_down == 1 ){
+	    $logger->info(sprintf("Device %s has been marked as snmp_down. Aborting.", $self->fqdn));
+	    return;
+	}
 
 	# Fill up SNMP arguments from object if it wasn't passed to us
 	if ( !defined $argv{communities} && $self->community ){
@@ -4578,6 +4594,8 @@ sub _get_arp_from_snmp {
     my %cache;
     my $sinfo = $argv{session} || $self->_get_snmp_session();
 
+    return unless $sinfo;
+
     my %devints; my %devsubnets;
     foreach my $int ( $self->interfaces ){
 	$devints{$int->number} = $int->id;
@@ -4645,6 +4663,9 @@ sub _get_v6_nd_from_snmp {
     my $host = $self->fqdn;
     my %cache;
     my $sinfo = $argv{session} || $self->_get_snmp_session();
+
+    return unless $sinfo;
+
     unless ( $sinfo->can('ipv6_n2p_mac') ){
 	$logger->debug("Device::_get_v6_nd_from_snmp: This version of SNMP::Info ".
 		       "does not support fetching Ipv6 addresses");
@@ -4789,6 +4810,9 @@ sub _get_fwt_from_snmp {
 
     my $start   = time;
     my $sinfo   = $argv{session} || $self->_get_snmp_session();
+
+    return unless $sinfo;
+
     my $sints   = $sinfo->interfaces();
 
     # Build a hash with device's interfaces, indexed by ifIndex
@@ -4847,6 +4871,9 @@ sub _get_fwt_from_snmp {
                 $logger->error("$host: SNMP error for VLAN $vlan: $e");
                 next;
             }
+
+	    return unless $vlan_sinfo;
+
             $class->_exec_timeout($host, sub{ return $self->_walk_fwt(sinfo   => $vlan_sinfo,
 								      sints   => $sints,
 								      devints => \%devints,
