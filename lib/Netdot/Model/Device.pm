@@ -5728,7 +5728,7 @@ sub _update_interfaces {
 
 	if ( ($ifs_old && !$ifs_new) || ($ifs_new && ($ifs_new < $ifs_old) && 
 					 ($ifs_new / $ifs_old) <= $int_thold) ){
-	    $logger->warn(sprintf("%s: new/old interface ratio: %d is below INT_COUNT_THRESHOLD".
+	    $logger->warn(sprintf("%s: new/old interface ratio: %.2f is below INT_COUNT_THRESHOLD".
 				  "Skipping interface update. Re-discover manually if needed.",
 				  $host, $ifs_new/$ifs_old));
 	    return;
@@ -5749,7 +5749,7 @@ sub _update_interfaces {
 
 	if ( ($ips_old && !$ips_new) || ($ips_new && ($ips_new < $ips_old) && 
 					 ($ips_new / $ips_old) <= $int_thold) ){
-	    $logger->warn(sprintf("%s: new/old IP ratio: %d is below INT_COUNT_THRESHOLD".
+	    $logger->warn(sprintf("%s: new/old IP ratio: %.2f is below INT_COUNT_THRESHOLD".
 				  "Skipping interface update. Re-discover manually if needed.",
 				  $host, $ips_new/$ips_old));
 	    return;
