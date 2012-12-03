@@ -3745,8 +3745,8 @@ sub _validate_args {
 	    if ( defined $self ){
 		if ( $self->id != $otherdev->id ){
 		    my $msg = sprintf("%s: Existing device: %s uses S/N %s, MAC %s", 
-				      $self->fqdn, $asset->serial_number, $asset->physaddr, 
-				      $otherdev->fqdn);
+				      $self->fqdn, $otherdev->fqdn, $asset->serial_number, 
+				      $asset->physaddr);
 		    if ( Netdot->config->get('ENFORCE_DEVICE_UNIQUENESS') ){
 			$self->throw_user($msg); 
 		    }else{
