@@ -403,11 +403,9 @@ sub get_unused_subnets {
     my @result;
     foreach my $id ( @ids ){
 	my $ip = Ipblock->retrieve($id);
-	if ( defined $args{version} && $args{version} == 4 ){
-	    # Ignore IPv4 multicast blocks
-	    if ( $ip->netaddr->within(new NetAddr::IP "224.0.0.0/4") ){
-		next;
-	    }
+	# Ignore multicast blocks
+	if ( $ip->is_multicast ){
+	    next;
 	}
 	push @result, $ip;
     }
@@ -452,37 +450,43 @@ sub get_subnet_addr {
 =head2 is_loopback - Check if address is a loopback address
 
   Arguments:
-    address - dotted quad ip address.  Required.
+    address - dotted quad ip address. Required unless called as object method.
     prefix  - dotted quad or prefix length. Optional. 
               NetAddr::IP will assume it is a host (/32 or /128)
 
   Returns:
     1 or 0
   Example:
+    my $flag = $ipblock->is_loopback;
     my $flag = Ipblock->is_loopback('127.0.0.1');
 
 =cut
 
 sub is_loopback{
-    my ( $class, $address, $prefix ) = @_;
-    $class->isa_class_method('is_loopback');
-
-    $class->throw_fatal("Missing required arguments: address")
-	unless $address;
-
-    my $ip;
-    my $str;
-    if ( !($ip = $class->netaddr(address=>$address, prefix=>$prefix))){
-	$str = ( $address && $prefix ) ? (join '/', $address, $prefix) : $address;
-	$class->throw_user("Invalid IP: $str");
+    my ( $self, $address, $prefix ) = @_;
+    my ($netaddr, $version);
+    if ( ref($self) ){
+	# Called as object method
+	$netaddr = $self->netaddr;
+	$version = $self->version;
+    }else{
+	# Called as class method
+	$self->throw_fatal("Missing required arguments when called as class method: address")
+	    unless ( defined $address );
+	if ( !($netaddr = NetAddr::IP->new($address, $prefix))){
+	    my $str = ( $address && $prefix ) ? (join '/', $address, $prefix) : $address;
+	    $self->throw_user("Invalid IP: $str");
+	}
+	$version = $netaddr->version;
     }
-
-    my $ipv4_lb = $class->netaddr(address=>"127.0.0.0", prefix=>"255.0.0.0");
-    my $ipv6_lb = $class->netaddr(address=>"::1"); 
-    if ( $ip->within($ipv4_lb) || $ip == $ipv6_lb ) {
-	return 1;	
+    if ( $version == 4 && 
+	 $netaddr->within(new NetAddr::IP '127.0.0.0', '255.0.0.0') ){
+	return 1;
+    }elsif ( $version == 6 &&
+	     $netaddr == NetAddr::IP->new6('::1') ){
+	return 1;
     }
-    return;
+    return 0;
 }
 
 ##################################################################
@@ -519,6 +523,47 @@ sub is_link_local{
     }
     if ( $ip->within(NetAddr::IP->new6("fe80::/10")) ) {
 	return 1;	
+    }
+    return 0;
+}
+
+##################################################################
+=head2 is_multicast - Check if address is a multicast address
+    
+  Arguments:
+    address - dotted quad ip address.  Required unless called as object method
+    prefix  - dotted quad or prefix length. Optional. NetAddr::IP will assume it is a host (/32 or /128)
+
+  Returns:
+    True (1) or False (0)
+  Example:
+    my $flag = $ipblock->is_multicast();
+    my $flag = Ipblock->is_multicast('239.255.0.1');
+
+=cut
+sub is_multicast{
+    my ($self, $address, $prefix) = @_;
+    my ($netaddr, $version);
+    if ( ref($self) ){
+	# Called as object method
+	$netaddr = $self->_netaddr;
+	$version = $self->version;
+    }else{
+	# Called as class method
+	$self->throw_fatal("Missing required arguments when called as class method: address")
+	    unless ( defined $address );
+	if ( !($netaddr = NetAddr::IP->new($address, $prefix))){
+	    my $str = ( $address && $prefix ) ? (join '/', $address, $prefix) : $address;
+	    $self->throw_user("Invalid IP: $str");
+	}
+	$version = $netaddr->version;
+    }
+    if ( $version == 4 && 
+	 $netaddr->within(new NetAddr::IP "224.0.0.0/4") ){
+	return 1;
+    }elsif ( $version == 6 &&
+	     $netaddr->within(new6 NetAddr::IP "FF00::/8") ){
+	return 1;
     }
     return 0;
 }
@@ -1607,6 +1652,18 @@ sub update {
 	    $scope->update({ipblock=>$self});
 	}
     }
+
+    # Update PTR records if needed
+    if ( $self->address ne $bak{address} ){
+	my $name = RRPTR->get_name(ipblock=>$self);
+	foreach my $pr ( $self->ptr_records ){
+	    my $rr = $pr->rr;
+	    my $domain = $rr->zone->name;
+	    $name =~ s/\.$domain\.?$//i;
+	    $rr->update({name=>$name});
+	}
+    }
+
     # Generate hostaudit entry if needed
     if ( $self->parent && $self->parent->dhcp_scopes
 	 && ($bak{status}->id != $state{status}) ){
@@ -2193,6 +2250,12 @@ sub update_a_records {
 sub ip2int {
     my ($self, $address) = @_;
     my $ipobj;
+    
+    # Transform RFC2317 format to a real IP
+    if ( $address =~/^(.+)-(\d+)/ ) {
+	$address = $1;
+    }
+
     unless ( $ipobj = NetAddr::IP->new($address) ){
 	$self->throw_user("Invalid IP address: $address");
     }
@@ -2216,6 +2279,11 @@ sub ip2int {
 
 sub validate {
     my ($self, $address, $prefix) = @_;
+    
+    # Transform RFC2317 format to a real ip
+    if ( $address =~/^(.+)-(\d+)/ ) {
+	$address = $1;
+    }
     
     eval {
 	$self->_prevalidate($address, $prefix);
@@ -2367,6 +2435,7 @@ sub shared_network_subnets{
       attributes      - Optional.  This must be a hashref with:
                           key   = attribute name, 
                           value = attribute value
+      active          - Whether it should be exported or not
  
   Returns:   
     Scope object (subnet or shared-network)
@@ -2385,10 +2454,12 @@ sub enable_dhcp{
     $self->throw_user("Trying to enable DHCP on a non-subnet block")
 	if ( $self->status->name ne 'Subnet' );
     
-    my %args = (container => $argv{container},
-		type      =>'subnet', 
-		ipblock   => $self);
-    $args{attributes} = $argv{attributes};
+    my %args = (container  => $argv{container},
+		active     => $argv{active},
+		attributes => $argv{attributes},
+		type       =>'subnet', 
+		ipblock    => $self,
+	);
     my $scope = DhcpScope->insert(\%args);
 
     if ( my @shared = $self->shared_network_subnets ){
@@ -2535,9 +2606,10 @@ sub dns_zones {
   Arguments: 
     None
   Returns:   
-    Zone object
+    Zone object or array of zone objects, depending on context
   Examples:
     my $zone = $ipb->forward_zone();
+    my @zones = $ibp->forward_zone();
 =cut
 
 sub forward_zone {

@@ -329,7 +329,8 @@ foreach my $o ( values %rrs ) {
     #RRADDR
     if ( $o->name eq '@' || $o->name eq $o->zone->name || (!$o->cnames && !$o->ptr_records) ){
 	print '<div class="container" style="margin-left:10px">';
-	print '<div class="containerheadleft"><b>Address '.$ui->table_descr_link('RRADDR', '(A/AAAA)').'</b></div>';
+	print '<div class="containerheadleft"><b>Address '.$ui->table_descr_link('RRADDR', '(A/AAAA)').
+	    '</b></div>';
 	print '<div class="containerheadright">';
 
 	if ( $manager && $manager->can($user, "access_section", 'host.html:add_rraddr') ){
@@ -341,11 +342,13 @@ foreach my $o ( values %rrs ) {
 	    $newrraddr =~ s/\n//g;
 	    $newrraddr =~ s/<script.*?<\/script>//g;
 	    $newrraddr =~ s/'/\\'/g;
-	    print '<script type="text/javascript" language="javascript">uricomponents[\'rraddr_'.$o.'_content\']=encodeURIComponent(\''.$newrraddr.'\');</script>';
+	    print '<script type="text/javascript" language="javascript">uricomponents[\'rraddr_'.$o.
+		'_content\']=encodeURIComponent(\''.$newrraddr.'\');</script>';
 	    print '&nbsp;';
 	    if ( !$edit ){
    	        if ( $manager && $manager->can($user, 'edit', $o) ){
-   		    print '<div id="rraddr_'.$o.'"><a href="#" onClick="dynamicAdd(\'rraddr\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+   		    print '<div id="rraddr_'.$o.'"><a href="#" onClick="dynamicAdd(\'rraddr\', \''.$o.
+			'\', 1, \'rr\')">[add]</a></div>';
 		}
 	    }
 	}else{
@@ -387,10 +390,11 @@ foreach my $o ( values %rrs ) {
 
 	foreach my $ipblock ( @ips ){
 	    my $gscope; # global scope
-	    if ( int($ipblock->parent) != 0 && $ipblock->parent->dhcp_scopes ) {
+	    if ( $ipblock->parent && $ipblock->parent->dhcp_scopes ) {
 		# Subnet is in DHCP
 		$gscope = $ipblock->parent->dhcp_scopes->first->get_global;
-		$m->comp('/generic/error.mhtml', error=>"Could not determine global scope for IP ".$ipblock->get_label)
+		$m->comp('/generic/error.mhtml', error=>"Could not determine global scope for IP ".
+			 $ipblock->get_label)
 		    unless $gscope;
  
 	    }else{
@@ -434,7 +438,8 @@ foreach my $o ( values %rrs ) {
 		}elsif ( $ipblock->version == 6 ){
 		    push @field_headers, ('DUID: ');
 		    if ( $edit ){
-			push @cell_data, '<input type="text" size="48" name="DhcpScope__'.$scope.'__duid" value="'.$scope->duid.'" >';
+			push @cell_data, '<input type="text" size="48" name="DhcpScope__'.$scope.
+			    '__duid" value="'.$scope->duid.'" >';
 		    }else{
 			push( @cell_data, $scope->duid );
 		    }
@@ -456,7 +461,8 @@ foreach my $o ( values %rrs ) {
 		    print '<input name="DhcpScope__NEW__name" value="'.$ipblock->address.'" type="hidden">';
 		    print '<input name="DhcpScope__NEW__ipblock" value="'.$ipblock.'" type="hidden">';
 		    if ( $ipblock->version == 4 || 
-			 ($ipblock->version == 6 && Netdot->config->get('DHCPD_ALLOW_ETHERNET_FOR_IPV6_HOST_DECL')) ){
+			 ($ipblock->version == 6 && 
+			  Netdot->config->get('DHCPD_ALLOW_ETHERNET_FOR_IPV6_HOST_DECL')) ){
 			push @field_headers, ('Ethernet: ');
 			push( @cell_data, '<input name="DhcpScope__NEW__physaddr" value="" type="text">' );
 		    }elsif ( $ipblock->version == 6 ){
@@ -473,7 +479,8 @@ foreach my $o ( values %rrs ) {
 	#####################################################################################################
 	#RRHINFO
 	print '<div class="container" style="margin-left:10px">';
-	print '<div class="containerheadleft"><b>Hardware Information '.$ui->table_descr_link('RRHINFO', '(HINFO)').'</b></div>';
+	print '<div class="containerheadleft"><b>Hardware Information '.
+	    $ui->table_descr_link('RRHINFO', '(HINFO)').'</b></div>';
 	print '<div class="containerheadright">';
 
 	my $cpu_defaults = $ui->config->get('DEFAULT_HINFO_CPU_VALUES');
@@ -493,11 +500,13 @@ foreach my $o ( values %rrs ) {
 	    $newhinfo =~ s/\n//g;
 	    $newhinfo =~ s/<script.*?<\/script>//g;
 	    $newhinfo =~ s/'/\\'/g;
-	    print '<script type="text/javascript" language="javascript">uricomponents[\'rrhinfo_'.$o.'_content\']=encodeURIComponent(\''.$newhinfo.'\');</script>';
+	    print '<script type="text/javascript" language="javascript">uricomponents[\'rrhinfo_'.
+		$o.'_content\']=encodeURIComponent(\''.$newhinfo.'\');</script>';
 	    print '&nbsp;';
 	    if ( !$edit ){
 		if ( $manager && $manager->can($user, 'edit', $o) ){
-		    print '<div id="rrhinfo_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrhinfo\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+		    print '<div id="rrhinfo_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrhinfo\', \''.
+			$o.'\', 1, \'rr\')">[add]</a></div>';
 		}
 	    }
 	}else{
@@ -525,7 +534,8 @@ foreach my $o ( values %rrs ) {
 	#####################################################################################################
 	#RRTXT
 	print '<div class="container" style="margin-left:10px">';
-	print '<div class="containerheadleft"><b>Text Records '.$ui->table_descr_link('RRTXT', '(TXT)').'</b></div>';
+	print '<div class="containerheadleft"><b>Text Records '.$ui->table_descr_link('RRTXT', '(TXT)').
+	    '</b></div>';
 	print '<div class="containerheadright">';
 	
 	#new rrtxt
@@ -537,11 +547,13 @@ foreach my $o ( values %rrs ) {
 	$newtxt =~ s/\n//g;
 	$newtxt =~ s/<script.*?<\/script>//g;
 	$newtxt =~ s/'/\\'/g;
-	print '<script type="text/javascript" language="javascript">uricomponents[\'rrtxt_'.$o.'_content\']=encodeURIComponent(\''.$newtxt.'\');</script>';
+	print '<script type="text/javascript" language="javascript">uricomponents[\'rrtxt_'.$o.
+	    '_content\']=encodeURIComponent(\''.$newtxt.'\');</script>';
 	print '&nbsp;';
 	if ( !$edit ){
 	    if ( $manager && $manager->can($user, 'edit', $o) ){
-		print '<div id="rrtxt_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrtxt\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+		print '<div id="rrtxt_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrtxt\', \''.$o.
+		    '\', 1, \'rr\')">[add]</a></div>';
 	    }
 	}
 	print '</div>';  #close containerheadright
@@ -564,7 +576,8 @@ foreach my $o ( values %rrs ) {
 	#####################################################################################################
 	#RRMX
 	print '<div class="container" style="margin-left:10px">';
-	print '<div class="containerheadleft"><b>Mail Exchangers '.$ui->table_descr_link('RRMX', '(MX)').'</b></div>';
+	print '<div class="containerheadleft"><b>Mail Exchangers '.$ui->table_descr_link('RRMX', '(MX)').
+	    '</b></div>';
 	print '<div class="containerheadright">';
 	
 	#new rrmx
@@ -576,11 +589,13 @@ foreach my $o ( values %rrs ) {
 	$newmx =~ s/\n//g;
 	$newmx =~ s/<script.*?<\/script>//g;
 	$newmx =~ s/'/\\'/g;
-	print '<script type="text/javascript" language="javascript">uricomponents[\'rrmx_'.$o.'_content\']=encodeURIComponent(\''.$newmx.'\');</script>';
+	print '<script type="text/javascript" language="javascript">uricomponents[\'rrmx_'.$o.
+	    '_content\']=encodeURIComponent(\''.$newmx.'\');</script>';
 	print '&nbsp;';
 	if ( !$edit ){
 	    if ( $manager && $manager->can($user, 'edit', $o) ){
-		print '<div id="rrmx_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrmx\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+		print '<div id="rrmx_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrmx\', \''.$o.
+		    '\', 1, \'rr\')">[add]</a></div>';
 	    }
 	}
 	print '</div>';  #close containerheadright
@@ -602,9 +617,28 @@ foreach my $o ( values %rrs ) {
 	
     
 	#####################################################################################################
+	#RRMX pointing to $o
+	if ( my @mxs = RRMX->search(exchange=>$o->get_label) ){
+	    print '<div class="container" style="margin-left:10px">';
+	    print '<div class="containerhead"><b>MX records pointing to '.$o->get_label.'</b></div>';
+	    
+	    # display only
+	    print '<div class="containerbody">';
+	    foreach my $mx ( sort { $a->rr->name cmp $b->rr->name } @mxs ) {
+		$ui->add_to_fields(o=>$mx, edit=>0, fields=>['rr'],
+				   field_headers=>\@field_headers, cell_data=>\@cell_data,
+				   linkpages=>['host.html']);
+		$m->comp('/generic/attribute_table.mhtml', %comphash, width=>1);
+		(@field_headers, @cell_data) = ((),());
+	    }
+	    print '</div></div>';
+	}
+
+	#####################################################################################################
 	#RRCNAME for somewhere pointing to $o
 	print '<div class="container" style="margin-left:10px">';
-	print '<div class="containerheadleft"><b>Aliases of '.$o->get_label.' '.$ui->table_descr_link('RRCNAME', '(CNAME)').'</b></div>';
+	print '<div class="containerheadleft"><b>Aliases of '.$o->get_label.' '.
+	    $ui->table_descr_link('RRCNAME', '(CNAME)').'</b></div>';
 	print '<div class="containerheadright">';
 	if ( $add_alias ){
 	    print '<input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">';
@@ -656,7 +690,8 @@ foreach my $o ( values %rrs ) {
     
     if ( !$o->a_records && !$o->ptr_records && !$o->ns_records ) {
 	print '<div class="container" style="margin-left:10px">';
-	print '<div class="containerheadleft"><b>'.$o->get_label.' is an alias of '.$ui->table_descr_link('RRCNAME', '(CNAME)').'</b></div>';
+	print '<div class="containerheadleft"><b>'.$o->get_label.' is an alias of '.
+	    $ui->table_descr_link('RRCNAME', '(CNAME)').'</b></div>';
 	print '<div class="containerheadright">';
 	
 	my @cnames = $o->cnames();
@@ -670,11 +705,13 @@ foreach my $o ( values %rrs ) {
 	    $newcname =~ s/\n//g;
 	    $newcname =~ s/<script.*?<\/script>//g;
 	    $newcname =~ s/'/\\'/g;
-	    print '<script type="text/javascript" language="javascript">uricomponents[\'rrcname_'.$o.'_content\']=encodeURIComponent(\''.$newcname.'\');</script>';
+	    print '<script type="text/javascript" language="javascript">uricomponents[\'rrcname_'.
+		$o.'_content\']=encodeURIComponent(\''.$newcname.'\');</script>';
 	    print '&nbsp;';
 	    if ( !$edit ){
 		if ( $manager && $manager->can($user, 'edit', $o) ){
-		    print '<div id="rrcname_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrcname\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+		    print '<div id="rrcname_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrcname\', \''.
+			$o.'\', 1, \'rr\')">[add]</a></div>';
 		}
 	    }
 
@@ -741,7 +778,8 @@ foreach my $o ( values %rrs ) {
 	my $ptr = $ipblock->ptr_records->first;
 
 	print '<div class="container" style="margin-left:10px">';
-	print '<div class="containerheadleft"><b>Reverse for '.$ipblock->get_label.' '.$ui->table_descr_link('RRPTR', '(PTR)').'</b></div>';
+	print '<div class="containerheadleft"><b>Reverse for '.$ipblock->get_label.' '.
+	    $ui->table_descr_link('RRPTR', '(PTR)').'</b></div>';
 	print '<div class="containerheadright">';
 	print '&nbsp;';
 	if ( !$ptr ){
@@ -819,12 +857,14 @@ foreach my $o ( values %rrs ) {
 	$newns =~ s/\n//g;
 	$newns =~ s/<script.*?<\/script>//g;
 	$newns =~ s/'/\\'/g;
-	print '<script type="text/javascript" language="javascript">uricomponents[\'rrns_'.$o.'_content\']=encodeURIComponent(\''.$newns.'\');</script>';
+	print '<script type="text/javascript" language="javascript">uricomponents[\'rrns_'.$o.
+	    '_content\']=encodeURIComponent(\''.$newns.'\');</script>';
 	print '&nbsp;';
 	if ( !$edit ){
 	    if ( $manager && $manager->can($user, 'access_section', 'add_ns_records') 
 		 && $manager->can($user, 'edit', $o) ){
-		print '<div id="rrns_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrns\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+		print '<div id="rrns_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrns\', \''.$o.
+		    '\', 1, \'rr\')">[add]</a></div>';
 	    }
 	}
 	print '</div>';  #close containerheadright
@@ -855,7 +895,8 @@ foreach my $o ( values %rrs ) {
     #RRDS
     if ( !$o->a_records && !$o->ptr_records  ){
 	print '<div class="container" style="margin-left:10px">';
-	print '<div class="containerheadleft"><b>Delegation Signers '.$ui->table_descr_link('RRDS', '(DS)').'</b></div>';
+	print '<div class="containerheadleft"><b>Delegation Signers '.
+	    $ui->table_descr_link('RRDS', '(DS)').'</b></div>';
 	print '<div class="containerheadright">';
 
 	my @field_names = ('key_tag', 'algorithm', 'digest_type', 'digest', 'ttl');
@@ -868,12 +909,14 @@ foreach my $o ( values %rrs ) {
 	$newds =~ s/\n//g;
 	$newds =~ s/<script.*?<\/script>//g;
 	$newds =~ s/'/\\'/g;
-	print '<script type="text/javascript" language="javascript">uricomponents[\'rrds_'.$o.'_content\']=encodeURIComponent(\''.$newds.'\');</script>';
+	print '<script type="text/javascript" language="javascript">uricomponents[\'rrds_'.
+	    $o.'_content\']=encodeURIComponent(\''.$newds.'\');</script>';
 	print '&nbsp;';
 	if ( !$edit ){
 	    if ( $manager && $manager->can($user, 'access_section', 'add_ds_records') 
 		 && $manager->can($user, 'edit', $o) ){
-		print '<div id="rrds_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrds\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+		print '<div id="rrds_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrds\', \''.
+		    $o.'\', 1, \'rr\')">[add]</a></div>';
 	    }
 	}
 	print '</div>';  #close containerheadright
@@ -905,7 +948,8 @@ foreach my $o ( values %rrs ) {
 
     if ( !$o->a_records && !$o->ptr_records && !$o->ns_records ){
 	print '<div class="container" style="margin-left:10px">';
-	print '<div class="containerheadleft"><b>Name Authority Pointer '.$ui->table_descr_link('RRNAPTR', '(NAPTR)').'</b></div>';
+	print '<div class="containerheadleft"><b>Name Authority Pointer '.
+	    $ui->table_descr_link('RRNAPTR', '(NAPTR)').'</b></div>';
 	print '<div class="containerheadright">';
 
 	#new rrnaptr
@@ -919,11 +963,13 @@ foreach my $o ( values %rrs ) {
 	$newnaptr =~ s/\n//g;
 	$newnaptr =~ s/<script.*?<\/script>//g;
 	$newnaptr =~ s/'/\\'/g;
-	print '<script type="text/javascript" language="javascript">uricomponents[\'rrnaptr_'.$o.'_content\']=encodeURIComponent(\''.$newnaptr.'\');</script>';
+	print '<script type="text/javascript" language="javascript">uricomponents[\'rrnaptr_'.
+	    $o.'_content\']=encodeURIComponent(\''.$newnaptr.'\');</script>';
 	print '&nbsp;';
 	if ( !$edit ){
 	    if ( $manager && $manager->can($user, 'edit', $o) ){
-		print '<div id="rrnaptr_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrnaptr\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+		print '<div id="rrnaptr_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrnaptr\', \''.
+		    $o.'\', 1, \'rr\')">[add]</a></div>';
 	    }
 	}
 	print '</div>';  #close containerheadright
@@ -951,7 +997,8 @@ foreach my $o ( values %rrs ) {
     if ( !$o->a_records && !$o->ns_records ){
     
 	print '<div class="container" style="margin-left:10px">';
-	print '<div class="containerheadleft"><b>Pointer Records '.$ui->table_descr_link('RRPTR', '(PTR)').'</b></div>';
+	print '<div class="containerheadleft"><b>Pointer Records '.
+	    $ui->table_descr_link('RRPTR', '(PTR)').'</b></div>';
 	print '<div class="containerheadright">';
 
 	#new rrptr
@@ -965,11 +1012,13 @@ foreach my $o ( values %rrs ) {
 	$newptr =~ s/\n//g;
 	$newptr =~ s/<script.*?<\/script>//g;
 	$newptr =~ s/'/\\'/g;
-	print '<script type="text/javascript" language="javascript">uricomponents[\'rrptr_'.$o.'_content\']=encodeURIComponent(\''.$newptr.'\');</script>';
+	print '<script type="text/javascript" language="javascript">uricomponents[\'rrptr_'.$o.
+	    '_content\']=encodeURIComponent(\''.$newptr.'\');</script>';
 	print '&nbsp;';
 	if ( !$edit ){
 	    if ( $manager && $manager->can($user, 'edit', $o) ){
-		print '<div id="rrptr_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrptr\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+		print '<div id="rrptr_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrptr\', \''.$o.
+		    '\', 1, \'rr\')">[add]</a></div>';
 	    }
 	}
 	print '</div>';  #close containerheadright
@@ -980,9 +1029,11 @@ foreach my $o ( values %rrs ) {
 	    foreach my $ptr (@ptrs) {
 		push( @field_headers, "IP:");
 		if ($edit) {
-		    push( @cell_data, "<input name='RRPTR__".$ptr."__ipblock' value='".$ptr->ipblock->address."' type='text'>" );
+		    push( @cell_data, "<input name='RRPTR__".$ptr."__ipblock' value='".
+			  $ptr->ipblock->address."' type='text'>" );
 		} else {
-		    push( @cell_data, "<a href='ip.html?id=".$ptr->ipblock->id."'>".$ptr->ipblock->address."</a>");
+		    push( @cell_data, "<a href='ip.html?id=".$ptr->ipblock->id."'>".
+			  $ptr->ipblock->address."</a>");
 		}
 		$ui->add_to_fields(o=>$ptr, edit=>$edit, fields=>['ptrdname', 'ttl'],
 				   field_headers=>\@field_headers, cell_data=>\@cell_data,
@@ -1001,7 +1052,8 @@ foreach my $o ( values %rrs ) {
     #RRLOC
     if ( !$o->ptr_records && !$o->ns_records ){
 	print '<div class="container" style="margin-left:10px">';
-	print '<div class="containerheadleft"><b>Location Records '.$ui->table_descr_link('RRLOC', '(LOC)').'</b></div>';
+	print '<div class="containerheadleft"><b>Location Records '.
+	    $ui->table_descr_link('RRLOC', '(LOC)').'</b></div>';
 	print '<div class="containerheadright">';
 
 	#new
@@ -1009,18 +1061,21 @@ foreach my $o ( values %rrs ) {
 			   fields=>['latitude', 'longitude', 'altitude', 'size', 
 				    'horiz_pre', 'vert_pre', 'ttl'],
 			   field_headers=>\@field_headers, cell_data=>\@cell_data,
-			   linkpages=>['view.html', 'view.html', 'view.html', 'view.html', 'view.html', 'view.html', ''], 
+			   linkpages=>['view.html', 'view.html', 'view.html', 'view.html', 'view.html', 
+				       'view.html', ''], 
 	    );
 	my $newloc = $m->scomp('/generic/attribute_table.mhtml', %comphash);
 	(@field_headers, @cell_data) = ((),());
 	$newloc =~ s/\n//g;
 	$newloc =~ s/<script.*?<\/script>//g;
 	$newloc =~ s/'/\\'/g;
-	print '<script type="text/javascript" language="javascript">uricomponents[\'rrloc_'.$o.'_content\']=encodeURIComponent(\''.$newloc.'\');</script>';
+	print '<script type="text/javascript" language="javascript">uricomponents[\'rrloc_'.$o.
+	    '_content\']=encodeURIComponent(\''.$newloc.'\');</script>';
 	print '&nbsp;';
 	if ( !$edit ){
 	    if ( $manager && $manager->can($user, 'edit', $o) ){
-		print '<div id="rrloc_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrloc\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+		print '<div id="rrloc_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrloc\', \''.$o.
+		    '\', 1, \'rr\')">[add]</a></div>';
 	    }
 	}
 	print '</div>';  #close containerheadright
@@ -1033,7 +1088,8 @@ foreach my $o ( values %rrs ) {
 				   fields=>['latitude', 'longitude', 'altitude', 
 					    'size', 'horiz_pre', 'vert_pre', 'ttl'],
 				   field_headers=>\@field_headers, cell_data=>\@cell_data,
-				   linkpages=>['view.html', 'view.html', 'view.html', 'view.html', 'view.html', 'view.html', ''], 
+				   linkpages=>['view.html', 'view.html', 'view.html', 'view.html', 
+					       'view.html', 'view.html', ''], 
 				   with_delete=>1
 		    );
 		$m->comp('/generic/attribute_table.mhtml', %comphash);
@@ -1050,7 +1106,8 @@ foreach my $o ( values %rrs ) {
     # Only show this part if owner name follows valid format
     if ( $o->name  =~ /^_.+\._.+/ ){
 	print '<div class="container" style="margin-left:10px">';
-	print '<div class="containerheadleft"><b>Service Records '.$ui->table_descr_link('RRSRV', '(SRV)').'</b></div>';
+	print '<div class="containerheadleft"><b>Service Records '.
+	    $ui->table_descr_link('RRSRV', '(SRV)').'</b></div>';
 	print '<div class="containerheadright">';
 
 	#new rrsrv
@@ -1062,11 +1119,13 @@ foreach my $o ( values %rrs ) {
 	$newsrv =~ s/\n//g;
 	$newsrv =~ s/<script.*?<\/script>//g;
 	$newsrv =~ s/'/\\'/g;
-	print '<script type="text/javascript" language="javascript">uricomponents[\'rrsrv_'.$o.'_content\']=encodeURIComponent(\''.$newsrv.'\');</script>';
+	print '<script type="text/javascript" language="javascript">uricomponents[\'rrsrv_'.$o.
+	    '_content\']=encodeURIComponent(\''.$newsrv.'\');</script>';
 	print '&nbsp;';
 	if ( !$edit ){
 	    if ( $manager && $manager->can($user, 'edit', $o) ){
-		print '<div id="rrsrv_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrsrv\', \''.$o.'\', 1, \'rr\')">[add]</a></div>';
+		print '<div id="rrsrv_'.$o.'"><a href="#" onClick="dynamicAdd(\'rrsrv\', \''.$o.
+		    '\', 1, \'rr\')">[add]</a></div>';
 	    }
 	}
 	print '</div>';  #close containerheadright

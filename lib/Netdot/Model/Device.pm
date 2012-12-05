@@ -699,7 +699,9 @@ sub get_snmp_info {
 	    $sess_args{$arg} = $args{$arg} if defined $args{$arg};
 	}
 	$sinfo = $self->_get_snmp_session(%sess_args);
+	return unless $sinfo;
     }
+
 
     $dev{_sclass} = $sinfo->class();
 
@@ -842,7 +844,9 @@ sub get_snmp_info {
 									   'communities' => [$comm],
 									   'version'     => $sinfo->snmp_ver,
 									   'sclass'      => $sinfo->class);
-				    
+
+				    return unless $vsinfo;
+  
 				    $stp_p_info = $class->_exec_timeout( 
 					$args{host}, 
 					sub{  return $self->_get_stp_info(sinfo=>$vsinfo) } 
@@ -888,6 +892,9 @@ sub get_snmp_info {
 								       'communities' => [$comm],
 								       'version'     => $sinfo->snmp_ver,
 								       'sclass'      => $sinfo->class);
+				
+				return unless $vsinfo;
+				
 				my $stp_p_info = $class->_exec_timeout( 
 				    $args{host}, 
 				    sub{  return $self->_get_stp_info(sinfo=>$vsinfo) } );
@@ -1085,6 +1092,11 @@ sub get_snmp_info {
     ################################################################
     # IPv4 addresses and masks 
     #
+
+    # This table is critical, so if we didn't get anything, ask again
+    if ( !defined($hashes{'ip_index'}) || !(keys %{ $hashes{'ip_index'} }) ){
+	$hashes{'ip_index'} = $sinfo->ip_index();
+    }
     while ( my($ip,$iid) = each %{ $hashes{'ip_index'} } ){
  	next unless (defined $dev{interface}{$iid});
 	next if &_check_if_status_down(\%dev, $iid);
@@ -1431,6 +1443,8 @@ sub discover {
 						   priv_proto  => $argv{priv_proto},
 						   priv_pass   => $argv{priv_pass},
 		    );
+
+		return unless $sinfo;
 	    }
 	    $info = $class->_exec_timeout($name, 
 					  sub{ return $class->get_snmp_info(session   => $sinfo,
@@ -2706,6 +2720,9 @@ sub snmp_update {
 					  priv_proto  => $argv{priv_proto},
 					  priv_pass   => $argv{priv_pass},
 	    );
+
+	return unless $sinfo;
+
     }
     
     # Re-bless into appropriate sub-class if needed
@@ -3529,7 +3546,7 @@ sub bgppeers_by_id {
 
   Arguments:  
     Array ref of BGPPeering objects, 
-    Entity table field to sort by [name*|asnumber|asname]
+    Entity table field to sort by [name|asnumber|asname]
   Returns:    
     Sorted array of BGPPeering objects
 
@@ -3540,7 +3557,7 @@ sub bgppeers_by_entity {
     $self->isa_object_method('bgppeers_by_id');
 
     $sort ||= "name";
-    unless ( $sort =~ /name|asnumber|asname/ ){
+    unless ( $sort =~ /^name|asnumber|asname$/o ){
 	$self->throw_fatal("Model::Device::bgppeers_by_entity: Invalid Entity field: $sort");
     }
     my $sortsub = ($sort eq "asnumber") ? 
@@ -3728,8 +3745,8 @@ sub _validate_args {
 	    if ( defined $self ){
 		if ( $self->id != $otherdev->id ){
 		    my $msg = sprintf("%s: Existing device: %s uses S/N %s, MAC %s", 
-				      $self->fqdn, $asset->serial_number, $asset->physaddr, 
-				      $otherdev->fqdn);
+				      $self->fqdn, $otherdev->fqdn, $asset->serial_number, 
+				      $asset->physaddr);
 		    if ( Netdot->config->get('ENFORCE_DEVICE_UNIQUENESS') ){
 			$self->throw_user($msg); 
 		    }else{
@@ -3815,12 +3832,16 @@ sub _get_snmp_session {
 	# Being called as an instance method
 
 	# Do not continue unless snmp_managed flag is on
-	$self->throw_user(sprintf("Device %s not SNMP-managed. Aborting.", $self->fqdn))
-	    unless $self->snmp_managed;
+	unless ( $self->snmp_managed ){
+	    $logger->debug(sprintf("Device %s not SNMP-managed. Aborting.", $self->fqdn));
+	    return;
+	}
 
 	# Do not continue if we've exceeded the connection attempts threshold
-	$self->throw_user(sprintf("Device %s has been marked as snmp_down. Aborting.", $self->fqdn))
-	    if ( $self->snmp_down == 1 );
+	if ( $self->snmp_down == 1 ){
+	    $logger->info(sprintf("Device %s has been marked as snmp_down. Aborting.", $self->fqdn));
+	    return;
+	}
 
 	# Fill up SNMP arguments from object if it wasn't passed to us
 	if ( !defined $argv{communities} && $self->community ){
@@ -4573,6 +4594,8 @@ sub _get_arp_from_snmp {
     my %cache;
     my $sinfo = $argv{session} || $self->_get_snmp_session();
 
+    return unless $sinfo;
+
     my %devints; my %devsubnets;
     foreach my $int ( $self->interfaces ){
 	$devints{$int->number} = $int->id;
@@ -4640,6 +4663,9 @@ sub _get_v6_nd_from_snmp {
     my $host = $self->fqdn;
     my %cache;
     my $sinfo = $argv{session} || $self->_get_snmp_session();
+
+    return unless $sinfo;
+
     unless ( $sinfo->can('ipv6_n2p_mac') ){
 	$logger->debug("Device::_get_v6_nd_from_snmp: This version of SNMP::Info ".
 		       "does not support fetching Ipv6 addresses");
@@ -4784,6 +4810,9 @@ sub _get_fwt_from_snmp {
 
     my $start   = time;
     my $sinfo   = $argv{session} || $self->_get_snmp_session();
+
+    return unless $sinfo;
+
     my $sints   = $sinfo->interfaces();
 
     # Build a hash with device's interfaces, indexed by ifIndex
@@ -4842,6 +4871,9 @@ sub _get_fwt_from_snmp {
                 $logger->error("$host: SNMP error for VLAN $vlan: $e");
                 next;
             }
+
+	    return unless $vlan_sinfo;
+
             $class->_exec_timeout($host, sub{ return $self->_walk_fwt(sinfo   => $vlan_sinfo,
 								      sints   => $sints,
 								      devints => \%devints,
@@ -5708,24 +5740,48 @@ sub _update_interfaces {
 	# whose username is netdot, running the update
 
 	my $int_thold = $self->config->get('IF_COUNT_THRESHOLD');
-	if ( $int_thold >= 1 ){
+	if ( $int_thold <= 0 || $int_thold >= 1 ){
 	    $self->throw_fatal('Incorrect value for IF_COUNT_THRESHOLD in config file');
 	}
-
+	
 	my %old_snmp_ifs;
 	map { $old_snmp_ifs{$_->id} = $_ } 
 	grep { $_->doc_status eq 'snmp' } values %oldifs;
-
-	my $num_old = scalar(keys(%old_snmp_ifs));
-	my $num_new = scalar(keys(%{$info->{interface}}));
 	
-	if ( ($num_old && !$num_new) || ($num_new && ($num_new < $num_old) && 
-	     ($num_new / $num_old) <= $int_thold) ){
-	    $logger->warn("The ratio of new to old interfaces is below the configured".
-			  " threshold (IF_COUNT_THRESHOLD). Skipping interface update.". 
-			  " Please re-discover device manually if needed.");
+	my $ifs_old = scalar(keys(%old_snmp_ifs));
+	my $ifs_new = scalar(keys(%{$info->{interface}}));
+	
+	$logger->debug("$host: Old Ifs: $ifs_old, New Ifs: $ifs_new");
+
+	if ( ($ifs_old && !$ifs_new) || ($ifs_new && ($ifs_new < $ifs_old) && 
+					 ($ifs_new / $ifs_old) <= $int_thold) ){
+	    $logger->warn(sprintf("%s: new/old interface ratio: %.2f is below INT_COUNT_THRESHOLD".
+				  "Skipping interface update. Re-discover manually if needed.",
+				  $host, $ifs_new/$ifs_old));
 	    return;
 	}
+	
+	# Do the same for IP addresses
+	my $ips_old = scalar(keys(%old_ips));
+	my $ips_new = 0;
+	foreach my $i ( values %{ $info->{interface} } ){
+	    foreach my $ip ( values %{ $i->{ips} } ){
+		my $address = $ip->{address};
+		next if Ipblock->is_loopback($address);
+		$ips_new++;
+	    }
+	}
+	
+	$logger->debug("$host: Old IPs: $ips_old, New IPs: $ips_new");
+
+	if ( ($ips_old && !$ips_new) || ($ips_new && ($ips_new < $ips_old) && 
+					 ($ips_new / $ips_old) <= $int_thold) ){
+	    $logger->warn(sprintf("%s: new/old IP ratio: %.2f is below INT_COUNT_THRESHOLD".
+				  "Skipping interface update. Re-discover manually if needed.",
+				  $host, $ips_new/$ips_old));
+	    return;
+	}
+	
     }
 
     # Index by interface name (ifDescr) and number (ifIndex)
@@ -5888,6 +5944,14 @@ sub _update_interfaces {
 	if ( $obj->interface && $obj->interface->ignore_ip ){
 	    $logger->debug(sub{sprintf("%s: IP %s not deleted: %s set to Ignore IP", 
 				       $host, $obj->address, $obj->interface->get_label)});
+	    next;
+	}
+
+	# Don't delete snmp_target address unless updating via UI
+	if ( $ENV{REMOTE_USER} eq 'netdot' && 
+	     $self->snmp_target->id == $obj->id ){
+	    $logger->debug(sub{sprintf("%s: IP %s is snmp target. Skipping delete", 
+				       $host, $obj->address)});
 	    next;
 	}
 

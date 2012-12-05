@@ -217,6 +217,8 @@ sub _reduce_iname{
     return unless $name;
     if ( $name =~ /Appliance \'(\S+)\' interface/ ){
 	return $1;
+    }elsif ( $name =~ /Firewall Services Module \'(\S+)\' interface/ ){
+	return $1;
     }
     return $name;
 }

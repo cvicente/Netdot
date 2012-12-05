@@ -58,7 +58,13 @@ sub insert {
 	$rr = RR->search(name=>$name)->first;
 	unless ( $rr ){
 	    my $domain = $zone->name;
-	    $name =~ s/\.$domain\.?$//i;
+	    if ( $domain =~ /^\d+\-\d+\./ ) {
+		# Transform RFC2317 domain name to allowed one
+		$name =~ s/^(\d+).*/$1/;
+	    } else {
+		$name =~ s/\.$domain\.?$//i;
+	    }
+
 	    $rr = RR->insert({zone=>$zone, name=>$name});
 	    $logger->debug("Netdot::Model::RRPTR: Created owner RR for IP: ".
 			   $ipb->get_label." as: ".$rr->get_label);

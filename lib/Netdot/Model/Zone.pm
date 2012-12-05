@@ -75,6 +75,24 @@ sub search {
 	    return $class->SUPER::search(id => $alias->zone->id, $opts);
 	}elsif ( $argv{name} =~ /\./ && !Ipblock->matches_v4($argv{name}) ){
 	    my @sections = split '\.', $argv{name};
+
+	    # first try to search for the RFC2317 reverse if it exists
+	    if ( $argv{name} =~ /(\d+)\.(\d+)\.(\d+)\.(\d+)\.in-addr\.arpa$/o ) {
+		my $address = join('.',($4, $3, $2, $1));
+		if ( my $ipb = Ipblock->search(address=>$address)->first ){
+		    if ( my $subnet = $ipb->parent ){
+			my $subnetaddr = $subnet->address;
+			my $prefix = $subnet->prefix;
+			my @octs = split('\.', $subnetaddr);
+			$argv{name} = $octs[3]."-".$prefix.".$octs[2].$octs[1].$octs[0].in-addr.arpa";
+			$logger->debug(sub{ "Zone::search: $argv{name}" });
+			if ( $class->SUPER::search(%argv, $opts) ){
+			    $logger->debug(sub{ "Zone::search: found: ", $argv{name} });
+			    return $class->SUPER::search(%argv, $opts);
+			}
+		    } 
+		}
+	    }
 	    while ( @sections ){
 		$argv{name} = join '.', @sections;
 		$logger->debug(sub{ "Zone::search: $argv{name}" });
@@ -175,7 +193,7 @@ sub insert {
 	    );
 
 	# Copy values from template zone
-	foreach my $field ( qw(mname rname refresh retry expire minimum default_ttl) ){
+	foreach my $field ( qw(mname rname refresh retry expire minimum default_ttl include) ){
 	    $state{$field} = $tzone->$field;
 	}
 	$newzone = $class->SUPER::insert( \%state );
@@ -945,6 +963,9 @@ sub _dot_arpa_to_ip {
     }elsif ( $ipaddr =~ s/(.*)\.ip6.arpa$/$1/ ){
 	$version = 6;
     }
+
+    # Transform RFC2317 format to real IP
+    $ipaddr =~ s/\d+-\d+\.(\d+\.\d+\.\d+)/$1/g;
 
     my $plen; # prefix length
     if ( $version == 4 ){

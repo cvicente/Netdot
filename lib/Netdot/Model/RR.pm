@@ -350,7 +350,7 @@ sub update_ptr {
 
 =head2 delete - Override delete method
 
-    * Removes any matching CNAMEs
+    * Removes any matching CNAMEs and MX records
 
   Arguments:
     None
@@ -366,8 +366,9 @@ sub delete {
     $self->isa_object_method('delete');
     my $class = ref($self);
     my @cnames = RRCNAME->search(cname=>$self->get_label);
-    foreach my $cname ( @cnames ){
-	$cname->rr->delete();
+    my @mxs = RRMX->search(exchange=>$self->get_label);
+    foreach my $o ( @cnames, @mxs ){
+	$o->rr->delete();
     }
     return $self->SUPER::delete();
 }
@@ -705,10 +706,14 @@ sub _validate_args {
 	if ( $name =~ /[^A-Za-z0-9\.\-_@\*]/ ){
 	    $self->throw_user("Invalid name: $name. Contains invalid characters");
 	}
-	# Underscore only allowed at beginning of string or dotted section
-	if ( $name =~ /[^^.]_/ || $name =~ /_$/ ){
-	    $self->throw_user("Invalid name: $name. Invalid underscores");
+
+        if ( $self->config->get('ALLOW_UNDERSCORES_IN_DEVICE_NAMES') eq '0' ){
+	    # Underscore only allowed at beginning of string or dotted section
+	    if ( $name =~ /[^^.]_/ || $name =~ /_$/ ){
+		$self->throw_user("Invalid name: $name. Invalid underscores");
+	    }
 	}
+
 	# Name must not start or end with a dash
 	if ( $name =~ /^\-/ || $name =~ /\-$/ ){
 	    $self->throw_user("Invalid name: $name. Name must not start or end with a dash");

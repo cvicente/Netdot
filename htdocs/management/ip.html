@@ -431,7 +431,11 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
     }
     my $container = delete $ARGS{dhcp_global_scope};
     my %args = (container=>$container);
-    
+
+    # Active flag
+    my $active = delete $ARGS{dhcp_active};
+    $args{active} = (defined $active && $active eq 'on')? 1 : 0;
+
     # Grab all the dhcp options & declarations
     foreach my $arg ( %ARGS ){
 	if ( $arg =~ /^dhcp_/ ){
@@ -850,7 +854,20 @@ if ($o->parent && $o->parent->dhcp_scopes) {
     my @scopes  = $o->dhcp_scopes;
     
     print '<div class="container">';
-    print '<div class="containerhead"><b>DHCP Host</b></div>';
+    print '<div class="containerheadleft"><b>DHCP Host</b></div>';
+    print '<div class="containerheadright">';
+    if ( @scopes ){
+	print '&nbsp;';
+    }else{
+	# Let user add a scope (takes user to another page)
+	print '&nbsp;';
+	if ( !$edit ){
+	    if ( $manager && $manager->can($user, 'edit', $o) ){
+		print '<a href="host.html?ipblock='.$o.'&add_dhcp='.$o.'">[add]</a>';
+	    }
+	}
+    }
+    print '</div>';
     print '<div class="containerbody">';
     $m->comp('/generic/sortresults.mhtml', object=>\@scopes);
     print '</div>'; #close containerbody of DHCP
@@ -1176,7 +1193,8 @@ if ( $edit ){
 	    $x .= '<option value="'. $ent->id .'">'. $ent->name .'</option>';
 	}
 	$x .= '</select>';
-	$x .= '<a class="hand" onClick="openinsertwindow(\'table=DhcpScope&select_id=dhcp_global_scope&selected=1&dowindow=1\')">[new]</a>';
+	$x .= '<a class="hand" onClick="openinsertwindow(\'table=DhcpScope&select_id='.
+	    'dhcp_global_scope&selected=1&dowindow=1\')">[new]</a>';
 	$x;
     }});
 
@@ -1188,6 +1206,10 @@ if ( $edit ){
 	push @fields, 'Option routers:';
 	push @data,   '<input type="text" name="dhcp_option_routers" class="txt" value="'.$o->netaddr->first->addr.'">';
     }
+    push @fields, 'Active?:';
+    push @data, '<input type="checkbox" name="dhcp_active" checked="checked"> (Uncheck if you do not want this scope'.
+	' included in the DHCP configuration)';
+
     
 </%perl>	
 
@@ -1518,6 +1540,7 @@ print $tmp{value};
       </div>
       <div class="containerbody">
 %     if ( $_action eq 'VIEW_ADD_FZONES' ){
+%         my $czone = ($o->forward_zone)? $o->forward_zone->name : "none";
 %         my @all_zones = sort { $a->name cmp $b->name } Zone->retrieve_all;
 %         my %cur_zones;
 %         map { $cur_zones{$_->zone->id} = 1 } @sz; 
@@ -1525,7 +1548,10 @@ print $tmp{value};
 	    <input type="hidden" name="id" value="<% $o->id %>">
 	    <input type="hidden" name="_action" value="LINK_ZONES">
 	    <input type="hidden" name="view" value="Zones">
-            Link this block with existing forward zones:
+	    <p>Zones are inherited from superior blocks. The current forward zone for this block is:
+	    <p>
+%	    print "&nbsp;&nbsp;$czone";
+            <p>Link this block with existing forward zones:
 	    <p><select name="link_zones" multiple="multiple">
             <option value=""> - select - </option>
 %	    foreach my $zone ( grep { $_->active == 1 && $_->name !~ /\.arpa$/ } @all_zones ){
