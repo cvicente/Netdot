@@ -1,52 +1,24 @@
 
-           == Instructions for Upgrading Netdot 1.0.1 to 1.0.2 ==
+           == Instructions for Upgrading Netdot 1.0.2 to 1.0.3 ==
+
 
 
 1. You will need to update the database schema in addition to the application.
 
-IMPORTANT: MAKE SURE YOU MAKE A BACKUP COPY OF YOUR DATABASE BEFORE UPGRADING
+   There are no actual schema changes in this upgrade. The only thing we need 
+   is to match the schema version to the application version.
+	
+   Please execute the following command:
 
-This new version of Netdot fixes an incorrect UNIQUE constraint in the device
-table. It is possible that your database contains two or more devices using the 
-same name (RR). This means that the addition of the unique index to the device
-table may fail.
-
-After making a backup copy of your database, please execute the following command:
-
-    # make upgrade
-
-This will call a script that updates your current database to the schema required 
-by the version you are upgrading to. 
-
-Any errors found while applying these schema changes will be written to a file
-called "error.log". You will need to inspect this file and make sure to correct
-any problems before continuing. You may have to restore your database from backup,
-fix the data and start over.
+    	  # make upgrade
 
 2. Check for new requirements:
 
    # make testdeps
 
-You will notice that Netdot version 1.0.2 requires a specific version of the 
-Net::Patricia Perl module. The module has been patched to satisfy our requirements,
-but at the time of this writing, the patch has not been applied to the public version. 
-Therefore, we have included a patched version of the module. Netdot can install it
-for you by doing:
-
-    # make installdeps
-
-* Side Note:
-
-There is a bug ticket open for Net::Patricia:
-
-      https://rt.cpan.org/Public/Bug/Display.html?id=79480
-
-It would be helpful if you could write the author of the module asking that the patch
-be applied.
-
 3. At this point you can do a 
 
-   # make install
+   # make install [PARAMETERS]
 
 4. Restart Apache
 

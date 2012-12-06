@@ -108,6 +108,12 @@ if ( $schema_version eq '1.0.1' ){
 	die "Unsupported DB type: $dbms\n";
     }
     
+
+}elsif ( $schema_version eq '1.0.2' ){
+    
+    print "Upgrading Netdot schema from version $schema_version\n";
+    
+    push @statements, "UPDATE schemainfo SET version='1.0.3' WHERE id=1;",
     
 }else{
     die "Unsupported version for this upgrade: $schema_version\n";
