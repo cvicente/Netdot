@@ -4934,7 +4934,16 @@ $meta = {
         tag => 'Vlan',
         type => 'bigint'
       },
-    },
+      use_network_broadcast => {
+        default => '',
+        description => 'Whether the network and broadcast addresses in this IPv4 block should be marked as reserved or not',
+        length => '',
+        nullable => 0,
+        tag => 'Use Network/Broadcast?',
+        type => 'bool'
+      },
+
+  },
     description => 'An IP (v4 or v6) CIDR block, which can represent both individual addresses and blocks of addresses (subnets, etc).',
     has_history => 0,
     index => [ ['parent'], ['status'], ['first_seen'], ['last_seen'], ['interface'], ['vlan'], ['version'] ],
@@ -4964,6 +4973,7 @@ $meta = {
         'description',
         'first_seen',
         'last_seen',
+        'use_network_broadcast',
         'info'
       ],
       brief => [
