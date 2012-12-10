@@ -83,9 +83,6 @@ rpm-install:
 	@echo "Installing required RPM packages"
 	$(PERL) bin/perldeps.pl rpm-install
 
-test:
-	prove -r
-
 dir:
 	@echo 
 	@echo "Creating necessary directories..."
