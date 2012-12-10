@@ -581,13 +581,15 @@ sub _validate_args {
 	    unless ( $subnet_scope = ($subnet->dhcp_scopes)[0] ){
 		$self->throw_user("$name: Subnet ".$subnet->get_label." not dhcp-enabled.");
 	    }
-	    # Make sure we assign to the correct global container
-	    $argv->{container} = $subnet_scope->get_global;
+	    # Make sure we assign to the correct global container if none passed
+	    $argv->{container} = $subnet_scope->get_global 
+		unless defined $argv->{container};
 	    $fields{container} = $argv->{container};
 
 	    # Check for mismatched versions
-	    if ( $fields{ipblock}->version != $fields{container}->version ){
-		$self->throw_user("$name: IP version in host scope does not match IP version in container");
+	    if ( $fields{container}->type eq 'global' && 
+		 $fields{ipblock}->version != $fields{container}->version ){
+		$self->throw_user("$name: IP version in host scope does not match version in global scope");
 	    }
 	}
 
