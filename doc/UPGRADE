@@ -1,24 +1,33 @@
 
-           == Instructions for Upgrading Netdot 1.0.2 to 1.0.3 ==
+                    == Instructions for Upgrading Netdot ==
 
 
+NOTE: Starting with Netdot 1.0.1, the upgrade script is able to perform several
+version upgrades at once.
 
-1. You will need to update the database schema in addition to the application.
+1. You may need to update the database schema in addition to the application.
 
-   There are no actual schema changes in this upgrade. The only thing we need 
-   is to match the schema version to the application version.
-	
-   Please execute the following command:
+IMPORTANT: MAKE SURE YOU MAKE A BACKUP COPY OF YOUR DATABASE BEFORE UPGRADING
 
-    	  # make upgrade
+After making a backup copy of your database, please execute the following command:
 
-2. Check for new requirements:
+    # make upgrade
 
-   # make testdeps
+This will call a script that updates your current database to the schema required 
+by the version you are upgrading to. 
+
+Any errors found while applying these schema changes will be written to a file
+called "error.log". You will need to inspect this file and make sure to correct
+any problems before continuing. You may have to restore your database from backup,
+fix any issues and start over.
+
+2. Check for new required dependencies:
+
+    # make testdeps
 
 3. At this point you can do a 
 
-   # make install [PARAMETERS]
+    # make install [PARAMETERS]
 
 4. Restart Apache
 
