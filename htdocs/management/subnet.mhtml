@@ -180,11 +180,11 @@ for( my $i=0; $i<($num/$cols); $i++ ) {
 	    $disp_addr =~ s/^\d+\.(\d+\.\d+\.\d+)$/$1/o;
 	}
 
-	if( ($net == $net->network) && ($mask != 31) ){
+	if( ( ($net == $net->network) && ($mask != 31)) && !$network->use_network_broadcast ){
 	    # don't allow selection of network or broadcast addresses
 	    $disp_addr = '<div class="ipaddr_disabled" title="Network">'.$disp_addr.'</div>';
 
-	}elsif ( $net == $net->broadcast && $mask != 31 ){
+	}elsif ( ($net == $net->broadcast && $mask != 31) && !$network->use_network_broadcast ){
 	    # don't allow selection of network or broadcast addresses
 	    $disp_addr = '<div class="ipaddr_disabled" title="Broadcast">'.$disp_addr.'</div>';
 

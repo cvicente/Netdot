@@ -24,12 +24,37 @@ my ($schema_version) = $dbh->selectrow_array("SELECT version
 
 die "Schema version unknown\n" unless $schema_version;
 
+print "Upgrading Netdot schema from version $schema_version\n";
+
 my @statements;
 
 if ( $schema_version eq '1.0.1' ){
-
-    print "Upgrading Netdot schema from version $schema_version\n";
     
+    &upg_101_102();
+    &upg_102_103();
+    &upg_103_104();
+    
+}elsif ( $schema_version eq '1.0.2' ){
+    
+    &upg_102_103();
+    &upg_103_104();
+    
+}elsif ( $schema_version eq '1.0.3' ){
+    
+    &upg_103_104();
+    
+}else{
+    die "Unsupported version for this upgrade: $schema_version\n";
+}
+
+
+&processdata(\@statements);
+&dbdisconnect();
+
+
+#########################################################################
+sub upg_101_102 {
+
     if ( $dbms eq 'mysql' ) {
 	
 	# Try to speed up the conversion as much as possible
@@ -70,7 +95,9 @@ if ( $schema_version eq '1.0.1' ){
 	"DELETE FROM datacache;";
 	
 	# Restore checks
-	push @statements, "SET FOREIGN_KEY_CHECKS = 1;", "COMMIT;";
+	push @statements, "SET FOREIGN_KEY_CHECKS = 1;", 
+	"COMMIT;",
+	"SET AUTOCOMMIT=1;";
 	
     }elsif ( $dbms eq 'Pg' ){
 	
@@ -107,19 +134,28 @@ if ( $schema_version eq '1.0.1' ){
     }else{
 	die "Unsupported DB type: $dbms\n";
     }
-    
 
-}elsif ( $schema_version eq '1.0.2' ){
-    
-    print "Upgrading Netdot schema from version $schema_version\n";
-    
-    push @statements, "UPDATE schemainfo SET version='1.0.3' WHERE id=1;",
-    
-}else{
-    die "Unsupported version for this upgrade: $schema_version\n";
 }
 
-&processdata(\@statements);
+#########################################################################
+sub upg_102_103 {
+    push @statements, "UPDATE schemainfo SET version='1.0.3' WHERE id=1;",
+}
 
-&dbdisconnect();
+#########################################################################
+sub upg_103_104 {
 
+    if ( $dbms eq 'mysql' ) {
+
+	push @statements, "ALTER TABLE ipblock ADD COLUMN use_network_broadcast bool NOT NULL;";
+
+    }elsif ( $dbms eq 'Pg' ){
+
+	push @statements, 
+	"ALTER TABLE ipblock ADD COLUMN use_network_broadcast bool NOT NULL default 'f';";
+
+    }
+    
+    push @statements, "UPDATE schemainfo SET version='1.0.4' WHERE id=1;";
+
+}
