@@ -343,10 +343,7 @@ sub post{
     unless ( $argv{obj} || ($argv{table} && $argv{id}) ){
 	$self->throw_fatal("Missing required arguments");
     }
-    unless ( $argv{data} ){
-	$self->throw_fatal("Missing required arguments: data");
-    }
-    
+   
     my $obj = $argv{obj} || $argv{table}->retrieve($argv{id});
     unless ( $obj ) {
 	my $msg = sprintf("Netdot::REST::post: %s/%s not found", $argv{table}, $argv{id});
