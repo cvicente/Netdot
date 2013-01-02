@@ -1651,6 +1651,11 @@ sub update {
 	    my $scope = ($self->dhcp_scopes)[0];
 	    $scope->update({ipblock=>$self});
 	}
+	if ( $bak{status} != $self->status ){
+	    if ( $self->status->name ne 'Subnet' ){
+		$self->throw_user("Subnet cannot change status while DHCP scope exists");
+	    }
+	}
     }
 
     # Update PTR records if needed
