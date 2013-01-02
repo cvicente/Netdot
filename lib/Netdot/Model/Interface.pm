@@ -503,16 +503,12 @@ sub snmp_update {
 	    $vdata{vid}   = $vid;
 	    $vdata{name}  = $vname if defined $vname;
 	    if ( $vo = Vlan->search(vid => $vid)->first ){
-		# update in case named changed
-		# (ignore default vlan 1)
-		if ( defined $vdata{name} && $vo->vid ne "1" ){
-		    if ( !(defined $vo->name) || 
-			 (defined $vo->name && $vdata{name} ne $vo->name) ){
-			my $r = $vo->update(\%vdata);
-			$logger->debug(sub{ sprintf("%s: VLAN %s name updated: %s", 
-						    $label, $vo->vid, $vo->name) })
-			    if $r;
-		    }
+		# update if name wasn't set (ignore default vlan 1)
+		if ( !defined $vo->name && defined $vdata{name} && $vo->vid ne "1" ){
+		    my $r = $vo->update(\%vdata);
+		    $logger->debug(sub{ sprintf("%s: VLAN %s name updated: %s", 
+						$label, $vo->vid, $vo->name) })
+			if $r;
 		}
 	    }else{
 		# create
