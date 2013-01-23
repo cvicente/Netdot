@@ -757,7 +757,7 @@ sub get_last_n_arp {
 
 sub devices { 
     my ($self) = @_;
-    map { $_->devices if ($_->devices) } $self->assets;
+    map { $_->devices } $self->assets;
 }
 
 ################################################################

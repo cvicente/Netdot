@@ -6,26 +6,29 @@ Performs a general search in the database, looking into every field of every tab
 
 
 <%args>
-$q
+$q => undef
 </%args>
 
 <%init>
 
 my %linksto;
 my $results;
-eval {
-    $results = Netdot::Model->search_all_tables($q);
-};
-if ( my $e = $@ ){
-    $m->comp("/generic/error.mhtml", error=>$e);
-}
+my $numtbls;
 my $DEBUG = 0;
-if ( $DEBUG ) {
-    print "<pre>", Dumper($results), "</pre>";
-    $m->abort;
-}
-my $numtbls = scalar keys %$results;
 
+if ( defined $q ){
+    eval {
+	$results = Netdot::Model->search_all_tables($q);
+    };
+    if ( my $e = $@ ){
+	$m->comp("/generic/error.mhtml", error=>$e);
+    }
+    if ( $DEBUG ) {
+	print "<pre>", Dumper($results), "</pre>";
+	$m->abort;
+    }
+    $numtbls = scalar keys %$results;
+}
 </%init>
 
 

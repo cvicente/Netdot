@@ -59,9 +59,13 @@ my $manager = $ui->get_permission_manager($r);
     <div class="containerheadright">
 
 %   if ( $manager && $manager->can($user, 'access_admin_section', 'vlan_tasks:new') ){
-%       if ( $view eq 'search' ){
-            <a href="vlan_tasks.html?view=new">[new]</a>
-%       }elsif ( $view eq 'new' ){
+%       if ( $view ne 'new-vlan' ){
+            <a href="vlan_tasks.html?view=new-vlan">[new vlan]</a>
+%       }
+%       if ( $view ne 'new-group' ){
+            <a href="vlan_tasks.html?view=new-group">[new group]</a>
+%       }
+%       if ( $view ne 'search' ){
             <a href="vlan_tasks.html?view=search">[search]</a>
 %       }    
 %   }    
@@ -90,8 +94,15 @@ my $manager = $ui->get_permission_manager($r);
                 </p>
             </form>
          </fieldset>
-%    }elsif ( $view eq 'new' ){
-%       unless ( $manager && $manager->can($user, 'access_admin_section', 'vlan_tasks:new') ){
+%    }elsif ( $view eq 'new-vlan' ){
+%       unless ( $manager && $manager->can($user, 'access_admin_section', 'vlan_tasks:new-vlan') ){
+%	    $m->comp('/generic/error.mhtml', error=>"You do not have permission to do this");
+%       }
+
+        <& '/generic/edit.html', table=>'Vlan' &>
+
+%    }elsif ( $view eq 'new-group' ){
+%       unless ( $manager && $manager->can($user, 'access_admin_section', 'vlan_tasks:new-group') ){
 %	    $m->comp('/generic/error.mhtml', error=>"You do not have permission to do this");
 %       }
         <fieldset class="medium">

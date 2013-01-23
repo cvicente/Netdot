@@ -5289,7 +5289,7 @@ sub _assign_base_mac {
 	# OK
     }else{
 	$logger->debug(sub{"$host did not return base MAC. Using first available interface MAC."});
-	foreach my $iid ( sort keys %{$info->{interface}} ){
+	foreach my $iid ( sort { $a <=> $b}  keys %{$info->{interface}} ){
 	    if ( my $addr = $info->{interface}->{$iid}->{physaddr} ){
 		next unless ($address = PhysAddr->validate($addr));
 		last;
