@@ -2564,40 +2564,38 @@ sub update_bgp_peering {
     my ($peer, $oldpeerings) = @argv{"peer", "oldpeerings"};
     $self->isa_object_method('update_bgp_peering');
 
-    $self->throw_fatal("Model::Device::update_bgp_peering: Missing required arguments: peer, oldpeerings")
+    $self->throw_fatal('Model::Device::update_bgp_peering: '.
+		       'Missing required arguments: peer, oldpeerings')
 	unless ( $peer && $oldpeerings );
+
     my $host = $self->fqdn;
-
     my $p; # bgppeering object
-
+    
     # Check if we have basic Entity info
     my $entity;
-    if ( exists ($peer->{asname}) || 
-	 exists ($peer->{orgname})|| 
-	 exists ($peer->{asnumber}) ){
+    if ( $peer->{asname}  || $peer->{orgname} || $peer->{asnumber} ){
 	
 	my $entityname = $peer->{orgname} || $peer->{asname};
-	$entityname .= " ($peer->{asnumber})";
+	$entityname .= " ($peer->{asnumber})" if $peer->{asnumber};
 	
-	# Check if Entity exists
-	#
-	if ( $entity = Entity->search(asnumber => $peer->{asnumber})->first ||
-	     Entity->search(asname => $peer->{asname})->first               ||
-	     Entity->search(name   => $peer->{orgname})->first
-	     ){
+	# Check if Entity exists (notice it's an OR search)
+	my @where;
+	push @where, { asnumber => $peer->{asnumber} } if $peer->{asnumber};
+	push @where, { asname   => $peer->{asname}   } if $peer->{asname};
+	push @where, { name     => $entityname       };
+	
+	if ( $entity = Entity->search_where(\@where)->first ){
 	    # Update AS stuff
 	    $entity->update({asname   => $peer->{asname},
 			     asnumber => $peer->{asnumber}});
 	}else{
 	    # Doesn't exist. Create Entity
-	    #
 	    # Build Entity info
-	    #
 	    my %etmp = ( name     => $entityname,
 			 asname   => $peer->{asname},
 			 asnumber => $peer->{asnumber},
 		);
-	
+	    
 	    $logger->info(sprintf("%s: Peer Entity %s not found. Inserting", 
 				  $host, $entityname ));
 	    
