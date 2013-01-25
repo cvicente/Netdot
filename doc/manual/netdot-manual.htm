@@ -194,11 +194,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <li><p>Perl 5.6.1 or later</p></li>
 <li><p>Apache2 with <code>mod_perl2</code></p></li>
 <li><p>MySQL or PostgreSQL</p></li>
-<li><p>Authentication Server (optional). Netdot supports local authentication, as well as RADIUS and LDAP.</p>
-<ul>
-<li><p>For RADIUS, we recommend FreeRadius, available at: <a href="http://www.freeradius.org/"><code class="url">http://www.freeradius.org/</code></a></p></li>
-<li><p>For LDAP, you can try OpenLdap, available at: <a href="http://www.openldap.org/"><code class="url">http://www.openldap.org/</code></a></p></li>
-</ul></li>
+<li><p>Authentication Server (optional). Netdot supports local authentication, as well as RADIUS, LDAP and Kerberos.</p></li>
 <li><p>The RRDtool package, including its Perl modules, available at: <a href="http://oss.oetiker.ch/rrdtool/"><code class="url">http://oss.oetiker.ch/rrdtool/</code></a></p></li>
 <li><p>The GraphViz package, available at: <a href="http://www.graphviz.org/"><code class="url">http://www.graphviz.org/</code></a></p></li>
 <li><p>The latest Netdisco MIBs. <a href="http://sourceforge.net/projects/netdisco/files/netdisco-mibs/"><code class="url">http://sourceforge.net/projects/netdisco/files/netdisco-mibs/</code></a></p></li>
@@ -281,15 +277,15 @@ DB_DBA_PASSWORD=DATABASE-ADMIN-PASSWORD</code></pre></li>
 </blockquote></li>
 </ul>
 <h2 id="apache-configuration"><a href="#TOC"><span class="header-section-number">3.6</span> Apache Configuration</a></h2>
-<p>Edit the supplied Apache config template for either Local, RADIUS or LDAP authentication, copy it to your Apache config directory and include it somewhere in your Apache configuration file (httpd.conf) (e.g.):</p>
-<pre class="sourceCode apache"><code class="sourceCode apache">Include<span class="st"> conf/netdot_apache2_&lt;local|radius|ldap&gt;.conf</span></code></pre>
+<p>Edit the supplied Apache config template for either Local, RADIUS, Kerberos or LDAP authentication, copy it to your Apache config directory and include it somewhere in your Apache configuration file (httpd.conf) (e.g.):</p>
+<pre class="sourceCode apache"><code class="sourceCode apache">Include<span class="st"> conf/netdot_apache2_&lt;local|radius|ldap|krb5&gt;.conf</span></code></pre>
 <p>Alternatively, some Apache environments provide a directory from which files are included automatically when Apache starts. In that case, you can create a link to the file in said directory.</p>
 <p>For example, in Debian or Ubuntu, it's a two-step process:</p>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">cd</span> /etc/apache2
 ~# <span class="kw">ln</span> -s /usr/local/netdot/etc/netdot_apache2_local.conf sites-available/netdot
 ~# <span class="kw">ln</span> -s ../sites-available/netdot sites-enabled/netdot</code></pre>
 <p>Or, in other distributions with just one directory:</p>
-<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">ln</span> -s /usr/local/netdot/etc/netdot_apache2_radius.conf /etc/apache2/conf.d/netdot</code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# <span class="kw">ln</span> -s /usr/local/netdot/etc/netdot_apache2_local.conf /etc/apache2/conf.d/netdot</code></pre>
 <blockquote>
 <p><strong>Tip</strong> Make sure you use the version of the file that gets copied into your install directory by make install, not from the source directory. This file contains relevant path substitutions based on your chosen install prefix.</p>
 </blockquote>
@@ -299,7 +295,7 @@ DB_DBA_PASSWORD=DATABASE-ADMIN-PASSWORD</code></pre></li>
 <pre><code>username: &quot;admin&quot;
 password: &quot;admin&quot;</code></pre>
 <blockquote>
-<p><strong>Tip</strong> If you are using the RADIUS or LDAP authentication options, you should have NetdotRadiusFailToLocal or NetdotRadiusFailToLocal set to &quot;yes&quot; in your <code>netdot_apache2_x.conf</code> file.</p>
+<p><strong>Tip</strong> If you are using the one of the external authentication options, you should have Netdot(radius|ldap|krb5)FailToLocal set to &quot;yes&quot; in your <code>netdot_apache2_x.conf</code> file.</p>
 </blockquote>
 <blockquote>
 <p><strong>Warning</strong> Please remember to change the &quot;admin&quot; password! Go to <code>Contacts -&gt; People</code>, search for 'Admin', click on [edit] and type in a new password. Then click on the Update button.</p>
@@ -440,7 +436,7 @@ device3 community2
 <blockquote>
 <p><strong>Tip</strong> The mechanisms by which zone files are transferred to and loaded by authoritative name servers are left to the administrator. A simple way to do this is by running a name server locally in the machine that runs Netdot, and saving those zone files in the location where the software can load them periodically. A more complex setup could involve saving these files into revision control systems (CVS, SVN, etc), which could then be used by system configuration engines like Puppet or CfEngine to run syntax checks and load them into the appropriate name servers.</p>
 </blockquote>
-<p>Netdot supports the following DNS records: A, AAAA, CNAME, DS, HINFO, LOC, MX, NAPTR, SRV, and TXT.</p>
+<p>Netdot supports the following DNS records: A, AAAA, CNAME, DS, HINFO, LOC, MX, NAPTR, PTR, SRV, and TXT.</p>
 <p>You can import your existing BIND zones into netdot with the help of the tool <code>import_bind_zones.pl</code> from the import subdirectory</p>
 <pre><code> usage: import/import_bind_zones.pl
   [ -n|domain &lt;name&gt;, -f|file &lt;path&gt; ] (for single zone)
@@ -605,7 +601,7 @@ device3 community2
 <p>To assign permissions for an individual user, perform the following tasks:</p>
 <ul>
 <li><p>Make sure there is a Person object for the user. You can verify if a Person object exists by going to <code>Contacts -&gt; People</code> and searching for the person's name in the Search box. If the object does not exist, you can create a new one by clicking on the [new] button on the upper right corner of the same window.</p></li>
-<li><p>Make sure that the person object has a Username and a User Type set. If you have configured netdot to use RADIUS or LDAP authentication, make sure that the username corresponds with the login information in those central authentication systems. If you are using local authentication instead, make sure that you set a local password using the Password field.</p></li>
+<li><p>Make sure that the person object has a Username and a User Type set. If you have configured netdot to use external authentication, make sure that the username corresponds with the login information in those external authentication systems. If you are using local authentication instead, make sure that you set a local password using the Password field.</p></li>
 <li><p>On the Person page, you can add permissions by clicking on the [access_rights] button. This will display current permissions. You can now add new ones by clicking on the [add] button on the right.</p></li>
 <li><p>On the UserRight window, select the Object Class, the specific object or objects, and one or more access rights (view, edit, delete). Only select the 'none' right to revoke all permissions inherited from a group. Click on <code>Insert</code>.</p></li>
 </ul>
