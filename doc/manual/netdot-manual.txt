@@ -130,13 +130,7 @@ Netdot, i.e.
 *   MySQL or PostgreSQL
 
 *   Authentication Server (optional). Netdot supports local
-    authentication, as well as RADIUS and LDAP.
-
-    *   For RADIUS, we recommend FreeRadius, available at:
-        <http://www.freeradius.org/>
-
-    *   For LDAP, you can try OpenLdap, available at:
-        <http://www.openldap.org/>
+    authentication, as well as RADIUS, LDAP and Kerberos.
 
 *   The RRDtool package, including its Perl modules, available at:
     <http://oss.oetiker.ch/rrdtool/>
@@ -337,12 +331,12 @@ Finally, install the new Netdot code and restart Apache:
 
 ## Apache Configuration
 
-Edit the supplied Apache config template for either Local, RADIUS or
+Edit the supplied Apache config template for either Local, RADIUS, Kerberos or
 LDAP authentication, copy it to your Apache config directory and include
 it somewhere in your Apache configuration file (httpd.conf) (e.g.):
 
 ~~~~ {.apache}
-Include conf/netdot_apache2_<local|radius|ldap>.conf
+Include conf/netdot_apache2_<local|radius|ldap|krb5>.conf
 ~~~~
 
 Alternatively, some Apache environments provide a directory from which
@@ -360,7 +354,7 @@ For example, in Debian or Ubuntu, it's a two-step process:
 Or, in other distributions with just one directory:
 
 ~~~~ {.bash}
-~# ln -s /usr/local/netdot/etc/netdot_apache2_radius.conf /etc/apache2/conf.d/netdot
+~# ln -s /usr/local/netdot/etc/netdot_apache2_local.conf /etc/apache2/conf.d/netdot
 ~~~~
 
 > **Tip**
@@ -384,9 +378,9 @@ password: "admin"
 ~~~~
 
 >**Tip**
-If you are using the RADIUS or LDAP authentication options, you should
-have NetdotRadiusFailToLocal or NetdotRadiusFailToLocal set to "yes" in
-your `netdot_apache2_x.conf` file.
+If you are using the one of the external authentication options, you should
+have Netdot(radius|ldap|krb5)FailToLocal set to "yes" in your `netdot_apache2_x.conf` 
+file.
 
 >**Warning**
 Please remember to change the "admin" password! Go to `Contacts ->
@@ -1285,9 +1279,9 @@ tasks:
     the upper right corner of the same window.
 
 *   Make sure that the person object has a Username and a User Type set.
-    If you have configured netdot to use RADIUS or LDAP authentication,
+    If you have configured netdot to use external authentication,
     make sure that the username corresponds with the login information
-    in those central authentication systems. If you are using local
+    in those external authentication systems. If you are using local
     authentication instead, make sure that you set a local password
     using the Password field.
 
