@@ -304,9 +304,14 @@ sub generate_configs {
 		my $iface = $device_info->{$devid}->{interface}->{$ifid};
 		if ( $iface->{monitored} && defined $iface->{admin} && $iface->{admin} eq 'up' ){
 		    my %args;
+		    $args{srvname}   = 'IFSTATUS';
 		    $args{hostname}  = $hostargs{name};
+		    unless ( $iface->{number} ){
+			$logger->warn("$hostname: interface $ifid: IFSTATUS check requires ifindex");
+			return;
+		    }
 		    $args{ifindex}   = $iface->{number};
-		    $args{srvname}   = "IFSTATUS";
+		    $args{name}      = $iface->{name} if $iface->{name};
 		    $args{community} = $device_info->{$devid}->{community};
 
 		    # If interface has a contactlist, use that, otherwise use Device contactlists
@@ -511,13 +516,9 @@ sub print_service {
 	}
     }
     if ( $srvname eq "IFSTATUS" ){
-	my $ifindex;
-	unless ( $ifindex = $argv{ifindex} ){
-	    $logger->warn("Service check for $srvname requires ifindex." . 
-			  " Skipping $srvname check for host $hostname.");
-	    return;
-	}
+	my $ifindex = $argv{ifindex};
 	$srvname  .= "_$ifindex"; # Make the service name unique
+	$srvname  .= '_('.$argv{name}.')' if defined $argv{name};
 	$checkcmd .= "!$ifindex"; # Pass the argument to the check command
     }
 
