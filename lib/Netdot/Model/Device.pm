@@ -2649,9 +2649,13 @@ sub update_bgp_peering {
 	$logger->debug(sub{ sprintf("%s: Updated Peering with: %s. ", $host, $entity->name)}) if $r;
 	
     }else{
-	# Peering Doesn't exist.  Create.
+	# Peering doesn't exist.  Create.
 	# 
-	$pstate{monitored} = 1;
+	if ( $self->config->get('MONITOR_BGP_PEERINGS') ){
+	    $pstate{monitored} = 1;
+	}else{
+	    $pstate{monitored} = 0;
+	}
 	$p = BGPPeering->insert(\%pstate);
 	my $peer_label = $entity ? $entity->name : $peer->address;
 	$logger->info(sprintf("%s: Inserted new Peering with: %s. ", $host, $peer_label));
