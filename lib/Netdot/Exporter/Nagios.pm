@@ -42,7 +42,7 @@ sub new{
     foreach my $key ( qw /NMS_DEVICE NAGIOS_CHECKS NAGIOS_TIMEPERIODS NAGIOS_DIR 
                           NAGIOS_FILE NAGIOS_NOTIF_FIRST NAGIOS_NOTIF_LAST 
                           NAGIOS_NOTIF_INTERVAL NAGIOS_TRAPS NAGIOS_STRIP_DOMAIN
-                          NAGIOS_GROUP_BY/ ){
+                          NAGIOS_GROUP_BY NAGIOS_TEMPLATES/ ){
 	$self->{$key} = Netdot->config->get($key);
     }
      
@@ -392,6 +392,10 @@ sub print_host {
     my @cls       = @{ $argv{contactlists} } if $argv{contactlists};
     my $out       = $self->{out};
 
+    my $generic_host = $self->{NAGIOS_TEMPLATES}->{generic_host};
+    my $generic_trap = $self->{NAGIOS_TEMPLATES}->{generic_trap};
+    my $generic_ping = $self->{NAGIOS_TEMPLATES}->{generic_ping};
+
     my $contactlists = $self->{contactlists};
     my %levels;
     if ( @cls ) {
@@ -421,7 +425,7 @@ sub print_host {
 	    
 	    if ( $first ){
 		print $out "define host{\n";
-		print $out "\tuse                    generic-host\n";
+		print $out "\tuse                    $generic_host\n";
 		print $out "\thost_name              $name\n";
 		print $out "\talias                  $group\n";
 		print $out "\taddress                $ip\n";
@@ -430,7 +434,7 @@ sub print_host {
 		print $out "}\n\n";
 		if ( $self->{NAGIOS_TRAPS} ){
 		    print $out "define service{\n";
-		    print $out "\tuse                     generic-trap\n";
+		    print $out "\tuse                     $generic_trap\n";
 		    print $out "\thost_name               $name\n";
 		    print $out "\tcontact_groups          $contact_groups\n";
 		    print $out "}\n\n";
@@ -464,7 +468,7 @@ sub print_host {
     }
     if ( !@cls || !keys %levels ){
 	print $out "define host{\n";
-	print $out "\tuse                    generic-host\n";
+	print $out "\tuse                    $generic_host\n";
 	print $out "\thost_name              $name\n";
 	print $out "\talias                  $group\n";
 	print $out "\taddress                $ip\n";
@@ -475,7 +479,7 @@ sub print_host {
 	if ( $self->{NAGIOS_TRAPS} ){
 	    # Define a TRAP service for every host
 	    print $out "define service{\n";
-	    print $out "\tuse                     generic-trap\n";
+	    print $out "\tuse                     $generic_trap\n";
 	    print $out "\thost_name               $name\n";
 	    print $out "\tcontact_groups          nobody\n";
 	    print $out "}\n\n";
@@ -484,7 +488,7 @@ sub print_host {
     
     # Add ping service for every host
     print $out "define service{\n";
-    print $out "\tuse                    generic-ping\n";
+    print $out "\tuse                    $generic_ping\n";
     print $out "\thost_name              $name\n";
     print $out "}\n\n";
 
@@ -512,6 +516,7 @@ sub print_service {
     my @cls = @{ $argv{contactlists} } if $argv{contactlists};
     my $out = $self->{out};
     my $contactlists = $self->{contactlists};
+    my $generic_service = $self->{NAGIOS_TEMPLATES}->{generic_service};
 
     
     if ( $srvname eq "BGPPEER" || $srvname eq "IFSTATUS" ){
@@ -566,7 +571,7 @@ sub print_service {
 	    
 	    if ( $first ){
 		print $out "define service{\n";
-		print $out "\tuse                   generic-service\n";
+		print $out "\tuse                   $generic_service\n";
 		print $out "\thost_name             $hostname\n";
 		print $out "\tservice_description   $srvname\n";
 		print $out "\tcontact_groups        $contact_groups\n";
@@ -591,7 +596,7 @@ sub print_service {
     }
     if ( ! @cls || ! keys %levels ){
 	print $out "define service{\n";
-	print $out "\tuse                  generic-service\n";
+	print $out "\tuse                  $generic_service\n";
 	print $out "\thost_name            $hostname\n";
 	print $out "\tservice_description  $srvname\n";
 	print $out "\tcontact_groups       nobody\n";
@@ -616,8 +621,9 @@ sub print_service {
 sub print_contacts {
     my($self) = @_;
     my $out = $self->{out};
-    my $contacts     = $self->{contacts};
-    my $contactlists = $self->{contactlists};
+    my $contacts        = $self->{contacts};
+    my $contactlists    = $self->{contactlists};
+    my $generic_contact = $self->{NAGIOS_TEMPLATES}->{generic_contact};
 
     # Create the contact templates (with a person's common info)
     # A person might be a contact for several groups/events
@@ -625,7 +631,7 @@ sub print_contacts {
     foreach my $name ( keys %$contacts ){
 	print $out "define contact{\n";
 	print $out "\tname                            $name\n";
-	print $out "\tuse                             generic-contact\n";
+	print $out "\tuse                             $generic_contact\n";
 	print $out "\talias                           $name\n";
 	print $out "\temail                           ".$contacts->{$name}->{email}."\n" if $contacts->{$name}->{email};
 	print $out "\tpager                           ".$contacts->{$name}->{pager}."\n" if $contacts->{$name}->{pager};
