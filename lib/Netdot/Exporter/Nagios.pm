@@ -41,7 +41,8 @@ sub new{
 
     foreach my $key ( qw /NMS_DEVICE NAGIOS_CHECKS NAGIOS_TIMEPERIODS NAGIOS_DIR 
                           NAGIOS_FILE NAGIOS_NOTIF_FIRST NAGIOS_NOTIF_LAST 
-                          NAGIOS_NOTIF_INTERVAL NAGIOS_TRAPS NAGIOS_STRIP_DOMAIN/ ){
+                          NAGIOS_NOTIF_INTERVAL NAGIOS_TRAPS NAGIOS_STRIP_DOMAIN
+                          NAGIOS_GROUP_BY/ ){
 	$self->{$key} = Netdot->config->get($key);
     }
      
@@ -204,15 +205,22 @@ sub generate_configs {
 
   	# Determine the group name
  	my $group;
-	if ( my $subnet = $device_info->{$devid}->{subnet} ){
-	    $group = $subnet_info{$subnet}->{entity} || 
-		$subnet_info{$subnet}->{description};
-	}
-	unless ( $group ){ 
-	    if ( my $entity = $device_info->{$devid}->{used_by} ){
-		$group = $entity;
+	if ( $self->{NAGIOS_GROUP_BY} eq 'entity' ){
+	    if ( my $subnet = $device_info->{$devid}->{subnet} ){
+		$group = $subnet_info{$subnet}->{entity} || 
+		    $subnet_info{$subnet}->{description};
+	    }
+	    unless ( $group ){ 
+		if ( my $entity = $device_info->{$devid}->{used_by} ){
+		    $group = $entity;
+		}
+	    }
+	}if ( $self->{NAGIOS_GROUP_BY} eq 'site' ){
+	    if ( my $site = $device_info->{$devid}->{site} ){
+		$group = $site;
 	    }
 	}
+
  	unless ( $group ){
  	    $logger->warn("Device $hostname in unknown group");
  	    $group = "Unknown";

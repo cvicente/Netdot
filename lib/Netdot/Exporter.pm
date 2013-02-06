@@ -84,13 +84,14 @@ sub get_device_info {
     $logger->debug("Netdot::Exporter::get_device_info: querying database");
     my $rows = $self->{_dbh}->selectall_arrayref("
                 SELECT    d.id, d.snmp_managed, d.community,
-                          d.down_from, d.down_until, entity.name, contactlist.id,
+                          d.down_from, d.down_until, entity.name, site.name, contactlist.id,
                           target.id, target.address, target.version, target.parent, rr.name, zone.name,
                           i.id, i.number, i.name, i.admin_status, i.monitored, i.contactlist,
                           bgppeering.bgppeeraddr, bgppeering.monitored
                 FROM      rr, zone, interface i, device d
                 LEFT JOIN ipblock target ON d.snmp_target=target.id
                 LEFT JOIN entity ON d.used_by=entity.id
+                LEFT JOIN site ON d.site=site.id
                 LEFT JOIN devicecontacts ON d.id=devicecontacts.device
                 LEFT JOIN contactlist ON contactlist.id=devicecontacts.contactlist
                 LEFT JOIN bgppeering ON d.id=bgppeering.device
@@ -103,7 +104,7 @@ sub get_device_info {
     $logger->debug("Netdot::Exporter::get_device_info: building data structure");
     foreach my $row ( @$rows ){
 	my ($devid, $devsnmp, $community, 
-	    $down_from, $down_until, $entity, $clid,
+	    $down_from, $down_until, $entity, $site, $clid,
 	    $target_id, $target_addr, $target_version, $subnet, $name, $zone, 
 	    $intid, $intnumber, $intname, $intadmin, $intmon, $intcl,
 	    $peeraddr, $peermon) = @$row;
@@ -118,6 +119,7 @@ sub get_device_info {
 	$device_info{$devid}{down_from}    = $down_from;
 	$device_info{$devid}{down_until}   = $down_until;
 	$device_info{$devid}{used_by}      = $entity if defined $entity;
+	$device_info{$devid}{site}         = $site if defined $site;
 	$device_info{$devid}{contactlist}{$clid} = 1 if defined $clid;
 	$device_info{$devid}{peering}{$peeraddr}{monitored}  = $peermon if defined $peeraddr;
 	$device_info{$devid}{interface}{$intid}{number}      = $intnumber;
