@@ -87,7 +87,7 @@ sub get_device_info {
                           d.down_from, d.down_until, entity.name, entity.aliases,
                           site.name, site.number, site.aliases, contactlist.id,
                           target.id, target.address, target.version, target.parent, rr.name, zone.name,
-                          i.id, i.number, i.name, i.admin_status, i.monitored, i.contactlist,
+                          i.id, i.number, i.name, i.description, i.admin_status, i.monitored, i.contactlist,
                           bgppeering.bgppeeraddr, bgppeering.monitored
                 FROM      rr, zone, interface i, device d
                 LEFT JOIN ipblock target ON d.snmp_target=target.id
@@ -108,7 +108,7 @@ sub get_device_info {
 	    $down_from, $down_until, $entity_name, $entity_alias, 
 	    $site_name, $site_number, $site_alias, $clid,
 	    $target_id, $target_addr, $target_version, $subnet, $name, $zone, 
-	    $intid, $intnumber, $intname, $intadmin, $intmon, $intcl,
+	    $intid, $intnumber, $intname, $intdesc, $intadmin, $intmon, $intcl,
 	    $peeraddr, $peermon) = @$row;
 	my $hostname = ($name eq '@')? $zone : $name.'.'.$zone;
 	$device_info{$devid}{ipid}         = $target_id;
@@ -129,6 +129,7 @@ sub get_device_info {
 	$device_info{$devid}{peering}{$peeraddr}{monitored}  = $peermon if defined $peeraddr;
 	$device_info{$devid}{interface}{$intid}{number}      = $intnumber;
 	$device_info{$devid}{interface}{$intid}{name}        = $intname;
+	$device_info{$devid}{interface}{$intid}{description} = $intdesc;
 	$device_info{$devid}{interface}{$intid}{admin}       = $intadmin;
 	$device_info{$devid}{interface}{$intid}{monitored}   = $intmon;
 	$device_info{$devid}{interface}{$intid}{contactlist} = $intcl;

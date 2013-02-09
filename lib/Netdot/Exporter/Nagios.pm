@@ -331,9 +331,10 @@ sub generate_configs {
 			$logger->warn("$hostname: interface $ifid: IFSTATUS check requires ifindex");
 			return;
 		    }
-		    $args{ifindex}   = $iface->{number};
-		    $args{name}      = $iface->{name} if $iface->{name};
-		    $args{community} = $device_info->{$devid}->{community};
+		    $args{ifindex}     = $iface->{number};
+		    $args{name}        = $iface->{name} if $iface->{name};
+		    $args{description} = $iface->{description} if $iface->{description};
+		    $args{community}   = $device_info->{$devid}->{community};
 
 		    # If interface has a contactlist, use that, otherwise use Device contactlists
 		    my @cls;
@@ -518,6 +519,7 @@ sub print_host {
 sub print_service {
     my ($self, %argv) = @_;
     my ($hostname, $srvname) = @argv{'hostname', 'srvname'};
+    my $displayname;
 
     my $checkcmd;
     unless ( $checkcmd = $self->{NAGIOS_CHECKS}{$srvname} ){
@@ -544,8 +546,9 @@ sub print_service {
     if ( $srvname eq "IFSTATUS" ){
 	my $ifindex = $argv{ifindex};
 	$srvname  .= "_$ifindex"; # Make the service name unique
-	$srvname  .= '_('.$argv{name}.')' if defined $argv{name};
 	$checkcmd .= "!$ifindex"; # Pass the argument to the check command
+	$displayname = $argv{name} || $srvname;
+	$displayname .= " (" . $argv{description} . ")" if $argv{description};
     }
 
     if ( $srvname eq "BGPPEER" ){
@@ -581,12 +584,14 @@ sub print_service {
 		}
 	    }
 	    my $contact_groups = join ',', @contact_groups;
+	    $displayname ||= $srvname;
 	    
 	    if ( $first ){
 		print $out "define service{\n";
 		print $out "\tuse                   $generic_service\n";
 		print $out "\thost_name             $hostname\n";
 		print $out "\tservice_description   $srvname\n";
+		print $out "\tdisplay_name          $displayname\n";
 		print $out "\tcontact_groups        $contact_groups\n";
 		print $out "\tcheck_command         $checkcmd\n";
 		print $out "}\n\n";
@@ -596,6 +601,7 @@ sub print_service {
 		print $out "define serviceescalation{\n";
 		print $out "\thost_name                $hostname\n";
 		print $out "\tservice_description      $srvname\n";
+		print $out "\tdisplay_name             $displayname\n";
 		print $out "\tfirst_notification       $fn\n";
 		print $out "\tlast_notification        $ln\n";
 		print $out "\tnotification_interval    ".$self->{NAGIOS_NOTIF_INTERVAL}."\n";
