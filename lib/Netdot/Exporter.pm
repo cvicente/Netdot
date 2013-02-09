@@ -84,7 +84,8 @@ sub get_device_info {
     $logger->debug("Netdot::Exporter::get_device_info: querying database");
     my $rows = $self->{_dbh}->selectall_arrayref("
                 SELECT    d.id, d.snmp_managed, d.community,
-                          d.down_from, d.down_until, entity.name, site.name, contactlist.id,
+                          d.down_from, d.down_until, entity.name, entity.aliases,
+                          site.name, site.number, site.aliases, contactlist.id,
                           target.id, target.address, target.version, target.parent, rr.name, zone.name,
                           i.id, i.number, i.name, i.admin_status, i.monitored, i.contactlist,
                           bgppeering.bgppeeraddr, bgppeering.monitored
@@ -104,7 +105,8 @@ sub get_device_info {
     $logger->debug("Netdot::Exporter::get_device_info: building data structure");
     foreach my $row ( @$rows ){
 	my ($devid, $devsnmp, $community, 
-	    $down_from, $down_until, $entity, $site, $clid,
+	    $down_from, $down_until, $entity_name, $entity_alias, 
+	    $site_name, $site_number, $site_alias, $clid,
 	    $target_id, $target_addr, $target_version, $subnet, $name, $zone, 
 	    $intid, $intnumber, $intname, $intadmin, $intmon, $intcl,
 	    $peeraddr, $peermon) = @$row;
@@ -118,8 +120,11 @@ sub get_device_info {
 	$device_info{$devid}{snmp_managed} = $community;
 	$device_info{$devid}{down_from}    = $down_from;
 	$device_info{$devid}{down_until}   = $down_until;
-	$device_info{$devid}{used_by}      = $entity if defined $entity;
-	$device_info{$devid}{site}         = $site if defined $site;
+	$device_info{$devid}{usedby_entity_name}  = $entity_name if defined $entity_name;
+	$device_info{$devid}{usedby_entity_alias} = $entity_alias if defined $entity_alias;
+	$device_info{$devid}{site_name}   = $site_name    if defined $site_name;
+	$device_info{$devid}{site_number} = $site_number  if defined $site_number;
+	$device_info{$devid}{site_alias}  = $site_alias if defined $site_alias;
 	$device_info{$devid}{contactlist}{$clid} = 1 if defined $clid;
 	$device_info{$devid}{peering}{$peeraddr}{monitored}  = $peermon if defined $peeraddr;
 	$device_info{$devid}{interface}{$intid}{number}      = $intnumber;

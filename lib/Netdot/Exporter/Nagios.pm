@@ -42,7 +42,8 @@ sub new{
     foreach my $key ( qw /NMS_DEVICE NAGIOS_CHECKS NAGIOS_TIMEPERIODS NAGIOS_DIR 
                           NAGIOS_FILE NAGIOS_NOTIF_FIRST NAGIOS_NOTIF_LAST 
                           NAGIOS_NOTIF_INTERVAL NAGIOS_TRAPS NAGIOS_STRIP_DOMAIN
-                          NAGIOS_GROUP_BY NAGIOS_TEMPLATES/ ){
+                          NAGIOS_TEMPLATES NAGIOS_HOSTGROUP_NAME_FIELD 
+                          NAGIOS_HOSTGROUP_ALIAS_FIELD/ ){
 	$self->{$key} = Netdot->config->get($key);
     }
      
@@ -88,15 +89,16 @@ sub generate_configs {
     # Get Subnet info
     my %subnet_info;
     my $subnetq = $self->{_dbh}->selectall_arrayref("
-                  SELECT    ipblock.id, ipblock.description, entity.name
+                  SELECT    ipblock.id, ipblock.description, entity.name, entity.aliases
                   FROM      ipblockstatus, ipblock
                   LEFT JOIN entity ON (ipblock.used_by=entity.id)
                   WHERE     ipblock.status=ipblockstatus.id 
                         AND (ipblockstatus.name='Subnet' OR ipblockstatus.name='Container')
                  ");
     foreach my $row ( @$subnetq ){
-	my ($id, $descr, $entity) = @$row;
-	$subnet_info{$id}{entity}      = $entity if defined $entity;
+	my ($id, $descr, $entity_name, $entity_alias) = @$row;
+	$subnet_info{$id}{entity_name} = $entity_name if defined $entity_name;
+	$subnet_info{$id}{entity_alias} = $entity_alias if defined $entity_alias;
 	$subnet_info{$id}{description} = $descr;
     }
 
@@ -203,34 +205,45 @@ sub generate_configs {
 	    next;
 	}
 
-  	# Determine the group name
- 	my $group;
-	if ( $self->{NAGIOS_GROUP_BY} eq 'entity' ){
-	    if ( my $subnet = $device_info->{$devid}->{subnet} ){
-		$group = $subnet_info{$subnet}->{entity} || 
-		    $subnet_info{$subnet}->{description};
-	    }
-	    unless ( $group ){ 
-		if ( my $entity = $device_info->{$devid}->{used_by} ){
-		    $group = $entity;
-		}
-	    }
-	}if ( $self->{NAGIOS_GROUP_BY} eq 'site' ){
-	    if ( my $site = $device_info->{$devid}->{site} ){
-		$group = $site;
-	    }
-	}
+  	# Determine the hostgroup name and alias
+ 	my $group_name;
+	my $group_alias;
 
- 	unless ( $group ){
+	my $name_field  = $self->{NAGIOS_HOSTGROUP_NAME_FIELD};
+	my $alias_field = $self->{NAGIOS_HOSTGROUP_ALIAS_FIELD};
+
+	if ( $name_field =~ /^subnet_/o ){
+	    my $nf = $name_field;
+	    $nf =~ s/^subnet_//;
+	    if ( my $subnet = $device_info->{$devid}->{subnet} ){
+		$group_name = $subnet_info{$subnet}->{$nf};
+	    }
+	}else {
+	    $group_name = $device_info->{$devid}->{$name_field};
+	}
+	if ( $alias_field =~ /^subnet_/o ){
+	    my $af = $alias_field;
+	    $af =~ s/^subnet_//;
+	    if ( my $subnet = $device_info->{$devid}->{subnet} ){
+		$group_alias = $subnet_info{$subnet}->{$af};
+	    }
+	}else {
+	    $group_alias = $device_info->{$devid}->{$alias_field};
+	}
+ 	unless ( $group_name ){
  	    $logger->warn("Device $hostname in unknown group");
- 	    $group = "Unknown";
+ 	    $group_name  = "Unknown";
+ 	    $group_alias = "Unknown";
  	}
+
  	# Remove illegal chars
- 	$group =~ s/[\(\),]//g;  
- 	$group =~ s/^\s*(.)\s*$/$1/;
- 	$group =~ s/[\/\s]/_/g;  
- 	$group =~ s/&/and/g;     
- 	$hostargs{group} = $group;
+ 	$group_name =~ s/[\(\),]//g;  
+ 	$group_name =~ s/^\s*(.)\s*$/$1/;
+ 	$group_name =~ s/[\/\s]/_/g;  
+ 	$group_name =~ s/&/and/g;
+	
+	$groups{$group_name}{alias} = $group_alias;
+ 	$hostargs{group} = $group_name;
 
 	# Contact Lists
 	my @clids;
@@ -257,7 +270,7 @@ sub generate_configs {
 	    $hostargs{parents} = join ',', @parent_names;    
 	}
 
-	push @{ $groups{$group}{members} }, $hostargs{name};
+	push @{ $groups{$group_name}{members} }, $hostargs{name};
 	$self->print_host(%hostargs);
 
  	# Add monitored services on the target IP
@@ -712,10 +725,11 @@ sub print_hostgroups{
 
     my $out = $self->{out};
     foreach my $group ( keys %$groups ){
+	my $alias = $groups->{$group}->{alias} || $group;
 	my $hostlist = join ',', @{ $groups->{$group}->{members} };
 	print $out "define hostgroup{\n";
 	print $out "\thostgroup_name      $group\n";
-	print $out "\talias               $group\n";
+	print $out "\talias               $alias\n";
 	print $out "\tmembers             $hostlist\n";
 	print $out "}\n\n";
     }
