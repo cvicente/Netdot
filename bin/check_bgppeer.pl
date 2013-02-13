@@ -2,7 +2,7 @@
 #
 # check_bgppeer.pl - nagios plugin 
 #
-# Copyright (C) 2009 Carlos Vicente
+# Copyright (C) 2013 Carlos Vicente
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -24,7 +24,7 @@
 #
 # 08/05/2009 Version 1.1
 # 09/29/2011 Version 1.2 - Fixed incorrect return values
-#
+# 09/29/2011 Version 1.3 - Use radb.net as whois server
 
 use SNMP;
 use strict;
@@ -32,8 +32,8 @@ use Getopt::Long qw(:config no_ignore_case bundling);
 
 # whois program for Registry database queries
 my $whois      = '/usr/bin/whois';
-my $whoissrv   = 'whois.arin.net';
-my $whoisfield = "ASName";
+my $whoissrv   = 'whois.radb.net';
+my $whoisfield = "as-name";
 my $TIMEOUT    = 30;
 my %self;
 
@@ -62,7 +62,7 @@ my $usage = <<EOF;
   Perl BGP peer check plugin for Nagios
   Monitors BGP session of a particular peer
 
-  Copyright (C) 2009 Carlos Vicente
+  Copyright (C) 2013 Carlos Vicente
   $0 comes with ABSOLUTELY NO WARRANTY
   This programm is licensed under the terms of the
   GNU General Public License\n(check source code for details)
