@@ -215,7 +215,8 @@ sub handle_resource {
 	    }
 	}
     }else{
-	$self->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, msg=>'Netdot::REST::handle_resource: Bad request'); 
+	$self->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
+		     msg=>'Netdot::REST::handle_resource: Bad request'); 
     }
 }
 
@@ -340,19 +341,27 @@ sub post{
     my ($self, %argv) = @_;
     $self->isa_object_method('post');
     
-    unless ( $argv{obj} || ($argv{table} && $argv{id}) ){
-	$self->throw_fatal("Missing required arguments");
+    my ($obj, $table);
+    if ( $argv{obj} ){
+	$obj = $argv{obj} 
+    }elsif ( $table = $argv{table} ){
+	if ( $argv{id} ){
+	    $obj = $table->retrieve($argv{id});	    
+	    unless ( $obj ) {
+		my $msg = sprintf("Netdot::REST::post: %s/%s not found", $argv{table}, $argv{id});
+		$self->throw(code=>Apache2::Const::NOT_FOUND, msg=>$msg); 
+	    }
+	}
+    }else{
+	$self->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
+		     msg=>'Netdot::REST::post: Problem with arguments.');
     }
-   
-    my $obj = $argv{obj} || $argv{table}->retrieve($argv{id});
-    unless ( $obj ) {
-	my $msg = sprintf("Netdot::REST::post: %s/%s not found", $argv{table}, $argv{id});
-	$self->throw(code=>Apache2::Const::NOT_FOUND, msg=>$msg); 
-    }
+    
     # These are not part of the data. Remove them.
     foreach my $f ( qw/obj table id/ ){
 	delete $argv{$f};
     }
+
     if ( $obj ){
 	# We are updating an existing object
 	# Only admins can edit things this way
@@ -367,18 +376,18 @@ sub post{
 	};
 	if ( my $e = $@ ){
 	    $self->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
-			 msg=>'Netdot::REST::post: Bad request: $e');
+			 msg=>"Netdot::REST::post: Bad request: $e");
 	}
 	return $self->get(obj=>$obj);
     }else{
 	# We are inserting a new object
 	my $obj;
 	eval {
-	    $obj = $argv{table}->insert(\%argv);
+	    $obj = $table->insert(\%argv);
 	};
 	if ( my $e = $@ ){
 	    $self->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
-			 msg=>'Netdot::REST::post: Bad request: $e');
+			 msg=>"Netdot::REST::post: Bad request: $e");
 	}
 	return $self->get(obj=>$obj);
     }
