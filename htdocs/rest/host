@@ -175,7 +175,7 @@ if ( $rest->{request}->method eq 'GET' ){
 	my %args; # For update method
 	# These are the only records we allow changing
 	foreach my $rarg ( qw/name expiration info/ ){
-	    $args{$rarg} = $ARGS{$rarg};
+	    $args{$rarg} = $ARGS{$rarg} if ( defined $ARGS{$rarg} );
 	}
 
 	# Hostname validation
