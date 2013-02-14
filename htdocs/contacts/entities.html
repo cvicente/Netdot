@@ -175,6 +175,7 @@ if ( $_action eq "SEARCH" && $submit ){
 	my %idx;
         map { $idx{$_->id} = $_ } Entity->search_like(name       => $search);
         map { $idx{$_->id} = $_ } Entity->search_like(short_name => $search);
+        map { $idx{$_->id} = $_ } Entity->search_like(acctnumber => $search);
         # deeper search, within entitysite
 	my @sites = Site->search_like(name => $search);
 	foreach my $s ( @sites ) {
