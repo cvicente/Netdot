@@ -118,7 +118,8 @@ if ( $ENTITY || $NEIG || $SITE || $NEW ){
 	$output .= sprintf("\nThe following devices have no neighbors:\n");
 	map { $output .= sprintf(" %s\n", $_->fqdn) } @orphans;
     }
-}elsif ( $DUPLEX ){
+}
+if ( $DUPLEX ){
     my $list = Interface->find_duplex_mismatches();
     if ( scalar @$list ){
 	$output .= sprintf("\nThe following Interfaces have duplex/speed mismatch:\n");
