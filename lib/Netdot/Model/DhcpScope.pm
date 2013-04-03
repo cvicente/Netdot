@@ -722,8 +722,9 @@ sub _print {
     
     # Print free-form text
     if ( $data->{$id}->{text} ){
-	chomp $data->{$id}->{text};
-	print $fh $indent.$data->{$id}->{text}, "\n" ;
+ 	chomp (my $text = $data->{$id}->{text});
+ 	$text =~ s/\n/\n$indent/g  ;
+ 	print $fh $indent.$text, "\n" ;
     }
     
     # Print attributes
