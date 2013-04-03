@@ -2620,7 +2620,6 @@ sub update_bgp_peering {
 	$logger->warn( sprintf("%s: Missing peer info. Cannot associate peering %s with an entity", 
 			       $host, $peer->{address}) );
     }
-    $entity ||= 0;
     
     # Create a hash with the peering's info for update or insert
     my %pstate = (device      => $self,
