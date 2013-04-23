@@ -60,7 +60,7 @@ sub generate_configs {
     my ($self) = @_;
 
     my $query = $self->{_dbh}->selectall_arrayref("
-                SELECT     rr.name, zone.name, p.name, e.name,
+                SELECT     d.id, rr.name, zone.name, p.name, e.name,
                            d.monitored, t.name, d.down_from, d.down_until
                  FROM      device d, rr, zone, product p, entity e, asset a,
                            producttype t, ipblock i
@@ -74,7 +74,7 @@ sub generate_configs {
     
     my %types;
     foreach my $row ( @$query ){
-	my ($rrname, $zone, $product, $vendor,
+	my ($devid, $rrname, $zone, $product, $vendor,
 	    $monitor, $type, $down_from, $down_until) = @$row;  
 
 	my $name = $rrname . "." . $zone;
@@ -92,16 +92,8 @@ sub generate_configs {
 	}
 
         # Check maintenance dates to see if this device should be excluded
-	if ( $down_from && $down_until && 
-	     $down_from ne '0000-00-00' && $down_until ne '0000-00-00' ){
-	    my $time1 = Netdot::Model->sqldate2time($down_from);
-	    my $time2 = Netdot::Model->sqldate2time($down_until);
-	    my $now = time;
-	    if ( $time1 < $now && $now < $time2 ){
-		$logger->debug("Netdot::Exporter::Smokeping::generate_configs: $name in down time.");
-		next;
-	    }
-	}
+	next if $self->in_downtime($devid);
+
         $types{$type}{$name}{rrname} = $rrname;
     }
 
