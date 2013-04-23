@@ -180,6 +180,7 @@ sub upg_104_105 {
 	push @statements, "ALTER TABLE device_history ADD COLUMN power_outlet_2 varchar(255);";
 
 	push @statements, "ALTER TABLE ipblock ADD COLUMN monitored bool NOT NULL;";
+	push @statements, "ALTER TABLE ipblock ADD COLUMN rir varchar(255);";
 
     }elsif ( $dbms eq 'Pg' ){
 
@@ -194,6 +195,7 @@ sub upg_104_105 {
 	push @statements, "ALTER TABLE device_history ADD COLUMN power_outlet_2 character varying(255);";
 
 	push @statements, "ALTER TABLE ipblock ADD COLUMN monitored bool NOT NULL;";
+	push @statements, "ALTER TABLE ipblock ADD COLUMN rir character varying(255);";
     }
     
     push @statements, "UPDATE schemainfo SET version='1.0.5' WHERE id=1;";

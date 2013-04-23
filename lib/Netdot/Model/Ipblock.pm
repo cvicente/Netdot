@@ -3076,6 +3076,14 @@ sub _validate {
 	    $self->throw_user($self->get_label.": The monitored flag is only for addresses.");
 	}	
     }
+
+    if ( my $rir = $args->{rir} ){
+	my $re = $self->config->get('VALID_RIR_REGEX');
+	unless ( $rir =~ /$re/ ){
+	    $self->throw_user("Invalid RIR: $rir");
+	}
+    }
+
     return 1;
 }
 
