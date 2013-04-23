@@ -516,9 +516,20 @@ sub add_host {
     my $zone = Zone->objectify($argv{zone});
     $class->throw_user("Invalid zone: $argv{zone}") 
 	unless $zone;
-
+    
     if ( my $h = RR->search(name=>$argv{name}, zone=>$zone)->first ){
-	$class->throw_user($h->get_label." is already taken");
+	my $v4version = 0;
+	my $v6version = 0;
+	foreach my $ar ( $h->a_records ) {
+	    if ( $ar->ipblock->version == 4 ) {
+		$v4version = 1;
+	    }elsif ( $ar->ipblock->version == 6 ) {
+		$v6version = 1;
+	    }
+	}
+	if ( $v4version && $v6version ) {
+	    $class->throw_user($h->get_label." is already taken");
+	}    
     }
 
     # We want this to be atomic
