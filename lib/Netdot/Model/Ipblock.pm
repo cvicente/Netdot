@@ -546,13 +546,13 @@ sub is_multicast{
     my ($netaddr, $version);
     if ( ref($self) ){
 	# Called as object method
-	$netaddr = $self->_netaddr;
+	$netaddr = $self->netaddr;
 	$version = $self->version;
     }else{
 	# Called as class method
 	$self->throw_fatal("Missing required arguments when called as class method: address")
 	    unless ( defined $address );
-	if ( !($netaddr = NetAddr::IP->new($address, $prefix))){
+	if ( !($netaddr = Ipblock->netaddr($address, $prefix))){
 	    my $str = ( $address && $prefix ) ? (join '/', $address, $prefix) : $address;
 	    $self->throw_user("Invalid IP: $str");
 	}
