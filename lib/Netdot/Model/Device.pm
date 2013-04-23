@@ -2655,7 +2655,10 @@ sub update_bgp_peering {
 	    $pstate{monitored} = 0;
 	}
 	$p = BGPPeering->insert(\%pstate);
-	my $peer_label = $entity ? $entity->name : $peer->address;
+	my $peer_label;
+	$peer_label = $entity->name  if ($entity && ref($entity)) ;
+	$peer_label = $peer->{address} if ($peer && ref($peer));
+	$peer_label ||= "n\a";
 	$logger->info(sprintf("%s: Inserted new Peering with: %s. ", $host, $peer_label));
     }
     return $p;
