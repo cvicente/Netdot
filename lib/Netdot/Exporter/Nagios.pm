@@ -170,9 +170,7 @@ sub generate_configs {
     my $iface_graph    = $self->get_interface_graph();
     
     ######################################################################################
-    foreach my $devid ( sort { $device_info->{$a}->{hostname} 
-			       cmp $device_info->{$b}->{hostname} 
-			} keys %$device_info ){
+    foreach my $devid ( sort keys %$device_info ){
 
 	# We already search for monitored devices only in get_device_info()
 	# Is it within downtime period?
@@ -195,8 +193,8 @@ sub generate_configs {
 	$hostnames{$hosts{$ip}{name}} = 1;
 
   	# Determine the hostgroup name and alias
- 	my $group_name  = "Unknown";
-	my $group_alias = "Unknown";
+ 	my $group_name;
+	my $group_alias;
 
 	my $name_field  = $self->{NAGIOS_HOSTGROUP_NAME_FIELD};
 	my $alias_field = $self->{NAGIOS_HOSTGROUP_ALIAS_FIELD};
@@ -220,12 +218,11 @@ sub generate_configs {
 	    $group_alias = $devh->{$alias_field};
 	}
 
- 	# Remove illegal chars
- 	$group_name =~ s/[\(\),]//g;  
- 	$group_name =~ s/^\s*(.*)\s*$/$1/;
- 	$group_name =~ s/[\/\s]/_/g;  
- 	$group_name =~ s/&/and/g;
+ 	$group_name  ||= "Unknown";
+	$group_alias ||= "Unknown";
 
+ 	# Remove illegal chars
+	$group_name = $self->_rem_illegal_chars($group_name);
 	$groups{$group_name}{alias} = $group_alias;
 
 	# Contact Lists
@@ -276,14 +273,18 @@ sub generate_configs {
 			$logger->warn("$hostname: interface $intid: IFSTATUS check requires ifindex");
 			return;
 		    }
-		    my $srvname = "IFSTATUS_".$iface->{number}; # Make the service name unique
+		    my $srvname = "IFSTATUS_".$iface->{number};
+		    $srvname .= "_".$iface->{name} if defined $iface->{name};
+		    $srvname = $self->_rem_illegal_chars($srvname);
 		    $hosts{$ip}{service}{$srvname}{type}        = 'IFSTATUS';
 		    $hosts{$ip}{service}{$srvname}{hostname}    = $hosts{$ip}{name};
 		    $hosts{$ip}{service}{$srvname}{ifindex}     = $iface->{number};
 		    $hosts{$ip}{service}{$srvname}{srvname}     = $srvname;
 		    $hosts{$ip}{service}{$srvname}{name}        = $iface->{name} if $iface->{name};
-		    $hosts{$ip}{service}{$srvname}{description} = $iface->{description} if $iface->{description};
 		    $hosts{$ip}{service}{$srvname}{community}   = $devh->{community};
+		    if ( $iface->{name} && $iface->{description} ){
+			$hosts{$ip}{service}{$srvname}{displayname} = $iface->{name}." (".$iface->{description}.")";
+		    }
 		    
 		    # If interface has a contactlist, use that, otherwise use Device contactlists
 		    my @cls;
@@ -388,7 +389,9 @@ sub generate_configs {
     }
 
     # Print each host and its services together
-    foreach my $i ( sort keys %hosts ){
+    foreach my $i ( sort { $hosts{$a}{name} 
+			   cmp $hosts{$b}{name} 
+		    } keys %hosts ){
 	$self->print_host(\%{$hosts{$i}});
 	foreach my $s ( sort keys %{$hosts{$i}{service}} ){
 	    $self->print_service(\%{$hosts{$i}{service}{$s}});
@@ -535,10 +538,10 @@ sub print_host {
 
 sub print_service {
     my ($self, $argv) = @_;
-    my $hostname = $argv->{hostname};
-    my $srvname  = $argv->{srvname};
-    my $type     = $argv->{type};
-    my $displayname;
+    my $hostname    = $argv->{hostname};
+    my $srvname     = $argv->{srvname};
+    my $type        = $argv->{type};
+    my $displayname = $argv->{displayname} || $srvname;
 
     my $checkcmd;
     unless ( $checkcmd = $self->{NAGIOS_CHECKS}{$type} ){
@@ -565,8 +568,6 @@ sub print_service {
     if ( $srvname =~ /^IFSTATUS/o ){
 	my $ifindex = $argv->{ifindex};
 	$checkcmd .= "!$ifindex"; # Pass the argument to the check command
-	$displayname = $argv->{name} || $srvname;
-	$displayname .= " (" . $argv->{description} . ")" if $argv->{description};
     }
 
     if ( $srvname =~ /^BGPPEER/o ){
@@ -601,7 +602,6 @@ sub print_service {
 		}
 	    }
 	    my $contact_groups = join ',', @contact_groups;
-	    $displayname ||= $srvname;
 	    
 	    if ( $first ){
 		print $out "define service{\n";
@@ -635,6 +635,7 @@ sub print_service {
 	print $out "\tuse                  $generic_service\n";
 	print $out "\thost_name            $hostname\n";
 	print $out "\tservice_description  $srvname\n";
+	print $out "\tdisplay_name         $displayname\n";
 	print $out "\tcontact_groups       nobody\n";
 	print $out "\tcheck_command        $checkcmd\n";
 	print $out "}\n\n";
@@ -905,6 +906,19 @@ sub strip_domain {
 	$hostname =~ s/\.$domain// ;
     }
     return $hostname;
+}
+
+########################################################################
+# Remove illegal chars
+
+sub _rem_illegal_chars {
+    my ($self, $string) = @_;
+    return unless $string;
+    $string =~ s/[\(\),'";]//g;  
+    $string =~ s/^\s*(.*)\s*$/$1/;
+    $string =~ s/[\/\s]/_/g;  
+    $string =~ s/&/and/g;
+    return $string;
 }
 
 =head1 AUTHOR
