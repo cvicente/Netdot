@@ -3070,6 +3070,12 @@ sub _validate {
 	    $self->throw_user($self->get_label.": Available addresses cannot have A records or DHCP scopes");
 	}
     }
+
+    if ( $args->{monitored} ){
+	unless ( $self->is_address($self) ){
+	    $self->throw_user($self->get_label.": The monitored flag is only for addresses.");
+	}	
+    }
     return 1;
 }
 

@@ -987,8 +987,7 @@ if (scalar @$ips){
     @headers = ('<a href="device.html?id='. $id .'&view='. $view .'&ipsort=address">Address</a>',
 		'Subnet',
 		'<a href="device.html?id='. $id .'&view='. $view .'&ipsort=interface">Interface</a>',
-		'DNS Name(s)',
-		'Services',
+		'DNS Name(s)', 'Monitored?', 'Services',
 		);
 
     my $can_edit = ($manager && $manager->can($user, "edit", $o))? 1 : 0;
@@ -1043,6 +1042,10 @@ if (scalar @$ips){
 		      }
 		  }
 		  $a;
+	      }} );
+	push( @row,
+	      &{sub{
+		  $ui->form_field(object=>$ip, table=>"Ipblock", column=>'monitored', edit=>$editips, returnValOnly=>1);
 	      }} );
 	push( @row, 
 	      &{sub{

@@ -2944,6 +2944,7 @@ sub info_update {
 	my $val = $self->_assign_device_monitored($asset->product_id);
 	$devtmp{monitored}    = $val;
 	$devtmp{snmp_polling} = $val;
+	$devtmp{snmp_target}->update({monitored => $val});
     }
 
     ##############################################################

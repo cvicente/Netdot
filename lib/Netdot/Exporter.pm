@@ -83,48 +83,50 @@ sub get_device_info {
     my %device_info;
     $logger->debug("Netdot::Exporter::get_device_info: querying database");
     my $rows = $self->{_dbh}->selectall_arrayref("
-                SELECT    d.id, d.snmp_managed, d.community,
-                          d.down_from, d.down_until, entity.name, entity.aliases,
-                          site.name, site.number, site.aliases, contactlist.id,
-                          target.id, target.address, target.version, target.parent, rr.name, zone.name,
-                          i.id, i.number, i.name, i.description, i.admin_status, i.monitored, i.contactlist,
-                          bgppeering.bgppeeraddr, bgppeering.monitored
-                FROM      rr, zone, interface i, device d
-                LEFT JOIN ipblock target ON d.snmp_target=target.id
-                LEFT JOIN entity ON d.used_by=entity.id
-                LEFT JOIN site ON d.site=site.id
-                LEFT JOIN devicecontacts ON d.id=devicecontacts.device
-                LEFT JOIN contactlist ON contactlist.id=devicecontacts.contactlist
-                LEFT JOIN bgppeering ON d.id=bgppeering.device
-                WHERE     d.monitored='1'
-                     AND  i.device=d.id                  
-                     AND  d.name=rr.id 
-                     AND  rr.zone=zone.id
+          SELECT    d.id, d.snmp_managed, d.community, d.snmp_target,
+                    d.down_from, d.down_until, entity.name, entity.aliases,
+                    site.name, site.number, site.aliases, contactlist.id,
+                    i.id, i.number, i.name, i.description, i.admin_status, i.monitored, i.contactlist,
+                    ip.id, ip.address, ip.version, ip.parent, ip.monitored, rr.name, zone.name,
+                    service.id, service.name, ipservice.monitored, ipservice.contactlist,
+                    bgppeering.bgppeeraddr, bgppeering.monitored
+          FROM      rr, zone, device d
+          LEFT OUTER JOIN bgppeering ON d.id=bgppeering.device
+          LEFT OUTER JOIN devicecontacts ON d.id=devicecontacts.device
+          LEFT OUTER JOIN contactlist ON contactlist.id=devicecontacts.contactlist
+          LEFT OUTER JOIN entity ON d.used_by=entity.id
+          LEFT OUTER JOIN site ON d.site=site.id,
+                    interface i 
+          LEFT OUTER JOIN ipblock ip ON ip.interface=i.id
+          LEFT OUTER JOIN ipservice ON ipservice.ip=ip.id
+          LEFT OUTER JOIN service ON ipservice.service=service.id
+          WHERE     d.monitored='1'
+               AND  i.device=d.id                  
+               AND  d.name=rr.id 
+               AND  rr.zone=zone.id
          ");
     
     $logger->debug("Netdot::Exporter::get_device_info: building data structure");
     foreach my $row ( @$rows ){
-	my ($devid, $devsnmp, $community, 
+	my ($devid, $dev_snmp, $community, $target_id,
 	    $down_from, $down_until, $entity_name, $entity_alias, 
 	    $site_name, $site_number, $site_alias, $clid,
-	    $target_id, $target_addr, $target_version, $subnet, $name, $zone, 
 	    $intid, $intnumber, $intname, $intdesc, $intadmin, $intmon, $intcl,
+	    $ip_id, $ip_addr, $ip_version, $subnet, $ip_mon, $name, $zone,
+	    $srv_id, $srv_name, $srv_mon, $srv_cl,
 	    $peeraddr, $peermon) = @$row;
 	my $hostname = ($name eq '@')? $zone : $name.'.'.$zone;
-	$device_info{$devid}{ipid}         = $target_id;
-	$device_info{$devid}{ipaddr}       = $target_addr;
-	$device_info{$devid}{ipversion}    = $target_version;
-	$device_info{$devid}{subnet}       = $subnet;
+	$device_info{$devid}{target_id}    = $target_id;
 	$device_info{$devid}{hostname}     = $hostname;
 	$device_info{$devid}{community}    = $community;
-	$device_info{$devid}{snmp_managed} = $community;
+	$device_info{$devid}{snmp_managed} = $dev_snmp;
 	$device_info{$devid}{down_from}    = $down_from;
 	$device_info{$devid}{down_until}   = $down_until;
-	$device_info{$devid}{usedby_entity_name}  = $entity_name if defined $entity_name;
+	$device_info{$devid}{usedby_entity_name}  = $entity_name  if defined $entity_name;
 	$device_info{$devid}{usedby_entity_alias} = $entity_alias if defined $entity_alias;
-	$device_info{$devid}{site_name}   = $site_name    if defined $site_name;
-	$device_info{$devid}{site_number} = $site_number  if defined $site_number;
-	$device_info{$devid}{site_alias}  = $site_alias if defined $site_alias;
+	$device_info{$devid}{site_name}    = $site_name    if defined $site_name;
+	$device_info{$devid}{site_number}  = $site_number  if defined $site_number;
+	$device_info{$devid}{site_alias}   = $site_alias   if defined $site_alias;
 	$device_info{$devid}{contactlist}{$clid} = 1 if defined $clid;
 	$device_info{$devid}{peering}{$peeraddr}{monitored}  = $peermon if defined $peeraddr;
 	$device_info{$devid}{interface}{$intid}{number}      = $intnumber;
@@ -133,8 +135,23 @@ sub get_device_info {
 	$device_info{$devid}{interface}{$intid}{admin}       = $intadmin;
 	$device_info{$devid}{interface}{$intid}{monitored}   = $intmon;
 	$device_info{$devid}{interface}{$intid}{contactlist} = $intcl;
+	if ( defined $ip_id ){
+	    $device_info{$devid}{interface}{$intid}{ip}{$ip_id}{addr}      = $ip_addr;
+	    $device_info{$devid}{interface}{$intid}{ip}{$ip_id}{version}   = $ip_version;
+	    $device_info{$devid}{interface}{$intid}{ip}{$ip_id}{subnet}    = $subnet;
+	    $device_info{$devid}{interface}{$intid}{ip}{$ip_id}{monitored} = $ip_mon;
+	    if ( $ip_id == $target_id ){
+		$device_info{$devid}{target_addr} = $ip_addr;
+		$device_info{$devid}{target_version} = $ip_version;
+	    }
+	    if ( defined $srv_id ){
+		$device_info{$devid}{interface}{$intid}{ip}{$ip_id}{srv}{$srv_id}{name}        = $srv_name;
+		$device_info{$devid}{interface}{$intid}{ip}{$ip_id}{srv}{$srv_id}{monitored}   = $srv_mon;
+		$device_info{$devid}{interface}{$intid}{ip}{$ip_id}{srv}{$srv_id}{contactlist} = $srv_cl;
+	    }
+	}
     }
-
+    
     return $self->cache('exporter_device_info', \%device_info);
 }
 
