@@ -354,6 +354,9 @@ my (@field_headers, @cell_data);
 $ui->add_to_fields(o=>$o, edit=>$editgen, fields=>['name', 'aliases'], field_headers=>\@field_headers, 
 		   cell_data=>\@cell_data, linkpages=>['host.html', '']);
 
+$ui->add_to_fields(o=>$o, edit=>0, fields=>['sysname', 'sysdescription'], field_headers=>\@field_headers, 
+		   cell_data=>\@cell_data);
+
 $ui->add_to_fields(o=>$o, edit=>$editgen, 
 		   fields=>['asset_id',], 
 		   linkpages=>['view.html'],
@@ -469,6 +472,11 @@ my @fields = ('rack');
 $ui->add_to_fields(o=>$o, edit=>$editloc, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
 }
 
+{
+my @fields = ('syslocation');
+$ui->add_to_fields(o=>$o, edit=>0, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
+}
+
 </%perl>
 
     <& /generic/attribute_table.mhtml, width=>"2", field_headers=>\@field_headers, data=>\@cell_data &>
@@ -502,7 +510,8 @@ $ui->add_to_fields(o=>$o, edit=>$editloc, fields=>\@fields, field_headers=>\@fie
 $ui->add_to_fields(o=>$o, edit=>0, fields=>['date_installed', 'last_updated'], field_headers=>\@field_headers, cell_data=>\@cell_data);
 
 {
-    my @fields = ('oobname','oobnumber','monitored', 'monitoring_path_cost', 'customer_managed', 
+    my @fields = ('oobname', 'oobname_2', 'oobnumber', 'oobnumber_2', 'power_outlet', 'power_outlet_2',
+		  'monitored', 'monitoring_path_cost', 'customer_managed', 
 		  'monitor_config', 'monitor_config_group', 'down_from', 'down_until', 
 		  'snmp_managed', 'auto_dns');
     $ui->add_to_fields(o=>$o, edit=>$editmgmt, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
@@ -527,7 +536,7 @@ if ( $o->snmp_managed ){
 		   'collect_arp', 'collect_fwt', 'collect_stp', 'snmp_conn_attempts', 'snmp_down');
     $ui->add_to_fields(o=>$o, edit=>$editmgmt, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
     
-    @fields = ('last_arp', 'last_fwt', 'sysname', 'syslocation', 'sysdescription');
+    @fields = ('last_arp', 'last_fwt');
     $ui->add_to_fields(o=>$o, edit=>0, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
 }
 if ( $o->snmp_version eq "3" ){
