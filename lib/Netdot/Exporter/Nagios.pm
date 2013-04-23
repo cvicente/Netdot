@@ -119,6 +119,7 @@ sub generate_configs {
 	my ($clid, $clname, $contid, $esc_level,
 	    $person_first, $person_last, $email, $pager, 
 	    $email_period, $pager_period) = @$row;
+	$clname =~ s/\s+/_/g;
 	$contact_info{$clid}{name} = $clname;
 	my $contname;
 	$contname = $person_first if defined $person_first;
@@ -155,6 +156,7 @@ sub generate_configs {
 
  	    # Then group by escalation level
  	    my $level = $contact->{esc_level} || 0;
+	    $contactlists{$clid}{name} = $contact_info{$clid}{name};
  	    $contactlists{$clid}{level}{$level}{$contid} = $contact;
 	}
     }
@@ -235,7 +237,6 @@ sub generate_configs {
 		next;
 	    }
 	    $contactlists{$clid}{name} = $contact_info{$clid}{name};
-	    $contactlists{$clid}{name} =~ s/\s+/_/g;
 	    push @clids, $clid;
 	}
 
