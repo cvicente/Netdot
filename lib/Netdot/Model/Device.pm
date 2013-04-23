@@ -1132,10 +1132,16 @@ sub get_snmp_info {
 	if ( $key =~ /^.+\.((?:\d+\.){15}\d+)$/o ) {
 	    $addr = $self->_octet_string_to_v6($1);
 	}
-	if ( $val =~ /^(\d+)\.\d+\.\d+\.([\d\.]+)\.(\d+)$/o ) {
+	if ( $val =~ /^(\d+)\.(\d+)\.\d+\.([\d\.]+)\.(\d+)$/o ) {
 	    # ifIndex, type, size, prefix length
-	    $iid = $1; $len = $3;
-	    $pfx = $self->_octet_string_to_v6($2);
+	    if ( ($1 == 1)  && ($2 > 150000000)) {
+		# It seems that for nexus the ifIndex id is always greater than 150000000
+                $iid=$2;
+            } else {
+                $iid=$1;
+            }
+	    $len = $4;
+	    $pfx = $self->_octet_string_to_v6($3);
 	}
 	if ( $iid && $addr && $pfx && $len ){
 	    next unless (defined $dev{interface}{$iid});
