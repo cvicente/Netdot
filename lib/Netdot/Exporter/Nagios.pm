@@ -304,10 +304,14 @@ sub generate_configs {
 			if ( $nd && $device_parents->{$devid}->{$nd} ){
 			    # Neighbor device is my parent
 			    if ( exists $device_info->{$nd} ){
-				if ( $device_info->{$nd}->{interface}->{$neighbor}->{monitored} ){
+				my $ndh = $device_info->{$nd};
+				if ( $ndh->{interface}->{$neighbor}->{monitored} ){
 				    if ( my $nifindex = $intid2ifindex->{$neighbor} ){
 					$hosts{$ip}{service}{$srvname}{parent_host}    = $self->strip_domain($device_info->{$nd}->{hostname});
-					$hosts{$ip}{service}{$srvname}{parent_service} = "IFSTATUS_$nifindex";
+					my $p_srv = "IFSTATUS_$nifindex";
+					$p_srv .= '_'.$ndh->{interface}->{$neighbor}->{name} if defined $ndh->{interface}->{$neighbor}->{name};
+					$p_srv = $self->_rem_illegal_chars($p_srv);
+					$hosts{$ip}{service}{$srvname}{parent_service} = $p_srv;
 				    }
 				}else{
 				    $hosts{$ip}{service}{$srvname}{parent_host}    = $self->strip_domain($device_info->{$nd}->{hostname});
