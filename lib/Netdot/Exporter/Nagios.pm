@@ -731,7 +731,7 @@ sub print_contacts {
 		}
 	    }
 	    # Create the contactgroup
-	    my $members = join ',', @members;
+	    my $members = join ',', sort @members;
 	    
 	    print $out "define contactgroup{\n";
 	    print $out "\tcontactgroup_name       $clname-level_$level\n";
@@ -757,7 +757,7 @@ sub print_hostgroups{
 	my $alias = $groups->{$group}->{alias} || $group;
 	next unless ( defined $groups->{$group}->{members} && 
 		      ref($groups->{$group}->{members}) eq 'ARRAY' );
-	my $hostlist = join ',', @{ $groups->{$group}->{members} };
+	my $hostlist = join ',', sort @{ $groups->{$group}->{members} };
 	print $out "define hostgroup{\n";
 	print $out "\thostgroup_name      $group\n";
 	print $out "\talias               $alias\n";
@@ -779,7 +779,7 @@ sub print_servicegroups{
     foreach my $group ( keys %$groups ){
 	# servicegroup members are like:
 	# members=<host1>,<service1>,<host2>,<service2>,...,
-	my $hostlist = join ',', map { "$_,$group" }@{ $groups->{$group}{members} };
+	my $hostlist = join ',', sort map { "$_,$group" }@{ $groups->{$group}{members} };
 	print $out "define servicegroup{\n";
 	print $out "\tservicegroup_name      $group\n";
 	print $out "\talias                  $group\n";
