@@ -180,6 +180,7 @@ sub generate_configs {
 	next unless $monitored;
 
 	my $devh = $device_info->{$devid};
+	next unless $devh->{target_addr} && $devh->{target_version};
 	my $ip = Ipblock->int2ip($devh->{target_addr}, $devh->{target_version});
 
 	$hosts{$ip}{ip} = $ip;
@@ -333,6 +334,7 @@ sub generate_configs {
 	    foreach my $ip_id ( sort keys %{$devh->{interface}->{$intid}->{ip} } ){
 		
 		my $iph = $devh->{interface}->{$intid}->{ip}->{$ip_id};
+		next unless $iph->{addr} && $iph->{version};
 		my $ip = Ipblock->int2ip($iph->{addr}, $iph->{version});
 
 		unless ( $devh->{target_id} == $ip_id ){
