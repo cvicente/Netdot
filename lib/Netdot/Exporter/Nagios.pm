@@ -409,6 +409,8 @@ sub generate_configs {
     $self->print_servicegroups(\%servicegroups);
     $self->print_contacts();
 
+    $self->print_eof($self->{out});
+
     $logger->info("Netdot::Exporter::Nagios: Configuration written to file: ".$self->{filename});
     close($self->{out});
 }

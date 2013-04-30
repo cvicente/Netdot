@@ -313,11 +313,13 @@ sub print_to_file{
 
     $class->_print($fh, $self->id, $data);
 
+    print $fh "\n#### EOF ####\n";
     close($fh);
 
     my $end = time;
     $logger->info(sprintf("DHCPD Scope %s exported to %s, in %s", 
 			  $self->name, $path, $class->sec2dhms($end-$start) ));
+
 }
 
 

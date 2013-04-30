@@ -149,7 +149,8 @@ EOP
 	print $sysmon "\n";
 	
     }
-    
+
+    $self->print_eof($sysmon);
     close($sysmon) or $logger->warn("$filename did not close nicely");
     $logger->info("Sysmon configuration written to $filename");
 }

@@ -306,6 +306,24 @@ sub in_downtime{
     return 0;
 }
 
+########################################################################
+
+=head2 print_eof - Print End of File marker
+
+ Arguments: 
+    filehandle
+ Returns:
+    Nothing
+
+=cut
+
+sub print_eof {
+    my ($self, $fh) = @_;
+    $self->throw_fatal("Netdot::Model::Exporter::print_eof: Filehandle required")
+	unless $fh;
+    print $fh "\n#### EOF ####\n";
+}
+
 =head1 AUTHORS
 
 Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>

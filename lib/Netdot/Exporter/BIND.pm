@@ -211,6 +211,8 @@ sub print_zone_to_file {
     # Add any includes
     print $fh $zone->include . "\n" if defined $zone->include;
 
+    print $fh "\n;#### EOF ####\n";
+
     close($fh);
     return $path;
 }

@@ -63,7 +63,7 @@ sub generate_configs {
                 SELECT     d.id, rr.name, zone.name, p.name, e.name,
                            d.monitored, t.name, d.down_from, d.down_until
                  FROM      device d, rr, zone, product p, entity e, asset a,
-                           producttype t, ipblock i
+                           producttype t
                 WHERE      d.name=rr.id
                   AND      rr.zone=zone.id
                   AND      a.product_id=p.id
@@ -82,7 +82,7 @@ sub generate_configs {
 
 	unless ( $monitor ){
 	    $logger->debug("Netdot::Exporter::Smokeping::generate_configs: ".
-			   "$name configured to not monitor config");
+			   "$name configured to not monitor");
 	    next;
 	}
 
@@ -130,13 +130,18 @@ host = $device
   
 ";
 	}
-        print $smokeping "# End of file\n";
+
+	$self->print_eof($smokeping);
 	close($smokeping) || $logger->warn("Netdot::Exporter::Smokeping::generate_configs: ".
 					   "$file_path did not close nicely");
 	
 	$logger->info("Netdot::Exporter::Smokeping::generate_configs:".
 		      " Smokeping configuration for group '$type' written to: '$file_path'");
+
+	
     }
+
+    
 }
 
 =head1 AUTHOR
