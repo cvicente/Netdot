@@ -5128,6 +5128,8 @@ sub _get_as_info{
 	$results{orgname} = $descr;
 	$logger->debug(sub{"Device::_get_as_info:: $server: Found orgname: $descr"});
     }
+    $results{orgname} ||= $asn;
+    $results{asname}  ||= $results{orgname};
     return \%results if %results;
     return;
 }
