@@ -2625,6 +2625,7 @@ sub update_bgp_peering {
     }else{
 	$logger->warn( sprintf("%s: Missing peer info. Cannot associate peering %s with an entity", 
 			       $host, $peer->{address}) );
+	$entity = Entity->search(name=>"Unknown")->first;
     }
     
     # Create a hash with the peering's info for update or insert
