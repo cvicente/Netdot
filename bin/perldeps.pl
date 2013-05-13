@@ -42,7 +42,7 @@ my @DEPS = (
     {cpan=>'SQL::Translator', apt=>'libsql-translator-perl', rpm=>'perl-SQL-Translator'},
     {cpan=>'SNMP::Info 2.06', apt=>'libsnmp-info-perl', rpm=>'perl-SNMP-Info'},
     {apt=>'netdisco-mibs-installer'},
-    {cpan=>'NetAddr::IP', apt=>'libnetaddr-ip-perl', rpm=>'perl-NetAddr-IP'},
+    {cpan=>'NetAddr::IP 4.042', apt=>'libnetaddr-ip-perl', rpm=>'perl-NetAddr-IP'},
     {cpan=>'Apache2::AuthCookie', apt=>'libapache2-authcookie-perl', rpm=>''},
     {cpan=>'Apache2::SiteControl', apt=>'libapache2-sitecontrol-perl', rpm=>''},
     {cpan=>'Log::Dispatch', apt=>'liblog-dispatch-perl', rpm=>'perl-Log-Dispatch'},
