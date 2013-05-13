@@ -650,7 +650,9 @@ sub import_records {
 
     if ( $argv{text } ){
 	eval {
-	    $rrs = Net::DNS::ZoneFile::Fast::parse(text=>$argv{text}, origin=>$domain);
+	    my $zone_content = $argv{text};
+	    $zone_content =~ s/\r\n/\n/g;
+	    $rrs = Net::DNS::ZoneFile::Fast::parse(text=>$zone_content, origin=>$domain);
 	};
 	if ( my $e = $@ ){
 	    $self->throw_user("Error parsing Zone data: $e")
