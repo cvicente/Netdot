@@ -19,6 +19,16 @@ if ( $DEBUG ){
     print "user: ", $user, "<br>";
     print "manager: ", $manager, "<br>";
 }
-$m->call_next(user=>$user, manager=>$manager);
+
+eval {
+    $m->call_next(user=>$user, manager=>$manager);
+};
+
+my $e;
+if ( $e = Netdot::Util::Exception->caught('Netdot::Util::Exception::REST') ){
+    $m->clear_and_abort($e->code);
+}elsif ( $e = $@ ){
+    die $e;
+}
 
 </%init>
