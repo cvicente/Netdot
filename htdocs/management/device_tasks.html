@@ -64,23 +64,34 @@ if ( $submit eq 'Find' ){
 	    my $id = $o->id;
 	    $m->comp('/management/device.html', id => $id, user=>$user );
 	}else{
-	    $m->comp('/management/address_tasks.html', submit=>1, search_address=>$device_search, user=>$user, dowindow=>1 );
+	    $m->comp('/management/address_tasks.html', submit=>1, search_address=>$device_search, 
+		     user=>$user, dowindow=>1 );
 	}
     }else{
 	$m->comp('.show_tasks', %ARGS, user=>$user);
 	my %args = (name=>$device_search);
 	$args{zone} = $zone_id if $zone_id;
-	unless ( (@list = Device->search_like(%args)) ){
-	    $m->comp('/generic/no_search_results.html', search=>$device_search);
-	}
-	if ( scalar(@list) == 1 ){
-	    # Don't offer list.  Just display device
-	    my $o  = $list[0];
-	    my $id = $o->id;
-	    $m->comp('/management/device.html', id => $id, user=>$user );
+	if ( (@list = Device->search_like(%args)) ){
+	    if ( scalar(@list) == 1 ){
+		# Don't offer list.  Just display device
+		my $o  = $list[0];
+		my $id = $o->id;
+		$m->comp('/management/device.html', id => $id, user=>$user );
+	    }else{
+		$m->comp('/generic/show_search_results.mhtml', search=>$device_search, list=>\@list, 
+			 dowindow=>1 );
+	    }
 	}else{
-	    $m->comp('/generic/show_search_results.mhtml', search=>$device_search, list=>\@list, dowindow=>1 );
+	    # Lookup name in DNS
+	    if ( my @ips = Netdot->dns->resolve_name($device_search) ){
+		# Just take the first one
+		$m->comp('/management/address_tasks.html', submit=>1, search_address=>$ips[0], 
+			 user=>$user, dowindow=>1 );
+	    }else{
+		$m->comp('/generic/no_search_results.html', search=>$device_search);
+	    }
 	}
+
     }
 }else{
     $m->comp('.show_tasks', %ARGS, user=>$user);
