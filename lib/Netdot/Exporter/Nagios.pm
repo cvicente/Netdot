@@ -627,7 +627,6 @@ sub print_service {
 		print $out "define serviceescalation{\n";
 		print $out "\thost_name                $hostname\n";
 		print $out "\tservice_description      $srvname\n";
-		print $out "\tdisplay_name             $displayname\n";
 		print $out "\tfirst_notification       $fn\n";
 		print $out "\tlast_notification        $ln\n";
 		print $out "\tnotification_interval    ".$self->{NAGIOS_NOTIF_INTERVAL}."\n";
