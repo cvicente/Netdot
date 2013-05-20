@@ -140,7 +140,7 @@ sub get_device_info {
 	    $device_info{$devid}{interface}{$intid}{ip}{$ip_id}{version}   = $ip_version;
 	    $device_info{$devid}{interface}{$intid}{ip}{$ip_id}{subnet}    = $subnet;
 	    $device_info{$devid}{interface}{$intid}{ip}{$ip_id}{monitored} = $ip_mon;
-	    if ( $ip_id == $target_id ){
+	    if ( defined $target_id && $ip_id == $target_id ){
 		$device_info{$devid}{target_addr} = $ip_addr;
 		$device_info{$devid}{target_version} = $ip_version;
 	    }
