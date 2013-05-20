@@ -679,15 +679,21 @@ sub update_ip {
 		
 		# Skip validation for speed, since the block already exists
 		$iargs{validate} = 0;
+		
+		# Add description from interface if not set
+		$iargs{description} = $self->description 
+		    if ( $subnetobj->description eq "" );
+
 		$subnetobj->update(\%iargs); # Makes sure that the status is set to subnet
 		
 	    }else{
 		$logger->debug(sub{ sprintf("Subnet %s/%s does not exist.  Inserting.", 
 					    $subnetaddr, $subnetprefix) });
 		
-		$iargs{address} = $subnet_netaddr->addr;
-		$iargs{prefix}  = $subnet_netaddr->masklen;
-		$iargs{version} = $version;
+		$iargs{address}     = $subnet_netaddr->addr;
+		$iargs{prefix}      = $subnet_netaddr->masklen;
+		$iargs{version}     = $version;
+		$iargs{description} = $self->description;
 		
 		# Check if subnet should inherit device info
 		if ( $args{subs_inherit} ){
