@@ -846,7 +846,7 @@ sub get_snmp_info {
 									   'sclass'      => $sinfo->class);
 
 				    return unless $vsinfo;
-  
+				    
 				    $stp_p_info = $class->_exec_timeout( 
 					$args{host}, 
 					sub{  return $self->_get_stp_info(sinfo=>$vsinfo) } 
@@ -892,9 +892,9 @@ sub get_snmp_info {
 								       'communities' => [$comm],
 								       'version'     => $sinfo->snmp_ver,
 								       'sclass'      => $sinfo->class);
-				
+
 				return unless $vsinfo;
-				
+
 				my $stp_p_info = $class->_exec_timeout( 
 				    $args{host}, 
 				    sub{  return $self->_get_stp_info(sinfo=>$vsinfo) } );
@@ -1447,6 +1447,7 @@ sub discover {
 						   auth_pass   => $argv{auth_pass},
 						   priv_proto  => $argv{priv_proto},
 						   priv_pass   => $argv{priv_pass},
+						   sqe         => $argv{sqe},
 		    );
 
 		return unless $sinfo;
@@ -1553,7 +1554,8 @@ sub discover {
     my %uargs;
     foreach my $field ( qw(communities version timeout retries 
                            sec_name sec_level auth_proto auth_pass priv_proto priv_pass
-                           add_subnets subs_inherit bgp_peers pretend do_info do_fwt do_arp timestamp) ){
+                           add_subnets subs_inherit bgp_peers pretend do_info do_fwt do_arp timestamp
+			   sqe) ){
 	$uargs{$field} = $argv{$field} if defined ($argv{$field});
     }
     $uargs{session}       = $sinfo if $sinfo;
@@ -2729,6 +2731,7 @@ sub snmp_update {
 					  auth_pass   => $argv{auth_pass},
 					  priv_proto  => $argv{priv_proto},
 					  priv_pass   => $argv{priv_pass},
+					  sqe         => $argv{sqe},
 	    );
 
 	return unless $sinfo;
@@ -3759,7 +3762,7 @@ sub _validate_args {
 	    if ( defined $self ){
 		if ( $self->id != $otherdev->id ){
 		    my $msg = sprintf("%s: Existing device: %s uses S/N %s, MAC %s", 
-				      $self->fqdn, $otherdev->fqdn, $asset->serial_number, 
+				      $self->fqdn, $otherdev->fqdn, $asset->serial_number,
 				      $asset->physaddr);
 		    if ( Netdot->config->get('ENFORCE_DEVICE_UNIQUENESS') ){
 			$self->throw_user($msg); 
@@ -3836,6 +3839,16 @@ sub _layer_active {
 #     my $session = Device->get_snmp_session(host=>$hostname, communities=>['public']);
 #
 
+sub _make_sinfo_object
+{
+    my ($self, $sclass, %sinfoargs) = @_;
+    if ($sinfoargs{sqe}) {
+	$sinfoargs{Session} = Netdot::FakeSNMPSession->new(%sinfoargs);
+	$logger->debug(sub{"Device::_make_sinfo_object: with SQE" });
+    }
+    return $sclass->new( %sinfoargs );
+}
+
 sub _get_snmp_session {
     my ($self, %argv) = @_;
 
@@ -3904,10 +3917,11 @@ sub _get_snmp_session {
 	BulkWalk    => (defined $argv{bulkwalk}) ? $argv{bulkwalk} :  $self->config->get('DEFAULT_SNMPBULK'),
 	BulkRepeaters => $self->config->get('DEFAULT_SNMPBULK_MAX_REPEATERS'),
 	MibDirs       => \@MIBDIRS,
+	sqe           => $argv{sqe},
 	);
 
     # Turn off bulkwalk if we're using Net-SNMP 5.2.3 or 5.3.1.
-    if ( $sinfoargs{BulkWalk} == 1  && ($SNMP::VERSION eq '5.0203' || $SNMP::VERSION eq '5.0301') 
+    if ( !$sinfoargs{sqe} && $sinfoargs{BulkWalk} == 1  && ($SNMP::VERSION eq '5.0203' || $SNMP::VERSION eq '5.0301') 
 	&& !$self->config->get('IGNORE_BUGGY_SNMP_CHECK')) {
 	$logger->info("Turning off bulkwalk due to buggy Net-SNMP $SNMP::VERSION");
 	$sinfoargs{BulkWalk} = 0;
@@ -3946,7 +3960,7 @@ sub _get_snmp_session {
 	$logger->debug(sub{ sprintf("Device::get_snmp_session: Trying SNMPv%d session with %s",
 				    $sinfoargs{Version}, $argv{host})});
 	
-	$sinfo = $sclass->new( %sinfoargs );
+	$sinfo = $self->_make_sinfo_object($sclass, %sinfoargs);
 
 	if ( defined $sinfo ){
 	    # Check for errors
@@ -3973,14 +3987,14 @@ sub _get_snmp_session {
 	    $logger->debug(sub{ sprintf("Device::_get_snmp_session: Trying SNMPv%d session with %s, ".
 					"community %s",
 					$sinfoargs{Version}, $argv{host}, $sinfoargs{Community})});
-	    $sinfo = $sclass->new( %sinfoargs );
+	    $sinfo = $self->_make_sinfo_object($sclass, %sinfoargs);
 	    
 	    # If v2 failed, try v1
  	    if ( !defined $sinfo && $sinfoargs{Version} == 2 ){
  		$logger->debug(sub{ sprintf("Device::_get_snmp_session: %s: SNMPv%d failed. Trying SNMPv1", 
  					    $argv{host}, $sinfoargs{Version})});
  		$sinfoargs{Version} = 1;
- 		$sinfo = $sclass->new( %sinfoargs );
+		$sinfo = $self->_make_sinfo_object($sclass, %sinfoargs);
  	    }
 	    
 	    if ( defined $sinfo ){
@@ -4328,9 +4342,65 @@ sub _fork_end {
 #   Returns: 
 #     Device count
 #
+sub async (&@);
 sub _snmp_update_parallel {
     my ($class, %argv) = @_;
     $class->isa_class_method('_snmp_update_parallel');
+    my $use_sqe = Netdot->config->get('USE_SNMP_QUERY_ENGINE');
+    my $sqe;
+    if ($use_sqe && !$Netdot::Model::Device::_sqe_module_loaded) {
+	$logger->info("SQE is requested, trying to load relevant modules");
+	eval {
+	    require Coro; Coro->import;
+	    require AnyEvent; AnyEvent->import;
+	    require Coro::AnyEvent; Coro::AnyEvent->import;
+	    require Netdot::FakeSNMPSession; Netdot::FakeSNMPSession->import;
+	    require Net::SNMP::QueryEngine::AnyEvent; Net::SNMP::QueryEngine::AnyEvent->import;
+	    $Netdot::Model::Device::_sqe_module_loaded = 1;
+	    $logger->info("SQE-related modules loaded succesfully");
+	};
+	unless ($Netdot::Model::Device::_sqe_module_loaded) {
+	    $logger->info("Failure loading SQE-related modules, disabling SQE: $@");
+	    $use_sqe = "";
+	}
+    }
+    if ($use_sqe) {
+	my @conn = split /:/, $use_sqe;
+	my $check_done = AnyEvent->condvar;
+	eval {
+	    $sqe = Net::SNMP::QueryEngine::AnyEvent->new(connect => \@conn,
+		on_connect => sub { $check_done->send },
+		on_error   => sub { $sqe = undef; $check_done->send },
+	    );
+	    $check_done->recv;
+	    if ($sqe) {
+		$sqe->info(sub { my ($h,$ok,$r) = @_; $sqe = undef unless $ok });
+		$sqe->wait;
+	    }
+	};
+    }
+    if ($sqe) {
+	$logger->info("SQE is requested and available, using it for SNMP collection");
+	$logger->debug("$class\::_snmp_update_parallel: Loading dummy SNMP::Info object");
+	my $dummy = SNMP::Info->new( DestHost    => 'localhost',
+				     Version     => 1,
+				     AutoSpecify => 0,
+				     Debug       => ( $logger->is_debug() )? 1 : 0,
+				     MibDirs     => \@MIBDIRS,
+				   );
+	$class->_snmp_update_parallel_sqe(%argv, sqe => $sqe);
+    } else {
+	if ($use_sqe) {
+	    $logger->info("SQE daemon is NOT available, using traditional method for SNMP collection");
+	} else {
+	    $logger->info("Using traditional method for SNMP collection");
+	}
+	$class->_snmp_update_parallel_traditional(%argv);
+    }
+}
+
+sub _snmp_update_parallel_args_check {
+    my ($class, %argv) = @_;
 
     my ($hosts, $devs);
     if ( defined $argv{hosts} ){
@@ -4345,16 +4415,143 @@ sub _snmp_update_parallel {
 	$class->throw_fatal("Model::Device::_snmp_update_parallel: Missing required parameters: ".
 			    "hosts or devs");
     }
-    
+
     my %uargs;
     foreach my $field ( qw(version timeout retries sec_name sec_level auth_proto auth_pass 
                            priv_proto priv_pass add_subnets subs_inherit bgp_peers pretend 
-                           do_info do_fwt do_arp) ){
+                           do_info do_fwt do_arp sqe) ){
 	$uargs{$field} = $argv{$field} if defined ($argv{$field});
     }
 
     $uargs{no_update_tree} = 1;
     $uargs{timestamp}      = $class->timestamp;
+
+    return ($hosts, $devs, %uargs);
+}
+
+sub _snmp_update_get_device_args {
+    my ($class, $dev, %args) = @_;
+
+    if ( $args{do_info} ){
+	unless ( $dev->canautoupdate ){
+	    $logger->debug(sub{ sprintf("%s: Auto Update option off", $dev->fqdn) });
+	    $args{do_info} = 0;
+	}
+    }
+    if ( $args{do_fwt} ){
+	unless ( $dev->collect_fwt ){
+	    $logger->debug(sub{ sprintf("%s: Collect FWT option off", $dev->fqdn) });
+	    $args{do_fwt} = 0;
+	}
+    }
+    if ( $args{do_arp} ){
+	unless ( $dev->collect_arp ){
+	    $logger->debug(sub{ sprintf("%s: Collect ARP option off", $dev->fqdn) });
+	    $args{do_arp} = 0;
+	}
+    }
+
+    return %args;
+}
+
+sub _snmp_update_parallel_sqe {
+    my ($class, %argv) = @_;
+    $class->isa_class_method('_snmp_update_parallel_sqe');
+
+    my ($hosts, $devs, %uargs) = $class->_snmp_update_parallel_args_check(%argv);
+    
+    my %do_devs;
+    
+    my $device_count = 0;
+    my $n_polling_devices = 0;
+    my $start = time;
+
+    if ( $devs ){
+	foreach my $dev ( @$devs ){
+	    # Put in list
+	    $do_devs{$dev->id} = $dev;
+	}
+    }elsif ( $hosts ){
+	foreach my $host ( keys %$hosts ){
+	    # Give preference to the community associated with the host
+	    if ( my $commstr = $hosts->{$host} ){
+		$uargs{communities} = [$commstr];
+	    }else{
+		$uargs{communities} = $argv{communities};
+	    }
+	    # If the device exists in the DB, we add it to the list
+	    my $dev;
+	    if ( $dev = $class->search(name=>$host)->first ){
+		$do_devs{$dev->id} = $dev;
+		$logger->debug(sub{ sprintf("%s exists in DB.", $dev->fqdn) });
+	    }else{
+		$device_count++;
+		$n_polling_devices++;
+		async {
+		    eval { $class->discover(name=> $host, %uargs); };
+		    if ( my $e = $@ ){
+			$logger->error($e);
+			exit 1;
+		    }
+		    $n_polling_devices--;
+		};
+	    }
+	}
+    }
+    
+    # Go over list of existing devices
+    while ( my ($id, $dev) = each %do_devs ){
+
+	if ( my $regex = $argv{matching} ){
+	    unless ( $dev->fqdn =~ /$regex/o ){
+		next;
+	    }
+	}
+	# Make sure we don't launch a process unless necessary
+	if ( $dev->is_in_downtime() ){
+	    $logger->debug(sub{ sprintf("Model::Device::_snmp_update_parallel_sqe: %s in downtime.  Skipping", $dev->fqdn) });
+	    next;
+	}
+
+	my %args = $class->_snmp_update_get_device_args($dev, %uargs);
+	unless ( $args{do_info} || $args{do_fwt} || $args{do_arp} ){
+	    next;
+	}
+
+	$device_count++;
+	$n_polling_devices++;
+	async {
+	    eval { $dev->snmp_update(%args); };
+	    if ( my $e = $@ ){
+		$logger->error($e);
+		exit 1;
+	    }
+	    $n_polling_devices--;
+	};
+    }
+
+    while ($n_polling_devices > 0) {
+	Coro::AnyEvent::idle_upto(5);
+	Coro::AnyEvent::sleep(0.05);
+    }
+
+    # Rebuild the IP tree if ARP caches were updated
+    if ( $argv{do_arp} ){
+	Ipblock->build_tree(4);
+	Ipblock->build_tree(6);
+    }
+    my $runtime = time - $start;
+    $class->_update_poll_stats($uargs{timestamp}, $runtime);
+    
+    return $device_count;
+}
+
+sub _snmp_update_parallel_traditional {
+    my ($class, %argv) = @_;
+    $class->isa_class_method('_snmp_update_parallel_traditional');
+
+    my ($hosts, $devs, %uargs) = $class->_snmp_update_parallel_args_check(%argv);
+    
     my %do_devs;
     
     my $device_count = 0;
@@ -4408,33 +4605,16 @@ sub _snmp_update_parallel {
 	}
 	# Make sure we don't launch a process unless necessary
 	if ( $dev->is_in_downtime() ){
-	    $logger->debug(sub{ sprintf("Model::Device::_snmp_update_parallel: %s in downtime. Skipping", 
+	    $logger->debug(sub{ sprintf("Model::Device::_snmp_update_parallel_traditional: %s in downtime. Skipping", 
 					$dev->fqdn) });
 	    next;
 	}
-	my %args = %uargs;
 
-	if ( $args{do_info} ){
-	    unless ( $dev->canautoupdate ){
-		$logger->debug(sub{ sprintf("%s: Auto Update option off", $dev->fqdn) });
-		$args{do_info} = 0;
-	    }
-	}
-	if ( $args{do_fwt} ){
-	    unless ( $dev->collect_fwt ){
-		$logger->debug(sub{ sprintf("%s: Collect FWT option off", $dev->fqdn) });
-		$args{do_fwt} = 0;
-	    }
-	}
-	if ( $args{do_arp} ){
-	    unless ( $dev->collect_arp ){
-		$logger->debug(sub{ sprintf("%s: Collect ARP option off", $dev->fqdn) });
-		$args{do_arp} = 0;
-	    }
-	}
+	my %args = $class->_snmp_update_get_device_args($dev, %uargs);
 	unless ( $args{do_info} || $args{do_fwt} || $args{do_arp} ){
 	    next;
 	}
+
 	$device_count++;
 	# FORK
 	$pm->start and next;
@@ -5759,24 +5939,24 @@ sub _update_interfaces {
 	if ( $int_thold <= 0 || $int_thold >= 1 ){
 	    $self->throw_fatal('Incorrect value for IF_COUNT_THRESHOLD in config file');
 	}
-	
+
 	my %old_snmp_ifs;
 	map { $old_snmp_ifs{$_->id} = $_ } 
 	grep { $_->doc_status eq 'snmp' } values %oldifs;
-	
+
 	my $ifs_old = scalar(keys(%old_snmp_ifs));
 	my $ifs_new = scalar(keys(%{$info->{interface}}));
-	
+
 	$logger->debug("$host: Old Ifs: $ifs_old, New Ifs: $ifs_new");
 
-	if ( ($ifs_old && !$ifs_new) || ($ifs_new && ($ifs_new < $ifs_old) && 
+	if ( ($ifs_old && !$ifs_new) || ($ifs_new && ($ifs_new < $ifs_old) &&
 					 ($ifs_new / $ifs_old) <= $int_thold) ){
 	    $logger->warn(sprintf("%s: new/old interface ratio: %.2f is below INT_COUNT_THRESHOLD".
 				  "Skipping interface update. Re-discover manually if needed.",
 				  $host, $ifs_new/$ifs_old));
 	    return;
 	}
-	
+
 	# Do the same for IP addresses
 	my $ips_old = scalar(keys(%old_ips));
 	my $ips_new = 0;
@@ -5787,17 +5967,16 @@ sub _update_interfaces {
 		$ips_new++;
 	    }
 	}
-	
+
 	$logger->debug("$host: Old IPs: $ips_old, New IPs: $ips_new");
 
-	if ( ($ips_old && !$ips_new) || ($ips_new && ($ips_new < $ips_old) && 
+	if ( ($ips_old && !$ips_new) || ($ips_new && ($ips_new < $ips_old) &&
 					 ($ips_new / $ips_old) <= $int_thold) ){
 	    $logger->warn(sprintf("%s: new/old IP ratio: %.2f is below INT_COUNT_THRESHOLD".
 				  "Skipping interface update. Re-discover manually if needed.",
 				  $host, $ips_new/$ips_old));
 	    return;
 	}
-	
     }
 
     # Index by interface name (ifDescr) and number (ifIndex)
@@ -5964,9 +6143,9 @@ sub _update_interfaces {
 	}
 
 	# Don't delete snmp_target address unless updating via UI
-	if ( $ENV{REMOTE_USER} eq 'netdot' && 
+	if ( $ENV{REMOTE_USER} eq 'netdot' &&
 	     $self->snmp_target->id == $obj->id ){
-	    $logger->debug(sub{sprintf("%s: IP %s is snmp target. Skipping delete", 
+	    $logger->debug(sub{sprintf("%s: IP %s is snmp target. Skipping delete",
 				       $host, $obj->address)});
 	    next;
 	}
