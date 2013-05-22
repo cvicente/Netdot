@@ -133,10 +133,6 @@ if ( $submit ){
 	my %products;
 
 	# for dup detection
-	my %assets; 
-	for ( Asset->retrieve_all() ){ $assets{$_->serial_number}  = 1 }
-	my %macs;
-	for ( PhysAddr->retrieve_all() ){ $macs{$_->address}  = 1 }
 	my %dups;
 
 	my @new_assets;
@@ -146,7 +142,7 @@ if ( $submit ){
 		    next if $line eq "";
 		    # Remove leading and trailing spaces
 		    $line = $ui->rem_lt_sp($line);
-		    my @data = split /,/, $line;
+		    my @data = split /"?\s*,\s*"?/, $line;
 		    if ( scalar(@import_fields) != scalar(@data) ){
 			Netdot->throw_user("Number of import fields does not match number of data columns");
 		    }
@@ -158,11 +154,10 @@ if ( $submit ){
 		    }
 		    
 		    # Check for dups
-		    if ( exists($assets{$d{serial_number}}) ){
+		    if ( Asset->search(serial_number=>$d{serial_number})) {
 			$dups{serial}{$d{serial_number}} = 1;
 			next;
 		    }
-		    $assets{$d{serial_number}} = 1;
 
 		    # fill up data for insert
 		    my %args;
@@ -172,11 +167,10 @@ if ( $submit ){
 			my $mac = PhysAddr->validate($d{physaddr});
 			Netdot->throw_user("Invalid MAC: $d{physaddr}")
 			    unless $mac;
-			if ( exists($macs{$mac}) ){
+			if ( PhysAddr->search(address=>$mac)) {
 			    $dups{macs}{$mac} = 1;
 			    next;
 			}
-			$macs{$mac} = 1;
 			$args{physaddr} = PhysAddr->insert({address=>$mac})->id;
 		    }
 		    
