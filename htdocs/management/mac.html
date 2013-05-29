@@ -207,7 +207,7 @@ if ( $o ){
 	    push @{$tstamps{$tstamp}}, $lnk;
         }
 	foreach my $tstamp ( reverse sort keys %tstamps ){
-            push @rows, [$tstamp, join ', ', @{$tstamps{$tstamp}}];
+            push @rows, [$tstamp, join ', ', sort @{$tstamps{$tstamp}}];
 	}
 </%perl>
 <!-- Display FWT -->
@@ -240,7 +240,7 @@ if ( $o ){
 	    foreach my $ipid ( keys %{$tstamps{$tstamp}} ){
 		my $iplbl   = Ipblock->retrieve($ipid)->get_label;
 		my $iplnk   = "<a href=\"../management/ip.html?id=$ipid\">$iplbl</a>";
-		push @rows, [$tstamp, $iplnk, (join ', ', @{$tstamps{$tstamp}{$ipid}})];
+		push @rows, [$tstamp, $iplnk, (join ', ', sort @{$tstamps{$tstamp}{$ipid}})];
 	    }
 	}
        
