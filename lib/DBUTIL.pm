@@ -506,7 +506,7 @@ sub insert_oui{
     open (OUI, "<:encoding(iso-8859-1)","$oui_file") or die "Can't open $oui_file: $!\n";
     while (my $line = <OUI>){
         chomp $line;
-        if ($line =~ /^([0-9A-F]{6})\s+\(base 16\)\s+(.*)\s*$/i){
+        if ($line =~ /^\s*([0-9A-F]{6})\s+\(base 16\)\s+(.*)\s*$/i){
             $oui{$1} = $2;
         }
     }
