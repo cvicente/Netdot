@@ -184,7 +184,25 @@ sub upg_104_105 {
 
 	push @statements, "ALTER TABLE ipblock ADD COLUMN monitored bool NOT NULL;";
 	push @statements, "ALTER TABLE ipblock ADD COLUMN rir varchar(255);";
-	push @statements, "ALTER TABLE ipblock ADD COLUMN asn varchar(255);";
+
+	push @statements, "CREATE TABLE `asn` (
+                             `description` varchar(255) NULL,
+                             `id` bigint NOT NULL auto_increment,
+                             `info` text NULL,
+                             `number` bigint NOT NULL,
+                             `rir` varchar(255) NULL,
+                              UNIQUE INDEX `asn1` (`number`),
+                              INDEX `ASN2` (`rir`),
+                              PRIMARY KEY (`id`)
+                           ) ENGINE=InnoDB;
+                           ";
+
+	push @statements, "ALTER TABLE ipblock ADD COLUMN asn bigint;";
+
+	push @statements, "INSERT INTO asn (number) SELECT DISTINCT bgplocalas FROM device WHERE bgplocalas IS NOT NULL;";
+	push @statements, "ALTER TABLE device MODIFY bgplocalas bigint;";
+	push @statements, "UPDATE device,asn SET device.bgplocalas=asn.id WHERE device.bgplocalas=asn.number;"; 
+
 
     }elsif ( $dbms eq 'Pg' ){
 
@@ -198,9 +216,26 @@ sub upg_104_105 {
 	push @statements, "ALTER TABLE device_history ADD COLUMN power_outlet character varying(255);";
 	push @statements, "ALTER TABLE device_history ADD COLUMN power_outlet_2 character varying(255);";
 
-	push @statements, "ALTER TABLE ipblock ADD COLUMN monitored bool NOT NULL;";
+	push @statements, "ALTER TABLE ipblock ADD COLUMN monitored bool NOT NULL default 'f';";
 	push @statements, "ALTER TABLE ipblock ADD COLUMN rir character varying(255);";
-	push @statements, "ALTER TABLE ipblock ADD COLUMN asn character varying(255);";
+
+	push @statements, 'CREATE TABLE "asn" (
+                             "description" character varying(255),
+                             "id" bigserial NOT NULL,
+                             "info" text,
+                             "number" bigint NOT NULL,
+                             "rir" character varying(255),
+                             CONSTRAINT "asn1" UNIQUE ("number"),
+                             CONSTRAINT "pk_asn" PRIMARY KEY ("id")
+                              );
+                           CREATE INDEX "ASN2" on "asn" ("rir");';
+
+ 	push @statements, "ALTER TABLE ipblock ADD COLUMN asn bigint;";
+
+	push @statements, "INSERT INTO asn (number) SELECT DISTINCT bgplocalas FROM device WHERE bgplocalas IS NOT NULL;";
+	push @statements, "ALTER TABLE device ALTER COLUMN bgplocalas TYPE bigint;";
+	push @statements, "UPDATE device SET bgplocalas=asn.id FROM asn WHERE device.bgplocalas=asn.number;"; 
+
     }
     
     push @statements, "UPDATE schemainfo SET version='1.0.5' WHERE id=1;";

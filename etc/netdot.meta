@@ -367,6 +367,71 @@ $meta = {
       ]
     }
   },
+  ASN => {
+    table_db_name => 'asn',
+    columns => {
+      id => {
+        default => '',
+        description => '',
+        length => '',
+        nullable => 0,
+        tag => undef,
+        type => 'bigint'
+      },
+      description => {
+        default => '',
+        description => 'A short description of this ASN',
+        length => '255',
+        nullable => 1,
+        tag => 'Description',
+        type => 'varchar'
+      },
+      info => {
+        default => '',
+        description => 'Comments',
+        length => '',
+        nullable => 1,
+        tag => 'Comments',
+        type => 'text'
+      },
+      number => {
+        default => '',
+        description => 'Autonomous System (AS) Number',
+        length => '',
+        nullable => 0,
+        tag => 'Number',
+        type => 'bigint'
+      },
+      rir => {
+        default => '',
+        description => 'Regional Internet Registry from which ASN was obtained (AFRINIC, APNIC, ARIN, LACNIC, RIPE)',
+        length => '255',
+        nullable => 1,
+        tag => 'RIR',
+        type => 'varchar'
+      },
+    },
+    description => 'Autonomous System Number',
+    has_history => 0,
+    index => [ ['rir'] ],
+    isjoin => '0',
+    label => ['number'],
+    primary_key => 'id',
+    unique => [ ['number'] ],
+    views => {
+      all => [
+        'number',
+        'rir',
+        'description',
+        'info',
+      ],
+      brief => [
+        'number',
+        'rir',
+        'description',
+      ]
+    }
+  },
   Asset => {
     table_db_name => 'asset',
     columns => {
@@ -1953,9 +2018,14 @@ $meta = {
         default => '',
         description => 'Border Gateway Protocol Local Autonomous System number',
         length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'devices',
+          table => 'ASN'
+        },
         nullable => 1,
         tag => 'BGP Local AS',
-        type => 'integer'
+        type => 'bigint'
       },
       canautoupdate => {
         default => '',
@@ -4838,10 +4908,15 @@ $meta = {
       asn => {
         default => '',
         description => 'Autonomous System Number where this block originates from',
-        length => '255',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'ipblocks',
+          table => 'ASN'
+        },
         nullable => 1,
         tag => 'ASN',
-        type => 'varchar'
+        type => 'bigint'
       },
       description => {
         default => '',

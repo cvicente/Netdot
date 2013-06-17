@@ -927,8 +927,11 @@ sub get_snmp_info {
 
     # Set some values specific to device types
     if ( $dev{ipforwarding} ){
-	$dev{bgplocalas} =  $sinfo->bgp_local_as();
-	$dev{bgpid}      =  $sinfo->bgp_id();
+	if ( my $local_as = $sinfo->bgp_local_as() ){
+	    my $asn = ASN->find_or_create({number=>$local_as});
+	    $dev{bgplocalas} = $asn;
+	}
+	$dev{bgpid} = $sinfo->bgp_id();
     }
 
     ################################################################
@@ -3628,9 +3631,9 @@ sub get_bgp_peers {
 	@peers = grep { $_->asnumber eq $argv{as} } $self->bgppeers;	
     }elsif ( $argv{type} ){
 	if ( $argv{type} eq "internal" ){
-	    @peers = grep { defined $_->entity && $_->entity->asnumber == $self->bgplocalas } $self->bgppeers;
+	    @peers = grep { defined $_->entity && $_->entity->asnumber == $self->bgplocalas->number } $self->bgppeers;
 	}elsif ( $argv{type} eq "external" ){
-	    @peers = grep { defined $_->entity && $_->entity->asnumber != $self->bgplocalas } $self->bgppeers;
+	    @peers = grep { defined $_->entity && $_->entity->asnumber != $self->bgplocalas->number } $self->bgppeers;
 	}elsif ( $argv{type} eq "all" ){
 	    @peers = $self->bgppeers();
 	}else{
