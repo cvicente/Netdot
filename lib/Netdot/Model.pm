@@ -1083,7 +1083,7 @@ sub search_all_tables {
 	    next if ( $mcol->links_to() );
 	    # Only include these types
 	    push @cols, $c
-		if ( $mcol->sql_type =~ /^blob|text|varchar|integer$/ ); 
+		if ( $mcol->sql_type =~ /^blob$|^text$|^varchar$|^integer$|^bigint$/o );
 	}
 	foreach my $col ( @cols ){
 	    my @res = $tbl->search_like($col=>$q);
