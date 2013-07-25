@@ -89,7 +89,7 @@ sub get_device_info {
                     i.id, i.number, i.name, i.description, i.admin_status, i.monitored, i.contactlist,
                     ip.id, ip.address, ip.version, ip.parent, ip.monitored, rr.name, zone.name,
                     service.id, service.name, ipservice.monitored, ipservice.contactlist,
-                    bgppeering.bgppeeraddr, bgppeering.monitored
+                    bgppeering.bgppeeraddr, bgppeering.monitored, bgppeering.contactlist
           FROM      rr, zone, device d
           LEFT OUTER JOIN bgppeering ON d.id=bgppeering.device
           LEFT OUTER JOIN devicecontacts ON d.id=devicecontacts.device
@@ -114,7 +114,7 @@ sub get_device_info {
 	    $intid, $intnumber, $intname, $intdesc, $intadmin, $intmon, $intcl,
 	    $ip_id, $ip_addr, $ip_version, $subnet, $ip_mon, $name, $zone,
 	    $srv_id, $srv_name, $srv_mon, $srv_cl,
-	    $peeraddr, $peermon) = @$row;
+	    $peeraddr, $peermon, $peercl) = @$row;
 	my $hostname = ($name eq '@')? $zone : $name.'.'.$zone;
 	$device_info{$devid}{target_id}    = $target_id;
 	$device_info{$devid}{hostname}     = $hostname;
@@ -128,13 +128,14 @@ sub get_device_info {
 	$device_info{$devid}{site_number}  = $site_number  if defined $site_number;
 	$device_info{$devid}{site_alias}   = $site_alias   if defined $site_alias;
 	$device_info{$devid}{contactlist}{$clid} = 1 if defined $clid;
-	$device_info{$devid}{peering}{$peeraddr}{monitored}  = $peermon if defined $peeraddr;
-	$device_info{$devid}{interface}{$intid}{number}      = $intnumber;
-	$device_info{$devid}{interface}{$intid}{name}        = $intname;
-	$device_info{$devid}{interface}{$intid}{description} = $intdesc;
-	$device_info{$devid}{interface}{$intid}{admin}       = $intadmin;
-	$device_info{$devid}{interface}{$intid}{monitored}   = $intmon;
-	$device_info{$devid}{interface}{$intid}{contactlist} = $intcl;
+	$device_info{$devid}{peering}{$peeraddr}{monitored}   = $peermon if defined $peeraddr;
+	$device_info{$devid}{peering}{$peeraddr}{contactlist} = $peercl  if defined $peeraddr;
+	$device_info{$devid}{interface}{$intid}{number}       = $intnumber;
+	$device_info{$devid}{interface}{$intid}{name}         = $intname;
+	$device_info{$devid}{interface}{$intid}{description}  = $intdesc;
+	$device_info{$devid}{interface}{$intid}{admin}        = $intadmin;
+	$device_info{$devid}{interface}{$intid}{monitored}    = $intmon;
+	$device_info{$devid}{interface}{$intid}{contactlist}  = $intcl;
 	if ( defined $ip_id ){
 	    $device_info{$devid}{interface}{$intid}{ip}{$ip_id}{addr}      = $ip_addr;
 	    $device_info{$devid}{interface}{$intid}{ip}{$ip_id}{version}   = $ip_version;

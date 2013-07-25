@@ -667,6 +667,19 @@ $meta = {
         tag => 'Peer ID',
         type => 'varchar'
       },
+      contactlist => {
+        default => '',
+        description => 'Who to contact about this peering session. Also used for Nagios alarms.',
+        length => '',
+        linksto => {
+          cascade => 'Nullify',
+          method => 'peerings',
+          table => 'ContactList'
+        },
+        nullable => 0,
+        tag => 'Contact List',
+        type => 'bigint'
+      },
       device => {
         default => '',
         description => 'Device where BGP peering exists (the local device, that is)',
@@ -709,6 +722,14 @@ $meta = {
         tag => 'Comments',
         type => 'text'
       },
+      last_changed => {
+        default => '',
+        description => 'Time when the state last changed',
+        length => '',
+        nullable => 0,
+        tag => 'Last Changed',
+        type => 'timestamp'
+      },
       max_v4_prefixes => {
         default => '',
         description => 'Maximum number of IPv4 prefixes we will permit from this peer',
@@ -733,18 +754,21 @@ $meta = {
         tag => 'Monitored?',
         type => 'bool'
       },
-      monitorstatus => {
+      state => {
         default => '',
-        description => 'Monitoring Status of this Peering',
-        length => '',
-        linksto => {
-          cascade => 'Fail',
-          method => 'bgppeers',
-          table => 'MonitorStatus'
-        },
+        description => 'Peering state',
+        length => '255',
         nullable => 1,
-        tag => 'Monitored Status',
-        type => 'bigint'
+        tag => 'State',
+        type => 'varchar'
+      },
+      peer_group => {
+        default => '',
+        description => 'Name of the peer group',
+        length => '255',
+        nullable => 1,
+        tag => 'Peer Group',
+        type => 'varchar'
       },
     },
     description => 'A BGP Peering',
@@ -772,11 +796,14 @@ $meta = {
         'entity',
         'bgppeerid',
         'bgppeeraddr',
+        'state',
+	'last_changed',
 	'max_v4_prefixes',
 	'max_v6_prefixes',
         'monitored',
-        'monitorstatus',
 	'authkey',
+	'peer_group',
+	'contactlist',
 	'info',
       ],
       brief => [

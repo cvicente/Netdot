@@ -1235,10 +1235,12 @@ push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&peersort
 push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&peersort=entity">Entity</a>' );
 push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&peersort=asname">AS Name</a>' );
 push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&peersort=asnumber">AS Number</a>' );
+push( @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&peersort=state">State</a>' );
 push( @headers, 'Monitored?' );
+push( @headers, 'Contact List' );
 
 if ( $epeers ){
-    push @rows, ["<strong>External (eBGP)</strong>", "", "", "", "", ""];
+    push @rows, ["<strong>External (eBGP)</strong>", "", "", "", "", "", "", ""];
     
     foreach my $peer ( @$epeers ){
 	my (@row) = ();
@@ -1255,13 +1257,16 @@ if ( $epeers ){
 	}else{
 	    push( @row, $asn );
 	}
+	push( @row, $peer->state );
 	push( @row, $ui->radio_group_boolean(object=>$peer, column=>"monitored", edit=>$editbgp, returnAsVar=>1) );
+	push( @row, $ui->form_field(object=>$peer, column=>"contactlist", 
+				    edit=>$editbgp, linkPage=>"view.html", returnValOnly=>1) );
 	push( @rows, \@row );
     }
-    push @rows, ["&nbsp;", "", "", "", "", ""];
+    push @rows, ["&nbsp;", "", "", "", "", "", "", ""];
 }
 if ( $ipeers ){
-    push @rows, ["<strong>Internal (iBGP)</strong>", "", "", "", "", ""];
+    push @rows, ["<strong>Internal (iBGP)</strong>", "", "", "", "", "", "", ""];
     
     foreach my $peer (@$ipeers){
 	my (@row) = ();
@@ -1278,7 +1283,10 @@ if ( $ipeers ){
 	}else{
 	    push( @row, $peer->entity->asnumber );
 	}
+	push( @row, $peer->state );
 	push( @row, $ui->radio_group_boolean(object=>$peer, column=>"monitored", edit=>$editbgp, returnAsVar=>1) );
+	push( @row, $ui->form_field(object=>$peer, column=>"contactlist", 
+				    edit=>$editbgp, linkPage=>"view.html", returnValOnly=>1) );
 	push( @rows, \@row );
     }
 }

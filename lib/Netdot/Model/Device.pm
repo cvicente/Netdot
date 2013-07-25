@@ -730,7 +730,7 @@ sub get_snmp_info {
     }
 
     if ( $args{bgp_peers} || $self->config->get('ADD_BGP_PEERS')) {
-	push @SMETHODS, qw( bgp_peers bgp_peer_id bgp_peer_as );
+	push @SMETHODS, qw( bgp_peers bgp_peer_id bgp_peer_as bgp_peer_state );
     }
 
     my %hashes;
@@ -1211,6 +1211,9 @@ sub get_snmp_info {
 		}
 	    }else{
 		$logger->warn("Could not determine AS number of peer $peer");
+	    }
+	    if ( my $state = $hashes{'bgp_peer_state'}->{$peer} ){
+		$dev{bgp_peer}{$peer}{state} = $state;
 	    }
 	}
     }
@@ -2637,7 +2640,9 @@ sub update_bgp_peering {
     my %pstate = (device      => $self,
 		  entity      => $entity,
 		  bgppeerid   => $peer->{bgppeerid},
-		  bgppeeraddr => $peer->{address});
+		  bgppeeraddr => $peer->{address},
+		  state       => $peer->{state},
+	);
 	
     # Check if peering exists
     foreach my $peerid ( keys %{ $old_peerings } ){
@@ -2655,6 +2660,11 @@ sub update_bgp_peering {
     }
     if ( $p ){
 	# Update in case anything has changed
+	# Only change last_changed if the state has changed
+	if ( defined $p->state && defined $pstate{state} && 
+	     $p->state ne $pstate{state} ){
+	    $pstate{last_changed} = $self->timestamp;
+	}
 	my $r = $p->update(\%pstate);
 	$logger->debug(sub{ sprintf("%s: Updated Peering with: %s. ", $host, $entity->name)}) if $r;
 	
@@ -2666,6 +2676,7 @@ sub update_bgp_peering {
 	}else{
 	    $pstate{monitored} = 0;
 	}
+	$pstate{last_changed} = $self->timestamp;
 	$p = BGPPeering->insert(\%pstate);
 	my $peer_label;
 	$peer_label = $entity->name  if ($entity && ref($entity)) ;
@@ -3603,7 +3614,7 @@ sub bgppeers_by_entity {
     ip        <address> Return peers whose Remote IP matches <address>
     as        <integer> Return peers whose AS matches <integer>
     type      <string>  Return peers of type [internal|external|all*]
-    sort      <string>  Sort by [entity*|asnumber|asname|id|ip]
+    sort      <string>  Sort by [entity*|asnumber|asname|id|ip|state]
 
     (*) default
 
@@ -3649,6 +3660,8 @@ sub get_bgp_peers {
 	return $self->bgppeers_by_ip(\@peers);
     }elsif( $argv{sort} eq "id" ){
 	return $self->bgppeers_by_id(\@peers);
+    }elsif( $argv{sort} eq "state" ){
+	@peers = sort { $a->state cmp $b->state } @peers; 
     }else{
 	$self->throw_fatal("Model::Device::get_bgp_peers: Invalid sort argument: $argv{sort}");
     }

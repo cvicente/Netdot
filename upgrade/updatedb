@@ -203,6 +203,14 @@ sub upg_104_105 {
 	push @statements, "ALTER TABLE device MODIFY bgplocalas bigint;";
 	push @statements, "UPDATE device,asn SET device.bgplocalas=asn.id WHERE device.bgplocalas=asn.number;"; 
 
+	push @statements, "ALTER TABLE bgppeering ADD COLUMN contactlist bigint NOT NULL;";
+	push @statements, "ALTER TABLE bgppeering ADD COLUMN last_changed timestamp NOT NULL;";
+	push @statements, "ALTER TABLE bgppeering ADD COLUMN peer_group varchar(255);";
+	push @statements, "ALTER TABLE bgppeering ADD COLUMN state varchar(255);";
+	push @statements, "ALTER TABLE bgppeering DROP FOREIGN KEY `fk_monitorstatus`;";
+	push @statements, "ALTER TABLE bgppeering DROP INDEX monitorstatus;";
+	push @statements, "ALTER TABLE bgppeering DROP COLUMN monitorstatus;";
+
 
     }elsif ( $dbms eq 'Pg' ){
 
@@ -235,6 +243,12 @@ sub upg_104_105 {
 	push @statements, "INSERT INTO asn (number) SELECT DISTINCT bgplocalas FROM device WHERE bgplocalas IS NOT NULL;";
 	push @statements, "ALTER TABLE device ALTER COLUMN bgplocalas TYPE bigint;";
 	push @statements, "UPDATE device SET bgplocalas=asn.id FROM asn WHERE device.bgplocalas=asn.number;"; 
+
+	push @statements, "ALTER TABLE bgppeering ADD COLUMN contactlist bigint NOT NULL;";
+	push @statements, "ALTER TABLE bgppeering ADD COLUMN last_changed timestamp NOT NULL";
+	push @statements, "ALTER TABLE bgppeering ADD COLUMN peer_group character varying(255);";
+	push @statements, "ALTER TABLE bgppeering ADD COLUMN state character varying(255);";
+	push @statements, "ALTER TABLE bgppeering DROP COLUMN monitorstatus;";
 
     }
     

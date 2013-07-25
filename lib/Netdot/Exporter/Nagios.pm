@@ -261,7 +261,13 @@ sub generate_configs {
 		$hosts{$ip}{service}{$srvname}{peeraddr}     = $peeraddr;
 		$hosts{$ip}{service}{$srvname}{srvname}      = $srvname;
 		$hosts{$ip}{service}{$srvname}{community}    = $devh->{community};
-		$hosts{$ip}{service}{$srvname}{contactlists} = \@clids;
+		my @peercls;
+		if ( $peering->{contactlist} ){
+		    push @peercls, $peering->{contactlist};
+		}else{
+		    push @peercls, @clids;
+		}
+		$hosts{$ip}{service}{$srvname}{contactlists} = \@peercls;
 	    }
 	}
 
