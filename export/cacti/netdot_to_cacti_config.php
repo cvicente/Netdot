@@ -83,27 +83,25 @@ $hostGroupStyle = 2;    /* 1 = Graph Template,  2 = Data Query Index */
 /* ---------------------------------------------------------------------------------- */
 /* SNMP - Interface Statistics 
 */
-$dsGraphs["any"]["Interface Statistics"]["snmpQueryId"] = 1;
 
-/* 
-Select a subset of the interfaces:
-*/
-$dsGraphs["any"]["Interface Statistics"]["snmpCriteria"] = "field_name='ifSpeed' AND field_value<='100000000'";
-
-$dsGraphs["any"]["Interface Statistics"]["queryTypeIds"] = array(2  => 22,  // In/Out Errors/Discarded Packets
-								 3  => 24,  // In/Out Non-Unicast Packets
-								 4  => 23,  // In/Out Unicast Packets
-								 13 => 2,   // In/Out Bits
-								 );
 
 $dsGraphs["any"]["64-bit Interface Statistics"]["snmpQueryId"]  = 1;
-$dsGraphs["any"]["64-bit Interface Statistics"]["snmpCriteria"] = "field_name='ifSpeed' AND field_value>'100000000'";
+$dsGraphs["any"]["64-bit Interface Statistics"]["snmpCriteria"] = "field_name='ifHighSpeed' ";
 $dsGraphs["any"]["64-bit Interface Statistics"]["queryTypeIds"] = array(2  => 22,  // In/Out Errors/Discarded Packets
 									3  => 24,  // In/Out Non-Unicast Packets
 									4  => 23,  // In/Out Unicast Packets
 									14 => 2,   // In/Out Bits (64-bit Counters)
 									);
 
+// Here, the plan is that if the above criteria isn't met, then these graphs will be created instead
+// Tests so far indicate that both types of graphs will not be created for the same host
+$dsGraphs["any"]["Interface Statistics"]["snmpQueryId"] = 1;
+$dsGraphs["any"]["Interface Statistics"]["snmpCriteria"] = "field_name='ifSpeed'";
+$dsGraphs["any"]["Interface Statistics"]["queryTypeIds"] = array(2  => 22,  // In/Out Errors/Discarded Packets
+								 3  => 24,  // In/Out Non-Unicast Packets
+								 4  => 23,  // In/Out Unicast Packets
+								 13 => 2,   // In/Out Bits
+								 );
 /* Host MIB Mounted Partitions Stats */
 $dsGraphs["3"]["Mounted Partitions"]["snmpQueryId"]  = 8;
 $dsGraphs["3"]["Mounted Partitions"]["snmpCriteria"] = "field_name='hrStorageIndex'";
