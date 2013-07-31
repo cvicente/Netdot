@@ -682,7 +682,7 @@ sub update_ip {
 		
 		# Add description from interface if not set
 		$iargs{description} = $self->description 
-		    if ( $subnetobj->description eq "" );
+		    if ( !defined $subnetobj->description || $subnetobj->description eq "" );
 
 		$subnetobj->update(\%iargs); # Makes sure that the status is set to subnet
 		
