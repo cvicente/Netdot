@@ -152,6 +152,10 @@ while ($row = $q->FetchRow()) {
   if (!$community){
     $community = "public";
   }
+  // This is a new requirement of api_device_save as of Cacti 0.8.8
+  if ($snmp_priv_protocol == 'AES'){
+    $snmp_priv_protocol = 'AES128';
+  }
   $disable = ($enabled)? 0 : 1;
   
   // Try to assign a template
