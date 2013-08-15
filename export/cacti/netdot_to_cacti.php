@@ -394,6 +394,7 @@ foreach ($groups as $group => $hosts){
 	$GraphAttr["hostTemplateId"] = $template_id;
 	$GraphAttr["hostId"]         = $hostId;
 	$GraphAttr["description"]    = $description;
+	$GraphAttr["ignoreIntsLike"] = $ignoreIntsLike;
 	debug("$description: Creating ds graphs: $descr");
 	$dsGraphsCreated = create_ds_graphs($GraphAttr);
 	if ( $dsGraphsCreated ){
@@ -448,6 +449,7 @@ function create_ds_graphs($args) {
   $description     = $args["description"];
   $queryTypeIds    = $args["queryTypeIds"];
   $snmpQueryId     = $args["snmpQueryId"];
+  $ignoreIntsLike  = $args["ignoreIntsLike"];
 
   if (!isset($hostId) || !isset($description) || !isset($queryTypeIds) || !isset($snmpQueryId)){
     echo "ERROR: create_ds_graph: Missing required arguments\n";
@@ -490,10 +492,55 @@ function create_ds_graphs($args) {
    if (isset($args["snmpCriteria"]) && $args["snmpCriteria"] != ""){
      $indexes_query .= " AND ". $args["snmpCriteria"];
    }
-   
+
    $snmpIndexes = db_fetch_assoc($indexes_query);
+
+   // Interfaces to ignore
+
+   if($snmpQueryId == 1 && count($snmpIndexes) && 
+      isset($ignoreIntsLike) && count($ignoreIntsLike)){
+     $ignQuery = "SELECT snmp_index
+                  FROM   host_snmp_cache
+                  WHERE  host_id='$hostId'
+                    AND  snmp_query_id=1
+                    AND  field_name='ifDescr'";
+     
+     $patts = array();
+     foreach ($ignoreIntsLike as $patt){
+       array_push($patts, "field_value LIKE '$patt'");
+     }
+
+     $crit = implode(' OR ', $patts);
+     $ignQuery .= " AND ($crit)";
+
+     debug('$ignQuery is: '.$ignQuery);
+     $ignIndexes = db_fetch_assoc($ignQuery);
+
+     // Make into an associative array for faster lookups
+     $ignHash = array();
+     foreach ($ignIndexes as $row){
+       $ignHash[$row["snmp_index"]] = TRUE;
+     }
+
+     debug('$ignHash has: ');
+     debug(var_export($ignHash));
+     
+     if (count($ignHash)){
+       // Now exclude the indexes that matched the ignore patterns
+       $temparr = array();
+       foreach ($snmpIndexes as $row){
+	 if (!isset($ignHash[$row["snmp_index"]])) {
+	   array_push($temparr, $row);
+	 }
+       }
+       $snmpIndexes = $temparr;
+     }
+   }
+
+   debug('$snmpIndexes has: '); 
+   debug(var_export($snmpIndexes));
    
-   if (sizeof($snmpIndexes)) {
+   if (count($snmpIndexes)) {
     $graphsCreated = 0;
     $graphs = db_fetch_assoc("SELECT id, snmp_index, graph_template_id
                               FROM   graph_local

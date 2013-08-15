@@ -102,6 +102,11 @@ $dsGraphs["any"]["Interface Statistics"]["queryTypeIds"] = array(2  => 22,  // I
 								 4  => 23,  // In/Out Unicast Packets
 								 13 => 2,   // In/Out Bits
 								 );
+
+// Ignore interfaces matching these patterns in their names
+// Notice that we use the '%' wildcard for SQL
+$ignoreIntsLike = array('lo%', 'ipfw%', 'usbus%', 'plip%', 'dwdm%', '127.0.0.%');
+
 /* Host MIB Mounted Partitions Stats */
 $dsGraphs["3"]["Mounted Partitions"]["snmpQueryId"]  = 8;
 $dsGraphs["3"]["Mounted Partitions"]["snmpCriteria"] = "field_name='hrStorageIndex'";
