@@ -171,13 +171,16 @@ if( $deviceadd && $newhost ){
     $o = Device->retrieve($id);
 }
 
-if ( $o && $o->name ){
-    $name = (defined $o->name->name) ? $o->name->name : "Name N/A!";
-    $fqdn = $name . "." . $o->name->zone->name;
+if ( $o ){
     $id = $o->id;
-
+    if ( $o->name ){
+	$name = (defined $o->name->name) ? $o->name->name : "Name N/A!";
+	$fqdn = $name . "." . $o->name->zone->name;
+    }else{
+	$m->comp('/generic/error.mhtml', error=>"Device name not set");
+    }
 }elsif ( ! $search ){
-    $m->comp('/generic/error.mhtml', error=>"Device undefined or no name set");
+    $m->comp('/generic/error.mhtml', error=>"Cannot retrieve device");
 }
 
 if ( $view eq "Interfaces" || $view eq "Topology" || $view eq "All" ){
