@@ -94,9 +94,10 @@ sub update{
 sub _validate {
     my ($self, $args) = @_;
     
-    my $num = $args->{number};
-    if ( $num < 1 || $num > 4294967295 ){
-	$self->throw_user("Invalid AS number: $num");	
+    if ( my $num = $args->{number} ){
+	if ( $num < 1 || $num > 4294967295 ){
+	    $self->throw_user("Invalid AS number: $num");	
+	}
     }
 
     if ( my $rir = $args->{rir} ){
