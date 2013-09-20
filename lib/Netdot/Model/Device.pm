@@ -712,7 +712,6 @@ sub get_snmp_info {
 
     $logger->debug("Device::get_snmp_info: SNMP target is $dev{snmp_target}");
     
-    $dev{snmp_version} = $sinfo->snmp_ver;
     $dev{community}    = $sinfo->snmp_comm if ( defined $sinfo->snmp_ver && $sinfo->snmp_ver != 3 );
 
     my $name_src = ( $self->config->get('IFNAME_SHORT') eq '1' )? 
