@@ -222,6 +222,10 @@ sub upg_104_105 {
 	push @statements, "ALTER TABLE bgppeering DROP INDEX monitorstatus;";
 	push @statements, "ALTER TABLE bgppeering DROP COLUMN monitorstatus;";
 
+	push @statements, "ALTER TABLE rrds DROP FOREIGN KEY `fk_rr_2`;";
+	push @statements, "ALTER TABLE rrds DROP INDEX `rrds1`;";
+	push @statements, "CREATE UNIQUE INDEX rrds1 ON rrds (rr, key_tag, algorithm, digest_type);";
+	push @statements, "ALTER TABLE rrds ADD CONSTRAINT `fk_rr_2` FOREIGN KEY (`rr`) REFERENCES `rr` (`id`);";
 
     }elsif ( $dbms eq 'Pg' ){
 
@@ -268,6 +272,9 @@ sub upg_104_105 {
 	push @statements, "ALTER TABLE bgppeering ADD COLUMN peer_group character varying(255);";
 	push @statements, "ALTER TABLE bgppeering ADD COLUMN state character varying(255);";
 	push @statements, "ALTER TABLE bgppeering DROP COLUMN monitorstatus;";
+
+	push @statements, 'DROP CONSTRAINT "rrds1";';
+	push @statements, 'ALTER TABLE bgppeering ADD CONSTRAINT "rrds1" UNIQUE ("rr", "key_tag", "algorithm", "digest_type");';
 
     }
     
