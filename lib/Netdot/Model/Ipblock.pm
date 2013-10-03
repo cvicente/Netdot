@@ -763,7 +763,8 @@ sub reserve_first_n {
     my $num = $class->config->get('SUBNET_AUTO_RESERVE');
     if ( $num && $num < $self->num_addr ){
 	for ( 1..$num ){
-	    my $addr = $self->get_next_free();
+	    my $strategy = $class->config->get('SUBNET_AUTO_RESERVE_STRATEGY');
+	    my $addr = $self->get_next_free(strategy=>$strategy);
 	    eval {
 		$class->insert({address=>$addr, status=>'Reserved', 
 				parent=>$self->id, no_update_tree=>1,
