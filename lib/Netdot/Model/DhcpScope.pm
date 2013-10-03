@@ -113,10 +113,19 @@ sub insert {
 	}
     }elsif ( $scope->type->name eq 'shared-network' ){
 	# Shared subnets need to point to the new shared-network scope 
+	my $failoverstatus = 0;
 	foreach my $s ( @shared_subnets ){
 	    my $subnet_scope = $s->dhcp_scopes->first;
 	    $subnet_scope->update({container=>$scope, 
 				   ipblock=>$s});
+	    if ( $subnet_scope->enable_failover == 1 ) {
+		$failoverstatus = 1;
+	    }
+	}
+	if ( $failoverstatus ){
+	    my $failover_peer = $scope->container->failover_peer || 'dhcp-peer';
+	    $scope->SUPER::update({enable_failover => 1, 
+				   failover_peer   => $failover_peer});
 	}
     }
     $scope->_update_attributes($attributes) if $attributes;
