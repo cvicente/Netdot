@@ -490,7 +490,13 @@ sub add_host {
 	    if ( my $ipb = Ipblock->search(address=>$address, 
 					   prefix=>$prefix)->first ){
 		if ( $ipb->status->name ne 'Available' ){
-		    $class->throw_user("Address $address is not available");
+		    if ($ipb->status->name eq 'Discovered') {
+			my $discovered_overwrite = Netdot->config->get("USER_DISCOVERED_OVERWRITE");
+			$class->throw_user("Address $address is not available")
+			    unless ($discovered_overwrite);
+		    } else {
+			$class->throw_user("Address $address is not available");
+		    }
 		}
 	    }
 

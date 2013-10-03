@@ -26,6 +26,8 @@ my $make_cell = sub {
 	@argv{'caller', 'id', 'addr', 'disp_addr', 'divtitle', 'divclass', 
 	      'priv_user', 'can_edit', 'can_choose', 'subnet_id', 'used'};
 
+    our $DISCOVERED_OVERWRITE;
+
     my $str = $disp_addr;
     if ( $caller eq 'choose_ip.html' ){
 	# Called as a popup window
@@ -50,6 +52,16 @@ my $make_cell = sub {
 		}
 	    }elsif ( $divclass eq 'ipaddr_static' || $priv_user ){
 		$str = '<a href="'.$comp.'?id='.$id.'" class="ipaddr">'.$str.'</a>';
+		
+	    }elsif ( $DISCOVERED_OVERWRITE && ($divclass eq 'ipaddr_discovered') ) {
+		if ( $priv_user && $can_edit ){
+		    # User is either admin or operator with edit rights
+		    $str = '<a href="'.$comp.'?id='.$id.'" class="ipaddr">'.$str.'</a>';
+		}elsif ( $can_choose ){
+		    # User is regular user, but has choose_ip rights
+		    $str = '<a href="../user_management/add_host.html?address='.$addr.
+			'&add_host_block='.$subnet_id.'" class="ipaddr">'.$str.'</a>';
+		}
 	    }
 	}else{
 	    if ( $priv_user && $can_edit ){
@@ -71,6 +83,8 @@ my $make_cell = sub {
 <%init>
 
 my $BLOCK_MAX = Netdot->config->get('SUBNET_BLOCK_VIEW_MAX_PREFIX');
+our $DISCOVERED_OVERWRITE = Netdot->config->get('USER_DISCOVERED_OVERWRITE');
+
 if ( $network->version == 4 && $network->prefix < $BLOCK_MAX ){
     print "This subnet is too big for the block view";
     $m->abort;
