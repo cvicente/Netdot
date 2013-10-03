@@ -112,6 +112,10 @@ if ( $submit ){
 		}
 		my $addr = $block->address;
 		$addr =~ s/:$//;
+		my $number =()= $addr =~ /\:/gi;
+		if ( $number == 3 ) {
+		    $addr.="0:";
+		}
 		$addr .= join(':', map { $parts{$_} } sort { $a <=> $b } keys %parts);
 		$args{address} = $addr;
 	    }
@@ -262,6 +266,10 @@ function showIPv6Input(selectObj, Layer){
 %			 }
 %                        my $txt = join ':', @txt;
 %			 $blockaddr =~ s/:$//;
+%                        my $number =()= $blockaddr =~ /\:/gi;
+%                        if ( $number == 3 ) {
+%                            $blockaddr.="0:";
+%                        }
 %                        print $blockaddr . $txt;
 %                     }else{
                           <input type="text" name="address" class="longtxt" value=""> 
