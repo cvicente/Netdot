@@ -195,6 +195,9 @@ sub generate_configs {
 	$hosts{$ip}{name} ||= $ip;
 	$hostnames{$hosts{$ip}{name}} = 1;
 
+	# Template 
+	$hosts{$ip}{use_host} = $devh->{mon_template} if defined $devh->{mon_template};
+
   	# Determine the hostgroup name and alias
  	my $group_name;
 	my $group_alias;
@@ -438,12 +441,16 @@ sub print_host {
     my $ip        = $argv->{ip};
     my $group     = $argv->{group};
     my $parents   = $argv->{parents};
+    my $use_host  = $argv->{use_host};
     my @cls       = @{ $argv->{contactlists} } if $argv->{contactlists};
     my $out       = $self->{out};
 
     my $generic_host = $self->{NAGIOS_TEMPLATES}->{generic_host};
     my $generic_trap = $self->{NAGIOS_TEMPLATES}->{generic_trap};
     my $generic_ping = $self->{NAGIOS_TEMPLATES}->{generic_ping};
+
+    # Use the generic template if not passed to us
+    $use_host ||= $generic_host;
 
     my $contactlists = $self->{contactlists};
     my %levels;
@@ -474,7 +481,7 @@ sub print_host {
 	    
 	    if ( $first ){
 		print $out "define host{\n";
-		print $out "\tuse                    $generic_host\n";
+		print $out "\tuse                    $use_host\n";
 		print $out "\thost_name              $name\n";
 		print $out "\talias                  $alias\n";
 		print $out "\taddress                $ip\n";
@@ -517,7 +524,7 @@ sub print_host {
     }
     if ( !@cls || !keys %levels ){
 	print $out "define host{\n";
-	print $out "\tuse                    $generic_host\n";
+	print $out "\tuse                    $use_host\n";
 	print $out "\thost_name              $name\n";
 	print $out "\talias                  $alias\n";
 	print $out "\taddress                $ip\n";
