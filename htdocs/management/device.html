@@ -513,10 +513,23 @@ $ui->add_to_fields(o=>$o, edit=>0, fields=>\@fields, field_headers=>\@field_head
 $ui->add_to_fields(o=>$o, edit=>0, fields=>['date_installed', 'last_updated'], field_headers=>\@field_headers, cell_data=>\@cell_data);
 
 {
-    my @fields = ('oobname', 'oobname_2', 'oobnumber', 'oobnumber_2', 'power_outlet', 'power_outlet_2',
-		  'monitored', 'monitoring_template', 'monitoring_path_cost', 'customer_managed', 
-		  'monitor_config', 'monitor_config_group', 'down_from', 'down_until', 
-		  'snmp_managed', 'auto_dns');
+    my @fields = ('oobname', 'oobname_2', 'oobnumber', 'oobnumber_2', 'power_outlet', 'power_outlet_2', 'monitored');
+    $ui->add_to_fields(o=>$o, edit=>$editmgmt, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
+
+    if ( $o->monitored ){
+	my %tmp;
+	if ( $editmgmt ){
+	    my $templates = Netdot->config->get('DEV_MONITORING_TEMPLATES');
+	    %tmp = $ui->form_field(object=>$o, column=>"monitoring_template", defaults=>$templates, edit=>$editmgmt);
+	}else{
+	    %tmp = $ui->form_field(object=>$o, column=>"monitoring_template", edit=>$editmgmt);
+	}
+	push( @field_headers, $tmp{label} );
+	push( @cell_data, $tmp{value} );
+    }
+
+    @fields = ('monitoring_path_cost', 'customer_managed', 'monitor_config', 'monitor_config_group', 
+	       'down_from', 'down_until', 'snmp_managed', 'auto_dns');
     $ui->add_to_fields(o=>$o, edit=>$editmgmt, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
     
     push( @field_headers, $ui->col_descr_link('Device', 'layers', 'Layers:') );
