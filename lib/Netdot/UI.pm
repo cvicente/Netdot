@@ -939,6 +939,7 @@ sub text_field($@){
 	if ( $defaults && ref($defaults) eq "HASH" ){
 	    # Show a select tag instead
 	    $output .= "<select name=\"$name\">";
+	    $output .= '<option value=""></option>';
 	    my $value_found = 0;
 	    foreach my $key ( sort { $defaults->{$a} cmp $defaults->{$b} } 
 			      keys %$defaults ){
@@ -950,7 +951,7 @@ sub text_field($@){
 		    $output .= "<option value=\"$key\">$v</option>";
 		}
 	    }
-	    unless ( $value_found ){
+	    if ( !$value_found && $value ne "" ){
 		$output .= "<option value=\"$value\" SELECTED>$value</option>";
 	    }
 	    $output .= '</select>';
