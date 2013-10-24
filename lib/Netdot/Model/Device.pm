@@ -6141,6 +6141,10 @@ sub _update_interfaces {
 	next unless ( defined $obj );
 	next if ( ref($obj) =~ /deleted/i );
 
+	# Don't delete if interface was added manually, which means that
+	# the IP was probably manually added too.
+	next if ($obj->interface && $obj->interface->doc_status eq 'manual');
+
 	# Don't delete dynamic addresses, just unset the interface
 	if ( $obj->status && $obj->status->name eq 'Dynamic' ){
 	    $obj->update({interface=>undef});
