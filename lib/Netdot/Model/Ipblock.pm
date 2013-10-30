@@ -1544,6 +1544,8 @@ sub is_address {
     my $self = shift;
     $self->isa_object_method('is_address');
 
+    return unless ($self->version && $self->prefix);
+
     if ( ($self->version == 4 && $self->prefix == 32) 
 	 || ($self->version == 6 && $self->prefix == 128) ){
 	return 1; 
@@ -3550,6 +3552,7 @@ sub _obj_int2ip {
 
     return unless ( $self->id );
     my $decimal = $self->address;
+    return 0 unless $decimal;
     unless ( $decimal =~ /\D/o ){
 	my $ip = $self->int2ip($decimal, $self->version);
 	$self->_attribute_store({address => $ip, decimal => $decimal});
