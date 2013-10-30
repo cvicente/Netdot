@@ -100,6 +100,10 @@ if ( $action eq "discover" ){
 	if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>$e);
 	}
+
+	if ( !$info ){
+	    $m->comp('/generic/error.mhtml', error=>'SNMP session failed.');
+	}
 	
     }
     elsif ( $host ){
@@ -127,6 +131,11 @@ if ( $action eq "discover" ){
 	if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>$e);
 	}
+
+	if ( !$info ){
+	    $m->comp('/generic/error.mhtml', error=>'SNMP session failed.');
+	}
+
 	print "info contains: <pre>", Dumper(%$info), "</pre>" if $DEBUG;
 	
 	# Make sure we don't have a device by this name already

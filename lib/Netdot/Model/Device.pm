@@ -3925,7 +3925,7 @@ sub _get_snmp_session {
 	}
 
 	# We might already have a SNMP::Info class
-	$sclass ||= $self->{_sclass};
+	$sclass ||= $self->{_sclass} if defined $self->{_sclass};
 	
 	# Fill out some arguments if not given explicitly
 	unless ( $argv{host} ){
@@ -3956,7 +3956,7 @@ sub _get_snmp_session {
 	sqe           => $argv{sqe},
 	);
 
-    if ( defined $sclass ) {
+    if ( defined $sclass && $sclass ne 'SNMP::Info' ) {
 	$sinfoargs{AutoSpecify} = 0;
     }else{
 	$sinfoargs{AutoSpecify} = 1;
