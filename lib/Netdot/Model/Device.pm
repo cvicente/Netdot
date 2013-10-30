@@ -432,11 +432,9 @@ sub assign_name {
 	unless $host;
 
     # An RR record might already exist
-    if ( defined $host && (my @rrs = RR->search(name=>$host)) ){
-	if ( scalar @rrs == 1 ){
-	    $logger->debug(sub{"Name $host exists in DB"});
-	    return $rrs[0];
-	}
+    if ( defined $host && (my $rr = RR->search(name=>$host)->first) ){
+	$logger->debug(sub{"Name $host exists in DB"});
+	return $rr;
     }
     # An RR matching $host does not exist, or the name exists in 
     # multiple zones
