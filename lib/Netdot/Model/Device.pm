@@ -2938,13 +2938,37 @@ sub info_update {
 	reserved_for  => "", # needs to be cleared when device gets installed
 	);
     
-    # This is an OR (notice the arrayref)
-    my @where;
-    push(@where, { serial_number => $asset_args{serial_number} }) 
+    # Search for an asset based on either serial number or base MAC
+    # If two different assets are found, we will have to pick one and
+    # delete the other, as this leads to errors
+    my $asset_sn = Asset->search(serial_number=>$asset_args{serial_number})->first
 	if $asset_args{serial_number};
-    push(@where, { physaddr => $asset_args{physaddr} }) 
+    my $asset_phy = Asset->search(physaddr=>$asset_args{physaddr})->first
 	if $asset_args{physaddr};
-    my $asset = Asset->search_where(\@where)->first if @where;
+    
+    my $asset;
+    if ( $asset_sn && $asset_phy ){
+	if ($asset_sn->id != $asset_phy->id ){
+	    # Not the same. We'll just choose the one
+	    # with the serial number
+	    # Reassign any devices or device_modules' assets
+	    foreach my $dev ( $asset_phy->devices ){
+		$dev->update({asset_id=>$asset_sn});
+	    }
+	    foreach my $mod ( $asset_phy->device_modules ){
+		$mod->update({asset_id=>$asset_sn});
+	    }
+	    $logger->debug(sub{ sprintf("%s: Deleting duplicate asset %s", 
+					$host, $asset_phy->get_label)});
+	    $asset_phy->delete();
+	}
+	$asset = $asset_sn;
+    }elsif ( $asset_sn ){
+	$asset = $asset_sn;
+    }elsif ( $asset_phy ){
+	$asset = $asset_phy;
+    }
+
     my $dev_product;
     if ( $asset ){
 	# Make sure that the data is complete with the latest info we got
