@@ -837,7 +837,7 @@ sub get_snmp_info {
 				my $stp_p_info;
 				my $i_stp_info;
 				eval {
-				    my $vsinfo = $class->_get_cisco_snmp_context_session(sinfo => $sinfo,
+				    my $vsinfo = $self->_get_cisco_snmp_context_session(sinfo => $sinfo,
 											 vlan  => $vid);
 				    
 				    return unless $vsinfo;
@@ -880,7 +880,7 @@ sub get_snmp_info {
 			    next if ( exists $IGNOREDVLANS{$vid} );
 			    next unless $vlan_status{$vid} eq 'operational';
 			    eval {
-				my $vsinfo = $class->_get_cisco_snmp_context_session(sinfo => $sinfo,
+				my $vsinfo = $self->_get_cisco_snmp_context_session(sinfo => $sinfo,
 										     vlan  => $vid);
 				
 				return unless $vsinfo;
@@ -5129,7 +5129,7 @@ sub _get_fwt_from_snmp {
 	    next if ( $argv{vlan} && $argv{vlan} ne $vlan );
 	    my $vlan_sinfo;
 	    eval {
-		$vlan_sinfo = $class->_get_cisco_snmp_context_session(sinfo=>$sinfo, vlan=>$vlan);
+		$vlan_sinfo = $self->_get_cisco_snmp_context_session(sinfo=>$sinfo, vlan=>$vlan);
 	    };
 	    if ( my $e = $@ ){ 
                 $logger->error("$host: SNMP error for VLAN $vlan: $e");
