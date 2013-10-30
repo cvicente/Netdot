@@ -228,6 +228,7 @@ sub upg_104_105 {
 	push @statements, "ALTER TABLE rrds ADD CONSTRAINT `fk_rr_2` FOREIGN KEY (`rr`) REFERENCES `rr` (`id`);";
 
 	push @statements, "ALTER TABLE device ADD COLUMN monitoring_template varchar(255);";
+	push @statements, "ALTER TABLE device_history ADD COLUMN monitoring_template varchar(255);";
 
     }elsif ( $dbms eq 'Pg' ){
 
@@ -279,8 +280,9 @@ sub upg_104_105 {
 	push @statements, 'ALTER TABLE bgppeering ADD CONSTRAINT "rrds1" UNIQUE ("rr", "key_tag", "algorithm", "digest_type");';
 
 	push @statements, "ALTER TABLE device ADD COLUMN monitoring_template character varying(255);";
+	push @statements, "ALTER TABLE device_history ADD COLUMN monitoring_template character varying(255);";
     }
-    
+  
     push @statements, "UPDATE schemainfo SET version='1.0.5' WHERE id=1;";
 
 }
