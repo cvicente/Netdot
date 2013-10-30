@@ -4,7 +4,8 @@
 #
 # This script retrieves SNMP information from one ore more devices
 # and updates the Netdot database.  It can retrive basic device information
-# as well as bridge forwarding tables and ARP caches.
+# as well as bridge forwarding tables and ARP caches. In addition, it can
+# execute the topology discovery process.
 #
 use strict;
 use lib "<<Make:LIB>>";
@@ -18,8 +19,8 @@ my ($host, $blocks, $db, $matching, $file, $commstrs, $version, $sec_name,
     $sec_level, $auth_proto, $auth_pass, $priv_proto, $priv_pass);
 
 # Default values
-my $retries         = Netdot->config->get('DEFAULT_SNMPRETRIES');
-my $timeout         = Netdot->config->get('DEFAULT_SNMPTIMEOUT');
+my $retries = Netdot->config->get('DEFAULT_SNMPRETRIES');
+my $timeout = Netdot->config->get('DEFAULT_SNMPTIMEOUT');
 
 # Flags
 my ($ATOMIC, $ADDSUBNETS, $SUBSINHERIT, $BGPPEERS, $RECURSIVE, $INFO, $FWT, 
@@ -129,9 +130,23 @@ foreach my $flagref ( \$ADDSUBNETS, \$SUBSINHERIT, \$BGPPEERS ){
     }
 }
 
+# Common update arguments
+my %uargs = (version      => $version,
+	     timeout      => $timeout,
+	     retries      => $retries,
+	     sec_name     => $sec_name,
+	     sec_level    => $sec_level,
+	     auth_proto   => $auth_proto,
+	     auth_pass    => $auth_pass,
+	     priv_proto   => $priv_proto,
+	     priv_pass    => $priv_pass,
+    );
+
 my @communities = split ',', $commstrs if defined $commstrs;
 # Remove any spaces
 map { $_ =~ s/\s+// } @communities;
+
+$uargs{communities} = \@communities if @communities;
 
 # Add a log appender 
 my $logscr = Netdot::Util::Log->new_appender('Screen', stderr=>0);
@@ -160,32 +175,29 @@ $logger->info(sprintf("$0 started at %s", scalar localtime($start)));
 
 if ( $INFO || $FWT || $ARP ){
     
-    my %uargs = (version      => $version,
-		 timeout      => $timeout,
-		 retries      => $retries,
-		 sec_name     => $sec_name,
-		 sec_level    => $sec_level,
-		 auth_proto   => $auth_proto,
-		 auth_pass    => $auth_pass,
-		 priv_proto   => $priv_proto,
-		 priv_pass    => $priv_pass,
-		 pretend      => $PRETEND,
-		 atomic       => $ATOMIC,
-		 add_subnets  => $ADDSUBNETS,
-		 subs_inherit => $SUBSINHERIT,
-		 bgp_peers    => $BGPPEERS,
-		 do_info      => $INFO,
-		 do_fwt       => $FWT,
-		 do_arp       => $ARP,
-		 matching     => $matching,
+    # Arguments specific to these functions
+    my %dargs = (
+	pretend      => $PRETEND,
+	atomic       => $ATOMIC,
+	add_subnets  => $ADDSUBNETS,
+	subs_inherit => $SUBSINHERIT,
+	bgp_peers    => $BGPPEERS,
+	do_info      => $INFO,
+	do_fwt       => $FWT,
+	do_arp       => $ARP,
+	matching     => $matching,
 	);
-    $uargs{communities} = \@communities if @communities;
-    
+
+    # Add the common update arguments
+    while ( my($key, $val) = each %uargs ){
+	$dargs{$key} = $val;
+    }
+
     if ( $host ){
 	$logger->info("Updating single device: $host");
-	$uargs{name} = $host;
+	$dargs{name} = $host;
 	eval {
-	    Device->discover(%uargs);
+	    Device->discover(%dargs);
 	};
 	die "ERROR: $@\n" if $@;
 	
@@ -193,17 +205,17 @@ if ( $INFO || $FWT || $ARP ){
 	my @blocks = split ',', $blocks;
 	map { $_ =~ s/\s+//g } @blocks;
 	$logger->info("Updating all devices in $blocks");
-	$uargs{blocks} = \@blocks;
-	Netdot::Model::Device->snmp_update_block(%uargs);
+	$dargs{blocks} = \@blocks;
+	Netdot::Model::Device->snmp_update_block(%dargs);
 	
     }elsif ( $db ){
 	$logger->info("Updating all devices in the DB");
-	Netdot::Model::Device->snmp_update_all(%uargs);
+	Netdot::Model::Device->snmp_update_all(%dargs);
 	
     }elsif ( $file ){
 	$logger->info("Updating all devices in given file: $file");
-	$uargs{file} = $file;
-	Netdot::Model::Device->snmp_update_from_file(%uargs);
+	$dargs{file} = $file;
+	Netdot::Model::Device->snmp_update_from_file(%dargs);
 	
     }else{
 	print $USAGE;
@@ -215,9 +227,7 @@ if ( $TOPO ){
     $logger = Netdot->log->get_logger('Netdot::Topology');
     $logger->level($DEBUG) if ( $_DEBUG ); # Notice that $DEBUG is imported from Log::Log4perl
     $logger->add_appender($logscr);
-    my %uargs;
-    $uargs{recursive}   = 1 if $RECURSIVE;
-    $uargs{communities} = \@communities if @communities;
+    $uargs{recursive} = 1 if $RECURSIVE;
     Netdot::Topology->discover(%uargs);
 }
 
@@ -229,7 +239,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2009 University of Oregon, all rights reserved.
+Copyright 2013 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

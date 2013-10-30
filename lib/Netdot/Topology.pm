@@ -35,11 +35,21 @@ Netdot Device Topology Class
     exclude_p2p - optional, set to true to exclude P2P
     interfaces  - optional, interfaces to preform topology update on
     recursive   - optional, recursively discover unknown neighbors
-    communities - Array of communities to try when discovering unknown neighbors
+    communities - Arrayref of SNMP communities
+    version     - SNMP version
+    timeout     - SNMP timeout
+    retries     - SNMP retries
+    sec_name    - SNMP Security Name
+    sec_level   - SNMP Security Level
+    auth_proto  - SNMP Authentication Protocol
+    auth_pass   - SNMP Auth Key
+    priv_proto  - SNMP Privacy Protocol
+    priv_pass   - SNMP Privacy Key
+
   Returns:
     True
   Examples:
-    Netdot::Topology->discover();
+    Netdot::Topology->discover(%args);
 
 =cut
 
@@ -59,12 +69,10 @@ sub discover {
 			  $srcs, $MINSCORE));
     
     my $start = time;
-    my $stp_links = $class->get_stp_links() if ( $SOURCES{STP} );
-    my $fdb_links = $class->get_fdb_links() if ( $SOURCES{FDB} );
-    
-    my $dp_links  = $class->get_dp_links(%argv)  if ( $SOURCES{DP}  );
-    
-    my $p2p_links = $class->get_p2p_links() if ( $SOURCES{P2P} );
+    my $stp_links = $class->get_stp_links()     if ( $SOURCES{STP} );
+    my $fdb_links = $class->get_fdb_links()     if ( $SOURCES{FDB} );
+    my $dp_links  = $class->get_dp_links(%argv) if ( $SOURCES{DP}  );
+    my $p2p_links = $class->get_p2p_links()     if ( $SOURCES{P2P} );
 
     $logger->debug(sprintf("Netdot::Topology: All links determined in %s", 
 			   $class->sec2dhms(time - $start)));
@@ -311,9 +319,19 @@ sub update_links {
 =head2 get_dp_links - Get links between devices based on Discovery Protocol (CDP/LLDP) Info 
 
   Arguments:  
-    interfaces  - Optional interfaces to get dp links from
-    recursive   - Recursively discover unknown neighbors
-    communities - Array of communities to try when discovering unknown neighbors
+    interfaces    - Optional interfaces to get dp links from
+    recursive     - Recursively discover unknown neighbors
+    communities   - Arrayref of SNMP communities
+    version       - SNMP version
+    timeout       - SNMP timeout
+    retries       - SNMP retries
+    sec_name      - SNMP Security Name
+    sec_level     - SNMP Security Level
+    auth_proto    - SNMP Authentication Protocol
+    auth_pass     - SNMP Auth Key
+    priv_proto    - SNMP Privacy Protocol
+    priv_pass     - SNMP Privacy Key
+
   Returns:    
     Hashref with link info
   Example:
@@ -556,6 +574,13 @@ sub get_dp_links {
     $logger->debug(sprintf("Topology::get_dp_links: %d Links determined in %s", 
 			   scalar keys %links, $class->sec2dhms(time - $start)));
     
+    # Grab the relevant arguments for Device::discover()
+    my %dargs;
+    foreach my $key (qw/communities version timeoutretries sec_name sec_level 
+                        auth_proto auth_pass priv_proto priv_pass /){
+	$dargs{$key} = $argv{$key};
+    }
+
     my @new_devs;
     IPLOOP: foreach my $ip ( keys %ips2discover ){
 	foreach my $block ( keys %$excluded_blocks ){
@@ -567,7 +592,7 @@ sub get_dp_links {
 	}
 	$logger->info("Topology::get_dp_links: Discovering unknown neighbor: $ip");
 	eval {
-	    push @new_devs, Device->discover(name=>$ip, communities=>$argv{communities});
+	    push @new_devs, Device->discover(name=>$ip, %dargs);
 	};
     }
     if ( @new_devs && $argv{recursive} ){
