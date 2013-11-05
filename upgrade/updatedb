@@ -211,11 +211,11 @@ sub upg_104_105 {
 
 	push @statements, "UPDATE device,asn SET device.bgplocalas=asn.id WHERE device.bgplocalas=asn.number;"; 
 
-	push @statements, "ALTER TABLE bgppeering ADD COLUMN contactlist bigint NOT NULL;";
+	push @statements, "ALTER TABLE bgppeering ADD COLUMN contactlist bigint;";
 	push @statements, "ALTER TABLE bgppeering ADD CONSTRAINT `fk_contactlist_bgppeering` FOREIGN KEY (`contactlist`) ".
 	    "REFERENCES `contactlist` (`id`);";
 	push @statements, "CREATE INDEX contactlist ON bgppeering (contactlist)";
-	push @statements, "ALTER TABLE bgppeering ADD COLUMN last_changed timestamp NOT NULL;";
+	push @statements, "ALTER TABLE bgppeering ADD COLUMN last_changed timestamp;";
 	push @statements, "ALTER TABLE bgppeering ADD COLUMN peer_group varchar(255);";
 	push @statements, "ALTER TABLE bgppeering ADD COLUMN state varchar(255);";
 	push @statements, "ALTER TABLE bgppeering DROP FOREIGN KEY `fk_monitorstatus`;";
@@ -268,10 +268,10 @@ sub upg_104_105 {
 
 	push @statements, "UPDATE device SET bgplocalas=asn.id FROM asn WHERE device.bgplocalas=asn.number;"; 
 	
-	push @statements, "ALTER TABLE bgppeering ADD COLUMN contactlist bigint NOT NULL;";
+	push @statements, "ALTER TABLE bgppeering ADD COLUMN contactlist bigint;";
 	push @statements, "ALTER TABLE \"bgppeering\" ADD CONSTRAINT \"fk_contactlist\" FOREIGN KEY (\"contactlist\") ".
 	    "REFERENCES \"contactlist\" (\"id\") DEFERRABLE;";
-	push @statements, "ALTER TABLE bgppeering ADD COLUMN last_changed timestamp NOT NULL";
+	push @statements, "ALTER TABLE bgppeering ADD COLUMN last_changed timestamp";
 	push @statements, "ALTER TABLE bgppeering ADD COLUMN peer_group character varying(255);";
 	push @statements, "ALTER TABLE bgppeering ADD COLUMN state character varying(255);";
 	push @statements, "ALTER TABLE bgppeering DROP COLUMN monitorstatus;";
