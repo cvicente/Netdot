@@ -2386,6 +2386,31 @@ sub get_last_n_arp {
 
 ################################################################
 
+=head2 get_last_arp_mac - Get latest MAC using this IP from ARP
+
+  Arguments: 
+    None
+  Returns:   
+    PhysAddr object if successful
+  Examples:
+    my $mac = $ipb->get_last_arp_mac();
+
+=cut
+
+sub get_last_arp_mac {
+    my ($self) = @_;
+    $self->isa_object_method('get_last_arp_mac');
+    
+    if ( my $arp = $self->get_last_n_arp(1) ){
+        my $row = shift @$arp;
+	my ($iid, $macid, $tstamp) = @$row;
+	my $mac = PhysAddr->retrieve($macid);
+	return $mac if defined $mac;
+    }
+}
+
+################################################################
+
 =head2 shared_network_subnets
 
     Determine if this subnet shares a physical link with another

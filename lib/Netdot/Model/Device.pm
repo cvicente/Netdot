@@ -636,6 +636,51 @@ sub insert {
 
 ############################################################################
 
+=head2 manual_add - Add a device manually
+
+    Sets enough information so it can be monitored:
+    - Creates an interface
+    - Assigns IP to that interface
+    - Sets neighbor relationship if possible
+    
+  Arguments:
+    host - Name or IP address. Either one will be resolved
+  Returns:
+    New Device object
+  Examples:
+    my $newdevice = Device->manual_add(host=>"myhost");
+
+=cut
+
+sub manual_add {
+    my ($class, %argv) = @_;
+    $class->isa_class_method('manual_add');
+
+    # host is required
+    if ( !exists($argv{host}) ){
+	$class->throw_fatal('Model::Device::manual_add: Missing required argument: host');
+    }
+    # We will try to get both the IP and the name
+    my ($ip, $name) = Netdot->dns->resolve_any($argv{host});
+    $name ||= $ip;
+    my $dev = Device->insert({name=>$name, monitored=>1, snmp_managed=>0, 
+			      canautoupdate=>0, auto_dns=>0});
+    my $ints = $dev->add_interfaces(1);
+    my $int = $ints->[0];
+    if ( $ip ){
+	my $ipb = Ipblock->find_or_create({address=>$ip});
+	$ipb->update({status=>"Static", interface=>$int, monitored=>1});
+	$dev->update({snmp_target=>$ipb});
+	# Try to set the interface neighbor
+	my $mac = $ipb->get_last_arp_mac();
+	my $neighbor = $mac->find_edge_port if $mac;
+	$int->add_neighbor(id=>$neighbor, fixed=>1) if $neighbor;
+    }
+    return $dev;
+}
+
+############################################################################
+
 =head2 get_snmp_info - SNMP-query a Device for general information
     
     This method can either be called on an existing object, or as a 

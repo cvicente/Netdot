@@ -140,9 +140,9 @@ if( $deviceadd && $newhost ){
 	print "<p><b>Device $newhost already exists in DB</b>";   
 	$m->abort;
     }else{
-	# Minimal info to create device manually
+	# Add device manually
 	eval {
-	    $o = Device->insert({name=>$newhost, snmp_managed=>0, canautoupdate=>0});
+	    $o = Device->manual_add(host=>$newhost);
 	};
 	if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>$e);	

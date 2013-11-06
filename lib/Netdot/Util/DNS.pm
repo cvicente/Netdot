@@ -150,7 +150,7 @@ sub resolve_any {
     if ( $host =~ /^($IPV4)|($IPV6)$/ ){
 	# looks like an IP address
 	$ip   = $host;
-	$name = $self->resolve_ip($ip) || "?";
+	$name = $self->resolve_ip($ip) || "";
     }else{
 	# looks like a name
 	$name = $host;
