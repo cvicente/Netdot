@@ -668,7 +668,7 @@ sub manual_add {
     my $ints = $dev->add_interfaces(1);
     my $int = $ints->[0];
     if ( $ip ){
-	my $ipb = Ipblock->find_or_create({address=>$ip});
+	my $ipb = Ipblock->search(address=>$ip)->first || Ipblock->insert({address=>$ip});
 	$ipb->update({status=>"Static", interface=>$int, monitored=>1});
 	$dev->update({snmp_target=>$ipb});
 	# Try to set the interface neighbor
