@@ -548,17 +548,34 @@ $ui->add_to_fields(o=>$o, edit=>0, fields=>['ipforwarding'],
 
 
 if ( $o->snmp_managed ){
-    my @fields = ('snmp_version', 'community', 'snmp_bulk', 'canautoupdate', 'snmp_polling',
-		   'collect_arp', 'collect_fwt', 'collect_stp', 'snmp_conn_attempts', 'snmp_down');
-    $ui->add_to_fields(o=>$o, edit=>$editmgmt, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
-    
-    @fields = ('last_arp', 'last_fwt');
-    $ui->add_to_fields(o=>$o, edit=>0, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);
-}
-if ( $o->snmp_version eq "3" ){
-    my @fields = ('snmp_authkey', 'snmp_authprotocol', 'snmp_privkey', 'snmp_privprotocol', 'snmp_securitylevel', 
-		  'snmp_securityname' );
-    $ui->add_to_fields(o=>$o, edit=>$editmgmt, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data);    
+
+    $ui->add_to_fields(o=>$o, edit=>$editmgmt, fields=>['snmp_version'], defaults=>[['1','2','3']],		 
+		       field_headers=>\@field_headers, cell_data=>\@cell_data);
+
+    my @fields = ('snmp_bulk', 'canautoupdate', 'snmp_polling', 'collect_arp', 'collect_fwt', 
+		  'collect_stp', 'snmp_conn_attempts', 'snmp_down');
+    $ui->add_to_fields(o=>$o, edit=>$editmgmt, fields=>\@fields, field_headers=>\@field_headers, 
+		       cell_data=>\@cell_data);
+
+    # These can't be edited
+    $ui->add_to_fields(o=>$o, edit=>0, fields=>['last_arp', 'last_fwt'], 
+		       field_headers=>\@field_headers, cell_data=>\@cell_data);
+
+    if ( $o->snmp_version eq "3" ){
+	my @auth_protocols = ('MD5', 'SHA');
+	my @priv_protocols = ('AES', 'DES');
+	my @sec_levels     = ('noAuthNoPriv', 'authNoPriv', 'authPriv');
+
+	my @fields = ('snmp_authkey', 'snmp_authprotocol', 'snmp_privkey', 'snmp_privprotocol', 'snmp_securitylevel', 
+		      'snmp_securityname' );
+	$ui->add_to_fields(
+	    o=>$o, edit=>$editmgmt, fields=>\@fields, field_headers=>\@field_headers, cell_data=>\@cell_data,
+	    defaults=>['', \@auth_protocols, '', \@priv_protocols, \@sec_levels, ''],
+	    );
+    }else{
+	$ui->add_to_fields(o=>$o, edit=>0, fields=>['community'], field_headers=>\@field_headers, 
+			   cell_data=>\@cell_data);
+    }
 }
 
 # Add the snmp_target IP.  We want to show only the device IPs when editing

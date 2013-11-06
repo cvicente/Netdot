@@ -936,23 +936,37 @@ sub text_field($@){
     my $input_type = ($column =~ /^password|snmp_authkey|snmp_privkey$/)? 'password' : 'text';
 
     if ( $isEditing ){
-	if ( $defaults && ref($defaults) eq "HASH" ){
+	if ( $defaults ){
 	    # Show a select tag instead
 	    $output .= "<select name=\"$name\">";
 	    $output .= '<option value=""></option>';
 	    my $value_found = 0;
-	    foreach my $key ( sort { $defaults->{$a} cmp $defaults->{$b} } 
-			      keys %$defaults ){
-		my $v = $defaults->{$key};
-		if ( $value eq $key ){
- 		    $output .= "<option value=\"$key\" SELECTED>$v</option>";
-		    $value_found = 1;
-		}else{
-		    $output .= "<option value=\"$key\">$v</option>";
+	    if ( ref($defaults) eq "HASH" ){
+		foreach my $key ( sort { $defaults->{$a} cmp $defaults->{$b} } 
+				  keys %$defaults ){
+		    my $v = $defaults->{$key};
+		    if ( $value eq $key ){
+			$output .= "<option value=\"$key\" SELECTED>$v</option>";
+			$value_found = 1;
+		    }else{
+			$output .= "<option value=\"$key\">$v</option>";
+		    }
 		}
-	    }
-	    if ( !$value_found && $value ne "" ){
-		$output .= "<option value=\"$value\" SELECTED>$value</option>";
+		if ( !$value_found && $value ne "" ){
+		    $output .= "<option value=\"$value\" SELECTED>$value</option>";
+		}
+	    }elsif ( ref($defaults) eq 'ARRAY' ){
+		foreach my $v ( sort @$defaults ){
+		    if ( $value eq $v ){
+			$output .= "<option value=\"$v\" SELECTED>$v</option>";
+			$value_found = 1;
+		    }else{
+			$output .= "<option value=\"$v\">$v</option>";
+		    }
+		}
+		if ( !$value_found && $value ne "" ){
+		    $output .= "<option value=\"$value\" SELECTED>$value</option>";
+		}
 	    }
 	    $output .= '</select>';
 	}else{
