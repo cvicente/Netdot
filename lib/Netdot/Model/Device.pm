@@ -5700,7 +5700,6 @@ sub _assign_monitor_config_group{
     if ( $self->config->get('DEV_MONITOR_CONFIG') && 
 	 (!$self->monitor_config_group || $self->monitor_config_group eq "") ){
 	my $monitor_config_map = $self->config->get('DEV_MONITOR_CONFIG_GROUP_MAP') || {};
-	my $config_group;
 	if ( my $type = $info->{type} ){
 	    if ( exists $monitor_config_map->{$type} ){
 		return $monitor_config_map->{$type};
