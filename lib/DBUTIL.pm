@@ -524,11 +524,11 @@ sub insert_oui{
     }
     close(OUI);
 
-    if (lc($CONFIG{DB_TYPE}) eq 'mysql') {
+    if ($CONFIG{DB_TYPE} eq 'mysql') {
 	push @data, "LOAD DATA LOCAL INFILE '$oui_file' INTO TABLE oui (oui, vendor);"
-    } elsif (lc($CONFIG{DB_TYPE}) eq 'Pg') {
+    } elsif ($CONFIG{DB_TYPE} eq 'Pg') {
         push @data, "COPY oui(oui, vendor) FROM '$oui_file';"
-    }   
+}   
     &db_query(\@data);
     unlink($oui_file);
     my $oui_count = scalar keys %oui;
