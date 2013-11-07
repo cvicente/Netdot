@@ -513,7 +513,6 @@ function create_ds_graphs($args) {
      $crit = implode(' OR ', $patts);
      $ignQuery .= " AND ($crit)";
 
-     debug('$ignQuery is: '.$ignQuery);
      $ignIndexes = db_fetch_assoc($ignQuery);
 
      // Make into an associative array for faster lookups
@@ -522,9 +521,6 @@ function create_ds_graphs($args) {
        $ignHash[$row["snmp_index"]] = TRUE;
      }
 
-     debug('$ignHash has: ');
-     debug(var_export($ignHash));
-     
      if (count($ignHash)){
        // Now exclude the indexes that matched the ignore patterns
        $temparr = array();
@@ -536,9 +532,6 @@ function create_ds_graphs($args) {
        $snmpIndexes = $temparr;
      }
    }
-
-   debug('$snmpIndexes has: '); 
-   debug(var_export($snmpIndexes));
    
    if (count($snmpIndexes)) {
     $graphsCreated = 0;
