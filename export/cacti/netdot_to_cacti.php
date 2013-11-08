@@ -432,15 +432,16 @@ foreach ($groups as $group => $hosts){
 /* ----------------------------------------------------------------------------------------------------- */
 /* Clean up stale groups and nodes in the tree */
 
-foreach($hostNodes as $oldNode){
-  debug("Deleting old tree node: $oldNode");
-  db_execute("DELETE FROM graph_tree_items WHERE id=$oldNode");
+if ( !isset($id) ){
+  foreach($hostNodes as $oldNode){
+    debug("Deleting old tree node: $oldNode");
+    db_execute("DELETE FROM graph_tree_items WHERE id=$oldNode");
+  }
+  foreach($headerNodes as $oldHeader){
+    debug("Deleting old tree header: $oldHeader");
+    db_execute("DELETE FROM graph_tree_items WHERE id=$oldHeader");
+  }
 }
-foreach($headerNodes as $oldHeader){
-  debug("Deleting old tree header: $oldHeader");
-  db_execute("DELETE FROM graph_tree_items WHERE id=$oldHeader");
-}
-
 
 /* ----------------------------------------------------------------------------------------------------- */
 // Subroutines
