@@ -4312,7 +4312,7 @@ sub _get_devs_from_file {
 # 
 # Arguments:  File path
 # Returns  :  Hashref with hostnames (or IP addresses) as key 
-#             and SNMP community as value
+#             and, optionally, SNMP community as value
 # 
 sub _get_hosts_from_file {
     my ($class, $file) = @_;
@@ -4330,16 +4330,20 @@ sub _get_hosts_from_file {
     while (<FILE>){
 	chomp($_);
 	next if ( /^#/ );
-	if ( /\w+\s+\w+/ ){
+	if ( /\S+\s+\S+/ ){
 	    my ($host, $comm) = split /\s+/, $_;
 	    $hosts{$host} = $comm;
+	}else{
+	    if ( /\S+/ ){ # allow for only host on line
+		$hosts{$_} = '';
+	    }
 	}
     }
+    close(FILE);
     
     $class->throw_user("Host list is empty!")
 	unless ( scalar keys %hosts );
     
-    close(FILE);
     return \%hosts;
 }
 
