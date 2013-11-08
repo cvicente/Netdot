@@ -250,8 +250,8 @@ sub update_rrptr {
 				    zone     => $rev_zone,
 				    ttl      => $self->ttl});
 	}else{
-	    $logger->warn("Netdot::Model::RRADDR::update_rrptr: Ipblock: "
-			  .$self->ipblock->get_label." reverse zone not found");
+	    $logger->debug("Netdot::Model::RRADDR::update_rrptr: Ipblock: "
+			   .$self->ipblock->get_label." reverse zone not found");
 	}
     }
     return 1;
