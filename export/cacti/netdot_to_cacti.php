@@ -53,6 +53,9 @@ array_shift($parms);
     case "--no-graphs":
       $no_graphs = TRUE;
       break;
+    case "--id":
+      $id = $value;
+      break;
     default:
       echo "ERROR: Invalid Argument: ($arg)\n\n";
       display_help();
@@ -89,8 +92,7 @@ if (!$result) {
   exit(1);
  }
 
-$q = $netdot_db->Execute("
-                SELECT     rr.name, zone.name, ipblock.address, site.name, p.name, p.sysobjectid, pt.name, 
+$query_str =  "SELECT     rr.name, zone.name, ipblock.address, site.name, p.name, p.sysobjectid, pt.name, 
                            d.id, d.snmp_managed, d.snmp_polling, d.community, d.snmp_version, 
                            d.snmp_authkey, d.snmp_authprotocol, d.snmp_privkey, d.snmp_privprotocol,
                            d.snmp_securityname, e.name, m.name 
@@ -105,8 +107,15 @@ $q = $netdot_db->Execute("
                   AND      a.product_id=p.id
                   AND      d.asset_id=a.id
                   AND      p.type=pt.id
-                ORDER BY   rr.name;
-");
+";
+
+if ( isset($id) ){
+  $query_str .= ' AND d.id = ' . $id;
+}
+
+$query_str .=  ' ORDER BY rr.name';
+
+$q = $netdot_db->Execute($query_str);
 
 if (!$q) {
   print "DB Error: ".$netdot_db->ErrorMsg();
@@ -619,6 +628,7 @@ function display_help() {
   echo "usage: netdot_to_cacti.php [--no-graphs] [-d|--debug] [-h|-help]\n";
   echo "\n";
   echo "Optional:\n";
+  echo "    --id           Only include device with this netdot ID\n";
   echo "    --no-graphs    Do not add graphs, only update devices and tree\n";
   echo "    -d|--debug     Enable debugging output\n";
   echo "    -h|--help      Display help and exit\n";
