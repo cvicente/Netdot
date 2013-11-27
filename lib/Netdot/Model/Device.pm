@@ -2978,10 +2978,14 @@ sub info_update {
     ##############################################################
     # Asset
     my %asset_args = (
-	serial_number => $info->{serial_number},
 	physaddr      => $self->_assign_base_mac($info) || undef,
 	reserved_for  => "", # needs to be cleared when device gets installed
 	);
+
+    # Make sure S/N contains something
+    if (defined $info->{serial_number} && $info->{serial_number} =~ /\S+/ ){
+	$asset_args{serial_number} = $info->{serial_number};
+    }
     
     # Search for an asset based on either serial number or base MAC
     # If two different assets are found, we will have to pick one and
