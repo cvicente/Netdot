@@ -131,7 +131,7 @@ sub check_credentials {
 			      ", config requires TLS, cannot continue: " . $tls->error);
                 return 0;
             } elsif ( $does_support_tls ) {
-                $r->log_warning("Netdot::LDAP::check_credentials: Failed to start TLS ".
+                $r->warn("Netdot::LDAP::check_credentials: Failed to start TLS ".
 				"although server advertises TLS support: " . $tls->error);
             }
         }
