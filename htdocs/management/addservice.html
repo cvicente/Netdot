@@ -87,6 +87,7 @@ if ( $Add ){
 	$state{contactlist} = $contactlist if defined $contactlist;
 	eval{
 	    IpService->insert(\%state);
+	    $ipobj->update({monitored=>1});
 	};
 	if ( my $e = $@ ){
 	    $m->comp("error.mhtml", error=>$e);
