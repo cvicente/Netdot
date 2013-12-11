@@ -684,6 +684,8 @@ sub update_ip {
 		$iargs{description} = $self->description 
 		    if ( !defined $subnetobj->description || $subnetobj->description eq "" );
 
+		$iargs{last_seen} = $self->timestamp;
+
 		$subnetobj->update(\%iargs); # Makes sure that the status is set to subnet
 		
 	    }else{
@@ -694,6 +696,8 @@ sub update_ip {
 		$iargs{prefix}      = $subnet_netaddr->masklen;
 		$iargs{version}     = $version;
 		$iargs{description} = $self->description;
+		$iargs{first_seen}  = $self->timestamp;
+		$iargs{last_seen}   = $iargs{first_seen};
 		
 		# Check if subnet should inherit device info
 		if ( $args{subs_inherit} ){
@@ -744,7 +748,7 @@ sub update_ip {
 	eval {
 	    $ipobj = Ipblock->insert({address => $address, prefix    => $prefix, 
 				      status  => "Static", interface => $self,
-				      version => $version,
+				      version => $version, 
 				     });
 	};
 	if ( my $e = $@ ){
