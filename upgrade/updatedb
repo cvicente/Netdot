@@ -224,6 +224,11 @@ sub upg_104_105 {
 
 	push @statements, "ALTER TABLE device ADD COLUMN monitoring_template varchar(255);";
 
+	push @statements, "ALTER TABLE device ADD COLUMN host_device bigint;";
+	push @statements, "ALTER TABLE device ADD CONSTRAINT `fk_host_device` FOREIGN KEY (`host_device`) ".
+	    "REFERENCES `device` (`id`);";
+	push @statements, "CREATE INDEX host_device ON device (host_device)";
+
 	push @statements, "DROP TABLE backbonecable_history;";
 	push @statements, "DROP TABLE cablestrand_history;";
 	push @statements, "DROP TABLE circuit_history;";
@@ -282,6 +287,10 @@ sub upg_104_105 {
 	push @statements, 'ALTER TABLE rrds ADD CONSTRAINT rrds1 UNIQUE (rr, key_tag, algorithm, digest_type);';
 
 	push @statements, "ALTER TABLE device ADD COLUMN monitoring_template character varying(255);";
+
+	push @statements, "ALTER TABLE device ADD COLUMN host_device TYPE bigint;";
+	push @statements, "ALTER TABLE device ADD CONSTRAINT \"fk_host_device\" FOREIGN KEY (\"host_device\") ".
+	    "REFERENCES \"device\" (\"id\") DEFERRABLE;";
 
 	push @statements, "DROP TABLE backbonecable_history;";
 	push @statements, "DROP TABLE cablestrand_history;";

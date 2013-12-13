@@ -246,10 +246,14 @@ sub generate_configs {
 
 	# Host Parents
 	my @parent_names;
-	foreach my $d ( $self->get_monitored_ancestors($devid, $device_parents) ){
-	    my $name = $self->strip_domain($device_info->{$d}->{hostname});
-	    push @parent_names, $name;
+	if ( (my @ancestors = $self->get_monitored_ancestors($devid, $device_parents)) ){
+	    foreach my $d ( @ancestors ){
+		push @parent_names, $self->strip_domain($device_info->{$d}->{hostname});
+	    }
+	}elsif ( (my $hd = $devh->{host_device}) ){
+	    push @parent_names, $self->strip_domain($device_info->{$hd}->{hostname});
 	}
+
 	
 	# Services monitored via SNMP on the target IP
 	if ( $devh->{snmp_managed} ){

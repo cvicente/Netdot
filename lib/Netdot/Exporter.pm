@@ -83,7 +83,8 @@ sub get_device_info {
     my %device_info;
     $logger->debug("Netdot::Exporter::get_device_info: querying database");
     my $rows = $self->{_dbh}->selectall_arrayref("
-          SELECT    d.id, d.snmp_managed, d.community, d.snmp_target, 
+
+          SELECT    d.id, d.snmp_managed, d.community, d.snmp_target, d.host_device,
                     d.monitoring_template, d.down_from, d.down_until, entity.name, entity.aliases,
                     site.name, site.number, site.aliases, contactlist.id,
                     i.id, i.number, i.name, i.description, i.admin_status, i.monitored, i.contactlist,
@@ -108,7 +109,8 @@ sub get_device_info {
     
     $logger->debug("Netdot::Exporter::get_device_info: building data structure");
     foreach my $row ( @$rows ){
-	my ($devid, $dev_snmp, $community, $target_id,
+
+	my ($devid, $dev_snmp, $community, $target_id, $host_device,
 	    $mon_template, $down_from, $down_until, $entity_name, $entity_alias, 
 	    $site_name, $site_number, $site_alias, $clid,
 	    $intid, $intnumber, $intname, $intdesc, $intadmin, $intmon, $intcl,
@@ -118,6 +120,7 @@ sub get_device_info {
 	my $hostname = ($name eq '@')? $zone : $name.'.'.$zone;
 	$device_info{$devid}{target_id}    = $target_id;
 	$device_info{$devid}{hostname}     = $hostname;
+	$device_info{$devid}{host_device}  = $host_device;
 	$device_info{$devid}{community}    = $community;
 	$device_info{$devid}{snmp_managed} = $dev_snmp;
 	$device_info{$devid}{mon_template} = $mon_template;

@@ -2553,7 +2553,8 @@ sub is_in_downtime {
     We override the update method for extra functionality:
       - Update 'last_updated' field with current timestamp
       - snmp_managed flag turns off all other snmp access flags
-
+      - Validate various arguments
+    
   Arguments:
     Hash ref with Device fields
   Returns:
@@ -3866,6 +3867,14 @@ sub _validate_args {
 		    $logger->warn($msg);
 		}
 	    }
+	}
+    }
+
+    # Host Device
+    if ( $self && $args->{host_device} ){
+	my $hd = scalar($args->{host_device});
+	if ( $hd == $self->id ){
+	    $class->throw_user("Device cannot be a host of itself");
 	}
     }
     

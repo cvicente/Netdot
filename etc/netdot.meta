@@ -2309,6 +2309,19 @@ $meta = {
         tag => 'OS',
         type => 'varchar'
       },
+      host_device => {
+        default => '',
+        description => 'Another device which this one is part of, such as a virtual machine host. Host device will be used as parent device in monitoring exports.',
+        length => '',
+        linksto => {
+          cascade => 'Delete',
+          method => 'hosted_devices',
+          table => 'Device'
+        },
+        nullable => 1,
+        tag => 'Host Device',
+        type => 'bigint'
+      },
       power_outlet => {
         default => '',
         description => 'ID of the power outlet in a power distribution unit or similar',
@@ -2567,6 +2580,7 @@ $meta = {
         'ipforwarding',
         'layers',
         'os',
+        'host_device',
         'extension',
         'bgplocalas',
 	'auto_dns',
