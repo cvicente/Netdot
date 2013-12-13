@@ -146,7 +146,7 @@ sub graphviz_schema {
 sub _parser{
     my ( $self, $tr ) = @_;
     my $schema = $tr->schema;
-    my @tables = $self->get_tables(with_history => 1);
+    my @tables = $self->get_tables();
     foreach my $mtable ( @tables ) {
 	my $tname = $mtable->name;
 	$tname = lc($tname);
@@ -192,15 +192,13 @@ sub _parser{
 
 	my $icount;
 
-	# Add Unique indexes. Skip history tables
-	unless ( $mtable->is_history ) {
-	    foreach my $unique ( @{$mtable->get_unique_columns} ){
-		$icount++;
-		$table->add_index(name   => $table->name.$icount,
-				  fields => $unique,
-				  type   => 'UNIQUE',
-				  );
-	    }
+	# Add Unique indexes
+	foreach my $unique ( @{$mtable->get_unique_columns} ){
+	    $icount++;
+	    $table->add_index(name   => $table->name.$icount,
+			      fields => $unique,
+			      type   => 'UNIQUE',
+		);
 	}
 	# Add normal indexes
 	foreach my $index ( @{$mtable->get_indexed_columns} ){

@@ -712,43 +712,7 @@ POST: {ethernet=&gt;&#39;DEADDEADBEEF&#39;}</code></pre>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# cpan
 <span class="kw">&gt;install</span> Netdot::Client::REST</code></pre>
 <h1 id="database-maintenance"><a href="#TOC"><span class="header-section-number">8</span> Database Maintenance</a></h1>
-<p>Netdot's database will grow with time, thus it will be necessary to remove old information as it becomes stale. You will find a CLI utility called &quot;prune_db.pl&quot; in the bin/ directory of the distribution. The command's syntax is as follows:</p>
-<pre class="sourceCode bash"><code class="sourceCode bash"> usage: bin/prune_db.pl
- -H, --history <span class="kw">|</span> -F, --fwt <span class="kw">|</span> -A, --arp <span class="kw">|</span>
- -M, --macs <span class="kw">|</span> -I, --ips <span class="kw">|</span> -R, --rr <span class="kw">|</span>  -a, --audit <span class="kw">|</span> -t, --hostaudit
-<span class="kw"> [</span> -d, --num_days &lt;number<span class="ot">&gt;</span><span class="kw"> ] [</span> -n, --num_history &lt;number<span class="ot">&gt;</span><span class="kw"> ] [</span> -r, --rotate<span class="kw"> ]</span>
-<span class="kw"> [</span> -g, --debug<span class="kw"> ]</span> [-h, --help]
-
-    -H, --history        History tables
-    -F, --fwt            Forwarding Tables
-    -A, --arp            ARP caches
-    -M, --macs           MAC addresses
-    -I, --ips            IP addresses
-    -R, --rr             DNS Resource Records
-    -a, --audit          Audit records
-    -t, --hostaudit      Host Audit records
-    -d, --num_days       Number of days worth of items to keep <span class="kw">(</span>default: 365<span class="kw">)</span>
-    -n, --num_history    Number of <span class="kw">history</span> items to keep <span class="kw">for</span> each record
-    -r, --rotate         Rotate forw<span class="kw">.</span> tables and ARP <span class="kw">(</span>rather than delete records<span class="kw">)</span>
-    -p, --pretend        Show activity without actually deleting anything
-    -g, --debug          Print <span class="kw">(</span>lots of<span class="kw">)</span> debugging output
-    -h, --help           Print <span class="kw">help</span>
-
-    Deletes old items from database <span class="kw">as</span> necessary.
-
-    * For <span class="st">&quot;history&quot;</span> tables:
-
-    We want to keep NUM_DAYS worth of <span class="kw">history</span> <span class="kw">for</span> every record<span class="kw">.</span> But
-    if a record doesn<span class="st">&#39;t change at all during the last NUM_DAYS, we don&#39;</span>t
-    want to lose the <span class="kw">history</span> that does exist <span class="kw">for</span> it from before that time.
-    To compromise, we will only check the <span class="kw">history</span> tables <span class="kw">for</span> old data
-    if there are <span class="kw">more</span> than NUM_HISTORY items <span class="kw">for</span> a record<span class="kw">.</span> If there are
-    <span class="kw">more</span> than NUM_HISTORY items <span class="kw">for</span> a record, <span class="kw">then</span> we drop anything older
-    than NUM_DAYS.
-
-    * For address tracking tables:
-
-    We delete records that are older than NUM_DAYS.</code></pre>
+<p>Netdot's database will grow with time, thus it will be necessary to remove old information as it becomes stale. You will find a CLI utility called &quot;prune_db.pl&quot; in the bin/ directory of the distribution.</p>
 <p>The sample CRON file &quot;netdot.cron&quot; included with the package contains recommended uses of this command.</p>
 <blockquote>
 <p><strong>Note</strong>: Be especially careful when using the -I and -M options to remove old IP and MAC addresses. The criteria for deletion relies on the &quot;last seen&quot; timestamp on these records. That means that if Netdot is not collecting ARP and FWT tables from the routers, firewalls and switches where these addresses can be seen in the network, then Netdot will assume that they are not active anymore, thus included for deletion.</p>

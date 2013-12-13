@@ -66,49 +66,6 @@ BEGIN {
 				      $Netdot::VERSION, $schema_version));
     }
 
-###########################################################
-# Copy stored object in corresponding history table 
-#  - After updating
-#  - After creating
-# This must be defined here (before loading the classes).  
-###########################################################
-    __PACKAGE__->add_trigger( after_update => \&_historize );
-    __PACKAGE__->add_trigger( after_create => \&_historize );
-
-    sub _historize {
-	my ($self, %args) = @_;
-	
-	my $changed_columns = $args{discard_columns};
-	if ( defined $changed_columns ){ 
-	    if ( (scalar(@$changed_columns) == 1 && $changed_columns->[0] eq 'last_updated') ||
-		 scalar(@$changed_columns) == 2 && $changed_columns->[0] eq 'last_updated' && 
-		 ($changed_columns->[1] eq 'last_fwt' || $changed_columns->[1] eq 'last_arp') ){
-		return;
-	    }
-	}
-	my $table    = $self->table;
-	my $h_table  = $self->meta_data->get_history_table_name();
-	return unless $h_table;  # this object does not have a history table
-	my $dbh      = $self->db_Main();
-	my $col_list = join ",", $self->columns;
-	my $id       = $self->id;
-	my @vals = $dbh->selectrow_array("SELECT $col_list FROM $table WHERE id = $id");
-	my %current_data;
-	my $i = 0;
-	map { $current_data{$_} = $vals[$i++] } $self->columns;
-	delete $current_data{id}; # Our id is different
-	my $oid = $table."_id"; # fk pointing to the real object's id
-	$current_data{$oid}     = $self->id;
-	$current_data{modified} = $self->timestamp;
-	$current_data{modifier} = $ENV{REMOTE_USER} || "unknown";
-	eval {
-	    $h_table->SUPER::insert(\%current_data);
-	};
-	if ( my $e = $@ ){
-	    $logger->error("Could not insert history record for $table id ".$self->id.": $e");
-	}
-	1;
-    }
 
     ###########################################################
     # Audit changes
@@ -159,7 +116,6 @@ BEGIN {
 
 	my $table = $self->table;
 	return if exists $EXCLUDE_AUDIT{$table};
-	return if $table =~ /_history$/o;
 
 	my $id = $self->id;
 	my $label;
@@ -359,7 +315,7 @@ BEGIN {
     # Notice that some tables have special parent classes, so we pass a different 'base'
     my (%subclasses, %tables, $evalcode);
     my $namespace = 'Netdot::Model';
-    foreach my $table ( __PACKAGE__->meta->get_tables(with_history => 1) ){
+    foreach my $table ( __PACKAGE__->meta->get_tables() ){
 	my ($base, $subclass);
 	if ( $table->name =~ /Picture/ ){
 	    $base = 'Netdot::Model::Picture';
@@ -937,6 +893,36 @@ sub get_state {
 
 ############################################################################
 
+=head2 get_audit_records
+
+    Get the latest audit records for this object. 
+    If limit arg is not passed, use DEFAULT_MAX_AUDIT from config
+
+  Arguments:
+    limit - Limit number of records to retrieve from DB
+  Returns:
+    Array of Audit objects
+  Examples:
+    my %state = $object->get_audit_records(limit=>'100');
+
+=cut
+
+sub get_audit_records {
+    my ($self, %argv) = @_;
+    $self->isa_object_method('get_audit_records');
+
+    my $limit = $argv{limit} || $self->config->get('DEFAULT_MAX_AUDIT');
+
+    my @recs = Audit->search_where({tablename => $self->table, 
+				    object_id => $self->id}, 
+				   {limit_dialect => 'LimitOffset',
+				    limit => $limit} );
+    return @recs;
+}
+
+
+############################################################################
+
 =head2 get_digest - Calculate MD5 digest of object's current data
 
   Arguments:
@@ -1007,37 +993,6 @@ sub get_label {
     return join "$delim", grep {$_ ne ""} @ret ;
 }
 
-############################################################################
-
-=head2 get_history - Get a list of history objects for a given object
-
-  Arguments:
-    None
-  Returns:
-    Array of history records associated with this object, ordered
-    by modified time, newest first.
-  Example:
-    my @h = $obj->get_history();
-
-=cut
-
-sub get_history {
-    my ($self, $o) = @_;
-    $self->isa_object_method('get_history');
-
-    my $table  = $self->table;
-    my $htable = $self->meta_data->get_history_table_name();
-    return unless $htable;
-
-    # History objects have two indexes, one is the necessary
-    # unique index, the other one refers to which real object
-    # this is the history of.
-    # The latter has the table's name plus the "_id" suffix
-
-    my $id_f = lc("$table" . "_id");
-    my @ho;
-    return $htable->search($id_f=>$self->id, {order_by => 'modified DESC'});
-}
 
 ############################################################################
 

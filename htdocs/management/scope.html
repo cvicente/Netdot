@@ -93,13 +93,11 @@ if ( $submit ){
 <div class="container">
     <div class="containerheadleft"><strong><% $table %></strong></div>
     <div class="containerheadright">
-%       if ( ! $table->meta_data->is_history() ){
-%           if ( $manager && $manager->can($user, 'access_admin_section', 'scope:new') ){
-                <a href="edit.html?table=<% $table %>">[new]</a>
-%           }
-%	    if ( $manager && $manager->can($user, 'edit', $o) ){
-		<a href="edit.html?table=<% $table %>&id=<% $o %>&view=<% $type %>">[edit]</a>
-%	    }
+%       if ( $manager && $manager->can($user, 'access_admin_section', 'scope:new') ){
+            <a href="edit.html?table=<% $table %>">[new]</a>
+%       }
+%	if ( $manager && $manager->can($user, 'edit', $o) ){
+           <a href="edit.html?table=<% $table %>&id=<% $o %>&view=<% $type %>">[edit]</a>
 %	}
 %	if ( $manager && $manager->can($user, 'delete', $o) ){
             <a href="delete.html?table=<% $table %>&id=<% $o %>">[delete]</a>
@@ -112,8 +110,7 @@ if ( $submit ){
 </div>
 <!-- End Display main object values -->
 <!-- Display has_many possibilities-->
-%  my $has_history_table = 1 if ( $table->meta_data->get_history_table_name() );
-%  if ( ! $table->meta_data->is_history() && ( keys %linksfrom ) ){
+%  if ( keys %linksfrom ){
   <div class="container">
 	<div class="containerhead">View</div>
 	   <div class="containerbody">

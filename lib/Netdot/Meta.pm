@@ -118,21 +118,8 @@ sub get_table{
     if ( $newtable = $self->_get_cached_table($name) ){
 	return $newtable;
     }else{
-	my $actual_name = $name;
-	my $hf = $self->get_history_suffix();
-	$actual_name =~ s/$hf//;
-	my $info = $self->_get_table_info($actual_name);
+	my $info = $self->_get_table_info($name);
 	$info->{meta} = $self;
-	# Let new table know if it is a history table
-	if ( $name ne $actual_name ){
-	    $info->{is_history}     = 1;
-	    $info->{name}           = $info->{name} . $hf;
-	    $info->{original_table} = $actual_name;
-	    $info->{has_history}    = 0;
-	    $info->{table_db_name} .= $self->get_history_suffix();
-	}else{
-	    $info->{is_history}     = 0;
-	}
 	$newtable = Netdot::Meta::Table->new($info);
 	$self->_cache_table($newtable);
     }
@@ -144,7 +131,7 @@ sub get_table{
 =head2 get_tables - Get a list of all Table objects
 
   Arguments:
-    with_history - If true, history tables will be included in the array
+    None
   Returns:
     Array of Netdot::Meta::Table objects
   Example: 
@@ -157,15 +144,6 @@ sub get_tables {
     my @tables;
     push @tables, $self->get_table($_) foreach $self->get_table_names();
     my @all_tables = @tables;
-    # Add history tables if told to
-    if ( $argv{with_history} ){
-	foreach my $mtable ( @tables ){
-	    if ( !$mtable->is_history
-		 && ( my $hname = $mtable->get_history_table_name() ) ){
-		push @all_tables, $self->get_table($hname);
-	    }
-	}
-    }
     return @all_tables;
 }
 
@@ -249,14 +227,7 @@ sub cdbi_class{
 	    }elsif ( $casc eq 'Delete' ){
 		$args{cascade} = $casc;
 	    }elsif ( $casc eq 'Fail' ){
-		if ( $t->is_history ){
-		    # We don't want any delete operation to fail
-		    # because of a history table. Just nullify the
-		    # foreign key in the history record
-		    $args{cascade} = 'Delete';
-		}else{
-		    $args{cascade} = 'Fail';
-		}
+		$args{cascade} = 'Fail';
 	    }else{
 		croak "cdbi_classes: Unknown cascade behavior $casc";
 	    }
@@ -271,23 +242,6 @@ sub cdbi_class{
 }
 
 
-##################################################
-
-=head2 get_history_suffix - Get suffix used to name history tables;
-    
-  Arguments:
-    None
-  Returns:
-    string
-  Example: 
-
-=cut
-
-sub get_history_suffix{
-    my $self = shift;
-    my $HIST = '_history';
-    return $HIST;
-}
 
 
 ##################################################################

@@ -299,10 +299,10 @@ my $refresh_url = "device.html?id=$id&view=$view";
           <li><a href="device.html?id=<% $id %>&view=FWT">FWT</a></li>
 %       }
 %     }
-%     if( $view eq "History" ) {
-        <li><span>History</span></li>
+%     if( $view eq "Audit" ) {
+        <li><span>Audit</span></li>
 %     } else {
-        <li><a href="device.html?id=<% $id %>&view=History">History</a></li>
+        <li><a href="device.html?id=<% $id %>&view=Audit">Audit</a></li>
 %     }
 %     if( $view eq "Rights" ) {
         <li><span>Access Rights</span></li>
@@ -1553,26 +1553,26 @@ if ( $ipeers ){
 
 %#######################################################################
 %#
-%# History
+%# Audit
 %#
 %#######################################################################
 %
-% if ( $view eq "History" || $view eq "All" ){
-%   my @h_objs = $o->get_history;
+% if ( $view eq "Audit" || $view eq "All" ){
+%   my @audit = $o->get_audit_records();
 %
-<!-- History Table -->
+<!-- Audit Records -->
 <div class="container">
     <div class="containerhead">
-        History
+        Audit
     </div>
     <div class="containerbody">
-        <& /generic/sortresults.mhtml, object => \@h_objs , view => "row" &>
+        <& /generic/sortresults.mhtml, object => \@audit , view => "row" &>
     </div>
 </div>
 % }
 %
 %
-<!-- End History Section -->
+<!-- End Audit Section -->
 %#######################################################################
 %#
 %# Circuit

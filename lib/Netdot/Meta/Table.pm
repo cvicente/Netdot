@@ -216,7 +216,6 @@ sub get_links_to{
 
     Get one-to-many relationships for a given table, this table being on the "one" side 
     (equivalent to has_many definitions in Class::DBI).
-    History tables are not referenced by other tables
     
   Arguments:
     None
@@ -233,20 +232,13 @@ sub get_links_to{
 sub get_links_from{
     my $self = shift;
     my %ret;
-    return if ( $self->is_history );
-    foreach my $t ( $self->{meta}->get_tables(with_history=>1) ){
+    foreach my $t ( $self->{meta}->get_tables() ){
 	foreach my $c ( $t->get_columns() ){
 	    my $lt = $c->links_to_attrs();
 	    next unless ( $lt && exists $lt->{table} );
 	    if ( $lt->{table} eq $self->name ){
 		next unless exists $lt->{method};
-		my $method;
-		if ( $t->is_history && $lt->{method} ne 'history_records' ){
-		    $method = 'history_'.$lt->{method};
-		}else{
-		    $method = $lt->{method};
-		}
-		$ret{$method}{$t->name} = $c->name;
+		$ret{$lt->{method}}{$t->name} = $c->name;
 	    }
 	}
     }
@@ -282,9 +274,6 @@ sub get_column_order{
 	return;
     }
     my @tmp = @{$views->{$view}};
-    if ( $self->is_history ){
-	push @tmp, ('modified', 'modifier');
-    }
     my $i = 1;
     my %ret;
     map { $ret{$_} = $i++ } @tmp;
@@ -313,9 +302,6 @@ sub get_column_order{
 sub get_column_order_brief {
     my $self = shift;
     my @tmp;
-    if ( $self->is_history ){
-	push @tmp, ('modified', 'modifier');
-    }
     my $views = $self->_get_attr('views');
     if ( ! exists $views->{brief} ){
 	return;
@@ -385,18 +371,7 @@ sub get_unique_columns {
 
 sub get_indexed_columns {
     my $self = shift;
-    my $idx = []; 
-    if ( $self->is_history ){
-	# History tables do not need the same indexes
-	# as their real counterpars.
-	# We index the id that points to the  real table
-	push @$idx, lc($self->original_table)."_id";
-	# Also, the modified date
-	push @$idx, 'modified';
-    }else{
-	$idx = $self->_get_attr('index');
-    }
-    return $idx;
+    return $self->_get_attr('index');
 }
 
 ##################################################
@@ -417,80 +392,6 @@ sub is_join {
     return $self->_get_attr('isjoin');
 }
 
-##################################################
-
-=head2 has_history - Check if this table has a corresponding history table
-
-  Arguments:
-    None
-  Returns:
-    True or false (1 or 0)
-  Example: 
-  $flag = $mtable->has_history();
-
-=cut
-
-sub has_history {
-    my ($self) = @_;
-    return $self->_get_attr('has_history');
-}
-
-##################################################
-
-=head2 get_history_table_name - Return the name of the history table that corresponds to this table
-
-  Arguments:
-    None
-  Returns:
-    History table name
-  Example: 
-
-=cut
-
-sub get_history_table_name {
-    my ($self) = @_;
-    if ( $self->has_history && !$self->is_history ){
-	return $self->name . $self->{meta}->get_history_suffix;
-    }
-    return;
-}
-
-##################################################
-
-=head2 is_history - Check if this table is a history table
-
-  Arguments:
-    None
-  Returns:
-    True or false (1 or 0)
-  Example: 
-  $flag = $mtable->is_history();
-
-=cut
-
-sub is_history {
-    my ($self) = @_;
-    return $self->_get_attr('is_history');
-}
-
-##################################################
-
-=head2 original_table - Return name of original table if this is a history table
-
-  Arguments:
-    None
-  Returns:
-    Name of original table 
-  Example: 
-  $orig = $mtable->original_table();
-
-=cut
-
-sub original_table {
-    my ($self) = @_;
-    return $self->_get_attr('original_table')
-	if ( $self->is_history );
-}
 
 ##################################################################
 #
@@ -523,38 +424,6 @@ sub _get_attr{
 sub _get_columns_hash{
     my $self = shift;
     my %ret = %{ $self->_get_attr('columns') };
-    # If it is a history table, we have to add some columns
-    if ( $self->is_history ){
-	# The field that points to the original object id
-	my $hid    = lc($self->original_table)."_id"; 
-	$ret{$hid} = {default     => '',
-		      description => '',
-		      length      => '',
-		      linksto => {
-			  cascade => 'Delete',
-			  method  => 'history_records',
-			  table   => $self->original_table
-			  },
-		      nullable    => 1,
-		      tag         => '',
-		      type        => 'bigint'};
-	
-	$ret{modified} = {default     => '1970-01-02 00:00:01',
-			  description => 'Time this record was last modified',
-			  length      => '',
-			  nullable    => 0,
-			  tag         => 'Modified',
-			  type        => 'timestamp'};
-	
-	$ret{modifier} = {default     => '',
-			  description => 'Netdot user who last modified this record',
-			  length      => '255',
-			  nullable    => 1,
-			  tag         => 'Modifier',
-			  type        => 'varchar'};
-	
-	
-    }
     return \%ret;
 }
 

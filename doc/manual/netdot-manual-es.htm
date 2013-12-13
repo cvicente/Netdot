@@ -699,27 +699,7 @@ POST: {ethernet=&gt;&#39;DEADDEADBEEF&#39;}</code></pre>
 <pre class="sourceCode bash"><code class="sourceCode bash">~# cpan
 <span class="kw">&gt;install</span> Netdot::Client::REST</code></pre>
 <h1 id="mantenimiento-de-la-base-de-datos"><a href="#TOC"><span class="header-section-number">8</span> Mantenimiento de la base de datos</a></h1>
-<p>La base de datos de Netdot crecerá con el tiempo, por lo que será necesario borrar información caducada. Encontará una utilidad de línea de comandos llamada &quot;prune_db.pl&quot; en el directorio bin/ de la distribución. La sintaxis de dicho comando es como sigue:</p>
-<pre class="sourceCode bash"><code class="sourceCode bash"> usage: bin/prune_db.pl
- -H, --history <span class="kw">|</span> -F, --fwt <span class="kw">|</span> -A, --arp <span class="kw">|</span>
- -M, --macs <span class="kw">|</span> -I, --ips <span class="kw">|</span> -R, --rr <span class="kw">|</span> -a, --audit <span class="kw">|</span> -t, --hostaudit
-<span class="kw"> [</span> -d, --num_days &lt;number<span class="ot">&gt;</span><span class="kw"> ] [</span> -n, --num_history &lt;number<span class="ot">&gt;</span><span class="kw"> ] [</span> -r, --rotate<span class="kw"> ]</span>
-<span class="kw"> [</span> -g, --debug<span class="kw"> ]</span> [-h, --help]
-
-    -H, --history      Tablas con historia
-    -F, --fwt          Tablas de reenvío
-    -A, --arp          Cachés de ARP
-    -M, --macs         Direcciones MAC
-    -I, --ips          Direcciones IP
-    -R, --rr           Récords DNS
-    -a, --audit        Récords de auditoría
-    -t, --hostaudit    Récords de auditoría de DNS y DHCP
-    -d, --num_days     Mantener récords por número de días <span class="kw">(</span>default: 365<span class="kw">)</span>;
-    -n, --num_history  Número de récords históricos a mantener por cada record
-    -r, --rotate       Rotar <span class="kw">(</span>en lugar de borrar<span class="kw">)</span> las tablas de reenvío y ARP
-    -p, --pretend      Mostrar actividad sin realmente borrar nada
-    -g, --debug        Información de depuración <span class="kw">(</span>mucha<span class="kw">)</span>
-    -h, --help         Mostrar ayuda</code></pre>
+<p>La base de datos de Netdot crecerá con el tiempo, por lo que será necesario borrar información caducada. Encontará una utilidad de línea de comandos llamada &quot;prune_db.pl&quot; en el directorio bin/ de la distribución.</p>
 <p>El fichero de muestra &quot;netdot.cron&quot; incluído con el paquete muestra ejemplos de uso recomendado de este programa.</p>
 <blockquote>
 <p><strong>Nota</strong>: Sea especialmente cuidadoso al utilizar las opciones -I y -M para borrar direcciones IP y MAC. El criterio para su eliminación depende del sello de tiempo &quot;last seen&quot; (visto por última vez) incluído en estos récords. Esto implica que si Netdot no está recopilando las tablas de ARP y de reenvío de los enrutadores, cortafuegos y switches donde se encontrarían estas direcciones, Netdot asumirá que no están activas, y por tanto las incluirá en la lista de eliminación.</p>

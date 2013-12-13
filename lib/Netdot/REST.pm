@@ -595,7 +595,6 @@ sub _get_linked_from{
     my %results;
     foreach my $i ( keys %linksfrom ){
 	my $rtable = (keys %{$linksfrom{$i}})[0]; # Table that points to us
-	next if ( $rtable =~ /_history$/o ); # Do not include history records
 	my @robjs = $obj->$i; # Objects that point to us
 	if ( $depth ){
 	    map { push @{$results{$i}}, $self->get(table=>$rtable, id=>$_->id, depth=>$depth-1) } @robjs;

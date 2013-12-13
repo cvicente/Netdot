@@ -35,7 +35,7 @@
 #	          The SQL data type of this column
 #      },
 #    description => 'Table1 blah blah blah', # Description for this table
-#    has_history => 0,  # Should a history table (a clone of this one) be inserted as well?
+#    has_history => 0,  # Deprecated
 #    index => [],       # Columns that should be indexed by the DBMS
 #    isjoin => '0',     # Is this table a join table?
 #
@@ -910,7 +910,7 @@ $meta = {
       }
     },
     description => 'A Backbone cable that interconnects two sites.  Backbone cables can have multiple strands.',
-    has_history => 1,
+    has_history => 0,
     index => [
       [
         'name'
@@ -1047,7 +1047,7 @@ $meta = {
       }
     },
     description => 'A single cable strand/pair',
-    has_history => 1,
+    has_history => 0,
     index => [
       [
         'cable'
@@ -1255,7 +1255,7 @@ $meta = {
       }
     },
     description => 'A circuit can either be a WAN link provided by an external entity, or a set of [spliced] backbone cable strands terminated into two device interfaces',
-    has_history => 1,
+    has_history => 0,
     index => [
       [
         'linkid'
@@ -1677,7 +1677,7 @@ $meta = {
       }
     },
     description => 'A Link between two Sites.  A Site Link can consist of one or more circuits',
-    has_history => 1,
+    has_history => 0,
     index => [],
     isjoin => '0',
     label => [
@@ -1812,7 +1812,7 @@ $meta = {
       }
     },
     description => 'A Contact object is basically a Role of a certain Person.  People can be associated with one or more resources (devices, services, etc) for which they could be contacted.  Each Contact object represents one of these roles.',
-    has_history => 1,
+    has_history => 0,
     index => [
       [
         'contactlist'
@@ -1986,7 +1986,7 @@ $meta = {
       }
     },
     description => 'Cached data',
-    has_history => '0',
+    has_history => 0,
     unique => [ ['name'] ],
     label => [ 'name' ],
     index => [ ],
@@ -2547,7 +2547,7 @@ $meta = {
       }
     },
     description => 'A network device.  Particularly, Devices in Netdot are network infrastructure devices that network administrators care about for inventory, monitoring and management purposes.  Not to be confused with end nodes',
-    has_history => 1,
+    has_history => 0,
     index => [ ['used_by'], ['owner'], ['os'], ['sysname'], ['down_from'], ['down_until'], ['extension'] ],
     isjoin => '0',
     label => [
@@ -3583,7 +3583,7 @@ $meta = {
       },
     },
     description => 'An organization related to the network in some way',
-    has_history => 1,
+    has_history => 0,
     index => [ ['asname'], ['asnumber'] ],
     isjoin => '0',
     label => [ 'name' ],
@@ -4664,7 +4664,7 @@ $meta = {
       }
     },
     description => 'An interface associated with a device',
-    has_history => 1,
+    has_history => 0,
     index => [ ['description'], ['stp_id'], ['physaddr'], ['jack'], ['neighbor'], ['oper_duplex'], ['oper_status'], ['speed'], ['circuit'] ],
     isjoin => '0',
     label => [
@@ -5692,7 +5692,7 @@ $meta = {
       },
     },
     description => 'Information about an individual',
-    has_history => 1,
+    has_history => 0,
     index => [],
     isjoin => '0',
     label => [
@@ -6023,7 +6023,7 @@ $meta = {
       }
     },
     description => 'Product Names',
-    has_history => 1,
+    has_history => 0,
     index => [
       [
         'sysobjectid'
@@ -7435,7 +7435,7 @@ $meta = {
       }
     },
     description => 'A physical location such as a building or data center.',
-    has_history => 1,
+    has_history => 0,
     index => [
       [
         'street1'
@@ -8361,7 +8361,7 @@ $meta = {
       },
     },
     description => 'A Virtual LAN Group',
-    has_history => 1,
+    has_history => 0,
     index => [],
     isjoin => '0',
     label => [
@@ -8716,7 +8716,7 @@ $meta = {
       }        
     },
     description => 'Saved SQL queries',
-    has_history => '0',
+    has_history => 0,
     unique => [ ['name'] ],
     label => [ 'name', 'querytext'  ],
     index => [ ],

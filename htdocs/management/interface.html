@@ -71,14 +71,13 @@ my %linksfrom = Interface->meta_data->get_links_from;
 %             }
 %             foreach my $i ( sort keys %linksfrom ){
 %               next if $i eq 'neighbors';
-%               next if $i =~ /^history_/;
 %               if ( $view eq $i ){
                    [<% $i %>]
 %               }else{
                    <a href="interface.html?id=<% $o %>&view=<% $i %>">[<% $i %>]</a>
 %               }   
 %             }
-              <a href="interface.html?id=<% $o %>&view=history">[history]</a>
+              <a href="interface.html?id=<% $o %>&view=audit">[audit]</a>
 	   </div>
 	</div>
       </div>
@@ -90,7 +89,6 @@ my %linksfrom = Interface->meta_data->get_links_from;
 %    if ( ($view eq 'all' || $view eq $i ) ){
 %	# Special cases
 %       next if $i eq 'neighbors';
-%       next if $i =~ /^history_/;
 %	if( $i eq 'vlans' && (my @ivlans = $o->vlans) ){
 %           my @vlans = map { $_->vlan } @ivlans;
             <div class="containerhead">VLANs</div>
@@ -198,13 +196,13 @@ my %linksfrom = Interface->meta_data->get_links_from;
 
 <!-- End Display has_many objects -->
 
-<!-- Display history objects associated with this object-->
-%if ( $view eq 'all' || $view eq 'history' ){
+<!-- Display audit records associated with this object-->
+%if ( $view eq 'all' || $view eq 'audit' ){
 <div class="container">
-%    my @ho = $o->get_history;
-     <& /generic/sortresults.mhtml, object => \@ho , view => "row", sort => 0 &>
+%    my @audit = $obj->get_audit_records(table=>'Interface', id=>$obj->id);
+     <& /generic/sortresults.mhtml, object => \@audit , view => "row", sort => 0 &>
 </div>
 %} 
-<!-- End Display history objects -->
+<!-- End Display audit records -->
 
 </div>
