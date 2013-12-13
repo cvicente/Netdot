@@ -278,8 +278,8 @@ sub upg_104_105 {
 	push @statements, "ALTER TABLE bgppeering ADD COLUMN state character varying(255);";
 	push @statements, "ALTER TABLE bgppeering DROP COLUMN monitorstatus;";
 
-	push @statements, 'DROP CONSTRAINT "rrds1";';
-	push @statements, 'ALTER TABLE bgppeering ADD CONSTRAINT "rrds1" UNIQUE ("rr", "key_tag", "algorithm", "digest_type");';
+	push @statements, 'ALTER TABLE rrds DROP CONSTRAINT rrds1;';
+	push @statements, 'ALTER TABLE rrds ADD CONSTRAINT rrds1 UNIQUE (rr, key_tag, algorithm, digest_type);';
 
 	push @statements, "ALTER TABLE device ADD COLUMN monitoring_template character varying(255);";
 
