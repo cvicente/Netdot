@@ -264,6 +264,14 @@ my $refresh_url = "device.html?id=$id&view=$view";
           <li><a href="device.html?id=<% $id %>&view=BGP">BGP Peers</a></li>
 %       }
 %     }
+%     my @hosted = $o->hosted_devices;
+%     if ( @hosted ){
+%       if( $view eq "Hosted" ) {
+          <li><span>Hosted</span></li>
+%       } else {
+          <li><a href="device.html?id=<% $id %>&view=Hosted">Hosted</a></li>
+%       }
+%     }
 %     my @circuits = $o->get_circuits;
 %     if( scalar @circuits ){
 %         if( $view eq "Circuit" ){
@@ -1573,12 +1581,14 @@ if ( $ipeers ){
 %
 %
 <!-- End Audit Section -->
+
 %#######################################################################
 %#
 %# Circuit
 %#
 %#######################################################################
 
+<!-- Circuits -->
 %if ( $view eq "Circuit" || $view eq "All" ){
     <div class="container">
         <div class="containerhead">Circuits</div>
@@ -1587,6 +1597,24 @@ if ( $ipeers ){
         </div>
     </div>
 %}
+<!-- End Circuits Section -->
+
+%#######################################################################
+%#
+%# Hosted Devices
+%#
+%#######################################################################
+
+<!-- Hosted Devices -->
+%if ( $view eq "Hosted" || $view eq "All" ){
+    <div class="container">
+        <div class="containerhead">Hosted Devices</div>
+        <div class="containerbody">
+            <& /generic/sortresults.mhtml, object => \@hosted , view => "row" &>
+        </div>
+    </div>
+%}
+<!-- End Hosted Devices Section -->
 
 
 %################################################################
