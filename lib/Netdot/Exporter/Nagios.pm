@@ -259,13 +259,15 @@ sub generate_configs {
 	if ( $devh->{snmp_managed} ){
 	    
 	    # Add a bgppeer service check for each monitored BGP peering
-	    foreach my $peeraddr ( keys %{$devh->{peering}} ){
-		my $peering = $devh->{peering}->{$peeraddr};
+	    foreach my $peer_addr ( keys %{$devh->{peering}} ){
+		my $peering = $devh->{peering}->{$peer_addr};
 		next unless ( $peering->{monitored} );
-		my $srvname = "BGPPEER_".$peeraddr;
+		my $srvname = 'BGPPEER_'.$peer_addr;
+		$srvname .= '_'.$peering->{asname} if $peering->{asname};
+		$srvname .= '_('.$peering->{asn}.')' if $peering->{asn};
 		$hosts{$ip}{service}{$srvname}{type}         = 'BGPPEER';
 		$hosts{$ip}{service}{$srvname}{hostname}     = $hosts{$ip}{name};
-		$hosts{$ip}{service}{$srvname}{peeraddr}     = $peeraddr;
+		$hosts{$ip}{service}{$srvname}{peer_addr}    = $peer_addr;
 		$hosts{$ip}{service}{$srvname}{srvname}      = $srvname;
 		$hosts{$ip}{service}{$srvname}{community}    = $devh->{community};
 		my @peercls;
@@ -597,13 +599,13 @@ sub print_service {
     }
 
     if ( $srvname =~ /^BGPPEER/o ){
-	my $peeraddr;
-	unless ( $peeraddr = $argv->{peeraddr} ){
-	    $logger->warn("Service check for $srvname requires peeraddr." . 
+	my $peer_addr;
+	unless ( $peer_addr = $argv->{peer_addr} ){
+	    $logger->warn("Service check for $srvname requires peer_addr." . 
 			  " Skipping $srvname check for host $hostname.");
 	    return;
 	}
-	$checkcmd .= "!$peeraddr"; # Pass the argument to the check command
+	$checkcmd .= "!$peer_addr"; # Pass the argument to the check command
     }
     
     my %levels;

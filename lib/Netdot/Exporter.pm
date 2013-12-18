@@ -90,7 +90,8 @@ sub get_device_info {
                     i.id, i.number, i.name, i.description, i.admin_status, i.monitored, i.contactlist,
                     ip.id, ip.address, ip.version, ip.parent, ip.monitored, rr.name, zone.name,
                     service.id, service.name, ipservice.monitored, ipservice.contactlist,
-                    bgppeering.bgppeeraddr, bgppeering.monitored, bgppeering.contactlist
+                    bgppeering.bgppeeraddr, bgppeering.monitored, bgppeering.contactlist,
+                    peer.asn, peer.asname
           FROM      rr, zone, device d
           LEFT OUTER JOIN bgppeering ON d.id=bgppeering.device
           LEFT OUTER JOIN devicecontacts ON d.id=devicecontacts.device
@@ -101,6 +102,7 @@ sub get_device_info {
           LEFT OUTER JOIN ipblock ip ON ip.interface=i.id
           LEFT OUTER JOIN ipservice ON ipservice.ip=ip.id
           LEFT OUTER JOIN service ON ipservice.service=service.id
+          LEFT OUTER JOIN entity peer ON bgppeering.entity=peer.id
           WHERE     d.monitored='1'
                AND  i.device=d.id                  
                AND  d.name=rr.id 
@@ -116,7 +118,7 @@ sub get_device_info {
 	    $intid, $intnumber, $intname, $intdesc, $intadmin, $intmon, $intcl,
 	    $ip_id, $ip_addr, $ip_version, $subnet, $ip_mon, $name, $zone,
 	    $srv_id, $srv_name, $srv_mon, $srv_cl,
-	    $peeraddr, $peermon, $peercl) = @$row;
+	    $peer_addr, $peer_rmon, $peer_cl, $peer_asn, $peer_asname) = @$row;
 	my $hostname = ($name eq '@')? $zone : $name.'.'.$zone;
 	$device_info{$devid}{target_id}    = $target_id;
 	$device_info{$devid}{hostname}     = $hostname;
@@ -132,8 +134,12 @@ sub get_device_info {
 	$device_info{$devid}{site_number}  = $site_number  if defined $site_number;
 	$device_info{$devid}{site_alias}   = $site_alias   if defined $site_alias;
 	$device_info{$devid}{contactlist}{$clid} = 1 if defined $clid;
-	$device_info{$devid}{peering}{$peeraddr}{monitored}   = $peermon if defined $peeraddr;
-	$device_info{$devid}{peering}{$peeraddr}{contactlist} = $peercl  if defined $peeraddr;
+	if ( $peer_addr ){
+	    $device_info{$devid}{peering}{$peer_addr}{monitored}   = $peer_mon;
+	    $device_info{$devid}{peering}{$peer_addr}{contactlist} = $peer_cl;
+	    $device_info{$devid}{peering}{$peer_addr}{asn}         = $peer_asname if $peer_asn;
+	    $device_info{$devid}{peering}{$peer_addr}{asname}      = $peer_asname if $peer_asname;
+	}
 	$device_info{$devid}{interface}{$intid}{number}       = $intnumber;
 	$device_info{$devid}{interface}{$intid}{name}         = $intname;
 	$device_info{$devid}{interface}{$intid}{description}  = $intdesc;
