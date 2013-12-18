@@ -118,7 +118,7 @@ sub get_device_info {
 	    $intid, $intnumber, $intname, $intdesc, $intadmin, $intmon, $intcl,
 	    $ip_id, $ip_addr, $ip_version, $subnet, $ip_mon, $name, $zone,
 	    $srv_id, $srv_name, $srv_mon, $srv_cl,
-	    $peer_addr, $peer_rmon, $peer_cl, $peer_asn, $peer_asname) = @$row;
+	    $peer_addr, $peer_mon, $peer_cl, $peer_asn, $peer_asname) = @$row;
 	my $hostname = ($name eq '@')? $zone : $name.'.'.$zone;
 	$device_info{$devid}{target_id}    = $target_id;
 	$device_info{$devid}{hostname}     = $hostname;
