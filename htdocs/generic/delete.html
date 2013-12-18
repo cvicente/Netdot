@@ -148,7 +148,8 @@ if ( $table && $id ){
     my @objs;
     foreach my $l ( @records ){
 	my ($table, $id) = @$l;
-	push @objs, $table->retrieve($id);
+	my $obj = $table->retrieve($id);
+	push @objs, $obj if $obj;
     }
     my @lbls = map { "$table " . $_->get_label } @objs;
     eval {
