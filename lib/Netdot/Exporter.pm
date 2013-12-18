@@ -91,7 +91,7 @@ sub get_device_info {
                     ip.id, ip.address, ip.version, ip.parent, ip.monitored, rr.name, zone.name,
                     service.id, service.name, ipservice.monitored, ipservice.contactlist,
                     bgppeering.bgppeeraddr, bgppeering.monitored, bgppeering.contactlist,
-                    peer.asn, peer.asname
+                    peer.asnumber, peer.asname
           FROM      rr, zone, device d
           LEFT OUTER JOIN bgppeering ON d.id=bgppeering.device
           LEFT OUTER JOIN devicecontacts ON d.id=devicecontacts.device
