@@ -136,7 +136,7 @@ sub get_device_info {
 	$device_info{$devid}{contactlist}{$clid} = 1 if defined $clid;
 	if ( $peer_addr ){
 	    $device_info{$devid}{peering}{$peer_addr}{contactlist} = $peer_cl;
-	    $device_info{$devid}{peering}{$peer_addr}{asn}         = $peer_asname if $peer_asn;
+	    $device_info{$devid}{peering}{$peer_addr}{asn}         = $peer_asn    if $peer_asn;
 	    $device_info{$devid}{peering}{$peer_addr}{asname}      = $peer_asname if $peer_asname;
 	}
 	$device_info{$devid}{interface}{$intid}{number}       = $intnumber;
