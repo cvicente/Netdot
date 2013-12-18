@@ -264,6 +264,7 @@ sub generate_configs {
 		my $srvname = 'BGPPEER_'.$peer_addr;
 		$srvname .= '_'.$peering->{asname} if $peering->{asname};
 		$srvname .= '_('.$peering->{asn}.')' if $peering->{asn};
+		$srvname = $self->_rem_illegal_chars($srvname);
 		$hosts{$ip}{service}{$srvname}{type}         = 'BGPPEER';
 		$hosts{$ip}{service}{$srvname}{hostname}     = $hosts{$ip}{name};
 		$hosts{$ip}{service}{$srvname}{peer_addr}    = $peer_addr;
