@@ -139,10 +139,7 @@ sub get_name_from_interface {
     $name =~ s/-\./\./g;
     
     # Append device name
-    # Remove any possible prefixes added
-    # e.g. loopback0.devicename -> devicename
     my $devname = $ip->interface->device->short_name;
-    $devname =~ s/^.*\.(.*)/$1/;
     $name .= ".".$devname ;
 
     return $name;
