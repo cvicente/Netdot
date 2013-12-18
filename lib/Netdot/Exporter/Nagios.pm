@@ -261,7 +261,6 @@ sub generate_configs {
 	    # Add a bgppeer service check for each monitored BGP peering
 	    foreach my $peer_addr ( keys %{$devh->{peering}} ){
 		my $peering = $devh->{peering}->{$peer_addr};
-		next unless ( $peering->{monitored} );
 		my $srvname = 'BGPPEER_'.$peer_addr;
 		$srvname .= '_'.$peering->{asname} if $peering->{asname};
 		$srvname .= '_('.$peering->{asn}.')' if $peering->{asn};
