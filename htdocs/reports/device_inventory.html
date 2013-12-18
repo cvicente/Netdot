@@ -215,7 +215,7 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 	    my $latest_os;
 	    if ( $prod ne 'Unset' && ($product = Product->retrieve($prod)) ){
 		push( @row, "<strong><a href=\"../generic/view.html?table=Product&id=$prod\">" . $product->name . "</a></strong>" );
-		$latest_os = "(recommended: ".$product->latest_os.")" if defined($product->latest_os);
+		$latest_os = "(recommended: ".$product->latest_os.")" if ($product->latest_os);
 	    }else{
 		push( @row, $prod );
 	    }
