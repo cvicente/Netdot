@@ -262,6 +262,8 @@ sub generate_configs {
 	    foreach my $peer_addr ( keys %{$devh->{peering}} ){
 		my $peering = $devh->{peering}->{$peer_addr};
 		my $srvname = 'BGPPEER_'.$peer_addr;
+		$srvname .= '_'. $peering->{asname} if $peering->{asname};
+		$srvname = $self->_rem_illegal_chars($srvname);
 		my $displayname = $peer_addr;
 		$displayname .= ' '. $peering->{asname}  if $peering->{asname};
 		$displayname .= ' ('.$peering->{asn}.')' if $peering->{asn};
