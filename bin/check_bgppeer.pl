@@ -19,11 +19,21 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #
 #
+#
+# Report bugs to: cvicente(at)ns.uoregon.edu
+#
+# 08/05/2009 Version 1.1
+# 09/29/2011 Version 1.2 - Fixed incorrect return values
+# 09/29/2011 Version 1.3 - Use radb.net as whois server
 
 use SNMP;
 use strict;
 use Getopt::Long qw(:config no_ignore_case bundling);
 
+# whois program for Registry database queries
+my $whois      = '/usr/bin/whois';
+my $whoissrv   = 'whois.radb.net';
+my $whoisfield = "as-name";
 my $TIMEOUT    = 30;
 my %self;
 
@@ -64,6 +74,7 @@ my $usage = <<EOF;
     -a, --address      BGP Peer remote address (NOT peer ID)
     -c, --comm         SNMP community (default: public)
     -v, --version      SNMP version (default: 1)
+    -w, --whois        Query WHOIS for AS name
     -d, --debug        Print debugging output
     -h, --help         Show this message
 
@@ -82,6 +93,7 @@ my $result = GetOptions(
     "H|hostname=s"   => \$self{HOSTNAME},
     "a|address=s"    => \$self{PEER},
     "c|comm=s"       => \$self{COMMUNITY},
+    "w|whois"        => \$self{WHOIS},
     "v|version=s"    => \$self{VERSION},
     "d|debug"        => \$self{DEBUG},
     "h|help"         => \$self{HELP},
@@ -148,7 +160,23 @@ if ( $bgp_state eq 'established' || $bgp_state eq 'idle' ) {
     print "$state\n";
 }else { 
     $state = 'CRITICAL';
-    print ("$state: $self{PEER} ($as) is $bgp_state\n");
+    my $asname = "n/a";
+    if ( $self{WHOIS} ){
+	&debug("Quering WHOIS server $whoissrv");
+	
+	my @output = `$whois -h $whoissrv AS$as`;
+	my ($name, $value);
+	foreach (@output) {
+	    if (/No entries found/i){
+		last;
+	    }
+	    if (/$whoisfield:/){
+		(undef, $asname) = split /\s+/, $_;
+		last;
+	    }
+	}
+    }
+    print ("$state: $as ($asname) is $bgp_state\n");
 }
 
 exit $ERRORS{$state};
