@@ -263,6 +263,8 @@ sub upg_104_105 {
                               );
                            CREATE INDEX "ASN2" on "asn" ("rir");';
 
+	push @statements, "GRANT SELECT,INSERT,UPDATE,DELETE ON asn TO netdot_user;";
+
  	push @statements, "ALTER TABLE ipblock ADD COLUMN asn bigint;";
 	push @statements, "ALTER TABLE ipblock ADD CONSTRAINT \"fk_asn\" FOREIGN KEY (\"asn\") ".
 	    "REFERENCES \"asn\" (\"id\") DEFERRABLE;";
