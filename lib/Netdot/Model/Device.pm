@@ -5424,7 +5424,7 @@ sub _get_as_info{
     }
     my $obj = $i->match("aut-num","as$asn");
     unless ( $obj ){
-	$logger->warn("Device::_get_as_info: Can't find AS $asn in $server");
+	$logger->debug("Device::_get_as_info: Can't find AS $asn in $server");
 	return;
     }
     $i->disconnect();
