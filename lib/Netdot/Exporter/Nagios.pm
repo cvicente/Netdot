@@ -182,7 +182,7 @@ sub generate_configs {
 	my $devh = $device_info->{$devid};
 	next unless $devh->{target_addr} && $devh->{target_version};
 	my $ip = Ipblock->int2ip($devh->{target_addr}, $devh->{target_version});
-
+	my $target_ip = $ip;
 	$hosts{$ip}{ip} = $ip;
 
 	# This is the device name in Netdot. 
@@ -355,11 +355,19 @@ sub generate_configs {
 		next unless $iph->{addr} && $iph->{version};
 		my $ip = Ipblock->int2ip($iph->{addr}, $iph->{version});
 
-		unless ( $devh->{target_id} == $ip_id ){
+		if ( $devh->{target_id} == $ip_id ){
+		    # This is the target IP
+		    if ( @parent_names && defined $parent_names[0] ){
+			$hosts{$ip}{parents} = join ',', @parent_names;    
+		    }
+		}else{
 		    # IP is not target IP. We only care about it if it's marked as monitored
 		    next unless $iph->{monitored};
 		    $hosts{$ip}{ip} = $ip;
 
+		    # Parent is the host with the target IP
+		    $hosts{$ip}{parents} = $hosts{$target_ip}{name};
+		    
 		    # Figure out a unique name for this IP
 		    if ( my $name = Netdot->dns->resolve_ip($ip) ){
 			$hosts{$ip}{alias} = $name; # fqdn
@@ -377,10 +385,6 @@ sub generate_configs {
 		$hosts{$ip}{group} = $group_name;
 		push @{ $groups{$group_name}{members} }, $hosts{$ip}{name};
 		push @{$hosts{$ip}{contactlists}}, @clids;
-		if ( @parent_names && defined $parent_names[0] ){
-		    $hosts{$ip}{parents} = join ',', @parent_names;    
-		}
-
 
 		# Add monitored services on this IP
 		foreach my $servid ( keys %{$iph->{srv}} ){
