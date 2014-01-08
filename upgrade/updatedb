@@ -290,7 +290,7 @@ sub upg_104_105 {
 
 	push @statements, "ALTER TABLE device ADD COLUMN monitoring_template character varying(255);";
 
-	push @statements, "ALTER TABLE device ADD COLUMN host_device TYPE bigint;";
+	push @statements, "ALTER TABLE device ADD COLUMN host_device bigint;";
 	push @statements, "ALTER TABLE device ADD CONSTRAINT \"fk_host_device\" FOREIGN KEY (\"host_device\") ".
 	    "REFERENCES \"device\" (\"id\") DEFERRABLE;";
 
