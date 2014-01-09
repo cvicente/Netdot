@@ -15,6 +15,7 @@ $CONFIG{DEFAULT_DATA} = "$CONFIG{CONFIG_DIR}/default_data";
 
 my $netdot_config = Netdot::Config->new(config_dir => $CONFIG{CONFIG_DIR});
 my $dbms = $netdot_config->get('DB_TYPE');
+my $netdot_user = $netdot_config->get("DB_NETDOT_USER");
 my $dbh = &dbconnect();
 
 # Get the current schema version from DB
@@ -263,7 +264,7 @@ sub upg_104_105 {
                               );
                            CREATE INDEX "ASN2" on "asn" ("rir");';
 
-	push @statements, "GRANT SELECT,INSERT,UPDATE,DELETE ON asn TO netdot_user;";
+	push @statements, "GRANT SELECT,INSERT,UPDATE,DELETE ON asn TO $netdot_user;";
 
  	push @statements, "ALTER TABLE ipblock ADD COLUMN asn bigint;";
 	push @statements, "ALTER TABLE ipblock ADD CONSTRAINT \"fk_asn\" FOREIGN KEY (\"asn\") ".
