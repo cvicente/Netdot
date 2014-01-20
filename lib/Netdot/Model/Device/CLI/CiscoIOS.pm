@@ -259,10 +259,11 @@ sub _get_fwt_from_cli {
     # ------+----------------+--------+-----+----------+--------------------------
     #    128  0024.b20e.fe0f   dynamic  Yes        255   Gi9/22
     # *  703  0022.91a9.6100   dynamic  Yes          5   Fa2/13
+    # *   10  0022.91a9.6100   dynamic  Yes   Gi3/9                             (c6500 sup2)
 
     foreach my $line ( @output ) {
 	chomp($line);
-	if ( $line =~ /^.*($CISCO_MAC)\s+dynamic\s+\S+\s+\S+\s+(\S+)\s*$/o ) {
+	if ( $line =~ /^.*($CISCO_MAC)\s+dynamic\s+\S+\s+\d+?\s+(\S+)\s*$/o ) {
 	    $mac   = $1;
 	    $iname = $2;
 	}else{
