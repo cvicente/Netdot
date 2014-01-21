@@ -5849,7 +5849,7 @@ sub _update_stp_info {
 	    }
 	    # Finally, just get the priority
 	    $uargs{bridge_priority} = $info->{stp_instances}->{$instn}->{stp_priority};
-	    if ( defined $stpinst->bridge_priority && 
+	    if ( defined $stpinst->bridge_priority && defined($uargs{bridge_priority}) && 
 		 $stpinst->bridge_priority ne $uargs{bridge_priority} ){
 		$logger->warn(sprintf("%s: STP instance %s: Bridge Priority Changed: %s -> %s", 
 				      $host, $stpinst->number, $stpinst->bridge_priority, 
