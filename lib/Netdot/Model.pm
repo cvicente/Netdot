@@ -28,7 +28,12 @@ my $db_type = __PACKAGE__->config->get('DB_TYPE');
 my %EXCLUDE_AUDIT = (
     'audit'     => 1, 
     'datacache' => 1, 
-    'hostaudit' => 1
+    'hostaudit' => 1,
+    );
+
+# Columns to exclude from audit
+my %EXCLUDE_AUDIT_COL = (
+    'bindata' => 1, 
     );
 
 BEGIN {
@@ -139,6 +144,7 @@ BEGIN {
 	if ( $args{operation} eq 'insert' ){
 	    my (@fields, @values);
 	    foreach my $col ( $self->columns ){
+		next if exists $EXCLUDE_AUDIT_COL{$col};
 		if ( defined $self->$col ){ 
 		    push @fields, $col;
 		    if ( $self->$col && blessed($self->$col) ){
@@ -158,6 +164,7 @@ BEGIN {
 		return if ( $data{fields} eq 'modified' );
 		my @values;
 		foreach my $col ( @$changed_columns ){
+		    next if exists $EXCLUDE_AUDIT_COL{$col};
 		    if ( $self->$col && blessed($self->$col) ){
 			push @values, $self->$col->get_label();
 		    }else{

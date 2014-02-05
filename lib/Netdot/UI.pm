@@ -31,9 +31,11 @@ Netdot::UI groups common methods and variables related to Netdot's user interfac
 
 # Some tables have a specific view page. 
 #
-my %VIEWPAGE = ( BinFile       => "../generic/display_bin.html",
+my %VIEWPAGE = ( ClosetPicture => "../generic/display_bin.html",
+		 FloorPicture  => "../generic/display_bin.html",
+		 SitePicture   => "../generic/display_bin.html",
 		 BackboneCable => "../cable_plant/cable_backbone.html",
-		 CableStrand    => "../cable_plant/cable_strand.html",
+		 CableStrand   => "../cable_plant/cable_strand.html",
 		 Closet        => "../cable_plant/closet.html",
 		 Circuit       => "../cable_plant/circuit.html",
 		 ContactList   => "contactlist.html",
@@ -913,7 +915,7 @@ the value from the DB (if any).
     or False if failure    
   Examples:
 
-    $ui->text_field(object=>$pic->binfile, table=>"BinFile", column=>"filename", edit=>$editPictures);
+    $ui->text_field(object=>$o, table=>"Site", column=>"name");
 
 =cut
 

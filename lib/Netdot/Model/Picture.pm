@@ -87,14 +87,15 @@ sub _decode_bindata{
     return 1 unless ( $self->config->get('DB_TYPE') eq 'Pg' );
     my $id = $self->id;
     my $dbh = $self->db_Main;
-    my $encoded = ($dbh->selectrow_array("SELECT bindata FROM binfile WHERE id = $id"))[0];
+    my $table = lc($self->table);
+    my $encoded = ($dbh->selectrow_array("SELECT bindata FROM $table WHERE id = $id"))[0];
     unless ( $encoded ){
-	$logger->error("BinFile::_decode_bindata: No bindata available for BinFile id $id");
+	$logger->error("Picture::_decode_bindata: No bindata available for $table id $id");
 	return 1;
     }
     my $decoded = APR::Base64::decode($encoded);
     unless ( $decoded ){
-	$logger->error("BinFile::_decode_bindata: Problem decoding bindata for BinFile id $id");
+	$logger->error("Picture::_decode_bindata: Problem decoding bindata for $table id $id");
 	return 1;
     }
     $self->_attribute_store( bindata => $decoded );
