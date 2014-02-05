@@ -57,51 +57,13 @@ sub insert {
 }
 
 #################################################
-# Add some triggers
+# Handle PostgreSQL's bytea types correctly. 
 #
-# Postgresql's fields of type 'bytea' must be encoded prior to storing
-#
-__PACKAGE__->add_trigger( deflate_for_create => \&_encode_bindata );
-__PACKAGE__->add_trigger( deflate_for_update => \&_encode_bindata );
-__PACKAGE__->add_trigger( select             => \&_decode_bindata );
 
-#################################################
-#
-#    Called before insert/update
-#
-sub _encode_bindata{
-    my $self = shift;
-    return 1 unless ( $self->config->get('DB_TYPE') eq 'Pg' );
-    my $data = ($self->_attrs('bindata'))[0];
-    $data = APR::Base64::encode($data);
-    $self->_attribute_store( bindata => $data );
-    return 1;
+if (__PACKAGE__->config->get('DB_TYPE') eq 'Pg') {
+    require DBD::Pg;
+    __PACKAGE__->data_type(bindata => { pg_type => &DBD::Pg::PG_BYTEA });
 }
-
-#################################################
-#
-#     Called before select
-#
-sub _decode_bindata{
-    my $self = shift;
-    return 1 unless ( $self->config->get('DB_TYPE') eq 'Pg' );
-    my $id = $self->id;
-    my $dbh = $self->db_Main;
-    my $table = lc($self->table);
-    my $encoded = ($dbh->selectrow_array("SELECT bindata FROM $table WHERE id = $id"))[0];
-    unless ( $encoded ){
-	$logger->error("Picture::_decode_bindata: No bindata available for $table id $id");
-	return 1;
-    }
-    my $decoded = APR::Base64::decode($encoded);
-    unless ( $decoded ){
-	$logger->error("Picture::_decode_bindata: Problem decoding bindata for $table id $id");
-	return 1;
-    }
-    $self->_attribute_store( bindata => $decoded );
-    return 1;
-}
-
 
 =head1 AUTHOR
 
