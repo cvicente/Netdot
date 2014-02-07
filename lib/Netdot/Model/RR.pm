@@ -706,13 +706,15 @@ sub _validate_args {
     if ( defined $argv->{name} ){
 	# Convert to lowercase
 	my $name = lc($argv->{name});
-	$argv->{name} = $name;
 
 	# Remove whitespace
-	$argv->{name} =~ s/\s+//g;
+	$name =~ s/\s+//g;
 	
 	# Remove trailing dots, if any
-	$argv->{name} =~ s/\.$//;
+	$name =~ s/\.$//;
+
+	# Remove commas
+	$name =~ s/,//;
 
 	# Length restrictions
 	unless ( length($name) >= 1 && length($name) < 64 ){
@@ -741,6 +743,9 @@ sub _validate_args {
 		$self->throw_user("Invalid FQDN: $fqdn. Length exceeds 255 characters");
 	    }
 	}
+
+	$argv->{name} = $name;
+
     }
     1;
 }
