@@ -661,17 +661,17 @@ sub _validate_args {
 	if ( $type eq 'global' ){
 	    $self->throw_user("$name: a global scope cannot exist within another scope");
 	}
-	if ( $type eq 'host' && !($ctype eq 'global' || $ctype eq 'group') ){
-	    $self->throw_user("$name: a host scope can only exist within a global or group scope");
+	if ( $type eq 'host' && !($ctype eq 'global' || $ctype eq 'group' || $ctype eq 'subnet' || $ctype eq 'shared-network') ){
+	    $self->throw_user("$name: a host scope can only exist within a global, group, subnet or shared-network scope");
 	}
 	if ( $type eq 'group' && $ctype ne 'global' ){
 	    $self->throw_user("$name: a group scope can only exist within a global scope");
 	}
-	if ( $type eq 'subnet' && !($ctype eq 'global' || $ctype eq 'shared-network') ){
-	    $self->throw_user("$name: a subnet scope can only exist within a global or shared-network scope");
+	if ( $type eq 'subnet' && !($ctype eq 'global' || $ctype eq 'shared-network' || $ctype eq 'group') ){
+	    $self->throw_user("$name: a subnet scope can only exist within a global, shared-network or group scope");
 	}
-	if ( $type eq 'shared-network' && $ctype ne 'global' ){
-	    $self->throw_user("$name: a shared-network scope can only exist within a global scope");
+	if ( $type eq 'shared-network' && !($ctype eq 'global' || $ctype eq 'group') ){
+	    $self->throw_user("$name: a shared-network scope can only exist within a global or group scope");
 	}
 	if ( $type eq 'pool' && !($ctype eq 'subnet' || $ctype eq 'shared-network') ){
 	    $self->throw_user("$name: a pool scope can only exist within a subnet or shared-network scope");
