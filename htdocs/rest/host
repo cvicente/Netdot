@@ -82,7 +82,7 @@ if ( $rest->{request}->method eq 'GET' ){
 	    $rest->throw(code=>Apache2::Const::NOT_FOUND, msg=>"Address not found"); 
 	}
     }elsif ( $ethernet ){
-	if ( my $phy = Physaddr->search(address=>$ethernet)->first ){
+	if ( my $phy = PhysAddr->search(address=>$ethernet)->first ){
 	    foreach my $host ( $phy->dhcp_hosts ){
 		my $ip = $host->ipblock;
 		$ips{$ip->id} = $ip if $ip;
