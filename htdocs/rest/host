@@ -132,7 +132,7 @@ if ( $rest->{request}->method eq 'GET' ){
 	}
     }
 
-    # Get all related IPs and names from A records
+    # Get all related IPs and names
     foreach my $rr ( values %rrs ){
 	foreach my $ar ( $rr->a_records ){
 	    my $ip = $ar->ipblock;
@@ -142,6 +142,10 @@ if ( $rest->{request}->method eq 'GET' ){
     foreach my $ipb ( values %ips ){
 	foreach my $ar ( $ipb->a_records ){
 	    my $rr = $ar->rr;
+	    $rrs{$rr->id} = $rr;
+	}
+	foreach my $ptr ( $ipb->ptr_records ){
+	    my $rr = $ptr->rr;
 	    $rrs{$rr->id} = $rr;
 	}
     }
@@ -320,26 +324,67 @@ if ( $rest->{request}->method eq 'GET' ){
 	$rest->print_formatted($rest->get(obj=>$rr, depth=>0));
     }
 }elsif ( $rest->{request}->method eq 'DELETE' ){
+    
+    my @objs_to_delete;
+    
     if ( $rrid ){
-	my $rr = RR->retrieve($rrid);
-	$rest->throw(code=>Apache2::Const::NOT_FOUND, msg=>"RR not found")
-	    unless $rr;
+    	my $rr = RR->retrieve($rrid);
+    	$rest->throw(code=>Apache2::Const::NOT_FOUND, msg=>"RR not found")
+    	    unless $rr;
 	
-	unless ( $manager->can($user, 'delete', $rr) ){
-	    $rest->throw_rest(code=>Apache2::Const::HTTP_FORBIDDEN, 
-			      msg=>"User not allowed to delete this object");
-	}
-	eval {
-	    $rr->delete();
-	};
-	if ( my $e = $@ ){
-	    $rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
-			 msg=>"Bad request: $e"); 
-	}
+    	push @objs_to_delete, $rr;
+	
     }elsif ( $ipid ){
-	$rest->throw_rest(code=>Apache2::Const::HTTP_FORBIDDEN, 
-			  msg=>"You are not allowed to delete IPs this way");
+	
+    	my $ipb = Ipblock->retrieve($ipid);
+    	$rest->throw(code=>Apache2::Const::NOT_FOUND, msg=>"IP not found")
+    	    unless $ipb;
+	
+    	# Make sure we are only dealing with host IPs, not blocks
+	unless ( $ipb->is_address ){
+	    $rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
+			 msg=>"Bad request: Cannot operate on blocks of addresses"); 
+	}
+    	# Delete A records and PTR records
+    	foreach my $ar ( $ipb->a_records ){
+    	    push @objs_to_delete, $ar->rr;
+    	}
+    	foreach my $ptr ( $ipb->ptr_records ){
+    	    push @objs_to_delete, $ptr->rr;
+    	}
+    	# Delete DHCP hosts
+    	foreach my $scope ( $ipb->dhcp_scopes ){
+    	    push @objs_to_delete, $scope;
+    	}
+	
+   }elsif ( $ethernet ){
+   	my $phy = PhysAddr->search(address=>$ethernet)->first;
+   	$rest->throw(code=>Apache2::Const::NOT_FOUND, msg=>"MAC not found") 
+   	    unless $phy;
+	
+   	# Delete DhcpScope objects associated with this MAC
+   	foreach my $host ( $phy->dhcp_hosts ){
+   	    push @objs_to_delete, $host;
+   	}
     }
-
+    
+    # Delete objects (if any) as one transaction
+    if ( @objs_to_delete ){
+    	eval {
+    	    Netdot::Model->do_transaction( sub{ 
+    		foreach my $obj ( @objs_to_delete ){
+    		    unless ( $manager->can($user, 'delete', $obj) ){
+    			$rest->throw_rest(code=>Apache2::Const::HTTP_FORBIDDEN, 
+    					  msg=>"User not allowed to delete this object");
+    		    }
+    		    $obj->delete();
+    		}	
+    					   });
+    	};
+    	if ( my $e = $@ ){
+    	    $rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
+    			 msg=>"Bad request: $e"); 
+    	}
+    }
 }
 </%perl>
