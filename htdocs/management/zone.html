@@ -160,7 +160,9 @@ if ( $submit ){
       <div class="containerheadright">
 %     if ( $manager && $manager->can($user, 'edit', $o) ){
           <a href="host.html?action=new&zone=<% $id %>">[add]</a> 
-          <a href="zone.html?id=<% $id %>&view=bulk_import">[import]</a>
+%     }
+%     if ( $manager && $manager->can($user, 'access_admin_section', 'zone.html:bulk') ){
+         <a href="zone.html?id=<% $id %>&view=bulk_import">[import]</a>
 %     }
 %     if ( $view eq 'records' ){
           &nbsp;
@@ -233,6 +235,7 @@ if ( $view eq 'records' || $edit eq 'records' ){
 <!-- Show Bulk Import Interface -->
 
 % if ( $view eq 'bulk_import' ){
+%   if ( $manager && $manager->can($user, 'access_admin_section', 'zone.html:bulk') ){
     <p>
     <div align="center">
     <form action="zone.html" method="POST">
@@ -246,6 +249,7 @@ if ( $view eq 'records' || $edit eq 'records' ){
         <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
     </form>
     </div>
+%   }
 % }
 
 % }
