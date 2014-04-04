@@ -1664,11 +1664,18 @@ sub update {
     # Update PTR records if needed
     if ( $self->address ne $bak{address} ){
 	my $name = RRPTR->get_name(ipblock=>$self);
+	# If address changed it might belong to another reverse zone.
+	my $reverse_zone = $self->reverse_zone();
 	foreach my $pr ( $self->ptr_records ){
 	    my $rr = $pr->rr;
-	    my $domain = $rr->zone->name;
-	    $name =~ s/\.$domain\.?$//i;
-	    $rr->update({name=>$name});
+	    if ( defined $reverse_zone ) {
+		my $domain = $reverse_zone->name;
+		$name =~ s/\.$domain\.?$//i;
+		$rr->update({name=>$name, zone=>$reverse_zone});
+	    }else{
+		# If there's no reverse zone, the RR has no purpose
+		$rr->delete();
+	    }
 	}
     }
 
