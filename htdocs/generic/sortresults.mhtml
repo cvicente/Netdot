@@ -147,7 +147,7 @@ if ( defined($object) && scalar @$object ){
 	foreach my $obj ( @{ $object } ){
 	    my $lbl;
 	    if ( my $ref = ref($obj->$sort_field) ){
-		if ( $ref =~ /Ipblock/o ){
+		if ( $ref =~ /(Netdot::Model::)?Ipblock$/o ){
 		    $ip = 1;
 		}
 		$lbl = $obj->$sort_field->get_label;
