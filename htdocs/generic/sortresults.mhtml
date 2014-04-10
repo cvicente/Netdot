@@ -147,23 +147,20 @@ if ( defined($object) && scalar @$object ){
 	foreach my $obj ( @{ $object } ){
 	    my $lbl;
 	    if ( my $ref = ref($obj->$sort_field) ){
-		if ( $ref =~ /(Netdot::Model::)?Ipblock$/o ){
-		    $ip = 1;
-		}
+		$ip ||= 1 if ( $ref =~ /(Netdot::Model::)?Ipblock$/o );
 		$lbl = $obj->$sort_field->get_label;
 	    }else{
 		$lbl = $obj->$sort_field;
 	    }
-	    if ( $lbl =~ /\D+/o ){
-		$alpha = 1;
-	    }
+	    $alpha ||= 1 if ( $lbl =~ /\D+/o );
 	    push @lbls, [$obj , $lbl];
 	}
 	if ( $ip ){
-	    @lbls = sort { 
-		$a->[0]->$sort_field->address_numeric <=> 
-		    $b->[0]->$sort_field->address_numeric 
-	    } @lbls; 
+	    # Sort by decimal address
+	    # Make sure that the FK is not null before we call the method
+	    @lbls = map { $_->[0] } sort { $a->[1] <=> $b->[1] } map {
+		[ $_, $_->[0]->$sort_field ? $_->[0]->$sort_field->address_numeric : 0 ] } @lbls;
+	    
 	}elsif ( $alpha ){
 	    @lbls = sort { $a->[1] cmp $b->[1] } @lbls; 
 	}else{
