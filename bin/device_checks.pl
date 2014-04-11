@@ -59,7 +59,6 @@ unless ( $ENTITY || $NEIG || $SITE || $DUPLEX || $NEW ){
     die "Error: Must specify either -e, -n, -s, -d or -n\n";
 }
 
-# This will be reflected in the history tables
 $ENV{REMOTE_USER} = "netdot";
 my (@nameless, @lost, @orphans, @homeless, @new, $output);
 

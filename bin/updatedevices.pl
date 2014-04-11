@@ -26,7 +26,6 @@ my $timeout = Netdot->config->get('DEFAULT_SNMPTIMEOUT');
 my ($ATOMIC, $ADDSUBNETS, $SUBSINHERIT, $BGPPEERS, $RECURSIVE, $INFO, $FWT, 
     $TOPO, $ARP, $PRETEND, $HELP, $_DEBUG);
 
-# This will be reflected in the history tables
 $ENV{REMOTE_USER} = "netdot";
 
 my $USAGE = <<EOF;
