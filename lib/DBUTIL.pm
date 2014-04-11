@@ -456,22 +456,25 @@ CREATE USER $CONFIG{DB_NETDOT_USER} WITH PASSWORD '$CONFIG{DB_NETDOT_PASS}' NOCR
 
 sub insert_default_data{
     my @data;
+
+    # Insert current schema version
+    # Get version number from library
+    my $version = `grep 'our \$VERSION' ../lib/Netdot.pm`;
+    chomp($version);
+    $version =~ s/.*\=\s+"(.*)";/$1/;
+    push @data, "INSERT INTO schemainfo (version) VALUES('$version');";
+
     my $file = $CONFIG{DEFAULT_DATA};
     if ( -f $file) {
-	print "Inserting default data\n";
 	open (DEFAULT, "<$file") or die "Can't open $file: $!";
 	foreach (<DEFAULT>) {
 	    next unless ( /\w+/ );
-	    if ( /INSERT INTO (\w+)/ ){
-		my $t = $1;
-		$t = lc($t);
-		s/INSERT INTO \w+/INSERT INTO $t/;
-	    }
 	    push @data, $_;
 	}	
     }else{
 	die "Can't find $file";
     }
+    print "Inserting default data\n";
     &db_query(\@data);
 }
 
