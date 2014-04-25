@@ -221,7 +221,7 @@ if ( $rest->{request}->method eq 'GET' ){
 	if ( $ethernet || $duid ){
 	    my %args;
 	    $args{duid} = $duid if $duid;
-	    $args{ethernet} = $ethernet if ( $ethernet && !$args{duid} );
+	    $args{physaddr} = $ethernet if ( $ethernet && !$args{duid} );
 	    
 	    if ( my $host = $ipb->dhcp_scopes->first ){
 		# Edit the MAC on this existing scope
