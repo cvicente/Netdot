@@ -70,6 +70,8 @@ $ui->get_allowed_objects($r, $user) if $user;
                 <input type="text" name="q" size="13" value="" style="color:#003300;border:1px inset #006600;width:10em;">
             </form>
             <br />
+%       }
+%       if ( $manager && $manager->can($user, "access_admin_section", 'header.mhtml:search') ){
             <strong>user</strong>: <a href="view.html?table=Person&id=<% $person->id %>"><% $user->getUsername() %></a> &nbsp;
 %       }else{
             <strong>user</strong>: <a href="../user_management/person.html?id=<% $person->id %>"><% $user->getUsername() %></a> &nbsp;
