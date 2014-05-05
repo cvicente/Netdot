@@ -2456,12 +2456,12 @@ sub set_user_type{
     Hashref with key=Object class, 
                  value=Hashref with key=Object id, value=access right
   Examples:
-    $ui->get_allowed_objects($user, 'Device')
+    $ui->get_allowed_objects($r, $user)
 
 =cut
 
 sub get_allowed_objects{
-    my ($self, $r, $user, $type) = @_;
+    my ($self, $r, $user) = @_;
 
     $self->throw_fatal("Netdot::UI::get_allowed_objects: Missing required arguments")
 	unless ( $r, $user );

@@ -364,11 +364,9 @@ sub post{
 
     if ( $obj ){
 	# We are updating an existing object
-	# Only admins can edit things this way
-	my $user_type = $self->{user}->getAttribute('USER_TYPE');
-	unless ( $user_type && ($user_type eq 'Admin') ){
- 	    $self->throw(code=>Apache2::Const::HTTP_FORBIDDEN, 
-			      msg=>"Netdot::REST::post: User not allowed to edit objects this way");
+	unless ( $self->{manager}->can($self->{user}, 'edit', $obj) ){
+	    $self->throw(code=>Apache2::Const::HTTP_FORBIDDEN, 
+			 msg=>"Netdot::REST::post: User not allowed to edit this object");
 	}
 	
 	eval {
@@ -420,11 +418,10 @@ sub delete{
     unless ( $obj ) {
 	$self->throw(code=>Apache2::Const::NOT_FOUND, msg=>"Not found"); 
     }
-    # Only admins can delete things this way
-    my $user_type = $self->{user}->getAttribute('USER_TYPE');
-    unless ( $user_type && ($user_type eq 'Admin') ){
-	$self->throw(code=>Apache2::Const::HTTP_FORBIDDEN, 
-			  msg=>"Netdot::REST::delete: User not allowed to delete objects this way");
+	
+    unless ( $self->{manager}->can($self->{user}, 'delete', $obj) ){
+    	$self->throw(code=>Apache2::Const::HTTP_FORBIDDEN, 
+    		     msg=>"Netdot::REST::delete: User not allowed to delete this object");
     }
 	
     eval {
@@ -433,7 +430,6 @@ sub delete{
     if ( my $e = $@ ){
 	$self->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, msg=>'Bad request');
     }
-
 }
 
 ##################################################################

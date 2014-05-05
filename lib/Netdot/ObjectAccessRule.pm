@@ -278,19 +278,14 @@ sub _deny_action_access {
 # ip addresses inherit ancestor permissions
 # RRs inherit IP address permissions, but users are allowed to edit and delete RRs
 sub _deny_ip_access {
+
     my ($action, $access, $ipblock, $is_rr) = @_;
     if ( $action ne 'view' && ($ipblock->interface || $ipblock->snmp_devices) ){
 	$logger->debug("ObjectAccessRule::_deny_ip_access: ".$ipblock->get_label.
 		       " linked to Device. Denying access.");
 	return 1;
     }
-    unless ( $is_rr ){
-	if ( $ipblock->is_address && ($action eq 'delete' || $action eq 'edit') ){
-	    $logger->debug("ObjectAccessRule::_deny_ip_access: ".$ipblock->get_label
-			   ." Users cannot edit or delete IP addresses. Denying access.");
-	    return 1;
-	}
-    }
+
     if ( $ipblock->status ){
 	my $status = $ipblock->status->name;
 	if ( $status eq 'Dynamic' || $status eq 'Reserved' ){

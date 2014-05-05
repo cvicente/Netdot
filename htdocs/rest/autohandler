@@ -20,6 +20,9 @@ if ( $DEBUG ){
     print "manager: ", $manager, "<br>";
 }
 
+# Make sure we have this information for every user
+$ui->get_allowed_objects($r, $user) if $user;
+
 eval {
     $m->call_next(user=>$user, manager=>$manager);
 };
