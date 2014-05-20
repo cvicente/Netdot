@@ -6278,7 +6278,7 @@ sub _update_interfaces {
 	}
 
 	# Don't delete snmp_target address unless updating via UI
-	if ( $ENV{REMOTE_USER} eq 'netdot' &&
+	if ( $ENV{REMOTE_USER} eq 'netdot' && $self->snmp_target && 
 	     $self->snmp_target->id == $obj->id ){
 	    $logger->debug(sub{sprintf("%s: IP %s is snmp target. Skipping delete",
 				       $host, $obj->address)});
