@@ -146,7 +146,7 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 	$t{$site}{types}{$type}{prods}{$product}{count}++;
 	$t{$site}{total}++;
     }
-    foreach my $site ( keys %t ){
+    foreach my $site ( sort { $t{$a}{name} cmp $t{$b}{name} } keys %t ){
 	my $site_name = $t{$site}{name};
 	my @hdr = ();
 	push( @hdr, "<strong><a href=\"../generic/search_obj.html?".
