@@ -6085,7 +6085,7 @@ sub _update_interfaces {
 	if ( ($ifs_old && !$ifs_new) || ($ifs_new && ($ifs_new < $ifs_old) &&
 					 ($ifs_new / $ifs_old) <= $int_thold) ){
 	    $logger->warn(sprintf("%s: new/old interface ratio: %.2f is below INT_COUNT_THRESHOLD".
-				  "Skipping interface update. Re-discover manually if needed.",
+				  " Skipping interface update. Re-discover manually if needed.",
 				  $host, $ifs_new/$ifs_old));
 	    return;
 	}
