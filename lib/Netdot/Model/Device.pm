@@ -3029,24 +3029,26 @@ sub info_update {
 	$asset_args{product_id} = $dev_product->id;
 	$asset = Asset->insert(\%asset_args);
     }else{
-	$dev_product = $self->_assign_product($info);	
+	$dev_product = $self->_assign_product($info);
     }
     $devtmp{asset_id} = $asset->id if $asset;
-    
+
 
     ##############################################################
     # Things to do only when creating the device
     if ( $argv{device_is_new} ){
-	
+
 	$devtmp{snmp_version} = $info->{snmp_version} if exists $info->{snmp_version};
-	
+
 	if ( $asset && $asset->product_id  ){
 	    my $val = $self->_assign_device_monitored($asset->product_id);
 	    $devtmp{monitored}    = $val;
 	    $devtmp{snmp_polling} = $val;
-	    $devtmp{snmp_target}->update({monitored => $val});
+	    if ( my $st = $devtmp{snmp_target} ){
+		$st->update({monitored => $val});
+	    }
 	}
-	
+
 	if ( my $g = $self->_assign_monitor_config_group($info) ){
 	    $devtmp{monitor_config}       = 1;
 	    $devtmp{monitor_config_group} = $g;
@@ -3056,7 +3058,7 @@ sub info_update {
     ##############################################################
     # Spanning Tree
     $self->_update_stp_info($info, \%devtmp);
-    
+
     ##############################################################
     # Modules
     $self->_update_modules(
