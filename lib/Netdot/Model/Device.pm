@@ -5612,9 +5612,9 @@ sub _munge_speed_high {
 #
 sub _assign_base_mac {
     my ($self, $info) = @_;
-    
+
     my $host = $self->fqdn;
-    my $address = delete $info->{physaddr}; 
+    my $address = delete $info->{physaddr};
     if ( $address && ($address = PhysAddr->validate($address)) ) {
 	# OK
     }else{
@@ -5625,6 +5625,10 @@ sub _assign_base_mac {
 		last;
 	    }
 	}
+    }
+    unless ( $address ){
+	$logger->debug("$host: No suitable MAC address found");
+	return;
     }
     # Look it up
     my $mac;
