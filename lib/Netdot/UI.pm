@@ -1822,7 +1822,8 @@ sub build_device_topology_graph {
 	    @argv{'graph', 'device', 'view', 'show_names', 'show_vlans', 'nodeoptions'};
 	
 	$view ||= "view";
-        $g->add_node(name  => $device->short_name, 
+        $g->add_node($device->id,
+		     label => $device->short_name, 
 		     shape => "record",
 		     URL   => "device.html?id=".$device->id."&view=$view&toponames=$show_names&topovlans=$show_vlans",
 		     %$nodeoptions
@@ -1891,7 +1892,7 @@ sub build_device_topology_graph {
 			    $style='dashed';
 			}   
 			
-			$g->add_edge($device->short_name => $nd->short_name,
+			$g->add_edge($device->id         => $nd->id,
 				     tailURL             => "view.html?table=Interface&id=".$iface->id,
 				     taillabel           => ((defined($specific_vlan) && $specific_vlan != 0)?$name:$vname),
 				     headURL             => "view.html?table=Interface&id=".$neighbor->id, 
@@ -1905,7 +1906,7 @@ sub build_device_topology_graph {
                 }
             } else {
 		if ( !defined($specific_vlan) || defined($specific_vlan) && $specific_vlan == 0 ) {
-		    $g->add_edge($device->short_name => $nd->short_name,
+		    $g->add_edge($device->id         => $nd->id,
 				 tailURL             => "view.html?table=Interface&id=".$iface->id,
 				 taillabel           => $name,
 				 headURL             => "view.html?table=Interface&id=".$neighbor->id, 
