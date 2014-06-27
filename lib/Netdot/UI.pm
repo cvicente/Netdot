@@ -1779,6 +1779,7 @@ sub build_ip_tree_graph_html {
     show_vlans   Boolean. Whether to show colored arrows for each VLAN
     vlans        
     show_names   Boolean. Whether to show interface names
+    minlen       Integer. Minimum edge length.
     filename     File name for the graph
     format       (canon|text|ps|hpgl|gd|gd2|gif|jpeg|png|svg)
     direction    (up_down|left_right)
@@ -1792,9 +1793,9 @@ sub build_ip_tree_graph_html {
 sub build_device_topology_graph {
     my ($self, %argv) = @_;
     my ($id, $root, $depth, $depth_up, $depth_down, $view, $show_vlans, $show_names, 
-	$filename, $vlans, $format, $direction, $specific_vlan) = 
+	$filename, $vlans, $format, $direction, $specific_vlan, $minlen) = 
 	    @argv{'id', 'root', 'depth', 'depth_up', 'depth_down', 'view', 'show_vlans', 'show_names', 
-		  'filename', 'vlans', 'format', 'direction', 'specific_vlan'};
+		  'filename', 'vlans', 'format', 'direction', 'specific_vlan', 'minlen'};
     
     # Guard against malicious input
     $depth      = (int($depth)      > 0) ? int($depth)      : 0;
@@ -1802,6 +1803,7 @@ sub build_device_topology_graph {
     $depth_down = (int($depth_down) > 0) ? int($depth_down) : 0;
     $show_vlans = ($show_vlans == 1)     ? 1 : 0;
     $show_names = ($show_names == 1)     ? 1 : 0;
+    $minlen     ||= 1;
 
     $root ||= $id;
 
@@ -1957,7 +1959,8 @@ sub build_device_topology_graph {
     my %args = (layout=>'dot', truecolor=>1, bgcolor=>"#ffffff00",ranksep=>2.0,
 		node=>{shape=>'record', fillcolor=>'#ffffff88', style=>'filled', 
 		       fontsize=>10, height=>.25},
-		edge=>{dir=>'none', labelfontsize=>8}, rankdir=>$direction );
+		edge=>{dir=>'none', labelfontsize=>8, minlen=>$minlen},
+		rankdir=>$direction );
 
     # Actually do the searching
     my $g = GraphViz->new(%args);
