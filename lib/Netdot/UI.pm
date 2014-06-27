@@ -1854,15 +1854,18 @@ sub build_device_topology_graph {
 	    my $neighbor_name = ($show_names ? $neighbor->name : $neighbor->number) || $neighbor->number;
 	    
             my $nd = $neighbor->device || next;
+            my ($n1, $n2, $constraint) = ($device->id, $nd->id, 1);
 
 	    if ( exists($spp->{$device->id}->{$nd->id}) ){
 		# Neighbor is closer to root
 		$dir = "up";
+		($n1, $n2) = ($n2, $n1);
 	    }elsif ( exists($spp->{$nd->id}->{$device->id}) ){
 		# The opposite
 		$dir = "down";
 	    }else{
 		$dir = "level";
+		$constraint = 0;
 	    }
 	    my $add_node = 0;
 
@@ -1892,7 +1895,8 @@ sub build_device_topology_graph {
 			    $style='dashed';
 			}   
 			
-			$g->add_edge($device->id         => $nd->id,
+			$g->add_edge($n1                 => $n2,
+				     constraint          => $constraint,
 				     tailURL             => "view.html?table=Interface&id=".$iface->id,
 				     taillabel           => ((defined($specific_vlan) && $specific_vlan != 0)?$name:$vname),
 				     headURL             => "view.html?table=Interface&id=".$neighbor->id, 
@@ -1906,7 +1910,8 @@ sub build_device_topology_graph {
                 }
             } else {
 		if ( !defined($specific_vlan) || defined($specific_vlan) && $specific_vlan == 0 ) {
-		    $g->add_edge($device->id         => $nd->id,
+		    $g->add_edge($n1                 => $n2,
+				 constraint          => $constraint,
 				 tailURL             => "view.html?table=Interface&id=".$iface->id,
 				 taillabel           => $name,
 				 headURL             => "view.html?table=Interface&id=".$neighbor->id, 
