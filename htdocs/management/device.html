@@ -53,6 +53,7 @@ $topodepth_up    => 1
 $topodepth_down  => 1
 $topovlans  => 0
 $toponames  => 0
+$topominlen => 0
 $specific_vlan  => 0
 $stp_number     => undef
 $state_digest   => undef
@@ -1468,6 +1469,7 @@ if ( $ipeers ){
       <th>Show Vlans?</th>
       <th>Show this Vlan only?</th>
       <th>Show Interface Names?</th>
+      <th>Line length</th>
       <th>Depth up</th>
       <th>Depth down</th>
       <th>Reference Point</th>
@@ -1490,6 +1492,15 @@ if ( $ipeers ){
 %       }
         </select></td>
       <td><input type="checkbox" name="toponames" value="1"  <% ($toponames ? "checked" : "") %>></td>
+      <td><select name="topominlen">
+%       for (my $minlen=1; $minlen <= 3; $minlen++) {
+%           if ( $topominlen == $minlen ){
+                <option value="<% $minlen %>" SELECTED><% $minlen %></option>     
+%           }else{
+                <option value="<% $minlen %>"><% $minlen %></option>     
+%           }
+%       }
+        </select></td>
       <td><input type="text" name="topodepth_up" size=2 value="<% $topodepth_up %>"></td>
       <td><input type="text" name="topodepth_down" size=2 value="<% $topodepth_down %>"></td>
       <td><input type="text" name="toporoot" size=20 value="<% $toporoot %>"></td>
@@ -1512,7 +1523,7 @@ if ( $ipeers ){
 %                                                   depth_up=>$topodepth_up, depth_down=>$topodepth_down,
 %                                                   web_path=>$r->dir_config('NetdotPath'), 
 %                                                   show_vlans=>$topovlans, show_names=>$toponames, 
-%                                                   specific_vlan=>$specific_vlan);
+%                                                   specific_vlan=>$specific_vlan, minlen=>$topominlen);
     </center>
     </div>
 </div>
