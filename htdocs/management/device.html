@@ -1213,8 +1213,12 @@ if ( $editips || $add_ip ) {
 % push( @field_headers, "BGP ID: " );
 % push( @cell_data, $ui->form_field(object=>$o, column=>"bgpid", edit=>$editdevbgp, returnValOnly=>1) );
 % push( @field_headers, "BGP Local AS: " );
-% push( @cell_data, $ui->form_field(object=>$o->bgplocalas, column=>"number", edit=>$editdevbgp, 
-%       linkPage=>"view.html", returnValOnly=>1) );
+% if ( $o->bgplocalas ){
+%     push( @cell_data, $ui->form_field(object=>$o->bgplocalas, column=>"number", edit=>$editdevbgp, 
+%           linkPage=>"view.html", returnValOnly=>1) );
+% }else{
+      push( @cell_data, "n/a")
+% }
 
 <div class="container">
    <div class="containerheadleft">Device BGP Info</div>
