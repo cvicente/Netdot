@@ -2951,7 +2951,7 @@ sub info_update {
     unless ( ref($info) eq 'HASH' ){
 	$self->throw_fatal("Model::Device::info_update: Invalid SNMP data structure");
     }
-    
+
     # Pretend works by turning off autocommit in the DB handle and rolling back
     # all changes at the end
     if ( $argv{pretend} ){
@@ -2960,7 +2960,7 @@ sub info_update {
             $self->throw_fatal("Model::Device::info_update: Unable to set AutoCommit off");
         }
     }
-    
+
     # Data that will be passed to the update method
     my %devtmp;
 
@@ -2970,7 +2970,7 @@ sub info_update {
                             sysdescription syslocation os collect_arp collect_fwt ) ){
 	$devtmp{$field} = $info->{$field} if exists $info->{$field};
     }
-    
+
     ##############################################################
     if ( my $ipb = $self->_assign_snmp_target($info) ){
 	$devtmp{snmp_target} = $ipb;
@@ -2978,16 +2978,16 @@ sub info_update {
 
     ##############################################################
     # Asset
-    my %asset_args = (
-	physaddr      => $self->_assign_base_mac($info) || undef,
-	reserved_for  => "", # needs to be cleared when device gets installed
-	);
+    my %asset_args;
+    my $base_mac = $self->_assign_base_mac($info);
+    $asset_args{physaddr} = $base_mac if defined $base_mac;
+    $asset_args{reserved_for}  = ""; # needs to be cleared when device gets installed
 
     # Make sure S/N contains something
     if (defined $info->{serial_number} && $info->{serial_number} =~ /\S+/ ){
 	$asset_args{serial_number} = $info->{serial_number};
     }
-    
+
     # Search for an asset based on either serial number or base MAC
     # If two different assets are found, we will have to pick one and
     # delete the other, as this leads to errors
@@ -2995,7 +2995,7 @@ sub info_update {
 	if $asset_args{serial_number};
     my $asset_phy = Asset->search(physaddr=>$asset_args{physaddr})->first
 	if $asset_args{physaddr};
-    
+
     my $asset;
     if ( $asset_sn && $asset_phy ){
 	if ($asset_sn->id != $asset_phy->id ){
@@ -5608,7 +5608,7 @@ sub _munge_speed_high {
 # Arguments
 #   snmp info hashref
 # Returns
-#   PhysAddr object
+#   PhysAddr object if successful, undef otherwise
 #
 sub _assign_base_mac {
     my ($self, $info) = @_;
@@ -5618,7 +5618,8 @@ sub _assign_base_mac {
     if ( $address && ($address = PhysAddr->validate($address)) ) {
 	# OK
     }else{
-	$logger->debug(sub{"$host did not return base MAC. Using first available interface MAC."});
+	$logger->debug(sub{"$host does not provide a valid base MAC.".
+			     " Using first available interface MAC."});
 	foreach my $iid ( sort { $a <=> $b}  keys %{$info->{interface}} ){
 	    if ( my $addr = $info->{interface}->{$iid}->{physaddr} ){
 		next unless ($address = PhysAddr->validate($addr));
