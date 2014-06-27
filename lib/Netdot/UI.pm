@@ -1854,12 +1854,12 @@ sub build_device_topology_graph {
 	    my $neighbor_name = ($show_names ? $neighbor->name : $neighbor->number) || $neighbor->number;
 	    
             my $nd = $neighbor->device || next;
-            my ($n1, $n2, $constraint) = ($device->id, $nd->id, 1);
+            my ($from, $to, $head, $tail, $constraint) = ("from", "to", "head", "tail", 1);
 
 	    if ( exists($spp->{$device->id}->{$nd->id}) ){
 		# Neighbor is closer to root
 		$dir = "up";
-		($n1, $n2) = ($n2, $n1);
+		($from, $to, $head, $tail) = ("to", "from", "tail", "head");
 	    }elsif ( exists($spp->{$nd->id}->{$device->id}) ){
 		# The opposite
 		$dir = "down";
@@ -1895,29 +1895,31 @@ sub build_device_topology_graph {
 			    $style='dashed';
 			}   
 			
-			$g->add_edge($n1                 => $n2,
-				     constraint          => $constraint,
-				     tailURL             => "view.html?table=Interface&id=".$iface->id,
-				     taillabel           => ((defined($specific_vlan) && $specific_vlan != 0)?$name:$vname),
-				     headURL             => "view.html?table=Interface&id=".$neighbor->id, 
-				     headlabel           => $neighbor_name,
-				     color               => $color,
-				     style               => $style,
-			    );
+			$g->add_edge({$from              => $device->id,
+			              $to                => $nd->id,
+				      constraint         => $constraint,
+				      "${tail}URL"       => "view.html?table=Interface&id=".$iface->id,
+				      "${tail}label"     => ((defined($specific_vlan) && $specific_vlan != 0)?$name:$vname),
+				      "${head}URL"       => "view.html?table=Interface&id=".$neighbor->id, 
+				      "${head}label"     => $neighbor_name,
+				      color              => $color,
+				      style              => $style,
+			    });
 			$add_node = 1;
 			$cont = 1;
 		    }
                 }
             } else {
 		if ( !defined($specific_vlan) || defined($specific_vlan) && $specific_vlan == 0 ) {
-		    $g->add_edge($n1                 => $n2,
-				 constraint          => $constraint,
-				 tailURL             => "view.html?table=Interface&id=".$iface->id,
-				 taillabel           => $name,
-				 headURL             => "view.html?table=Interface&id=".$neighbor->id, 
-				 headlabel           => $neighbor_name,
-				 color               => 'black',
-			);
+		    $g->add_edge({$from              => $device->id,
+				  $to                => $nd->id,
+				  constraint         => $constraint,
+				  "${tail}URL"       => "view.html?table=Interface&id=".$iface->id,
+				  "${tail}label"     => $name,
+				  "${head}URL"       => "view.html?table=Interface&id=".$neighbor->id, 
+				  "${head}label"     => $neighbor_name,
+				  color              => 'black',
+			});
 		    $add_node = 1;
 		    $cont = 1;
 		}
