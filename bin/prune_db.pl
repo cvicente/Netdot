@@ -1,9 +1,8 @@
 #!<<Make:PERL>>
 
-###############################################################
-# prune_db.pl
+# Prune database
 #
-
+#
 use lib "<<Make:LIB>>";
 use Netdot::Model;
 use Netdot::Config;
@@ -42,10 +41,10 @@ my $usage = <<EOF;
     -h, --help                     Print help
     
 EOF
-    
+
 
 # handle cmdline args
-my $result = GetOptions( 
+my $result = GetOptions(
     "F|fwt"           => \$self{FWT},
     "A|arp"           => \$self{ARP},
     "M|macs"          => \$self{MACS},
@@ -96,7 +95,7 @@ $logger->debug(sprintf("NUM_DAYS(%d) ago was : %s", $self{NUM_DAYS}, $sqldate));
 my $start = time;
 my %rows_deleted;
 
-    
+
 if ( $self{MACS} ){
     ###########################################################################################
     # Delete MAC addresses that don't belong to devices (static flag is off)
@@ -112,12 +111,11 @@ if ( $self{MACS} ){
 }
 if ( $self{IPS} ){
     ###########################################################################################
-    # Delete 'Discovered' and 'Static' IP addresses
+    # Delete 'Discovered' IP addresses
     # Note: This will also delete A/AAAA records, ArpCache entries, DhcpScopes, etc.
     my $q = $dbh->prepare("SELECT ipblock.id 
                            FROM   ipblock, ipblockstatus
-                           WHERE  (ipblockstatus.name='Discovered'
-                              OR  ipblockstatus.name='Static')
+                           WHERE  ipblockstatus.name='Discovered'
                              AND  ipblock.status=ipblockstatus.id
                              AND  ipblock.last_seen < ?");
     $q->execute($sqldate);
@@ -140,7 +138,7 @@ if ( $self{RR} ){
 			  expiration => {'<>', '1970-01-01'},
 			  expiration => {'<>', '1970-01-02'}]
 	);
-    
+
     my @rrs = RR->search_where(@where);
 
     unless ( $self{PRETEND} ){
@@ -149,7 +147,7 @@ if ( $self{RR} ){
 	    $rr->delete();
 	}
     }
-    
+
     $rows_deleted{rr} = scalar(@rrs);
 }
 
@@ -207,7 +205,7 @@ if ( $self{ARP} ){
 	# Delete ArpCaches
 	# Note: This will also delete ArpCacheEntry objects.
 	$logger->info("Deleting ARP Caches older than $sqldate");
-	
+
 	my @arps = ArpCache->search_where(tstamp=>{ '<', $sqldate });
 	foreach my $arp ( @arps ){
 	    $logger->debug("Deleting ArpCache id ". $arp->id);
@@ -244,13 +242,13 @@ sub optimize_table{
     my ($table) = @_;
 
     if ( $db_type eq 'mysql' ){
-        $dbh->do("OPTIMIZE TABLE $table");    
+        $dbh->do("OPTIMIZE TABLE $table");
     }elsif( $db_type eq 'Pg' ){
-        $dbh->do("VACUUM $table");    
+        $dbh->do("VACUUM $table");
     }else{
         $logger->warn("Could not optimize table $table. Database $db_type not supported");
-    }    
-    
+    }
+
     return;
 }
 
@@ -275,13 +273,13 @@ sub rotate_tables{
     my $db_user = Netdot->config->get('DB_DBA');
     my $db_pass = Netdot->config->get('DB_DBA_PASSWORD');
     my $db_db   = Netdot->config->get('DB_DATABASE');
- 
+
     my $dbh = &dbconnect($db_type, $db_host, $db_port, $db_user, $db_pass, $db_db) 
 	|| die ("Cannot connect to database as root");
-   
+
     $dbh->{AutoCommit} = 0; # make sure autocommit is off so we use transactions
     $dbh->{RaiseError} = 1; # make sure we hear about any problems
-    
+
     my $timestamp = time;
 
     my %defs;
@@ -311,7 +309,7 @@ sub rotate_tables{
     $logger->info("Tables $table_list rotated successfully");
     # We can turn autocommit back on since the rest of the transactions are basically atomic
     $dbh->{AutoCommit} = 1; 
-    
+
     &dbdisconnect($dbh);
     return 1;
 }
