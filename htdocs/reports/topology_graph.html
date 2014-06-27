@@ -7,9 +7,11 @@ title   => 'Network Topology Graph'
 </%attr>
 
 <%args>
-$root      => undef
-$regen     => undef
-$graph     => undef
+$root       => undef
+$graph1     => undef
+$graph2     => undef
+$show_names => 0
+$minlen     => 1
 </%args>
 
 <%init>
@@ -39,19 +41,20 @@ my $device_obj = Device->search(name=>$root)->first
 
 my $id = $device_obj->id;
 
-if ( $regen && $graph ){
+if ( $graph1 || $graph2 ){
     # Build args
     my %bargs = (
 	id         => $id, 
 	depth      => $depth,
-	show_names => 0,
+	show_names => $show_names,
+	minlen     => $minlen,
 	);
 
-    if ( $graph == 1 ){
+    if ( $graph1 ){
 	$bargs{show_vlans} = 0;
 	$bargs{filename}   = $abs_img_path1;
 	
-    }elsif ( $graph == 2 ){
+    }elsif ( $graph2 ){
 	$bargs{show_vlans} = 1;
 	$bargs{filename}   = $abs_img_path2;
     }
@@ -71,6 +74,7 @@ if ( $regen && $graph ){
       <br><strong>Please use cautiously!</strong>
     </div>
 
+<form name="topo_graph_form" action="topology_graph.html" method="POST">
 <h4>Network Graph without VLANs</h4>
 <ul>
 %if ( -r $abs_img_path1 ){
@@ -84,10 +88,7 @@ if ( $regen && $graph ){
     <li> Graph has not been generated yet
 %}
 <br>
-<form name="topo_graph_form" action="topology_graph.html" method="POST">
-    <input type="hidden" name="graph" value="1">
-    Regenerate: <input type="submit" name="regen" value="Go">
-</form>
+    Regenerate: <input type="submit" name="graph1" value="Go">
 </ul>
 
 <h4>Network Graph with VLANs</h4>
@@ -104,12 +105,24 @@ if ( $regen && $graph ){
     <li> Graph has not been generated yet
 %}
 <br>
-<form name="topo_graph_form" action="topology_graph.html" method="POST">
-    <input type="hidden" name="graph" value="2">
-    Regenerate: <input type="submit" name="regen" value="Go">
-</form>
+    Regenerate: <input type="submit" name="graph2" value="Go">
 </ul>
 
+<label>Show Interface Names
+<input type="checkbox" name="show_names" value="1"  <% ($show_names ? "checked" : "") %>>
+</label>
+<label>Line Length
+<select name="minlen">
+%       for (my $i=1; $i <= 3; $i++) {
+%           if ( $minlen == $i ){
+                <option value="<% $i %>" SELECTED><% $i %></option>
+%           }else{
+                <option value="<% $i %>"><% $i %></option>
+%           }
+%       }
+</select>
+</label>
+</form>
 
     </div>
   </div>
