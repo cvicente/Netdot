@@ -1780,7 +1780,7 @@ sub build_ip_tree_graph_html {
     vlans        
     show_names   Boolean. Whether to show interface names
     filename     File name for the graph
-    format       (text|ps|hpgl|gd|gd2|gif|jpeg|png|svg)
+    format       (canon|text|ps|hpgl|gd|gd2|gif|jpeg|png|svg)
     direction    (up_down|left_right)
   Returns:
     GraphViz object
@@ -1985,7 +1985,7 @@ sub build_device_topology_graph {
 
     $argv{format} ||= 'png';
 
-    if ( $argv{format} =~ /^(text|ps|hpgl|gd|gd2|gif|jpeg|png|svg)$/){
+    if ( $argv{format} =~ /^(canon|text|ps|hpgl|gd|gd2|gif|jpeg|png|svg)$/){
 	my $method = 'as_'.$argv{format};
 	$g->$method($filename);
     }else{
@@ -2182,7 +2182,7 @@ sub build_device_stp_graph {
     
     #output the graph to file
     $argv{format} ||= 'png';
-    if ( $argv{format} =~ /^(text|ps|hpgl|gd|gd2|gif|jpeg|png|svg)$/){
+    if ( $argv{format} =~ /^(canon|text|ps|hpgl|gd|gd2|gif|jpeg|png|svg)$/){
 	my $method = 'as_'.$argv{format};
 	$g->$method($filename);
     }else{
