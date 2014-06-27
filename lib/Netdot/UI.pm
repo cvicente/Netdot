@@ -1780,7 +1780,7 @@ sub build_ip_tree_graph_html {
     vlans        
     show_names   Boolean. Whether to show interface names
     filename     File name for the graph
-    format       (text|ps|hpgl|gd|gd2|gif|jpeg|png|svg)
+    format       (canon|text|ps|hpgl|gd|gd2|gif|jpeg|png|svg)
     direction    (up_down|left_right)
   Returns:
     GraphViz object
@@ -1822,7 +1822,8 @@ sub build_device_topology_graph {
 	    @argv{'graph', 'device', 'view', 'show_names', 'show_vlans', 'nodeoptions'};
 	
 	$view ||= "view";
-        $g->add_node(name  => $device->short_name, 
+        $g->add_node($device->id,
+		     label => $device->short_name, 
 		     shape => "record",
 		     URL   => "device.html?id=".$device->id."&view=$view&toponames=$show_names&topovlans=$show_vlans",
 		     %$nodeoptions
@@ -1853,15 +1854,18 @@ sub build_device_topology_graph {
 	    my $neighbor_name = ($show_names ? $neighbor->name : $neighbor->number) || $neighbor->number;
 	    
             my $nd = $neighbor->device || next;
+            my ($n1, $n2, $constraint) = ($device->id, $nd->id, 1);
 
 	    if ( exists($spp->{$device->id}->{$nd->id}) ){
 		# Neighbor is closer to root
 		$dir = "up";
+		($n1, $n2) = ($n2, $n1);
 	    }elsif ( exists($spp->{$nd->id}->{$device->id}) ){
 		# The opposite
 		$dir = "down";
 	    }else{
 		$dir = "level";
+		$constraint = 0;
 	    }
 	    my $add_node = 0;
 
@@ -1891,7 +1895,8 @@ sub build_device_topology_graph {
 			    $style='dashed';
 			}   
 			
-			$g->add_edge($device->short_name => $nd->short_name,
+			$g->add_edge($n1                 => $n2,
+				     constraint          => $constraint,
 				     tailURL             => "view.html?table=Interface&id=".$iface->id,
 				     taillabel           => ((defined($specific_vlan) && $specific_vlan != 0)?$name:$vname),
 				     headURL             => "view.html?table=Interface&id=".$neighbor->id, 
@@ -1905,7 +1910,8 @@ sub build_device_topology_graph {
                 }
             } else {
 		if ( !defined($specific_vlan) || defined($specific_vlan) && $specific_vlan == 0 ) {
-		    $g->add_edge($device->short_name => $nd->short_name,
+		    $g->add_edge($n1                 => $n2,
+				 constraint          => $constraint,
 				 tailURL             => "view.html?table=Interface&id=".$iface->id,
 				 taillabel           => $name,
 				 headURL             => "view.html?table=Interface&id=".$neighbor->id, 
@@ -1984,7 +1990,7 @@ sub build_device_topology_graph {
 
     $argv{format} ||= 'png';
 
-    if ( $argv{format} =~ /^(text|ps|hpgl|gd|gd2|gif|jpeg|png|svg)$/){
+    if ( $argv{format} =~ /^(canon|text|ps|hpgl|gd|gd2|gif|jpeg|png|svg)$/){
 	my $method = 'as_'.$argv{format};
 	$g->$method($filename);
     }else{
@@ -2181,7 +2187,7 @@ sub build_device_stp_graph {
     
     #output the graph to file
     $argv{format} ||= 'png';
-    if ( $argv{format} =~ /^(text|ps|hpgl|gd|gd2|gif|jpeg|png|svg)$/){
+    if ( $argv{format} =~ /^(canon|text|ps|hpgl|gd|gd2|gif|jpeg|png|svg)$/){
 	my $method = 'as_'.$argv{format};
 	$g->$method($filename);
     }else{
