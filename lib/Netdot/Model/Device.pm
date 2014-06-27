@@ -3716,9 +3716,11 @@ sub get_bgp_peers {
 	@peers = grep { $_->asnumber eq $argv{as} } $self->bgppeers;	
     }elsif ( $argv{type} ){
 	if ( $argv{type} eq "internal" ){
-	    @peers = grep { defined $_->entity && $_->entity->asnumber == $self->bgplocalas->number } $self->bgppeers;
+	    @peers = grep { defined $_->entity && defined $self->bgplocalas &&
+			      $_->entity->asnumber == $self->bgplocalas->number } $self->bgppeers;
 	}elsif ( $argv{type} eq "external" ){
-	    @peers = grep { defined $_->entity && $_->entity->asnumber != $self->bgplocalas->number } $self->bgppeers;
+	    @peers = grep { defined $_->entity && defined $self->bgplocalas &&
+			      $_->entity->asnumber != $self->bgplocalas->number } $self->bgppeers;
 	}elsif ( $argv{type} eq "all" ){
 	    @peers = $self->bgppeers();
 	}else{
