@@ -1101,16 +1101,24 @@ sub get_tree_stp_links {
 	    if ( exists $near{$des_b}{$des_p} ){
 		my $r_int = $near{$des_b}{$des_p};
 		$links{$int} = $r_int;
-		$logger->debug(sprintf("Topology::get_tree_stp_links: Found link: %d -> %d", 
-				       $int, $r_int));
+		if ( $logger->is_debug() ){
+		    my $toi   = Interface->retrieve(id=>$r_int);
+		    my $fromi = Interface->retrieve(id=>$int);
+		    $logger->debug("Topology::get_tree_stp_links: Found link: "
+				   . $fromi->get_label . " -> " . $toi->get_label );
+		}
 	    }else{
 		# Octet representations may not match
 		foreach my $r_des_p ( keys %{$near{$des_b}} ){
 		    if ( $class->_cmp_des_p($r_des_p, $des_p) ){
 			my $r_int = $near{$des_b}{$r_des_p};
 			$links{$int} = $r_int;
-			$logger->debug(sprintf("Topology::get_tree_stp_links: Found link: %d -> %d", 
-					       $int, $r_int));
+                        if ( $logger->is_debug() ){
+                            my $toi   = Interface->retrieve(id=>$r_int);
+                            my $fromi = Interface->retrieve(id=>$int);
+                            $logger->debug("Topology::get_tree_stp_links: Found link: "
+                                           . $fromi->get_label . " -> " . $toi->get_label );
+                        }
 		    }
 		}
 	    }
