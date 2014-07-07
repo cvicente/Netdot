@@ -69,7 +69,7 @@ my %MFIELDS = (
 my @SMETHODS = qw( 
    hasCDP e_descr i_type i_alias i_speed i_up 
    i_up_admin i_duplex i_duplex_admin 
-   ip_index ip_netmask i_mac
+   ip_index ip_netmask i_mac ip_table
    i_vlan_membership qb_v_name v_name v_state
 );
 
@@ -1133,7 +1133,16 @@ sub get_snmp_info {
     if ( !defined($hashes{'ip_index'}) || !(keys %{ $hashes{'ip_index'} }) ){
 	$hashes{'ip_index'} = $sinfo->ip_index();
     }
-    while ( my($ip,$iid) = each %{ $hashes{'ip_index'} } ){
+    if ( !defined($hashes{'ip_table'}) || !(keys %{ $hashes{'ip_table'} }) ){
+	   $hashes{'ip_table'} = $sinfo->ip_table();
+    }
+    while ( my($ipt,$iid) = each %{ $hashes{'ip_index'} } ){
+        my $ip;
+        if ($iid > 150000000) { #nx-os has id > 150000000
+            $ip=$hashes{'ip_table'}{$ipt};
+        } else {
+            $ip=$ipt;
+        }
  	next unless (defined $dev{interface}{$iid});
 	next if &_check_if_status_down(\%dev, $iid);
 	next if Ipblock->is_loopback($ip);
@@ -4901,7 +4910,7 @@ sub _get_arp_from_snmp {
     # atPhysAddress is used.
     my $use_shortcut = 1;
     my @paddr_keys = keys %$at_paddr;
-    if ( $paddr_keys[0] && $paddr_keys[0] =~ /^(\d+)(\.1)?\.($IPV4)$/ ){
+    if ( $paddr_keys[0] && $paddr_keys[0] =~ /^(\d+)(\.1|\.4)?\.($IPV4)$/ ){
 	my $idx = $1;
 	if ( !exists $devints{$idx} ){
 	    $use_shortcut = 0;
@@ -4914,7 +4923,7 @@ sub _get_arp_from_snmp {
 	my ($ip, $idx, $mac);
 	$mac = $at_paddr->{$key};
 	if ( $use_shortcut ){
-	    if ( $key =~ /^(\d+)(\.1)?\.($IPV4)$/ ){
+	    if ( $key =~ /^(\d+)(\.1|\.4)?\.($IPV4)$/ ){
 		$idx = $1;
 		$ip  = $3;
 	    }else{
