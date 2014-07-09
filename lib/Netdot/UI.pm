@@ -1835,8 +1835,20 @@ sub build_device_topology_graph {
     # Tried to be fancy and add lots of port information.  EPIC FAIL.  There's no
     # good way to do it.  A nice tarpit for others to avoid.
 
-    sub _randomcolor {
-        return sprintf("#%02X%02X%02X", rand(128), rand(128), rand(128));
+    # Assign color to VLAN. Do it algorithmically so that VLAN colors are
+    # consistent. Put the low-order bits at the top so that numerically
+    # adjacent vids have contrasting colors, and arrange that vid=1 is black.
+    #
+    # Perhaps the color would be better stored in the vlan table so that
+    # the user could change it to their liking
+    
+    sub _vlancolor {
+        my ($vid) = @_;
+        my @b = reverse(split('', sprintf "%012b", 4097-$vid));
+        return sprintf("#%02X%02X%02X",
+            oct("0b$b[0]$b[3]$b[6]$b[9]000"),
+            oct("0b$b[1]$b[4]$b[7]$b[10]000"),
+            oct("0b$b[2]$b[5]$b[8]$b[11]000"));
     }
 
     sub _dfs { # DEPTH FIRST SEARCH - recursive
@@ -1889,7 +1901,7 @@ sub build_device_topology_graph {
 			my $style = 'solid';
 			my $vname = $vlan->vlan->name || $vlan->vlan->vid;
 			if (!exists $vlans->{$vname}) {
-			    $vlans->{$vname} = { color=>&_randomcolor, vlan=>$vlan->vlan->id };
+			    $vlans->{$vname} = { color=>&_vlancolor($vlan->vlan->vid), vlan=>$vlan->vlan->id };
 			}
 			$color = $vlans->{$vname}{'color'};
 			
@@ -2035,7 +2047,7 @@ sub build_device_topology_graph_html {
     my $netdot_path   = Netdot->config->get('NETDOT_PATH');
     $argv{filename}   = "$netdot_path/htdocs/" . $graph_path;
 
-    my $vlans    = { 1=>{color=>'#000000', vlan=>Vlan->search(id=>1)->first} };
+    my $vlans = {};
     $argv{vlans} = $vlans;
 
     my $g = $self->build_device_topology_graph(%argv);
