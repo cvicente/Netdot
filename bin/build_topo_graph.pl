@@ -10,7 +10,7 @@ use Getopt::Long qw(:config no_ignore_case bundling);
 
 # Default parameters
 my $nms = Netdot->config->get('NMS_DEVICE');
-my %self = ( root=>$nms, start=>$nms, vlans=>0, names=>0, depth=>99999 );
+my %self = ( root=>$nms, start=>$nms, vlans=>0, names=>0, depth=>99999, minlen=>undef );
 
 my $USAGE = <<EOF;
  
@@ -20,6 +20,7 @@ my $USAGE = <<EOF;
            [-u|--depth-up <integer>] [-o|--depth-down <integer>]
            [-V|--specificvlan <vlanid>] [-v|--vlans] [-n|names] 
            [-F|--format] [-D|--direction <up_down|left_right>]
+           [-m|--minlen <integer>]
            -f|--filename <name>
 
     Argument Detail: 
@@ -34,6 +35,7 @@ my $USAGE = <<EOF;
     -V, --specificvlan <vlanid>          The vlan ID of the specific vlan to display
     -v, --vlans                          Show vlans with lines in different colors
     -n, --names                          Show interface names instead of index numbers
+    -m, --minlen <integer>               Minimum length of edges
 
 EOF
     
@@ -49,6 +51,7 @@ my $result = GetOptions( "r|root=s"         => \$self{root},
 			 "V|specificvlan=s" => \$self{specific},
 			 "v|vlans"          => \$self{vlans},
 			 "n|names"          => \$self{names},
+			 "m|minlen=s"       => \$self{minlen},
 			 "h|help"           => \$self{help},
     );
 
@@ -83,6 +86,7 @@ $ui->build_device_topology_graph(
     show_vlans    => $self{vlans}, 
     specific_vlan => $self{specific}, 
     show_names    => $self{names},
+    minlen        => $self{minlen},
     filename      => $self{filename},
     format        => $self{format},
     direction     => $self{direction},

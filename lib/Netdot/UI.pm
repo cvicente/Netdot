@@ -1779,6 +1779,7 @@ sub build_ip_tree_graph_html {
     show_vlans   Boolean. Whether to show colored arrows for each VLAN
     vlans        
     show_names   Boolean. Whether to show interface names
+    minlen       Integer. Minimum edge length.
     filename     File name for the graph
     format       (canon|text|ps|hpgl|gd|gd2|gif|jpeg|png|svg)
     direction    (up_down|left_right)
@@ -1792,9 +1793,9 @@ sub build_ip_tree_graph_html {
 sub build_device_topology_graph {
     my ($self, %argv) = @_;
     my ($id, $root, $depth, $depth_up, $depth_down, $view, $show_vlans, $show_names, 
-	$filename, $vlans, $format, $direction, $specific_vlan) = 
+	$filename, $vlans, $format, $direction, $specific_vlan, $minlen) = 
 	    @argv{'id', 'root', 'depth', 'depth_up', 'depth_down', 'view', 'show_vlans', 'show_names', 
-		  'filename', 'vlans', 'format', 'direction', 'specific_vlan'};
+		  'filename', 'vlans', 'format', 'direction', 'specific_vlan', 'minlen'};
     
     # Guard against malicious input
     $depth      = (int($depth)      > 0) ? int($depth)      : 0;
@@ -1802,6 +1803,7 @@ sub build_device_topology_graph {
     $depth_down = (int($depth_down) > 0) ? int($depth_down) : 0;
     $show_vlans = ($show_vlans == 1)     ? 1 : 0;
     $show_names = ($show_names == 1)     ? 1 : 0;
+    $minlen     ||= 1;
 
     $root ||= $id;
 
@@ -1833,8 +1835,20 @@ sub build_device_topology_graph {
     # Tried to be fancy and add lots of port information.  EPIC FAIL.  There's no
     # good way to do it.  A nice tarpit for others to avoid.
 
-    sub _randomcolor {
-        return sprintf("#%02X%02X%02X", rand(128), rand(128), rand(128));
+    # Assign color to VLAN. Do it algorithmically so that VLAN colors are
+    # consistent. Put the low-order bits at the top so that numerically
+    # adjacent vids have contrasting colors, and arrange that vid=1 is black.
+    #
+    # Perhaps the color would be better stored in the vlan table so that
+    # the user could change it to their liking
+    
+    sub _vlancolor {
+        my ($vid) = @_;
+        my @b = reverse(split('', sprintf "%012b", 4097-$vid));
+        return sprintf("#%02X%02X%02X",
+            oct("0b$b[0]$b[3]$b[6]$b[9]000"),
+            oct("0b$b[1]$b[4]$b[7]$b[10]000"),
+            oct("0b$b[2]$b[5]$b[8]$b[11]000"));
     }
 
     sub _dfs { # DEPTH FIRST SEARCH - recursive
@@ -1854,12 +1868,12 @@ sub build_device_topology_graph {
 	    my $neighbor_name = ($show_names ? $neighbor->name : $neighbor->number) || $neighbor->number;
 	    
             my $nd = $neighbor->device || next;
-            my ($n1, $n2, $constraint) = ($device->id, $nd->id, 1);
+            my ($from, $to, $head, $tail, $constraint) = ("from", "to", "head", "tail", 1);
 
 	    if ( exists($spp->{$device->id}->{$nd->id}) ){
 		# Neighbor is closer to root
 		$dir = "up";
-		($n1, $n2) = ($n2, $n1);
+		($from, $to, $head, $tail) = ("to", "from", "tail", "head");
 	    }elsif ( exists($spp->{$nd->id}->{$device->id}) ){
 		# The opposite
 		$dir = "down";
@@ -1887,7 +1901,7 @@ sub build_device_topology_graph {
 			my $style = 'solid';
 			my $vname = $vlan->vlan->name || $vlan->vlan->vid;
 			if (!exists $vlans->{$vname}) {
-			    $vlans->{$vname} = { color=>&_randomcolor, vlan=>$vlan->vlan->id };
+			    $vlans->{$vname} = { color=>&_vlancolor($vlan->vlan->vid), vlan=>$vlan->vlan->id };
 			}
 			$color = $vlans->{$vname}{'color'};
 			
@@ -1895,29 +1909,31 @@ sub build_device_topology_graph {
 			    $style='dashed';
 			}   
 			
-			$g->add_edge($n1                 => $n2,
-				     constraint          => $constraint,
-				     tailURL             => "view.html?table=Interface&id=".$iface->id,
-				     taillabel           => ((defined($specific_vlan) && $specific_vlan != 0)?$name:$vname),
-				     headURL             => "view.html?table=Interface&id=".$neighbor->id, 
-				     headlabel           => $neighbor_name,
-				     color               => $color,
-				     style               => $style,
-			    );
+			$g->add_edge({$from              => $device->id,
+			              $to                => $nd->id,
+				      constraint         => $constraint,
+				      "${tail}URL"       => "view.html?table=Interface&id=".$iface->id,
+				      "${tail}label"     => ((defined($specific_vlan) && $specific_vlan != 0)?$name:$vname),
+				      "${head}URL"       => "view.html?table=Interface&id=".$neighbor->id, 
+				      "${head}label"     => $neighbor_name,
+				      color              => $color,
+				      style              => $style,
+			    });
 			$add_node = 1;
 			$cont = 1;
 		    }
                 }
             } else {
 		if ( !defined($specific_vlan) || defined($specific_vlan) && $specific_vlan == 0 ) {
-		    $g->add_edge($n1                 => $n2,
-				 constraint          => $constraint,
-				 tailURL             => "view.html?table=Interface&id=".$iface->id,
-				 taillabel           => $name,
-				 headURL             => "view.html?table=Interface&id=".$neighbor->id, 
-				 headlabel           => $neighbor_name,
-				 color               => 'black',
-			);
+		    $g->add_edge({$from              => $device->id,
+				  $to                => $nd->id,
+				  constraint         => $constraint,
+				  "${tail}URL"       => "view.html?table=Interface&id=".$iface->id,
+				  "${tail}label"     => $name,
+				  "${head}URL"       => "view.html?table=Interface&id=".$neighbor->id, 
+				  "${head}label"     => $neighbor_name,
+				  color              => 'black',
+			});
 		    $add_node = 1;
 		    $cont = 1;
 		}
@@ -1957,7 +1973,8 @@ sub build_device_topology_graph {
     my %args = (layout=>'dot', truecolor=>1, bgcolor=>"#ffffff00",ranksep=>2.0,
 		node=>{shape=>'record', fillcolor=>'#ffffff88', style=>'filled', 
 		       fontsize=>10, height=>.25},
-		edge=>{dir=>'none', labelfontsize=>8}, rankdir=>$direction );
+		edge=>{dir=>'none', labelfontsize=>8, minlen=>$minlen},
+		rankdir=>$direction );
 
     # Actually do the searching
     my $g = GraphViz->new(%args);
@@ -2030,7 +2047,7 @@ sub build_device_topology_graph_html {
     my $netdot_path   = Netdot->config->get('NETDOT_PATH');
     $argv{filename}   = "$netdot_path/htdocs/" . $graph_path;
 
-    my $vlans    = { 1=>{color=>'#000000', vlan=>Vlan->search(id=>1)->first} };
+    my $vlans = {};
     $argv{vlans} = $vlans;
 
     my $g = $self->build_device_topology_graph(%argv);
