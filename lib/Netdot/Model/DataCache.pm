@@ -1,6 +1,7 @@
 package Netdot::Model::DataCache;
 
 use base 'Netdot::Model';
+use APR::Base64;
 use warnings;
 use strict;
 
