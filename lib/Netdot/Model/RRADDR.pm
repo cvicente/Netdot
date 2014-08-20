@@ -168,7 +168,8 @@ sub delete {
 	foreach my $host ( $ipblock->dhcp_scopes ){
 	    $host->delete();
 	}
-	if ( !$ipblock->interface && !$argv->{no_change_status} ){
+	if ( $ipblock->status->name eq 'Static' &&
+	     !$ipblock->interface && !$argv->{no_change_status} ){
 	    # Not an interface IP, so it should be available
 	    # unless we're told not to touch it
 	    $ipblock->update({status=>"Available"});
