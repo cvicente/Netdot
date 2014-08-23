@@ -1630,7 +1630,7 @@ sub update {
 
     # Only rebuild the tree if address/prefix have changed
     if ( !$no_update_tree && ($self->address ne $bak{address} || $self->prefix ne $bak{prefix}) ){
-	$self->_update_tree(old_addr=>$bak{address}, old_prefix=>$bak{prefix});
+	$self->_update_tree(changed=>1);
     }
 
     # Now check for rules
@@ -3213,7 +3213,7 @@ sub _build_tree_mem {
 #   Non-address blocks trigger a full tree rebuild
 #
 #   Arguments:
-#     None
+#     changed (bool) Either address or prefix length changed
 #   Returns:
 #     True
 #   Examples:
@@ -3241,11 +3241,10 @@ sub _update_tree{
     }else{
 	# This is a non-address block
 	# This block's address and/or prefix were changed
-        if ( $argv{old_addr} || $argv{old_prefix} ) {
+        if ( $argv{changed} ) {
 	    $logger->debug("Ipblock::_update_tree: ". $self->get_label .
 			   " changed address and/or prefix. Rebuilding.");
 	    $class->build_tree($version);
-	    $class->_tree_save(version=>$self->version, tree=>$tree);
 	    return 1;
         }
 	# At this point we can assume that the block is new
