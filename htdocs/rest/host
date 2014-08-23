@@ -34,10 +34,14 @@ my $headers = $rest->{request}->headers_in;
 # Deal with Accept header
 $rest->check_accept_header($headers->{Accept}) if ( $headers->{Accept} );
 
+my $method = $rest->{request}->method;
+my $req_args = $method eq 'POST' ? 
+    sprintf("%s", join(": ", %ARGS)) : $rest->{request}->args;
+
 my $logger = Netdot->log->get_logger("Netdot::REST");
 $logger->info(sprintf("/rest/host: %s request with args: %s from %s (%s)", 
- 		      $rest->{request}->method, 
-		      $rest->{request}->args,
+ 		      $method, 
+		      $req_args,
  		      $rest->{request}->connection->remote_ip, 
  		      $headers->{'User-Agent'}
  	      ));
@@ -50,7 +54,7 @@ my %ips;
 </%init>
 <%perl>
     
-if ( $rest->{request}->method eq 'GET' ){
+if ( $method eq 'GET' ){
     if ( $rrid ){
 	my $rr = RR->retrieve($rrid);
 	$rest->throw(code=>Apache2::Const::NOT_FOUND, msg=>"RR not found")
@@ -98,7 +102,7 @@ if ( $rest->{request}->method eq 'GET' ){
 
     }elsif ( $zone ){
 	# All RRs within given zone
-	my $zoneobj = Zone->objectify($zone) ||
+	my $zoneobj = Zone->objectify($zone) or
 	    $rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
 			 msg=>'Bad request: invalid zone'); 
 	unless ( $manager->can($user, 'view', $zoneobj) ){
@@ -109,7 +113,7 @@ if ( $rest->{request}->method eq 'GET' ){
 	map { $rrs{$_->id} = $_ } $zoneobj->records;
 
     }elsif ( $subnet ){
-	my $subnetobj = Ipblock->objectify($subnet) ||
+	my $subnetobj = Ipblock->objectify($subnet) or
 	    $rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
 			 msg=>'Bad request: invalid subnet'); 
 	unless ( $manager->can($user, 'view', $subnetobj) ){
@@ -165,7 +169,7 @@ if ( $rest->{request}->method eq 'GET' ){
 
     $rest->print_formatted(\%ret);
 
-}elsif ( $rest->{request}->method eq 'POST' ){
+}elsif ( $method eq 'POST' ){
     if ( $rrid ){
 	# We're updating
 	my $rr = RR->retrieve($rrid);
@@ -272,40 +276,70 @@ if ( $rest->{request}->method eq 'GET' ){
 	$add_args{duid} = $duid if $duid;
 	$add_args{ethernet} = $ethernet if ( $ethernet && !$add_args{duid} );
 
-	my $subnetobj = Ipblock->objectify($subnet) ||
+	unless ( $subnet ){
+	    if ( $address ){
+		$subnet = Ipblock->get_covering_block(address=>$address);
+	    }else{
+		$rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
+			     msg=>'Bad request: Need to pass either a subnet or IP address'); 
+	    }
+	}
+
+	my $subnetobj = Ipblock->objectify($subnet) or
 	    $rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
 			 msg=>'Bad request: invalid subnet'); 
-	
+
 	unless ( $manager->can($user, 'edit', $subnetobj) ){
 	    $rest->throw(code=>Apache2::Const::HTTP_FORBIDDEN, 
 			 msg=>"User not allowed to edit this subnet");
 	}
 
-	# Zone that corresponds to this subnet
+	# Zone that corresponds to this subnet. 
+	# This is our preferred zone
 	my $zoneobj = $subnetobj->forward_zone();
 
-	if ( $zone ){
-	    # user gave us a zone
-	    my $givenzone = Zone->objectify($zone) ||
+	# If not set above, use the default zone from config
+	unless ( $zoneobj ){
+	    my $dfzname = Netdot->config->get('DEFAULT_DNSDOMAIN');
+	    $zoneobj = (Zone->search(name=>$dfzname))[0];
+	}
+
+	# Check if the given hostname falls within a given zone
+	my $zone_from_name = (Zone->search(name=>$name))[0];
+
+	# Our given zone name comes from either the $zone parameter
+	# or from the hostname itself
+	my $given_zone_name = $zone || $zone_from_name;
+	if ( $given_zone_name ){
+	    my $given_zone = Zone->objectify($given_zone_name) or
 		$rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
-			     msg=>'Bad request: invalid zone'); 
-	    # Normally, unprivileged users are not given permissions
-	    # to a whole zone, so only fail if it doesn't match
-	    # the zone that corresponds to this subnet
-	    if ( !$zoneobj || ($zoneobj->id != $givenzone->id) ){
-		# We don't have a default zone, or they don't match, so we need to 
-		# make sure that this user has permissions to edit the given zone
-		if ( $manager->can($user, 'edit', $givenzone) ){
-		    $add_args{zone} = $givenzone;
+			     msg=>'Bad request: invalid zone given'); 
+
+	    if ( !$zoneobj || ($zoneobj->id != $given_zone->id) ){
+		# We don't have a default zone, or it doesn't match
+		# the given zone, make sure that this user 
+		# has permissions to edit the given zone
+		if ( $manager->can($user, 'edit', $given_zone) ){
+		    $zoneobj = $given_zone;
 		}else{
 		    $rest->throw(code=>Apache2::Const::HTTP_FORBIDDEN, 
 				 msg=>"User not allowed to edit this zone");
 		}
 	    }
 	}
-	$add_args{zone} ||= $zoneobj; # If there's no default, it  will fail
+
+	# At this point we should have a zone object
+	$rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
+		     msg=>"Could not determine a zone")
+	    unless $zoneobj;
+
+	# In case that hostname contains zone name
+	my $zname = $zoneobj->name;
+	$add_args{name} =~ s/\.$zname$//;
+	$add_args{zone} = $zoneobj; 
+
 	if ( $address ){
-	    # User gave us an address
+	    # We were given a specific address
 	    if ($manager->can($user, 'choose_ip', $subnetobj)){
 		$add_args{address} = $address;
 	    }else{
@@ -323,7 +357,7 @@ if ( $rest->{request}->method eq 'GET' ){
 	}
 	$rest->print_formatted($rest->get(obj=>$rr, depth=>0));
     }
-}elsif ( $rest->{request}->method eq 'DELETE' ){
+}elsif ( $method eq 'DELETE' ){
     
     my @objs_to_delete;
     

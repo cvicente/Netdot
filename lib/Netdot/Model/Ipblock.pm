@@ -790,7 +790,7 @@ sub reserve_first_n {
  Arguments: 
     IP address and (optional) prefix length
  Returns:   
-    Ipblock object or 0 if not found
+    Ipblock object or undef if not found
   Examples:
     my $ip = Ipblock->get_covering_block(address=>$address, prefix=>$prefix);
 
@@ -1403,7 +1403,7 @@ sub matches_v6 {
   Returns: 
     Ipblock object
   Examples:
-    my $ipb = Ipblock->objectify($zonestr);
+    my $ipb = Ipblock->objectify($thing);
 
 =cut
 
