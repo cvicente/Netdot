@@ -1090,19 +1090,16 @@ sub fast_update{
 	    my $attrs = $ips->{$address};
 	    # Convert address to decimal format
 	    my $dec_addr = $class->ip2int($address);
-	    
-	    eval {
-		$sth2->execute($dec_addr, $attrs->{prefix}, $attrs->{version},
+	   
+	    my $rows = $sth1->execute($attrs->{timestamp}, $dec_addr);
+	    if ($rows == 0){
+	        eval {
+	    	    $sth2->execute($dec_addr, $attrs->{prefix}, $attrs->{version},
 			       $attrs->{status}, $attrs->{timestamp}, $attrs->{timestamp},
 		    );
-	    };
-	    if ( my $e = $@ ){
-		# Probably duplicate. Try to update.
-		eval {
-		    $sth1->execute($attrs->{timestamp}, $dec_addr);
 		};
-		if ( my $e2 = $@ ){
-		    $logger->error($e2);
+		if ( my $e = $@ ){
+		    $logger->error($e);
 		}
 	    }
 	}
@@ -2919,7 +2916,7 @@ sub get_addresses_by {
     WHERE     ipblock.parent=$id
       AND     ipblock.status=ipblockstatus.id ";
     if ( ($self->version == 6) && ($self->config->get('IPV6_HIDE_DISCOVERED')) ) {
-       $query.=" AND     ipblockstatus.name != \"Discovered\" ";
+       $query.=" AND     ipblockstatus.name != \'Discovered\' ";
     }
     $query .= "GROUP BY ipblock.id 
     ORDER BY  $sort2field{$sort}";

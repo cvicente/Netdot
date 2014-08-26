@@ -185,29 +185,25 @@ sub fast_update {
 	foreach my $address ( keys %$macs ){
 	    $sth->execute($address, $timestamp, $timestamp);
 	}
-    }else{    
-	# Build SQL queries
-	my $sth1 = $dbh->prepare_cached("UPDATE physaddr SET last_seen=? WHERE address=?");	
-	    
+    }else{
+        # Build SQL queries
+        my $sth1 = $dbh->prepare_cached("UPDATE physaddr SET last_seen=? WHERE address=?");
 	my $sth2 = $dbh->prepare_cached("INSERT INTO physaddr (address,first_seen,last_seen,static)
-                                         VALUES (?, ?, ?, '0')");	
+                                         VALUES (?, ?, ?, '0')");
 
-	# Now walk our list
-	foreach my $address ( keys %$macs ){
-	    eval {
-		$sth2->execute($address, $timestamp, $timestamp);
-	    };
-	    if ( my $e = $@ ){
-		# Probably duplicate. That's OK. Update
+        # Now walk our list
+        foreach my $address ( keys %$macs ){
+	    # this should not fail unless the database connection is broken
+            my $rows = $sth1->execute($timestamp, $address);
+	    if ($rows == 0){
 		eval {
-		    $sth1->execute($timestamp, $address);
+		    $sth2->execute($address, $timestamp, $timestamp);
 		};
-		if ( my $e2 = $@ ){
-		    # Something else is wrong
-		    $logger->error($e2);
-		}
+                if ( my $e1 = $@ ){
+               	    $logger->error($e1);
+                }
 	    }
-	}
+       }
     }
     
     my $end = time;
