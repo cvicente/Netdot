@@ -2919,7 +2919,7 @@ sub get_addresses_by {
     WHERE     ipblock.parent=$id
       AND     ipblock.status=ipblockstatus.id ";
     if ( ($self->version == 6) && ($self->config->get('IPV6_HIDE_DISCOVERED')) ) {
-       $query.=" AND     ipblockstatus.name != \"Discovered\" ";
+       $query.=" AND ipblockstatus.name != 'Discovered' ";
     }
     $query .= "GROUP BY ipblock.id 
     ORDER BY  $sort2field{$sort}";
