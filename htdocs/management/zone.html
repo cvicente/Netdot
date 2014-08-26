@@ -17,6 +17,7 @@ $edit => undef
 $submit => undef
 $bulk_import_data => undef
 $import_overwrite => undef
+$update_ptrs      => undef
 </%args>
 %
 %
@@ -43,8 +44,10 @@ if ( $submit ){
 	# Do this atomically
 	eval {
 	    Netdot::Model->do_transaction(sub{
-		$o->import_records(text=>$bulk_import_data, overwrite=>$import_overwrite)
-					  });
+		$o->import_records(text        => $bulk_import_data, 
+				   overwrite   => $import_overwrite,
+				   update_ptrs => $update_ptrs,
+		    )});
 	};
 	if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>$e);
@@ -244,6 +247,8 @@ if ( $view eq 'records' || $edit eq 'records' ){
 	<textarea name="bulk_import_data" cols="80" rows="20">; Copy zone data here (BIND format)</textarea>
 	<p>
 	Overwrite existing records of same name <input type="checkbox" name="import_overwrite">
+	<p>
+	Update PTRs <input type="checkbox" name="update_ptrs">
 	<p>
 	<input type="submit" name="submit" value="Import">
         <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">

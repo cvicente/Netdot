@@ -627,9 +627,10 @@ sub get_record_count {
 =head2 import_records - Import records into zone
     
   Args: 
-    rrs       -  Arrayref containing Net:DNS::RR objects (required unless text is passed)
-    text      -  Text containing records (BIND format) (required unless rrs is passed)
-    overwrite -  Overwrite any existing records
+    rrs         -  Arrayref containing Net:DNS::RR objects (required unless text is passed)
+    text        -  Text containing records (BIND format) (required unless rrs is passed)
+    overwrite   -  Overwrite any existing records
+    update_ptrs -  When inserting a A/AAAA record, insert/update the corresponding PTR
   Returns: 
     Nothing
   Examples:
@@ -724,7 +725,7 @@ sub import_records {
 	    my %args = (rr=>$nrr, ipblock=>$ipb);
 	    if ( $argv{overwrite} || !($rraddr = RRADDR->search(%args)->first) ){
 		$args{ttl} = $ttl;
-		$args{update_ptr} = 0;
+		$args{update_ptr} = $argv{update_ptrs};
 		$logger->debug("$domain: Inserting RRADDR $name, $address, ttl: $ttl");
 		$rraddr = RRADDR->insert(\%args);
 	    }

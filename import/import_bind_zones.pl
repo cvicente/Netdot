@@ -23,8 +23,9 @@ my $usage = <<EOF;
 
     -n, --domain <name>      Domain or Zone name
     -f, --zonefile <path>    Zone file
-
-    -w, --wipe               Wipe out existing zone data
+    
+    -u, --update_ptrs        Update PTRs for each imported A/AAAA
+    -w, --wipe               Wipe out existing zone before importing
     -g, --debug              Print debugging output
     -h, --help               Print help
     
@@ -36,6 +37,7 @@ my $result = GetOptions(
     "d|dir=s"         => \$self{dir},
     "n|domain=s"      => \$self{domain},
     "f|zonefile=s"    => \$self{zonefile},
+    "u|update_ptrs"   => \$self{update_ptrs},
     "w|wipe"          => \$self{wipe},
     "h|help"          => \$self{help},
     "g|debug"         => \$self{debug},
@@ -179,5 +181,7 @@ sub import_zone {
 	}
     }
     
-    $nzone->import_records(rrs=>$rrs, overwrite=>$self{wipe});
+    $nzone->import_records(rrs         => $rrs, 
+			   update_ptrs => $self{update_ptrs},
+	);
 }
