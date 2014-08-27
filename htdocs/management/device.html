@@ -1248,6 +1248,11 @@ if ( $editips || $add_ip ) {
 <%perl>
     my $ipeers = $o->get_bgp_peers(type=>"internal", sort=>$peersort);
     my $epeers = $o->get_bgp_peers(type=>"external", sort=>$peersort);
+    if ( !$ipeers && !$epeers ) {
+	# We may get nothing if for some reason the device's local AS
+	# is not set. This shows any peers as external.
+        $epeers = $o->get_bgp_peers(type=>"all", sort=>$peersort);
+    }
     my $whois_url = Netdot->config->get('BGP_AS_WHOIS_URL');
 </%perl>
 
