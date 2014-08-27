@@ -75,9 +75,6 @@ sub search {
     my $opts = @nargs % 2 ? pop @nargs : {};
     my %args = @nargs;
 
-    if (defined $args{vid}) {
-        $class->_validate_vid($args{vid});
-    }
     return $class->SUPER::search(@args);
 }
 
