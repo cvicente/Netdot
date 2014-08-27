@@ -580,8 +580,19 @@ sub snmp_update {
 	my $name = $self->name;
 
 	# For layer3 switches with virtual VLAN interfaces
-	if ( !$vlan && $name && $name =~ /Vlan(\d+)/o ){
-	    my $vid = $1;
+	if ( !$vlan && $self->device->ipforwarding ){
+	    my $vid;
+
+	    if ( $name && $name =~ /Vlan(\d+)/o ){
+		# This works mostly for Cisco Catalyst stuff
+		$vid = $1;
+	    }elsif ( $self->type eq '135' # See IF-MIB
+		     && $name && $name =~ /\.(\d+)$/o ){
+		# This works for Juniper stuff or anything
+		# with sub-interfaces. It assumes that
+		# the sub-interface number matches the VLAN id
+		$vid = $1;
+	    }
 	    $vlan = Vlan->search(vid=>$vid)->first;
 	}
 
