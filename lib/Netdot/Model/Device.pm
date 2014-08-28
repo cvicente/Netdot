@@ -1516,27 +1516,35 @@ sub discover {
 	my $main_ip = $argv{main_ip} || $class->_get_main_ip($info);
 	my $host    = $main_ip || $name;
 	my $newname = $class->assign_name(host=>$host, sysname=>$info->{sysname});
+	
+	
+	my %devtmp; # Store new Device values here
 
-	my %devtmp = (snmp_managed  => 1,
-		      snmp_polling  => 1,
-		      canautoupdate => 1,
-		      # These following two could have changed in get_snmp_session
-		      # so we grab them from %info instead of directly from %argv
-		      community     => $info->{community},
-		      snmp_version  => $info->{snmp_version},
-		      );
+	if ( $info->{snmp_version} ) {
+	    # Means we probably discovered this using SNMP
 
-	if ( defined $devtmp{snmp_version} && $devtmp{snmp_version} == 3 ){
-	    my %arg2field = (sec_name   => 'snmp_securityname',
-			     sec_level  => 'snmp_securitylevel',
-			     auth_proto => 'snmp_authprotocol',
-			     auth_pass  => 'snmp_authkey',
-			     priv_proto => 'snmp_privprotocol',
-			     priv_pass  => 'snmp_privkey',
+	    # Set some default stuff
+	    %devtmp = (snmp_managed  => 1,
+		       snmp_polling  => 1,
+		       canautoupdate => 1,
+		       # These following two could have changed in get_snmp_session
+		       # so we grab them from %info instead of directly from %argv
+		       community     => $info->{community},
+		       snmp_version  => $info->{snmp_version},
 		);
-
-	    foreach my $arg ( keys %arg2field ){
-		$devtmp{$arg2field{$arg}} = $argv{$arg} if defined $argv{$arg};
+	    
+	    if ( defined $devtmp{snmp_version} && $devtmp{snmp_version} == 3 ){
+		my %arg2field = (sec_name   => 'snmp_securityname',
+				 sec_level  => 'snmp_securitylevel',
+				 auth_proto => 'snmp_authprotocol',
+				 auth_pass  => 'snmp_authkey',
+				 priv_proto => 'snmp_privprotocol',
+				 priv_pass  => 'snmp_privkey',
+		    );
+		
+		foreach my $arg ( keys %arg2field ){
+		    $devtmp{$arg2field{$arg}} = $argv{$arg} if defined $argv{$arg};
+		}
 	    }
 	}
 
@@ -1613,7 +1621,7 @@ sub discover {
 
     # Update Device with SNMP info obtained
     $dev->snmp_update(%uargs);
-    
+  
     return $dev;
 }
 
@@ -2958,7 +2966,7 @@ sub info_update {
 	return;	
     }
     unless ( ref($info) eq 'HASH' ){
-	$self->throw_fatal("Model::Device::info_update: Invalid SNMP data structure");
+	$self->throw_fatal("Model::Device::info_update: Invalid info data structure");
     }
 
     # Pretend works by turning off autocommit in the DB handle and rolling back
