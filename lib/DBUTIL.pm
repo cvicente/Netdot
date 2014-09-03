@@ -395,8 +395,8 @@ sub initacls_mysql {
  
    &db_query(\@acl, 'mysql');
     my $cmd = "$CONFIG{BINDIR}/mysqladmin --host=$CONFIG{DB_HOST} --port=$CONFIG{DB_PORT} --user=$CONFIG{DB_DBA}"; 
-    my $cmd .= " -p$CONFIG{DB_DBA_PASSWORD}" if $CONFIG{DB_DBA_PASSWORD};
-    my $cmd .= ' reload';
+    $cmd .= " -p$CONFIG{DB_DBA_PASSWORD}" if $CONFIG{DB_DBA_PASSWORD};
+    $cmd .= ' reload';
     system ($cmd);
 }
 
