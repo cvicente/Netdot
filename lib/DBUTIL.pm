@@ -394,8 +394,10 @@ sub initacls_mysql {
     push @acl, "GRANT SELECT,INSERT,CREATE,INDEX,UPDATE,DELETE ON $CONFIG{DB_DATABASE}.* TO $CONFIG{DB_NETDOT_USER}\@$CONFIG{DB_HOST} IDENTIFIED BY '$CONFIG{DB_NETDOT_PASS}';";
  
    &db_query(\@acl, 'mysql');
-    system ("$CONFIG{BINDIR}/mysqladmin --host=$CONFIG{DB_HOST} --port=$CONFIG{DB_PORT} --user=$CONFIG{DB_DBA} -p$CONFIG{DB_DBA_PASSWORD} reload");
-    
+    my $cmd = "$CONFIG{BINDIR}/mysqladmin --host=$CONFIG{DB_HOST} --port=$CONFIG{DB_PORT} --user=$CONFIG{DB_DBA}"; 
+    my $cmd .= " -p$CONFIG{DB_DBA_PASSWORD}" if $CONFIG{DB_DBA_PASSWORD};
+    my $cmd .= ' reload';
+    system ($cmd);
 }
 
 
