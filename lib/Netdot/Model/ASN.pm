@@ -101,8 +101,8 @@ sub _validate {
     }
 
     if ( my $rir = $args->{rir} ){
-	my $re = $self->config->get('VALID_RIR_REGEX');
-	unless ( $rir =~ /$re/ ){
+	my $valid_rirs = $self->config->get('VALID_RIRS');
+	unless ( exists $valid_rirs->{$rir} ){
 	    $self->throw_user("Invalid RIR: $rir");
 	}
     }
