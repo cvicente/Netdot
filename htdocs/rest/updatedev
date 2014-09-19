@@ -1,0 +1,63 @@
+<%doc>
+Discover devices via REST
+</%doc>
+<%args>
+$user                    # Should be assigned by autohandler
+$manager                 # Should be assigned by autohandler
+$name                    # Device name
+$info                    # Device information (serialized)
+</%args>
+<%init>
+my $DEBUG = 0;
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+
+use Apache2::Const -compile => qw(FORBIDDEN OK NOT_FOUND HTTP_BAD_REQUEST);
+
+use Data::Dumper;
+
+use Netdot::REST;
+my $rest = Netdot::REST->new(user=>$user, manager=>$manager);
+$rest->request($r);
+
+# Get relevant HTTP headers from request object
+my $headers = $rest->{request}->headers_in;
+
+# Deal with Accept header
+$rest->check_accept_header($headers->{Accept}) if ( $headers->{Accept} );
+
+my $method = $rest->{request}->method;
+my $req_args = $method eq 'POST' ? 
+    sprintf("%s", join(" ", Dumper(%ARGS))) : $rest->{request}->args;
+
+my $logger = Netdot->log->get_logger("Netdot::REST");
+$logger->info(sprintf("/rest/updatedev: %s request with args: %s from %s (%s)", 
+ 		      $method, 
+		      $req_args,
+ 		      $rest->{request}->connection->remote_ip, 
+ 		      $headers->{'User-Agent'}
+ 	      ));
+
+</%init>
+<%perl>
+    
+my $dinfo;
+if ( $method eq 'POST' ){
+    $dinfo = $rest->read_serialized($info);
+
+    my $obj;
+    eval {
+	Netdot::Model->do_transaction( sub{ 
+	    $obj = Device->discover(name=>$name, info=>$dinfo);
+				       });
+    };
+    if ( my $e = $@ ){
+	$rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
+		     msg=>"Bad request: $e"); 
+    }
+
+
+    my $o = $rest->get(obj=>$obj);
+    $rest->print_serialized($o);
+}
+
+</%perl>

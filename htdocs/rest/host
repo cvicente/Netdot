@@ -167,7 +167,7 @@ if ( $method eq 'GET' ){
 	push @{$ret{Ipblock}}, $o;
     }	
 
-    $rest->print_formatted(\%ret);
+    $rest->print_serialized(\%ret);
 
 }elsif ( $method eq 'POST' ){
     if ( $rrid ){
@@ -204,7 +204,7 @@ if ( $method eq 'GET' ){
 	    $rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
 			 msg=>'Bad request: $e'); 
 	}
-	$rest->print_formatted($rest->get(obj=>$rr, depth=>0));
+	$rest->print_serialized($rest->get(obj=>$rr, depth=>0));
 
     }elsif ( $ipid ){
 	# We're updating
@@ -251,7 +251,7 @@ if ( $method eq 'GET' ){
 		
 	    }
 	}
-	$rest->print_formatted($rest->get(obj=>$ipb, depth=>0));
+	$rest->print_serialized($rest->get(obj=>$ipb, depth=>0));
 
     }else{
 	# No rrid or ipid means We're adding a new host
@@ -355,7 +355,7 @@ if ( $method eq 'GET' ){
 	    $rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
 			 msg=>"Bad request: $e"); 
 	}
-	$rest->print_formatted($rest->get(obj=>$rr, depth=>0));
+	$rest->print_serialized($rest->get(obj=>$rr, depth=>0));
     }
 }elsif ( $method eq 'DELETE' ){
     

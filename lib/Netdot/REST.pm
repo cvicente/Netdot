@@ -4,7 +4,7 @@ use base qw( Netdot );
 use Netdot::Model;
 use XML::Simple;
 use Data::Dumper;
-use Apache2::Const -compile => qw(FORBIDDEN HTTP_UNAUTHORIZED OK NOT_FOUND 
+use Apache2::Const -compile => qw(HTTP_FORBIDDEN HTTP_UNAUTHORIZED OK NOT_FOUND 
                                   HTTP_BAD_REQUEST HTTP_NOT_ACCEPTABLE);
 use strict;
 
@@ -155,11 +155,11 @@ sub handle_resource {
 		    }
 		    $get_args{linked_from} = $argv{linked_from};
 		    my $o = $self->get(%get_args);
-		    $self->print_formatted($o);
+		    $self->print_serialized($o);
 
 		}elsif ( $self->{request}->method eq 'POST' ){
 		    my $o = $self->post(table=>$table, id=>$id, %argv);
-		    $self->print_formatted($o);
+		    $self->print_serialized($o);
 
 		}elsif ( $self->{request}->method eq 'DELETE' ){
 		    $self->delete(table=>$table, id=>$id);
@@ -170,7 +170,7 @@ sub handle_resource {
 		    my $m = $table->meta_data();
 		    my %meta = %$m;
 		    delete $meta{meta};
-		    $self->print_formatted(\%meta);
+		    $self->print_serialized(\%meta);
 		}
 	    }else{
 		# Invalid ID
@@ -203,7 +203,7 @@ sub handle_resource {
 			$get_args{linked_from} = $linked_from if defined( $linked_from );
 			push @objs, $self->get(%get_args);
 		    }
-		    $self->print_formatted({$table=>\@objs});
+		    $self->print_serialized({$table=>\@objs});
 		}else{
 		    $self->throw(code=>Apache2::Const::NOT_FOUND, msg=>"Not found"); 
 		}
@@ -211,7 +211,7 @@ sub handle_resource {
 	    }elsif ( $self->{request}->method eq 'POST' ){
 		# A lack of id means we're inserting a new object
 		my $o = $self->post(table=>$table, %argv);
-		$self->print_formatted($o);
+		$self->print_serialized($o);
 	    }
 	}
     }else{
@@ -471,17 +471,19 @@ sub media_type {
 
 ##################################################################
 
-=head2 print_formatted - Print formatted data to stdout
+=head2 print_serialized - Print serialized data to stdout
+
+  Format is determined by the media type set in the request
 
   Arguments: 
     hashref with data to format
   Returns:
-    formatted data
+    serialized data (XML, etc)
   Examples:
-    $rest->print_formatted(\%hash);
+    $rest->print_serialized(\%hash);
 =cut
 
-sub print_formatted {
+sub print_serialized {
     my ($self, $data) = @_;
     
     $self->throw_fatal("Missing required arguments") 
@@ -490,18 +492,39 @@ sub print_formatted {
     my $mtype = $self->{media_type} || 'xml';
     
     if ( $mtype eq 'xml' ){
-	unless ( $self->{xs} ){
-	    # Instantiate the XML::Simple class
-	    $self->{xs} = XML::Simple->new(
-		ForceArray => 1,
-		XMLDecl    => 1, 
-		KeyAttr    => 'id',
-		);
-	}
+	$self->_load_xml_lib();
 	my $xml = $self->{xs}->XMLout($data);
 	$self->{request}->content_type(q{text/xml; charset=utf-8});
 
 	print $xml;
+    }
+}
+
+##################################################################
+
+=head2 read_serialized - Read serialized data
+
+  Format is determined by the media type set in the request
+
+  Arguments: 
+    String with serialized data (XML, etc)
+  Returns:
+    Hashref
+  Examples:
+    my $data = $rest->read_serialized($string);
+=cut
+
+sub read_serialized {
+    my ($self, $string) = @_;
+    
+    $self->throw_fatal("Missing required arguments") 
+	unless ( $string );
+    
+    my $mtype = $self->{media_type} || 'xml';
+    
+    if ( $mtype eq 'xml' ){
+	$self->_load_xml_lib();
+	$self->{xs}->XMLin($string);
     }
 }
 
@@ -568,6 +591,7 @@ sub throw {
 #
 ##################################################################
 
+##################################################################
 # _get_linked_from - Get list of objects that point to us
 #    
 #     Arguments:
@@ -602,13 +626,37 @@ sub _get_linked_from{
 }
 
 
+##################################################################
+# _load_xml_lib - Load XML library
+#    
+#  Instantiates XML::Simple class if needed
+#
+#     Arguments:
+#        none
+#     Returns:
+#        Nothing
+#     Examples:
+#        $self->_load_xml_lib();
+#
+sub _load_xml_lib{
+    my ($self) = @_;
+    
+    unless ( $self->{xs} ){
+	$self->{xs} = XML::Simple->new(
+	    ForceArray => 1,
+	    XMLDecl    => 1, 
+	    KeyAttr    => 'id',
+	    );
+    }
+}
+
 =head1 AUTHORS
 
 Carlos Vicente & Clayton Parker Coleman
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2012 University of Oregon, all rights reserved.
+Copyright 2014 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
