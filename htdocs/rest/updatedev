@@ -37,15 +37,24 @@ $logger->info(sprintf("/rest/updatedev: %s request with args: %s from %s (%s)",
  		      $headers->{'User-Agent'}
  	      ));
 
-my $user_type = $user->getAttribute('USER_TYPE');
-
 </%init>
 <%perl>
     
 my $dinfo;
 if ( $method eq 'POST' ){
     $dinfo = $rest->read_serialized($info);
-    my $obj = Device->discover(name=>$name, info=>$dinfo);
+
+    my $obj;
+    eval {
+	Netdot::Model->do_transaction( sub{ 
+	    $obj = Device->discover(name=>$name, info=>$dinfo);
+				       });
+    };
+    if ( my $e = $@ ){
+	$rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
+		     msg=>"Bad request: $e"); 
+    }
+
 
     my $o = $rest->get(obj=>$obj);
     $rest->print_serialized($o);
