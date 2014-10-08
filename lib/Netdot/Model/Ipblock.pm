@@ -2235,9 +2235,12 @@ sub update_a_records {
 						       $host, $self->address, $name) );
 			    }else{
 				# Just update the current name, then
-				$rr->update(\%rrstate);
-				$logger->debug(sub{ sprintf("%s: Updated DNS record for %s: %s", 
-							    $host, $self->address, $name) });
+				# Only update if name is different
+				if ($rr->name ne $rrstate{"name"}) {
+				    $rr->update(\%rrstate);
+				    $logger->debug(sub{ sprintf("%s: Updated DNS record for %s: %s", 
+					    		    $host, $self->address, $name) });
+			    }
 			    }
 			}
 		    }
