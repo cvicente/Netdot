@@ -409,14 +409,14 @@ if ( $method eq 'GET' ){
     		foreach my $obj ( @objs_to_delete ){
 		    # The object may have been cascade-deleted
 		    next if ( ref($obj) eq 'Class::DBI::Object::Has::Been::Deleted' );
-
+		    
 		    # Make sure user can do this
     		    unless ( $manager->can($user, 'delete', $obj) ){
     			$rest->throw_rest(code=>Apache2::Const::HTTP_FORBIDDEN, 
     					  msg=>"User not allowed to delete this object");
     		    }
-			$obj->delete(); 
-			
+		    $obj->delete(); 
+		    
     		}	
     					   });
     	};
