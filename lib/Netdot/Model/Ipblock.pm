@@ -552,7 +552,7 @@ sub is_multicast{
 	# Called as class method
 	$self->throw_fatal("Missing required arguments when called as class method: address")
 	    unless ( defined $address );
-	if ( !($netaddr = Ipblock->netaddr($address, $prefix))){
+	if ( !($netaddr = Ipblock->netaddr(address=>$address, prefix=>$prefix))){
 	    my $str = ( $address && $prefix ) ? (join '/', $address, $prefix) : $address;
 	    $self->throw_user("Invalid IP: $str");
 	}
@@ -1921,29 +1921,27 @@ sub address_usage {
     my ($self) = @_;
     $self->isa_object_method('address_usage');
 
-    my $start  = $self->netaddr->network();
-    my $end    = $self->netaddr->broadcast();
-    my $count  = 0;
-    my $q;
-    my $dbh = $self->db_Main;
+    my $plen  = ($self->version == 6)? 128 : 32;
+    my $start = $self->netaddr->network();
+    my $end   = $self->netaddr->broadcast();
+    my $dbh   = $self->db_Main;
+    my $sth;
     eval {
-	$q = $dbh->prepare_cached("SELECT ipblock.prefix, ipblock.version, ipblockstatus.name 
-                                   FROM   ipblock, ipblockstatus 
-                                   WHERE  ipblock.status=ipblockstatus.id 
-                                     AND  ? <= address AND address <= ?");
+	my $q = "SELECT  COUNT(ipblock.id) 
+                   FROM  ipblock, ipblockstatus
+                  WHERE  ipblock.status = ipblockstatus.id
+                    AND  ipblock.prefix = $plen
+                    AND  ? <= ipblock.address AND ipblock.address <= ?
+		    AND  ipblockstatus.name != 'Available'";
 	
-	$q->execute(scalar($start->numeric), scalar($end->numeric));
+	$sth = $dbh->prepare($q);
+	$sth->execute(scalar($start->numeric), scalar($end->numeric));
     };
     if ( my $e = $@ ){
 	$self->throw_fatal( $e );
     }
     
-    while ( my ($prefix, $version, $status) = $q->fetchrow_array() ) {
-        if( ( $version == 4 && $prefix == 32 ) || ( $version == 6 && $prefix == 128 ) ) {
-	    next if $status eq 'Available';
-            $count++;
-        }
-    }
+    my $count = $sth->fetchrow_array() || 0;
 
     return $count;
 }

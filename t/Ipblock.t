@@ -39,7 +39,7 @@ is($address->address_numeric, '3221225994', 'address_numeric method');
 is($address->prefix, '32', 'prefix method');
 
 is($subnet->num_addr(), '126', 'num_addr');
-is($subnet->address_usage(), '6', 'address_usage');
+is($subnet->address_usage(), '1', 'address_usage');
 
 is($container->subnet_usage(), '128', 'subnet_usage');
 
@@ -48,7 +48,7 @@ is($subnet->get_label(), '192.0.2.0/25', 'subnet label');
 
 is(Ipblock->search(address=>'192.0.2.0', prefix=>'25')->first, $subnet, 'search' );
 
-is(scalar(Ipblock->search_like(address=>'192.0')), 8, 'search_like' );
+is(scalar(Ipblock->search_like(address=>'192.0')), 3, 'search_like' );
 
 $subnet->update({description=>'test subnet'});
 is(((Ipblock->keyword_search('test subnet'))[0])->id, $subnet->id, 'keyword_search');
@@ -98,7 +98,7 @@ is(Ipblock->subnetmask(256), 24, 'subnetmask');
 
 is(Ipblock->subnetmask_v6(4), 126, 'subnetmask_v6');
 
-is($subnet->get_next_free, '192.0.2.6', 'get_next_free');
+is($subnet->get_next_free, '192.0.2.1', 'get_next_free');
 is($subnet->get_next_free(strategy=>'last'), '192.0.2.126', 'get_next_free_last');
 
 is(($subnet->get_dot_arpa_names)[0], '0-25.2.0.192.in-addr.arpa', 'get_dot_arpa_names_v4_25');
@@ -175,7 +175,7 @@ $v6subnet = undef;
 $v6subnet = Ipblock->retrieve($tmpid);
 is($v6subnet->parent, $v6container3, 'v6_parent3');
 
-is($v6subnet->get_next_free, '2001:db8::6', 'get_next_free_v6');
+is($v6subnet->get_next_free, '2001:db8::1', 'get_next_free_v6');
 is($v6subnet->get_next_free(strategy=>'last'), '2001:db8:0:3:ffff:ffff:ffff:fffe', 'get_next_free_last_v6');
 
 is(Ipblock->matches_v4($address->address), 1, 'matches_v4_1');

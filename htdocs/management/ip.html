@@ -1354,7 +1354,7 @@ if ( $o->version == 4 ){
 push( @cell_data, ($num_addresses." (". $first_address." - ".$last_address.")") );
 	
 if ($o->status->name eq "Subnet") {
-      my $used  = new Math::BigInt($o->num_children);
+      my $used  = new Math::BigInt($o->address_usage);
       my $total = $o->num_addr;
       my $avail = $total - $used;
       my $avail_percent = $ui->friendly_percent(value=>$avail,total=>$total);
