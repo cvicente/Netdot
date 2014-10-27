@@ -510,7 +510,7 @@ sub assign_name {
     
     # Try to create the RR object
     # This will also create the Zone object if necessary
-    my $rr = RR->insert(\%args);
+    my $rr = RR->find_or_create(\%args);
     $logger->info(sprintf("Inserted new RR: %s", $rr->get_label));
     # Make sure name has an associated IP and A record
     if ( $ip ){
