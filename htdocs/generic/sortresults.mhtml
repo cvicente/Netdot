@@ -50,6 +50,10 @@ my $numcols;
 my $caller_path;
 my $user = $ui->get_current_user($r);
 
+if ( $table eq 'Audit' ){
+    $withedit = 0;
+}
+
 my $user_per_page = $user->getAttribute("USER_PERPAGE");
 if ( !defined($per_page) ){
     $per_page = $ui->config->get('DEFAULT_PERPAGE');
