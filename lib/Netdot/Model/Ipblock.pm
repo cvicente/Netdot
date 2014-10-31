@@ -1523,8 +1523,20 @@ sub full_address {
 
 sub get_label {
     my $self = shift;
-    return $self->address if $self->is_address;
-    return $self->cidr;
+    my $label;
+    if ( $self->is_address ){
+	$label = $self->address;
+    }else{
+	$label = $self->cidr;
+    }
+    if ( $label !~ /\D/o ){
+	# CDBI select trigger should make the address
+	# method return the dotted quad, but for some
+	# reason it doesn't in some cases.
+	# #annoying
+	$label = $self->int2ip($label, $self->version);
+    }
+    return $label;
 }
 
 ##################################################################
