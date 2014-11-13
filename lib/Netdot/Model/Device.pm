@@ -71,6 +71,7 @@ my @SMETHODS = qw(
    i_up_admin i_duplex i_duplex_admin 
    ip_index ip_netmask i_mac ip_table
    i_vlan_membership qb_v_name v_name v_state
+   hasLLDP
 );
 
 
@@ -970,7 +971,7 @@ sub get_snmp_info {
 
     ################################################################
     # CDP/LLDP stuff
-    if ( $hashes{hasCDP} ){
+    if (( $hashes{hasCDP} ) or ($hashes{hasLLDP})){
 	# Call all the relevant methods
 	my %dp_hashes;
 	my @dp_methods = qw ( c_id c_ip c_port c_platform );
