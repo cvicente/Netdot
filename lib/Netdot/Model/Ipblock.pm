@@ -3068,8 +3068,12 @@ sub _validate {
 	    if ( $self->is_address() ){
 		if ( $pstatus eq "Reserved" ){
 		    $self->throw_user($self->get_label.": Address allocations not allowed under Reserved blocks");
-		}elsif ( $pstatus eq 'Subnet' && $self->version == 4 && $parent->prefix != 31 ){
-		    if ( $self->address eq $parent->address ){
+		}elsif ( $pstatus eq 'Subnet' ){
+		    if ( $self->address eq $parent->address &&
+			 !$parent->use_network_broadcast &&
+			 (($self->version == 4 && $parent->prefix != 31) ||
+			  ($self->version == 6 && $parent->prefix != 127))
+			){
 			$self->throw_user(sprintf("IP cannot have same address as its subnet: %s == %s", 
 						  $self->address, $parent->address));
 		    }
