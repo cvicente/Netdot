@@ -940,7 +940,6 @@ if ( $edit ){
   </div>
 <!-- End Display Custom Attributes -->
 
-
 %################################################################
 <!-- Display ARP -->
 <%perl>
@@ -979,6 +978,19 @@ if ( $edit ){
 %     }
 <!-- End Display ARP -->
 
+%################################################################
+% my @audit = $o->get_audit_records;
+% if ( @audit ){
+<!-- Display Audit Records -->
+  <div class="container">
+    <div class="containerheadleft"><strong>Audit Records</strong></div>
+    <div class="containerheadright">&nbsp;</div>
+    <div class="containerbody">
+        <& /generic/sortresults.mhtml, object=>\@audit, view=>"row" &>
+    </div>
+  </div>
+<!-- End Display Audit Records -->
+% }
 </div>
 
 %} else {     
@@ -1058,6 +1070,11 @@ if ( $edit ){
               <li><span>Comments</span></li>
 %         } else {
               <li><a href="ip.html?id=<% $id %>&view=Comments">Comments</a></li>
+%         }
+%         if( $view eq "Audit" ) {
+              <li><span>Audit</span></li>
+%         } else {
+              <li><a href="ip.html?id=<% $id %>&view=Audit">Audit</a></li>
 %         }
 %         if( $view eq "All" ) {
               <li><span>All</span></li>
@@ -1480,7 +1497,22 @@ print $tmp{value};
 
     </div>
 </div>
+% }
 
+%################################################################
+%# Audit records
+%################################################################
+% if ( $view eq 'Audit' || $view eq 'All' ){
+%    my @audit = $o->get_audit_records();
+<div class="container">
+    <div class="containerheadleft">
+        Audit
+    </div>
+    <div class="containerheadright">&nbsp</div>
+ <div class="containerbody">
+    <& /generic/sortresults.mhtml, object => \@audit , view => "row" &>
+ </div>
+</div>
 % }
 
 
@@ -1726,6 +1758,7 @@ if ( $_action eq 'VIEW_ADD_RIGHTS' ){
 <!-- End Display Custom Attributes -->
 % }
 %}
+
 
 %################################################################
 %# Graphical Views
