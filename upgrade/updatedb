@@ -208,11 +208,12 @@ sub upg_104_105 {
 	push @statements, "INSERT INTO asn (number) SELECT DISTINCT bgplocalas FROM device WHERE bgplocalas IS NOT NULL;";
 
 	push @statements, "ALTER TABLE device MODIFY bgplocalas bigint;";
-	push @statements, "ALTER TABLE device ADD CONSTRAINT `fk_bgplocalas` FOREIGN KEY (`bgplocalas`) ".
-	    "REFERENCES `asn` (`id`);";
 	push @statements, "CREATE INDEX bgplocalas ON device (bgplocalas);";
 
 	push @statements, "UPDATE device,asn SET device.bgplocalas=asn.id WHERE device.bgplocalas=asn.number;"; 
+
+	push @statements, "ALTER TABLE device ADD CONSTRAINT `fk_bgplocalas` FOREIGN KEY (`bgplocalas`) ".
+	    "REFERENCES `asn` (`id`);";
 
 	push @statements, "ALTER TABLE bgppeering ADD COLUMN contactlist bigint;";
 	push @statements, "ALTER TABLE bgppeering ADD CONSTRAINT `fk_contactlist_bgppeering` FOREIGN KEY (`contactlist`) ".
