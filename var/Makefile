@@ -13,7 +13,7 @@ include $(SRCROOT)/etc/utility-Makefile
 POLLSTATSRRD = pollstats.rrd
 
 all: 
-	if ! test -r $(PREFIX)/$(DIR)/$(POLLSTATSRRD); then \
+	if ! test -r $(STAGEDIR)/$(DIR)/$(POLLSTATSRRD); then \
 	  rrdtool create $(POLLSTATSRRD) -s 3600 \
 	  DS:ips:GAUGE:7200:0:4294967296 \
 	  DS:macs:GAUGE:7200:0:4294967296 \
@@ -24,5 +24,5 @@ all:
 	  RRA:AVERAGE:0.5:24:365 \
 	  RRA:MAX:0.5:24:30 \
 	  RRA:MIN:0.5:24:30; \
-	  install -m $(FMOD) $(POLLSTATSRRD) $(PREFIX)/$(DIR)/$(POLLSTATSRRD); \
+	  install -m $(FMOD) $(POLLSTATSRRD) $(STAGEDIR)/$(DIR)/$(POLLSTATSRRD); \
 	fi;

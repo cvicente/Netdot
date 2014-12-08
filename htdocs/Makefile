@@ -9,7 +9,7 @@ FILES := `find . -name "*" | egrep ".*(rest\/.*|handler|\.?html|\.css|\.png|\.gi
 
 all: wipedir dir
 	$(substitute)
-	ln -s $(PREFIX)/doc/manual/netdot-manual.htm  $(PREFIX)/$(DIR)/help/manual.html
+	ln -s $(STAGEDIR)/doc/manual/netdot-manual.htm  $(STAGEDIR)/$(DIR)/help/manual.html
 
 # Wipe out dir before installing
 wipedir:
@@ -20,10 +20,10 @@ dir:
 	$(mkdirs)
 
 	@echo "Hacking together mason permissions fix..."
-	touch $(PREFIX)/$(DIR)/masondata/obj/.__obj_create_marker
-	chown -R $(APACHEUSER):$(APACHEGROUP) $(PREFIX)/$(DIR)/masondata
-	chmod 0755 $(PREFIX)/$(DIR)/masondata
+	touch $(STAGEDIR)/$(DIR)/masondata/obj/.__obj_create_marker
+	chown -R $(APACHEUSER):$(APACHEGROUP) $(STAGEDIR)/$(DIR)/masondata
+	chmod 0755 $(STAGEDIR)/$(DIR)/masondata
 # Graphs can be updated dynamically so apache needs +w
-	chown $(APACHEUSER):$(APACHEGROUP) $(PREFIX)/$(DIR)/img/graphs
-	chmod 0750 $(PREFIX)/$(DIR)/img/graphs
+	chown $(APACHEUSER):$(APACHEGROUP) $(STAGEDIR)/$(DIR)/img/graphs
+	chmod 0750 $(STAGEDIR)/$(DIR)/img/graphs
 

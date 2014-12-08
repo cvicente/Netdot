@@ -41,7 +41,7 @@ define substitute
 for file in $(FILES); do\
   $(SED) -r $(REPLACEMENT_EXPRESSIONS) $$file\
     > $$file.tmp;\
-  install -m $(FMOD) $$file.tmp $(PREFIX)/$(DIR)/$$file;\
+  install -m $(FMOD) $$file.tmp $(STAGEDIR)/$(DIR)/$$file;\
   rm -rf $$file.tmp;\
 done
 @echo "Done."
@@ -51,10 +51,10 @@ endef
 define mkdirs
 @echo "Creating necessary directories..."
 for dir in $(NDIR); do \
-    if test -d $(PREFIX)/$(DIR)/$$dir; then \
-       echo "Skipping dir $(PREFIX)/$(DIR)/$$dir; already exists"; \
+    if test -d $(STAGEDIR)/$(DIR)/$$dir; then \
+       echo "Skipping dir $(STAGEDIR)/$(DIR)/$$dir; already exists"; \
     else \
-       mkdir -m $(DMOD) -p $(PREFIX)/$(DIR)/$$dir ; \
+       mkdir -m $(DMOD) -p $(STAGEDIR)/$(DIR)/$$dir ; \
     fi ; \
 done
 @echo "Done."
@@ -64,6 +64,6 @@ endef
 # left hanging around
 define wipedir
 @echo "Wiping out directory before installing"
-rm -fr $(PREFIX)/$(DIR)
+rm -fr $(STAGEDIR)/$(DIR)
 @echo "done"
 endef
