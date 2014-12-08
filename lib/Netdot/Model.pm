@@ -937,7 +937,7 @@ sub get_audit_records {
   Returns:
     MD5 digest of object's data
   Examples:
-    my %digest = $obj->get_state_digest;
+    my %digest = $obj->get_digest;
 
 =cut
 
