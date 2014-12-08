@@ -388,7 +388,9 @@ sub get_dp_links {
 	my ($h, @ints, $rem_dev, $rem_int, $iface);
 	if ( ($h = $macs2ints->{$mac}) && (ref($h) eq 'HASH') && (@ints = keys %$h) ){
 	    if ( scalar(@ints) > 1 ){
-		#There are multiple interfaces using $mac. Ignore
+		# There are multiple interfaces using $mac. Ignore
+		$logger->debug("Topology::_find_by_mac: $str used by ".scalar(@ints).
+			       " interfaces, ignoring");
 	    }elsif ( my $dev = $base_macs->{$mac} ){
 		# this means that this mac is also a base_mac 
 		# don't set rem_int because it would most likely be wrong
@@ -400,6 +402,8 @@ sub get_dp_links {
 		if ( $iftype eq 'propVirtual' || $iftype eq '53' ||
 		     $iftype eq 'l2vlan' || $iftype eq '135' ){
 		    # Ignore virtual interfaces, but do set the remote device
+		    $logger->debug("Topology::_find_by_mac: $str is a virtual interface ".
+				   "and does not identify the port");
 		}else{
 		    # This should be good then
 		    $rem_int = $iface;
