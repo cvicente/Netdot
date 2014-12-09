@@ -2410,10 +2410,9 @@ sub get_fwt {
     
     We override the insert method for extra functionality:
      - Remove orphaned Resource Records if necessary
-     - Remove orphaned Asset records if necessary
 
   Arguments:
-    None
+    no_delete_name - Do not attempt to delete name DNS record
   Returns:
     True if successful
 
@@ -2423,7 +2422,7 @@ sub get_fwt {
 =cut
 
 sub delete {
-    my ($self) = @_;
+    my ($self, %argv) = @_;
     $self->isa_object_method('delete');
 
     # We don't want to delete dynamic addresses
@@ -2434,17 +2433,19 @@ sub delete {
 	    }
 	}
     }
-    
-    # If the RR had a RRADDR, it was probably deleted.  
-    # Otherwise, we do it here.
+
+    # Get ID of name RR
     my $rrid = ( $self->name )? $self->name->id : "";
     
     $self->SUPER::delete();
     
-    if ( my $rr = RR->retrieve($rrid) ){
-	$rr->delete() unless $rr->a_records;
+    unless ( $argv{no_delete_name} ){
+	# If the RR had a RRADDR, it was probably deleted.  
+	# Otherwise, we do it here.
+	if ( my $rr = RR->retrieve($rrid) ){
+	    $rr->delete() unless $rr->sub_records;
+	}	
     }
-    
     return 1;
 }
 
