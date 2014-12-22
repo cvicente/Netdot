@@ -59,7 +59,9 @@ sub new{
 sub generate_configs {
     my ($self) = @_;
 
-    my $query = $self->{_dbh}->selectall_arrayref("
+    my $dbh = Netdot::Model->db_Main();
+
+    my $query = $dbh->selectall_arrayref("
                 SELECT     d.id, rr.name, zone.name, p.name, e.name,
                            d.monitored, t.name, d.down_from, d.down_until
                  FROM      device d, rr, zone, product p, entity e, asset a,
