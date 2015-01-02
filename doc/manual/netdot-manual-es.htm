@@ -131,6 +131,8 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <li><a href="#actualizar-récords-existentes-http-post."><span class="toc-section-number">7.2.1.3</span> Actualizar récords existentes (HTTP POST).</a></li>
 <li><a href="#borrar-records-http-delete"><span class="toc-section-number">7.2.1.4</span> Borrar records (HTTP DELETE)</a></li>
 </ul></li>
+<li><a href="#restdevinfo"><span class="toc-section-number">7.2.2</span> /rest/devinfo</a></li>
+<li><a href="#restupdatedev"><span class="toc-section-number">7.2.3</span> /rest/updatedev</a></li>
 </ul></li>
 <li><a href="#autorización-en-la-interfaz-rest"><span class="toc-section-number">7.3</span> Autorización en la interfaz REST</a></li>
 <li><a href="#módulo-perl-para-programas-cliente-en-cpan"><span class="toc-section-number">7.4</span> Módulo Perl para programas cliente en CPAN</a></li>
@@ -141,7 +143,7 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <p></p>
 <h1 id="copyright"><a href="#TOC"><span class="header-section-number">1</span> Copyright</a></h1>
 <p>Version 1.0</p>
-<p>Copyright 2012 University of Oregon, Todos los derechos reservados.</p>
+<p>Copyright 2014 Carlos Vicente</p>
 <p>This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.</p>
 <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTIBILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.</p>
 <p>You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.</p>
@@ -689,6 +691,12 @@ POST: {ethernet=&gt;&#39;DEADDEADBEEF&#39;}</code></pre>
 <li>Borrar el nombre de host con RR Id 3 (también libera la IP)</li>
 </ul>
 <pre><code>http://netdot.localdomain/netdot/rest/host?rrid=3</code></pre>
+<h3 id="restdevinfo"><a href="#TOC"><span class="header-section-number">7.2.2</span> /rest/devinfo</a></h3>
+<p>Puede utilizarse este recurso REST para obtener información extensa acerca de todos los dispositivos de la red existentes en la base de datos. La estructura de datos resultante es la misma que utiliza la clase de exportación para NAGIOS, por lo que puede ser útil en la generación de configuraciones para otros programas de monitorización.</p>
+<h3 id="restupdatedev"><a href="#TOC"><span class="header-section-number">7.2.3</span> /rest/updatedev</a></h3>
+<p>This special REST resource can be used to import devices into Netdot, as an alternative to using SNMP discovery. It accepts only POST requests. An example using the Perl client library can be found in the Netdot source, at:</p>
+<p>Este recurso REST puede ser usado para importar información de dispositivos de forma alternativa al descubrimiento via SNMP. Acepta solamente peticiones tipo POST. Se incluye un ejemplo de su utilización con la biblioteca cliente para Perl ul siguiente archivo dentro de la fuente de Netdot:</p>
+<pre><code>import/update_dev_rest.pl</code></pre>
 <h2 id="autorización-en-la-interfaz-rest"><a href="#TOC"><span class="header-section-number">7.3</span> Autorización en la interfaz REST</a></h2>
 <p>Todos los tipos de usuario pueden interactuar con la interfaz REST siempre que se le hayan asignado permisos. Sin embargo, sólo los usuarios tipo Admin pueden editar o borrar objetos utilizando los recursos genéricos REST. Los usuarios tipo 'Operator' y tipo 'User' pueden 'ver' los recursos genéricos pero sólo pueden editar o borrar algunas cosas utilizando los recursos de propósito específico como 'rest/host'.</p>
 <h2 id="módulo-perl-para-programas-cliente-en-cpan"><a href="#TOC"><span class="header-section-number">7.4</span> Módulo Perl para programas cliente en CPAN</a></h2>

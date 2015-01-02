@@ -7,7 +7,7 @@
 
 Version 1.0
 
-Copyright 2012 University of Oregon, Todos los derechos reservados.
+Copyright 2014 Carlos Vicente
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the
@@ -1548,6 +1548,29 @@ POST: {ethernet=>'DEADDEADBEEF'}
 
 ~~~~
 http://netdot.localdomain/netdot/rest/host?rrid=3
+~~~~
+
+### /rest/devinfo
+
+Puede utilizarse este recurso REST para obtener información extensa
+acerca de todos los dispositivos de la red existentes en la base de datos.
+La estructura de datos resultante es la misma que utiliza la clase de exportación
+para NAGIOS, por lo que puede ser útil en la generación de configuraciones para
+otros programas de monitorización.
+
+### /rest/updatedev
+
+This special REST resource can be used to import devices into Netdot,
+as an alternative to using SNMP discovery. It accepts only POST requests.
+An example using the Perl client library can be found in the Netdot source, at:
+
+Este recurso REST puede ser usado para importar información de dispositivos
+de forma alternativa al descubrimiento via SNMP. Acepta solamente peticiones
+tipo POST. Se incluye un ejemplo de su utilización con la biblioteca cliente
+para Perl ul siguiente archivo dentro de la fuente de Netdot:
+
+~~~~
+import/update_dev_rest.pl
 ~~~~
 
 ## Autorización en la interfaz REST
