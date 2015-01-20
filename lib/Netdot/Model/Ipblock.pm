@@ -2098,14 +2098,14 @@ sub subnet_usage {
 
 ############################################################################
 
-=head2 update_a_records -  Update DNS A record(s) for this ip 
+=head2 update_a_records -  Update DNS A record(s) for this IP
 
     Creates or updates DNS records based on the output of configured plugin,
     which can, for example, derive the names from device/interface information.
     
   Arguments:
     Hash with following keys:
-       hostname_ips   - arrayref of ip addresses to which main hostname resolves to
+       hostname_ips   - arrayref of ip addresses to which main hostname resolves
        num_ips        - Number of IPs in Device
   Returns:
     True if successful
@@ -2143,13 +2143,22 @@ sub update_a_records {
     $self->throw_fatal( sprintf("update_a_records: Device id %d is missing its name!", $device->id) )
 	unless $device->name;
 
-    # Only generate names for IP blocks that are mapped to a zone
-    my $zone;
-    unless ( $zone = $self->forward_zone ){
-	$logger->debug(sprintf("%s: Cannot determine forward DNS zone for IP: %s", 
+    # Determine the zone that will be used for this record
+    my $zone = $self->forward_zone; # From SubnetZone association
+    my $auto_dns_zone;
+    if ( my $zname = $self->config->get('AUTO_DNS_ZONE') ){
+	$auto_dns_zone = (Zone->search(name=>$zname))[0];
+    }
+    if ( $auto_dns_zone ){
+	my $zone_override = $self->config->get('AUTO_DNS_ZONE_OVERRIDE');
+	if ( $zone_override || !$zone ){
+	    $zone = $auto_dns_zone;
+	}
+    }
+    unless ( $zone ){
+	$logger->debug(sprintf("%s: Cannot determine DNS zone for IP: %s",
 			       $host, $self->get_label));
 	return;
-	
     }
 
     # Determine what DNS name this IP will have.

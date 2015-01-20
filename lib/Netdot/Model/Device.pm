@@ -574,7 +574,7 @@ sub insert {
 	snmp_polling       => 0,
 	snmp_down          => 0,
 	snmp_conn_attempts => 0,
-	auto_dns           => $class->config->get('UPDATE_DEVICE_IP_NAMES'),
+	auto_dns           => $class->config->get('DEVICE_IP_NAME_AUTO_UPDATE_DEFAULT'),
 	);
 
     # Add given args (overrides defaults).
@@ -3826,6 +3826,52 @@ sub set_interfaces_auto_dns {
     return 1;
 }
 
+###############################################################
+=head2 _do_auto_dns - Generate DNS records for all interface IPs
+
+    Arguments
+      None
+    Returns
+      Nothing
+    Example:
+     $device->do_auto_dns();
+=cut
+
+sub do_auto_dns {
+    my ($self, %argv) = @_;
+    
+    my $host = $self->fqdn;
+
+    # Get addresses that the main Device name resolves to
+    my @hostnameips;
+    if ( @hostnameips = Netdot->dns->resolve_name($host) ){
+	$logger->debug(sub{ sprintf("Device::_update_interfaces: %s resolves to: %s",
+				    $host, (join ", ", @hostnameips))});
+    }
+    
+    my @my_ips;
+    foreach my $ip ( @{ $self->get_ips() } ){
+	if ( $ip->version == 6 && $ip->is_link_local ){
+	    # Do not create AAAA records for link-local addresses
+	    next;
+	}else{
+	    push @my_ips, $ip;
+	}
+    }
+    my $num_ips = scalar(@my_ips);
+    foreach my $ip ( @my_ips ){
+	# We do not want to stop the process if a name update fails
+	eval {
+	    $ip->update_a_records(hostname_ips=>\@hostnameips, num_ips=>$num_ips);
+	};
+	if ( my $e = $@ ){
+	    $logger->error(sprintf("Error updating A record for IP %s: %s",
+				   $ip->address, $e));
+	}
+    }
+    1;
+}
+
 
 
 
@@ -6320,38 +6366,13 @@ sub _update_interfaces {
     
     ##############################################################
     # Update A records for each IP address
-    
     if ( $self->config->get('UPDATE_DEVICE_IP_NAMES') && $self->auto_dns ){
-	
-	# Get addresses that the main Device name resolves to
-	my @hostnameips;
-	if ( @hostnameips = Netdot->dns->resolve_name($host) ){
-	    $logger->debug(sub{ sprintf("Device::_update_interfaces: %s resolves to: %s",
-					$host, (join ", ", @hostnameips))});
-	}
-	
-	my @my_ips;
-	foreach my $ip ( @{ $self->get_ips() } ){
-	    if ( $ip->version == 6 && $ip->is_link_local ){
-		# Do not create AAAA records for link-local addresses
-		next;
-	    }else{
-		push @my_ips, $ip;
-	    }
-	}
-	my $num_ips = scalar(@my_ips);
-	foreach my $ip ( @my_ips ){
-	    # We do not want to stop the process if a name update fails
-	    eval {
-		$ip->update_a_records(hostname_ips=>\@hostnameips, num_ips=>$num_ips);
-	    };
-	    if ( my $e = $@ ){
-		$logger->error(sprintf("Error updating A record for IP %s: %s",
-				       $ip->address, $e));
-	    }
-	}
+	$self->do_auto_dns();
     }
+
+    1;
 }
+
 
 ###############################################################
 # Add/Update/Delete BGP Peerings
