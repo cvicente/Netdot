@@ -64,7 +64,7 @@ sub insert {
     $argv->{ipblock} = $class->_convert_ipblock($argv->{ipblock});
     
     my $update_ptr = 1; # On by default
-    if ( defined $argv->{update_ptr} ){
+    if ( exists $argv->{update_ptr} ){
 	$update_ptr = delete $argv->{update_ptr};
     }
     
