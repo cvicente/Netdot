@@ -695,7 +695,10 @@ sub _validate_args {
 	$zone = $self->zone;
     }
     if ( defined $argv->{zone} ){
-	if ( !ref($argv->{zone}) ){
+	if ( ref($argv->{zone}) ){
+	    # We're being passed an object
+	    $zone = $argv->{zone}
+	}else{
 	    if ( $argv->{zone} =~ /\D+/ ){
 		$zone = Zone->search(name=>$argv->{zone})->first;
 	    }else{
@@ -716,11 +719,6 @@ sub _validate_args {
 	# Remove commas
 	$name =~ s/,//;
 
-	# Length restrictions
-	unless ( length($name) >= 1 && length($name) < 64 ){
-	    $self->throw_user("Invalid name: $name. Length must be between 1 and 63 characters");
-	}
-
 	# Valid characters
 	if ( $name =~ /[^A-Za-z0-9\.\-_@\*]/ ){
 	    $self->throw_user("Invalid name: $name. Contains invalid characters");
@@ -737,15 +735,20 @@ sub _validate_args {
 	if ( $name =~ /^\-/ || $name =~ /\-$/ ){
 	    $self->throw_user("Invalid name: $name. Name must not start or end with a dash");
 	}
-	if ( $zone ){
-	    my $fqdn = $name.".".$zone->name;
-	    if ( length($fqdn) > 255 ){
-		$self->throw_user("Invalid FQDN: $fqdn. Length exceeds 255 characters");
+
+	# Length restrictions (RFC 1035)
+	my $fqdn = $name.".".$zone->name;
+	if ( length($fqdn) > 255 ){
+	    $self->throw_user("Invalid FQDN: $fqdn. Length exceeds 255 characters");
+	}
+	# labels (sections between dots) must not exceed 63 chars
+	foreach my $label ( split(/\./, $fqdn) ){
+	    unless ( length($label) >= 1 && length($label) < 64 ){
+		$self->throw_user("Invalid label: $label. Each label must be between 1".
+				  " and 63 characters long");
 	    }
 	}
-
 	$argv->{name} = $name;
-
     }
     1;
 }
