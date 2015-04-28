@@ -1861,6 +1861,33 @@ sub get_descendants {
 
 ##################################################################
 
+=head2 get_inherited_attributes
+    
+ Arguments: 
+    None
+ Returns:   
+    Hashref containing attributes and their values
+  Examples:
+    my $attrs = $ip->get_inherited_attributes();
+
+=cut
+
+sub get_inherited_attributes {
+    my ($self) = @_;
+    $self->isa_object_method('get_inherited_attributes');
+
+    my @chain = reverse $self->get_ancestors;
+    push @chain, $self;
+    my %res;
+    foreach my $ip ( @chain ){
+	foreach my $attr ( $ip->attributes ){
+	    $res{$attr->name->name} = $attr->value;
+	}	
+    }
+    return \%res;
+}
+##################################################################
+
 =head2 num_addr - Return the number of usable addresses in a subnet
 
  Arguments:

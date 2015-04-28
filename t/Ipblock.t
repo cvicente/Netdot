@@ -4,6 +4,12 @@ use lib "lib";
 
 BEGIN { use_ok('Netdot::Model::Ipblock'); }
 
+# Clean up first
+foreach my $obj ( '192.0.2.0/24', '2001:db8::/32' ){
+    my $b = Ipblock->search(address=>$obj)->first;
+    $b->delete(recursive=>1) if $b;
+}
+
 my $container = Ipblock->insert({
     address => "192.0.2.0",
     prefix  => '24',
@@ -84,7 +90,6 @@ ok(Ipblock->is_link_local('fe80:abcd::1234'), 'is_link_local');
 
 is(Ipblock->get_covering_block(address=>'192.0.2.5', prefix=>'32'), $subnet,
    'get_covering_block');
-
 
 is(Ipblock->numhosts(24), 256, 'numhosts');
 
@@ -191,6 +196,40 @@ is(Ipblock->matches_ip($address->address), 1, 'matches_ip_2');
 my $ar1 = Ipblock->matches_cidr($address->cidr);
 my $ar2 = ($address->address, $address->prefix);
 is_deeply(\$ar1, \$ar2, 'matches_cidr_1');
+
+# Inherited attributes
+# First we clean up
+foreach my $atrname ( 'A', 'B', 'C' ){
+    my $atr = IpblockAttrName->search(name=>$atrname)->first;
+    $atr->delete if $atr;
+}
+
+# Add new attributes
+my $atn_a = IpblockAttrName->insert({name=>'A'});
+my $atn_b = IpblockAttrName->insert({name=>'B'});
+my $atn_c = IpblockAttrName->insert({name=>'C'});
+
+# Assign attributes and values to the Container, Subnet and Address
+my $at_a = IpblockAttr->insert({ipblock=>$container, name=>$atn_a, value=>'a'});
+my $at_b = IpblockAttr->insert({ipblock=>$subnet, name=>$atn_b, value=>'b'});
+my $at_c = IpblockAttr->insert({ipblock=>$address, name=>$atn_c, value=>'c'});
+my $attrs = $address->get_inherited_attributes();
+my $expected = {
+    'A' => 'a',
+    'B' => 'b',
+    'C' => 'c',
+};
+is_deeply($attrs, $expected, 'gets list of inherited attributes');
+
+# Override C's value
+$at_c->update({value=>'z'});
+my $attrs = $address->get_inherited_attributes();
+my $expected = {
+    'A' => 'a',
+    'B' => 'b',
+    'C' => 'z',
+};
+is_deeply($attrs, $expected, 'gets overridden attribute');
 
 # Delete all records
 $container->delete(recursive=>1);
