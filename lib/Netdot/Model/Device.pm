@@ -1077,6 +1077,7 @@ sub get_snmp_info {
 	# These are all the vlans that are enabled on this port.
 	if ( my $vm = $hashes{'i_vlan_membership'}->{$iid} ){
 	    foreach my $vid ( @$vm ){
+		next unless $vid; # we've seen undef's
 		if ( exists $IGNOREDVLANS{$vid} ){
 		    $logger->debug(sub{"Device::get_snmp_info: $args{host} VLAN $vid ignored ".
 					   "per configuration option (IGNOREVLANS)"});
