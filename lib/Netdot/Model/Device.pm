@@ -6567,12 +6567,15 @@ __PACKAGE__->set_sql(no_type => qq{
     });
 
 __PACKAGE__->set_sql(by_product_os => qq{
-       SELECT d.id, a.product_id, d.os
-         FROM device d, asset a
-        WHERE d.asset_id = a.id
-          AND d.os is NOT NULL 
-          AND d.os != '0'
-     ORDER BY a.product_id,d.os
+         SELECT  d.id, p.id as prod_id, p.name as prod, p.latest_os as latest_os,
+                 m.id as manuf_id, m.name as manuf, d.os as os
+           FROM  device d
+ LEFT OUTER JOIN (asset a, product p, entity m) ON a.id=d.asset_id
+             AND a.product_id=p.id
+             AND m.id=p.manufacturer
+           WHERE d.os is NOT NULL 
+             AND d.os != '0'
+        ORDER BY p.name,d.os
     });
 
 __PACKAGE__->set_sql(for_os_mismatches => qq{
