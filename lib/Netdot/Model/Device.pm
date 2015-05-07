@@ -2576,7 +2576,9 @@ sub is_in_downtime {
       - Validate various arguments
     
   Arguments:
-    Hash ref with Device fields
+    Hash ref with:
+      - Device fields
+      - Flag to disable last_updated timestamp
   Returns:
     See Class::DBI update()
   Example:
@@ -2587,8 +2589,11 @@ sub is_in_downtime {
 sub update {
     my ($self, $argv) = @_;
     
-    # Update the timestamp
-    $argv->{last_updated} = $self->timestamp;
+    # Update the timestamp unless we're told not to
+    my $no_tstamp = delete $argv->{no_timestamp};
+    unless ( $no_tstamp ){
+	$argv->{last_updated} = $self->timestamp;
+    }
 
     if ( exists $argv->{snmp_managed} && !($argv->{snmp_managed}) ){
 	# Means it's being set to 0 or undef
@@ -4109,7 +4114,7 @@ sub _get_snmp_session {
 	my $max = $self->config->get('MAX_SNMP_CONNECTION_ATTEMPTS');
 	my $count = $self->snmp_conn_attempts || 0;
 	$count++;
-	$self->update({snmp_conn_attempts=>$count});
+	$self->update({snmp_conn_attempts=>$count, no_timestamp=>1});
 	$logger->info(sprintf("Device::_get_snmp_session: %s: Failed connection attempts: %d",
 			      $host, $count));
 	if ( $max == 0 ){
@@ -4117,7 +4122,7 @@ sub _get_snmp_session {
 	    return;
 	}
 	if ( $count >= $max ){
-	    $self->update({snmp_down=>1});
+	    $self->update({snmp_down=>1, no_timestamp=>1});
 	}
     }
 
