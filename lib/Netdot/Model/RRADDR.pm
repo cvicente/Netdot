@@ -280,7 +280,6 @@ sub _net_dns {
     return $ndo;
 }
 
-
 ##################################################################
 # check if IP is an address string
 sub _convert_ipblock {
@@ -288,8 +287,10 @@ sub _convert_ipblock {
     if (!(ref $ip) && ($ip =~ /\D/)) {
 	$ip = $self->rem_lt_sp($ip);
 	my $ipblock;
-	unless ( $ipblock = Ipblock->search(address=>$ip)->first){
-	    $ipblock = Ipblock->insert({address=>$ip, status=>'Static'});
+	# Make sure that we get end-addresses
+	my $plen = Ipblock->matches_v4($ip) ? '32' : '128';
+	unless ( $ipblock = Ipblock->search(address=>$ip, prefix=>$plen)->first){
+	    $ipblock = Ipblock->insert({address=>$ip, prefix=>$plen, status=>'Static'});
 	}
 	# Make sure it's set to static
 	$ipblock->update({status=>'Static'})
