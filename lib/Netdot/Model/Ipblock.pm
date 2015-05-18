@@ -1064,12 +1064,10 @@ sub fast_update{
 
     if ( $class->config->get('DB_TYPE') eq 'mysql' ){
 	# Take advantage of MySQL's "ON DUPLICATE KEY UPDATE" 
-	my $sth = $dbh->prepare_cached(
-	    "INSERT INTO ipblock (address,prefix,version,status,first_seen,last_seen)
-                                 VALUES (?, ?, ?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE last_seen=VALUES(last_seen),
-                                     status=VALUES(status);"
-	    );
+	my $sth = $dbh->prepare_cached("INSERT INTO ipblock
+                                        (address,prefix,version,status,first_seen,last_seen)
+                                        VALUES (?, ?, ?, ?, ?, ?)
+                                        ON DUPLICATE KEY UPDATE last_seen=VALUES(last_seen);");
 
 	foreach my $address ( keys %$ips ){
 	    my $attrs = $ips->{$address};
@@ -1081,9 +1079,7 @@ sub fast_update{
     }else{
 
 	# Build SQL queries
-	my $sth1 = $dbh->prepare_cached("UPDATE ipblock 
-                                            SET last_seen=?,status=? 
-                                          WHERE address=?");	
+	my $sth1 = $dbh->prepare_cached("UPDATE ipblock SET last_seen=? WHERE address=?");	
 	
 	my $sth2 = $dbh->prepare_cached("INSERT INTO ipblock 
                                           (address,prefix,version,status,first_seen,last_seen)
@@ -1103,7 +1099,7 @@ sub fast_update{
 	    if ( my $e = $@ ){
 		# Probably duplicate. Try to update.
 		eval {
-		    $sth1->execute($attrs->{timestamp}, $dec_addr, $attrs->{status});
+		    $sth1->execute($attrs->{timestamp}, $dec_addr);
 		};
 		if ( my $e2 = $@ ){
 		    $logger->error($e2);
