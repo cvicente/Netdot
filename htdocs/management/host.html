@@ -668,7 +668,7 @@ foreach my $o ( values %rrs ) {
 
 	#display/edit
 	print '<div class="containerbody">';
-	if ( my @cnames = RRCNAME->search(cname=>$o->get_label) ){
+	if ( my @cnames = $o->aliases ){
 	    foreach my $cname ( sort { $a->rr->name cmp $b->rr->name } @cnames ) {
 		$ui->add_to_fields(o=>$cname, edit=>0, fields=>['rr'],
 				   field_headers=>\@field_headers, cell_data=>\@cell_data,

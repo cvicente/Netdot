@@ -122,6 +122,11 @@ foreach my $rtype ( keys %$count ){
     is($count->{$rtype}, 1, $rtype.'_record_count');
 }
 
+$rr->add_alias('alias2');
+my @cnames = $rr->aliases();
+isa_ok($cnames[1], 'Netdot::Model::RRCNAME', 'add_alias');
+is($cnames[1]->as_text, "alias2.$domain.	86400	IN	CNAME	$name.$domain.", 'alias_as_text');
+
 # Clean up
 $zone->delete;
 $revzone->delete;
