@@ -40,18 +40,7 @@ sub new{
 	$self->{$key} = Netdot->config->get($key);
     }
      
-    # Convert these Netdot Manufacturer names into RANCID's known types
-    # See RANCID documentation for list of available device types
-    $self->{MFG_MAP} = {
-	'cisco'      => 'cisco',
-	'enterasys'  => 'enterasys',
-	'extreme'    => 'extreme',
-	'force10'    => 'force10',
-	'foundry'    => 'foundry',
-	'Hewlett|HP' => 'hp',
-	'juniper'    => 'juniper',
-	'netscreen'  => 'netscreen',
-    };
+    $self->{MFG_MAP} = Netdot->config->get('RANCID_TYPE_MAP');
 
     $self->{EXCLUDE} = Netdot->config->get('RANCID_EXCLUDE') || {};
     
