@@ -74,7 +74,6 @@ if ( $submit ){
 	}
 	eval {
 	    Netdot::Model->do_transaction(sub{
-		my @ips = map { $_->ipblock } $rr->a_records();
 		$deleted_label = $rr->get_label();
 		delete $rrs{$rr->id};
 		$rr->delete();
@@ -153,15 +152,21 @@ if ( $rr && $action eq 'delete' ){
     print '<div class="container">';
     print '<div class="containerhead"><b>Delete Records</b></div>';
     print '<div class="containerbody">';
-   
-    print '<p>';
-    print '<strong>Are you sure you want to delete the records below?</strong>';
-    print '<p>';
-    print '<p>';
-    print '<input type="hidden" name="id" value="'.$rr.'">';
-    print '<input type="hidden" name="action" value="delete_confirm" >';
-    print '<input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> ';
-    print '<input type="submit" name="submit" value="yes" >';
+
+    if ( $rr->devices ){
+	print '<p>';
+	print '<strong>You cannot delete this record because it is the name of a device</strong>';
+	print '<p>';
+    }else{
+	print '<p>';
+	print '<strong>Are you sure you want to delete the records below?</strong>';
+	print '<p>';
+	print '<p>';
+	print '<input type="hidden" name="id" value="'.$rr.'">';
+	print '<input type="hidden" name="action" value="delete_confirm" >';
+	print '<input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);"> ';
+	print '<input type="submit" name="submit" value="yes" >';
+    }
     print '</div>';
     print '</div>';
     print '<p>';
