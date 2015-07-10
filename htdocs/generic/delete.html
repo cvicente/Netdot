@@ -12,6 +12,7 @@ $selectall     => undef
 $selectall_ids => undef
 $return_url    => undef
 $warning       => undef
+$delete_device_ips => undef
 </%args>
 
 <%init>
@@ -93,6 +94,9 @@ if ( $table && $id ){
     }
 }
 </%perl>
+    <form method="POST" action="delete.html">
+    <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
+    <input type="hidden" name="return_url" value="<% $return_url %>">
 
 % if ( $warning ne "" ){
     <nobr>
@@ -106,11 +110,15 @@ if ( $table && $id ){
     <nobr>
     <p>
     <strong>Device removal notice:</strong>
-     This hardware will be moved to the available asset pool. If you inted to 
-     decommission the hardware remember to remove the asset as well.
+    </p>
+    <p>
+    This hardware will be moved to the available asset pool. If you inted to 
+    decommission the hardware, remember to remove the asset as well.
+    </p>
+    <p>
+    <input type="checkbox" name="delete_device_ips" value="1"> Delete this Device's IP addresses. This will also delete any DNS A/AAAA records associated with each IP.
     </p>
     </nobr>
-    <br>
 % }
 
 % if ( %cascade ){
@@ -127,9 +135,6 @@ if ( $table && $id ){
     </ul>
 % }
  
-    <form method="POST" action="delete.html">
-    <input type="hidden" name="sid" value="<% $session->{_session_id} %>">
-    <input type="hidden" name="return_url" value="<% $return_url %>">
     <input name="submit" value="Confirm" type="submit">
     <input type="button" name="cancel" value="Cancel" onClick="history.go(-1);">
     </form>
@@ -151,6 +156,13 @@ if ( $table && $id ){
 	my $obj = $table->retrieve($id);
 	push @objs, $obj if $obj;
     }
+
+    my %dargs; # Arguments for delete()
+
+    if ( $delete_device_ips ){
+	$dargs{delete_ips} = 1;
+    }
+
     my @lbls = map { "$table " . $_->get_label } @objs;
     eval {
 	Netdot::Model->do_transaction(sub{
@@ -158,7 +170,7 @@ if ( $table && $id ){
 		unless ( $manager && $manager->can($user, "delete", $obj) ){
 		    $ui->throw_user("You don't have permission to delete this object");
 		}
-		$obj->delete();
+		$obj->delete(%dargs);
 	    }
 				      });
     };

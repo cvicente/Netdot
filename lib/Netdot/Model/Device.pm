@@ -2414,6 +2414,7 @@ sub get_fwt {
 
   Arguments:
     no_delete_name - Do not attempt to delete name DNS record
+    delete_ips - Optionally delete IP addresses associated with this device
   Returns:
     True if successful
 
@@ -2426,11 +2427,14 @@ sub delete {
     my ($self, %argv) = @_;
     $self->isa_object_method('delete');
 
-    # We don't want to delete dynamic addresses
-    if ( my $ips = $self->get_ips ){
-	foreach my $ip ( @$ips ) {
-	    if ( $ip->status && $ip->status->name eq 'Dynamic' ){
-		$ip->update({interface=>undef});
+    if ( $argv{delete_ips} ){
+	if ( my $ips = $self->get_ips ){
+	    foreach my $ip ( @$ips ) {
+		# We don't want to delete dynamic addresses
+		if ( $ip->status && $ip->status->name eq 'Dynamic' ){
+		    next;
+		}
+		$ip->delete();
 	    }
 	}
     }
@@ -2445,7 +2449,7 @@ sub delete {
 	# Otherwise, we do it here.
 	if ( my $rr = RR->retrieve($rrid) ){
 	    $rr->delete() unless $rr->sub_records;
-	}	
+	}
     }
     return 1;
 }
@@ -6333,31 +6337,22 @@ sub _update_interfaces {
     }
     
     ##############################################
-    # remove ip addresses that no longer exist
+    # Disconnect IP addresses no longer reported
     while ( my ($address, $obj) = each %old_ips ){
-	# Check that it still exists 
-	# (could have been deleted if its interface was deleted)
 	next unless ( defined $obj );
-	next if ( ref($obj) =~ /deleted/i );
 
-	# Don't delete if interface was added manually, which means that
+	# Don't disconnect if interface was added manually, which means that
 	# the IP was probably manually added too.
 	next if ($obj->interface && $obj->interface->doc_status eq 'manual');
 
-	# Don't delete dynamic addresses, just unset the interface
-	if ( $obj->status && $obj->status->name eq 'Dynamic' ){
-	    $obj->update({interface=>undef});
-	    next;
-	}
-
-	# If interface is set to "Ignore IP", don't delete existing IP
+	# If interface is set to "Ignore IP", skip
 	if ( $obj->interface && $obj->interface->ignore_ip ){
 	    $logger->debug(sub{sprintf("%s: IP %s not deleted: %s set to Ignore IP", 
 				       $host, $obj->address, $obj->interface->get_label)});
 	    next;
 	}
 
-	# Don't delete snmp_target address unless updating via UI
+	# Skip snmp_target address unless updating via UI
 	if ( $ENV{REMOTE_USER} eq 'netdot' && $self->snmp_target && 
 	     $self->snmp_target->id == $obj->id ){
 	    $logger->debug(sub{sprintf("%s: IP %s is snmp target. Skipping delete",
@@ -6365,9 +6360,10 @@ sub _update_interfaces {
 	    next;
 	}
 
+	# Disconnect the IP from the interface (do not delete)
 	$logger->info(sprintf("%s: IP %s no longer exists.  Removing.", 
 			      $host, $obj->address));
-	$obj->delete(no_update_tree=>1);
+	$obj->update({interface=>undef});
     }
     
     ##############################################################
