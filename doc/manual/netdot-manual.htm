@@ -144,8 +144,8 @@ code > span.er { color: #ff0000; font-weight: bold; }
 </div>
 <p></p>
 <h1 id="copyright"><a href="#TOC"><span class="header-section-number">1</span> Copyright</a></h1>
-<p>Version 1.0.8</p>
-<p>Copyright 2014 Carlos Vicente</p>
+<p>Version 1.1.0</p>
+<p>Copyright 2015 Carlos Vicente</p>
 <p>This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.</p>
 <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTIBILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.</p>
 <p>You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.</p>
@@ -462,7 +462,8 @@ device3 community2
 <p>The most convenient way to create reverse zones (in-addr.arpa or ip6.arpa) is to go to the corresponding IP block page, DNS Zones section, and click on [add]. If the corresponding reverse zone does not exist, Netdot will present the user with the appropriate zone name and an option to create it. This is especially useful with IPv6 blocks, which tend to require very long reverse zone names.</p>
 <p>At this point, you can add new records by clicking on the [add] button on the Records section. Records can also be added from other parts of the user interface, for example, from the IP address page, or the DNS Records page.</p>
 <p>Records can also be imported in bulk into the zone by going to the Zone page, clicking on the [import] button of the Records section and pasting the text from a BIND zone file into the text box.</p>
-<p>Each time the zone or its contents are modified, the transaction is added to a list of pending changes. This list is kept in a database table called &quot;hostaudit&quot; and is used to determine when a zone needs to be exported. Zones can be exported manually via the UI by going to the Export menu, or via cron jobs. When a zone is exported, its serial number is increased and the changes' &quot;pending&quot; status is cleared.</p>
+<p>Zones can be exported manually via the UI by going to the Export menu, or via cron jobs. When a zone is exported, its serial number is increased.</p>
+<p>Each time a new zone is exported, Netdot calculates a digest of the zone and stores in the &quot;digest&quot; field. When asked to export the zone again, Netdot checks if the newly exported file would be different than the existing one by comparing the digest. Netdot will not export a zone unless the digests differ, or unless the user asks to force the export.</p>
 <h3 id="the-record"><a href="#TOC"><span class="header-section-number">4.5.1</span> The '@' record</a></h3>
 <p>In Netdot, as in BIND, the '@' record symbolizes the domain (a.k.a &quot;zone apex&quot;). In order to add records that apply to the domain itself, such as NS records, MX records, A records, etc. this record must exist. At zone creation time, Netdot automatically adds this record, together with two NS records for the zone, with the names (ns1.zone.name and ns2.zone.name).</p>
 <h2 id="dhcp"><a href="#TOC"><span class="header-section-number">4.6</span> DHCP</a></h2>
@@ -489,7 +490,7 @@ device3 community2
 <p>A template scope is not a real scope, but only a collection of attributes that you want to apply to things as a group. For example, the DHCP host scope for an IP phone may have one or more attributes that define where it should get its configuration from and other things. You can create a template containing these attributes and then use that template each time you create a host scope for IP phones.</p>
 <h3 id="active-and-inactive-scopes"><a href="#TOC"><span class="header-section-number">4.6.5</span> Active and Inactive Scopes</a></h3>
 <p>The 'active' flag in the scope object determines whether this scope will be used while exporting DHCP configurations. For example, if you wish to document the assignment of IP addresses to MAC addresses in a given subnet, but you do not want to run DHCP on that subnet, you can create a Subnet scope and make it inactive.</p>
-<p>Similarly to DNS records, DHCP changes are recorded in the &quot;hostaudit&quot; table, which Netdot uses to determine whether the DHCP configuration needs to be exported. Once exported, all changes' &quot;pending&quot; status is cleared.</p>
+<p>Similarly to DNS zone files, DHCP configurations are not exported unless the resulting content is different than the existing one (by comparing a digest), or unless the user forces the export.</p>
 <h2 id="contact-information"><a href="#TOC"><span class="header-section-number">4.7</span> Contact Information</a></h2>
 <p>Netdot uses the concept of &quot;Contact Lists&quot; to show contact information for different objects, for example devices, sites, entities (departments, providers, etc.).</p>
 <p>A Person object in Netdot contains a person's information, including location, e-mail address, phone numbers, pager numbers, etc.</p>

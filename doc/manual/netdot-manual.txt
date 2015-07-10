@@ -5,9 +5,9 @@
 
 # Copyright
 
-Version 1.0.8
+Version 1.1.0
 
-Copyright 2014 Carlos Vicente
+Copyright 2015 Carlos Vicente
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the
@@ -844,12 +844,15 @@ Records can also be imported in bulk into the zone by going to the Zone
 page, clicking on the [import] button of the Records section and pasting
 the text from a BIND zone file into the text box.
 
-Each time the zone or its contents are modified, the transaction is
-added to a list of pending changes. This list is kept in a database
-table called "hostaudit" and is used to determine when a zone needs to
-be exported. Zones can be exported manually via the UI by going to the
+Zones can be exported manually via the UI by going to the
 Export menu, or via cron jobs. When a zone is exported, its serial number
-is increased and the changes' "pending" status is cleared.
+is increased.
+
+Each time a new zone is exported, Netdot calculates a digest of the zone
+and stores in the "digest" field. When asked to export the zone again,
+Netdot checks if the newly exported file would be different than the existing
+one by comparing the digest. Netdot will not export a zone unless the digests
+differ, or unless the user asks to force the export.
 
 ### The '@' record
 
@@ -954,10 +957,9 @@ wish to document the assignment of IP addresses to MAC addresses in
 a given subnet, but you do not want to run DHCP on that subnet, you
 can create a Subnet scope and make it inactive.
 
-Similarly to DNS records, DHCP changes are recorded in the "hostaudit"
-table, which Netdot uses to determine whether the DHCP configuration
-needs to be exported. Once exported, all changes' "pending" status
-is cleared.
+Similarly to DNS zone files, DHCP configurations are not exported unless
+the resulting content is different than the existing one (by comparing
+a digest), or unless the user forces the export.
 
 ## Contact Information
 

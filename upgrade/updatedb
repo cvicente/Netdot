@@ -68,6 +68,10 @@ if ( $schema_version eq '1.0.1' ){
     
     &upg_106_107();
     
+}elsif ( $schema_version eq '1.0.7' ){
+    
+    &upg_107_110();
+    
 }else{
     die "Unsupported version for this upgrade: $schema_version\n";
 }
@@ -339,4 +343,21 @@ sub upg_105_106 {
 #########################################################################
 sub upg_106_107 {
     push @statements, "UPDATE schemainfo SET version='1.0.7' WHERE id=1;",
+}
+
+#########################################################################
+sub upg_107_110 {
+    if ( $dbms eq 'mysql' ) {
+
+	push @statements, "ALTER TABLE zone ADD COLUMN digest varchar(255);";
+	push @statements, "ALTER TABLE dhcpscope ADD COLUMN digest varchar(255);";
+
+    }elsif ( $dbms eq 'Pg' ){
+
+	push @statements, "ALTER TABLE zone ADD COLUMN digest character varying(255);";
+	push @statements, "ALTER TABLE dhcpscope ADD COLUMN digest character varying(255);";
+
+    }
+    push @statements, "DROP TABLE hostaudit;";
+    push @statements, "UPDATE schemainfo SET version='1.1.0' WHERE id=1;",
 }

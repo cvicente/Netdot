@@ -712,27 +712,6 @@ sub insert {
 	$newblock->SUPER::update({owner=>$newblock->parent->owner});
     }
     
-    # Generate a hostaudit entry if necessary to trigger
-    # a DHCP update
-    if ( $newblock->status->name eq 'Dynamic' ){
-	my %args;
-	$args{operation} = 'insert';
-	my (@fields, @values);
-	foreach my $col ( $newblock->columns ){
-	    if ( defined $newblock->$col ){ 
-		push @fields, $col;
-		if ( $newblock->$col && blessed($newblock->$col) ){
-		    push @values, $newblock->$col->get_label();
-		}else{
-		    push @values, $newblock->$col;
-		}
-	    } 
-	}
-	$args{fields} = join ',', @fields;
-	$args{values} = join ',', map { "'$_'" } @values if @values;
-	$newblock->_host_audit(%args);
-    }
-
     # Reserve first or last N addresses
     if ( !$newblock->is_address && $newblock->status->name eq 'Subnet' ){
 	$newblock->reserve_first_n();
@@ -1691,19 +1670,6 @@ sub update {
 	}
     }
 
-    # Generate hostaudit entry if needed
-    if ( $self->parent && $self->parent->dhcp_scopes
-	 && ($bak{status}->id != $state{status}) ){
-	my $dyn_id = IpblockStatus->search(name=>'Dynamic')->first->id;
-	if ( $dyn_id == $bak{status}->id || $dyn_id == $state{status} ){
-	    my %args;
-	    $args{operation} = 'update';
-	    $args{fields} = ('status');
-	    $args{values} = ($state{status});
-	    $self->_host_audit(%args);
-	}
-    }
-	
     if ( $recursive ){
 	my %data;
 	# Only these fields are allowed
@@ -1763,18 +1729,6 @@ sub delete {
     }    
     unless ( $args{no_update_tree} ){
 	$self->_tree_delete();
-    }
-
-    # Generate hostaudit entry if needed
-    if ( blessed($self->parent) && $self->parent->dhcp_scopes ){
-	my $dyn_id = IpblockStatus->search(name=>'Dynamic')->first->id;
-	if ( $dyn_id == $bak{status}->id ){
-	    my %args;
-	    $args{operation} = 'delete';
-	    $args{fields} = 'all';
-	    $args{values} = $self->get_label;
-	    $self->_host_audit(%args);
-	}
     }
 
     $self->SUPER::delete();

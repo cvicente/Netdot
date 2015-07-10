@@ -5,9 +5,9 @@
 
 # Copyright
 
-Version 1.0.8
+Version 1.1.0
 
-Copyright 2014 Carlos Vicente
+Copyright 2015 Carlos Vicente
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the
@@ -882,14 +882,15 @@ zona, haciendo click en el botón [import] de la sección *Records* y
 pegando el texto del fichero de zona BIND en la caja de texto de la
 interfaz web.
 
-Cada vez que la zona o su contenido es modificado, la operación es
-adicionada a una lista de cambios pendientes. Esta lista se guarda
-en una tabla de la base de datos llamada "hostaudit", y sirve para
-determinar cuándo una zona necesita ser exportada. Las zonas pueden
-ser exportadas de forma manual a través de la interfaz web en el menú
-*Export* o utilizando tareas programadas cron. Cuando una zona es exportada,
-su número de serie es incrementado y los cambios marcados como "pendientes"
-se cambian a "no pendientes".
+Las zonas pueden ser exportadas de forma manual a través de la interfaz web 
+en el menú *Export* o utilizando tareas programadas cron. Al exportar una zona,
+Netdot actualiza el número de serie.
+
+Al exportar una nueva zona, Netdot calcula una función "digest" de su contenido
+y lo guarda en el campo "digest". Cuando se le pide exportar la zona de nuevo,
+Netdot calcula el digest y lo compara con el valor guardado la última vez. A menos
+que el valor cambie, o a menos que el usuario use el parámetro "--force", la 
+zona no será exportada.
 
 Netdot puede generar y gestionar los registros DNS para direcciones IP
 que pertenecen a interfaces de dispositivos, como enturadores. La
@@ -1009,11 +1010,10 @@ si usted quisiera documentar la asignación de direcciones IP a
 direcciones MAC en una subred, pero no desea usar DHCP en tal subred,
 puede definir un ámbito de subred y marcarlo como inactivo.
 
-Similar a como se hace con los registros DNS, los cambios de DHCP
-se registran en la tabla "hostaudit", la cual Netdot utiliza para
-determinar si la configuración de DHCP necesita ser exportada. Ona
-vez exportada, los cambios marcados como "pendientes" se cambian
-a "no pendientes".
+Similar a como ocurre con las zonas DNS, Netdot no exporta las
+configurationes DHCP a menos que su contenido cambie (lo cual
+se logra comparando la función digest), o a menos que el usuario
+use el parámetro "--force".
 
 ## Información de Contacto
 
