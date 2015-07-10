@@ -23,7 +23,7 @@ $self{ROTATE}      = 0;
 
 my $usage = <<EOF;
  usage: $0  -F, --fwt | -A, --arp | 
-            -M, --macs | -I, --ips | -R, --rr | -a, --audit | -t, --hostaudit
+            -M, --macs | -I, --ips | -R, --rr | -a, --audit
           [ -d, --num_days <number> ] [ -r, --rotate ]
           [ -g, --debug ] [-h, --help]
     
@@ -33,7 +33,6 @@ my $usage = <<EOF;
     -I, --ips                      IP addresses
     -R, --rr                       DNS Resource Records
     -a, --audit                    Audit records
-    -t, --hostaudit                Host Audit records
     -d, --num_days                 Number of days worth of items to keep (default: $self{NUM_DAYS});
     -r, --rotate                   Rotate forwarding tables and ARP caches (rather than delete records) 
     -p, --pretend                  Show activity without actually deleting anything
@@ -51,7 +50,6 @@ my $result = GetOptions(
     "I|ips"           => \$self{IPS},
     "R|rr"            => \$self{RR},
     "a|audit"         => \$self{AUDIT},
-    "t|hostaudit"     => \$self{HOSTAUDIT},
     "d|num_days=i"    => \$self{NUM_DAYS},
     "r|rotate"        => \$self{ROTATE},
     "p|pretend"       => \$self{PRETEND},
@@ -70,7 +68,7 @@ if ( !$result ){
 }
 
 unless  ( $self{FWT} || $self{ARP} || $self{MACS} || 
-	  $self{IPS} || $self{RR} || $self{HOSTAUDIT} || $self{AUDIT} ){
+	  $self{IPS} || $self{RR} || $self{AUDIT} ){
     print $usage;
     die "Error: Missing required args\n";
 }
@@ -149,14 +147,6 @@ if ( $self{RR} ){
     }
 
     $rows_deleted{rr} = scalar(@rrs);
-}
-
-if ( $self{HOSTAUDIT} ){
-    my $r;
-    $logger->debug("Deleting hostaudit records");
-    $r = $dbh->do("DELETE FROM hostaudit WHERE tstamp < '$sqldate'")
-	unless $self{PRETEND};
-    $rows_deleted{hostaudit} = $r;
 }
 
 if ( $self{AUDIT} ){

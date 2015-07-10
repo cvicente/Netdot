@@ -1,7 +1,6 @@
 package Netdot::Model::Person;
 
 use base 'Netdot::Model';
-use Digest::SHA qw(sha256_base64);
 use warnings;
 use strict;
 
@@ -105,7 +104,7 @@ sub delete {
 sub verify_passwd {
     my ($self, $plaintext) = @_;
 
-    return 1 if ( sha256_base64($plaintext) eq $self->password );
+    return 1 if ( $self->sha_digest($plaintext) eq $self->password );
     return 0;
 }
 
@@ -237,12 +236,12 @@ sub get_user_type {
 ##################################################################
 
 ##################################################################
-# Stores a SHA-256 base64-encoded digest of given password 
+# Stores a digest of given password 
 #
 sub _encrypt_passwd { 
     my ($self) = @_;
     my $plaintext = ($self->_attrs('password'))[0];
-    my $digest = sha256_base64($plaintext);
+    my $digest = $self->sha_digest($plaintext);
     $self->_attribute_store(password=>$digest);  
     return 1;
 }

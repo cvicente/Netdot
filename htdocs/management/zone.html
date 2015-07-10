@@ -191,50 +191,6 @@ if ( $view eq 'records' || $edit eq 'records' ){
 </%perl>
    </div>
 
-
-<!-- Display list of pending changes -->
-  <div class="container">
-      <div class="containerheadleft">Pending Changes</div>
-      <div class="containerheadright">
-%     if ( $view eq 'pending_changes' ){
-          &nbsp;
-%     }else{
-         <a href="zone.html?id=<% $id %>&view=pending_changes">[view]</a>
-%     }
-      </div>
-      <div class="containerbody">
-%     if ( $view eq 'pending_changes' ){
-%         my @pending_changes = HostAudit->search_where(
-%			{ zone     => $o->name, 
-%                         pending  => 1 },
-%                       { order_by => 'tstamp DESC' });
-          <& /generic/sortresults.mhtml, object=>\@pending_changes, withedit=>0  &>
-%     }
-      </div>
-  </div>
-
-<!-- Display list of recent changes -->
-  <div class="container">
-      <div class="containerheadleft">Recent Changes</div>
-      <div class="containerheadright">
-%     if ( $view eq 'recent_changes' ){
-          &nbsp;
-%     }else{
-         <a href="zone.html?id=<% $id %>&view=recent_changes">[view]</a>
-%     }
-      </div>
-      <div class="containerbody">
-%     if ( $view eq 'recent_changes' ){
-%         my @audit_records = HostAudit->search_where(
-%	      { zone          => $o->name },
-%	      { order_by      => 'tstamp DESC', 
-%	        limit_dialect => 'LimitXY',
-%	        limit         => '50' });
-          <& /generic/sortresults.mhtml, object=>\@audit_records, withedit=>0  &>
-%     }
-      </div>
-  </div>
-
 <!-- Show Bulk Import Interface -->
 
 % if ( $view eq 'bulk_import' ){

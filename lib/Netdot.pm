@@ -11,6 +11,7 @@ use Netdot::Util::DNS;
 use Carp;
 use RRDs;
 use Data::Dumper;
+use Digest::SHA qw(sha256_base64);
 
 # Some useful patterns used througout
 my $IPV4 = '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}';
@@ -40,11 +41,11 @@ Netdot - Network Documentation Tool
 
 =head1 VERSION
 
-Version 1.0.7
+Version 1.1.0
 
 =cut
 
-our $VERSION = "1.0.7";
+our $VERSION = "1.1.0";
 
 =head1 SYNOPSIS
 
@@ -329,6 +330,23 @@ sub is_ascii {
     return unless $v;
     return 0 if ( $v =~ /[^[:ascii:]]/o );
     return 1;
+}
+
+######################################################################
+
+=head2 sha_digest - SHA-256 base64-encoded digest of given string
+	
+   Arguments: 
+    string
+   Returns:
+    digest string
+   Example:
+    my $sha = Netdot->sha_digest($string);
+=cut   
+
+sub sha_digest {
+    my ($self, $str) = @_;
+    return sha256_base64($str)
 }
 
 

@@ -28,7 +28,6 @@ my $db_type = __PACKAGE__->config->get('DB_TYPE');
 my %EXCLUDE_AUDIT = (
     'audit'     => 1, 
     'datacache' => 1, 
-    'hostaudit' => 1,
     );
 
 # Columns to exclude from audit
@@ -100,13 +99,6 @@ BEGIN {
     # Record DB operations 
     sub _audit {
 	my ($self, %args) = @_;
-
-	# If it's a host record, make sure that it gets
-	# recorded in hostaudit
-	if ( $self->table =~ /^rr/o || $self->table eq 'zone' ||
-	     $self->table eq 'dhcpscope' || $self->table eq 'dhcpattr' ){
-	    $self->_host_audit(%args);
-	}
 
 	unless ( $self->config->get('AUDIT_USER_ACTIVITY') ){
 	    return 1;
@@ -190,83 +182,6 @@ BEGIN {
 	$msg .= ", fields: ($data{fields})" if (defined $data{fields});
         $msg .= ", values: ($data{vals})"   if (defined $data{vals});
 	$logger->info($msg);
-	1;
-    }
-
-    ###########################################################
-    # Keep audit trail of DNS/DHCP changes.  
-    # Each relevant record change inserts an entry in the 
-    # houstaudit table.  Each time a new zonefile or dhcp config 
-    # is generated, pending changes are unmarked. 
-    # This avoids unnecessary work
-    ###########################################################
-    sub _host_audit {
-	my ($self, %args) = @_;
-	
-	if ( $args{operation} eq 'update' ){
-	    my $changed_columns = $args{discard_columns};
-	    if ( defined $changed_columns && scalar(@$changed_columns) ){
-		my $fields = join ',', @$changed_columns;
-		return if ( $fields eq 'modified' );
-	    }else{
-		return;
-	    }
-	}
-
-	my $table = $self->table;
-	my ($zone, $scope);
-	my $rr; 
-	if ( $table eq 'zone' ){
-	    $zone = $self;   
-	}elsif ( $table eq 'rr' ){
-	    $rr = $self;
-	    $zone = $self->zone;
-	}elsif ( $table =~ /^rr/o ){
-	    if ( $self->rr ){
-		if ( blessed($self->rr) ){
-		    $rr = $self->rr;
-		    $zone = $rr->zone;
-		}else{
-		    if ( $rr = RR->retrieve($self->rr) ){
-			$zone = $rr->zone;
-		    }else{
-			$logger->error("Netdot::Model::_host_audit: $table id ".$self->id." has invalid rr: ".$self->rr);
-			return;
-		    }
-		}
-	    }else{
-		$logger->error("Netdot::Model::_host_audit: $table id ".$self->id." has no rr");
-		return;
-	    }
-	}elsif ( $table eq 'dhcpscope' ){
-	    $scope = $self->get_global();
-	}elsif ( $table eq 'dhcpattr' ){
-	    $scope = $self->scope->get_global();
-	}elsif ( $table eq 'ipblock' ){
-	    if ( $self->parent && $self->parent->dhcp_scopes ){
-		$scope = $self->parent->dhcp_scopes->first->get_global();
-	    }
-	}else{
-	    $self->throw_fatal("Netdot::Model::_host_audit: Invalid table: $table");
-	}
-	my $label = $self->get_label;
-	my %data = (tstamp      => $self->timestamp,
-		    pending     => 1,
-		    );
-	if ( $zone ){
-	    my $z = (blessed $zone)? $zone : Zone->retrieve($zone);
-	    $data{zone} = $z->name;
-	}elsif ( $scope ){
-	    my $s = (blessed $scope)? $scope : DhcpScope->retrieve($scope);
-	    $data{scope} = $s->name;
-	}
-	eval {
-	    HostAudit->insert(\%data);
-	};
-	if ( my $e = $@ ){
-	    $logger->error("Netdot::Model::_host_audit: Could not insert HostAudit record about $table id ".$self->id.": $e");
-	    return;
-	}
 	1;
     }
 

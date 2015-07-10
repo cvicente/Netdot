@@ -3172,6 +3172,14 @@ $meta = {
         tag => 'Active?',
         type => 'bool'
       },
+      digest => {
+        default => '',
+        description => 'A digest of the DHCP config contents when exported',
+        length => '255',
+        nullable => 0,
+        tag => 'Digest',
+        type => 'varchar'
+      },
       duid => {
         default => '',
         description => 'DHCP Unique Identifier. Only applies to host scopes. See RFC 3315',
@@ -3296,6 +3304,7 @@ $meta = {
         'name',
         'type',
         'version',
+        'digest',
         'container',
         'active',
         'ipblock',
@@ -8480,6 +8489,14 @@ $meta = {
         tag => 'Active?',
         type => 'bool'
       },
+      digest => {
+        default => '',
+        description => 'The result of a one-way hash function of the zone contents when exported',
+        length => '255',
+        nullable => 0,
+        tag => 'Digest',
+        type => 'varchar'
+      },
       contactlist => {
         default => '',
         description => '',
@@ -8621,6 +8638,7 @@ $meta = {
         'retry',
         'expire',
         'minimum',
+        'digest',
         'contactlist',
         'active',
         'export_file',
@@ -8630,74 +8648,6 @@ $meta = {
       ],
       brief => [
         'name',
-      ]
-    }
-  },
-  HostAudit => {
-    table_db_name => 'hostaudit',
-    columns => {
-      id => {
-        default => '',
-        description => '',
-        length => '',
-        nullable => 0,
-        tag => undef,
-        type => 'bigint'
-      },
-      pending => {
-        default => \"FALSE",
-        description => 'This flag specifies whether the change is pending or it has been committed.',
-        length => '',
-        nullable => 0,
-        tag => undef,
-        type => 'bool'
-      },
-      scope => {
-        default => '',
-        description => 'Name of DHCP scope where change happened',
-        length => '255',
-        nullable => 1,
-        tag => 'DHCP Scope',
-        type => 'varchar'
-      },
-      zone => {
-        default => '',
-        description => 'Name of zone where change happened',
-        length => '255',
-        nullable => 1,
-        tag => 'Zone',
-        type => 'varchar'
-      },
-      tstamp => {
-        default => '1970-01-02 00:00:01',
-        description => 'When this change happened',
-        length => '',
-        nullable => 0,
-        tag => 'Timestamp',
-        type => 'timestamp'
-      },
-    },
-    description => 'DNS and DHCP changes',
-    has_history => 0,
-    index => [ ['zone'], ['scope'], ['pending'] ],
-    isjoin => '0',
-    label => [
-      'zone',
-    ],
-    primary_key => 'id',
-    unique => [],
-    views => {
-      all => [
-        'tstamp',
-        'zone',
-        'scope',
-        'pending',
-      ],
-      brief => [
-        'tstamp',
-	'zone',
-	'scope',
-        'pending',
       ]
     }
   },
