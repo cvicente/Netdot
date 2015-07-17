@@ -92,6 +92,9 @@ sub generate_configs {
 	    Netdot::Model->do_transaction(sub{
 		if ( @pending || $argv{force} ){
 		    my $path = $self->print_zone_to_file(zone=>$zone, nopriv=>$argv{nopriv});
+		    # Need to query again because the above method updates the serial
+		    # which creates another hostaudit record
+		    @pending = HostAudit->search(zone=>$zone->name, pending=>1);
 		    foreach my $record ( @pending ){
 			# Un-mark audit records as pending
 			$record->update({pending=>0});
