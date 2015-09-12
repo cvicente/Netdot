@@ -22,7 +22,7 @@ $self{dir}    = '.';
 my $USAGE = <<EOF;
 usage: $0 [options]
          
-    --dbtype <type>       Database Type [mysql|pg] (default: $self{dbtype})
+    --dbtype <type>       Database Type [mysql|Pg] (default: $self{dbtype})
     --dbuser <username>   Database DBA user (default: $self{dbuser})
     --dbpass <password>   Database DBA password
     --dir    <path>       Directory where files should be written (default: $self{dir})
