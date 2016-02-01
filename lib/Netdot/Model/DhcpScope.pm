@@ -462,8 +462,9 @@ sub _objectify_args {
 
     if ( $argv->{physaddr} && !ref($argv->{physaddr}) ){
 	# Could be an ID or an actual address
-	my $phys;
-	if ( PhysAddr->validate($argv->{physaddr}) ){
+    my $phys;
+    my $validation_error_message = undef;
+    if ( PhysAddr->validate($argv->{physaddr}, \$validation_error_message) ){
 	    # It looks like an address
 	    $phys = PhysAddr->find_or_create({address=>$argv->{physaddr}});
 	}elsif ( $argv->{physaddr} !~ /\D/ ){
@@ -473,7 +474,11 @@ sub _objectify_args {
 	if ( $phys ){
 	    $argv->{physaddr} = $phys;
 	}else{
-	    $self->throw_user("Could not find or create physaddr");
+        my $error_message = "Could not find or create physaddr";
+        if (defined($validation_error_message)) {
+            $error_message .= "\n$validation_error_message";
+        }
+        $self->throw_user($error_message);
 	}
     }
 
