@@ -279,7 +279,9 @@ function dynamicAdd(table, id, toAdd, rrFieldName) {
 
 <%perl>
 
+my $count = 0;
 foreach my $o ( values %rrs ) {
+    $count++;
     if ($action eq 'edit' && $rr->id == $o->id) {
 	$edit = 1;
     } else {
@@ -413,7 +415,7 @@ foreach my $o ( values %rrs ) {
 	    if ( ($scope = $ipblock->dhcp_scopes->first) && ( $scope->physaddr() || $scope->duid ) ){
 		print '&nbsp;';
 	    }else{
-		if ( $add_dhcp ){
+		if ( $count == 1 && $add_dhcp ){
 		    print '<input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">';
 		    print '<input type="submit" name="submit" value="save" >';
 		}else{
@@ -459,7 +461,7 @@ foreach my $o ( values %rrs ) {
 		(@field_headers, @cell_data) = ((),());
 
 	    }else{
-		if ( $add_dhcp == $ipblock->id ){
+		if ( $count == 1 && $add_dhcp == $ipblock->id ){
 		    # User wants to add a scope with this ip
 		    print '<input name="DhcpScope__NEW__container" value="'.$gscope.'" type="hidden">';
 		    print '<input name="DhcpScope__NEW__type" value="host" type="hidden">';
