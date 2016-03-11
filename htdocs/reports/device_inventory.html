@@ -183,54 +183,68 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 
 #######################################################################################
 }elsif ( $report_type eq 'os' ){
-    my %t;
     my @devs = Device->search_by_product_os();
-    foreach my $dev (@devs){
-	my $prod  = ($dev->asset_id && $dev->asset_id->product_id) ? 
-	    $dev->asset_id->product_id->id : "Unset";
-	my $manuf = ($dev->asset_id && $dev->asset_id->product_id && $dev->asset_id->product_id->manufacturer) ? 
-	    $dev->asset_id->product_id->manufacturer->id : 'Unset';
-	my $os    = $dev->os;
+    # Count stuff
+    my %t;
+    my ($manuf, $prod);
+    foreach my $dev ( @devs ){
+	if ( $manuf = $dev->{manuf} ){
+	    $t{$manuf}{id} = $dev->{manuf_id};
+	}else{
+	    $manuf = 'Unset';
+	}
+	if ( $prod = $dev->{prod} ){
+	    $t{$manuf}{product}{$prod}{id} = $dev->{prod_id};
+	}else{
+	    $prod = 'Unset';
+	}
+	my $os = $dev->os;
 	$t{$manuf}{total}++;
+	$t{$manuf}{product}{$prod}{latest_os} = $dev->{latest_os};
 	$t{$manuf}{product}{$prod}{total}++;
-	$t{$manuf}{product}{$prod}{os}{$os}{total}++ if defined ($os);
+	$t{$manuf}{product}{$prod}{os}{$os}{total}++ if defined $os;
     }
 
     @headers = ( 'Manufacturer', 'Model', 'OS', 'Count', );
     my @row = ();
-    foreach my $m ( keys %t ){
+    foreach my $manuf ( sort keys %t ){
 	my @row = ();
-	my $entity;
-	if ( $m ne 'Unset' && ($entity = Entity->retrieve($m)) ){
-	    push( @row, "<strong><a href=\"../generic/view.html?table=Entity&id=$m\">" . $entity->name . "</a></strong>" );
+   	if ( $manuf ne 'Unset' ){
+	    my $str = sprintf('<strong><a href="../generic/view.html?table=Entity&id=%d">%s</a></strong>',
+			      $t{$manuf}{id}, $manuf);
+	    push(@row, $str);
 	}else{
-	    push( @row, $m );
+	    push(@row, $manuf);
 	}
-	push ( @row, " ", " ", "<b>$t{$m}{total}</b>" );
+	push ( @row, " ", " ", "<b>$t{$manuf}{total}</b>" );
 	push( @rows, \@row );
-	foreach my $prod ( keys %{$t{$m}{product}} ){
+	foreach my $prod ( sort keys %{$t{$manuf}{product}} ){
 	    my @row = ();
 	    push( @row, " " );
-	    my $product;
 	    my $latest_os;
-	    if ( $prod ne 'Unset' && ($product = Product->retrieve($prod)) ){
-		push( @row, "<strong><a href=\"../generic/view.html?table=Product&id=$prod\">" . $product->name . "</a></strong>" );
-		$latest_os = "(recommended: ".$product->latest_os.")" if ($product->latest_os);
+	    if ( $prod ne 'Unset' ){
+		my $str = sprintf('<strong><a href="../generic/view.html?table=Product&id=%d">%s</a></strong>',
+			       $t{$manuf}{$prod}{id}, $prod);
+		push( @row, $str );
+		$latest_os = sprintf("(recommended: %s)", $t{$manuf}{product}{$prod}{latest_os}) 
+		    if ($t{$manuf}{product}{$prod}{latest_os});
 	    }else{
 		push( @row, $prod );
 	    }
-	    push( @row, $latest_os, $t{$m}{product}{$prod}{total} );
+	    push( @row, $latest_os, $t{$manuf}{product}{$prod}{total} );
 	    push( @rows, \@row );
-	    foreach my $os ( keys %{$t{$m}{product}{$prod}{os}} ){
+	    foreach my $os ( sort keys %{$t{$manuf}{product}{$prod}{os}} ){
 		my @row = ();
 		push( @row, " ", " " );
 		my $class = " ";
-		if ( $product->latest_os && ($os ne $product->latest_os) ){
+		if ( $latest_os && ($os ne $latest_os) ){
 		    $class = 'warn';
 		}
-		push( @row, "<a class=\"$class\" href=\"../generic/search_obj.html?table=Device&product=$prod&os=$os&res=1\">" . 
-		      $os . '</a>' );
-		push( @row, $t{$m}{product}{$prod}{os}{$os}{total} );
+		my $str = sprintf('<a class="%s" href="../generic/search_obj.html?'.
+				  'table=Device&product=%d&os=%s&res=1">%s</a>',
+				  $class, $t{$manuf}{product}{$prod}{id}, $os, $os);
+		push( @row, $str );
+		push( @row, $t{$manuf}{product}{$prod}{os}{$os}{total} );
 		push( @rows, \@row );
 	    }
 	}

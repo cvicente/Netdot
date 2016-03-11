@@ -43,6 +43,7 @@ $intadd     => undef
 $intaddnum  => undef
 $overwrite_if_descr => undef
 $if_auto_dns => undef
+$regen_dns  => undef
 $submit     => undef
 $view       => "Basics"
 $deviceadd  => undef
@@ -123,6 +124,11 @@ if ( $o ){
 	}
     }elsif ( defined $if_auto_dns ){
 	eval { $o->set_interfaces_auto_dns($if_auto_dns); };
+	if ( my $e = $@ ){
+	    $m->comp('/generic/error.mhtml', error=>$e);	
+	}
+    }elsif ( defined $regen_dns ){
+	eval { $o->do_auto_dns(); };
 	if ( my $e = $@ ){
 	    $m->comp('/generic/error.mhtml', error=>$e);	
 	}
@@ -1088,8 +1094,8 @@ if (scalar @$ips){
 			  if ( $editips && ($ar->rr->id != $o->name->id) ){
 			      $a .= '<input type="checkbox" name="' . "RR__" . $ar->rr->id . "__delete" . '" >[del] ';
 			  }
-			  $a .=  $ui->form_field(object=>$ar->rr, column=>"name", edit=>0, 
-						 linkPage=>"host.html", returnValOnly=>1);
+			  $a .= sprintf('<a href="host.html?id=%d">%s</a>', $ar->rr->id, $ar->rr->get_label);
+			  $a .= '<BR>';
 		      }
 		  }
 		  $a;
@@ -1172,7 +1178,7 @@ if ( $editips || $add_ip ) {
 % if ( !$editips && !$add_ip ){
 <div class="container">
     <div class="containerheadleft">
-        Options
+        DNS Options
     </div>
     <div class="containerheadright">&nbsp;</div>
     <div class="containerbody">
@@ -1190,11 +1196,18 @@ if ( $editips || $add_ip ) {
         <input type="submit" name="Set" value="Set">
       </form>
       </p>
+      <p>
+      <form name="regenerate_dns_form" action="device.html" method="POST">
+        <input type="hidden" name="id" value="<% $id %>">
+        <input type="hidden" name="view" value="<% $view %>">
+        Re-generate DNS names for all IPs
+        <input type="submit" name="regen_dns" value="Go">
+      </form>
+      </p>
 %   }
     </div>
 % }
 </div>
-
 % }
 
 <!-- End IPs Section -->

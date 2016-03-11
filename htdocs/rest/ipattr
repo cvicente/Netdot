@@ -1,0 +1,46 @@
+<%doc>
+Retrieve list of inherited IP attributes for given IP
+</%doc>
+<%args>
+$addr      # IP block or address
+$user      # Should be assigned by autohandler
+$manager   # Should be assigned by autohandler
+</%args>
+<%init>
+my $DEBUG = 0;
+print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+
+use Apache2::Const -compile => qw(FORBIDDEN OK NOT_FOUND HTTP_BAD_REQUEST);
+use Data::Dumper;
+use Netdot::REST;
+use Netdot::Exporter;
+
+my $rest = Netdot::REST->new(user=>$user, manager=>$manager);
+$rest->request($r);
+
+# Get relevant HTTP headers from request object
+my $headers = $rest->{request}->headers_in;
+
+# Deal with Accept header
+$rest->check_accept_header($headers->{Accept}) if ( $headers->{Accept} );
+
+my $method = $rest->{request}->method;
+$rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
+	     msg=>'Bad request: invalid method') unless $method eq 'GET';
+
+my $logger = Netdot->log->get_logger("Netdot::REST");
+$logger->info(sprintf("/rest/ipattr: %s request with args: %s from %s (%s)", 
+ 		      $method, 
+		      $rest->{request}->args,
+ 		      $rest->remote_ip, 
+ 		      $headers->{'User-Agent'}
+ 	      ));
+
+</%init>
+<%perl>
+my $ip = Ipblock->search(address=>$addr)->first; 
+$rest->throw(code=>Apache2::Const::NOT_FOUND, msg=>"IP not found") 
+    unless $ip;
+my $attrs = $ip->get_inherited_attributes();
+$rest->print_serialized($attrs);
+</%perl>

@@ -26,6 +26,9 @@ my $DEBUG = 0;
 my($obj, $prevobj );
 my %ftables;
 
+my %no_edit_tables = (
+    'Audit' => 1,
+    );
 
 unless ( $obj = $table->retrieve($id) ){
    $m->comp('error.mhtml', error => "Nonexistent record: $id");
@@ -53,6 +56,7 @@ if ( $DEBUG ){
 <div class="container">
     <div class="containerheadleft"><strong><% $table %></strong></div>
     <div class="containerheadright">
+%   unless ( exists $no_edit_tables{$table} ){
 %	if ( $manager && $manager->can($user, 'access_admin_section', 'view.html:new') ){
             <a href="edit.html?table=<% $table %>">[new]</a>
 %       }
@@ -62,6 +66,7 @@ if ( $DEBUG ){
 %	if ( $manager && $manager->can($user, "delete", $obj) ){
             <a href="delete.html?table=<% $table %>&id=<% $obj %>">[delete]</a>
 %       }
+%   }
         <a href="#" onClick="opentextwindow(jspopoutstring,'js','');">[text]</a>
     </div>
     <div class="containerbodyoutside">

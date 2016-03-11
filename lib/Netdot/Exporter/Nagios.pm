@@ -7,6 +7,8 @@ use Data::Dumper;
 
 my $logger = Netdot->log->get_logger('Netdot::Exporter');
 
+my $dbh = Netdot::Model->db_Main();
+
 =head1 NAME
 
 Netdot::Exporter::Nagios
@@ -88,7 +90,7 @@ sub generate_configs {
 
     # Get Subnet info
     my %subnet_info;
-    my $subnetq = $self->{_dbh}->selectall_arrayref("
+    my $subnetq = $dbh->selectall_arrayref("
                   SELECT    ipblock.id, ipblock.description, entity.name, entity.aliases
                   FROM      ipblockstatus, ipblock
                   LEFT JOIN entity ON (ipblock.used_by=entity.id)
@@ -104,7 +106,7 @@ sub generate_configs {
 
     # Get Contact Info
     my %contact_info;
-    my $clq = $self->{_dbh}->selectall_arrayref("
+    my $clq = $dbh->selectall_arrayref("
                   SELECT    contactlist.id, contactlist.name,
                             contact.id, contact.escalation_level, 
                             person.firstname, person.lastname, person.email, person.emailpager,
@@ -855,7 +857,7 @@ sub get_interface_graph {
 
     $logger->debug("Netdot::Exporter::get_interface_graph: querying database");
     my $graph = {};
-    my $links = $self->{_dbh}->selectall_arrayref("
+    my $links = $dbh->selectall_arrayref("
                 SELECT  i1.id, i2.id 
                 FROM    interface i1, interface i2
                 WHERE   i1.id > i2.id AND i2.neighbor = i1.id AND i1.neighbor = i2.id

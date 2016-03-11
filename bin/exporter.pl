@@ -70,24 +70,25 @@ if ( $self{debug} ){
 
 foreach my $type ( split ',', $self{types} ){
     $type =~ s/\s+//g;
-    my $exporter = Netdot::Exporter->new(type=>$type);
+    my %args;
     if ( $type eq 'BIND' ){
-	my %args = (nopriv => $self{nopriv},
-		    force  => $self{force},
+	%args = (nopriv => $self{nopriv},
+		 force  => $self{force},
 	    );
 	if ( $self{zones} ){
 	    my @zones = split ',', $self{zones};
 	    $args{zones} = \@zones;
 	}
-	$exporter->generate_configs(%args);
-
     }elsif ( $type eq 'DHCPD' ){
-	my %args;
 	$args{scopes} = [split ',', $self{scopes}] if $self{scopes};
 	$args{force} = $self{force} if $self{force};
+    }
+    eval {
+	my $exporter = Netdot::Exporter->new(type=>$type);
 	$exporter->generate_configs(%args);
-    }else{
-	$exporter->generate_configs();
+    };
+    if ( my $e = $@ ){
+	die "Problem exporting configs: $e\n"; 
     }
 }
 

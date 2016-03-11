@@ -157,24 +157,20 @@ sub insert {
 
     # Set default zone if needed
     if ( defined($argv->{type}) && $argv->{type} eq 'CNAME' && 
-	 defined($argv->{name}) && $argv->{name} =~ /\.$/ ){
-	# In this particular case, the user specified a dot at the end, which indicates
-	# that the label should not get the zone name appended
-	if ( my $z = (Zone->search(name=>$argv->{name}))[0] ){
-	    $argv->{zone} = $z;
-	}
+    	 defined($argv->{name}) && $argv->{name} =~ /\.$/ ){
+    	# In this particular case, the user specified a dot at the end, which indicates
+    	# that the label should not get the zone name appended
+    	if ( my $z = (Zone->search(name=>$argv->{name}))[0] ){
+    	    $argv->{zone} = $z;
+    	}
     }else{
-	$argv->{zone} = $class->config->get('DEFAULT_DNSDOMAIN') || 'localdomain'
-	    unless ($argv->{zone});
+    	$argv->{zone} = $class->config->get('DEFAULT_DNSDOMAIN') || 'localdomain'
+    	    unless ($argv->{zone});
     }
     
     # Insert zone if necessary;
     my $zone;
-    if ( (ref( $zone = $argv->{zone} ) =~ /Zone/)
-	 || ( $zone = (Zone->search(id   =>$argv->{zone}))[0] )
-	 || ( $zone = (Zone->search(name=>$argv->{zone}))[0] )
-	){
-    }else{
+    unless ( $zone = Zone->objectify($argv->{zone}) ){
 	$logger->debug(sub{ sprintf("Zone not found: \"%s\".  Inserting.", $argv->{zone}) });
 	$zone = Zone->insert({ name => $argv->{zone} });
 	$logger->info(sprintf("Inserted new Zone: %s", $zone->get_label));
@@ -228,43 +224,44 @@ sub insert {
 	delete $args{$arg};
     }
 
-    if ( $argv->{type} eq 'A' || $argv->{type} eq 'AAAA' ){
-	return RRADDR->insert(\%args);
-
-    }elsif ( $argv->{type} eq 'CNAME' ){
-	return RRCNAME->insert(\%args);
-
-    }elsif ( $argv->{type} eq 'DS' ){
-	return RRDS->insert(\%args);
-
-    }elsif ( $argv->{type} eq 'HINFO' ){
-	return RRHINFO->insert(\%args);
-    
-    }elsif ( $argv->{type} eq 'LOC' ){
-	return RRLOC->insert(\%args);    
-
-    }elsif ( $argv->{type} eq 'MX' ){
-	return RRMX->insert(\%args);
-	
-    }elsif ( $argv->{type} eq 'NAPTR' ){
-	return RRNAPTR->insert(\%args);    
-
-    }elsif ( $argv->{type} eq 'NS' ){
-	return RRNS->insert(\%args);
-
-    }elsif ( $argv->{type} eq 'PTR' ){
-	return RRPTR->insert(\%args);
-
-    }elsif ( $argv->{type} eq 'SRV' ){
-	return RRSRV->insert(\%args);    
-
-    }elsif ( $argv->{type} eq 'TXT' ){
-	return RRTXT->insert(\%args);
-    
-    }else{
-	$class->throw_user("Unrecognized type: ".$argv->{type});
+    if ( exists $argv->{type} ){
+	if ( $argv->{type} eq 'A' || $argv->{type} eq 'AAAA' ){
+	    return RRADDR->insert(\%args);
+	    
+	}elsif ( $argv->{type} eq 'CNAME' ){
+	    return RRCNAME->insert(\%args);
+	    
+	}elsif ( $argv->{type} eq 'DS' ){
+	    return RRDS->insert(\%args);
+	    
+	}elsif ( $argv->{type} eq 'HINFO' ){
+	    return RRHINFO->insert(\%args);
+	    
+	}elsif ( $argv->{type} eq 'LOC' ){
+	    return RRLOC->insert(\%args);    
+	    
+	}elsif ( $argv->{type} eq 'MX' ){
+	    return RRMX->insert(\%args);
+	    
+	}elsif ( $argv->{type} eq 'NAPTR' ){
+	    return RRNAPTR->insert(\%args);    
+	    
+	}elsif ( $argv->{type} eq 'NS' ){
+	    return RRNS->insert(\%args);
+	    
+	}elsif ( $argv->{type} eq 'PTR' ){
+	    return RRPTR->insert(\%args);
+	    
+	}elsif ( $argv->{type} eq 'SRV' ){
+	    return RRSRV->insert(\%args);    
+	    
+	}elsif ( $argv->{type} eq 'TXT' ){
+	    return RRTXT->insert(\%args);
+	    
+	}else{
+	    $class->throw_user("Unrecognized type: ".$argv->{type});
+	}
     }
-
 }
 
 =head1 INSTANCE METHODS
@@ -272,13 +269,36 @@ sub insert {
 
 ##################################################################
 
+=head2 aliases - Get list of aliases pointing to this record
+
+    NOTE: Not to be confused with $rr->cnames, which
+    gets the RRCNAME records associated with an RR that
+    is the alias name.
+
+  Arguments:
+    None
+  Returns:
+    Array of RRCNAME objects
+  Examples:
+    @list = $rr->aliases()
+
+=cut
+
+sub aliases {
+    my $self = shift;
+    return RRCNAME->search(cname=>$self->get_label);
+}
+
+##################################################################
+
 =head2 update
 
     Override base method to:
-       - Add option to update related RRPTR if name changes
+    - Update existing CNAMES
+    - Add option to update related RRPTR if name changes
   Arguments:
     Hashref with key/value pairs, plus:
-       update_ptr - (flag)
+       update_ptr - 0 or 1
   Returns:
     See Netdot::Model::update
   Examples:
@@ -289,10 +309,10 @@ sub insert {
 sub update {
     my ($self, $argv) = @_;
     $self->isa_object_method('update');
-    
+
     # Get CNAMEs that point to me
     my $old_fqdn = $self->get_label;
-    my @cnames = RRCNAME->search(cname=>$self->get_label);
+    my @cnames = $self->aliases();
 
     my $update_ptr = 1; # On by default
     if ( defined $argv->{update_ptr} && $argv->{update_ptr} == 0 ){
@@ -553,28 +573,11 @@ sub add_host {
 	    
 	    $rr = $rraddr->rr;
 	    
+	    
 	    # CNAMES
 	    if ( $argv{aliases} ){
-		my @cnames;
-		my @aliases = split ',', $argv{aliases};
-		foreach my $alias ( @aliases ){
-		    $alias =~ s/\s+//g;
-		    # In case they included the domain part in the alias
-		    my $domain = $zone->name;
-		    $alias =~ s/\.$domain$//;
-		    if ( my $h = RR->search(name=>$alias, zone=>$zone)->first ){
-			$class->throw_user($h->get_label." from your aliases list is already taken");
-		    }
-		    push @cnames, $alias;
-		}
-
-		foreach my $alias ( @cnames ){
-		    RR->insert({name  => $alias,
-				zone  => $zone,
-				type  => 'CNAME',
-				cname => $rr->get_label,
-			       });
-		}
+		my @aliases = split(/\s*,\s*/, $argv{aliases});
+		map { $rr->add_alias($_) } @aliases;
 	    }
 
 	    # HINFO
@@ -674,8 +677,41 @@ sub sub_records {
 }
 
 ############################################################################
+
+=head2 add_alias - Add CNAME record pointing to this one
+    
+  Args: 
+    String
+  Returns: 
+    new RRCNAME object
+  Examples:
+    $rr->add_alias('my_alias');
+
+=cut
+
+sub add_alias {
+    my ($self, $alias) = @_;
+
+    $logger->debug(sprintf("RR::add_alias(): alias: %s", $alias));
+
+    # In case they included the domain part in the alias
+    my $domain = $self->zone->name;
+    $alias =~ s/\.$domain$//;
+    if ( my $h = RR->search(name=>$alias, zone=>$self->zone)->first ){
+	$self->throw_user("CNAME record: ".$h->get_label." already exists");
+    }
+    RR->insert({name  => $alias,
+		zone  => $self->zone,
+		type  => 'CNAME',
+		cname => $self->get_label,
+	       });
+}
+
+
+############################################################################
 # PRIVATE METHODS
 ############################################################################
+
 
 ############################################################################
 # _validate_args - Validate arguments to insert and update
@@ -695,7 +731,10 @@ sub _validate_args {
 	$zone = $self->zone;
     }
     if ( defined $argv->{zone} ){
-	if ( !ref($argv->{zone}) ){
+	if ( ref($argv->{zone}) ){
+	    # We're being passed an object
+	    $zone = $argv->{zone}
+	}else{
 	    if ( $argv->{zone} =~ /\D+/ ){
 		$zone = Zone->search(name=>$argv->{zone})->first;
 	    }else{
@@ -716,11 +755,6 @@ sub _validate_args {
 	# Remove commas
 	$name =~ s/,//;
 
-	# Length restrictions
-	unless ( length($name) >= 1 && length($name) < 64 ){
-	    $self->throw_user("Invalid name: $name. Length must be between 1 and 63 characters");
-	}
-
 	# Valid characters
 	if ( $name =~ /[^A-Za-z0-9\.\-_@\*]/ ){
 	    $self->throw_user("Invalid name: $name. Contains invalid characters");
@@ -737,15 +771,21 @@ sub _validate_args {
 	if ( $name =~ /^\-/ || $name =~ /\-$/ ){
 	    $self->throw_user("Invalid name: $name. Name must not start or end with a dash");
 	}
-	if ( $zone ){
-	    my $fqdn = $name.".".$zone->name;
-	    if ( length($fqdn) > 255 ){
-		$self->throw_user("Invalid FQDN: $fqdn. Length exceeds 255 characters");
+
+	# Length restrictions (RFC 1035)
+	my $fqdn = $name.".".$zone->name;
+	if ( length($fqdn) > 255 ){
+	    $self->throw_user("Invalid FQDN: $fqdn. Length exceeds 255 characters");
+	}
+	# labels (sections between dots) must not exceed 63 chars
+	foreach my $label ( split(/\./, $fqdn) ){
+	    unless ( length($label) >= 1 && length($label) < 64 ){
+		$self->throw_user(sprintf("RR::validate_args(): '%s' has Invalid label: '%s'. ".
+					  "Each label must be between 1 and 63 characters long", 
+					  $fqdn, $label));
 	    }
 	}
-
 	$argv->{name} = $name;
-
     }
     1;
 }
@@ -756,7 +796,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2012 University of Oregon, all rights reserved.
+Copyright 2015 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

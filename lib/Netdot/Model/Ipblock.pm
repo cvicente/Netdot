@@ -552,7 +552,7 @@ sub is_multicast{
 	# Called as class method
 	$self->throw_fatal("Missing required arguments when called as class method: address")
 	    unless ( defined $address );
-	if ( !($netaddr = Ipblock->netaddr($address, $prefix))){
+	if ( !($netaddr = Ipblock->netaddr(address=>$address, prefix=>$prefix))){
 	    my $str = ( $address && $prefix ) ? (join '/', $address, $prefix) : $address;
 	    $self->throw_user("Invalid IP: $str");
 	}
@@ -1523,8 +1523,20 @@ sub full_address {
 
 sub get_label {
     my $self = shift;
-    return $self->address if $self->is_address;
-    return $self->cidr;
+    my $label;
+    if ( $self->is_address ){
+	$label = $self->address;
+    }else{
+	$label = $self->cidr;
+    }
+    if ( $label !~ /\D/o ){
+	# CDBI select trigger should make the address
+	# method return the dotted quad, but for some
+	# reason it doesn't in some cases.
+	# #annoying
+	$label = $self->int2ip($label, $self->version);
+    }
+    return $label;
 }
 
 ##################################################################
@@ -1849,6 +1861,33 @@ sub get_descendants {
 
 ##################################################################
 
+=head2 get_inherited_attributes
+    
+ Arguments: 
+    None
+ Returns:   
+    Hashref containing attributes and their values
+  Examples:
+    my $attrs = $ip->get_inherited_attributes();
+
+=cut
+
+sub get_inherited_attributes {
+    my ($self) = @_;
+    $self->isa_object_method('get_inherited_attributes');
+
+    my @chain = reverse $self->get_ancestors;
+    push @chain, $self;
+    my %res;
+    foreach my $ip ( @chain ){
+	foreach my $attr ( $ip->attributes ){
+	    $res{$attr->name->name} = $attr->value;
+	}	
+    }
+    return \%res;
+}
+##################################################################
+
 =head2 num_addr - Return the number of usable addresses in a subnet
 
  Arguments:
@@ -1921,29 +1960,27 @@ sub address_usage {
     my ($self) = @_;
     $self->isa_object_method('address_usage');
 
-    my $start  = $self->netaddr->network();
-    my $end    = $self->netaddr->broadcast();
-    my $count  = 0;
-    my $q;
-    my $dbh = $self->db_Main;
+    my $plen  = ($self->version == 6)? 128 : 32;
+    my $start = $self->netaddr->network();
+    my $end   = $self->netaddr->broadcast();
+    my $dbh   = $self->db_Main;
+    my $sth;
     eval {
-	$q = $dbh->prepare_cached("SELECT ipblock.prefix, ipblock.version, ipblockstatus.name 
-                                   FROM   ipblock, ipblockstatus 
-                                   WHERE  ipblock.status=ipblockstatus.id 
-                                     AND  ? <= address AND address <= ?");
+	my $q = "SELECT  COUNT(ipblock.id) 
+                   FROM  ipblock, ipblockstatus
+                  WHERE  ipblock.status = ipblockstatus.id
+                    AND  ipblock.prefix = $plen
+                    AND  ? <= ipblock.address AND ipblock.address <= ?
+		    AND  ipblockstatus.name != 'Available'";
 	
-	$q->execute(scalar($start->numeric), scalar($end->numeric));
+	$sth = $dbh->prepare($q);
+	$sth->execute(scalar($start->numeric), scalar($end->numeric));
     };
     if ( my $e = $@ ){
 	$self->throw_fatal( $e );
     }
     
-    while ( my ($prefix, $version, $status) = $q->fetchrow_array() ) {
-        if( ( $version == 4 && $prefix == 32 ) || ( $version == 6 && $prefix == 128 ) ) {
-	    next if $status eq 'Available';
-            $count++;
-        }
-    }
+    my $count = $sth->fetchrow_array() || 0;
 
     return $count;
 }
@@ -2088,14 +2125,14 @@ sub subnet_usage {
 
 ############################################################################
 
-=head2 update_a_records -  Update DNS A record(s) for this ip 
+=head2 update_a_records -  Update DNS A record(s) for this IP
 
     Creates or updates DNS records based on the output of configured plugin,
     which can, for example, derive the names from device/interface information.
     
   Arguments:
     Hash with following keys:
-       hostname_ips   - arrayref of ip addresses to which main hostname resolves to
+       hostname_ips   - arrayref of ip addresses to which main hostname resolves
        num_ips        - Number of IPs in Device
   Returns:
     True if successful
@@ -2133,13 +2170,22 @@ sub update_a_records {
     $self->throw_fatal( sprintf("update_a_records: Device id %d is missing its name!", $device->id) )
 	unless $device->name;
 
-    # Only generate names for IP blocks that are mapped to a zone
-    my $zone;
-    unless ( $zone = $self->forward_zone ){
-	$logger->debug(sprintf("%s: Cannot determine forward DNS zone for IP: %s", 
+    # Determine the zone that will be used for this record
+    my $zone = $self->forward_zone; # From SubnetZone association
+    my $auto_dns_zone;
+    if ( my $zname = $self->config->get('AUTO_DNS_ZONE') ){
+	$auto_dns_zone = (Zone->search(name=>$zname))[0];
+    }
+    if ( $auto_dns_zone ){
+	my $zone_override = $self->config->get('AUTO_DNS_ZONE_OVERRIDE');
+	if ( $zone_override || !$zone ){
+	    $zone = $auto_dns_zone;
+	}
+    }
+    unless ( $zone ){
+	$logger->debug(sprintf("%s: Cannot determine DNS zone for IP: %s",
 			       $host, $self->get_label));
 	return;
-	
     }
 
     # Determine what DNS name this IP will have.
@@ -3058,8 +3104,12 @@ sub _validate {
 	    if ( $self->is_address() ){
 		if ( $pstatus eq "Reserved" ){
 		    $self->throw_user($self->get_label.": Address allocations not allowed under Reserved blocks");
-		}elsif ( $pstatus eq 'Subnet' && $self->version == 4 && $parent->prefix != 31 ){
-		    if ( $self->address eq $parent->address ){
+		}elsif ( $pstatus eq 'Subnet' ){
+		    if ( $self->address eq $parent->address &&
+			 !$parent->use_network_broadcast &&
+			 (($self->version == 4 && $parent->prefix != 31) ||
+			  ($self->version == 6 && $parent->prefix != 127))
+			){
 			$self->throw_user(sprintf("IP cannot have same address as its subnet: %s == %s", 
 						  $self->address, $parent->address));
 		    }

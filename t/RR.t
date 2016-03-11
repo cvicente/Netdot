@@ -30,14 +30,28 @@ if ( Zone->search(name=>$domain) ){
 if ( Zone->search(name=>$domainrev) ){
     Zone->search(name=>$domainrev)->first->delete();
 }
+
+# Create reverse zone first
+my $revzone = Zone->insert({name=>$domainrev});
+isa_ok($revzone, 'Netdot::Model::Zone', 'insert_rev_zone');
+
 # RR
 my $rr = RR->insert({name=>$name, zone=>$domain});
 isa_ok($rr, 'Netdot::Model::RR', 'insert_rr');
 is(RR->search(name=>"$name.$domain")->first, $rr, 'search' );
 is($rr->get_label, "$name.$domain", 'get_label');
 
+# Labels longer that 63 characters shoud throw a user exception
+my $long_name = '1234567890123456789012345678901234567890123456789012345678901234';
+eval{
+    RR->insert({name=>$long_name, zone=>$domain});
+};
+my $e = $@;
+isa_ok($e, 'Netdot::Util::Exception::User');
+
 # RRADDR
-my $rraddr = RR->insert({type=>'A', name=>$name, zone=>$domain, ttl=>3600, ipblock=>$v4address});
+my $rraddr = RR->insert({type=>'A', name=>$name, zone=>$domain, 
+			 ttl=>3600, ipblock=>$v4address });
 isa_ok($rraddr, 'Netdot::Model::RRADDR', 'insert_rraddr');
 is($rraddr->as_text, "$name.$domain.	3600	IN	A	$v4address", 'as_text');
 
@@ -68,9 +82,9 @@ isa_ok($rrloc, 'Netdot::Model::RRLOC', 'insert_loc');
 is($rrloc->as_text, "testdomain.	3600	IN	LOC	596 31 23.648 S 123 05 00.000 W 122.00m 1.00m 10000.00m 10.00m", 'as_text');
 
 # RRMX
-my $rrmx = RR->insert({type=>'MX', name=>$name, zone=>$domain, ttl=>3600, preference=>10, exchange=>"smtp.$domain"});
+my $rrmx = RR->insert({type=>'MX', name=>$name, zone=>$domain, ttl=>3600, preference=>10, exchange=>"smtp.example.net"});
 isa_ok($rrmx, 'Netdot::Model::RRMX', 'insert_mx');
-is($rrmx->as_text, "$name.$domain.	3600	IN	MX	10 smtp.$domain.", 'as_text');
+is($rrmx->as_text, "$name.$domain.	3600	IN	MX	10 smtp.example.net.", 'as_text');
 
 # RRNAPTR
 my $rrnaptr = RR->insert({type=>'NAPTR', name=>'@', zone=>$domain, ttl=>3600, order_field=>"100", preference=>"10", flags=>"u", services=>"E2U+sip",
@@ -84,6 +98,7 @@ isa_ok($rrns, 'Netdot::Model::RRNS', 'insert_ns');
 is($rrns->as_text, "$name.$domain.	3600	IN	NS	ns1.$domain.", 'as_text');
 
 # RRPTR
+$rraddr->ipblock->ptr_records->first->delete();
 my $rrptr = RR->insert({type=>'PTR', name=>"10.1", ipblock=>$v4address, zone=>$domainrev, ttl=>3600, ptrdname=>"$name.$domain"});
 isa_ok($rrptr, 'Netdot::Model::RRPTR', 'insert_ptr');
 is($rrptr->as_text, "10.1.168.192.in-addr.arpa.	3600	IN	PTR	$name.$domain.", 'as_text');
@@ -98,8 +113,7 @@ my $rrtxt = RR->insert({type=>'TXT', name=>$name, zone=>$domain, ttl=>3600, txtd
 isa_ok($rrtxt, 'Netdot::Model::RRTXT', 'insert_txt');
 is($rrtxt->as_text, "$name.$domain.	3600	IN	TXT	\"text record\"", 'as_text');
 
-my $zone    = $rr->zone;
-my $revzone = $rrptr->rr->zone;
+my $zone = $rr->zone;
 
 # We should have one of each in this zone (except a PTR)
 my $count = $zone->get_record_count;
@@ -107,6 +121,11 @@ foreach my $rtype ( keys %$count ){
     next if ( $rtype eq 'ptr' );
     is($count->{$rtype}, 1, $rtype.'_record_count');
 }
+
+$rr->add_alias('alias2');
+my @cnames = $rr->aliases();
+isa_ok($cnames[1], 'Netdot::Model::RRCNAME', 'add_alias');
+is($cnames[1]->as_text, "alias2.$domain.	86400	IN	CNAME	$name.$domain.", 'alias_as_text');
 
 # Clean up
 $zone->delete;

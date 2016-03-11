@@ -59,7 +59,6 @@ sub new{
 	bless $self, $class;
     }
     
-    $self->{_dbh} = Netdot::Model->db_Main();
     return $self;
 }
 
@@ -67,12 +66,14 @@ sub new{
 
 =head2 get_device_info
 
+All device information needed for building monitoring configurations
+
   Arguments:
     None
   Returns:
     Hash reference where key=device.id
   Examples:
-    my $ips = Netdot::Model::Exporter->get_device_info();
+    my $info = Netdot::Exporter->get_device_info();
 =cut
 
 sub get_device_info {
@@ -82,10 +83,12 @@ sub get_device_info {
 
     my %device_info;
     $logger->debug("Netdot::Exporter::get_device_info: querying database");
-    my $rows = $self->{_dbh}->selectall_arrayref("
 
+    my $dbh = Netdot::Model->db_Main();
+    my $rows = $dbh->selectall_arrayref("
           SELECT    d.id, d.snmp_managed, d.community, d.snmp_target, d.host_device,
                     d.monitoring_template, d.down_from, d.down_until, entity.name, entity.aliases,
+                    p.name, ptype.name, manuf.name,
                     site.name, site.number, site.aliases, contactlist.id,
                     i.id, i.number, i.name, i.description, i.admin_status, i.monitored, i.contactlist,
                     ip.id, ip.address, ip.version, ip.parent, ip.monitored, rr.name, zone.name,
@@ -95,11 +98,15 @@ sub get_device_info {
           LEFT OUTER JOIN (bgppeering, entity peer) ON d.id=bgppeering.device 
                            AND bgppeering.entity=peer.id
                            AND bgppeering.monitored=1
+          LEFT OUTER JOIN (asset, product p, producttype ptype, entity manuf) ON asset.id=d.asset_id
+                           AND asset.product_id=p.id
+                           AND p.type=ptype.id
+                           AND manuf.id=p.manufacturer
           LEFT OUTER JOIN devicecontacts ON d.id=devicecontacts.device
           LEFT OUTER JOIN contactlist ON contactlist.id=devicecontacts.contactlist
           LEFT OUTER JOIN entity ON d.used_by=entity.id
           LEFT OUTER JOIN site ON d.site=site.id,
-                    interface i 
+                     interface i 
           LEFT OUTER JOIN ipblock ip ON ip.interface=i.id
           LEFT OUTER JOIN ipservice ON ipservice.ip=ip.id
           LEFT OUTER JOIN service ON ipservice.service=service.id
@@ -114,6 +121,7 @@ sub get_device_info {
 
 	my ($devid, $dev_snmp, $community, $target_id, $host_device,
 	    $mon_template, $down_from, $down_until, $entity_name, $entity_alias, 
+	    $pname, $ptype, $manuf,
 	    $site_name, $site_number, $site_alias, $clid,
 	    $intid, $intnumber, $intname, $intdesc, $intadmin, $intmon, $intcl,
 	    $ip_id, $ip_addr, $ip_version, $subnet, $ip_mon, $name, $zone,
@@ -122,6 +130,9 @@ sub get_device_info {
 	my $hostname = ($name eq '@')? $zone : $name.'.'.$zone;
 	$device_info{$devid}{target_id}    = $target_id;
 	$device_info{$devid}{hostname}     = $hostname;
+	$device_info{$devid}{pname}        = $pname if defined $pname;
+	$device_info{$devid}{ptype}        = $ptype if defined $ptype;
+	$device_info{$devid}{manuf}        = $manuf if defined $manuf;
 	$device_info{$devid}{host_device}  = $host_device;
 	$device_info{$devid}{community}    = $community;
 	$device_info{$devid}{snmp_managed} = $dev_snmp;
@@ -133,7 +144,7 @@ sub get_device_info {
 	$device_info{$devid}{site_name}    = $site_name    if defined $site_name;
 	$device_info{$devid}{site_number}  = $site_number  if defined $site_number;
 	$device_info{$devid}{site_alias}   = $site_alias   if defined $site_alias;
-	$device_info{$devid}{contactlist}{$clid} = 1 if defined $clid;
+	$device_info{$devid}{contactlist}{$clid}{clid} = $clid if defined $clid;
 	if ( $peer_addr ){
 	    $device_info{$devid}{peering}{$peer_addr}{contactlist} = $peer_cl;
 	    $device_info{$devid}{peering}{$peer_addr}{asn}         = $peer_asn    if $peer_asn;

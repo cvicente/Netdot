@@ -133,6 +133,8 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <li><a href="#updating-existing-records-http-post"><span class="toc-section-number">7.2.1.3</span> Updating existing records (HTTP POST)</a></li>
 <li><a href="#deleting-records-http-delete"><span class="toc-section-number">7.2.1.4</span> Deleting records (HTTP DELETE)</a></li>
 </ul></li>
+<li><a href="#restdevinfo"><span class="toc-section-number">7.2.2</span> /rest/devinfo</a></li>
+<li><a href="#restupdatedev"><span class="toc-section-number">7.2.3</span> /rest/updatedev</a></li>
 </ul></li>
 <li><a href="#restful-interface-authorization"><span class="toc-section-number">7.3</span> RESTful Interface Authorization</a></li>
 <li><a href="#client-module-on-cpan"><span class="toc-section-number">7.4</span> Client module on CPAN</a></li>
@@ -142,8 +144,8 @@ code > span.er { color: #ff0000; font-weight: bold; }
 </div>
 <p></p>
 <h1 id="copyright"><a href="#TOC"><span class="header-section-number">1</span> Copyright</a></h1>
-<p>Version 1.0</p>
-<p>Copyright 2012 University of Oregon, all rights reserved.</p>
+<p>Version 1.0.8</p>
+<p>Copyright 2014 Carlos Vicente</p>
 <p>This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.</p>
 <p>This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTIBILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.</p>
 <p>You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.</p>
@@ -702,6 +704,11 @@ POST: {ethernet=&gt;&#39;DEADDEADBEEF&#39;}</code></pre>
 <li>Delete hostname with RR id 3 (also frees IP)</li>
 </ul>
 <pre><code>http://netdot.localdomain/netdot/rest/host?rrid=3</code></pre>
+<h3 id="restdevinfo"><a href="#TOC"><span class="header-section-number">7.2.2</span> /rest/devinfo</a></h3>
+<p>This special REST resource can be used to retrieve extensive information about every device in the database using a single GET request. The returned data structure is the same one used by the NAGIOS exporter class.</p>
+<h3 id="restupdatedev"><a href="#TOC"><span class="header-section-number">7.2.3</span> /rest/updatedev</a></h3>
+<p>This special REST resource can be used to import devices into Netdot, as an alternative to using SNMP discovery. It accepts only POST requests. An example using the Perl client library can be found in the Netdot source, at:</p>
+<pre><code>import/update_dev_rest.pl</code></pre>
 <h2 id="restful-interface-authorization"><a href="#TOC"><span class="header-section-number">7.3</span> RESTful Interface Authorization</a></h2>
 <p>All user types can interact with the RESTful interface as long as they are granted permissions to do so. However only Admin users can edit or delete objects using generic REST resources. Operators and regular users can view generic resources but can only edit or delete them using specific-purpose resources such as 'rest/host'.</p>
 <h2 id="client-module-on-cpan"><a href="#TOC"><span class="header-section-number">7.4</span> Client module on CPAN</a></h2>

@@ -8,6 +8,7 @@ SRCROOT := $(shell pwd)
 #
 PERL        ?= /usr/bin/perl
 PREFIX      ?= /usr/local/netdot
+STAGEDIR    ?= $(PREFIX)
 APACHEUSER  ?= apache
 APACHEGROUP ?= apache
 MAKE        ?= make
@@ -23,6 +24,7 @@ usage:
 	@echo 
 	@echo "   PERL          = $(PERL)"
 	@echo "   PREFIX        = $(PREFIX)"
+	@echo "   STAGEDIR      = $(STAGEDIR)"
 	@echo "   APACHEUSER    = $(APACHEUSER)"
 	@echo "   APACHEGROUP   = $(APACHEGROUP)"
 	@echo "   MAKE          = $(MAKE)"
@@ -88,14 +90,14 @@ dir:
 	@echo "Creating necessary directories..."
 	echo $(PREFIX) > ./.prefix
 	for dir in $(DIR); do \
-	    if test -d $(PREFIX)/$$dir; then \
-	       echo "Skipping dir $(PREFIX)/$$dir; already exists"; \
+	    if test -d $(STAGEDIR)/$$dir; then \
+	       echo "Skipping dir $(STAGEDIR)/$$dir; already exists"; \
 	    else \
-	       mkdir -m $(DMOD) -p $(PREFIX)/$$dir ; \
+	       mkdir -m $(DMOD) -p $(STAGEDIR)/$$dir ; \
 	    fi ; \
 	done
-	chown -R $(APACHEUSER):$(APACHEGROUP) $(PREFIX)/tmp
-	chmod 750 $(PREFIX)/tmp
+	chown -R $(APACHEUSER):$(APACHEGROUP) $(STAGEDIR)/tmp
+	chmod 750 $(STAGEDIR)/tmp
 
 htdocs:
 	cd $@ ; $(MAKE) all DIR=$@ 

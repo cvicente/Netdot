@@ -4,6 +4,12 @@ use lib "lib";
 
 BEGIN { use_ok('Netdot::Model::Ipblock'); }
 
+# Clean up first
+foreach my $obj ( '192.0.2.0/24', '2001:db8::/32' ){
+    my $b = Ipblock->search(address=>$obj)->first;
+    $b->delete(recursive=>1) if $b;
+}
+
 my $container = Ipblock->insert({
     address => "192.0.2.0",
     prefix  => '24',
@@ -39,7 +45,7 @@ is($address->address_numeric, '3221225994', 'address_numeric method');
 is($address->prefix, '32', 'prefix method');
 
 is($subnet->num_addr(), '126', 'num_addr');
-is($subnet->address_usage(), '6', 'address_usage');
+is($subnet->address_usage(), '1', 'address_usage');
 
 is($container->subnet_usage(), '128', 'subnet_usage');
 
@@ -48,7 +54,7 @@ is($subnet->get_label(), '192.0.2.0/25', 'subnet label');
 
 is(Ipblock->search(address=>'192.0.2.0', prefix=>'25')->first, $subnet, 'search' );
 
-is(scalar(Ipblock->search_like(address=>'192.0')), 8, 'search_like' );
+is(scalar(Ipblock->search_like(address=>'192.0')), 3, 'search_like' );
 
 $subnet->update({description=>'test subnet'});
 is(((Ipblock->keyword_search('test subnet'))[0])->id, $subnet->id, 'keyword_search');
@@ -85,7 +91,6 @@ ok(Ipblock->is_link_local('fe80:abcd::1234'), 'is_link_local');
 is(Ipblock->get_covering_block(address=>'192.0.2.5', prefix=>'32'), $subnet,
    'get_covering_block');
 
-
 is(Ipblock->numhosts(24), 256, 'numhosts');
 
 {
@@ -98,7 +103,7 @@ is(Ipblock->subnetmask(256), 24, 'subnetmask');
 
 is(Ipblock->subnetmask_v6(4), 126, 'subnetmask_v6');
 
-is($subnet->get_next_free, '192.0.2.6', 'get_next_free');
+is($subnet->get_next_free, '192.0.2.1', 'get_next_free');
 is($subnet->get_next_free(strategy=>'last'), '192.0.2.126', 'get_next_free_last');
 
 is(($subnet->get_dot_arpa_names)[0], '0-25.2.0.192.in-addr.arpa', 'get_dot_arpa_names_v4_25');
@@ -175,7 +180,7 @@ $v6subnet = undef;
 $v6subnet = Ipblock->retrieve($tmpid);
 is($v6subnet->parent, $v6container3, 'v6_parent3');
 
-is($v6subnet->get_next_free, '2001:db8::6', 'get_next_free_v6');
+is($v6subnet->get_next_free, '2001:db8::1', 'get_next_free_v6');
 is($v6subnet->get_next_free(strategy=>'last'), '2001:db8:0:3:ffff:ffff:ffff:fffe', 'get_next_free_last_v6');
 
 is(Ipblock->matches_v4($address->address), 1, 'matches_v4_1');
@@ -191,6 +196,40 @@ is(Ipblock->matches_ip($address->address), 1, 'matches_ip_2');
 my $ar1 = Ipblock->matches_cidr($address->cidr);
 my $ar2 = ($address->address, $address->prefix);
 is_deeply(\$ar1, \$ar2, 'matches_cidr_1');
+
+# Inherited attributes
+# First we clean up
+foreach my $atrname ( 'A', 'B', 'C' ){
+    my $atr = IpblockAttrName->search(name=>$atrname)->first;
+    $atr->delete if $atr;
+}
+
+# Add new attributes
+my $atn_a = IpblockAttrName->insert({name=>'A'});
+my $atn_b = IpblockAttrName->insert({name=>'B'});
+my $atn_c = IpblockAttrName->insert({name=>'C'});
+
+# Assign attributes and values to the Container, Subnet and Address
+my $at_a = IpblockAttr->insert({ipblock=>$container, name=>$atn_a, value=>'a'});
+my $at_b = IpblockAttr->insert({ipblock=>$subnet, name=>$atn_b, value=>'b'});
+my $at_c = IpblockAttr->insert({ipblock=>$address, name=>$atn_c, value=>'c'});
+my $attrs = $address->get_inherited_attributes();
+my $expected = {
+    'A' => 'a',
+    'B' => 'b',
+    'C' => 'c',
+};
+is_deeply($attrs, $expected, 'gets list of inherited attributes');
+
+# Override C's value
+$at_c->update({value=>'z'});
+my $attrs = $address->get_inherited_attributes();
+my $expected = {
+    'A' => 'a',
+    'B' => 'b',
+    'C' => 'z',
+};
+is_deeply($attrs, $expected, 'gets overridden attribute');
 
 # Delete all records
 $container->delete(recursive=>1);

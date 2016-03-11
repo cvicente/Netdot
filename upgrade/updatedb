@@ -36,6 +36,7 @@ if ( $schema_version eq '1.0.1' ){
     &upg_103_104();
     &upg_104_105();
     &upg_105_106();
+    &upg_106_107();
     
 }elsif ( $schema_version eq '1.0.2' ){
     
@@ -43,21 +44,29 @@ if ( $schema_version eq '1.0.1' ){
     &upg_103_104();
     &upg_104_105();
     &upg_105_106();
+    &upg_106_107();
     
 }elsif ( $schema_version eq '1.0.3' ){
     
     &upg_103_104();
     &upg_104_105();
     &upg_105_106();
+    &upg_106_107();
 
 }elsif ( $schema_version eq '1.0.4' ){
     
     &upg_104_105();
     &upg_105_106();
+    &upg_106_107();
     
 }elsif ( $schema_version eq '1.0.5' ){
     
     &upg_105_106();
+    &upg_106_107();
+    
+}elsif ( $schema_version eq '1.0.6' ){
+    
+    &upg_106_107();
     
 }else{
     die "Unsupported version for this upgrade: $schema_version\n";
@@ -208,11 +217,12 @@ sub upg_104_105 {
 	push @statements, "INSERT INTO asn (number) SELECT DISTINCT bgplocalas FROM device WHERE bgplocalas IS NOT NULL;";
 
 	push @statements, "ALTER TABLE device MODIFY bgplocalas bigint;";
-	push @statements, "ALTER TABLE device ADD CONSTRAINT `fk_bgplocalas` FOREIGN KEY (`bgplocalas`) ".
-	    "REFERENCES `asn` (`id`);";
 	push @statements, "CREATE INDEX bgplocalas ON device (bgplocalas);";
 
 	push @statements, "UPDATE device,asn SET device.bgplocalas=asn.id WHERE device.bgplocalas=asn.number;"; 
+
+	push @statements, "ALTER TABLE device ADD CONSTRAINT `fk_bgplocalas` FOREIGN KEY (`bgplocalas`) ".
+	    "REFERENCES `asn` (`id`);";
 
 	push @statements, "ALTER TABLE bgppeering ADD COLUMN contactlist bigint;";
 	push @statements, "ALTER TABLE bgppeering ADD CONSTRAINT `fk_contactlist_bgppeering` FOREIGN KEY (`contactlist`) ".
@@ -324,4 +334,9 @@ sub upg_104_105 {
 #########################################################################
 sub upg_105_106 {
     push @statements, "UPDATE schemainfo SET version='1.0.6' WHERE id=1;",
+}
+
+#########################################################################
+sub upg_106_107 {
+    push @statements, "UPDATE schemainfo SET version='1.0.7' WHERE id=1;",
 }

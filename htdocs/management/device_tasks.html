@@ -55,7 +55,7 @@ $ARGS{show_tasks} = $show_tasks;
 if ( $submit eq 'Find' ){
     # Get rid of spaces
     $device_search =~ s/\s+//g;
-    if ( $device_search =~ /$MAC/ ){
+    if ( $device_search =~ /^$MAC$/ ){
 	$m->comp('.show_tasks', %ARGS, user=>$user);
 	$m->comp('/management/mac.html', search=>$device_search, dowindow=>1 );
     }elsif ( Ipblock->matches_ip($device_search) ){

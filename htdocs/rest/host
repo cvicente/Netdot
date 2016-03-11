@@ -42,7 +42,7 @@ my $logger = Netdot->log->get_logger("Netdot::REST");
 $logger->info(sprintf("/rest/host: %s request with args: %s from %s (%s)", 
  		      $method, 
 		      $req_args,
- 		      $rest->{request}->connection->remote_ip, 
+ 		      $rest->remote_ip, 
  		      $headers->{'User-Agent'}
  	      ));
 
@@ -167,7 +167,7 @@ if ( $method eq 'GET' ){
 	push @{$ret{Ipblock}}, $o;
     }	
 
-    $rest->print_formatted(\%ret);
+    $rest->print_serialized(\%ret);
 
 }elsif ( $method eq 'POST' ){
     if ( $rrid ){
@@ -202,9 +202,9 @@ if ( $method eq 'GET' ){
 	};
 	if ( my $e = $@ ){
 	    $rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
-			 msg=>'Bad request: $e'); 
+			 msg=>"Bad request: $e"); 
 	}
-	$rest->print_formatted($rest->get(obj=>$rr, depth=>0));
+	$rest->print_serialized($rest->get(obj=>$rr, depth=>0));
 
     }elsif ( $ipid ){
 	# We're updating
@@ -251,7 +251,7 @@ if ( $method eq 'GET' ){
 		
 	    }
 	}
-	$rest->print_formatted($rest->get(obj=>$ipb, depth=>0));
+	$rest->print_serialized($rest->get(obj=>$ipb, depth=>0));
 
     }else{
 	# No rrid or ipid means We're adding a new host
@@ -355,7 +355,7 @@ if ( $method eq 'GET' ){
 	    $rest->throw(code=>Apache2::Const::HTTP_BAD_REQUEST, 
 			 msg=>"Bad request: $e"); 
 	}
-	$rest->print_formatted($rest->get(obj=>$rr, depth=>0));
+	$rest->print_serialized($rest->get(obj=>$rr, depth=>0));
     }
 }elsif ( $method eq 'DELETE' ){
     
@@ -409,14 +409,14 @@ if ( $method eq 'GET' ){
     		foreach my $obj ( @objs_to_delete ){
 		    # The object may have been cascade-deleted
 		    next if ( ref($obj) eq 'Class::DBI::Object::Has::Been::Deleted' );
-
+		    
 		    # Make sure user can do this
     		    unless ( $manager->can($user, 'delete', $obj) ){
     			$rest->throw_rest(code=>Apache2::Const::HTTP_FORBIDDEN, 
     					  msg=>"User not allowed to delete this object");
     		    }
-			$obj->delete(); 
-			
+		    $obj->delete(); 
+		    
     		}	
     					   });
     	};
