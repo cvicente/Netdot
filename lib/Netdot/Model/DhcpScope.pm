@@ -617,7 +617,7 @@ sub _validate_args {
 			if ( $s->ipblock && (my $osubnet = $s->ipblock->parent) ){
 			    if ( $osubnet->id == $subnet->id ){
 				$self->throw_user("$name: Duplicate MAC address in this subnet: ".
-						  $fields{physaddr}->address);
+						  $fields{physaddr}->get_preferred_display__address);
 			    }
 			}
 		    }
@@ -890,7 +890,12 @@ sub _get_all_data {
 		$data{$scope_id}{attrs}{'client-id'}{value} = $scope_duid;
 	    }elsif ( $mac ){
 		$data{$scope_id}{attrs}{'hardware ethernet'}{name}  = 'hardware ethernet';
-		$data{$scope_id}{attrs}{'hardware ethernet'}{value} = PhysAddr->colon_address($mac);
+		$data{$scope_id}{attrs}{'hardware ethernet'}{value} = PhysAddr->format_address(
+            address                   => $mac,
+            format_caseness           => Netdot->config->get('MAC_DHCPD_FORMAT_CASENESS') || 'upper',
+            format_delimiter_string   => ':',
+            format_delimiter_interval => 2,
+        );
 	    }else{
 		# Without DUID or MAC, this would be invalid
 		next;
@@ -952,7 +957,7 @@ sub _assign_name {
 	if ( $argv->{ipblock} ){
 	    $name = $argv->{ipblock}->full_address;
 	}elsif ( $argv->{physaddr} ){
-	    $name = $argv->{physaddr}->address;
+	    $name = $argv->{physaddr}->get_preferred_display__address;
 	}elsif ( $argv->{duid} ){
 	    $name = $argv->{duid};
 	}

@@ -5725,7 +5725,7 @@ sub _assign_base_mac {
 	    $logger->debug(sprintf("%s: Could not insert base MAC: %s: %s",
 				   $host, $address, $e));
 	}else{
-	    $logger->info(sprintf("%s: Inserted new base MAC: %s", $host, $mac->address));
+	    $logger->info(sprintf("%s: Inserted new base MAC: %s", $host, $mac->get_preferred_display__address));
 	    return $mac;
 	}
     }
