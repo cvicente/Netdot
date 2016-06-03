@@ -57,7 +57,7 @@ sub generate_configs {
     my ($self, %argv) = @_;
     
     my @zones;
-    
+
     if ( $argv{zones} ){
 	unless ( ref($argv{zones}) eq 'ARRAY' ){
 	    $self->throw_fatal("zones argument must be arrayref!");
@@ -84,7 +84,15 @@ sub generate_configs {
     }else{
 	@zones = Zone->retrieve_all();
     }
-   
+
+    $self->hook(
+        name => 'before-all-zones-written',
+        data => {
+            user => $argv{user},
+        },
+    );
+
+    my @written_zones = ();
     foreach my $zone ( @zones ){
 	next unless $zone->active;
 	eval {
@@ -100,6 +108,23 @@ sub generate_configs {
 			$record->update({pending=>0});
 		    }
 		    $logger->info("Zone ".$zone->name." written to file: $path");
+            my %data = (
+                zone_name => $zone->name,
+                path      => $path,
+            );
+
+            my %copy_of_data = %data;
+
+            # save a copy so we can send the aggregate to a later "hook".
+            push @written_zones, \%copy_of_data;
+
+            # add user data in case the hook'ed programs want to use it.
+            $data{user} = $argv{user};
+
+            $self->hook(
+                name => 'after-zone-written',
+                data => \%data,
+            );
 		}else{
 		    $logger->debug("Exporter::BIND::generate_configs: ".$zone->name.
 				   ": No pending changes.  Use -f to force.");
@@ -108,6 +133,15 @@ sub generate_configs {
 	};
 	$logger->error($@) if $@;
     }
+
+    my $data = {
+        zones_written => \@written_zones,
+        user          => $argv{user},
+    };
+    $self->hook(
+        name => 'after-all-zones-written',
+        data => $data,
+    );
 }
 
 ############################################################################

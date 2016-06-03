@@ -112,6 +112,7 @@ my $manager = $ui->get_permission_manager($r);
 
 <%perl>
 if ( $submit ){
+    my $person = $ui->get_user_person($user);
     unless ( $manager && $manager->can($user, 'access_admin_section', 'Export:Submit_Configuration') ){
 	$m->comp('/generic/error.mhtml', error=>"You don't  have permission to perform this operation")
     }
@@ -130,7 +131,14 @@ if ( $submit ){
     $dhcp_logger->add_appender($logstr);
 
     foreach my $type ( @config_types ){
-	my %args;
+	my %args = (
+        user => {
+            person_username  => $person->username,
+            person_firstname => $person->firstname,
+            person_lastname  => $person->lastname,
+            person_email     => $person->email,
+        },
+    );
 	if ( $type eq 'BIND' ){
 	    $args{zone_ids} = \@zones if ( scalar @zones && $zones[0] ne "" );
 	    $args{force}    = 1 if ($bind_force);

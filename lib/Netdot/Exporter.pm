@@ -6,6 +6,12 @@ use warnings;
 use strict;
 use Data::Dumper;
 use Fcntl qw(:DEFAULT :flock);
+use JSON;
+use IPC::Open3;
+use File::Spec;
+use Symbol 'gensym';
+
+use File::Spec::Functions qw(catpath);
 
 my $logger = Netdot->log->get_logger('Netdot::Exporter');
 
@@ -306,6 +312,136 @@ sub print_eof {
     $self->throw_fatal("Netdot::Model::Exporter::print_eof: Filehandle required")
 	unless $fh;
     print $fh "\n#### EOF ####\n";
+}
+
+########################################################################
+
+=head2 get_short_type - Return the "short" type that this module is.
+
+    Arguments:
+        None
+    Returns:
+        Short type. i.e. "Nagios" or "DHCPD" or etc.
+
+=cut
+
+sub get_short_type {
+    my ($self) = @_;
+
+    my $long_type = ref($self);
+
+    $logger->trace("Getting short type for $long_type.");
+
+    my %long_to_short_lookup = reverse %types;
+
+    if (exists $long_to_short_lookup{$long_type}) {
+        my $short_type = $long_to_short_lookup{$long_type};
+        $logger->debug("Short type for $long_type is $short_type.");
+        return $short_type;
+    }
+    else {
+        $self->throw_fatal("Netdot::Exporter::get_short_type: No mapping found for long type ($long_type).");
+    }
+}
+
+########################################################################
+
+=head2 hook - Run the hooks for this point in the export process
+
+    Arguments:
+        Hash of arguments containing:
+            name
+            data
+        keys. Name is a string that will define which hook programs will run at
+        various points in the exporting process. Data is arbitrary data passed
+        to the hook program as a JSON encoded string. Usually "data" is a hash
+        reference.
+    Returns:
+        Nothing.
+
+=cut
+
+sub hook {
+    my $self = shift;
+    my %args = (
+        name => undef,
+        data => {},
+        @_,
+    );
+
+    my $name = $args{name};
+    my $data = $args{data};
+
+    if (! defined $name) {
+        $self->throw_fatal("Netdot::Exporter::hook Name of hook is not defined.");
+    }
+
+    my $hooks_dir = Netdot->config->get('EXPORTER_HOOKS_DIR');
+    $logger->trace("Configuration set hooks dir to $hooks_dir.");
+
+    my $short_type = $self->get_short_type;
+
+    my $module_hook_directory = catpath(undef, $hooks_dir, $short_type);
+    $logger->trace("Netdot::Exporter::hook for $short_type with name $name has a module_hook_directory of: $module_hook_directory");
+
+    my $named_hook_directory = catpath(undef, $module_hook_directory, $name);
+    $logger->trace("Netdot::Exporter::hook for $short_type with name $name has a named_hook_directory of: $named_hook_directory");
+
+    open(my $dev_null, '<', File::Spec->devnull) or die $!;
+
+    if (-e $named_hook_directory) {
+        if (-d $named_hook_directory) {
+            opendir(my $dh, $named_hook_directory) or die;
+            while(readdir $dh) {
+                my $entry = catpath(undef, $named_hook_directory, $_);
+                if (-f $entry && -x $entry) {
+                    $logger->debug("Found executable file $entry for hook $short_type with name $name.");
+
+                    # There were issues with the open3 call not being able to
+                    # read from the $output filehandle. The following two
+                    # lines seemed to fix it.
+                    # See:
+                    # http://stackoverflow.com/questions/23770338/perl-embperl-ipcopen3
+                    local *STDOUT;
+                    open(STDOUT, '>&=', 1) or die $!;
+
+                    my $pid = open3(
+                        $dev_null,
+                        my $output,         # autovivified filehandle to read from
+                        my $error = gensym, # we can't autovivify stderr filehandle, so use gensym
+                        $entry,             # the actual program to run
+                        encode_json($data), # and the arguments to pass on the command line
+                    ) or die $!;
+
+                    while (<$output>) {
+                        chomp;
+                        $logger->info("$_");
+                    }
+
+                    while (<$error>) {
+                        chomp;
+                        $logger->error("$_ [from: hook $short_type:$name $entry]");
+                    }
+
+                    waitpid($pid, 0);
+
+                    my $child_exit_status = $? >> 8;
+                    if ($child_exit_status != 0) {
+                        $logger->warn("$entry had an exit status of: $child_exit_status");
+                    }
+
+                    close $output or die $!;
+                    close $error or die $!;
+                }
+            }
+            closedir $dh or die;
+        }
+        else {
+            $logger->warn("$named_hook_directory exists, but is not a directory.");
+        }
+    }
+
+    close $dev_null or die $!;
 }
 
 =head1 AUTHORS
