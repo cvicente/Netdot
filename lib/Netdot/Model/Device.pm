@@ -3188,7 +3188,7 @@ sub add_ip {
    
   Arguments:
     Hash with the following keys:
-       sort_by  [address|interface]
+       sort_by [address|interface] (optional)
   Returns:
     Arrayref of Ipblock objects
   Examples:
@@ -3200,15 +3200,17 @@ sub get_ips {
     my ($self, %argv) = @_;
     $self->isa_object_method('get_ips');
     
-    $argv{sort_by} ||= "address";
-    
     my @ips;
-    if ( $argv{sort_by} eq "address" ){
-	@ips = Ipblock->search_devipsbyaddr($self->id);
-    }elsif ( $argv{sort_by} eq "interface" ){
-	@ips = Ipblock->search_devipsbyint($self->id);
+    if ( $argv{sort_by} ){
+	if ( $argv{sort_by} eq "address" ){
+	    @ips = Ipblock->search_devipsbyaddr($self->id);
+	}elsif ( $argv{sort_by} eq "interface" ){
+	    @ips = Ipblock->search_devipsbyint($self->id);
+	}else{
+	    $self->throw_fatal("Model::Device::get_ips: Invalid sort criteria: $argv{sort_by}");
+	}
     }else{
-	$self->throw_fatal("Model::Device::get_ips: Invalid sort criteria: $argv{sort_by}");
+	@ips = Ipblock->search_devips($self->id);
     }
     return \@ips;
 }
@@ -6650,5 +6652,3 @@ Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 #Be sure to return 1
 1;
-
-
