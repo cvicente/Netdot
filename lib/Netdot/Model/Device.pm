@@ -3836,8 +3836,33 @@ sub set_interfaces_auto_dns {
     return 1;
 }
 
-###############################################################
-=head2 _do_auto_dns - Generate DNS records for all interface IPs
+###########################################################################
+=head2 do_auto_dns_all - Generate DNS for all interface IPs on all devices
+
+    Arguments
+      None
+    Returns
+      Nothing
+    Example:
+     Device->do_auto_dns_all();
+=cut
+
+sub do_auto_dns_all {
+    my ($class, %argv) = @_;
+    $class->isa_class_method('do_auto_dns_all');
+
+    unless ( $class->config->get('UPDATE_DEVICE_IP_NAMES') ){
+	$logger->warn("UPDATE_DEVICE_IP_NAMES config option is disabled");
+	return;
+    }
+    
+    foreach my $dev ( Device->retrieve_all ){
+	$dev->do_auto_dns();
+    }
+}
+
+################################################################################
+=head2 do_auto_dns - Generate DNS records for all interface IPs of given device
 
     Arguments
       None
@@ -3849,13 +3874,23 @@ sub set_interfaces_auto_dns {
 
 sub do_auto_dns {
     my ($self, %argv) = @_;
-    
+    $self->isa_object_method('do_auto_dns');
+
     my $host = $self->fqdn;
 
-    # Get addresses that the main Device name resolves to
+    unless ( $self->auto_dns ){
+	$logger->debug(sub{sprintf("Auto DNS is disabled for device %s.".
+				   " Skipping.", $host)});
+	return;
+    }
+
+    $logger->debug(sub{sprintf("Generating DNS records for IP interfaces in %s", 
+			     $host)});
+
+    # Get addresses that the main device name resolves to
     my @hostnameips;
     if ( @hostnameips = Netdot->dns->resolve_name($host) ){
-	$logger->debug(sub{ sprintf("Device::_update_interfaces: %s resolves to: %s",
+	$logger->debug(sub{ sprintf("Device::do_auto_dns: %s resolves to: %s",
 				    $host, (join ", ", @hostnameips))});
     }
     
@@ -3881,9 +3916,6 @@ sub do_auto_dns {
     }
     1;
 }
-
-
-
 
 
 #####################################################################
@@ -6366,12 +6398,6 @@ sub _update_interfaces {
 	$obj->update({interface=>undef});
     }
     
-    ##############################################################
-    # Update A records for each IP address
-    if ( $self->config->get('UPDATE_DEVICE_IP_NAMES') && $self->auto_dns ){
-	$self->do_auto_dns();
-    }
-
     1;
 }
 

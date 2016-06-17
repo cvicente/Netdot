@@ -15,6 +15,9 @@ PREFIX=/usr/local/netdot
 # Twice a day, rediscover devices and topology (in addition to above)
 #0 12,17 * * * root $PREFIX/bin/updatedevices.pl -DIFAT
 
+# Once a day, generate DNS records for interface IPs
+30 7 * * * root $PREFIX/bin/updatedevices.pl -DN
+
 # Update whole-network topology graphs
 45 0 * * * root $PREFIX/bin/build_topo_graph.pl -f $PREFIX/htdocs/img/graphs/whole_network_no_vlans.png
 
