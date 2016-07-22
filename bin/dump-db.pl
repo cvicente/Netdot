@@ -14,13 +14,15 @@ my %self;
 
 $self{dbtype} = Netdot->config->get('DB_TYPE');
 $self{dbuser} = Netdot->config->get('DB_DBA');
+$self{dbhost} = Netdot->config->get('DB_HOST');
+$self{dbdatabase} = Netdot->config->get('DB_DATABASE');
 $self{dbpass} = Netdot->config->get('DB_DBA_PASSWORD');
 $self{dir}    = '.';
 
 my $USAGE = <<EOF;
 usage: $0 [options]
          
-    --dbtype <type>       Database Type [mysql|pg] (default: $self{dbtype})
+    --dbtype <type>       Database Type [mysql|Pg] (default: $self{dbtype})
     --dbuser <username>   Database DBA user (default: $self{dbuser})
     --dbpass <password>   Database DBA password
     --dir    <path>       Directory where files should be written (default: $self{dir})
@@ -60,8 +62,8 @@ if ($self{dbtype} eq 'mysql'){
     push @args, '--master-data' if $self{master_data};
     my $dump_args = join ' ', @args;
     system ("mysqldump $dump_args netdot >$file");
-}elsif ($self{dbtype} eq 'pg'){
-    die "$self{dbtype} not yet implemented";
+}elsif ($self{dbtype} eq 'Pg'){
+    system ("export PGPASSWORD=\"$self{dbpass}\"; pg_dump -h $self{dbhost} -U $self{dbuser} -w $self{dbdatabase} >$file");
 }else{
     die "$self{dbtype} not yet implemented";
 }
