@@ -594,7 +594,7 @@ on how they are contained within each other.
 device, together with the subnets they belong in, the device interface
 where they were found, and optionally, their DNS names.
 
-At the bottom of this section, you will find an option to set the "Auto
+Near the end of this section, you will find an option to set the "Auto
 DNS" flag on all interfaces with IP addresses. The purpose of this flag
 is to tell Netdot whether it should generate DNS names for each IP
 address based on the interface name and the device name.
@@ -604,7 +604,7 @@ that you can write your own plugin to generate DNS names based on your own
 naming scheme (see configuration file for more details). The included
 plugin generates names such as "ge-0-1.router1.mydomain.com", assuming
 that the device name is router1 and that the interface is GigabitEthernet0/1.
-This is very useful for when you are using the traceroute utility.
+This is very useful when you are using the traceroute utility.
 
 For this to work you need the following:
 
@@ -613,9 +613,25 @@ For this to work you need the following:
 * Each interface with an IP address on the device has to have the "Auto
   DNS flag on"
 * The IP address must exist within an IP block which has been assigned
-  a DNS zone (Management -> Address Space).
+  a DNS zone (Management -> Address Space). Alternatively, the 
+  option AUTO_DNS_ZONE specifies the name of the zone to use.
 * For PTR records to be generated as well, the IP block must have a
   reverse zone (in-addr.arpa or ip6.arpa) associated with it.
+
+You can generate these records in two ways:
+
+a) By clicking on the button that reads "Re-generate DNS names for all IPs"
+   at the bottom of the IP info tab of the device page. This will act 
+   on only that device
+b) By using the updatedevices.pl executable as follows:
+
+~~~~ {.bash}
+~# bin/updatedevices.pl -DN
+~~~~
+
+The command above will instruct Netdot to generate DNS records for all
+IPs belong to device interfaces, as long as the criteria explained earlier 
+are met.
 
 #### BGP Peers Tab: If the device is a router with BGP peering sessions,
 and those are seen via SNMP, Netdot will show that information in this

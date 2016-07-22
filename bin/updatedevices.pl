@@ -24,7 +24,7 @@ my $timeout = Netdot->config->get('DEFAULT_SNMPTIMEOUT');
 
 # Flags
 my ($ATOMIC, $ADDSUBNETS, $SUBSINHERIT, $BGPPEERS, $RECURSIVE, $INFO, $FWT, 
-    $TOPO, $ARP, $PRETEND, $HELP, $_DEBUG);
+    $TOPO, $ARP, $AUTO_DNS, $PRETEND, $HELP, $_DEBUG);
 
 $ENV{REMOTE_USER} = "netdot";
 
@@ -62,6 +62,7 @@ my $USAGE = <<EOF;
     -F, --fwt                            Get forwarding tables
     -T, --topology                       Update Topology
     -A, --arp                            Get ARP tables
+    -N, --auto-dns                       Generate DNS records for interface IPs
     --atomic                             Make updates atomic (enable transactions)
     --add-subnets <0|1>                  Enable/Disable trying to add subnets from routing devices
     --subs-inherit <0|1>                 Enable/Disable having new subnets inherit information from device 
@@ -85,6 +86,7 @@ my $result = GetOptions( "H|host=s"          => \$host,
 			 "F|fwt"             => \$FWT,
 			 "A|arp"             => \$ARP,
 			 "T|topology"        => \$TOPO,
+			 "N|auto-dns"        => \$AUTO_DNS,
 			 "c|communities:s"   => \$commstrs,
 			 "r|retries:s"       => \$retries,
 			 "o|timeout:s"       => \$timeout,
@@ -113,13 +115,14 @@ if ( $HELP ) {
     print $USAGE;
     exit;
 }
-if ( ($host && $db) || ($host && $blocks) || ($host && $file ) || ($db && $blocks) || ($db && $file) || ($blocks && $file) ){
+if ( ($host && $db) || ($host && $blocks) || ($host && $file ) || ($db && $blocks) 
+     || ($db && $file) || ($blocks && $file) ){
     print $USAGE;
     die "Error: arguments -H, -B, -D and -E are mutually exclusive\n";
 }
-unless ( $INFO || $FWT || $ARP || $TOPO ){
+unless ( $INFO || $FWT || $ARP || $TOPO || $AUTO_DNS ){
     print $USAGE;
-    die "Error: You need to specify at least one of -I, -F, -A or -T\n";
+    die "Error: You need to specify at least one of -I, -F, -A, -T or N\n";
 }
 
 foreach my $flagref ( \$ADDSUBNETS, \$SUBSINHERIT, \$BGPPEERS ){
@@ -218,7 +221,16 @@ if ( $INFO || $FWT || $ARP ){
 	
     }else{
 	print $USAGE;
-	die "Error: You need to specify one of: -H, -B, -E, -D or -T\n";
+	die "Error: You need to specify one of: -H, -B, -E, or -D\n";
+    }
+}
+
+if ( $AUTO_DNS ){
+    if ( $host || $blocks || $file ){
+	die "Error: AUTO DNS option only works with -D"
+    }elsif ( $db ){
+	$logger->info("Generating DNS for interface IPs on all devices");
+	Netdot::Model::Device->do_auto_dns_all();
     }
 }
 
@@ -238,7 +250,7 @@ Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2013 University of Oregon, all rights reserved.
+Copyright 2016 University of Oregon, all rights reserved.
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -255,5 +267,3 @@ along with this program; if not, write to the Free Software Foundation,
 Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 =cut
-
-

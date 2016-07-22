@@ -60,6 +60,8 @@ sub get_name {
     return $ip->interface->device->short_name;
 }
 
+1;
+
 =head1 AUTHORS
 
 Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >> 

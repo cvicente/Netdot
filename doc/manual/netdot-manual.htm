@@ -370,15 +370,22 @@ device3 community2
 <p>Netdot will show it in this tab. Modules are shown hierarchically based on how they are contained within each other.</p>
 <h4 id="ip-info-tab-this-section-lists-all-the-ip-addresses-found-in-the"><a href="#TOC"><span class="header-section-number">4.1.3.4</span> IP Info Tab: This section lists all the IP addresses found in the</a></h4>
 <p>device, together with the subnets they belong in, the device interface where they were found, and optionally, their DNS names.</p>
-<p>At the bottom of this section, you will find an option to set the &quot;Auto DNS&quot; flag on all interfaces with IP addresses. The purpose of this flag is to tell Netdot whether it should generate DNS names for each IP address based on the interface name and the device name.</p>
-<p>The logic of this operation is handed off to a plugin module, which means that you can write your own plugin to generate DNS names based on your own naming scheme (see configuration file for more details). The included plugin generates names such as &quot;ge-0-1.router1.mydomain.com&quot;, assuming that the device name is router1 and that the interface is GigabitEthernet0/1. This is very useful for when you are using the traceroute utility.</p>
+<p>Near the end of this section, you will find an option to set the &quot;Auto DNS&quot; flag on all interfaces with IP addresses. The purpose of this flag is to tell Netdot whether it should generate DNS names for each IP address based on the interface name and the device name.</p>
+<p>The logic of this operation is handed off to a plugin module, which means that you can write your own plugin to generate DNS names based on your own naming scheme (see configuration file for more details). The included plugin generates names such as &quot;ge-0-1.router1.mydomain.com&quot;, assuming that the device name is router1 and that the interface is GigabitEthernet0/1. This is very useful when you are using the traceroute utility.</p>
 <p>For this to work you need the following:</p>
 <ul>
 <li>The device has to have its &quot;Auto DNS&quot; flag set (Basics section of the device page).</li>
 <li>Each interface with an IP address on the device has to have the &quot;Auto DNS flag on&quot;</li>
-<li>The IP address must exist within an IP block which has been assigned a DNS zone (Management -&gt; Address Space).</li>
+<li>The IP address must exist within an IP block which has been assigned a DNS zone (Management -&gt; Address Space). Alternatively, the option AUTO_DNS_ZONE specifies the name of the zone to use.</li>
 <li>For PTR records to be generated as well, the IP block must have a reverse zone (in-addr.arpa or ip6.arpa) associated with it.</li>
 </ul>
+<p>You can generate these records in two ways:</p>
+<ol style="list-style-type: lower-alpha">
+<li>By clicking on the button that reads &quot;Re-generate DNS names for all IPs&quot; at the bottom of the IP info tab of the device page. This will act on only that device</li>
+<li>By using the updatedevices.pl executable as follows:</li>
+</ol>
+<pre class="sourceCode bash"><code class="sourceCode bash">~# bin/updatedevices.pl -DN</code></pre>
+<p>The command above will instruct Netdot to generate DNS records for all IPs belong to device interfaces, as long as the criteria explained earlier are met.</p>
 <h4 id="bgp-peers-tab-if-the-device-is-a-router-with-bgp-peering-sessions"><a href="#TOC"><span class="header-section-number">4.1.3.5</span> BGP Peers Tab: If the device is a router with BGP peering sessions,</a></h4>
 <p>and those are seen via SNMP, Netdot will show that information in this tab. Information includes the remote IP address, the BGP ID and the AS. The BGPPeering record also includes fields to document things such as the maximum number of allowed IPv4 and IPv6 prefixes, whether the peering should be monitored (e.g. with Nagios), etc.</p>
 <p>For each AS discovered, Netdot tries to look up its information using WHOIS. If the information is found, an entity record is created with the AS number, AS name, etc. You can expand this record to include contact information, comments, etc.</p>

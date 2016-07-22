@@ -68,7 +68,7 @@ $logger->level($DEBUG) if ( $self{DEBUG} );
 
 print "--------------------\n";
 
-if ( $address =~ /$MAC/ ){
+if ( $address =~ /^$MAC$/ ){
     $address   = PhysAddr->format_address($address);
     if ( $self{FORCE_LIVE} ){
 	&search_live(mac=>$address, vlan=>$self{VLAN});

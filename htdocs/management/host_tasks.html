@@ -191,7 +191,7 @@ if ( $action eq "search" && $submit ){
     # Remove trailing and leading spaces
     $search = $ui->rem_lt_sp($search);
     $search ||= '*';
-    if ( $search =~ /$MAC/ ){
+    if ( $search =~ /^$MAC$/ ){
 	@list = PhysAddr->search(address=>$search);
     }elsif ( Ipblock->matches_ip($search) ){
 	@list = Ipblock->search(address=>$search);

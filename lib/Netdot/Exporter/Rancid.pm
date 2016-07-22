@@ -141,7 +141,12 @@ sub generate_configs {
 	foreach my $device ( sort keys %{$groups{$group}} ){
 	    my $mfg   = $groups{$group}{$device}{mfg} || next;
 	    my $state = $groups{$group}{$device}{state} || next;
-	    print $rancid $device, ":$mfg:$state\n";
+	    my $delim = Netdot->config->get('RANCID_DELIM');
+	    $self->throw_user(sprintf("Netdot::Exporter::Rancid::generate_configs: ".
+				      "Invalid Rancid delimiter: '%s'", $delim)) 
+		unless ($delim eq ';' || $delim eq ':');
+	    my $str = join($delim, ($device, $mfg, $state));
+	    print $rancid "$str\n";
 	}
 	close($rancid) || $logger->warn("Netdot::Exporter::Rancid::generate_configs: ".
 				    "$file_path did not close nicely");

@@ -14,7 +14,6 @@ $zone           => undef
 $submit         => undef
 $add_ptr        => undef
 $add_alias      => undef
-$add_dhcp       => undef
 $editattr       => undef
 $editipblock    => undef
 </%args>
@@ -413,16 +412,11 @@ foreach my $o ( values %rrs ) {
 	    if ( ($scope = $ipblock->dhcp_scopes->first) && ( $scope->physaddr() || $scope->duid ) ){
 		print '&nbsp;';
 	    }else{
-		if ( $add_dhcp ){
-		    print '<input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">';
-		    print '<input type="submit" name="submit" value="save" >';
-		}else{
-		    # Let user add a scope
-		    print '&nbsp;';
-		    if ( !$edit ){
-			if ( $manager && $manager->can($user, 'edit', $o) ){
-			    print '<a href="host.html?id='.$id.'&add_dhcp='.$ipblock.'">[add]</a>';
-			}
+		# Let user add a host scope
+		print '&nbsp;';
+		if ( !$edit ){
+		    if ( $manager && $manager->can($user, 'edit', $o) ){
+			printf('<a href="ip.html?id=%d&_action=VIEW_ADD_DHCP">[add]</a>', $ipblock);
 		    }
 		}
 	    }
@@ -458,25 +452,6 @@ foreach my $o ( values %rrs ) {
 		$m->comp('/generic/attribute_table.mhtml', %comphash, width=>$t_width);
 		(@field_headers, @cell_data) = ((),());
 
-	    }else{
-		if ( $add_dhcp == $ipblock->id ){
-		    # User wants to add a scope with this ip
-		    print '<input name="DhcpScope__NEW__container" value="'.$gscope.'" type="hidden">';
-		    print '<input name="DhcpScope__NEW__type" value="host" type="hidden">';
-		    print '<input name="DhcpScope__NEW__name" value="'.$ipblock->address.'" type="hidden">';
-		    print '<input name="DhcpScope__NEW__ipblock" value="'.$ipblock.'" type="hidden">';
-		    if ( $ipblock->version == 4 || 
-			 ($ipblock->version == 6 && 
-			  Netdot->config->get('DHCPD_ALLOW_ETHERNET_FOR_IPV6_HOST_DECL')) ){
-			push @field_headers, ('Ethernet: ');
-			push( @cell_data, '<input name="DhcpScope__NEW__physaddr" value="" type="text">' );
-		    }elsif ( $ipblock->version == 6 ){
-			push @field_headers, ('DUID: ');
-			push( @cell_data, '<input name="DhcpScope__NEW__duid" value="" type="text" size="48">' );
-		    }
-		    $m->comp('/generic/attribute_table.mhtml', %comphash, width=>1);
-		    (@field_headers, @cell_data) = ((),());
-		}
 	    }
 	    print '</div></div>';
 	}

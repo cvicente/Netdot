@@ -199,57 +199,16 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 
 }elsif( $_action eq "UPDATE" ){
 
-    if ($submit eq "cancel") {
-        # Get rid of the new block
-        if ( $id != 0 ){
-	    unless ( $o = Ipblock->retrieve($id) ){
-		$m->comp('/generic/error.mhtml', error => "Can't retrieve Ipblock id $id");
+    my $new_digest = $o->get_digest();
+    eval {
+	Netdot::Model->do_transaction( sub{ 
+	    if ( $state_digest && ($state_digest ne $new_digest) ){
+		$ui->throw_user("This IP changed while you were editing!");
 	    }
-	    $o->delete;
-        }
-
-	# Show parent block
-        # reset all request variables to make this look like a view request
-        $view_object = 1;
-        $edit = 0;
-        $id = $parent;
-        if ( $id != 0 ){
-	    unless ( $o = Ipblock->retrieve($id) ){
-		$m->comp('/generic/error.mhtml', error => "Can't retrieve Ipblock id $id");
-	    }
-        }
-
-    } else {
-	my $new_digest = $o->get_digest();
-	eval {
-	    Netdot::Model->do_transaction( sub{ 
-		if ( $state_digest && ($state_digest ne $new_digest) ){
-		    $ui->throw_user("This IP changed while you were editing!");
-		}
-		$ui->form_to_db(%ARGS); 
-					   });
-	};
-        if ( my $e = $@ ){
-	    $m->comp('/generic/error.mhtml', error=>$e);
-        }else{
-	    # Do this to 'flush' the values associated with the object
-	    # before redisplaying
-	    $o = undef;
-	    if ( $id ){
-		$o = Ipblock->retrieve($id);
-	    }
-	}
-    }
-
-#######################################################################################
-# Update Children
-# 
-#######################################################################################
-
-}elsif( $_action eq "UPDATE_CHILDREN" ){
-
-    eval { $ui->form_to_db(%ARGS) };
-    if ( my $e = $@  ){
+	    $ui->form_to_db(%ARGS); 
+				       });
+    };
+    if ( my $e = $@ ){
 	$m->comp('/generic/error.mhtml', error=>$e);
     }else{
 	# Do this to 'flush' the values associated with the object
@@ -416,7 +375,7 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
     }
 	    
 #######################################################################################
-# ENABLE DHCP
+# ENABLE DHCP ON SUBNET
 #
 #######################################################################################
 }elsif ( $_action eq 'ENABLE_DHCP'){
@@ -859,17 +818,42 @@ if ($o->parent && $o->parent->dhcp_scopes) {
     if ( @scopes ){
 	print '&nbsp;';
     }else{
-	# Let user add a scope (takes user to another page)
+	# Let user add a scope
 	print '&nbsp;';
-	if ( !$edit ){
-	    if ( $manager && $manager->can($user, 'edit', $o) ){
-		print '<a href="host.html?ipblock='.$o.'&add_dhcp='.$o.'">[add]</a>';
-	    }
+	if ( $_action ne 'VIEW_ADD_DHCP' && $manager && $manager->can($user, 'edit', $o) ){
+	    print '<a href="ip.html?id='.$o.'&_action=VIEW_ADD_DHCP">[add]</a>';
 	}
     }
     print '</div>';
     print '<div class="containerbody">';
-    $m->comp('/generic/sortresults.mhtml', object=>\@scopes);
+    if ( $_action eq 'VIEW_ADD_DHCP' ){
+	print '<form name="netdotform" action="ip.html" method="POST">';
+	printf('<input type="hidden" name="id" value="%d">', $o->id);
+	print '<input type="hidden" name="_action" value="UPDATE">';
+
+	my (@field_headers, @cell_data) = ((),());
+	# User wants to add a scope with this ip
+	printf('<input name="DhcpScope__NEW__container" value="%s" type="hidden">', $gscope);
+	printf('<input name="DhcpScope__NEW__type" value="host" type="hidden">');
+	printf('<input name="DhcpScope__NEW__name" value="%s" type="hidden">', $o->address);
+	printf('<input name="DhcpScope__NEW__ipblock" value="%s" type="hidden">', $o->id);
+	if ( $o->version == 4 || 
+	     ($o->version == 6 && 
+	      Netdot->config->get('DHCPD_ALLOW_ETHERNET_FOR_IPV6_HOST_DECL')) ){
+	    push @field_headers, ('Ethernet: ');
+	    push( @cell_data, '<input name="DhcpScope__NEW__physaddr" value="" type="text">' );
+	}elsif ( $o->version == 6 ){
+	    push @field_headers, ('DUID: ');
+	    push( @cell_data, '<input name="DhcpScope__NEW__duid" value="" type="text" size="48">' );
+	}
+	$m->comp('/generic/attribute_table.mhtml', field_headers=>\@field_headers,
+		 data=>\@cell_data, width=>1);
+	print '<p><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">';
+        print '<input type="submit" name="submit" value="add">';
+	print '</form>';
+    }else{
+	$m->comp('/generic/sortresults.mhtml', object=>\@scopes);
+    }
     print '</div>'; #close containerbody of DHCP
     print '</div>'; #close container of DHCP
 }
@@ -1846,7 +1830,7 @@ if ( $_action eq 'VIEW_ADD_RIGHTS' ){
           <div class="containerheadright">
 %	     if ( $edit_children ){
 	         <input type="hidden" name="id" value="<% $id %>">
-		 <input type="hidden" name="_action" value="UPDATE_CHILDREN">
+		 <input type="hidden" name="_action" value="UPDATE">
 		 <input type="hidden" name="view" value="Children">
 		 <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
 		 <input type="submit" name="submit" value="save">
