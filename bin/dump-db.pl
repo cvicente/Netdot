@@ -58,7 +58,6 @@ my $file = $self{dir}."/$hostname-$date.sql";
 
 ## Dump the database
 if ($self{dbtype} eq 'mysql'){
-    system ("mysqldump --opt -u$self{dbuser} -p$self{dbpass} netdot >$file");
     my @args = ('--opt', "-u$self{dbuser}", "-p$self{dbpass}");
     push @args, '--master-data' if $self{master_data};
     my $dump_args = join ' ', @args;
