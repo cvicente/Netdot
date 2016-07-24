@@ -2743,7 +2743,9 @@ sub update_bgp_peering {
 	$pstate{last_changed} = $self->timestamp;
 
 	# Assign the first available contactlist from the device list
-	$pstate{contactlist} = $self->contacts->first->contactlist;
+	if (defined ($self->contacts->first)) {
+	    $pstate{contactlist} = $self->contacts->first->contactlist;
+        }
 
 	$p = BGPPeering->insert(\%pstate);
 	my $peer_label;
