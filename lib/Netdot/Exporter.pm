@@ -376,6 +376,9 @@ sub hook {
         $self->throw_fatal("Netdot::Exporter::hook Name of hook is not defined.");
     }
 
+    # Always include the Netdot name for the external program to consume.
+    $data->{netdot_name} = Netdot->config->get('NETDOTNAME');
+
     my $hooks_dir = Netdot->config->get('EXPORTER_HOOKS_DIR');
     $logger->trace("Configuration set hooks dir to $hooks_dir.");
 
