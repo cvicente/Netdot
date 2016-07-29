@@ -395,7 +395,8 @@ sub hook {
     if (-e $named_hook_directory) {
         if (-d $named_hook_directory) {
             opendir(my $dh, $named_hook_directory) or die;
-            while(readdir $dh) {
+            my @files = sort readdir $dh;
+            for (@files) {
                 my $entry = catpath(undef, $named_hook_directory, $_);
                 if (-f $entry && -x $entry) {
                     $logger->debug("Found executable file $entry for hook $short_type with name $name.");
