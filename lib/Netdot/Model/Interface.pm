@@ -436,7 +436,8 @@ sub snmp_update {
     
     ############################################
     # Update PhysAddr
-    if ( $info->{physaddr} && (my $addr = PhysAddr->validate($info->{physaddr})) ){
+    $iftmp{physaddr} = undef;
+    if ( my $addr = $info->{physaddr} ){
 	my $physaddr = PhysAddr->search(address=>$addr)->first;
 	if ( $physaddr ){
 	    $physaddr->update({last_seen=>$self->timestamp, static=>1});
@@ -445,12 +446,10 @@ sub snmp_update {
 		$physaddr = PhysAddr->insert({address=>$addr, static=>1}); 
 	    };
 	    if ( my $e = $@ ){
-		$logger->debug(sub{"$e"});
+		$logger->warn("Could not insert interface MAC: $e");
 	    }
 	}
 	$iftmp{physaddr} = $physaddr->id if $physaddr;
-    }else{
-	$iftmp{physaddr} = undef;
     }
 
 

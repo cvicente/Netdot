@@ -69,7 +69,7 @@ $logger->level($DEBUG) if ( $self{DEBUG} );
 print "--------------------\n";
 
 if ( $address =~ /^$MAC$/ ){
-    $address   = PhysAddr->format_address_disk_storage($address);
+    $address = PhysAddr->format_address_db($address);
     if ( $self{FORCE_LIVE} ){
 	&search_live(mac=>$address, vlan=>$self{VLAN});
     }else{
@@ -166,10 +166,10 @@ sub show_mac {
     }
 
     print "\n";
-    print "MAC Address : ", $mac->get_preferred_display__address, "\n";
-    print "Vendor      : ", $mac->vendor,                         "\n";
-    print "First Seen  : ", $mac->first_seen,                     "\n";
-    print "Last Seen   : ", $mac->last_seen,                      "\n";
+    print "MAC Address : ", $mac->address,    "\n";
+    print "Vendor      : ", $mac->vendor,     "\n";
+    print "First Seen  : ", $mac->first_seen, "\n";
+    print "Last Seen   : ", $mac->last_seen,  "\n";
 
     my $last_n_fte = $self{FWT_LIMIT} || 1;
     my $last_n_arp = $self{ARP_LIMIT} || 1;

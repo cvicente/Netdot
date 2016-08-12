@@ -361,12 +361,6 @@ sub import_hosts{
 	$self->throw_user("Invalid line: $line")
 	    unless ($mac && $ip);
 	
-	$self->throw_user("Invalid mac: $mac")
-	    unless ( PhysAddr->validate($mac) );
-
-	$self->throw_user("Invalid IP: $ip")
-	    unless ( Ipblock->matches_ip($ip) );
-
 	if ( $argv{overwrite} ){
 	    if ( my $phys = PhysAddr->search(address=>$mac)->first ){
 		foreach my $scope ( $phys->dhcp_hosts ){
@@ -459,26 +453,21 @@ sub _objectify_args {
 	    $self->throw_user("Invalid type argument ".$argv->{type});
 	}
     }
-
+    
     if ( $argv->{physaddr} && !ref($argv->{physaddr}) ){
 	# Could be an ID or an actual address
-    my $phys;
-    my $validation_error_message = undef;
-    if ( PhysAddr->validate($argv->{physaddr}, \$validation_error_message) ){
-	    # It looks like an address
-	    $phys = PhysAddr->find_or_create({address=>$argv->{physaddr}});
-	}elsif ( $argv->{physaddr} !~ /\D/ ){
-	    # Does not contain non-digits, so it must be an ID
+	my $phys;
+	if ( $argv->{physaddr} !~ /\D/ ){
+	    # It's all digits, so it must be an ID
 	    $phys = PhysAddr->retrieve($argv->{physaddr});
+	}else{
+	    $phys = PhysAddr->find_or_create({address=>$argv->{physaddr}});
 	}
 	if ( $phys ){
 	    $argv->{physaddr} = $phys;
 	}else{
-        my $error_message = "Could not find or create physaddr";
-        if (defined($validation_error_message)) {
-            $error_message .= "\n$validation_error_message";
-        }
-        $self->throw_user($error_message);
+	    $self->throw_user("Could not find or create physical address".
+			      " for given argument: ".$argv->{physaddr});
 	}
     }
 
@@ -617,7 +606,7 @@ sub _validate_args {
 			if ( $s->ipblock && (my $osubnet = $s->ipblock->parent) ){
 			    if ( $osubnet->id == $subnet->id ){
 				$self->throw_user("$name: Duplicate MAC address in this subnet: ".
-						  $fields{physaddr}->get_preferred_display__address);
+						  $fields{physaddr}->address);
 			    }
 			}
 		    }
@@ -890,12 +879,7 @@ sub _get_all_data {
 		$data{$scope_id}{attrs}{'client-id'}{value} = $scope_duid;
 	    }elsif ( $mac ){
 		$data{$scope_id}{attrs}{'hardware ethernet'}{name}  = 'hardware ethernet';
-		$data{$scope_id}{attrs}{'hardware ethernet'}{value} = PhysAddr->format_address(
-            address                   => $mac,
-            format_caseness           => Netdot->config->get('MAC_DHCPD_FORMAT_CASENESS') || 'upper',
-            format_delimiter_string   => ':',
-            format_delimiter_interval => 2,
-        );
+		$data{$scope_id}{attrs}{'hardware ethernet'}{value} = PhysAddr->dhcpd_address($mac);
 	    }else{
 		# Without DUID or MAC, this would be invalid
 		next;
@@ -957,7 +941,7 @@ sub _assign_name {
 	if ( $argv->{ipblock} ){
 	    $name = $argv->{ipblock}->full_address;
 	}elsif ( $argv->{physaddr} ){
-	    $name = $argv->{physaddr}->get_preferred_display__address;
+	    $name = $argv->{physaddr}->address;
 	}elsif ( $argv->{duid} ){
 	    $name = $argv->{duid};
 	}

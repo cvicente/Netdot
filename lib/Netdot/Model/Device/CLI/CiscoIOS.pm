@@ -254,7 +254,7 @@ sub _get_fwt_from_cli {
     my ($iname, $mac, $intid);
     my %fwt;
     
-    # Output look like this:
+    # Output looks like this:
     #  vlan   mac address     type    learn     age              ports
     # ------+----------------+--------+-----+----------+--------------------------
     #    128  0024.b20e.fe0f   dynamic  Yes        255   Gi9/22
@@ -266,28 +266,30 @@ sub _get_fwt_from_cli {
 	    $mac   = $1;
 	    $iname = $2;
 	}else{
-	    $logger->debug(sub{"Device::CLI::CiscoIOS::_get_fwt_from_cli: line did not match criteria: '$line'" });
+	    $logger->debug(sub{"Device::CLI::CiscoIOS::_get_fwt_from_cli: ".
+				   "line did not match criteria: '$line'" });
 	    next;
 	}
 	$iname = $self->_reduce_iname($iname);
 	my $intid = $int_names{$iname};
 
 	unless ( $intid ) {
-	    $logger->warn("Device::CLI::CiscoIOS::_get_fwt_from_cli: $host: Could not match $iname to any interface names");
+	    $logger->warn("Device::CLI::CiscoIOS::_get_fwt_from_cli: $host: ".
+			  "Could not match $iname to any interface names");
 	    next;
 	}
-	
-	my $validmac = PhysAddr->validate($mac);
-	if ( $validmac ){
-	    $mac = $validmac;
-	}else{
-	    $logger->debug(sub{"Device::CLI::CiscoIOS::_get_fwt_from_cli: $host: Invalid MAC: $mac" });
+	eval {
+	    $mac = PhysAddr->validate($mac);
+	};
+	if ( my $e = $@ ){
+	    $logger->debug(sub{"Device::CLI::CiscoIOS::_get_fwt_from_cli: ".
+				   "$host: Invalid MAC: $e" });
 	    next;
 	}	
-
 	# Store in hash
 	$fwt{$intid}{$mac} = 1;
-	$logger->debug(sub{"Device::CLI::CiscoIOS::_get_fwt_from_cli: $host: $iname -> $mac" });
+	$logger->debug(sub{"Device::CLI::CiscoIOS::_get_fwt_from_cli: ".
+			       "$host: $iname -> $mac" });
     }
     
     return \%fwt;

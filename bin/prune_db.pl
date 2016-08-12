@@ -102,7 +102,7 @@ if ( $self{MACS} ){
     # Note: This will also delete FWTableEntry, ArpCacheEntry objects, DhcpScopes, etc.
     my @macs = PhysAddr->search_where(static=>0, last_seen=>{ '<', $sqldate } );
     foreach my $mac ( @macs ){
-	$logger->debug(sprintf("Deleting PhysAddr %s", $mac->get_preferred_display__address));
+	$logger->debug(sprintf("Deleting PhysAddr %s", $mac->address));
 	unless ( $self{PRETEND} ){
 	    $mac->delete;
 	    $rows_deleted{physaddr}++;
