@@ -815,8 +815,10 @@ if (!$edit){
             Name: <input type="text" name="new_a_name" value="">
 	    <select name="new_a_zone">
             <option value=""> - select - </option>
+%          my $i = 0;
 %	    foreach my $zone ( @zone_list ){
-                <option value="<% $zone->id %>"><% $zone->get_label %></option>
+                <option value="<% $zone->id %>"<% ($i == 0 && Netdot->config->get("SELECT_DEFAULT_DOMAIN_FOR_NEW_ADDRESS_RECORD")) ? ' selected' : '' %>><% $zone->get_label %></option>
+%               $i++;
 %	    }
             </select>
             <p><input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
