@@ -988,10 +988,18 @@ sub _dot_arpa_to_ip {
 	my @g; my $m;
 	for (my $i=1; $i<=scalar(@n); $i++){
 	    $m .= $n[$i-1];
+        # If we are at a "group" boundary, then push it on.
 	    if ( $i % 4 == 0 ){
 		push @g, $m;
 		$m = "";
 	    }
+        # If we are at the last character of the address, then process
+        # what is left.
+        elsif ($i == @n) {
+            # Ensure we have four characters in the group before pushing.
+            $m .= '0' x (4 - length($m));
+            push @g, $m;
+        }
 	}
 	$ipaddr = join ':', @g;
 	if ( $plen < 128 ){
