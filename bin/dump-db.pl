@@ -14,25 +14,29 @@ my %self;
 
 $self{dbtype} = Netdot->config->get('DB_TYPE');
 $self{dbuser} = Netdot->config->get('DB_DBA');
+$self{dbhost} = Netdot->config->get('DB_HOST');
+$self{dbdatabase} = Netdot->config->get('DB_DATABASE');
 $self{dbpass} = Netdot->config->get('DB_DBA_PASSWORD');
 $self{dir}    = '.';
 
 my $USAGE = <<EOF;
 usage: $0 [options]
          
-    --dbtype <type>       Database Type [mysql|pg] (default: $self{dbtype})
+    --dbtype <type>       Database Type [mysql|Pg] (default: $self{dbtype})
     --dbuser <username>   Database DBA user (default: $self{dbuser})
     --dbpass <password>   Database DBA password
     --dir    <path>       Directory where files should be written (default: $self{dir})
+    --master-data         Include master data in dump (MySQL)
     --help                Display this message
 EOF
 
-my $result = GetOptions( "dbtype=s"  => \$self{dbtype}, 
-			 "dbuser=s"  => \$self{dbuser}, 
-			 "dbpass=s"  => \$self{dbpass}, 
-			 "dir:s"     => \$self{dir},
-			 "help=s"    => \$self{help},
-			 "debug"     => \$self{debug},
+my $result = GetOptions( "dbtype=s"    => \$self{dbtype}, 
+			 "dbuser=s"    => \$self{dbuser}, 
+			 "dbpass=s"    => \$self{dbpass}, 
+			 "dir:s"       => \$self{dir},
+			 "master-data" => \$self{master_data},
+			 "help=s"      => \$self{help},
+			 "debug"       => \$self{debug},
 			 );    
 
 if( ! $result || $self{help} ) {
@@ -54,9 +58,12 @@ my $file = $self{dir}."/$hostname-$date.sql";
 
 ## Dump the database
 if ($self{dbtype} eq 'mysql'){
-    system ("mysqldump --opt -u$self{dbuser} -p$self{dbpass} netdot >$file");
-}elsif ($self{dbtype} eq 'pg'){
-    die "$self{dbtype} not yet implemented";
+    my @args = ('--opt', "-u$self{dbuser}", "-p$self{dbpass}");
+    push @args, '--master-data' if $self{master_data};
+    my $dump_args = join ' ', @args;
+    system ("mysqldump $dump_args netdot >$file");
+}elsif ($self{dbtype} eq 'Pg'){
+    system ("export PGPASSWORD=\"$self{dbpass}\"; pg_dump -h $self{dbhost} -U $self{dbuser} -w $self{dbdatabase} >$file");
 }else{
     die "$self{dbtype} not yet implemented";
 }

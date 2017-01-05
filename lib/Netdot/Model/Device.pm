@@ -2743,7 +2743,9 @@ sub update_bgp_peering {
 	$pstate{last_changed} = $self->timestamp;
 
 	# Assign the first available contactlist from the device list
-	$pstate{contactlist} = $self->contacts->first->contactlist;
+	if (defined ($self->contacts->first)) {
+	    $pstate{contactlist} = $self->contacts->first->contactlist;
+        }
 
 	$p = BGPPeering->insert(\%pstate);
 	my $peer_label;
@@ -3188,7 +3190,7 @@ sub add_ip {
    
   Arguments:
     Hash with the following keys:
-       sort_by  [address|interface]
+       sort_by [address|interface] (optional)
   Returns:
     Arrayref of Ipblock objects
   Examples:
@@ -3200,15 +3202,17 @@ sub get_ips {
     my ($self, %argv) = @_;
     $self->isa_object_method('get_ips');
     
-    $argv{sort_by} ||= "address";
-    
     my @ips;
-    if ( $argv{sort_by} eq "address" ){
-	@ips = Ipblock->search_devipsbyaddr($self->id);
-    }elsif ( $argv{sort_by} eq "interface" ){
-	@ips = Ipblock->search_devipsbyint($self->id);
+    if ( $argv{sort_by} ){
+	if ( $argv{sort_by} eq "address" ){
+	    @ips = Ipblock->search_devipsbyaddr($self->id);
+	}elsif ( $argv{sort_by} eq "interface" ){
+	    @ips = Ipblock->search_devipsbyint($self->id);
+	}else{
+	    $self->throw_fatal("Model::Device::get_ips: Invalid sort criteria: $argv{sort_by}");
+	}
     }else{
-	$self->throw_fatal("Model::Device::get_ips: Invalid sort criteria: $argv{sort_by}");
+	@ips = Ipblock->search_devips($self->id);
     }
     return \@ips;
 }
@@ -3836,8 +3840,33 @@ sub set_interfaces_auto_dns {
     return 1;
 }
 
-###############################################################
-=head2 _do_auto_dns - Generate DNS records for all interface IPs
+###########################################################################
+=head2 do_auto_dns_all - Generate DNS for all interface IPs on all devices
+
+    Arguments
+      None
+    Returns
+      Nothing
+    Example:
+     Device->do_auto_dns_all();
+=cut
+
+sub do_auto_dns_all {
+    my ($class, %argv) = @_;
+    $class->isa_class_method('do_auto_dns_all');
+
+    unless ( $class->config->get('UPDATE_DEVICE_IP_NAMES') ){
+	$logger->warn("UPDATE_DEVICE_IP_NAMES config option is disabled");
+	return;
+    }
+    
+    foreach my $dev ( Device->retrieve_all ){
+	$dev->do_auto_dns();
+    }
+}
+
+################################################################################
+=head2 do_auto_dns - Generate DNS records for all interface IPs of given device
 
     Arguments
       None
@@ -3849,13 +3878,23 @@ sub set_interfaces_auto_dns {
 
 sub do_auto_dns {
     my ($self, %argv) = @_;
-    
+    $self->isa_object_method('do_auto_dns');
+
     my $host = $self->fqdn;
 
-    # Get addresses that the main Device name resolves to
+    unless ( $self->auto_dns ){
+	$logger->debug(sub{sprintf("Auto DNS is disabled for device %s.".
+				   " Skipping.", $host)});
+	return;
+    }
+
+    $logger->debug(sub{sprintf("Generating DNS records for IP interfaces in %s", 
+			     $host)});
+
+    # Get addresses that the main device name resolves to
     my @hostnameips;
     if ( @hostnameips = Netdot->dns->resolve_name($host) ){
-	$logger->debug(sub{ sprintf("Device::_update_interfaces: %s resolves to: %s",
+	$logger->debug(sub{ sprintf("Device::do_auto_dns: %s resolves to: %s",
 				    $host, (join ", ", @hostnameips))});
     }
     
@@ -3881,9 +3920,6 @@ sub do_auto_dns {
     }
     1;
 }
-
-
-
 
 
 #####################################################################
@@ -6366,12 +6402,6 @@ sub _update_interfaces {
 	$obj->update({interface=>undef});
     }
     
-    ##############################################################
-    # Update A records for each IP address
-    if ( $self->config->get('UPDATE_DEVICE_IP_NAMES') && $self->auto_dns ){
-	$self->do_auto_dns();
-    }
-
     1;
 }
 
@@ -6624,5 +6654,3 @@ Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 #Be sure to return 1
 1;
-
-

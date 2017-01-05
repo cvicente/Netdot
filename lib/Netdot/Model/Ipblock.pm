@@ -3712,6 +3712,17 @@ __PACKAGE__->set_sql(devipsbyint => qq{
 	ORDER BY interface.name
     });
 
+# usage:
+#   Ipblock->search_devips($dev)
+
+__PACKAGE__->set_sql(devips => qq{
+    SELECT device.id, interface.id, interface.name, interface.device, ipblock.id, ipblock.interface, ipblock.address
+	FROM ipblock, interface, device
+	WHERE interface.id = ipblock.interface AND
+	device.id = interface.device AND
+	device.id = ?
+    });
+
 
 =head1 AUTHORS
 
