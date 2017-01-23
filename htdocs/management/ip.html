@@ -1329,7 +1329,7 @@ push( @cell_data, $used_by );
 my $ip = new NetAddr::IP($o->address, $o->prefix);
 
 push( @field_headers, "Netmask:", "Broadcast:" );
-push( @cell_data, $ip->mask);
+push( @cell_data, ($ip->version == 4 ? $ip->mask : '/'.$o->prefix) );
 push( @cell_data, ($ip->version == 4 ? $ip->broadcast->addr : "n/a") );
 
 ################
@@ -1349,8 +1349,8 @@ if ( $o->version == 4 ){
     }
 }else{
     $num_addresses = $o->num_addr;
-    $first_address = $ip->network->addr;
-    $last_address  = $ip->broadcast->addr;
+    $first_address = $ip->network->canon;
+    $last_address  = $ip->broadcast->canon;
 }
 push( @cell_data, ($num_addresses." (". $first_address." - ".$last_address.")") );
 	
