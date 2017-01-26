@@ -6,6 +6,7 @@ use Time::Local;
 use Net::DNS;
 use Digest::MD5 qw(md5_hex);
 use Scalar::Util qw(blessed);
+use Class::DBI::AbstractSearch;
 
 =head1 NAME
 

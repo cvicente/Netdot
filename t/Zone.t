@@ -5,8 +5,20 @@ use lib "lib";
 
 BEGIN { use_ok('Netdot::Model::Zone'); }
 
-my $obj = Zone->insert({name=>'domain.name'});
-isa_ok($obj, 'Netdot::Model::Zone', 'insert');
+my $obj = Zone->insert(
+    {
+        name => 'domain.name',
+    },
+);
+isa_ok($obj, 'Netdot::Model::Zone', 'insert zone');
+
+my $alias = ZoneAlias->insert(
+    {
+        name => 'alias.name',
+        zone => $obj->id,
+    },
+);
+isa_ok($alias, 'Netdot::Model::ZoneAlias', 'insert zone alias');
 
 lives_and { is(Zone->_dot_arpa_to_ip('1.in-addr.arpa'), '1.0.0.0/8', 'IPv4 /8 .arpa zone to address') };
 lives_and { is(Zone->_dot_arpa_to_ip('2.1.in-addr.arpa'), '1.2.0.0/16', 'IPv4 /16 .arpa zone to address') };
@@ -28,8 +40,15 @@ lives_and { is(Zone->_dot_arpa_to_ip('c.b.a.9.8.7.6.5.4.3.2.1.ip6.arpa'), '1234:
 
 is(Zone->search(name=>'sub.domain.name')->first, $obj, 'search scalar' );
 is_deeply([Zone->search(name=>'sub.domain.name')], [$obj], 'search array' );
+is(Zone->search(name=>'sub.DoMaIn.NaMe')->first, $obj, 'case insensitive search scalar' );
+is_deeply([Zone->search(name=>'sub.DoMaIn.NaMe')], [$obj], 'case insensitive search array' );
 is(Zone->search(name=>'fake')->first, undef, 'search empty scalar' );
 is_deeply([Zone->search(name=>'fake')], [], 'search empty array' );
+
+is(Zone->search(name=>'alias.name')->first, $obj, 'alias search scalar' );
+is_deeply([Zone->search(name=>'alias.name')], [$obj], 'alias search array' );
+is(Zone->search(name=>'AlIaS.NaMe')->first, $obj, 'case insensitive alias search scalar' );
+is_deeply([Zone->search(name=>'AlIaS.NaMe')], [$obj], 'case insensitive alias search array' );
 
 is(Zone->search_like(name=>'domain.name')->first, $obj, 'search_like scalar' );
 is_deeply([Zone->search_like(name=>'domain.name')], [$obj], 'search_like array' );

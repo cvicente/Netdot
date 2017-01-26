@@ -24,41 +24,43 @@ DNS Zone Class
 
     We override the base method to add functionality:
 
-    - Return the most specific domain name. 
-    
-      If given:
+        - Return the most specific domain name.
+        - Perform case-insensitive searches for the name of the zone.
 
-         name=>dns.cs.local.domain
+    If given:
 
-      we will look for a Zone object in this order:
+        name => dns.cs.local.domain
+
+    we will look for a Zone object in this order:
 
         dns.cs.local.domain (not found)
         cs.local.domain     (not found)
         local.domain        (found)
+
         return 'local.domain'
 
     - Search the ZoneAlias table in addition to the Zone table.
 
-  Arguments: 
-    Hash with key/value pairs
-  Returns: 
-    See Class::DBI search
-  Examples:
-    Zone->search(name=>'some.domain.name')
+    Arguments:
+        Hash with key/value pairs
+    Returns:
+        See Class::DBI search
+    Examples:
+        my $zone_obj = Zone->search(name => 'some.domain.name');
 
 =cut
 
 sub search {
     my ($class, @args) = @_;
     $class->isa_class_method('search');
-    
+
     @args = %{ $args[0] } if ref $args[0] eq "HASH";
-    my $opts = @args % 2 ? pop @args : {}; 
+    my $opts = @args % 2 ? pop @args : {};
     my %argv = @args;
 
-    if ( exists $argv{id} && $argv{id} =~ /\D+/ ){
-	# No use searching for non-digits in id field
-	$argv{id} = 0;
+    if (exists $argv{id} && $argv{id} =~ /\D+/) {
+        # No use searching for non-digits in id field
+        $argv{id} = 0;
     }
 
     my (@result, $result);
@@ -69,42 +71,48 @@ sub search {
     }
 
     if (@result || $result) {
-	return wantarray ? @result : $result;
-    }elsif ( defined $argv{name} ){
-	if ( my $alias = ZoneAlias->search(name=>$argv{name})->first ) {
-	    return $class->SUPER::search(id => $alias->zone->id, $opts);
-	}elsif ( $argv{name} =~ /\./ && !Ipblock->matches_v4($argv{name}) ){
-	    my @sections = split '\.', $argv{name};
+        return wantarray ? @result : $result;
+    }
+    elsif (defined $argv{name}) {
+        if (my $alias = ZoneAlias->search_where(name => ['lower(name) = ?', lc($argv{name})])->first) {
+            return $class->SUPER::search(id => $alias->zone->id, $opts);
+        }
+        elsif ($argv{name} =~ /\./ && !Ipblock->matches_v4($argv{name})) {
+            my @sections = split '\.', $argv{name};
 
-	    # first try to search for the RFC2317 reverse if it exists
-	    if ( $argv{name} =~ /(\d+)\.(\d+)\.(\d+)\.(\d+)\.in-addr\.arpa$/o ) {
-		my $address = join('.',($4, $3, $2, $1));
-		if ( my $ipb = Ipblock->search(address=>$address)->first ){
-		    if ( my $subnet = $ipb->parent ){
-			my $subnetaddr = $subnet->address;
-			my $prefix = $subnet->prefix;
-			my @octs = split('\.', $subnetaddr);
-			$argv{name} = $octs[3]."-".$prefix.".$octs[2].$octs[1].$octs[0].in-addr.arpa";
-			$logger->debug(sub{ "Zone::search: $argv{name}" });
-			if ( $class->SUPER::search(%argv, $opts) ){
-			    $logger->debug(sub{ "Zone::search: found: ", $argv{name} });
-			    return $class->SUPER::search(%argv, $opts);
-			}
-		    } 
-		}
-	    }
-	    while ( @sections ){
-		$argv{name} = join '.', @sections;
-		$logger->debug(sub{ "Zone::search: $argv{name}" });
-		if ( $class->SUPER::search(%argv, $opts) ){
-		    # We call the method again to not mess
-		    # with CDBI's wantarray checks
-		    $logger->debug(sub{ "Zone::search: found: ", $argv{name} });
-		    return $class->SUPER::search(%argv, $opts);
-		}
-		shift @sections;
-	    }
-	}
+            # first try to search for the RFC2317 reverse if it exists
+            if ($argv{name} =~ /(\d+)\.(\d+)\.(\d+)\.(\d+)\.in-addr\.arpa$/) {
+                my $address = join('.',($4, $3, $2, $1));
+                if (my $ipb = Ipblock->search(address => $address)->first) {
+                    if (my $subnet = $ipb->parent) {
+                        my $subnetaddr = $subnet->address;
+                        my $prefix = $subnet->prefix;
+                        my @octs = split('\.', $subnetaddr);
+                        $argv{name} = $octs[3]."-".$prefix.".$octs[2].$octs[1].$octs[0].in-addr.arpa";
+                        $logger->debug(sub{ "Zone::search: $argv{name}" });
+                        if ($class->SUPER::search(%argv, $opts)) {
+                            $logger->debug(sub{ "Zone::search: found: ", $argv{name} });
+                            return $class->SUPER::search(%argv, $opts);
+                        }
+                    }
+                }
+            }
+            while (@sections) {
+                my $new_name = join '.', @sections;
+                $argv{name} = [
+                    'lower(name) = ?',
+                    lc($new_name),
+                ];
+                $logger->debug(sub{ "Zone::search: $new_name" });
+                if ($class->SUPER::search_where(\%argv, $opts)) {
+                    # We call the method again to not mess
+                    # with CDBI's wantarray checks
+                    $logger->debug(sub{ "Zone::search: found: $new_name" });
+                    return $class->SUPER::search_where(\%argv, $opts);
+                }
+                shift @sections;
+            }
+        }
     }
     return wantarray ? @result : $result;
 }
