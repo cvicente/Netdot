@@ -77,6 +77,7 @@ my $added_ip    = 0;
 my $added_block = 0;
 my $covering_block;
 my $BLOCK_VIEW_MAX;
+my $dns_address_record_label = 'A/AAAA';
 
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
@@ -101,12 +102,14 @@ if ( $id ){
 	$BLOCK_VIEW_MAX = Netdot->config->get('CONTAINER_BLOCK_VIEW_MAX_PREFIX');
     }
     if ( $o->version == 4 ){
+        $dns_address_record_label = 'A';
 	if ( $view_format eq 'block' ){
 	    if ( $BLOCK_VIEW_MAX && ($o->prefix < $BLOCK_VIEW_MAX) ){
 		$view_format = 'list';
 	    }
 	}
     }elsif ( $o->version == 6 ){
+        $dns_address_record_label = 'AAAA';
 	$view_format = 'list' if $view_format eq 'block';
     }
 
@@ -550,7 +553,7 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
     if ( my $e = $@ ){
 	$m->comp('/generic/error.mhtml', error=>$e);
     }else{
-	$m->comp('.show_message', title=>"Action Message", msg=>"A or AAAA record added successfully");
+	$m->comp('.show_message', title=>"Action Message", msg=>"$dns_address_record_label record added successfully");
     }
     
     
@@ -735,12 +738,11 @@ print $tmp{value};
     </div>
  </div>
 
-
 %################################################################
 <%perl>
 if (!$edit){
     print '<div class="container">';
-    print '<div class="containerheadleft">DNS A/AAAA Records</div>';
+    print '<div class="containerheadleft">DNS '.$dns_address_record_label.' Records</div>';
     print '<div class="containerheadright">';
     if ( ($_action ne 'VIEW_ADD_A_RECORD') && $manager && $manager->can($user, 'edit', $o) ){
 	print "<a href=\"ip.html?id=$o&_action=VIEW_ADD_A_RECORD\">[add]</a>";
