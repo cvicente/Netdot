@@ -798,7 +798,7 @@ if (!$edit){
 	if ( $zone ){
 	    @zone_list = ( $zone );
 	}
-	foreach my $z ( sort { $a->name cmp $b->name } Zone->retrieve_all ){
+	foreach my $z ( Zone->retrieve_all ){
 	    next if $z->is_dot_arpa;
 	    next unless $z->active;
 	    next if $zone && ($z->id == $zone->id);
@@ -1592,7 +1592,7 @@ print $tmp{value};
       <div class="containerbody">
 %     if ( $_action eq 'VIEW_ADD_FZONES' ){
 %         my $czone = ($o->forward_zone)? $o->forward_zone->name : "none";
-%         my @all_zones = sort { $a->name cmp $b->name } Zone->retrieve_all;
+%         my @all_zones = Zone->retrieve_all;
 %         my %cur_zones;
 %         map { $cur_zones{$_->zone->id} = 1 } @sz; 
 	  <form name="netdotform" action="ip.html" method="POST">
@@ -1648,7 +1648,7 @@ print $tmp{value};
       </div>
       <div class="containerbody">
 %     if ( $_action eq 'VIEW_ADD_RZONES' ){
-%         my @all_zones = sort { $a->name cmp $b->name } Zone->retrieve_all;
+%         my @all_zones = Zone->retrieve_all;
 	  <form name="netdotform" action="ip.html" method="POST">
 	    <input type="hidden" name="id" value="<% $o->id %>">
 	    <input type="hidden" name="_action" value="ADD_REV_ZONE">
