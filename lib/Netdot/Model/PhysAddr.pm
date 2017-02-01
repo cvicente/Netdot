@@ -226,6 +226,7 @@ sub fast_update {
 
   Arguments: 
     Physical address string
+    Return message buffer (optional)
   Returns:   
     Physical address string in canonical format, false if invalid
   Examples:
@@ -234,51 +235,81 @@ sub fast_update {
 =cut
 
 sub validate {
-    my ($self, $addr) = @_;
+    my ($self, $addr, $return_message_buffer) = @_;
+
     $self->isa_class_method('validate');
 
-    return unless $addr;
-    $addr = $self->format_address($addr);
-    if ( $addr !~ /^[0-9A-F]{12}$/ ){
-	# Format must be DEADDEADBEEF
-	$logger->debug(sub{ "PhysAddr::validate: Bad format: $addr" });
-	return 0;
+    my $retval = 1;
+    my $error_message = undef;
 
-    }elsif ( $addr =~ /^([0-9A-F]{1})/ && $addr =~ /$1{12}/ ) {
-	# Assume the all-equal-bits address is invalid
-	$logger->debug(sub{ "PhysAddr::validate: Bogus address: $addr" });
-	return 0;
-
-    }elsif ( $addr eq '000000000001' ) {
-	 # Skip Passport 8600 CLIP MAC addresses
-	$logger->debug(sub{ "PhysAddr::validate: CLIP: $addr" });
-	return 0;
-
-    }elsif ( $addr =~ /^00005E00/i ) {
-	 # Skip VRRP addresses
-	$logger->debug(sub{ "PhysAddr::validate: VRRP: $addr" });
-	return 0;
-
-    }elsif ( $addr =~ /^00000C07AC/i ) {
-	 # Skip VRRP addresses
-	$logger->debug(sub{ "PhysAddr::validate: HSRP: $addr" });
-	return 0;
-
-    }elsif ( $addr =~ /^([0-9A-F]{2})/ && $1 =~ /.(1|3|5|7|9|B|D|F)/ ) {
-	 # Multicast addresses
-	$logger->debug(sub{ "PhysAddr::validate: address is Multicast: $addr" });
-	return 0;	
-
-    }elsif ( scalar(my @list = @{$self->config->get('IGNORE_MAC_PATTERNS')} ) ){
-	foreach my $ignored ( @list ){
-	    if ( $addr =~ /$ignored/i ){
-		$logger->debug(sub{"PhysAddr::validate: address matches configured pattern ($ignored): $addr"});
-		return 0;	
-	    }
-	}
+    if (! $addr) {
+        $error_message = "PhysAddr::validate: Address is not valid.";
+        $retval = 0;
     }
-	 
-    return $addr;
+    else {
+        $addr = $self->format_address($addr);
+
+        if ( $addr !~ /^[0-9A-F]{12}$/ ) {
+            # Format must be DEADDEADBEEF
+            $error_message = "PhysAddr::validate: Bad format: $addr";
+            $retval = 0;
+        }
+        elsif ( $addr =~ /^([0-9A-F]{1})/ && $addr =~ /$1{12}/ ) {
+            # Assume the all-equal-bits address is invalid
+            $error_message = "PhysAddr::validate: Bogus address: $addr";
+            $retval = 0;
+        }
+        elsif ( $addr eq '000000000001' ) {
+            # Skip Passport 8600 CLIP MAC addresses
+            $error_message = "PhysAddr::validate: CLIP: $addr";
+            $retval = 0;
+        }
+        elsif ( $addr =~ /^00005E00/i ) {
+            # Skip VRRP addresses
+            $error_message = "PhysAddr::validate: VRRP: $addr";
+            $retval = 0;
+        }
+        elsif ( $addr =~ /^00000C07AC/i ) {
+            # Skip HSRP addresses
+            $error_message = "PhysAddr::validate: HSRP: $addr";
+            $retval = 0;
+        }
+        elsif (
+            $addr =~ /^([0-9A-F]{2})/
+            &&
+            $1 =~ /.(1|3|5|7|9|B|D|F)/
+        ) {
+            # Multicast addresses
+            $error_message = "PhysAddr::validate: address is Multicast: $addr";
+            $retval = 0;
+        }
+        elsif ( scalar(my @list = @{$self->config->get('IGNORE_MAC_PATTERNS')} ) ) {
+            foreach my $ignored ( @list ) {
+                if ( $addr =~ /$ignored/i ) {
+                    $error_message = "PhysAddr::validate: address matches configured pattern ($ignored): $addr";
+                    $retval = 0;
+                    last;
+                }
+            }
+        }
+    }
+
+    if ($retval == 0) {
+        # If the return message buffer is a reference to a scalar, then set
+        # its contents to the error message.
+        if (
+            defined($return_message_buffer)
+            &&
+            ref($return_message_buffer) eq ref(\"")
+        ) {
+            $$return_message_buffer = $error_message;
+        }
+        $logger->debug(sub{ $error_message });
+        return $retval;
+    }
+    else {
+        return $addr;
+    }
 }
 
 #################################################################
@@ -811,10 +842,15 @@ sub _canonicalize {
     my $class = ref($self) || $self;
     my $address = ($self->_attrs('address'))[0];
     $self->throw_user("Missing address") 
-	unless $address;	
+    unless $address;
     $address = $self->format_address($address);
-    unless ( $class->validate( $address ) ){
-	$self->throw_user("Invalid Address: $address");	
+    my $validation_error_message = undef;
+    if (! $class->validate($address, \$validation_error_message)) {
+        my $error_message = "Invalid Address: $address";
+        if (defined($validation_error_message)) {
+            $error_message .= "\n$validation_error_message";
+        }
+        $self->throw_user($error_message);
     }
     $self->_attribute_store( address => $address );
 }
