@@ -21,17 +21,27 @@ Arguments:
 </%doc>
 
 <%args>
-@field_headers => undef;
-@data          => ();
-$subclass      => "";
-@style         => ();
-@rowstyle      => ();
+@field_headers => undef
+@data          => ()
+$subclass      => ""
+@style         => ()
+@rowstyle      => ()
+@table_classes => ()
 </%args>
+
+<%init>
+my $table_classes = undef;
+if (@table_classes > 0) {
+    # build the classes attribute for the table element...
+    $table_classes = join ' ', @table_classes;
+    $table_classes = qq{class="$table_classes"};
+}
+</%init>
 
 % if( $subclass ) { $subclass = '_'.$subclass; }
 
 
-<table border="0" width="100%" cellspacing="0">
+<table border="0" width="100%" cellspacing="0"<% (defined $table_classes) ? " $table_classes" : '' %>>
   <tr>
 % if ( @style ){
 %     for (my $i=0; $i < scalar @field_headers; $i++) {
