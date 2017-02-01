@@ -1568,6 +1568,37 @@ sub is_address {
 
 ##################################################################
 
+=head2 dns_address_record_label - A or AAAA
+
+    DNS address records have different labels for IPv4 or IPv6. Return the
+    correct label depending on the version of this object.
+
+ Arguments:
+    None
+ Returns:
+    'A' for IPv4
+    'AAAA' for IPv6
+    undef for anything else
+
+=cut
+
+sub dns_address_record_label {
+    my $self = shift;
+    $self->isa_object_method('dns_address_record_label');
+
+    if ($self->version == 4) {
+        return 'A';
+    }
+    elsif ($self->version == 6) {
+        return 'AAAA';
+    }
+    else {
+        return undef;
+    }
+}
+
+##################################################################
+
 =head2 update - Update an Ipblock object in DB
 
     Modify given fields of an Ipblock and (optionally) all its descendants.
