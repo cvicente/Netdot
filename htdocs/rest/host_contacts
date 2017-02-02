@@ -51,7 +51,7 @@ if ( $ip ){
 	    $res{name}{$fqdn}{info} = $rr->info;
 	}
 	if ( my $dhcp = $ipb->dhcp_scopes->first ){
-	    $res{ether}     = $dhcp->physaddr->address;
+	    $res{ether}     = $dhcp->physaddr->get_preferred_display__address;
 	    $res{ethertype} = $dhcp->physaddr->vendor;
 	}
     }

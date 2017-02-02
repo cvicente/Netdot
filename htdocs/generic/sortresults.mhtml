@@ -327,12 +327,17 @@ $last_item = ( ($offset + $per_page) < $total )? $offset + $per_page : $total;
 %            #####################################################################
 %            # It s not a link to another column
 %            #####################################################################
+%                my $preferred_column_value = $o->$c;
+%                my $preferred_display_method = "get_preferred_display__$c";
+%                if ($o->can($preferred_display_method)) {
+%                    $preferred_column_value = $o->$preferred_display_method;
+%                }
 %                if( $first_column ) {
-%                    my $val = $o->$c || 'n/a';
+%                    my $val = $preferred_column_value || 'n/a';
                      &nbsp;
                      <a href="<% $viewpage %>?table=<% $table %>&id=<% $o->id %>"><% $val %></a>
 %		 }else{
-                     <% $o->$c %>
+                     <% $preferred_column_value %>
 %		 }
 %            } # else fi
             </td>

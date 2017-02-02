@@ -9,6 +9,7 @@ use GraphViz;
 use Apache2::SiteControl;
 use strict;
 
+use Data::Dumper;
 my $logger = Netdot->log->get_logger("Netdot::UI");
 
 =head1 NAME
@@ -337,7 +338,21 @@ sub form_field {
     
     my $table   = ($o ? $o->short_class : $args{table});
     my $id      = ($o ? $o->id      : "NEW");
-    my $current = ($o ? $o->$column : $args{default});
+    my $current = $args{default};
+    if ($o) {
+        my $preferred_display_method = "get_preferred_display__$column";
+        $current = $o->can($preferred_display_method)
+            ? $o->$preferred_display_method
+            : $o->$column
+        ;
+        $logger->trace(
+            ref($o),
+            " $preferred_display_method does ",
+            ($o->can($preferred_display_method) ? '' : 'not '),
+            "exist. Setting current value to: ",
+            $current,
+        );
+    }
     $args{new_button} = 1 unless defined $args{new_button};
 
     
@@ -928,7 +943,21 @@ sub text_field($@){
 
     $table     = ($o ? $o->short_class : $table);
     my $id     = ($o ? $o->id : "NEW");
-    my $value  = ($o ? $o->$column : $default);
+    my $value = $default;
+    if ($o) {
+        my $preferred_display_method = "get_preferred_display__$column";
+        $value = $o->can($preferred_display_method)
+            ? $o->$preferred_display_method
+            : $o->$column
+        ;
+        $logger->trace(
+            ref($o),
+            " $preferred_display_method does ",
+            ($o->can($preferred_display_method) ? '' : 'not '),
+            "exist. Setting value to: ",
+            $value,
+        );
+    }
     my $name   = ( $shortFieldName ? $column : $table . "__" . $id . "__" . $column );
     $htmlExtra = "" if (!$htmlExtra);
 
@@ -2144,7 +2173,7 @@ sub build_device_stp_graph {
 	#add 'from' device to graph
 	if ( !exists $seen->{'NODE'}{$from_dev->id} && defined($from_stp_inst) ) {
 	    my $from_label = $from_dev->short_name
-	 	             . "|Mac:\\ ".$from_dev->asset_id->physaddr->address
+                         . "|Mac:\\ ".$from_dev->asset_id->physaddr->get_preferred_display__address
 	                     . "|Priority:\\ ".$from_stp_inst->bridge_priority
 	                     . "|<port".$links{$key}."> Int:\\ ".$from_int->name;
 	    $seen->{'NODE'}{$from_dev->id} = $from_label;
@@ -2155,9 +2184,9 @@ sub build_device_stp_graph {
 	#add 'to' device to graph
 	if ( !exists $seen->{'NODE'}{$to_dev->id} ) {
 	    my $to_label = $to_dev->short_name
-   		           . "|Mac:\\ ".$to_dev->asset_id->physaddr->address
-		           . "|Priority:\\ ".$to_stp_inst->bridge_priority
-	                   . "|<port".$key."> Int:\\ ".$to_int->name;
+                       . "|Mac:\\ ".$to_dev->asset_id->physaddr->get_preferred_display__address
+                       . "|Priority:\\ ".$to_stp_inst->bridge_priority
+                       . "|<port".$key."> Int:\\ ".$to_int->name;
 	    $seen->{'NODE'}{$to_dev->id} = $to_label;
 	} else {
 	    $seen->{'NODE'}{$to_dev->id} .= "|<port".$key."> Int:\\ ".$to_int->name;
