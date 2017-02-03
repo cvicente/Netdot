@@ -1691,6 +1691,16 @@ sub update {
 	}
     }
 
+    # Update any of the A/AAAA records if the address changed.
+    $logger->trace('Evaluating if address changed for Ipblock: '.$self->id);
+    if ($self->address ne $bak{address}) {
+        $logger->debug("Address changed from $bak{address} to ".$self->address);
+        for my $rraddr (RRADDR->search(ipblock => $self->id)) {
+            $logger->debug('Marking RRADDR DNS record ('.$rraddr->id.') as needing to be regenerated.');
+            $rraddr->_host_audit;
+        }
+    }
+
     # Generate hostaudit entry if needed
     if ( $self->parent && $self->parent->dhcp_scopes
 	 && ($bak{status}->id != $state{status}) ){
