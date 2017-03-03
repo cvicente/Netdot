@@ -278,7 +278,8 @@ sub delete{
     Hash with following keys:
     filename - (Optional)
   Returns: 
-    True
+    Path of file written to if successfully written
+    undef if scope is not active
   Examples:
     $scope->print_to_file();
 
@@ -293,7 +294,7 @@ sub print_to_file{
     unless ( $self->active ){
 	$logger->info(sprintf("DhcpScope::print_to_file: Scope %s is marked ".
 			      "as not active. Aborting", $self->get_label));
-	return;
+	return undef;
     }
     
     my $start = time;
@@ -329,6 +330,7 @@ sub print_to_file{
     $logger->info(sprintf("DHCPD Scope %s exported to %s, in %s", 
 			  $self->name, $path, $class->sec2dhms($end-$start) ));
 
+    return $path;
 }
 
 

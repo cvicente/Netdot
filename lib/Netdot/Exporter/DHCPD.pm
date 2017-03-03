@@ -68,6 +68,15 @@ sub generate_configs {
 	    }
 	}
     }
+
+    $self->hook(
+        name => 'before-all-scopes-written',
+        data => {
+            user => $argv{user},
+        },
+    );
+
+    my @written_scopes = ();
     foreach my $s ( @gscopes ){
 	Netdot::Model->do_transaction(sub{
 	    if ( (my @pending = HostAudit->search(scope=>$s->name, pending=>1)) || $argv{force} ){
@@ -76,13 +85,43 @@ sub generate_configs {
 		    # Un-mark audit records as pending
 		    $record->update({pending=>0});
 		}
-		$s->print_to_file();
+		my $path = $s->print_to_file();
+
+                # Only perform "hook" things if we actually wrote out a file...
+                if (defined $path) {
+                    my %data = (
+                        scope_name => $s->name,
+                        path       => $path,
+                    );
+
+                    my %copy_of_data = %data;
+
+                    # save a copy so we can send the aggregate to a later "hook".
+                    push @written_scopes, \%copy_of_data;
+
+                    # add user data in case the hook'ed programs want to use it.
+                    $data{user} = $argv{user};
+
+                    $self->hook(
+                        name => 'after-scope-written',
+                        data => \%data,
+                    );
+                }
 	    }else{
 		$logger->debug("Exporter::DHCPD::generate_configs: ".$s->name.
 			       ": No pending changes.  Use -f to force.");
 	    }
 				      });
     }
+
+    my $data = {
+        scopes_written => \@written_scopes,
+        user           => $argv{user},
+    };
+    $self->hook(
+        name => 'after-all-scopes-written',
+        data => $data,
+    );
 }
 
 =head1 AUTHOR
