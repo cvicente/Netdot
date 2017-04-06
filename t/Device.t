@@ -29,11 +29,14 @@ $testcl->delete;
 $obj->update({layers=>'00000010'});
 is($obj->has_layer(2), 1, 'has_layer');
 
-my $p = $obj->update_bgp_peering( peer=>{bgppeerid =>'10.0.0.1',
-					 asname    => 'testAS',
-					 asnumber  => '1000',
-					 orgname   => 'testOrg'},
-				  oldpeerings=>{} );
+my $p = $obj->update_bgp_peering( 
+    peer=>{
+	address   => '10.0.0.2',
+	bgppeerid => '10.0.0.1',
+	asname    => 'testAS',
+	asnumber  => '1000',
+	orgname   => 'testOrg'},
+    old_peerings=>{} );
 is($p->bgppeerid, '10.0.0.1', 'update_bgp_peering');
 
 my $newints = $obj->add_interfaces(1);

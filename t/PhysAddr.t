@@ -37,7 +37,7 @@ my $one = PhysAddr->search(address=>$tst_addrs[1])->first;
 is($one->address, $tst_addrs[1], 'fast_update inserts address');
 is($one->last_seen, $tstamp, 'fast_update inserts timestamp');
 
-throws_ok { PhysAddr->validate("") } qr/is undefined/, 
+throws_ok { PhysAddr->validate("") } qr/undefined/, 
     'validate throws undefined';
 
 throws_ok { PhysAddr->validate('qwerty') } qr/illegal chars or size/, 
@@ -75,7 +75,7 @@ is($obj->oui, 'DEADDE', 'oui returns first two octets');
 my $cisco_mac = PhysAddr->insert({address=>'00211CAABBCC'});
 ok($cisco_mac->vendor =~ qr/Cisco Systems/, 'vendor returns correct name');
 
-throws_ok { PhysAddr->format_address('blah') } qr/Missing argument/, 
+throws_ok { PhysAddr->format_address('blah'=>undef) } qr/Missing argument/, 
     'format_address throws missing argument';
 
 is(PhysAddr->format_address(address=>$tst_addrs[0]), $tst_addrs[0],
