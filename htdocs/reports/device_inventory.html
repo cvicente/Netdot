@@ -224,7 +224,7 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 	    my $latest_os;
 	    if ( $prod ne 'Unset' ){
 		my $str = sprintf('<strong><a href="../generic/view.html?table=Product&id=%d">%s</a></strong>',
-			       $t{$manuf}{$prod}{id}, $prod);
+			       $t{$manuf}{product}{$prod}{id}, $prod);
 		push( @row, $str );
 		$latest_os = sprintf("(recommended: %s)", $t{$manuf}{product}{$prod}{latest_os}) 
 		    if ($t{$manuf}{product}{$prod}{latest_os});
@@ -237,7 +237,7 @@ if ( $report_type eq 'product' || $report_type eq 'product_monitored' ){
 		my @row = ();
 		push( @row, " ", " " );
 		my $class = " ";
-		if ( $latest_os && ($os ne $latest_os) ){
+		if ( $latest_os && ($os ne $t{$manuf}{product}{$prod}{latest_os}) ){
 		    $class = 'warn';
 		}
 		my $str = sprintf('<a class="%s" href="../generic/search_obj.html?'.

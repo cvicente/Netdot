@@ -69,7 +69,7 @@ $logger->level($DEBUG) if ( $self{DEBUG} );
 print "--------------------\n";
 
 if ( $address =~ /^$MAC$/ ){
-    $address   = PhysAddr->format_address($address);
+    $address = PhysAddr->format_address_db($address);
     if ( $self{FORCE_LIVE} ){
 	&search_live(mac=>$address, vlan=>$self{VLAN});
     }else{
@@ -141,7 +141,7 @@ sub show_ip {
 			my $mac   = PhysAddr->retrieve($macid)->address;
 			$latest_mac  = $mac unless defined $latest_mac;
 			if ( $self{ARP_LIMIT} ){
-			    print $tstamp, " ", $mac, " ", (join ', ', @{$tstamps{$tstamp}{$macid}}), "\n";
+			    print $tstamp, " ", PhysAddr->format_address(address => $mac), " ", (join ', ', @{$tstamps{$tstamp}{$macid}}), "\n";
 			}
 		    }
 		}

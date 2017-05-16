@@ -8,31 +8,18 @@ BEGIN { use_ok('Netdot::Model::Vlan');
 
 my $group  = VlanGroup->insert({name        =>'Data', 
 				description =>'Data Vlans',
-				start       =>'100',
-				end         =>'300',
+				start_vid   =>'100',
+				end_vid     =>'300',
 			    });
 isa_ok($group, 'Netdot::Model::VlanGroup', 'insert');
 
-# This should fail because the ranges overlap
 eval {
     VlanGroup->insert({name        =>'Data2', 
 		       description =>'Data Vlans',
-		       start       =>'300',
-		       end         =>'400',
+		       start_vid   =>'300',
+		       end_vid     =>'400',
 		   });
 };
-
-like($@, qr/overlaps/, 'overlapping insert');
-
-# This should fail because the ranges overlap
-eval {
-    VlanGroup->insert({name        =>'Data3', 
-		       description =>'Data Vlans',
-		       start       =>'0',
-		       end         =>'101',
-		   });
-};
-
 like($@, qr/overlaps/, 'overlapping insert');
 
 $group->delete;

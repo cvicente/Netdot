@@ -43,11 +43,13 @@ sub get_arp {
     my $host = $self->fqdn;
 
     unless ( $self->collect_arp ){
-	$logger->debug(sub{"Device::FoundryIW::_get_arp: $host excluded from ARP collection. Skipping"});
+	$logger->debug(sub{"Device::FoundryIW::_get_arp: $host excluded ".
+			       "from ARP collection. Skipping"});
 	return;
     }
     if ( $self->is_in_downtime ){
-	$logger->debug(sub{"Device::FoundryIW::_get_arp: $host in downtime. Skipping"});
+	$logger->debug(sub{"Device::FoundryIW::_get_arp: $host in downtime. ".
+			       "Skipping"});
 	return;
     }
 
@@ -288,28 +290,30 @@ sub _get_fwt_from_cli {
 	    $iname = $2;
 	    $vlan  = $3;
 	}else{
-	    $logger->debug(sub{"Device::CLI::FoundryIW::_get_fwt_from_cli: line did not match criteria: '$line'" });
+	    $logger->debug(sub{"Device::CLI::FoundryIW::_get_fwt_from_cli: ".
+				   "line did not match criteria: '$line'" });
 	    next;
 	}
 	$iname = $self->_reduce_iname($iname);
 	my $intid = $int_names{$iname};
 
 	unless ( $intid ) {
-	    $logger->warn("Device::CLI::FoundryIW::_get_fwt_from_cli: $host: Could not match $iname to any interface names");
+	    $logger->warn("Device::CLI::FoundryIW::_get_fwt_from_cli: ".
+			  "$host: Could not match $iname to any interface names");
 	    next;
 	}
-	
-	my $validmac = PhysAddr->validate($mac);
-	if ( $validmac ){
-	    $mac = $validmac;
-	}else{
-	    $logger->debug(sub{"Device::CLI::FoundryIW::_get_fwt_from_cli: $host: Invalid MAC: $mac" });
+	eval {
+	    $mac = PhysAddr->validate($mac);
+	};
+	if ( my $e = $@ ){
+	    $logger->debug(sub{"Device::CLI::FoundryIW::_get_fwt_from_cli: ".
+				   "$host: Invalid MAC: $e" });
 	    next;
-	}	
-
+	}
 	# Store in hash
 	$fwt{$intid}{$mac} = 1;
-	$logger->debug(sub{"Device::CLI::FoundryIW::_get_fwt_from_cli: $host: $iname -> $mac" });
+	$logger->debug(sub{"Device::CLI::FoundryIW::_get_fwt_from_cli: ".
+			       "$host: $iname -> $mac" });
     }
     
     return \%fwt;

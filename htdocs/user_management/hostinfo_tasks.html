@@ -58,7 +58,7 @@ my $hideheader = 'style="display:none"' if ( !$showheader );
     <div class="containerbody" id="tasks" style="display:<% ($show_tasks eq "show"?"block":"none") %>">
 
 <%perl>
-my (%ipblocks, @zones);
+my (%ipblocks, %ipaddrs, @zones);
 my $ao = $ui->get_allowed_objects($r, $user);
 print '<pre>', Dumper($ao), '<pre>' if $DEBUG;
 if ( exists $ao->{Ipblock} ){
@@ -72,6 +72,8 @@ if ( exists $ao->{Ipblock} ){
 			$ipblocks{$ch->id} = $ch;
 		    }
 		}
+	    }elsif ( $ip->status->name eq 'Static' ) {
+		$ipaddrs{$id} = $ip;
 	    }
 	}else{
 	    delete $ao->{Ipblock}->{$id};
@@ -140,6 +142,25 @@ my %ipb_actions = (
     </fieldset>
 % }
 
+% if ( %ipaddrs ){
+    <fieldset class="small">
+        <legend>IP Address</legend>
+        <form name="actions_form" action="ip.html" method="GET">
+        <select name="id">
+            <option value="">- Select IP -</option>
+%       foreach my $o ( sort { $a->address_numeric <=> $b->address_numeric } values %ipaddrs ){
+%           if ( $ipblock && $ipblock eq $o->id ){
+                <option value="<% $o %>" SELECTED><% $o->get_label %></option>
+%           }else{
+                <option value="<% $o %>"><% $o->get_label %></option>
+%	    }
+%       }
+        </select>
+	<input type="submit" value="Show IP" name="">
+        </form>
+	
+    </fieldset>
+% }
 
 % if ( @zones ){
     <fieldset class="small">

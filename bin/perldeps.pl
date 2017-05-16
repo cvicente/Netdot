@@ -52,6 +52,7 @@ my @DEPS = (
     {cpan=>'Net::Patricia 1.20', apt=> 'libnet-patricia-perl', rpm=>''},
     {cpan=>'Authen::Radius', apt=>'libauthen-radius-perl', rpm=>'perl-Authen-Radius'},
     {cpan=>'Test::Simple' , apt=> 'libtest-simple-perl', rpm=>''},
+    {cpan=>'Test::Exception' , apt=> 'libtest-exception-perl', rpm=>''},
     {cpan=>'Net::IRR', apt=> 'libnet-irr-perl', rpm=>''},
     {cpan=>'Time::Local', apt=> 'libtime-local-perl', rpm=>''},
     {cpan=>'File::Spec',apt=> 'libfile-spec-perl', rpm=>''},

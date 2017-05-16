@@ -4,7 +4,6 @@ use base 'Netdot::Exporter';
 use warnings;
 use strict;
 use Data::Dumper;
-use Carp;
 
 my $logger = Netdot->log->get_logger('Netdot::Exporter');
 
@@ -42,14 +41,15 @@ sub new{
 
     foreach my $key ( qw /NMS_DEVICE SYSMON_DIR SYSMON_FILE SYSMON_QUEUETIME SYSMON_MAXQUEUED 
                           SYSMON_HTML_FILE SYSMON_HTML_REFRESH SYSMON_LOG_FACILITY SYSMON_STRIP_DOMAIN/ ){
-	$self->{$key} = Netdot->config->get($key);
+	$self->{$key} = (exists $argv{$key})? $argv{$key} : Netdot->config->get($key);
     }
      
     defined $self->{NMS_DEVICE} ||
-	croak "Netdot::Exporter::Sysmon: NMS_DEVICE not defined";
+	$self->throw_user("Netdot::Exporter::Sysmon: NMS_DEVICE not defined");
 
     $self->{ROOT} = Device->search(name=>$self->{NMS_DEVICE})->first 
-	|| croak "Netdot::Exporter::Sysmon: Monitoring device not found in DB: " . $self->{NMS_DEVICE};
+	|| $self->throw_user("Netdot::Exporter::Sysmon: Monitoring device not found in DB: " . 
+			     $self->{NMS_DEVICE});
     
     bless $self, $class;
     return $self;

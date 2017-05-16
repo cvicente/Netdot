@@ -36,6 +36,7 @@ Netdot::Exporter - Base class and object factory for Netdot exports
 
   Arguments:
     type - Netdot::Exporter type (Nagios|Sysmon|Rancid)
+    subclass arguments
   Returns:
     Netdot::Exporter object
   Examples:
@@ -47,14 +48,13 @@ sub new{
     my $class = ref($proto) || $proto;
     my $self = {};
     
-    if ( $argv{type} ) { 
-	my $subclass = $types{$argv{type}} ||
-	    $class->throw_user("Netdot::Exporter::new: Unknown Exporter type: $argv{type}");
+    my $type = delete $argv{type};
+
+    if ( $type ) { 
+	my $subclass = $types{$type} ||
+	    $class->throw_user("Netdot::Exporter::new: Unknown Exporter type: $type");
 	eval "use $subclass;";
-	if ( my $e = $@ ){
-	    $class->throw_user($e);
-	}
-	$self = $subclass->new();
+	$self = $subclass->new(%argv);
     }else {
 	bless $self, $class;
     }

@@ -196,12 +196,13 @@ sub _validate_arp {
 		next;
 	    }
 	    my $mac = $cache->{$key}->{$ip};
-	    my $validmac = PhysAddr->validate($mac); 
-	    unless ( $validmac ){
-		$logger->debug(sub{"Device::CLI::_validate_arp: $host: Invalid MAC: $mac" });
+	    eval {
+		$mac = PhysAddr->validate($mac);
+	    };
+	    if ( my $e = $@ ){
+		$logger->debug(sub{"Device::CLI::_validate_arp: $host: Invalid MAC: $e" });
 		next;
 	    }
-	    $mac = $validmac;
 	    if ( $ign_non_subnet ){
 		# This check does not work with link-local, so if user wants those
 		# just validate them

@@ -3,6 +3,7 @@ package Netdot::Model::PhysAddr;
 use base 'Netdot::Model';
 use warnings;
 use strict;
+use Data::Dumper;
 
 my $logger = Netdot->log->get_logger('Netdot::Model::Device');
 
@@ -42,7 +43,7 @@ sub search {
     my %argv = @args;
     
     if ( $argv{address} ){
-	$argv{address} = $class->format_address($argv{address});
+	$argv{address} = $class->_format_address_db($argv{address});
     }
     return $class->SUPER::search(%argv, $opts);
 }
@@ -59,7 +60,7 @@ sub search {
   Returns:   
     PhysAddr object(s) or undef
   Examples:
-    PhysAddr->search(address=>'DEADDEADBEEF');
+    PhysAddr->search_like(address=>'DEAD');
 =cut
 
 sub search_like {
@@ -70,7 +71,7 @@ sub search_like {
 	    # User wants exact match 
 	    # do nothing
 	}else{
-	    $argv{address} = $self->format_address($argv{address});
+	    $argv{address} = $self->_format_address_db($argv{address});
 	}
     }
     return $self->SUPER::search_like(%argv);
@@ -165,7 +166,7 @@ sub retrieve_all_hashref {
   Returns:   
     True if successul
   Examples:
-    PhysAddr->fast_update(\%macs);
+    PhysAddr->fast_update(\%macs, '2016-08-08 00:00:00');
 
 =cut
 
@@ -174,7 +175,7 @@ sub fast_update {
     $class->isa_class_method('fast_update');
     
     my $start = time;
-    $logger->debug(sub{ "PhysAddr::fast_update: Updating MAC addresses in DB" });
+    $logger->debug(sub{"PhysAddr::fast_update: Updating MAC addresses in DB"});
     
     my $dbh = $class->db_Main;
     if ( $class->config->get('DB_TYPE') eq 'mysql' ){
@@ -226,58 +227,56 @@ sub fast_update {
 
   Arguments: 
     Physical address string
+    Return message buffer (optional)
   Returns:   
-    Physical address string in canonical format, false if invalid
+    Physical address string in DB format
+    Throws user exception if address is invalid
   Examples:
     my $validmac = PhysAddr->validate('DEADDEADBEEF');
 
 =cut
 
 sub validate {
-    my ($self, $addr) = @_;
-    $self->isa_class_method('validate');
+    my ($class, $addr) = @_;
 
-    return unless $addr;
-    $addr = $self->format_address($addr);
+    $class->isa_class_method('validate');
+
+    $class->throw_user("Address undefined")
+	unless $addr;
+
+    $addr = $class->_format_address_db($addr);
+    my $displ = $class->format_address(address=>$addr);
+
     if ( $addr !~ /^[0-9A-F]{12}$/ ){
-	# Format must be DEADDEADBEEF
-	$logger->debug(sub{ "PhysAddr::validate: Bad format: $addr" });
-	return 0;
-
-    }elsif ( $addr =~ /^([0-9A-F]{1})/ && $addr =~ /$1{12}/ ) {
+	$class->throw_user("$displ has illegal chars or size");
+    }
+    elsif ( $addr =~ /^([0-9A-F]{1})/o && $addr =~ /$1{12}/ ){
 	# Assume the all-equal-bits address is invalid
-	$logger->debug(sub{ "PhysAddr::validate: Bogus address: $addr" });
-	return 0;
-
-    }elsif ( $addr eq '000000000001' ) {
-	 # Skip Passport 8600 CLIP MAC addresses
-	$logger->debug(sub{ "PhysAddr::validate: CLIP: $addr" });
-	return 0;
-
-    }elsif ( $addr =~ /^00005E00/i ) {
-	 # Skip VRRP addresses
-	$logger->debug(sub{ "PhysAddr::validate: VRRP: $addr" });
-	return 0;
-
-    }elsif ( $addr =~ /^00000C07AC/i ) {
-	 # Skip VRRP addresses
-	$logger->debug(sub{ "PhysAddr::validate: HSRP: $addr" });
-	return 0;
-
-    }elsif ( $addr =~ /^([0-9A-F]{2})/ && $1 =~ /.(1|3|5|7|9|B|D|F)/ ) {
-	 # Multicast addresses
-	$logger->debug(sub{ "PhysAddr::validate: address is Multicast: $addr" });
-	return 0;	
-
-    }elsif ( scalar(my @list = @{$self->config->get('IGNORE_MAC_PATTERNS')} ) ){
-	foreach my $ignored ( @list ){
-	    if ( $addr =~ /$ignored/i ){
-		$logger->debug(sub{"PhysAddr::validate: address matches configured pattern ($ignored): $addr"});
-		return 0;	
+	$class->throw_user("$displ looks bogus", $displ);
+    }
+    elsif ( $addr eq '000000000001' ){
+	# Skip Passport 8600 CLIP MAC addresses
+	$class->throw_user("$displ is CLIP");
+    }
+    elsif ( $addr =~ /^00005E00/io ){
+	$class->throw_user("$displ is VRRP");
+    }
+    elsif ( $addr =~ /^00000C07AC/io ){
+	$class->throw_user("$displ is HSRP");
+    }
+    elsif ( hex(substr($addr, 1, 1)) & 1  ){
+	$class->throw_user("$displ is multicast");
+    }
+    elsif ( $addr =~ /^([0-9A-F]{2})/ && $1 =~ /.(1|3|5|7|9|B|D|F)/ ){
+	$class->throw_user("$displ is multicast");
+    }
+    elsif ( scalar(my @list = @{$class->config->get('IGNORE_MAC_PATTERNS')}) ){
+	foreach my $ignored ( @list ) {
+	    if ( $addr =~ /$ignored/i ) {
+		$class->throw_user("$displ matches pattern ($ignored)");
 	    }
 	}
     }
-	 
     return $addr;
 }
 
@@ -479,71 +478,62 @@ sub vendor_count{
     return (\%res, $total);
 }
 
-################################################################
+################################################################################
 
-=head2 - is_broad_multi - Check for broadcast/multicast bit
+=head2 dhcpd_address - Return address with colons and configured caseness
 
-    IEEE 802.3 specifies that the lowest order bit in the first
-    octet designates an address as broadcast/multicast.
-    
-  Arguments:
-    As an object method, none.
-    As a class method, the address is required.
-  Returns:
-    True or false
+  Arguments: 
+    address string
+  Returns:   
+    Colon-separated string (e.g. 'DE:AD:DE:AD:BE:EF')
   Examples:
-     PhysAddr->is_broad_multi($address)
-    or 
-     $physaddr->is_broad_multi();
+    print PhysAddr->dhcpd_address('DEADDEADBEEF');
+
 =cut
 
-sub is_broad_multi {
-    my ($class, $address) = @_;
-    my $self;
-    if ( $self = ref($class) ){
-	$address = $self->address;
-    }else{
-	$class->throw_fatal("PhysAddr::is_broad_multi: Need an address to continue")
-	    unless $address;
-    }
-    my $dec = hex(substr($address, 1, 1));
-    return 1 if ( $dec & 1 );
-    return 0
+sub dhcpd_address {
+    my ($class, $addr) = @_;
+    $class->isa_class_method('dhcpd_address');
+    my $caseness = Netdot->config->get('MAC_DHCPD_FORMAT_CASENESS') || 'upper';
+    return $class->format_address(
+	address                   => $addr,
+	format_caseness           => $caseness,
+        format_delimiter_string   => ':',
+        format_delimiter_interval => 2,
+     );
 }
+
+################################################################################
+
+=head2 search_interface_macs
+
+  Arguments: 
+    Interface id
+    Timestamp
+  Returns:   
+    Array of PhysAddr objects
+  Examples:
+    my @macs = PhysAddr->search_interface_macs($iid, $tstamp)
+
+=cut
+
+__PACKAGE__->set_sql(interface_macs => qq{
+SELECT p.id
+FROM     physaddr p, interface i, fwtable ft, fwtableentry fte 
+WHERE    fte.interface=i.id 
+  AND    fte.fwtable=ft.id 
+  AND    fte.physaddr=p.id 
+  AND    i.id=? 
+  AND    ft.tstamp=?
+ORDER BY p.address    });
+
+################################################################
 
 =head1 INSTANCE METHODS
 =cut
 
 ################################################################
 
-=head2 colon_address - Return address with octets separated by colons
-
-    This can be either an instance method or class method
-
-  Arguments: 
-    None if called as instance method
-    address string if called as class method
-  Returns:   
-    String (e.g. 'DE:AD:DE:AD:BE:EF')
-  Examples:
-    print $physaddr->colon_address;
-    print PhysAddr->colon_address('DEADDEADBEEF');
-
-=cut
-
-sub colon_address {
-    my ($self, $address) = @_;
-    my $class = ref($self);
-    my $addr;
-    if ( $class ){
-	$addr = $self->address;
-    }else{
-	$addr = $address || 
-	    $self->throw_fatal("PhysAddr::colon_address: Missing address string");
-    }
-    my @octets  = unpack("A2" x 6, $addr);
-    return join ':', @octets;
-}
 
 ################################################################
 
@@ -760,87 +750,174 @@ sub devices {
     map { $_->devices } $self->assets;
 }
 
-################################################################
+################################################################################
 
-=head2 search_interface_macs
+=head2 format_address - Formats the MAC address to specifications.
 
-  Arguments: 
-    Interface id
-    Timestamp
-  Returns:   
-    Array of PhysAddr objects
-  Examples:
-    my @macs = PhysAddr->search_interface_macs($iid, $tstamp)
+    This can be either an instance method or class method
 
+    Arguments:
+        Hash with the following keys:
+          address
+          format_caseness
+          format_delimiter_string
+          format_delimiter_interval
+
+        address is set to the current object's address
+        if called as an instance method.
+    Returns:
+        String (e.g. 'DE:AD:DE:AD:BE:EF')
+    Examples:
+        # instance method called using default formatting.
+        print $physaddr->format_address;
+        # DEADDEADBEEF
+
+        # instance method called using lowercase formatting.
+        print $physaddr->format_address(
+            format_caseness => 'lower',
+        );
+        # deaddeadbeef
+
+        # instance method called with parameters to yield a Cisco-like format.
+        print $physaddr->format_address(
+            format_caseness           => 'lower',
+            format_delimiter_string   => '.',
+            format_delimiter_interval => 4,
+        );
+        # dead.dead.beef
+
+        # instance method called with parameters to yield a common format.
+        print $physaddr->format_address(
+            format_caseness           => 'lower',
+            format_delimiter_string   => ':',
+            format_delimiter_interval => 2,
+        );
+        # de:ad:de:ad:be:ef
+
+        print PhysAddr->format_address(
+            address                   => 'DEADDEADBEEF',
+            format_caseness           => 'lower',
+            format_delimiter_string   => ':',
+            format_delimiter_interval => 2,
+        );
+        # de:ad:de:ad:be:ef
 =cut
 
-__PACKAGE__->set_sql(interface_macs => qq{
-SELECT p.id
-FROM     physaddr p, interface i, fwtable ft, fwtableentry fte 
-WHERE    fte.interface=i.id 
-  AND    fte.fwtable=ft.id 
-  AND    fte.physaddr=p.id 
-  AND    i.id=? 
-  AND    ft.tstamp=?
-ORDER BY p.address    });
+sub format_address {
+    my ($self, %args) = @_;
+    
+    # Set some defaults
+    my %defaults;
+    $defaults{address} = $self->address if ref($self);
+    $defaults{format_caseness} = $self->config->get(
+	'MAC_DISPLAY_FORMAT_CASENESS') || 'upper';
+    $defaults{format_delimiter_string} = $self->config->get(
+	'MAC_DISPLAY_FORMAT_DELIMITER_STRING') // '';
+    $defaults{format_delimiter_interval} = $self->config->get(
+	'MAC_DISPLAY_FORMAT_DELIMITER_INTERVAL') // 0;
+    
+    # Use defaults if args missing
+    foreach my $k (keys %defaults){
+	$args{$k} = $defaults{$k} unless exists $args{$k};
+    }
+    
+    foreach my $arg (qw(address format_caseness format_delimiter_string 
+                     format_delimiter_interval)){
+	$self->throw_user("PhysAddr::format_address: Missing argument: $arg") 
+	    unless exists $args{$arg};
+    }
 
-#################################################
-# Add some triggers
+    my %valid_intervals = map { $_ => 1 } (0, 1, 2, 3, 4, 6);
+    $self->throw_user('Format delimiter interval must be '.
+		      'one of 0, 1, 2, 3, 4, or 6')
+	unless exists($valid_intervals{$args{format_delimiter_interval}});
 
-__PACKAGE__->add_trigger( deflate_for_create => \&_canonicalize );
-__PACKAGE__->add_trigger( deflate_for_update => \&_canonicalize );
+    # By default we don't need to insert any delimiters into the address
+    my $res = $args{address};
+    $res =~ s/[^\da-f]//gi;
 
+    # ...unless the delimiter interval is greater than zero.
+    if ($args{format_delimiter_interval} > 0) {
+        my $count = 12 / $args{format_delimiter_interval};
+        my @groups = unpack("A$args{format_delimiter_interval}" x $count, 
+			    $res);
+        $res = join $args{format_delimiter_string}, @groups;
+    }
+    if ($args{format_caseness} eq 'upper') {
+        $res = uc $res;
+    }elsif ($args{format_caseness} eq 'lower') {
+        $res = lc $res;
+    }else {
+        $self->throw_user('Format caseness must be set to "upper" or "lower".');
+    }
+    
+    return $res;
+}
 
 #################################################
 # PRIVATE METHODS
 #################################################
 
 #################################################
-# _canonicalize - Convert MAC address to canonical form
+# _format_address_db - Format address for storage
 #
-#    - Formats address
-#    - Calls validate function
+#  Arguments: 
+#    Address string
+#  Returns:   
+#    Formatted string
+#
+sub _format_address_db {
+    my ($self, $address) = @_;
+    my $retval = $self->format_address(
+        address                   => $address,
+        format_caseness           => 'upper',
+        format_delimiter_interval => 0,
+    );
+    $logger->debug("PhysAddr::_format_address_db: MAC address ".
+                   "($address) formatted for DB storage to: $retval");
+    return $retval;
+}
+
+#################################################
+# _deflate - Modify object before writing
 #
 #  Arguments: 
 #    physical address object
 #  Returns:   
 #    True if successful
 #
-sub _canonicalize {
+sub _obj_deflate {
     my $self = shift;
-    my $class = ref($self) || $self;
-    my $address = ($self->_attrs('address'))[0];
-    $self->throw_user("Missing address") 
-	unless $address;	
-    $address = $self->format_address($address);
-    unless ( $class->validate( $address ) ){
-	$self->throw_user("Invalid Address: $address");	
-    }
-    $self->_attribute_store( address => $address );
+    my $address = __PACKAGE__->validate(($self->_attrs('address'))[0]);
+    $self->_attribute_store(address=>$address);
+    return 1;
 }
-
 
 #################################################
-
-=head2 format_address
-
-    Format MAC address
-    - Removes usual separators
-    - Converts to all uppercase
-
-=cut
-
-sub format_address {
-    my ($self, $address) = @_;
-    $self->throw_user("Missing address")
-	unless $address;
-    $address =~ s/[:\-\.]//g;
-    $address = uc($address);
-    return $address;
+# _inflate - Modify object when reading
+#
+#  Arguments: 
+#    physical address object
+#  Returns:   
+#    True if successful
+#
+sub _obj_inflate {
+    my $self = shift;
+    my $address = __PACKAGE__->format_address(
+	address=>($self->_attrs('address'))[0]);
+    $self->_attribute_store(address=>$address);
+    return 1;
 }
 
+##################################################################
+# Add some triggers
+#
+__PACKAGE__->add_trigger( deflate_for_create => \&_obj_deflate );
+__PACKAGE__->add_trigger( deflate_for_update => \&_obj_deflate );
+__PACKAGE__->add_trigger( select             => \&_obj_inflate );
+
 ################################################################
-# Extract first 6 characters from MAC address 
+# Extract first 6 characters from MAC address
 #
 sub _oui_from_address {
     my ($self, $addr) = @_;
@@ -856,8 +933,7 @@ sub _get_vendor_from_oui {
     return "Unknown";    
 }
 
-
-=head1 AUTHOR
+=head1 AUTHORS
 
 Carlos Vicente, C<< <cvicente at ns.uoregon.edu> >>
 

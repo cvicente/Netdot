@@ -7,6 +7,7 @@ include $(SRCROOT)/etc/utility-Makefile
 PERL    =  /usr/bin/perl
 PREFIX  =  `cat ../.prefix`
 FMOD    = 755
+OUI_URL = http://standards-oui.ieee.org/oui/oui.txt
 
 FILES := $(shell ls *.pl) 
 
@@ -34,5 +35,5 @@ _defragdb:
 
 oui:
 	rm -f oui.txt
-	wget -t 1 http://standards.ieee.org/regauth/oui/oui.txt || cp oui.txt.default oui.txt
+	wget -t 1 -T 10 $(OUI_URL) || cp oui.txt.default oui.txt
 	$(PERL) initdb oui
