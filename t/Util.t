@@ -17,8 +17,8 @@ my $name = 'k.root-servers.net';
 is($dns->resolve_ip($ipv4), $name, 'resolve_ip_v4');
 is($dns->resolve_ip($ipv6), $name, 'resolve_ip_v6');
 my @addresses = $dns->resolve_name($name);
-is($addresses[0], $ipv6, 'resolve_name_ipv6');
-is($addresses[1], $ipv4, 'resolve_name_ipv4');
+is($addresses[0], $ipv4, 'resolve_name_ipv4');
+is($addresses[1], $ipv6, 'resolve_name_ipv6');
 
 is(($dns->resolve_name($name, {v4_only=>1}))[0], $ipv4, 'resolve_name_ipv4_only');
 is(($dns->resolve_name($name, {v6_only=>1}))[0], $ipv6, 'resolve_name_ipv6_only');

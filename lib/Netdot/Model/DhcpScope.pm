@@ -361,12 +361,6 @@ sub import_hosts{
 	$self->throw_user("Invalid line: $line")
 	    unless ($mac && $ip);
 	
-	$self->throw_user("Invalid mac: $mac")
-	    unless ( PhysAddr->validate($mac) );
-
-	$self->throw_user("Invalid IP: $ip")
-	    unless ( Ipblock->matches_ip($ip) );
-
 	if ( $argv{overwrite} ){
 	    if ( my $phys = PhysAddr->search(address=>$mac)->first ){
 		foreach my $scope ( $phys->dhcp_hosts ){
@@ -459,21 +453,21 @@ sub _objectify_args {
 	    $self->throw_user("Invalid type argument ".$argv->{type});
 	}
     }
-
+    
     if ( $argv->{physaddr} && !ref($argv->{physaddr}) ){
 	# Could be an ID or an actual address
 	my $phys;
-	if ( PhysAddr->validate($argv->{physaddr}) ){
-	    # It looks like an address
-	    $phys = PhysAddr->find_or_create({address=>$argv->{physaddr}});
-	}elsif ( $argv->{physaddr} !~ /\D/ ){
-	    # Does not contain non-digits, so it must be an ID
+	if ( $argv->{physaddr} !~ /\D/ ){
+	    # It's all digits, so it must be an ID
 	    $phys = PhysAddr->retrieve($argv->{physaddr});
+	}else{
+	    $phys = PhysAddr->find_or_create({address=>$argv->{physaddr}});
 	}
 	if ( $phys ){
 	    $argv->{physaddr} = $phys;
 	}else{
-	    $self->throw_user("Could not find or create physaddr");
+	    $self->throw_user("Could not find or create physical address".
+			      " for given argument: ".$argv->{physaddr});
 	}
     }
 
@@ -885,7 +879,7 @@ sub _get_all_data {
 		$data{$scope_id}{attrs}{'client-id'}{value} = $scope_duid;
 	    }elsif ( $mac ){
 		$data{$scope_id}{attrs}{'hardware ethernet'}{name}  = 'hardware ethernet';
-		$data{$scope_id}{attrs}{'hardware ethernet'}{value} = PhysAddr->colon_address($mac);
+		$data{$scope_id}{attrs}{'hardware ethernet'}{value} = PhysAddr->dhcpd_address($mac);
 	    }else{
 		# Without DUID or MAC, this would be invalid
 		next;

@@ -15,7 +15,7 @@ MAKE        ?= make
 SED         ?= sed
 usage:
 	@echo 
-	@echo "usage: make install|installdb|upgrade [ PARAMETER=value ]"
+	@echo "usage: make install|installdb|upgrade|test [ PARAMETER=value ]"
 	@echo 
 	@echo "You can either specify parameter values on the command"
 	@echo "line or you can modify them in the Makefile."
@@ -143,3 +143,6 @@ defragdb:
 
 oui:
 	cd bin ; $(MAKE) oui
+
+unit:
+	prove t/

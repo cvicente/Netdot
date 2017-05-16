@@ -30,7 +30,8 @@ Read relevant info from Netdot and build Nagios2 configuration
 =head2 new - Class constructor
 
   Arguments:
-    None
+    See Default.conf Nagios section.
+    Any explicitely passed arguments override config file
   Returns:
     Netdot::Exporter::Nagios object
   Examples:
@@ -46,7 +47,7 @@ sub new{
                           NAGIOS_NOTIF_INTERVAL NAGIOS_TRAPS NAGIOS_STRIP_DOMAIN
                           NAGIOS_TEMPLATES NAGIOS_HOSTGROUP_NAME_FIELD 
                           NAGIOS_HOSTGROUP_ALIAS_FIELD/ ){
-	$self->{$key} = Netdot->config->get($key);
+	$self->{$key} = (exists $argv{$key})? $argv{$key} : Netdot->config->get($key);
     }
      
     $self->{NAGIOS_NOTIF_FIRST} ||= 4;

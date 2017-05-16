@@ -54,5 +54,5 @@ ok(exists $res->{'Ipblock'}->{$bl->id}, 'search_all_tables_2');
 $obj->delete;
 isa_ok($obj, 'Class::DBI::Object::Has::Been::Deleted', 'delete');
 
-is(Netdot::Model->sqldate2time('2011-09-13'), 1315897200, 'sqldate2time');
-is(Netdot::Model->sqldate2time('2011-09-13 11:59:47'), 1315940387, 'sqldate2time');
+is(Netdot::Model->sqldate2time('2011-09-13'), 1315872000, 'sqldate2time');
+is(Netdot::Model->sqldate2time('2011-09-13 11:59:47'), 1315915187, 'sqldate2time');

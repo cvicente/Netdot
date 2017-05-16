@@ -5145,12 +5145,13 @@ sub _validate_arp {
 		next;
 	    }
 	    my $mac = $cache->{$idx}->{$ip};
-	    my $validmac = PhysAddr->validate($mac); 
-	    unless ( $validmac ){
-		$logger->debug(sub{"Device::_validate_arp: $host: Invalid MAC: $mac" });
+	    eval {
+		$mac = PhysAddr->validate($mac); 
+	    }; 
+	    if ( my $e = $@ ){
+		$logger->debug(sub{"Device::_validate_arp: $host: Invalid MAC: $e"});
 		next;
 	    }
-	    $mac = $validmac;
 	    if ( $ign_non_subnet ){
 		# This check does not work with link-local, so if user wants those
 		# just validate them
@@ -5414,12 +5415,11 @@ sub _walk_fwt {
 	}
 	
 	foreach my $mac ( keys %{ $tmp{$iid} } ){
-	    next unless $mac;
-	    my $validmac = PhysAddr->validate($mac);
-	    if ( $validmac ){
-		$mac = $validmac;
-	    }else{
-		$logger->debug(sub{"Device::_walk_fwt: $host: Invalid MAC: $mac" });
+	    eval {
+		$mac = PhysAddr->validate($mac);
+	    };
+	    if ( my $e = $@ ){
+		$logger->debug(sub{"Device::_walk_fwt: $host: Invalid MAC: $e" });
 		next;
 	    }
 	    $fwt->{$intid}->{$mac} = 1;
@@ -5728,15 +5728,23 @@ sub _assign_base_mac {
 
     my $host = $self->fqdn;
     my $address = delete $info->{physaddr};
-    if ( $address && ($address = PhysAddr->validate($address)) ) {
-	# OK
-    }else{
-	$logger->debug(sub{"$host does not provide a valid base MAC.".
-			     " Using first available interface MAC."});
+    eval {
+	$address = PhysAddr->validate($address);
+    };
+    if ( my $e = $@ ){
+	$logger->debug(sub{"$host: Invalid MAC: $e"});
+	$logger->debug(sub{"$host: Using first available interface MAC"});
 	foreach my $iid ( sort { $a <=> $b}  keys %{$info->{interface}} ){
 	    if ( my $addr = $info->{interface}->{$iid}->{physaddr} ){
-		next unless ($address = PhysAddr->validate($addr));
-		last;
+		eval {
+		    $address = PhysAddr->validate($addr);
+		};
+		if ( my $e = $@ ){
+		    $logger->debug(sub{"$host: Invalid MAC: $e"});
+		    next;
+		}else{
+		    last;
+		}
 	    }
 	}
     }

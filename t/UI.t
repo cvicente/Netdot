@@ -23,13 +23,13 @@ like($tmp{value}, "/input type=\"text\" name=\"Device__(\\d+)__os\" value=\"$val
 # TODO select_multiple
 
 my $radio = $ui->radio_group_boolean(object=>$o, column=>"monitored", edit=>1, returnAsVar=>1);
-like($radio, "/<nobr>Yes<input type=\"radio\" name=\"Device__(\\d+)__monitored\" value=\"1\" checked></nobr>&nbsp;\\n<nobr>No<input type=\"radio\" name=\"Device__(\\d+)__monitored\" value=\"0\" ></nobr>/", 'radio_group_boolean');
+like($radio, '/<nobr>Yes<input type="radio" name="Device__(\\d+)__monitored" value="1" >/', 'radio_group_boolean');
 
 my $text = $ui->text_field(object=>$o, column=>"os", edit=>1, returnAsVar=>1);
 like($text, "/<input type=\"text\" name=\"Device__(\\d+)__os\" value=\"blah\" >/", 'text_field');
 
 my $textarea = $ui->text_area(object=>$o, column=>"info", edit=>1, returnAsVar=>1);
-like($textarea, "/<textarea name=\"Device__(\\d+)__info\" ></textarea>/", 'text_area');
+like($textarea, "/<textarea name=\"Device__(\\d+)__info\".*></textarea>/", 'text_area');
 
 my $pb =  $ui->percent_bar(percent=>'50');
 is($pb, '<div class="progress_bar" title="50%"><div class="progress_used" style="width:50%"></div></div>', 'percent_bar');

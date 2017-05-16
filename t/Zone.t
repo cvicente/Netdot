@@ -3,9 +3,12 @@ use Test::More qw(no_plan);
 use Test::Exception;
 use lib "lib";
 
+my $DOMAIN = 'test.tld';
+my $SUB_DOMAIN = 'sub.'. $DOMAIN;
+
 BEGIN { use_ok('Netdot::Model::Zone'); }
 
-my $obj = Zone->insert({name=>'domain.name'});
+my $obj = Zone->insert({name=>$DOMAIN});
 isa_ok($obj, 'Netdot::Model::Zone', 'insert');
 
 lives_and { is(Zone->_dot_arpa_to_ip('1.in-addr.arpa'), '1.0.0.0/8', 'IPv4 /8 .arpa zone to address') };
@@ -26,13 +29,15 @@ lives_and { is(Zone->_dot_arpa_to_ip('a.9.8.7.6.5.4.3.2.1.ip6.arpa'), '1234:5678
 lives_and { is(Zone->_dot_arpa_to_ip('b.a.9.8.7.6.5.4.3.2.1.ip6.arpa'), '1234:5678:9ab0::/44', 'IPv6 /44 .arpa zone to address') };
 lives_and { is(Zone->_dot_arpa_to_ip('c.b.a.9.8.7.6.5.4.3.2.1.ip6.arpa'), '1234:5678:9abc::/48', 'IPv6 /48 .arpa zone to address') };
 
-is(Zone->search(name=>'sub.domain.name')->first, $obj, 'search scalar' );
-is_deeply([Zone->search(name=>'sub.domain.name')], [$obj], 'search array' );
+is(Zone->search(name=>$SUB_DOMAIN)->first, $obj, 'search scalar');
+is_deeply([Zone->search(name=>$SUB_DOMAIN)], [$obj], 'search array' );
+
 is(Zone->search(name=>'fake')->first, undef, 'search empty scalar' );
 is_deeply([Zone->search(name=>'fake')], [], 'search empty array' );
 
-is(Zone->search_like(name=>'domain.name')->first, $obj, 'search_like scalar' );
-is_deeply([Zone->search_like(name=>'domain.name')], [$obj], 'search_like array' );
+my $SUBSTR = substr($DOMAIN, 0, 3);
+is(Zone->search_like(name=>$SUBSTR)->first, $obj, 'search_like scalar');
+is_deeply([Zone->search_like(name=>$SUBSTR)], [$obj], 'search_like array' );
 is(Zone->search_like(name=>'fake')->first, undef, 'search_like empty scalar' );
 is_deeply([Zone->search_like(name=>'fake')], [], 'search_like empty array' );
 

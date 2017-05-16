@@ -314,11 +314,13 @@ sub _get_ap_info {
 
     # AP Ethernet MAC
     if ( my $basemac = $hashes->{'airespace_ap_mac'}->{$idx} ){
-	my $validmac = PhysAddr->validate($basemac);
-	if ( $validmac ){
-	    $info->{physaddr} = $validmac;
+	eval {
+	    $basemac = PhysAddr->validate($basemac);
+	};
+	if ( my $e = $@ ){
+	    $logger->debug(sub{"Device::get_airespace_if_info: iid $iid: Invalid MAC: $e" });
 	}else{
-	    $logger->debug(sub{"Device::get_airespace_if_info: iid $iid: Invalid MAC: $basemac" });
+	    $info->{physaddr} = $basemac;
 	}
     }else{
 	$logger->debug(sub{"Device::get_airespace_if_info: iid $iid: No MAC address"});
