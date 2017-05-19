@@ -327,7 +327,8 @@ sub generate_configs {
 			    # Neighbor device is my parent
 			    if ( exists $device_info->{$nd} ){
 				my $ndh = $device_info->{$nd};
-				if ( $ndh->{interface}->{$neighbor}->{monitored} ){
+				if ( $ndh->{interface}->{$neighbor}->{monitored} &&
+				     $iface->{admin} eq 'up'){
 				    if ( my $nifindex = $intid2ifindex->{$neighbor} ){
 					$hosts{$ip}{service}{$srvname}{parent_host}    = $self->strip_domain($device_info->{$nd}->{hostname});
 					my $p_srv = "IFSTATUS_$nifindex";

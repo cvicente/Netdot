@@ -2285,8 +2285,8 @@ sub update_a_records {
 				if ($rr->name ne $rrstate{"name"}) {
 				    $rr->update(\%rrstate);
 				    $logger->debug(sub{ sprintf("%s: Updated DNS record for %s: %s", 
-					    		    $host, $self->address, $name) });
-			    }
+								$host, $self->address, $name) });
+				}
 			    }
 			}
 		    }
