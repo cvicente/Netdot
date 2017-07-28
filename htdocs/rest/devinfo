@@ -4,6 +4,7 @@ REST resource to fetch device information
 <%args>
 $user                    # Should be assigned by autohandler
 $manager                 # Should be assigned by autohandler
+$site => undef           # (optional) Filter results by site
 </%args>
 <%init>
 my $DEBUG = 0;
@@ -40,7 +41,9 @@ $logger->info(sprintf("/rest/devinfo: %s request with args: %s from %s (%s)",
     
 my %ret;
 if ( $method eq 'GET' ){
-    my $info = Netdot::Exporter->get_device_info();
+    my %eargs;
+    $eargs{site} = $site if defined $site;
+    my $info = Netdot::Exporter->get_device_info(%eargs);
     $ret{device} = $info;
     $rest->print_serialized(\%ret);
 }

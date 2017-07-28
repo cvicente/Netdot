@@ -69,7 +69,8 @@ sub new{
 All device information needed for building monitoring configurations
 
   Arguments:
-    None
+    Hash with following keys:
+     site (str) - Name of site to filter (defaults to all sites)
   Returns:
     Hash reference where key=device.id
   Examples:
@@ -77,15 +78,18 @@ All device information needed for building monitoring configurations
 =cut
 
 sub get_device_info {
-    my ($self) = @_;
-    
-    return $self->cache('exporter_device_info')	if $self->cache('exporter_device_info');
+    my ($self, %argv) = @_;
+
+    # Don't cache if asked to filter by site
+    unless (exists $argv{site}){
+	return $self->cache('exporter_device_info')	if $self->cache('exporter_device_info');
+    }
 
     my %device_info;
     $logger->debug("Netdot::Exporter::get_device_info: querying database");
 
     my $dbh = Netdot::Model->db_Main();
-    my $rows = $dbh->selectall_arrayref("
+    my $query = "
           SELECT    d.id, d.snmp_managed, d.community, d.snmp_target, d.host_device,
                     d.monitoring_template, d.down_from, d.down_until, entity.name, entity.aliases,
                     p.name, ptype.name, manuf.name,
@@ -114,8 +118,17 @@ sub get_device_info {
                AND  i.device=d.id                  
                AND  d.name=rr.id 
                AND  rr.zone=zone.id
-         ");
+         ";
     
+    $query .= " AND site.name=?" if exists $argv{site};
+    my $sth = $dbh->prepare($query);
+    if ($argv{site}){
+	$sth->execute($argv{site});
+    }else{
+	$sth->execute();
+    }
+
+    my $rows = $sth->fetchall_arrayref();
     $logger->debug("Netdot::Exporter::get_device_info: building data structure");
     foreach my $row ( @$rows ){
 
@@ -173,7 +186,11 @@ sub get_device_info {
 	}
     }
     
-    return $self->cache('exporter_device_info', \%device_info);
+    # Don't cache if asked to filter by site
+    unless (exists $argv{site}){
+	$self->cache('exporter_device_info', \%device_info);
+    }
+    return \%device_info;
 }
 
 
