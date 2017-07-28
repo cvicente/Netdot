@@ -65,5 +65,5 @@ my $rancid = Netdot::Exporter->new(type=>'Rancid');
 isa_ok($rancid, 'Netdot::Exporter::Rancid', 'Constructor');
 #$rancid->generate_configs();
 
-#&cleanup();
+&cleanup();
 
