@@ -94,7 +94,7 @@ sub get_device_info {
                     d.monitoring_template, d.down_from, d.down_until, entity.name, entity.aliases,
                     p.name, ptype.name, manuf.name,
                     site.name, site.number, site.aliases, contactlist.id,
-                    i.id, i.number, i.name, i.description, i.admin_status, i.monitored, i.contactlist,
+                    i.id, i.number, i.name, i.description, i.admin_status, i.monitored, i.contactlist, i.speed,
                     ip.id, ip.address, ip.version, ip.parent, ip.monitored, rr.name, zone.name,
                     service.id, service.name, ipservice.monitored, ipservice.contactlist,
                     bgppeering.bgppeeraddr, bgppeering.contactlist, peer.asnumber, peer.asname
@@ -136,7 +136,7 @@ sub get_device_info {
 	    $mon_template, $down_from, $down_until, $entity_name, $entity_alias, 
 	    $pname, $ptype, $manuf,
 	    $site_name, $site_number, $site_alias, $clid,
-	    $intid, $intnumber, $intname, $intdesc, $intadmin, $intmon, $intcl,
+	    $intid, $intnumber, $intname, $intdesc, $intadmin, $intmon, $intcl, $intspeed,
 	    $ip_id, $ip_addr, $ip_version, $subnet, $ip_mon, $name, $zone,
 	    $srv_id, $srv_name, $srv_mon, $srv_cl,
 	    $peer_addr, $peer_cl, $peer_asn, $peer_asname) = @$row;
@@ -169,6 +169,7 @@ sub get_device_info {
 	$device_info{$devid}{interface}{$intid}{admin}        = $intadmin;
 	$device_info{$devid}{interface}{$intid}{monitored}    = $intmon;
 	$device_info{$devid}{interface}{$intid}{contactlist}  = $intcl;
+	$device_info{$devid}{interface}{$intid}{speed}        = $intspeed;
 	if ( defined $ip_id ){
 	    $device_info{$devid}{interface}{$intid}{ip}{$ip_id}{addr}      = $ip_addr;
 	    $device_info{$devid}{interface}{$intid}{ip}{$ip_id}{version}   = $ip_version;
