@@ -37,21 +37,27 @@ for my $name (@dev_names){
     my $dev = Device->manual_add(host=>$name);
     $dev->update({monitored=>1});
     $dev->update({site=>$site_ids[$i]});
+    foreach my $int ($dev->interfaces){
+	$int->update({speed=>'100'});
+    }
     $i++;
 }
 my $info = $exporter->get_device_info();
-my @ids = (sort keys %$info);
-is($info->{$ids[0]}->{hostname}, "test1.localdomain");
-is($info->{$ids[0]}->{site_name}, "tsite1");
-is($info->{$ids[1]}->{hostname}, "test2.localdomain");
-is($info->{$ids[1]}->{site_name}, "tsite2");
-is($info->{$ids[2]}->{hostname}, "test3.localdomain");
-is($info->{$ids[2]}->{site_name}, "tsite3");
+my @hdevs = map { $info->{$_} } sort keys %$info;
+is($hdevs[0]->{hostname}, "test1.defaultdomain");
+is($hdevs[0]->{site_name}, "tsite1");
+is($hdevs[1]->{hostname}, "test2.defaultdomain");
+is($hdevs[1]->{site_name}, "tsite2");
+is($hdevs[2]->{hostname}, "test3.defaultdomain");
+is($hdevs[2]->{site_name}, "tsite3");
+
+my $f_int = (keys %{$hdevs[0]->{interface}})[0];
+is($hdevs[0]->{interface}->{$f_int}->{speed}, 100);
 
 $info = $exporter->get_device_info(site=>'tsite1');
 my @ids = (sort keys %$info);
 is(scalar(@ids), 1);
-is($info->{$ids[0]}->{hostname}, "test1.localdomain");
+is($info->{$ids[0]}->{hostname}, "test1.defaultdomain");
 
 my $nagios = Netdot::Exporter->new(type=>'Nagios');
 isa_ok($nagios, 'Netdot::Exporter::Nagios', 'Constructor');
