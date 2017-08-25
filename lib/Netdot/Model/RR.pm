@@ -60,7 +60,12 @@ sub search {
 	    return $class->SUPER::search(%argv);
 	}
     }else{
-	return $class->SUPER::search(%argv, $opts);
+        if (exists $argv{zone}) {
+           if ( my $iv_zone = (Zone->search(name=>$argv{zone}))[0] ){
+             $argv{zone} = $iv_zone->id;
+           }
+        }
+        return $class->SUPER::search(%argv, $opts);
     }
     return;
 }
