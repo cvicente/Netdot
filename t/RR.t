@@ -3,42 +3,47 @@ use Test::More qw(no_plan);
 use lib "lib";
 
 BEGIN { 
-    use_ok('Netdot::Model::Zone'); 
-    use_ok('Netdot::Model::RR'); 
-    use_ok('Netdot::Model::RRADDR');
-    use_ok('Netdot::Model::RRCNAME');
-    use_ok('Netdot::Model::RRHINFO');
-    use_ok('Netdot::Model::RRLOC');
-    use_ok('Netdot::Model::RRMX');
-    use_ok('Netdot::Model::RRNAPTR');
-    use_ok('Netdot::Model::RRNS');
-    use_ok('Netdot::Model::RRDS');
-    use_ok('Netdot::Model::RRPTR');
-    use_ok('Netdot::Model::RRSRV');
-    use_ok('Netdot::Model::RRTXT');
+    my @classes = qw/Zone RR RRADDR RRCNAME RRHINFO RRLOC RRMX RRNAPTR 
+                 RRNS RRDS RRPTR RRSRV RRTXT/;
+    foreach my $class (@classes){
+	use_ok("Netdot::Model::$class");
+    }
 }
 
 my $name      = 'record';
 my $domain    = 'testdomain';
 my $domainrev = '168.192.in-addr.arpa';
 my $v4address = '192.168.1.10';
-my $v6address = 'fec0:1234:5678:9abc:0:0:0:10';
+my $v6address = 'fec0:1234:5678:9abc::10';
 
-if ( Zone->search(name=>$domain) ){
-    Zone->search(name=>$domain)->first->delete();
+sub cleanup{
+    foreach my $val (($domain, $domainrev)){
+	if ( my $obj = Zone->search(name=>$val)->first ){
+	    $obj->delete();
+	}
+    }
+    foreach my $val (($v4address, $v6address)){
+	if ( my $obj = Ipblock->search(address=>$val)->first ){
+	    $obj->delete();
+	}
+    }
 }
-if ( Zone->search(name=>$domainrev) ){
-    Zone->search(name=>$domainrev)->first->delete();
-}
+
+&cleanup();
 
 # Create reverse zone first
 my $revzone = Zone->insert({name=>$domainrev});
 isa_ok($revzone, 'Netdot::Model::Zone', 'insert_rev_zone');
 
-# RR
+# Insert the RR. This creates the zone as well
 my $rr = RR->insert({name=>$name, zone=>$domain});
 isa_ok($rr, 'Netdot::Model::RR', 'insert_rr');
-is(RR->search(name=>"$name.$domain")->first, $rr, 'search' );
+
+# There are several ways to find the rr,zone combination using search()
+my $zid = Zone->search(name=>$domain)->first->id;
+is(RR->search(name=>$name, zone=>$zid)->first, $rr, 'search_domain_as_id');
+is(RR->search(name=>$name, zone=>$domain)->first, $rr, 'search_domain_as_name');
+is(RR->search(name=>"$name.$domain")->first, $rr, 'search_as_fqdn' );
 is($rr->get_label, "$name.$domain", 'get_label');
 
 # Labels longer that 63 characters shoud throw a user exception
@@ -68,18 +73,18 @@ is($rrcname->as_text, "alias.$domain.	3600	IN	CNAME	$name.$domain.", 'as_text');
 my $rrds = RR->insert({type=>'DS', name=>$name, zone=>$domain, ttl=>3600, key_tag=>'60485', algorithm=>'5', digest_type=>'1', 
 		       digest=>'2BB183AF5F22588179A53B0A98631FAD1A292118'});
 isa_ok($rrds, 'Netdot::Model::RRDS', 'insert_ds');
-is($rrds->as_text, "record.testdomain.	3600	IN	DS	60485  5  1  2bb183af5f22588179a53b0a98631fad1a292118 ; xepor-cybyp-zulyd-dekom-civip-hovob-pikek-fylop-tekyd-namac-moxex");
+like($rrds->as_text, '/^record\.testdomain\.\s+3600\s+IN\s+DS\s+\(\s*60485\s+5\s+1\s+2bb183af5f22588179a53b0a98631fad1a292118/', 'rrds_as_text');
 
 # RRHINFO
 my $rrhinfo = RR->insert({type=>'HINFO', name=>$name, zone=>$domain, ttl=>3600, cpu=>'Intel', os=>'OSX'});
 isa_ok($rrhinfo, 'Netdot::Model::RRHINFO', 'insert_hinfo');
-is($rrhinfo->as_text, "$name.$domain.	3600	IN	HINFO	\"Intel\" \"OSX\"", 'as_text');
+is($rrhinfo->as_text, "$name.$domain.	3600	IN	HINFO	Intel OSX", 'as_text');
 
 # RRLOC
 my $rrloc = RR->insert({type=>'LOC', name=>'@', zone=>$domain, ttl=>3600, size=>"100", 
-			horiz_pre=>"1000000", vert_pre=>"1000", latitude=>"", longitude=>"1704383648", altitude=>"10012200"});
+			horiz_pre=>"1000", vert_pre=>"1000", latitude=>"44.046", longitude=>"123.078", altitude=>"10"});
 isa_ok($rrloc, 'Netdot::Model::RRLOC', 'insert_loc');
-is($rrloc->as_text, "testdomain.	3600	IN	LOC	596 31 23.648 S 123 05 00.000 W 122.00m 1.00m 10000.00m 10.00m", 'as_text');
+is($rrloc->as_text, "testdomain.	3600	IN	LOC	44 0 0 N  123 0 0 E  10m 100m 1000m 1000m", 'as_text');
 
 # RRMX
 my $rrmx = RR->insert({type=>'MX', name=>$name, zone=>$domain, ttl=>3600, preference=>10, exchange=>"smtp.example.net"});
@@ -90,7 +95,7 @@ is($rrmx->as_text, "$name.$domain.	3600	IN	MX	10 smtp.example.net.", 'as_text');
 my $rrnaptr = RR->insert({type=>'NAPTR', name=>'@', zone=>$domain, ttl=>3600, order_field=>"100", preference=>"10", flags=>"u", services=>"E2U+sip",
 			 regexpr=>'^.*$', replacement=>'sip:information@pbx.example.com'});
 isa_ok($rrnaptr, 'Netdot::Model::RRNAPTR', 'insert_naptr');
-is($rrnaptr->as_text, 'testdomain.	3600	IN	NAPTR	100 10 "u" "E2U+sip" "^.*$" sip:information\@pbx.example.com.', 'as_text');
+like($rrnaptr->as_text, '/^testdomain\.\s+3600\s+IN\s+NAPTR\s+\( 100 10 u E2U\+sip/', 'as_text');
 
 # RRNS
 my $rrns = RR->insert({type=>'NS', name=>$name, zone=>$domain, ttl=>3600, nsdname=>"ns1.$domain"});
@@ -127,8 +132,4 @@ my @cnames = $rr->aliases();
 isa_ok($cnames[1], 'Netdot::Model::RRCNAME', 'add_alias');
 is($cnames[1]->as_text, "alias2.$domain.	86400	IN	CNAME	$name.$domain.", 'alias_as_text');
 
-# Clean up
-$zone->delete;
-$revzone->delete;
-Ipblock->search(address=>$v4address)->first->delete;
-Ipblock->search(address=>$v6address)->first->delete;
+&cleanup();
