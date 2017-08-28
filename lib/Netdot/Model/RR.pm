@@ -27,8 +27,7 @@ Netdot::Model::RR - DNS Resource Record Class
 
     We override the base class to extend functionality:
 
-      - If zone key is not passed, name will be looked up assuming it might
-        contain domain info.
+      - If zone arg is not passed, try to find zone based on FQDN
 
   Arguments: 
     Hash with column/value pairs.  
@@ -49,20 +48,24 @@ sub search {
     my %argv = @args;
 
     my ($rr, @sections);
-    if ( (exists $argv{name}) && ($argv{name} =~ /\./)  && !exists $argv{zone} ){
-	if ( my $zone = (Zone->search(name=>$argv{name}))[0] ){
-	    my $name = $zone->name;
-	    $argv{name} =~ s/\.$name//;
-	    $argv{zone} = $zone->id;
-	    return $class->SUPER::search(%argv);
-	}else{
-	    # Zone not found, just do normal search
-	    return $class->SUPER::search(%argv);
+    if ( exists $argv{zone} ){
+	if ( !ref($argv{zone}) && $argv{zone} =~ /\D/o ){
+	    # Looks like a zone name. Look it up.
+	    if ( my $zone = (Zone->search(name=>$argv{zone}))[0] ){
+		$argv{zone} = $zone->id;
+	    }
 	}
     }else{
-	return $class->SUPER::search(%argv, $opts);
+	if ( exists $argv{name} && $argv{name} =~ /\./o ){
+	    # Name string potentially contains existing zone
+	    if ( my $zone = (Zone->search(name=>$argv{name}))[0] ){
+		my $zname = $zone->name;
+		$argv{name} =~ s/\.$zname//; # Remove part from RR
+		$argv{zone} = $zone->id;
+	    }
+	}
     }
-    return;
+    return $class->SUPER::search(%argv, $opts);
 }
 
 ############################################################################
