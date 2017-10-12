@@ -34,6 +34,7 @@ my $usage = <<EOF;
     -R, --rr                       DNS Resource Records
     -a, --audit                    Audit records
     -t, --hostaudit                Host Audit records
+    -i, --interfaces               'Removed' interfaces
     -d, --num_days                 Number of days worth of items to keep (default: $self{NUM_DAYS});
     -r, --rotate                   Rotate forwarding tables and ARP caches (rather than delete records) 
     -p, --pretend                  Show activity without actually deleting anything
@@ -52,6 +53,7 @@ my $result = GetOptions(
     "R|rr"            => \$self{RR},
     "a|audit"         => \$self{AUDIT},
     "t|hostaudit"     => \$self{HOSTAUDIT},
+    "i|interfaces"    => \$self{INTERFACES},
     "d|num_days=i"    => \$self{NUM_DAYS},
     "r|rotate"        => \$self{ROTATE},
     "p|pretend"       => \$self{PRETEND},
@@ -70,7 +72,8 @@ if ( !$result ){
 }
 
 unless  ( $self{FWT} || $self{ARP} || $self{MACS} || 
-	  $self{IPS} || $self{RR} || $self{HOSTAUDIT} || $self{AUDIT} ){
+	  $self{IPS} || $self{RR} || $self{HOSTAUDIT} || 
+          $self{AUDIT} || $self{INTERFACES} ){
     print $usage;
     die "Error: Missing required args\n";
 }
@@ -165,6 +168,14 @@ if ( $self{AUDIT} ){
     $r = $dbh->do("DELETE FROM audit WHERE tstamp < '$sqldate'")
 	unless $self{PRETEND};
     $rows_deleted{audit} = $r;
+}
+
+if ( $self{INTERFACES} ){
+    my $r;
+    $logger->debug("Deleting all interfaces with 'removed' doc status");
+    $r = $dbh->do("DELETE FROM interface WHERE doc_status='removed'")
+	unless $self{PRETEND};
+    $rows_deleted{interfaces} = $r;
 }
 
 if ( $self{FWT} ){
