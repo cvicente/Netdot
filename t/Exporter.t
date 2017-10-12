@@ -39,9 +39,18 @@ for my $name (@dev_names){
     foreach my $int ($dev->interfaces){
 	$int->update({speed=>'100'});
     }
+    # Create a "removed" interface to test that we do not
+    # get it in the exported data
+    Interface->insert({
+	device=>$dev,
+	name=>'dummy',
+	number=>'999',
+	doc_status=>'removed'});
     $i++;
 }
+
 my $info = $exporter->get_device_info();
+
 my @hdevs = map { $info->{$_} } sort keys %$info;
 is($hdevs[0]->{hostname}, "test1.defaultdomain");
 is($hdevs[0]->{site_name}, "tsite1");
@@ -50,13 +59,16 @@ is($hdevs[1]->{site_name}, "tsite2");
 is($hdevs[2]->{hostname}, "test3.defaultdomain");
 is($hdevs[2]->{site_name}, "tsite3");
 
-my $f_int = (keys %{$hdevs[0]->{interface}})[0];
+my @ints = keys %{$hdevs[0]->{interface}};
+is(length(@ints), 1);
+my $f_int = $ints[0];
 is($hdevs[0]->{interface}->{$f_int}->{speed}, 100);
 
 $info = $exporter->get_device_info(site=>'tsite1');
 my @ids = (sort keys %$info);
 is(scalar(@ids), 1);
 is($info->{$ids[0]}->{hostname}, "test1.defaultdomain");
+
 
 my $nagios = Netdot::Exporter->new(type=>'Nagios');
 isa_ok($nagios, 'Netdot::Exporter::Nagios', 'Constructor');

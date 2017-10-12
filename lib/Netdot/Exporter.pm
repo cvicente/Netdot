@@ -115,7 +115,8 @@ sub get_device_info {
           LEFT OUTER JOIN ipservice ON ipservice.ip=ip.id
           LEFT OUTER JOIN service ON ipservice.service=service.id
           WHERE     d.monitored='1'
-               AND  i.device=d.id                  
+               AND  i.device=d.id
+               AND  i.doc_status!='removed'
                AND  d.name=rr.id 
                AND  rr.zone=zone.id
          ";
