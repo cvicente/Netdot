@@ -28,6 +28,9 @@ my $make_cell = sub {
 
     our $DISCOVERED_OVERWRITE;
 
+    # Wrap the displayed address in a div before wrapping it in an anchor tag
+    # so that the whole cell is clickable.
+    $disp_addr = '<div class="'.$divclass.'" title="'.$divtitle.'" width="100%">'.$disp_addr.'</div>';
     my $str = $disp_addr;
     if ( $caller eq 'choose_ip.html' ){
 	# Called as a popup window
@@ -75,7 +78,6 @@ my $make_cell = sub {
 	    }
 	}
     }
-    $str = '<div class="'.$divclass.'" title="'.$divtitle.'" width="100%">'.$str.'</div>';
     return $str;
 };
 </%once>
