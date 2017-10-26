@@ -384,7 +384,7 @@ sub get_dp_links {
     # Finds remote device and/or remote interfaced given a MAC
     sub _find_by_mac {
 	my ($str, $macs2ints, $base_macs) = @_; 
-    my $mac = PhysAddr->format_address_db($str);
+	my $mac = PhysAddr->format_address_db($str);
 	my ($h, @ints, $rem_dev, $rem_int, $iface);
 	if ( ($h = $macs2ints->{$mac}) && (ref($h) eq 'HASH') && (@ints = keys %$h) ){
 	    if ( scalar(@ints) > 1 ){

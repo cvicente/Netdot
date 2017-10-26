@@ -43,7 +43,7 @@ sub search {
     my %argv = @args;
     
     if ( $argv{address} ){
-	$argv{address} = $class->_format_address_db($argv{address});
+	$argv{address} = $class->format_address_db($argv{address});
     }
     return $class->SUPER::search(%argv, $opts);
 }
@@ -71,7 +71,7 @@ sub search_like {
 	    # User wants exact match 
 	    # do nothing
 	}else{
-	    $argv{address} = $self->_format_address_db($argv{address});
+	    $argv{address} = $self->format_address_db($argv{address});
 	}
     }
     return $self->SUPER::search_like(%argv);
@@ -244,7 +244,7 @@ sub validate {
     $class->throw_user("Address undefined")
 	unless $addr;
 
-    $addr = $class->_format_address_db($addr);
+    $addr = $class->format_address_db($addr);
     my $displ = $class->format_address(address=>$addr);
 
     if ( $addr !~ /^[0-9A-F]{12}$/ ){
@@ -854,29 +854,31 @@ sub format_address {
     return $res;
 }
 
-#################################################
-# PRIVATE METHODS
-#################################################
+################################################################################
+=head2 format_address_db - Format address for storage
 
-#################################################
-# _format_address_db - Format address for storage
-#
-#  Arguments: 
-#    Address string
-#  Returns:   
-#    Formatted string
-#
-sub _format_address_db {
+ Arguments:
+   Address string
+ Returns:
+   Formatted string
+
+=cut
+
+sub format_address_db {
     my ($self, $address) = @_;
     my $retval = $self->format_address(
         address                   => $address,
         format_caseness           => 'upper',
         format_delimiter_interval => 0,
     );
-    $logger->debug("PhysAddr::_format_address_db: MAC address ".
+    $logger->debug("PhysAddr::format_address_db: MAC address ".
                    "($address) formatted for DB storage to: $retval");
     return $retval;
 }
+
+#################################################
+# PRIVATE METHODS
+#################################################
 
 #################################################
 # _deflate - Modify object before writing
