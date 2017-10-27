@@ -164,6 +164,14 @@ if ( $submit ){
 
 		    # MAC
 		    if ( $d{physaddr} ){
+			my $mac = $d{physaddr};
+			eval {
+			    $mac = PhysAddr->validate($mac);
+			};
+			if ( my $e = $@ ){
+			    Netdot->throw_user("Invalid MAC: $e");
+			    next;
+			}
 			if ( PhysAddr->search(address=>$mac)) {
 			    $dups{macs}{$mac} = 1;
 			    next;
