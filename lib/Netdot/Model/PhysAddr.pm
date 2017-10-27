@@ -922,7 +922,8 @@ __PACKAGE__->add_trigger( select             => \&_obj_inflate );
 # Extract first 6 characters from MAC address
 #
 sub _oui_from_address {
-    my ($self, $addr) = @_;
+    my ($class, $addr) = @_;
+    $addr = $class->format_address_db($addr);
     return substr($addr, 0, 6);
 }
 
