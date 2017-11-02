@@ -518,7 +518,7 @@ sub dhcpd_address {
 =cut
 
 __PACKAGE__->set_sql(interface_macs => qq{
-SELECT p.id
+SELECT p.id, p.address
 FROM     physaddr p, interface i, fwtable ft, fwtableentry fte 
 WHERE    fte.interface=i.id 
   AND    fte.fwtable=ft.id 
