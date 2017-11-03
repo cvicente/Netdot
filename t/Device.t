@@ -4,6 +4,18 @@ use lib "lib";
 
 BEGIN { use_ok('Netdot::Model::Device'); }
 
+sub cleanup{
+    my @devs = Device->search_like(name=>'localhost%');
+    foreach my $dev (@devs){
+	my $peers = $dev->get_bgp_peers();
+	foreach my $p (@$peers){
+	    $p->entity->delete if $p->isa('Netdot::Model::Entity');
+	}
+	$dev->delete();
+    }
+}
+&cleanup();
+
 my $dd = Netdot->config->get('DEFAULT_DNSDOMAIN');
 my $ddn = (Zone->search(name=>$dd)->first)->name;
 
@@ -29,7 +41,8 @@ $testcl->delete;
 $obj->update({layers=>'00000010'});
 is($obj->has_layer(2), 1, 'has_layer');
 
-my $p = $obj->update_bgp_peering( 
+# BGP Peerings
+my $p = $obj->update_bgp_peering(
     peer=>{
 	address   => '10.0.0.2',
 	bgppeerid => '10.0.0.1',
@@ -38,6 +51,29 @@ my $p = $obj->update_bgp_peering(
 	orgname   => 'testOrg'},
     old_peerings=>{} );
 is($p->bgppeerid, '10.0.0.1', 'update_bgp_peering');
+is($p->entity->name, 'testAS (1000)', 'peer_entity_name');
+is($p->entity->asnumber, '1000', 'peer_entity_asn');
+
+my $p2 = $obj->update_bgp_peering(
+    peer=>{
+	address   => '192.0.2.1',
+	bgppeerid => '192.0.2.100',
+	asname    => 'another_name',
+	asnumber  => '1000'},
+    old_peerings=>{} );
+is($p->entity->id, $p2->entity->id, 'find_entity_by_asn');
+
+# Change the entity's AS
+$p->entity->update(asn=>'2000');
+my $p3 = $obj->update_bgp_peering(
+    peer=>{
+	address   => '192.0.2.2',
+	bgppeerid => '192.0.2.200',
+	asname    => 'testAS',
+	asnumber  => '1000'},
+    old_peerings=>{} );
+is($p->entity->id, $p3->entity->id, 'find_entity_by_name');
+is($p->entity->asnumber, '1000', 'entity ASN is restored');
 
 my $newints = $obj->add_interfaces(1);
 my @ints = $obj->interfaces();
@@ -49,6 +85,4 @@ is($newip->address, '10.0.0.1', 'add_ip');
 my $peers = $obj->get_bgp_peers();
 is(($peers->[0])->id, $p->id, 'get_bgp_peers');
 
-$obj->delete;
-isa_ok($obj, 'Class::DBI::Object::Has::Been::Deleted', 'delete');
-$obj2->delete;
+&cleanup();

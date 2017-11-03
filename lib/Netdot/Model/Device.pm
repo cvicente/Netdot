@@ -2648,58 +2648,8 @@ sub update_bgp_peering {
     my $host = $self->fqdn;
     my $p; # bgppeering object
     
-    # Check if we have basic Entity info
-    my $entity;
-    if ( $peer->{asname}  || $peer->{orgname} || $peer->{asnumber} ){
-	
-	my $entityname = $peer->{orgname} || $peer->{asname};
-	$entityname .= " ($peer->{asnumber})" if $peer->{asnumber};
-	
-	# Check if Entity exists (notice it's an OR search)
-	my @where;
-	push @where, { asnumber => $peer->{asnumber} } if $peer->{asnumber};
-	push @where, { asname   => $peer->{asname}   } if $peer->{asname};
-	push @where, { name     => $entityname       };
-	
-	if ( $entity = Entity->search_where(\@where)->first ){
-	    # Update AS stuff
-	    $entity->update({asname   => $peer->{asname},
-			     asnumber => $peer->{asnumber}});
-	}else{
-	    # Doesn't exist. Create Entity
-	    # Build Entity info
-	    my %etmp = ( name     => $entityname,
-			 asname   => $peer->{asname},
-			 asnumber => $peer->{asnumber},
-		);
-	    
-	    $logger->info(sprintf("%s: Peer Entity %s not found. Inserting", 
-				  $host, $entityname ));
-	    
-	    $entity = Entity->insert( \%etmp );
-	    $logger->info(sprintf("%s: Created Peer Entity %s.", $host, $entityname));
-	}
-	
-	# Make sure Entity has role "peer"
-	if ( my $type = (EntityType->search(name => "Peer"))[0] ){
-	    my %eroletmp = ( entity => $entity, type => $type );
-	    my $erole;
-	    if ( $erole = EntityRole->search(%eroletmp)->first ){
-		$logger->debug(sub{ sprintf("%s: Entity %s already has 'Peer' role", 
-					    $host, $entityname )});
-	    }else{
-		EntityRole->insert(\%eroletmp);
-		$logger->info(sprintf("%s: Added 'Peer' role to Entity %s", 
-				      $host, $entityname ));
-	    }
-	}
-	
-    }else{
-	$logger->warn( sprintf("%s: Missing peer info. Cannot associate peering %s with an entity", 
-			       $host, $peer->{address}) );
-	$entity = Entity->search(name=>"Unknown")->first;
-    }
-    
+    my $entity = $self->_get_bgp_peer_entity($peer);
+
     # Create a hash with the peering's info for update or insert
     my %pstate = (device      => $self,
 		  entity      => $entity,
@@ -6577,6 +6527,69 @@ sub _netdot_rebless {
 	    return $self;
 	}
     }
+}
+
+############################################################################
+
+=head2 _get_bgp_peer_entity - Find or create Entity for BGP peer
+
+  Arguments:
+    peer - Hashref containing Peer SNMP info:
+      address
+      asname
+      asnumber
+      orgname
+      bgppeerid
+    old_peerings - Hash ref containing old peering objects
+  Returns:
+    Entity object
+
+=cut
+
+sub _get_bgp_peer_entity {
+    my ($self, $peer) = @_;
+
+    my $host = $self->fqdn;
+
+    # Check if we have basic Entity info
+    my $entity;
+    unless ( ($peer->{asname}  || $peer->{orgname}) && $peer->{asnumber} ){
+	$logger->warn(sprintf("%s: Missing peer info. Cannot associate peering %s with an entity",
+			      $host, $peer->{address}));
+	$entity = Entity->find_or_create({name=>"Unknown"});
+	return $entity;
+    }
+    my $entityname = $peer->{asname} || $peer->{orgname};
+    $entityname .= " ($peer->{asnumber})";
+
+    my $e;
+    if ($e = Entity->search(asnumber=>$peer->{asnumber})->first){
+	$entity = $e;
+    }elsif ($e = Entity->search(name=>$entityname)->first){
+	# Since $entityname has the asnumber in it, this is weird
+	# but we should probably update the asnumber in the DB
+	$entity = $e;
+	$entity->update({asnumber=>$peer->{asnumber}});
+    }else{
+	# Doesn't exist. Create Entity
+	# Build Entity info
+	my %etmp = ( name     => $entityname,
+		     asname   => $peer->{asname},
+		     asnumber => $peer->{asnumber},
+	    );
+
+	$logger->info(sprintf("%s: Peer Entity %s not found. Inserting", 
+			      $host, $entityname ));
+
+	$entity = Entity->insert( \%etmp );
+	$logger->info(sprintf("%s: Created Peer Entity %s.", $host, $entityname));
+    }
+
+    # Make sure Entity has role "peer"
+    if ( my $type = EntityType->search(name=>"Peer")->first ){
+	EntityRole->find_or_create({entity => $entity, type => $type});
+    }
+    return $entity;
 }
     
 ############################################################################
