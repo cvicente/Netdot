@@ -173,9 +173,14 @@ if ( $self{AUDIT} ){
 if ( $self{INTERFACES} ){
     my $r;
     $logger->debug("Deleting all interfaces with 'removed' doc status");
-    $r = $dbh->do("DELETE FROM interface WHERE doc_status='removed'")
-	unless $self{PRETEND};
-    $rows_deleted{interfaces} = $r;
+    my $count = 0;
+    unless ( $self{PRETEND} ){
+	foreach my $i (Interface->search('doc_status'=>'removed')){
+	    $i->delete();
+	    $count++
+	}
+    }
+    $rows_deleted{interfaces} = $count;
 }
 
 if ( $self{FWT} ){
