@@ -129,21 +129,11 @@ my $manager = $ui->get_permission_manager($r);
 		<br>
                 <fieldset class="large">
                     <legend>A/AAAA records</legend>
-    		    <p>You need to provide either a Subnet or an IP address.</p>
-		    <p>Selecting a Subnet will tell Netdot to use the next available address</p>
-                    <p>
+		    <p>Provide either an existing subnet or an IP address.</p>
+		    <p>If you enter a subnet, Netdot will pick the next available IP address</p>
+		    <p>
                     <label for="Subnet">Subnet:</label>
-                    <select name="add_host_block" id="add_host_block">
-                    <option value="">- Select Block -</option>
-%                   my @subnets = grep { $_->forward_zone } Ipblock->search(status=>"Subnet");
-%                   foreach my $o ( sort { $a->address_numeric cmp $b->address_numeric } @subnets ){
-%                       my $subnet_label = $o->get_label();
-%                       if ( $o->description ){
-%                           $subnet_label .= " (".$o->description.")"; 
-%                       }
-                        <option value="<% $o %>"><% $subnet_label %></option>
-%                   }
-                    </select> 
+	            <input name="add_host_block" type="text" class="longtxt" value=""> or
                     </p>
 		    <p>
                     <label for="Address">Address:</label>
@@ -248,14 +238,22 @@ if ( $action eq "search" && $submit ){
     }
 
     my %args;
-    if ( $add_host_block && !$add_host_address ){
-	my $block = Ipblock->retrieve($add_host_block);
+    if ( $add_host_block && $add_host_address ){
+	$m->comp('/generic/error.mhtml', error=>"Please select either a subnet or an IP address");
+    }
+    if ( $add_host_block ){
+	my $block = Ipblock->search(address=>$add_host_block)->first;
 	unless ( $block ){
 	    $m->comp('/generic/error.mhtml', error=>"Could not retrieve Ipblock: $add_host_block");
 	}
+	unless ( $block->status->name eq 'Subnet' ){
+	    $m->comp('/generic/error.mhtml', error=>"Block is not a subnet: " . $block->get_label);
+	}
 	$args{subnet} = $block;
-    }else{
+    }elsif ( $add_host_address ){
 	$args{address}  = $add_host_address;
+    }else{
+	$m->comp('/generic/error.mhtml', error=>"Please select either a subnet or an IP address");
     }
     my $zone = Zone->retrieve($add_host_zone);
     unless ( $zone ){
