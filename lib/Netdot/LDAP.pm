@@ -176,7 +176,7 @@ sub _connect {
     push @servers, $server1;
 
     # This is optional
-    if ( my $server2 = $r->dir_config("NetdotLDAPServer") ){
+    if ( my $server2 = $r->dir_config("NetdotLDAPServer2") ){
 	push @servers, $server2;
     }
 
