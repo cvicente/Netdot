@@ -25,6 +25,7 @@ $refresh_url
     my $manager = $ui->get_permission_manager($r);
     my $ifs = $device->interfaces_by($ifsort);
     my $connected = $device->get_connected_devices();
+    print '$connected has  <pre>', Dumper($connected), '</pre><br>' if $DEBUG;
     #
     # Store values in a hash first.  Thay way we can quicly verify if 
     # at least one of the interfaces has that field set to some value 
@@ -132,13 +133,13 @@ $refresh_url
 	    foreach my $mac_id (keys %{$connected->{$if->id}}){
 		if ( my $rr_id = $connected->{$if->id}->{$mac_id}->{rr} ){
 		    my $rr = RR->retrieve($rr_id);
-		    $ac = sprintf('<a href="host.html?id=%d">%s</a>', $rr_id, $rr->get_label);
+		    $ac .= sprintf('<a href="host.html?id=%d">%s</a>', $rr_id, $rr->get_label);
 		}elsif ( my $ipid = $connected->{$if->id}->{$mac_id}->{ip_id} ){
 		    my $ipb = Ipblock->retrieve($ipid);
-		    $ac = $ui->form_field(object=>$ipb, column=>"address", linkPage=>"ip.html", returnValOnly=>1);
+		    $ac .= $ui->form_field(object=>$ipb, column=>"address", linkPage=>"ip.html", returnValOnly=>1);
 		}else{
 		    my $mac = PhysAddr->retrieve($mac_id);
-		    $ac = $ui->form_field(object=>$mac, column=>"address", linkPage=>"mac.html", returnValOnly=>1);
+		    $ac .= $ui->form_field(object=>$mac, column=>"address", linkPage=>"mac.html", returnValOnly=>1);
 		}
 		$ac .= "<br>";
 	    }
