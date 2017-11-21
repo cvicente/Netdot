@@ -3871,6 +3871,55 @@ sub do_auto_dns {
     1;
 }
 
+################################################################################
+=head2 get_connected_devices - Query DB for connected devices on a switch
+
+    Arguments
+      None
+    Returns
+      Hashref keyed by Interface id + PhysAddr id, containing:
+        ip_id - Ipblock ID from ARP
+        rr - RR id from A/AAAA records
+    Example:
+      my $connected = $device->get_connected_devices()
+=cut
+
+
+sub get_connected_devices {
+    my ($self, %argv) = @_;
+    my $id = $self->id;
+
+    my $sql = <<EOF;
+    SELECT interface.id, physaddr.id, arp.ipaddr, rraddr.rr
+    FROM fwtableentry
+    JOIN interface ON interface.id=fwtableentry.interface
+    JOIN physaddr ON physaddr.id=fwtableentry.physaddr
+    LEFT JOIN
+      (SELECT ace.physaddr,ace.ipaddr,max(tstamp) as tstamp FROM arpcacheentry ace
+       JOIN arpcache ac ON ac.id=ace.arpcache
+       WHERE ac.tstamp >= timestampadd(hour,-8,now())
+       GROUP BY ace.physaddr,ace.ipaddr
+      ) AS arp ON arp.physaddr=physaddr.id
+    LEFT JOIN ipblock ON ipblock.id=arp.ipaddr
+    LEFT JOIN rraddr ON rraddr.ipblock=ipblock.id
+    WHERE fwtableentry.fwtable=(
+       SELECT MAX(fwtable.id) from fwtable, device
+       WHERE fwtable.device=$id
+     ) AND interface.neighbor IS NULL
+    ORDER BY CAST(interface.number AS SIGNED), physaddr.address
+EOF
+
+   my %ret;
+   my $res = Netdot::Model->raw_sql($sql)->{rows};
+    foreach my $r ( @$res ) {
+	my $iid = $r->[0];
+	my $mac = $r->[1];
+	$ret{$iid}{$mac}{ip_id}  = $r->[2];
+	$ret{$iid}{$mac}{rr}     = $r->[3];
+    }
+    return \%ret;
+}
+
 
 #####################################################################
 #

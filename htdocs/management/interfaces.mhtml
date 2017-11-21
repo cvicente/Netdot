@@ -1,8 +1,7 @@
-%#######################################################################
-%#
-%# Args section
-%#
-%#######################################################################
+<%doc>
+Interfaces tab in devices.html
+</%doc>
+
 <%args>
 $device
 $ifsort
@@ -16,13 +15,16 @@ $refresh_url
 </%args>
 
 <%perl>
+    my $DEBUG = 0;
+    print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
     my %ifacecolors = ( 
 	manual  => "cccccc",
 	removed => "ff8e8e",
     );	 
     my $id = $device->id;
     my $manager = $ui->get_permission_manager($r);
-    my $ifs = $device->interfaces_by($ifsort); 
+    my $ifs = $device->interfaces_by($ifsort);
+    my $connected = $device->get_connected_devices();
     #
     # Store values in a hash first.  Thay way we can quicly verify if 
     # at least one of the interfaces has that field set to some value 
@@ -68,7 +70,6 @@ $refresh_url
     }
     push @headers, 'Connected Devices';
 
-
     ### Actual data
     foreach my $if ( @$ifs ){
         next if ( !exists $ifvlans->{$if}{$showvlan} && $showvlan ne "all" );
@@ -102,7 +103,7 @@ $refresh_url
 		    }else{
 			my @links;
 			foreach my $v ( keys %{$ifvlans->{$if}} ){
-			    push @links, sprintf("<a href=\"view.html?table=Vlan&id=%s\">%s</a>", $vlans->{$v}, $v );
+			    push @links, sprintf('<a href="view.html?table=Vlan&id=%d">%s</a>', $vlans->{$v}, $v );
 			}
 			$ac .= join ', ', @links;
 		    }
@@ -127,11 +128,19 @@ $refresh_url
 	if ( exists $intinfo{neighbor}{$if->id} ){
 	    $ac = $ui->form_field(object=>$if, column=>"neighbor", edit=>$editints, linkPage=>1, returnValOnly=>1);
 	    $ac .= "<br>";
-	}
-	if ( !$editints && $can_edit ){
-	    #  Do not allow user to add neighbors on virtual interfaces
-	    if ( $if->type ne "53" && $if->type ne "propVirtual" ){
-		$ac .= "<a class=\"hand\" onClick=\"window.open('addneighbor.html?int_id=$if&url=$refresh_url', 'Add Neighbor', 'width=600,height=200')\">[add]</a>";
+	}elsif( exists $connected->{$if->id} ){
+	    foreach my $mac_id (keys %{$connected->{$if->id}}){
+		if ( my $rr_id = $connected->{$if->id}->{$mac_id}->{rr} ){
+		    my $rr = RR->retrieve($rr_id);
+		    $ac = sprintf('<a href="host.html?id=%d">%s</a>', $rr_id, $rr->get_label);
+		}elsif ( my $ipid = $connected->{$if->id}->{$mac_id}->{ip_id} ){
+		    my $ipb = Ipblock->retrieve($ipid);
+		    $ac = $ui->form_field(object=>$ipb, column=>"address", linkPage=>"ip.html", returnValOnly=>1);
+		}else{
+		    my $mac = PhysAddr->retrieve($mac_id);
+		    $ac = $ui->form_field(object=>$mac, column=>"address", linkPage=>"mac.html", returnValOnly=>1);
+		}
+		$ac .= "<br>";
 	    }
 	}
 	push @row, $ac;
