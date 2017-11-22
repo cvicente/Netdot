@@ -129,19 +129,24 @@ $refresh_url
 	if ( exists $intinfo{neighbor}{$if->id} ){
 	    $ac = $ui->form_field(object=>$if, column=>"neighbor", edit=>$editints, linkPage=>1, returnValOnly=>1);
 	    $ac .= "<br>";
-	}elsif( exists $connected->{$if->id} ){
-	    foreach my $mac_id (keys %{$connected->{$if->id}}){
-		if ( my $rr_id = $connected->{$if->id}->{$mac_id}->{rr} ){
-		    my $rr = RR->retrieve($rr_id);
-		    $ac .= sprintf('<a href="host.html?id=%d">%s</a>', $rr_id, $rr->get_label);
-		}elsif ( my $ipid = $connected->{$if->id}->{$mac_id}->{ip_id} ){
-		    my $ipb = Ipblock->retrieve($ipid);
-		    $ac .= $ui->form_field(object=>$ipb, column=>"address", linkPage=>"ip.html", returnValOnly=>1);
+	}elsif( my $cd = $connected->{$if->id} ){
+	    foreach my $mac_id (keys %$cd){
+		my $mac_addr = $cd->{$mac_id}->{mac};
+		if ( my $cdips = $cd->{$mac_id}->{ip} ){
+		    foreach my $ip_id (keys %$cdips){
+			my $ip_addr = $cdips->{$ip_id}->{address};
+			if ( my $rr_id = $cdips->{$ip_id}->{rrid} ){
+			    my $fqdn = $cdips->{$ip_id}->{fqdn};
+			    $ac .= sprintf('<a href="host.html?id=%d">%s</a>', $rr_id, $fqdn);
+			}else{
+			    $ac .= sprintf('<a href="ip.html?id=%d">%s</a>', $ip_id, $ip_addr);
+			}
+			$ac .= "<br>";
+		    }
 		}else{
-		    my $mac = PhysAddr->retrieve($mac_id);
-		    $ac .= $ui->form_field(object=>$mac, column=>"address", linkPage=>"mac.html", returnValOnly=>1);
+		    $ac .= sprintf('<a href="mac.html?id=%d">%s</a>', $mac_id, $mac_addr);
+		    $ac .= "<br>";
 		}
-		$ac .= "<br>";
 	    }
 	}
 	push @row, $ac;

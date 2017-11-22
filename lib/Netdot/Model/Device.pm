@@ -3877,9 +3877,7 @@ sub do_auto_dns {
     Arguments
       None
     Returns
-      Hashref keyed by Interface id + PhysAddr id, containing:
-        ip_id - Ipblock ID from ARP
-        rr - RR id from A/AAAA records
+      Hashref
     Example:
       my $connected = $device->get_connected_devices()
 =cut
@@ -3887,10 +3885,12 @@ sub do_auto_dns {
 
 sub get_connected_devices {
     my ($self, %argv) = @_;
+    $self->isa_object_method('get_connected_devices');
     my $id = $self->id;
 
     my $sql = <<EOF;
-    SELECT interface.id, physaddr.id, arp.ipaddr, rraddr.rr
+    SELECT interface.id, physaddr.id, physaddr.address,
+           ipblock.id, ipblock.address, ipblock.version, rr.id, rr.name, zone.name
     FROM fwtableentry
     JOIN interface ON interface.id=fwtableentry.interface
     JOIN physaddr ON physaddr.id=fwtableentry.physaddr
@@ -3901,21 +3901,30 @@ sub get_connected_devices {
        GROUP BY ace.physaddr,ace.ipaddr
       ) AS arp ON arp.physaddr=physaddr.id
     LEFT JOIN ipblock ON ipblock.id=arp.ipaddr
-    LEFT JOIN rraddr ON rraddr.ipblock=ipblock.id
+    LEFT JOIN (rraddr, rr, zone) ON rraddr.ipblock=ipblock.id AND
+              rraddr.rr=rr.id AND rr.zone=zone.id
     WHERE fwtableentry.fwtable=(
        SELECT MAX(fwtable.id) from fwtable, device
        WHERE fwtable.device=$id
      ) AND interface.neighbor IS NULL
-    ORDER BY CAST(interface.number AS SIGNED), physaddr.address
+    ORDER BY CAST(interface.number AS SIGNED), physaddr.address;
 EOF
 
    my %ret;
    my $res = Netdot::Model->raw_sql($sql)->{rows};
     foreach my $r ( @$res ) {
-	my $iid = $r->[0];
-	my $mac = $r->[1];
-	$ret{$iid}{$mac}{ip_id}  = $r->[2];
-	$ret{$iid}{$mac}{rr}     = $r->[3];
+	my ($iid, $macid, $ipid) = ($r->[0], $r->[1], $r->[3]);
+	my $mac = PhysAddr->format_address(address=>$r->[2]);
+	$ret{$iid}{$macid}{mac} = $mac;
+	if ($ipid){
+	    my $ipaddr = Ipblock->int2ip($r->[4], $r->[5]);
+	    $ret{$iid}{$macid}{ip}{$ipid}{address} = $ipaddr;
+	    if ($r->[6]){
+		$ret{$iid}{$macid}{ip}{$ipid}{rrid} = $r->[6];
+		my $fqdn = join('.', ($r->[7], $r->[8]));
+		$ret{$iid}{$macid}{ip}{$ipid}{fqdn} = $fqdn;
+	    }
+	}
     }
     return \%ret;
 }

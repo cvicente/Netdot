@@ -4,8 +4,11 @@ use lib "lib";
 
 BEGIN { use_ok('Netdot::Model::Device'); }
 
+my @macs = ('DEADDEADBEEF', 'DEADDEADDEAD', 'DEADBEEFDEAD');
+my @ips = ('10.0.0.88', '10.0.0.99', '10.0.0.101');
+
 sub cleanup{
-    my @devs = Device->search_like(name=>'localhost%');
+    my @devs = Device->search_like(name=>'testdev%');
     foreach my $dev (@devs){
 	my $peers = $dev->get_bgp_peers();
 	foreach my $p (@$peers){
@@ -13,24 +16,26 @@ sub cleanup{
 	}
 	$dev->delete();
     }
+    map { $_->delete() } map { PhysAddr->search(address=>$_) } @macs;
+    map { $_->delete() } map { Ipblock->search(address=>$_) } @ips;
 }
 &cleanup();
 
 my $dd = Netdot->config->get('DEFAULT_DNSDOMAIN');
 my $ddn = (Zone->search(name=>$dd)->first)->name;
 
-my $obj = Device->insert({name=>'localhost'});
+my $obj = Device->insert({name=>'testdev1'});
 isa_ok($obj, 'Netdot::Model::Device', 'insert');
 
-is($obj->short_name, 'localhost', 'get short_name');
-is($obj->fqdn, "localhost.$ddn", 'fqdn');
-is(Device->search(name=>"localhost.$ddn")->first, $obj, 'search' );
+is($obj->short_name, 'testdev1', 'get short_name');
+is($obj->fqdn, "testdev1.$ddn", 'fqdn');
+is(Device->search(name=>"testdev1.$ddn")->first, $obj, 'search' );
 
-my $obj2 = Device->insert({name=>'localhost2'});
-ok(scalar(Device->search_like(name=>"local")) == 2, 'search_like' );
+my $obj2 = Device->insert({name=>'testdev2'});
+ok(scalar(Device->search_like(name=>"test")) == 2, 'search_like' );
 
 # This should give us $obj's name
-my $rr = Device->assign_name(host=>'localhost');
+my $rr = Device->assign_name(host=>'testdev1');
 is($rr->id, $obj->name, 'assign_name');
 
 my $testcl = ContactList->insert({name=>'testcl'});
@@ -75,14 +80,55 @@ my $p3 = $obj->update_bgp_peering(
 is($p->entity->id, $p3->entity->id, 'find_entity_by_name');
 is($p->entity->asnumber, '1000', 'entity ASN is restored');
 
-my $newints = $obj->add_interfaces(1);
+my $peers = $obj->get_bgp_peers();
+is(($peers->[0])->id, $p->id, 'get_bgp_peers');
+
+my $newints = $obj->add_interfaces(3);
 my @ints = $obj->interfaces();
 is($ints[0], $newints->[0], 'add_interfaces');
 
 my $newip = $obj->add_ip('10.0.0.1');
 is($newip->address, '10.0.0.1', 'add_ip');
 
-my $peers = $obj->get_bgp_peers();
-is(($peers->[0])->id, $p->id, 'get_bgp_peers');
+# Test connected devices query
+# First, create some fwt entries
+my $tstamp = Netdot::Model->timestamp();
+my $fwt = FWTable->insert({device=>$obj, tstamp=>$tstamp});
+foreach my $i (0..2) {
+    FWTableEntry->insert({
+	fwtable => $fwt,
+	interface => $ints[$i],
+	physaddr => PhysAddr->insert({address=>$macs[$i]}),
+			 });
+}
+my @fwtes = $fwt->entries();
+is($fwtes[0]->interface, $ints[0]);
+is($fwtes[0]->physaddr->address, $macs[0]);
 
+# Then create some ARP entries
+my $arpcache = ArpCache->insert({device=>$obj2, tstamp=>$tstamp});
+my $arpint = Interface->insert({device=>$obj2, number=>'1', name=>'eth1'});
+foreach my $i (0..2){
+    ArpCacheEntry->insert({
+	arpcache  => $arpcache,
+	interface => $arpint,
+	ipaddr    => Ipblock->insert({address=>$ips[$i]}),
+	physaddr  => PhysAddr->search(address=>$macs[$i])->first,
+			  });
+}
+
+# Give IPs DNS names
+for my $ipaddr (@ips){
+    my $name = $ipaddr;
+    $name =~ s/\./-/g;
+    RR->insert({type=>'A', name=>$name, ipblock=>$ipaddr});
+}
+my $connected = $obj->get_connected_devices();
+is(ref($connected), 'HASH', 'get_connected_devices returns hashref');
+my @macobjs = map { PhysAddr->search(address=>$_)->first } @macs;
+my @ipobjs = map { Ipblock->search(address=>$_)->first } @ips;
+is($connected->{$ints[0]->id}->{$macobjs[0]->id}->{mac}, $macs[0], 
+   'get_connected_devices has mac address');
+is($connected->{$ints[0]->id}->{$macobjs[0]->id}->{ip}->{$ipobjs[0]->id}->{fqdn}, 
+   '10-0-0-88.defaultdomain', 'get_connected_devices has FQDN');
 &cleanup();
