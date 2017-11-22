@@ -30,9 +30,17 @@ my $ip = $iface->update_ip(%update_ip_args);
 ok( !defined Ipblock->search(address=>$test_blocks[1])->first, 
     'ignore_orphan_subnet' );
 
-my $root = Ipblock->insert({address=>$test_blocks[2]});
+my $root = Ipblock->insert({address=>$test_blocks[2],
+			   status=>'Container'});
 $ip = $iface->update_ip(%update_ip_args);
 ok( defined Ipblock->search(address=>$test_blocks[1])->first, 
     'add_non_orphan_subnet' );
+
+# This avoids a common situation with Juniper routers
+# that have interfaces with IPs in 10/8
+$update_ip_args{subnet} = $test_blocks[2];
+$iface->update_ip(%update_ip_args);
+is($root->status->name, 'Container', 
+   'update_ip cannot turn container into subnet');
 
 &cleanup();
