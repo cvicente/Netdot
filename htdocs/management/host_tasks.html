@@ -42,6 +42,25 @@ $zone_id        => undef
 %#######################################################################
 %
 <%init>
+#cache using view + username, don't cache action pages
+#if number of subnet or zones is changed build a new cache
+my $current_subnetcount=scalar(Ipblock->search(status=>"Subnet"));
+my $current_zonecount=scalar(Zone->retrieve_all());
+my $subnet_zone_count=$m->cache->get($view.$user->getUsername.'host_tasks_subnet_and_zone_count');
+if (defined($subnet_zone_count)) {
+        if ($subnet_zone_count == $current_subnetcount+$current_zonecount) {
+                if ($action eq "") {
+                        return if $m->cache_self(key => $view.$user->getUsername);
+                }
+        } else {
+                $m->cache->set($view.$user->getUsername.'host_tasks_subnet_and_zone_count',$current_subnetcount+$current_zonecount);
+        }
+} else {
+        $m->cache->set($view.$user->getUsername.'host_tasks_subnet_and_zone_count',$current_subnetcount+$current_zonecount);
+        return if $m->cache_self(key => $view.$user->getUsername);
+}
+#end caching code
+
 my $DEBUG = 0;
 print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
 
