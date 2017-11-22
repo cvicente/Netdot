@@ -11,7 +11,7 @@ my $logger = Netdot->log->get_logger('Netdot::Model::Device');
 
 =head1 NAME
 
-Netdot::Model::FWTableEntry - 
+Netdot::Model::FWTableEntry
 
 =head1 SYNOPSIS
 
@@ -25,19 +25,21 @@ Forwarding Table Entry class
 =head2 fast_insert - Faster inserts for specific cases
 
     This method will traverse a list of hashes containing FWT
-    info.  Meant to be used by processes that insert/update large amounts of 
+    info.  Meant to be used by processes that insert/update large amounts of
     objects.  We use direct SQL commands for improved speed.
+
+    Notice that the PhysAddr (MAC) objects must exist prior to calling this.
 
   Arguments: 
     Array ref containing hash refs with following keys:
-    fwt       - id of ArpCache table record
+    fwtable   - id of ArpCache table record
     interface - id of Interface
     physaddr  - string with mac address
    
   Returns:   
     True if successul
   Examples:
-    ArpCacheEntry->fast_insert(list=>\@list);
+    FWTableEntry->fast_insert(list=>\@list);
 
 =cut
 
@@ -53,15 +55,9 @@ sub fast_insert{
                                    (fwtable,interface,physaddr)
                                    VALUES (?, ?, (SELECT id FROM physaddr WHERE address=?))");	
     foreach my $r ( @$list ){
-	eval {
-	    $sth->execute($r->{fwtable}, 
-			  $r->{interface},
-			  $r->{physaddr},
-		);
-	};
-	if ( my $e = $@ ){
-	    $logger->warn("Problem inserting FWT entry: $e");
-	}
+	$sth->execute($r->{fwtable}, 
+		      $r->{interface},
+		      $r->{physaddr});
     }
     return 1;
 }
