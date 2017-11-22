@@ -35,6 +35,7 @@ ARP Cache Entry class
            arpcache  - id of ArpCache table record
            interface - id of Interface
            ipaddr    - ip address in numeric format
+           version   - IP version
            physaddr  - string with mac address
   Returns:   
     True if successul
@@ -70,12 +71,7 @@ sub fast_insert{
 	$sth->bind_param(4, $plen);
 	$sth->bind_param(5, $r->{version});
 	$sth->bind_param(6, $r->{physaddr});
-	eval {
-	    $sth->execute();
-	};
-	if ( my $e = $@ ){
-	    $logger->warn("Problem inserting arpcacheentry: $e");
-	}
+	$sth->execute();
     }
     
     return 1;
