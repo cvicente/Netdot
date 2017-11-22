@@ -12,7 +12,6 @@ section => 'Management'
 <%args>
 $id           => undef
 $search       => undef
-$search_live  => undef
 $vlan         => undef
 $delete       => undef
 $fwt_limit    => Netdot->config->get('SHOW_LAST_N_FTE') || 10
@@ -55,40 +54,11 @@ print "<pre>", Dumper(%ARGS), "</pre><br>" if $DEBUG;
               <& /generic/sortresults.mhtml, object => \@list, dowindow => $dowindow &>
 %         }elsif ( @list ){
 %             $o = $list[0];
-%         }else{
-              <p>Would you like to perform a "live" search in the network? (It might take a while).
-              <p>
-              <form action="mac.html" method="POST">
-  	        <select name="vlan">
-                <option value="" SELECTED>Select VLAN ID</option>
-%	        foreach my $v ( sort { $a->vid <=> $b->vid } Vlan->retrieve_all ){
-		    <option value="<% $v->vid %>"><% $v->vid %></option>
-%	        }
-	        </select>
-                <input name="submit" value="Live Search" class="btn" type="submit">
-                <input type="hidden" name="search_live" value="<% $search %>">
-              </form>
 %         }
           </div>
        </div>
 <%perl>
-}elsif ( $search_live ){
-    if ( !$vlan ){
-	$m->comp('../generic/error.mhtml', error=>"Please select a VLAN ID");
-    }
-    my $info;
-    my $address = PhysAddr->format_address_db($search_live);
-    eval { $info = Device->search_address_live(mac=>$address, vlan=>$vlan) };
-    if ( my $e = $@ ){
-	$m->comp('/generic/error.mhtml', error=>$e);
-    }
-    if ( $info ){
-	$m->comp('live_results.mhtml', info=>$info);
-    }else{
-	print "Not found";
-    }
 }
-
 
 if ( $id && !$o ){
     unless ( $o = PhysAddr->retrieve($id) ){

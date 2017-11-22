@@ -19,7 +19,6 @@ $search_address  => undef
 $search_regex    => undef
 $search_other    => undef
 $search          => undef
-$search_live     => undef
 $user            => $ui->get_current_user($r);
 $submit          => undef
 $show_tasks      => undef
@@ -51,7 +50,6 @@ my $hideheader = 'style="display:none"' if ( !$showheader );
 
 my $covering_block;
 my @list;
-my $live_info;
 my $manager = $ui->get_permission_manager($r);
 </%init>
 
@@ -209,11 +207,6 @@ if ( $submit ){
 	$search = $search_other;
 	$search = $ui->rem_lt_sp($search);
 	@list = Ipblock->keyword_search($search);
-    }elsif( $search_live ){
-	eval { $live_info = Device->search_address_live(ip=>$search_live) };
-	if ( my $e = $@ ){
-	    $m->comp('/generic/error.mhtml', error=>$e);
-	}
     }elsif( $submit eq "Search" ){
 	$m->comp('/generic/no_search_criteria.html');
     }   
@@ -239,34 +232,8 @@ if ( $submit ){
               </div>
             </div>
 %       }
-
-%	if ($search_address){
-%           # We do not want to offer a live search unless it's an end-node address
-%           my $nip = NetAddr::IP->new($search_address);
-%           if ( defined($nip) && 
-%		 (($nip->version == 4 && $nip->masklen == 32) ||
-%	         ($nip->version == 6 && $nip->masklen == 128)) ){
-                <p>
-                <div class="container">
-                <div class="containerhead">Live Search:</div>
-                <div class="containerbody">
-                <p>Would you like to perform a "live" search in the network? (It might take a while).
-                <p>
-                <form action="address_tasks.html" method="POST">
-                 <input name="submit" value="Live Search" class="btn" type="submit">
-                 <input type="hidden" name="search_live" value="<% $search %>">
-                </form>
-                </div>
-                </div>
-%           }
-%      }
 %   }
 % }
   </div>
 </div>
-
-
-% if ( $search_live && $live_info ){
-    <& live_results.mhtml, info=>$live_info &>
-% }
 

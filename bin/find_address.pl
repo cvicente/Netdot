@@ -15,19 +15,12 @@ my $USAGE = <<EOF;
 
     Locate a device given its name, MAC or IP address.  
 
-    By default, this script uses information from the Netdot database.  
-    The user also has the option of doing a "live" search by querying 
-    relevant devices in the network.  In this case, providing a VLAN id 
-    can significantly speed up the search.
-
   Usage: $0 [options] <ether|ip|name>
 
     Available options:
 
     -A|--arp_limit <value>  Number of latest ARP cache entries to show (default: $self{ARP_LIMIT})
     -F|--fwt_limit <valud>  Number of latest Forwarding Table entries to show (default: $self{FWT_LIMIT})
-    -v|--vlan      <vlanid> VLAN id to use when searching addresses "live"
-    -f|--forcelive          Force a "live" search
     -d|--debug              Show debugging output
     -h|--help               Show help
     
@@ -38,8 +31,6 @@ my $MAC  = Netdot->get_mac_regex();
 # handle cmdline args
 my $result = GetOptions( "A|arp_limit:s"  => \$self{ARP_LIMIT},
 			 "F|fwt_limit:s"  => \$self{FWT_LIMIT},
-                         "v|vlan:s"       => \$self{VLAN},
-			 "f|forcelive"    => \$self{FORCE_LIVE},
 			 "h|help"         => \$self{HELP},
 			 "d|debug"        => \$self{DEBUG},
     );
@@ -70,28 +61,15 @@ print "--------------------\n";
 
 if ( $address =~ /^$MAC$/ ){
     $address = PhysAddr->format_address_db($address);
-    if ( $self{FORCE_LIVE} ){
-	&search_live(mac=>$address, vlan=>$self{VLAN});
-    }else{
-	&show_mac($address, 1);
-    }
+    &show_mac($address, 1);
 
 }elsif ( Ipblock->matches_ip($address) ){
-    
-    if ( $self{FORCE_LIVE} ){
-	&search_live(ip=>$address, vlan=>$self{VLAN});
-    }else{
-	&show_ip($address, 1);
-    }
+    &show_ip($address, 1);
 }else{
     # Try to resolve
     if ( my @ips = Netdot->dns->resolve_name($address) ){
 	foreach my $ip ( @ips ){
-	    if ( $self{FORCE_LIVE} ){
-		&search_live(ip=>$ip, vlan=>$self{VLAN});
-	    }else{
-		&show_ip($ip, 1);
-	    }
+	    &show_ip($ip, 1);
 	}
     }else{
 	die "$address not found\n"
@@ -149,7 +127,7 @@ sub show_ip {
 	    }
 	}
     }else{
-	warn "$address not found in DB.  Try searching live (--forcelive)\n";
+	print "$address not found in DB";
 	exit 0;
     }
 }
@@ -161,7 +139,7 @@ sub show_mac {
     
     my $mac = PhysAddr->search(address=>$address)->first;
     if ( !$mac ){
-	warn "$address not found in DB.  Try searching live (--forcelive)\n";
+	print "$address not found in DB\n";
 	exit 0;
     }
 
@@ -241,56 +219,6 @@ sub show_mac {
     }
 }
 
-###############################################################################
-sub search_live{
-    my (%argv) = @_;
-
-    my $info = Device->search_address_live(%argv);
-    if ( $info ){
-	my ($ipaddr, $macaddr); 
-	$ipaddr  = $info->{ip};
-	$macaddr = $info->{mac};
-	if ( scalar keys %{$info->{routerports}} ){
-	    if ( $self{ARP_LIMIT} ){
-		print "\nARP entries: \n";
-	    }
-	    foreach my $id ( keys %{$info->{routerports}} ){
-		my $iface = Interface->retrieve($id);
-		my $ip    = (keys %{$info->{routerports}{$id}})[0];
-		$ipaddr   = $ip unless $ipaddr;
-		my $mac   = $info->{routerports}{$id}{$ip};
-		$macaddr  = $mac unless $macaddr;
-		if ( $self{ARP_LIMIT} ){
-		    print $iface->get_label, ", ", $ip, ", ", $mac, "\n";
-		}
-	    }
-	}
-	if ( scalar keys %{$info->{switchports}} && $self{FWT_LIMIT} ){ 
-	    print "\nFWT entries: \n";
-	    foreach my $id ( keys %{$info->{switchports}} ){
-		my $iface = Interface->retrieve($id);
-		print $iface->get_label;
-		print " ";
-	    }
-	    print "\n";
-	}
-	print "\n";
-	if ( $macaddr ){
-	    print "MAC Address : ", $macaddr, "\n";
-	    print "Vendor      : ", $info->{vendor}, "\n" if $info->{vendor};
-	}
-	if ( $ipaddr ){
-	    print "IP Address  : ", $ipaddr, "\n";
-	    print "DNS         : ", $info->{dns}, "\n" if $info->{dns};
-	}
-
-	print "\n";
-	&print_location($info->{edge}) if $info->{edge};
-	
-    }else{
-	die "$address not found\n";
-    }
-}
 
 ###############################################################################
 sub print_location{
