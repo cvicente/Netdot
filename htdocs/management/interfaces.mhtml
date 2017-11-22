@@ -1,0 +1,278 @@
+<%doc>
+Interfaces tab in devices.html
+</%doc>
+
+<%args>
+$device
+$ifsort
+$view
+$user
+$editints
+$vlans
+$ifvlans
+$showvlan
+$refresh_url
+</%args>
+
+<%perl>
+    my $DEBUG = 0;
+    print '%ARGS is  <pre>', Dumper(%ARGS), '</pre><br>' if $DEBUG;
+    my %ifacecolors = ( 
+	manual  => "cccccc",
+	removed => "ff8e8e",
+    );	 
+    my $id = $device->id;
+    my $manager = $ui->get_permission_manager($r);
+    my $ifs = $device->interfaces_by($ifsort);
+    my $connected = $device->get_connected_devices();
+    print '$connected has  <pre>', Dumper($connected), '</pre><br>' if $DEBUG;
+    #
+    # Store values in a hash first.  Thay way we can quicly verify if 
+    # at least one of the interfaces has that field set to some value 
+    # and decide whether to add that column or not
+    # 
+    my %intinfo;
+    foreach my $if ( @$ifs ){ 
+	foreach my $field ( qw/jack description neighbor/ ){
+	    if ( defined($if->$field) ){
+		$intinfo{$field}{$if->id} = $if->$field;
+	    }
+	}
+    }
+    # Use this var to avoid checking for permissions for each int
+    my $can_edit = ($manager && $manager->can($user, "edit", $device))? 1 : 0;
+
+    ### Headers
+    my (@headers, @rows, @rowstyles);
+    
+    if ( $editints ){
+      push @headers, '[del]';
+    }
+    
+    push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=number">Number</a>';
+    push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=name">Name</a>';
+    
+    if ( ! $editints ){
+      push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=speed">Speed</a>';
+      push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=vlan">VLAN</a>';
+      push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=oper_status">Status</a>';
+    }
+    my @closet_jacks;
+    if ( exists $intinfo{jack} || $editints ){
+      push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=jack">Jack</a>';
+      my @closets = $device->room->closets if ( $device->room );
+      foreach my $cl ( @closets ) {
+	  push @closet_jacks,  $cl->horizontalcables;
+      }
+      @closet_jacks = sort { $a->get_label cmp $b->get_label } @closet_jacks;
+    }
+    if ( exists $intinfo{description} || $editints ){
+      push @headers, '<a href="device.html?id=' . $id . '&view=' . $view . '&ifsort=descr">Descr.</a>';
+    }
+    push @headers, 'Connected Devices';
+
+    ### Actual data
+    foreach my $if ( @$ifs ){
+        next if ( !exists $ifvlans->{$if}{$showvlan} && $showvlan ne "all" );
+	my @row;
+      
+	if ( $editints ){	 
+	    push @row, '<input type="checkbox" name="' . "Interface__" . $if->id . "__delete" . '" >';
+	}
+      
+	push @row, $ui->form_field(object=>$if, column=>"number", edit=>$editints, htmlExtra=>"style=\"width: 5em;\"", 
+				   linkPage=>"interface.html", returnValOnly=>1);
+	push @row, $ui->form_field(object=>$if, column=>"name", edit=>$editints, htmlExtra=>"style=\"width: 10em;\"", 
+				   linkPage=>"interface.html", returnValOnly=>1);
+      
+	if ( !$editints ){
+	    push @row, $if->speed_pretty;
+	    push @row, 
+	    &{sub{
+		my $ac = "";
+		if ( exists $ifvlans->{$if} ){
+		    if ( (keys %{$ifvlans->{$if}} > 3) ) {
+			my $rc = "<select name=\"vlan_list\" ";
+			my $sc = "onChange=\"window.open(this.options[this.selectedIndex].value,'_top')\">\n";
+			my $tc = "<option value=\"$refresh_url\" selected>--Select--</option>\n";
+			$ac = $rc . $sc . $tc;
+			foreach my $v ( sort { $a <=> $b } keys %{$ifvlans->{$if}} ) {
+			    my $link = "view.html?table=Vlan&id=$vlans->{$v}";
+			    $ac .= "<option value=\"$link\">$v</option>\n";
+			}
+			$ac .= "</select>\n";
+		    }else{
+			my @links;
+			foreach my $v ( keys %{$ifvlans->{$if}} ){
+			    push @links, sprintf('<a href="view.html?table=Vlan&id=%d">%s</a>', $vlans->{$v}, $v );
+			}
+			$ac .= join ', ', @links;
+		    }
+		    $ac;
+		}
+	      }};
+	    push @row, $ui->form_field(object=>$if, column=>"oper_status", edit=>$editints, returnValOnly=>1);
+	}
+		
+	if ( exists $intinfo{jack} || $editints ){
+	    my %args = (object=>$if, column=>"jack", linkPage=>"view.html", edit=>$editints, returnValOnly=>1);
+	    if ( @closet_jacks && (scalar(@closet_jacks) <= $ui->config->get('DEFAULT_SELECTMAX')) ){
+		$args{defaults} = \@closet_jacks;
+	    }
+	    push @row, $ui->form_field(%args);      
+	}
+	if ( exists $intinfo{description} || $editints ){
+	    push @row, $ui->form_field(object=>$if, column=>"description", edit=>$editints, returnValOnly=>1);
+	}
+	
+	my $ac = "";
+	if ( exists $intinfo{neighbor}{$if->id} ){
+	    $ac = $ui->form_field(object=>$if, column=>"neighbor", edit=>$editints, linkPage=>1, returnValOnly=>1);
+	    $ac .= "<br>";
+	}elsif( my $cd = $connected->{$if->id} ){
+	    my %seen_names;
+	    foreach my $mac_id (keys %$cd){
+		my $mac_addr = $cd->{$mac_id}->{mac};
+		if ( my $cdips = $cd->{$mac_id}->{ip} ){
+		    foreach my $ip_id (keys %$cdips){
+			my $ip_addr = $cdips->{$ip_id}->{address};
+			if ( my $rr_id = $cdips->{$ip_id}->{rrid} ){
+			    my $fqdn = $cdips->{$ip_id}->{fqdn};
+			    # When a MAC address is associated with an IPv4 and an IPv6 address 
+			    # and when both addresses are associated with the same RR
+			    # we would have duplicate entries.
+			    next if exists $seen_names{$fqdn};
+			    $seen_names{$fqdn} = 1;
+			    $ac .= sprintf('<a href="host.html?id=%d">%s</a>', $rr_id, $fqdn);
+			}else{
+			    $ac .= sprintf('<a href="ip.html?id=%d">%s</a>', $ip_id, $ip_addr);
+			}
+			$ac .= "<br>";
+		    }
+		}else{
+		    $ac .= sprintf('<a href="mac.html?id=%d">%s</a>', $mac_id, $mac_addr);
+		    $ac .= "<br>";
+		}
+	    }
+	}
+	push @row, $ac;
+	
+	push @rows, \@row;
+	my $doc_status = $if->doc_status;
+	if (  exists $ifacecolors{$doc_status} ){
+	    push @rowstyles, "background-color: #$ifacecolors{$doc_status};"; 
+	}else{
+	    push @rowstyles, "";
+	} 
+	
+    } #foreach
+    
+</%perl>
+
+<script language="javascript">
+<!--
+/* 
+ * Show only interfaces belonging to selected VLAN
+ * 
+*/
+function showVlan(){
+    var name = document.showvlans.showvlan.value;
+    window.location = "device.html?id=<% $id %>&view=<% $view %>&showvlan="+name;
+}
+
+-->
+</script>
+
+<!-- Interface Table -->
+<div class="container">
+    <div class="containerheadleft">
+        Interfaces
+    </div>
+    <div class="containerheadright">
+
+%   if ( $editints ){	 
+    <form name="netdotform" action="device.html" method="POST">
+	<input type="hidden" name="id" value="<% $id %>">
+	<input type="hidden" name="view" value="<% $view %>">
+	<input type="hidden" name="ifsort" value="<% $ifsort %>">
+	<input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+	<input type="submit" name="submit" value="save">
+%   }else{
+
+        <form name="showvlans">
+	VLAN view: <select name="showvlan" onChange="showVlan();">
+%       if ( $showvlan eq 'all' ){
+            <option value="all" SELECTED>all</option>
+%       }else{
+            <option value="all">all</option>
+%       }
+%       foreach my $vid ( sort { $a <=> $b } keys %$vlans ){
+%           if ( $showvlan eq $vid ){
+                <option value="<% $vid %>" SELECTED><% $vid %></option>     
+%           }else{
+                <option value="<% $vid %>"><% $vid %></option>     
+%           }
+%       }
+        </select>
+        </form> 
+        Legend: 
+%	foreach my $status ( keys %ifacecolors ){
+	    <span style="background-color: #<% $ifacecolors{$status} %>;"><% $status %></span>
+%       }
+	&nbsp;&nbsp;
+%       if ( $manager && $manager->can($user, "edit", $device) ){
+            <a href="device.html?id=<% $id %>&view=<% $view %>&ifsort=<% $ifsort %>&editints=1">[edit]</a>
+%       }
+%  }
+
+    </div>
+    <div class="containerbody">
+        <& /generic/data_table.mhtml, field_headers=>\@headers, data=>\@rows, rowstyle=>\@rowstyles &>
+    </div>
+    <div class="containerheadright">
+%	  if ( $editints ){	 
+            <input type="button" name="cancel_button" value="cancel" onClick="history.go(-1);">
+            <input type="submit" name="submit" value="save">
+%	  }
+    </div>
+</div>
+
+% if ( ! $editints && ($view eq "Interfaces" || $view eq "All") ){
+%  if ( $manager && $manager->can($user, 'edit', $device) ){
+<div class="container">
+    <div class="containerheadleft">
+        Options
+    </div>
+    <div class="containerheadright">&nbsp;</div>
+    <div class="containerbody">
+    <p>
+    <form name="add_ints_form" action="device.html" method="POST">
+      <input type="hidden" name="id" value="<% $id %>">
+      <input type="hidden" name="view" value="<% $view %>">
+      Manually 
+      <input type="submit" name="intadd" value="Add">
+      <input type="text" name="intaddnum" value="1" size="3"> interfaces
+    </form>
+    </p>
+    <p>
+    <form name="overwrite_form" action="device.html" method="POST">
+      <input type="hidden" name="id" value="<% $id %>">
+      <input type="hidden" name="view" value="<% $view %>">
+      SNMP Updates Overwrite Descriptions:
+      <select name="overwrite_if_descr">
+          <option value="" selected>--Select--</option>
+          <option value="0">No</option>
+          <option value="1">Yes</option>
+      </select>
+      <input type="submit" name="Set" value="Set">
+    </form>
+    </p>
+    </div>
+%   }
+% }
+</div>
+
+%   if ($editints){
+       </form>
+%   }
+<!-- End Interfaces Section -->
