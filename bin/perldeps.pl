@@ -236,7 +236,7 @@ if ( $action eq 'test' ){
 	    &cmd('rm -fr /tmp/netdisco-mibs');
 	    &cmd('/usr/sbin/netdisco-mibs-download');
 	    print "\nInstalling SNMP MIB files\n";
-	    &cmd('/usr/sbin/netdisco-mibs-install');
+	    &cmd('LANG=C /usr/sbin/netdisco-mibs-install');
 	    print "\nA new /etc/snmp/snmp.conf needs to be installed to point to the newly ".
 		"installed MIB files.\n";
 	    print "The current file will be backed up. Continue? [y/n] ";
