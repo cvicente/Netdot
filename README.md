@@ -25,7 +25,7 @@ Features include:
 
 ## Documentation
 
-Read the Manual [pdf](https://github.com/cvicente/Netdot/blob/master/doc/manual/netdot-manual.pdf) [html](http://htmlpreview.github.io/?https://github.com/cvicente/Netdot/blob/master/doc/manual/netdot-manual.html)
+Read the Manual in [pdf](https://github.com/cvicente/Netdot/blob/master/doc/manual/netdot-manual.pdf) or [html](http://htmlpreview.github.io/?https://github.com/cvicente/Netdot/blob/master/doc/manual/netdot-manual.html)
 
 ## Contributing
 
