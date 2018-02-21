@@ -1,39 +1,22 @@
 # The master form of the documentation is the .txt file, which is converted
-# to the other forms using pandoc <http://johnmacfarlane.net/pandoc/>
+# to the other forms using pandoc <http://pandoc.org>
 # The input is in pandoc's extended form of 'markdown'
+# Requirements:
+# $ sudo apt-get install pandoc texlive-fonts-recommended texlive-latex-extra
 
 PANDOC_OPTIONS=--number-sections --toc
-PANDOC=pandoc
-MARKDOWN2PDF=pandoc
-INKSCAPE=inkscape
-SED=sed
+PANDOC=/usr/bin/pandoc
 
-all: netdot-manual.htm netdot-manual.pdf netdot-manual.epub \
-     netdot-manual-es.htm netdot-manual-es.pdf netdot-manual-es.epub
+SOURCES=netdot-manual.txt netdot-manual-es.txt
 
-netdot-manual.htm: netdot-manual.txt
-	$(PANDOC) $(PANDOC_OPTIONS) -s -o "$@" "$<"
+PDFS=$(SOURCES:.txt=.pdf)
+HTMLS=$(SOURCES:.txt=.html)
 
-netdot-manual-es.htm: netdot-manual-es.txt
-	$(PANDOC) $(PANDOC_OPTIONS) -s -o "$@" "$<"
+all: $(PDFS) $(HTMLS)
 
-# Workaround for PDF output: any .svg images must be converted to .pdf first
+%.pdf: %.txt
+	$(PANDOC) $(PANDOC_OPTIONS) $< -o $@
 
-SVG_IMAGES =
-PDF_IMAGES =
-
-%.pdf : %.svg
-	$(INKSCAPE) --export-pdf "$@" "$<"
-
-netdot-manual.pdf: netdot-manual.txt $(PDF_IMAGES)
-	$(SED) 's/\.svg/.pdf/g' "$<" | $(MARKDOWN2PDF) $(PANDOC_OPTIONS) -f markdown -o "$@"
-
-netdot-manual-es.pdf: netdot-manual-es.txt $(PDF_IMAGES)
-	$(SED) 's/\.svg/.pdf/g' "$<" | $(MARKDOWN2PDF) $(PANDOC_OPTIONS) -f markdown -o "$@"
-
-netdot-manual.epub: netdot-manual.txt $(SVG_IMAGES)
-	$(PANDOC) $(PANDOC_OPTIONS) -s -o "$@" "$<"
-
-netdot-manual-es.epub: netdot-manual-es.txt $(SVG_IMAGES)
-	$(PANDOC) $(PANDOC_OPTIONS) -s -o "$@" "$<"
+%.html: %.txt
+	$(PANDOC) $(PANDOC_OPTIONS) $< -o $@
 

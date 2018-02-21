@@ -7,7 +7,7 @@
 
 Version 1.0.8
 
-Copyright 2014 Carlos Vicente
+Copyright 2018 Carlos Vicente
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the
@@ -106,20 +106,15 @@ Netdot consists of several components:
 
 # Installation
 
-## Obtaining and unpacking the packaged distribution file
+## Obtaining the code
 
-Download the latest Netdot package from the netdot website
+Clone the latest version of the Netdot repository from Github.com. You will need the git utility:
 
 ~~~~
-https://osl.uoregon.edu/redmine/projects/netdot/wiki/DownLoad
+git clone https://github.com/cvicente/Netdot.git
+cd Netdot/
 ~~~~
 
-Unpack the file in a directory other than where you want to install
-Netdot, i.e.
-
-~~~~ {.bash}
-~# tar xzvf netdot.tar.gz -C /usr/local/src/
-~~~~
 
 ## Requirements
 
@@ -152,7 +147,7 @@ Netdot, i.e.
     distribution (this will also install other necessary packages,
     not just Perl modules).
 
-*   For systems with APT (e.g. Debian-based systems), run:
+*   For systems with APT (e.g. Debian, Ubuntu, etc.), run:
 
     ~~~~ {.bash}
     ~# apt-get install build-essential
@@ -347,14 +342,14 @@ For example, in Debian or Ubuntu, it's a two-step process:
 
 ~~~~ {.bash}
 ~# cd /etc/apache2
-~# ln -s /usr/local/netdot/etc/netdot_apache2_local.conf sites-available/netdot
-~# ln -s ../sites-available/netdot sites-enabled/netdot
+~# ln -s /usr/local/netdot/etc/netdot_apache24_local.conf sites-available/netdot.conf
+~# a2ensite netdot
 ~~~~
 
 Or, in other distributions with just one directory:
 
 ~~~~ {.bash}
-~# ln -s /usr/local/netdot/etc/netdot_apache2_local.conf /etc/apache2/conf.d/netdot
+~# ln -s /usr/local/netdot/etc/netdot_apache24_local.conf /etc/apache2/conf.d/netdot.conf
 ~~~~
 
 > **Tip**
