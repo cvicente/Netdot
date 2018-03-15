@@ -643,8 +643,10 @@ HERE
       Type:
 	<select name="fiber_type">
 	  <option value="null" selected>Select Type</option>
-	  <option value="1">Multimode</option>
-	  <option value="2">Singlemode</option>
+% my @fiber_types = sort { $a->name cmp $b->name } FiberType->retrieve_all;
+% for my $fiber_type (@fiber_types) {
+      <option value="<% $fiber_type->id %>"><% $fiber_type->name %></option>
+% }
         </select>
       Status:
 	<select name="status">
