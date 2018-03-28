@@ -839,14 +839,16 @@ if ($o->parent && $o->parent->dhcp_scopes) {
 	printf('<input name="DhcpScope__NEW__type" value="host" type="hidden">');
 	printf('<input name="DhcpScope__NEW__name" value="%s" type="hidden">', $o->address);
 	printf('<input name="DhcpScope__NEW__ipblock" value="%s" type="hidden">', $o->id);
-	if ( $o->version == 4 || 
-	     ($o->version == 6 && 
-	      Netdot->config->get('DHCPD_ALLOW_ETHERNET_FOR_IPV6_HOST_DECL')) ){
+	if ( $o->version == 4){
 	    push @field_headers, ('Ethernet: ');
 	    push( @cell_data, '<input name="DhcpScope__NEW__physaddr" value="" type="text">' );
 	}elsif ( $o->version == 6 ){
 	    push @field_headers, ('DUID: ');
 	    push( @cell_data, '<input name="DhcpScope__NEW__duid" value="" type="text" size="48">' );
+	    if ( Netdot->config->get('DHCPD_ALLOW_ETHERNET_FOR_IPV6_HOST_DECL') ){
+		push @field_headers, ('Or Ethernet: ');
+		push( @cell_data, '<input name="DhcpScope__NEW__physaddr" value="" type="text">' );
+	    }
 	}
 	$m->comp('/generic/attribute_table.mhtml', field_headers=>\@field_headers,
 		 data=>\@cell_data, width=>1);
