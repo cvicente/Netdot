@@ -564,8 +564,12 @@ POST: {ethernet=&gt;&#39;DEADDEADBEEF&#39;}</code></pre>
 <pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">~</span># <span class="kw">cpan</span>
 <span class="kw">&gt;install</span> Netdot::Client::REST</code></pre>
 <h1 id="mantenimiento-de-la-base-de-datos"><a href="#mantenimiento-de-la-base-de-datos"><span class="header-section-number">8</span> Mantenimiento de la base de datos</a></h1>
+<h2 id="eliminación-de-información-caducada"><a href="#eliminación-de-información-caducada"><span class="header-section-number">8.1</span> Eliminación de información caducada</a></h2>
 <p>La base de datos de Netdot crecerá con el tiempo, por lo que será necesario borrar información caducada. Encontará una utilidad de línea de comandos llamada &quot;prune_db.pl&quot; en el directorio bin/ de la distribución.</p>
 <p>El fichero de muestra &quot;netdot.cron&quot; incluído con el paquete muestra ejemplos de uso recomendado de este programa.</p>
 <blockquote>
 <p><strong>Nota</strong>: Sea especialmente cuidadoso al utilizar las opciones -I y -M para borrar direcciones IP y MAC. El criterio para su eliminación depende del sello de tiempo &quot;last seen&quot; (visto por última vez) incluído en estos récords. Esto implica que si Netdot no está recopilando las tablas de ARP y de reenvío de los enrutadores, cortafuegos y switches donde se encontrarían estas direcciones, Netdot asumirá que no están activas, y por tanto las incluirá en la lista de eliminación.</p>
 </blockquote>
+<h2 id="base-de-datos-oui"><a href="#base-de-datos-oui"><span class="header-section-number">8.2</span> Base de datos OUI</a></h2>
+<p>Durante la instalación de Netdot se insertará en la base de datos una copia de la base de datos OUI de la IEEE. Puede actualizar esta información en su base de datos ejecutando lo siguiente desde su directorio de instalación:</p>
+<pre><code>make oui</code></pre>

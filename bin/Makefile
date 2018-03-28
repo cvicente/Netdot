@@ -17,7 +17,7 @@ FILES := $(shell ls *.pl)
 install:
 	$(substitute)
 
-installdb: _installdb oui
+installdb: _installdb install_oui
 
 _installdb:
 	$(PERL) initdb initdb
@@ -33,7 +33,11 @@ defragdb: _defragdb
 _defragdb:
 	$(PERL) defragdb
 
-oui:
+oui: update_oui install_oui
+
+update_oui:
 	rm -f oui.txt
-	wget -t 1 -T 10 $(OUI_URL) || cp oui.txt.default oui.txt
+	wget -t 1 -T 10 $(OUI_URL)
+
+install_oui:
 	$(PERL) initdb oui
