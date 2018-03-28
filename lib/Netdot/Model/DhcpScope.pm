@@ -721,6 +721,10 @@ sub _print {
     if ( $type ne 'global' && $type ne 'template' ){
 	my $st   = $data->{$id}->{statement};
 	my $name = $data->{$id}->{name};
+	if ( $type eq 'class' ){
+	    # DHCPD requires double quotes
+	    $name = "\"$name\"" unless $name =~ /"/;
+	}
 	print $fh $indent."$st $name {\n";
 	$indent .= " " x 4;
     }
@@ -733,6 +737,10 @@ sub _print {
     }
     
     # Print attributes
+    my %quoted_attrs = (
+	'filename' => 1,
+	'domain-name' => 1,
+	);
     foreach my $attr_id ( sort { $data->{$id}->{attrs}->{$a}->{name} cmp 
 				     $data->{$id}->{attrs}->{$b}->{name} }
 			  keys %{$data->{$id}->{attrs}} ){
@@ -743,11 +751,10 @@ sub _print {
 	my $value  = $data->{$id}->{attrs}->{$attr_id}->{value};
 	print $fh $indent.$name;
 	if ( defined $value ) {
-	    if ( defined $format && ($format eq 'text' || $format eq 'string') ){
-		# DHCPD requires double quotes
-		if ( $value !~ /^"(.*)"$/ ){
-		    $value = "\"$value\"";
-		}
+	    if ( (defined $format && ($format eq 'text' || $format eq 'string')) ||
+		exists($quoted_attrs{$name}) ){
+		# DHCPD requires double quotes for these
+		$value = "\"$value\"" unless $value =~ /"/;
 	    }
 	    print $fh " $value";
 	}
