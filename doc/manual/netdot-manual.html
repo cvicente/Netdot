@@ -581,8 +581,12 @@ POST: {ethernet=&gt;&#39;DEADDEADBEEF&#39;}</code></pre>
 <pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">~</span># <span class="kw">cpan</span>
 <span class="kw">&gt;install</span> Netdot::Client::REST</code></pre>
 <h1 id="database-maintenance"><a href="#database-maintenance"><span class="header-section-number">8</span> Database Maintenance</a></h1>
+<h2 id="pruning-data"><a href="#pruning-data"><span class="header-section-number">8.1</span> Pruning data</a></h2>
 <p>Netdot's database will grow with time, thus it will be necessary to remove old information as it becomes stale. You will find a CLI utility called &quot;prune_db.pl&quot; in the bin/ directory of the distribution.</p>
 <p>The sample CRON file &quot;netdot.cron&quot; included with the package contains recommended uses of this command.</p>
 <blockquote>
 <p><strong>Note</strong>: Be especially careful when using the -I and -M options to remove old IP and MAC addresses. The criteria for deletion relies on the &quot;last seen&quot; timestamp on these records. That means that if Netdot is not collecting ARP and FWT tables from the routers, firewalls and switches where these addresses can be seen in the network, then Netdot will assume that they are not active anymore, thus included for deletion.</p>
 </blockquote>
+<h2 id="updating-oui-information"><a href="#updating-oui-information"><span class="header-section-number">8.2</span> Updating OUI information</a></h2>
+<p>At installation time, Netdot inserts organizationally unique identifier (OUI) data from IEEE into the database. You can update this data by running the following command from the Netdot source directory:</p>
+<pre><code>make oui</code></pre>
