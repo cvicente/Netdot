@@ -434,19 +434,20 @@ foreach my $o ( values %rrs ) {
 			push @cell_data, '<input type="checkbox" name="DhcpScope__'.$scope.'__DELETE">';
 		    }
 		    $t_width = 2;
-		}elsif ( $ipblock->version == 6 ){
-		    push @field_headers, ('DUID: ');
-		    if ( $edit ){
-			push @cell_data, '<input type="text" size="48" name="DhcpScope__'.$scope.
-			    '__duid" value="'.$scope->duid.'" >';
-		    }else{
-			push( @cell_data, $scope->duid );
+		}elsif ( $ipblock->version == 6 && (my $duid = $scope->duid) ){
+			push @field_headers, ('DUID: ');
+			if ( $edit ){
+			    push @cell_data, '<input type="text" size="48" name="DhcpScope__'.$scope.
+				'__duid" value="'.$duid.'" >';
+			}else{
+			    push( @cell_data, $duid );
+			}
+			if ( $edit ){
+			    push @field_headers, 'Delete';
+			    push @cell_data, '<input type="checkbox" name="DhcpScope__'.$scope.'__DELETE">';
+			}
+			$t_width = 2;
 		    }
-		    if ( $edit ){
-			push @field_headers, 'Delete';
-			push @cell_data, '<input type="checkbox" name="DhcpScope__'.$scope.'__DELETE">';
-		    }
-		    $t_width = 2;
 		}
 		
 		$m->comp('/generic/attribute_table.mhtml', %comphash, width=>$t_width);
