@@ -16,8 +16,7 @@ sub cleanup{
 	my $i = Ipblock->search(address=>$s)->first;
 	$i->delete if $i;
     }
-    my $d = DhcpScope->search(name=>$global_name)->first;
-    $d->delete if $d;
+    map { $_->delete } DhcpScope->retrieve_all;
 }
 
 &cleanup();
@@ -30,6 +29,9 @@ $subnet->enable_dhcp(container=>$global);
 my $subnet_scope = $subnet->dhcp_scopes->first;
 
 is($subnet_scope->name, '192.168.0.0 netmask 255.255.255.0', 'Subnet scope created');
+my %attr_names = map { $_->name->name => 1 } $subnet_scope->attributes;
+ok(exists $attr_names{'option broadcast-address'}, 'subnet gets broadcast');
+ok(exists $attr_names{'option subnet-mask'}, 'subnet gets mask');
 
 my $host_scope = DhcpScope->insert({
     container=>$global, type=>'host', 
