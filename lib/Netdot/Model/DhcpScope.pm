@@ -87,7 +87,8 @@ sub insert {
     $class->_assign_name($argv) unless $argv->{name};
     $class->_validate_args($argv);
 
-    my $attributes = delete $argv->{attributes} if exists $argv->{attributes};
+    my $attributes = {};
+    $attributes = delete $argv->{attributes} if exists $argv->{attributes};
 
     my $scope;
     if ( $scope = $class->search(name=>$argv->{name})->first ){
@@ -204,23 +205,9 @@ sub update{
     my ($self, $argv) = @_;
 
     $self->_objectify_args($argv);
-    $self->_assign_name($argv) unless $argv->{name};
     $self->_validate_args($argv);
 
     my $attributes = delete $argv->{attributes} if defined $argv->{attributes};
-
-    if ( $self->type->name eq 'subnet' ){
-	if ( $self->version == 4 ){ 
-	    # Add standard attributes
-	    $attributes->{'option broadcast-address'} = $argv->{ipblock}->netaddr->broadcast->addr();
-	    $attributes->{'option subnet-mask'}       = $argv->{ipblock}->netaddr->mask;	
-	    if ( my $zone = $argv->{ipblock}->forward_zone ){
-		# Add the domain-name attribute
-		$attributes->{'option domain-name'} = $zone->name;
-	    }
-	}
-    }
-
     my @res = $self->SUPER::update($argv);
 
     $self->_update_attributes($attributes) if $attributes;
@@ -929,17 +916,11 @@ sub _get_all_data {
 ############################################################################
 # Assign scope name based on type and other values
 sub _assign_name {
-    my ($self, $argv) = @_;
-
-    # Get these values from object if not passed
-    if ( ref($self) ){
-	foreach my $key (qw(type ipblock physaddr duid)){
-	    $argv->{$key} = $self->$key unless exists $argv->{$key}
-	}
-    }
+    my ($class, $argv) = @_;
+    $class->isa_class_method('_assign_name');
 
     unless ( $argv->{type} ){
-	$self->throw_fatal("DhcpScope::_assign_name: Missing required argument: type")
+	$class->throw_fatal("DhcpScope::_assign_name: Missing required argument: type")
     }
 
     my $name;
@@ -955,7 +936,7 @@ sub _assign_name {
 	$name =~ s/:/-/g; 
 
     }elsif ( $argv->{type}->name eq 'subnet' ){
-	$self->throw_fatal("DhcpScope::_assign_name: Missing ipblock object")
+	$class->throw_fatal("DhcpScope::_assign_name: Missing ipblock object")
 	    unless $argv->{ipblock};
 	if ( $argv->{ipblock}->version == 6 ){
 	    $name = $argv->{ipblock}->cidr;
@@ -964,13 +945,13 @@ sub _assign_name {
 	}
 
     }elsif ( $argv->{type}->name eq 'shared-network' ){
-	$self->throw_fatal("DhcpScope::_assign_name: Missing subnet list")
+	$class->throw_fatal("DhcpScope::_assign_name: Missing subnet list")
 	    unless $argv->{subnets};
 	my $subnets = delete $argv->{subnets};
 	$name = join('_', (map { $_->address } sort { $a->address_numeric <=> $b->address_numeric } @$subnets));
 
     }else{
-	$self->throw_fatal("DhcpScope::_assign_name: Don't know how to assign name for type: ".
+	$class->throw_fatal("DhcpScope::_assign_name: Don't know how to assign name for type: ".
 			   $argv->{type}->name);
     }
     $argv->{name} = $name;
