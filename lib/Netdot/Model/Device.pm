@@ -506,7 +506,8 @@ sub manual_add {
     my $ints = $dev->add_interfaces(1);
     my $int = $ints->[0];
     if ( $ip ){
-	my $ipb = Ipblock->search(address=>$ip)->first || Ipblock->insert({address=>$ip});
+	my $prefix = Ipblock->matches_v4($ip) ? 32 : 128;
+	my $ipb = Ipblock->find_or_create({address=>$ip, prefix=>$prefix});
 	$ipb->update({status=>"Static", interface=>$int, monitored=>1});
 	$dev->update({snmp_target=>$ipb});
 	# Try to set the interface neighbor
@@ -5632,15 +5633,21 @@ sub _assign_base_mac {
 sub _assign_snmp_target {
     my ($self, $info) = @_;
     my $host = $self->fqdn;
-    if ( $self->snmp_managed && !$self->snmp_target && $info->{snmp_target} ){
-	my $ipb = Ipblock->search(address=>$info->{snmp_target})->first;
+    if ( !$self->snmp_managed || defined($self->snmp_target)){
+	return;
+    }
+    if ( my $addr = $info->{snmp_target} ){
+	my $prefix = Ipblock->matches_v4($addr) ? 32 : 128;
+	my $ipb = Ipblock->search(address=>$addr, prefix=>$prefix)->first;
 	unless ( $ipb ){
 	    eval {
-		$ipb = Ipblock->insert({address=>$info->{snmp_target}, status=>'Static'});
+		$ipb = Ipblock->insert({address=>$addr, 
+					prefix=>$prefix,
+					status=>'Static'});
 	    };
 	    if ( my $e = $@ ){
 		$logger->warn("Device::assign_snmp_target: $host: Could not insert snmp_target address: ". 
-			      $info->{snmp_target} .": ", $e);
+			      $addr .": ", $e);
 	    }
 	}
 	if ( $ipb ){
