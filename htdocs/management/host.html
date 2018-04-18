@@ -224,7 +224,6 @@ if ($action eq 'new') {
     }
     foreach my $z ( sort { $a->name cmp $b->name } Zone->retrieve_all ){
 	next if $z->is_dot_arpa;
-	next unless $z->active;
 	next if $zone && ($z->id == $zone->id);
 	if ( $manager && $manager->can($user, 'edit', $z) ){
 	    push @select_list, $z;
