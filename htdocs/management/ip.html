@@ -761,7 +761,6 @@ if (!$edit){
 	}
 	foreach my $z ( sort { $a->name cmp $b->name } Zone->retrieve_all ){
 	    next if $z->is_dot_arpa;
-	    next unless $z->active;
 	    next if $zone && ($z->id == $zone->id);
 	    if ( $manager && $manager->can($user, 'edit', $z) ){
 		push @zone_list, $z;
@@ -1593,7 +1592,7 @@ print $tmp{value};
             <p>Link this block with existing forward zones:
 	    <p><select name="link_zones" multiple="multiple">
             <option value=""> - select - </option>
-%	    foreach my $zone ( grep { $_->active == 1 && $_->name !~ /\.arpa$/ } @all_zones ){
+%	    foreach my $zone ( grep { $_->name !~ /\.arpa$/ } @all_zones ){
 %               next if exists $cur_zones{$zone->id};
                 <option value="<% $zone->id %>"><% $zone->get_label %></option>
 %	    }
