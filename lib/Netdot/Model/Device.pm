@@ -5207,21 +5207,21 @@ sub _walk_fwt {
 	foreach my $fw_index ( keys %$fw_mac ){
 
 	    my $mac = $fw_mac->{$fw_index};
-	    unless ( defined $mac ) {
+	    unless ( $mac ) {
 		$logger->debug(
 		    sub{"Device::_walk_fwt: $host: MAC not defined at index $fw_index. Skipping" });
 		next;
 	    }
 
 	    my $bp_id  = $fw_port->{$fw_index};
-	    unless ( defined $bp_id ) {
+	    unless ( $bp_id ) {
 		$logger->debug(
 		    sub{"Device::_walk_fwt: $host: Port $fw_index has no fw_port mapping. Skipping" });
 		next;
 	    }
 	    
 	    my $iid = $bp_index->{$bp_id};
-	    unless ( defined $iid ) {
+	    unless ( $iid ) {
 		$logger->debug(
 		    sub{"Device::_walk_fwt: $host: Interface $bp_id has no bp_index mapping. Skipping" });
 		next;
