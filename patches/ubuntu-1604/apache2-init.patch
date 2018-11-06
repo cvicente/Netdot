@@ -1,0 +1,14 @@
+--- /etc/init.d/apache2.orig	2018-11-06 20:30:52.478691277 +0000
++++ /etc/init.d/apache2	2018-11-06 20:32:00.800835274 +0000
+@@ -159,8 +159,11 @@
+ 	fi
+ 
+ 	if apache_conftest ; then
++		a2disconf netdot
+ 	        $APACHE2CTL start
+ 	        apache_wait_start $?
++		a2enconf netdot
++		$APACHE2CTL graceful
+ 	        return $?
+ 	else
+ 	        APACHE2_INIT_MESSAGE="The apache2$DIR_SUFFIX configtest failed."
