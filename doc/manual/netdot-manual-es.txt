@@ -122,36 +122,6 @@ Clonar el repositorio del proyecto desde Github.com. Necesitará la utilidad Git
 +cd Netdot/
 ~~~~
 
-## Requerimientos
-
-*   Perl 5.6.1 o superior
-
-*   Apache2 con `mod_perl2`
-
-*   MySQL o PostgreSQL
-
-*   Servidor de autenticación (opcional). Netdot implementa
-    autenticacion local y también a través de RADIUS y LDAP.
-
-    *   Para RADIUS, recomendamos FreeRadius, disponible en:
-        <http://www.freeradius.org/>
-
-    *   Para LDAP, puede optar por OpenLdap, disponible en:
-        <http://www.openldap.org/>
-
-*   El paquete RRDtool, incluyendo sus módulos Perl, disponible en:
-    <http://oss.oetiker.ch/rrdtool/>
-
-*   el paquete GraphViz, disponible en:
-    <http://www.graphviz.org/>
-
-*   La última versión de las MIBs de Netdisco
-    <http://sourceforge.net/projects/netdisco/files/netdisco-mibs/>
-
-*   Varios módulos Perl
-
-*   El programa 'make'
-
 ### Instalación de dependencias
 
     Existen dos formas de instalar las dependencias: La primera
@@ -344,6 +314,26 @@ Luego instale el nuevo Netdot y reinicie Apache:
     las variables APACHEUSER y APACHEGROUP con el valor "www-data",
     el cual es el usuario con el que el servidor Apache se ejecuta.
 
+## Ubuntu 16.04
+
+A partir de Ubuntu 16.04, es necesario parchar manualmente algunos ficheros.
+
+The patches are included in the Netdot distribution. Before applying them,
+you need to move to the root directory, then use the patch command
+(adjust the location of your Netdot repository as needed):
+
+Los parches vienen incluidos en la distribución de Netdot. Antes de
+aplicarlos, debe cambiarse al directorio raíz y una vez allí, usar el
+comando "patch" como sigue (ajuste la ubicación de su repositorio de Netdot si
+es necesario):
+
+~~~
+cd /
+patch -p0 < ~/Netdot/patches/ubuntu-1604/DBI.pm.patch
+patch -p0 < ~/Netdot/patches/ubuntu-1604/apache2-init.patch
+~~~
+
+En el futuro, añadiremos parches para otras versiones de Ubuntu más recientes.
 
 ## Configuración del Servidor Web Apache
 

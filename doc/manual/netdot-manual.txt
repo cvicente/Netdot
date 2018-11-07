@@ -116,30 +116,6 @@ cd Netdot/
 ~~~~
 
 
-## Requirements
-
-*   Perl 5.6.1 or later
-
-*   Apache2 with `mod_perl2`
-
-*   MySQL or PostgreSQL
-
-*   Authentication Server (optional). Netdot supports local
-    authentication, as well as RADIUS, LDAP and Kerberos.
-
-*   The RRDtool package, including its Perl modules, available at:
-    <http://oss.oetiker.ch/rrdtool/>
-
-*   The GraphViz package, available at:
-    <http://www.graphviz.org/>
-
-*   The latest Netdisco MIBs.
-    <http://sourceforge.net/projects/netdisco/files/netdisco-mibs/>
-
-*   Various Perl modules.
-
-*   The 'make' utility.
-
 ### Installing dependencies
 
     There are two ways to install dependencies: The first and
@@ -323,6 +299,22 @@ Finally, install the new Netdot code and restart Apache:
     APACHEGROUP variables to "www-data", which is the user that Apache
     runs as.
 
+
+## Ubuntu 16.04
+
+Starting with Ubuntu 16.04, you will need to manually patch some files.
+
+The patches are included in the Netdot distribution. Before applying them,
+you need to move to the root directory, then use the patch command
+(adjust the location of your Netdot repository as needed):
+
+~~~
+cd /
+patch -p0 < ~/Netdot/patches/ubuntu-1604/DBI.pm.patch
+patch -p0 < ~/Netdot/patches/ubuntu-1604/apache2-init.patch
+~~~
+
+We will add patches for more recent versions of Ubuntu in the future.
 
 ## Apache Configuration
 
