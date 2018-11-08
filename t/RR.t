@@ -1,5 +1,6 @@
 use strict;
 use Test::More qw(no_plan);
+use Test::Exception;
 use lib "lib";
 
 BEGIN { 
@@ -15,6 +16,7 @@ my $domain    = 'testdomain';
 my $domainrev = '168.192.in-addr.arpa';
 my $v4address = '192.168.1.10';
 my $v6address = 'fec0:1234:5678:9abc::10';
+my $mailaddr  = '192.168.1.99';
 
 sub cleanup{
     foreach my $val (($domain, $domainrev)){
@@ -22,7 +24,7 @@ sub cleanup{
 	    $obj->delete();
 	}
     }
-    foreach my $val (($v4address, $v6address)){
+    foreach my $val (($v4address, $v6address, $mailaddr)){
 	if ( my $obj = Ipblock->search(address=>$val)->first ){
 	    $obj->delete();
 	}
@@ -46,7 +48,7 @@ is(RR->search(name=>$name, zone=>$domain)->first, $rr, 'search_domain_as_name');
 is(RR->search(name=>"$name.$domain")->first, $rr, 'search_as_fqdn' );
 is($rr->get_label, "$name.$domain", 'get_label');
 
-# Labels longer that 63 characters shoud throw a user exception
+# Labels longer that 63 characters should throw a user exception
 my $long_name = '1234567890123456789012345678901234567890123456789012345678901234';
 eval{
     RR->insert({name=>$long_name, zone=>$domain});
@@ -90,6 +92,26 @@ is($rrloc->as_text, "testdomain.	3600	IN	LOC	44 0 0 N  123 0 0 E  10m 100m 1000m
 my $rrmx = RR->insert({type=>'MX', name=>$name, zone=>$domain, ttl=>3600, preference=>10, exchange=>"smtp.example.net"});
 isa_ok($rrmx, 'Netdot::Model::RRMX', 'insert_mx');
 is($rrmx->as_text, "$name.$domain.	3600	IN	MX	10 smtp.example.net.", 'as_text');
+
+# When exchage points to an A record in Netdot
+
+throws_ok {
+    RR->insert({type=>'MX', name=>$name, zone=>$domain,
+		ttl=>3600, preference=>10, exchange=>"mail.$domain"});
+} qr/does not exist/, 'fails if exchange within local zone does not exist';
+
+my $mail_rr = RR->insert({type=>'A', name=>'mail', zone=>$domain,
+			  ttl=>3600, ipblock=>$mailaddr });
+my $rrmx2 = RR->insert({type=>'MX', name=>$name, zone=>$domain,
+			ttl=>3600, preference=>20, exchange=>"mail.$domain"});
+isa_ok($rrmx2, 'Netdot::Model::RRMX', 'insert_mx2');
+
+# Issue #130
+$mail_rr->delete();
+is(RR->search(name=>$name, zone=>$domain)->first, $rraddr->rr,
+   'Deleting MX host does not delete RR that references it');
+
+is(RRMX->search(exchange=>"mail.$domain"), 0, 'MX pointing to deleted host gets deleted');
 
 # RRNAPTR
 my $rrnaptr = RR->insert({type=>'NAPTR', name=>'@', zone=>$domain, ttl=>3600, order_field=>"100", preference=>"10", flags=>"u", services=>"E2U+sip",

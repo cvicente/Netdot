@@ -387,11 +387,10 @@ sub update_ptr {
 sub delete {
     my $self = shift;
     $self->isa_object_method('delete');
-    my $class = ref($self);
     my @cnames = RRCNAME->search(cname=>$self->get_label);
     my @mxs = RRMX->search(exchange=>$self->get_label);
     foreach my $o ( @cnames, @mxs ){
-	$o->rr->delete() if ($o->rr->get_label ne $self->get_label);
+	$o->delete();
     }
     return $self->SUPER::delete();
 }

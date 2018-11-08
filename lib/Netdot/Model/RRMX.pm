@@ -167,10 +167,12 @@ sub _validate_args {
 		if ( $name eq $domain ){
 		    $name = '@';
 		}
-		my $rr = RR->search(name=>$name, zone=>$z)->first ||
+		my $mxrr = RR->search(name=>$name, zone=>$z)->first;
+		unless ( $mxrr ){
 		    $self->throw_user("Exchange ".$argv->{exchange}.
 				      " within active zone '$domain', but name '$name' does not exist");
-		unless ( $rr->a_records ){
+		}
+		unless ( $mxrr->a_records ){
 		    $self->throw_user("Exchange ".$argv->{exchange}.
 				      " has no address (A or AAAA) records");
 		}
