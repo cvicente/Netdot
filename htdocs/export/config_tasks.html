@@ -15,16 +15,17 @@ title => 'Config Tasks'
 %#
 %#######################################################################
 <%args>
-@config_types   => undef
-$user           => $ui->get_current_user($r)
-$submit         => undef
-$showheader     => 1
-$hideheader     => undef
-@zones          => undef
-$bind_force     => undef
-$dhcpd_force    => undef
-$bind_no_priv   => undef
-@scopes         => undef
+@config_types       => undef
+$user               => $ui->get_current_user($r)
+$submit             => undef
+$showheader         => 1
+$hideheader         => undef
+@zones              => undef
+$bind_force         => undef
+$dhcpd_force        => undef
+$bind_no_priv_txt   => undef
+$bind_no_priv_hinfo => undef
+@scopes             => undef
 </%args>
 %
 %
@@ -84,9 +85,15 @@ my $manager = $ui->get_permission_manager($r);
                    <input type="checkbox" name="bind_force">
                    <label for="bind_force">Force export even if no pending changes</label>
                 </p>
+% my $exclude_hinfo_checked_state = Netdot->config->get('CHECKBOX_CHECKED_EXCLUDE_HINFO_PRIVATE_DATA') == 1 ? ' CHECKED' : '';
                 <p>
-                   <input type="checkbox" name="bind_no_priv" CHECKED>
-                   <label for="bind_no_priv">Exclude Private Data (HINFO and TXT records)</label> 
+                   <input type="checkbox" name="bind_no_priv_hinfo"<% $exclude_hinfo_checked_state%>>
+                   <label for="bind_no_priv_hinfo">Exclude HINFO private data</label>
+                </p>
+% my $exclude_txt_checked_state = Netdot->config->get('CHECKBOX_CHECKED_EXCLUDE_TXT_PRIVATE_DATA') == 1 ? ' CHECKED' : '';
+                <p>
+                   <input type="checkbox" name="bind_no_priv_txt"<% $exclude_txt_checked_state%>>
+                   <label for="bind_no_priv_txt">Exclude TXT private data</label>
                 </p>
         </fieldset>
         <fieldset class="small">
@@ -132,9 +139,10 @@ if ( $submit ){
     foreach my $type ( @config_types ){
 	my %args;
 	if ( $type eq 'BIND' ){
-	    $args{zone_ids} = \@zones if ( scalar @zones && $zones[0] ne "" );
-	    $args{force}    = 1 if ($bind_force);
-	    $args{nopriv}   = 1 if ($bind_no_priv);
+	    $args{zone_ids}     = \@zones if ( scalar @zones && $zones[0] ne "" );
+	    $args{force}        = 1 if ($bind_force);
+	    $args{nopriv_hinfo} = 1 if ($bind_no_priv_hinfo);
+	    $args{nopriv_txt}   = 1 if ($bind_no_priv_txt);
 	}elsif ( $type eq 'DHCPD' ){
 	    $args{force}  = 1 if ($dhcpd_force);
 	    $args{scopes} = \@scopes if @scopes;	    

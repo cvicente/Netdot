@@ -45,8 +45,9 @@ sub new{
 
   Arguments:
     Hashref with the following keys:
-      zones  - Array ref.  List of zone names to export.
-      nopriv - Exclude private data from zone file (TXT and HINFO)
+      zones        - Array ref.  List of zone names to export.
+      nopriv_txt   - Exclude TXT private data from zone file
+      nopriv_hinfo - Exclude HINFO private data from zone file
   Returns:
     True if successful
   Examples:
@@ -91,7 +92,7 @@ sub generate_configs {
 	    my @pending = HostAudit->search(zone=>$zone->name, pending=>1);
 	    Netdot::Model->do_transaction(sub{
 		if ( @pending || $argv{force} ){
-		    my $path = $self->print_zone_to_file(zone=>$zone, nopriv=>$argv{nopriv});
+		    my $path = $self->print_zone_to_file(zone=>$zone, nopriv_txt=>$argv{nopriv_txt}, nopriv_hinfo=>$argv{nopriv_hinfo});
 		    # Need to query again because the above method updates the serial
 		    # which creates another hostaudit record
 		    @pending = HostAudit->search(zone=>$zone->name, pending=>1);
@@ -114,14 +115,15 @@ sub generate_configs {
 
 =head2 print_zone_to_file -  Print the zone file using BIND syntax
 
- Args: 
+ Args:
     Hashref with following key/value pairs:
-        zone    - Zone object
-        nopriv  - Flag.  Exclude private data (TXT and HINFO)
-  Returns: 
+        zone         - Zone object
+        nopriv_txt   - Flag.  Exclude TXT private data from zone file
+        nopriv_hinfo - Flag.  Exclude HINFO private data from zone file
+  Returns:
     Path of file written to
   Examples:
-    my $path = $bind->print_to_file(zone=>$zone, nopriv=>1);
+    my $path = $bind->print_to_file(zone=>$zone, nopriv_txt=>1, nopriv_hinfo=>1);
 
 =cut
 
@@ -175,7 +177,7 @@ sub print_zone_to_file {
 		    }
 		}else{
 		    foreach my $data ( sort keys %{$rec->{$name}->{$type}} ){
-			if ( $argv{nopriv} && $type eq 'HINFO' ){
+			if ( $argv{nopriv_hinfo} && $type eq 'HINFO' ){
 			    next;
 			}
 			my $ttl = $rec->{$name}->{$type}->{$data};
@@ -190,7 +192,7 @@ sub print_zone_to_file {
 
 			my $line = "$name\t$ttl\tIN\t$type\t$data\n";
 
-			if ( $argv{nopriv} && $type eq 'TXT' ){
+			if ( $argv{nopriv_txt} && $type eq 'TXT' ){
 			    # We're told to exclude TXT records
 			    # Allow exceptions from config
 			    if ( my @patterns = @{$self->config->get('TXT_RECORD_EXCEPTIONS')} ){
