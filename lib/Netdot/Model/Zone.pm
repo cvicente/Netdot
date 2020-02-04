@@ -151,6 +151,34 @@ sub search_like {
     return wantarray ? @result : $result;
 }
 
+#########################################################################
+
+=head2 retrieve_all - Return all Zone objects sorted or an iterator
+
+    Args:
+        none
+    Returns:
+        Sorted array of Zone objects or an iterator
+    Examples:
+        my @zones = Zone->retrieve_all();
+        my $iterator = Zone->retrieve_all;
+
+=cut
+
+sub retrieve_all {
+    my ($class, @args) = @_;
+    $class->isa_class_method('retrieve_all');
+
+    # Sort by the "sort" field in ascending order, then sort by the name field
+    # of the zone.
+    return $class->SUPER::retrieve_from_sql(
+        qq{
+            id IS NOT NULL
+            ORDER BY
+            sort, name
+        }
+    );
+}
 
 #########################################################################
 
@@ -168,6 +196,7 @@ sub search_like {
     expire    max time before zone no longer authoritative
     minimum   negative caching TTL (RFC 2308)
     template  (optional) Name or ID of another zone to clone from
+    sort      integer to sort displayed zones
   Returns: 
     Zone object
   Examples:
@@ -193,7 +222,7 @@ sub insert {
 	    );
 
 	# Copy values from template zone
-	foreach my $field ( qw(mname rname refresh retry expire minimum default_ttl include) ){
+	foreach my $field ( qw(mname rname refresh retry expire minimum default_ttl include sort) ){
 	    $state{$field} = $tzone->$field;
 	}
 	$newzone = $class->SUPER::insert( \%state );
@@ -227,6 +256,7 @@ sub insert {
 	    active      => $argv->{active}      || 1,
 	    export_file => $argv->{export_file} || $argv->{name},
 	    default_ttl => $argv->{default_ttl} || $class->config->get('ZONE_DEFAULT_TTL'),
+	    sort        => $argv->{sort}        || 100,
 	    );
 
 	$newzone = $class->SUPER::insert( \%state );
