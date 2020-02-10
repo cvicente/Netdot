@@ -416,6 +416,53 @@ sub form_field {
     }
 }
 
+
+############################################################################
+
+=head2 underscore_override_form_field - Return if Underscore Override checkbox if enabled.
+
+    This method will populate a hashref with a label and checkbox to allow the
+    user to override the underscore validation for names.
+    If ALLOW_UNDERSCORES_IN_DEVICE_NAMES is set to true, then there is no
+    need to return the checkbox since underscores are allowed at the global
+    level.
+    If UNDERSCORES_IN_DEVICE_NAMES_OVERRIDE_ALLOWED is set to true then
+    return the checkbox to allow the user to override the underscore check
+    at a per device name.
+
+    Arguments:
+        hashref to populate with label and value
+    Returns:
+        Boolean true or false if the calling code should add label and value
+        to the UI.
+
+    Examples:
+
+        my $tmp = {};
+        if ($ui->underscore_override_form_field($tmp)) {
+            # do something with $tmp
+        }
+
+=cut
+
+sub underscore_override_form_field {
+    my $self = shift;
+    my $hash = shift;
+
+    if (
+        ! $self->config->get('ALLOW_UNDERSCORES_IN_DEVICE_NAMES')
+        &&
+        $self->config->get('UNDERSCORES_IN_DEVICE_NAMES_OVERRIDE_ALLOWED')
+    ) {
+        $hash->{label} = 'Allow underscores:';
+        $hash->{value} = '<input type="checkbox" name="RR__NEW__allow_underscore_override" value="1" />';
+        return 1;
+    }
+
+    return 0;
+}
+
+
 ############################################################################
 
 =head2 table_descr_link - Generate link to display a table\'s description
