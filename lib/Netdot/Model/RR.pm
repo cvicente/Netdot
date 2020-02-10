@@ -719,14 +719,19 @@ sub add_alias {
 # _validate_args - Validate arguments to insert and update
 #
 #  Args:
-#    hashref
+#    argv - hashref containing database field and values
+#    extra_argv - (optional) hashref containing extra parameters
 #  Returns:
 #    True, or throws exception if validation fails
 #  Examples:
 #    $class->_validate_args($argv);
 #
 sub _validate_args {
-    my ($self, $argv) = @_;
+    my ($self, $argv, $extra_argv) = @_;
+
+    if (! defined $extra_argv) {
+        $extra_argv = {};
+    }
 
     my $zone;
     if (ref($self)) {
@@ -766,6 +771,12 @@ sub _validate_args {
 
         if (
             $self->config->get('ALLOW_UNDERSCORES_IN_DEVICE_NAMES') eq '1'
+            ||
+            (
+                $self->config->get('UNDERSCORES_IN_DEVICE_NAMES_OVERRIDE_ALLOWED') eq '1'
+                &&
+                $extra_argv->{allow_underscore_override}
+            )
         ) {
             $logger->debug('Allow underscores in device name. No underscore validation check.');
         }
