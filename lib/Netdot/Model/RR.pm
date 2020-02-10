@@ -208,8 +208,11 @@ sub insert {
 		     expiration  => $argv->{expiration},
 		     info        => $argv->{info},
 	    );
+        my $extra_arguments = {
+            allow_underscore_override => $argv->{allow_underscore_override},
+        };
 
-	$class->_validate_args(\%state);
+	$class->_validate_args(\%state, $extra_arguments);
 	
 	$rr = $class->SUPER::insert(\%state);
 	
