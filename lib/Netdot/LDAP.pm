@@ -86,7 +86,8 @@ NetdotLDAPFailToLocal <yes|no>
 
 sub check_credentials {
     my ($r, $username, $password) = @_;
-    
+    $r->log_error("check_credentials starting");
+
     unless ( $r && $username && $password ){
 	$r->log_error("Netdot::LDAP::check_credentials: Missing required arguments");
 	return 0;
@@ -117,6 +118,34 @@ sub check_credentials {
 	    return 0;
 	}
     }
+    my $use_proxy = $r->dir_config("NetdotLDAPProxy");
+
+    if ( lc $use_proxy eq "yes" )
+        {
+           my $proxy_user = $r->dir_config("NetdotLDAPProxyUser");
+           my $proxy_pass = $r->dir_config("NetdotLDAPProxyPass");
+           my $proxy_base = $r->dir_config("NetdotLDAPProxySearchBaseDN");
+           my $proxyauth = $ldap->bind($proxy_user, password=>$proxy_pass);
+           my $result = $ldap->search(
+                                        base => $proxy_base,
+                                        scope => 'subtree',
+                                        filter => '(cn='.$username.')',
+                                        attrs => ['dn']
+                                );
+           if ($result->count() == 1) {
+                $user_dn = $result->entry(0)->dn();
+                $r->log_error("User Found base_dn=".$proxy_base." filter=(cn=".$username.") user_dn=".$user_dn);
+           } else {
+                $r->log_error("ERROR LDAP proxy search: ".$result->count()." results filter (cn=".$username.") base='".$proxy_base."'");
+                        if  ( $fail_to_local ){
+                                $r->log_error("Netdot::LDAP::check_credentials: Trying local auth");
+                                return Netdot::AuthLocal::check_credentials($r, $username, $password);
+                                }
+                 }
+        }
+
+
+
 
     # start TLS
     my $scheme = $ldap->scheme();
