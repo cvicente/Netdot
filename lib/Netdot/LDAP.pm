@@ -25,6 +25,11 @@ In Apache configuration:
       PerlSetVar NetdotLDAPVersion "3"
       PerlSetVar NetdotLDAPCACert "/usr/local/ssl/certs/cacert.pem"
       PerlSetVar NetdotLDAPFailToLocal "yes"
+      PerlSetVar NetdotLDAPProxy "no"
+      PerlSetVar NetdotLDAPProxySearchBaseDN "o=local"
+      #Change this to the full path dn and password of the ldap user netdot can use for its search
+      PerlSetVar NetdotLDAPProxyUser "cn=ProxyNetdot,ou=infr,ou=domain,o=local"
+      PerlSetVar NetdotLDAPProxyPass "ProxyNetdot_password"
    </Location>
     
 =back
@@ -67,6 +72,21 @@ NetdotLDAPVersion
 NetdotLDAPFailToLocal <yes|no>
     If LDAP authentication fails, authenticate against local (Netdot DB) credentials.
     
+NetdotLDAPProxy <yes|no>
+    If the LDAP server, does not allow anonymous binding, and users, reside in more than one branch, Netdot needs to use a initial login/password to connecto to LDAP server and search for the user's branch to be able to contruct the final distinguished name (DN) for the user. Just leave it at "no", if this is not needed.
+
+NetdotLDAPProxySearchBaseDN
+    The user will ne searched on the ldap Tree, down this top boundary. It can be the top of the tree, or a more specific brach, as needed.
+    e.g.1. "o=MY" 
+    e.g.2. "ou=TI,ou=EMP,o=MY"
+
+NetdotLDAPProxyUser 
+    Username, used by Netdot to login in the LDAP server. This should be the complete DN of the user.
+   e.g. "cn=ProxyNetdot,ou=USR,ou=IFR,o=MY"
+
+NetdotLDAPProxyPass
+    Password to login on the LDAP server.
+   e.g. "oij98uiu34eiuhs9"
 =cut
 
 ##########################################################################################
