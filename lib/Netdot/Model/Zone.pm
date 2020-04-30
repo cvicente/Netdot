@@ -3,7 +3,7 @@ package Netdot::Model::Zone;
 use base 'Netdot::Model';
 use warnings;
 use strict;
-use Net::DNS::ZoneFile::Fast;
+use Net::DNS::ZoneFile;
 
 my $logger = Netdot->log->get_logger('Netdot::Model::DNS');
 
@@ -651,9 +651,9 @@ sub import_records {
 
     if ( $argv{text } ){
 	eval {
-	    my $zone_content = $argv{text};
+	    my $zone_content = '$ORIGIN ' . $domain. "\n" . $argv{text};
 	    $zone_content =~ s/\r\n/\n/g;
-	    $rrs = Net::DNS::ZoneFile::Fast::parse(text=>$zone_content, origin=>$domain);
+	    $rrs = Net::DNS::ZoneFile->parse( $zone_content );
 	};
 	if ( my $e = $@ ){
 	    $self->throw_user("Error parsing Zone data: $e")

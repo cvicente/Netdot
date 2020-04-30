@@ -62,8 +62,8 @@ my @DEPS = (
     {cpan=>'Text::ParseWords', apt=>'', rpm=>''},
     {cpan=>'Carp::Assert', apt=>'libcarp-assert-perl', rpm=>'perl-Carp-Assert'},
     {cpan=>'Digest::SHA', apt=> 'libdigest-sha-perl', rpm=>'perl-Digest-SHA1'},
-    {apt=> 'libssl-dev', rpm=>'openssl-devel'}, # needed by Net::DNS::ZoneFile::Fast
-    {cpan=>'Net::DNS::ZoneFile::Fast', apt=> 'dnssec-tools', rpm=>''},
+    {apt=> 'libssl-dev', rpm=>'openssl-devel'}, # needed by Net::DNS::ZoneFile
+    {cpan=>'Net::DNS::ZoneFile', apt=> 'libnet-dns-perl', rpm=>'perl-Net-DNS'},
     {cpan=>'Socket6', apt=> 'libsocket6-perl', rpm=>'perl-Socket6'},
     {cpan=>'XML::Simple', apt=>'libxml-simple-perl', rpm=>'perl-XML-Simple'},
     {apt=>'snmp'},
