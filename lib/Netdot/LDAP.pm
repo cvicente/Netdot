@@ -25,6 +25,11 @@ In Apache configuration:
       PerlSetVar NetdotLDAPVersion "3"
       PerlSetVar NetdotLDAPCACert "/usr/local/ssl/certs/cacert.pem"
       PerlSetVar NetdotLDAPFailToLocal "yes"
+      PerlSetVar NetdotLDAPProxy "no"
+      PerlSetVar NetdotLDAPProxySearchBaseDN "o=local"
+      #Change this to the full path dn and password of the ldap user netdot can use for its search
+      PerlSetVar NetdotLDAPProxyUser "cn=ProxyNetdot,ou=infr,ou=domain,o=local"
+      PerlSetVar NetdotLDAPProxyPass "ProxyNetdot_password"
    </Location>
     
 =back
@@ -67,6 +72,21 @@ NetdotLDAPVersion
 NetdotLDAPFailToLocal <yes|no>
     If LDAP authentication fails, authenticate against local (Netdot DB) credentials.
     
+NetdotLDAPProxy <yes|no>
+    If the LDAP server, does not allow anonymous binding, and users, reside in more than one branch, Netdot needs to use a initial login/password to connecto to LDAP server and search for the user's branch to be able to contruct the final distinguished name (DN) for the user. Just leave it at "no", if this is not needed.
+
+NetdotLDAPProxySearchBaseDN
+    The user will ne searched on the ldap Tree, down this top boundary. It can be the top of the tree, or a more specific brach, as needed.
+    e.g.1. "o=MY" 
+    e.g.2. "ou=TI,ou=EMP,o=MY"
+
+NetdotLDAPProxyUser 
+    Username, used by Netdot to login in the LDAP server. This should be the complete DN of the user.
+   e.g. "cn=ProxyNetdot,ou=USR,ou=IFR,o=MY"
+
+NetdotLDAPProxyPass
+    Password to login on the LDAP server.
+   e.g. "oij98uiu34eiuhs9"
 =cut
 
 ##########################################################################################
@@ -86,7 +106,8 @@ NetdotLDAPFailToLocal <yes|no>
 
 sub check_credentials {
     my ($r, $username, $password) = @_;
-    
+    $r->log_error("check_credentials starting");
+
     unless ( $r && $username && $password ){
 	$r->log_error("Netdot::LDAP::check_credentials: Missing required arguments");
 	return 0;
@@ -117,6 +138,34 @@ sub check_credentials {
 	    return 0;
 	}
     }
+    my $use_proxy = $r->dir_config("NetdotLDAPProxy");
+
+    if ( lc $use_proxy eq "yes" )
+        {
+           my $proxy_user = $r->dir_config("NetdotLDAPProxyUser");
+           my $proxy_pass = $r->dir_config("NetdotLDAPProxyPass");
+           my $proxy_base = $r->dir_config("NetdotLDAPProxySearchBaseDN");
+           my $proxyauth = $ldap->bind($proxy_user, password=>$proxy_pass);
+           my $result = $ldap->search(
+                                        base => $proxy_base,
+                                        scope => 'subtree',
+                                        filter => '(cn='.$username.')',
+                                        attrs => ['dn']
+                                );
+           if ($result->count() == 1) {
+                $user_dn = $result->entry(0)->dn();
+                $r->log_error("User Found base_dn=".$proxy_base." filter=(cn=".$username.") user_dn=".$user_dn);
+           } else {
+                $r->log_error("ERROR LDAP proxy search: ".$result->count()." results filter (cn=".$username.") base='".$proxy_base."'");
+                        if  ( $fail_to_local ){
+                                $r->log_error("Netdot::LDAP::check_credentials: Trying local auth");
+                                return Netdot::AuthLocal::check_credentials($r, $username, $password);
+                                }
+                 }
+        }
+
+
+
 
     # start TLS
     my $scheme = $ldap->scheme();
