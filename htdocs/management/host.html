@@ -242,6 +242,12 @@ if ($action eq 'new') {
     push( @field_headers, $tmp{label} );
     push( @cell_data, $tmp{value} );
 
+    my $tmp_underscore_override = {};
+    if ($ui->underscore_override_form_field($tmp_underscore_override)) {
+        push(@field_headers, $tmp_underscore_override->{label});
+        push(@cell_data, $tmp_underscore_override->{value});
+    }
+
     $m->comp('/generic/attribute_table.mhtml', %comphash);
     (@field_headers, @cell_data) = ((),());
 
