@@ -102,16 +102,15 @@ if ( $id ){
 	$BLOCK_VIEW_MAX = Netdot->config->get('CONTAINER_BLOCK_VIEW_MAX_PREFIX');
     }
     if ( $o->version == 4 ){
-        $dns_address_record_label = 'A';
 	if ( $view_format eq 'block' ){
 	    if ( $BLOCK_VIEW_MAX && ($o->prefix < $BLOCK_VIEW_MAX) ){
 		$view_format = 'list';
 	    }
 	}
     }elsif ( $o->version == 6 ){
-        $dns_address_record_label = 'AAAA';
 	$view_format = 'list' if $view_format eq 'block';
     }
+    $dns_address_record_label = $o->dns_address_record_label;
 
 }else{
     $title = "Search";
@@ -337,6 +336,7 @@ if( $_action eq "SHOW_ROOTS" && !$id && $rootversion ){
 	    $id = $block->id;
 	    if( $o->is_address ) {
 		$added_ip  = 1;
+            $dns_address_record_label = $o->dns_address_record_label;
 	    }else {
 		$added_block = 1;
 	    }
