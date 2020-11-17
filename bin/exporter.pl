@@ -72,8 +72,9 @@ foreach my $type ( split ',', $self{types} ){
     $type =~ s/\s+//g;
     my %args;
     if ( $type eq 'BIND' ){
-	%args = (nopriv => $self{nopriv},
-		 force  => $self{force},
+	%args = (nopriv_txt    => $self{nopriv},
+		 nopriv_hinfo  => $self{nopriv},
+		 force         => $self{force},
 	    );
 	if ( $self{zones} ){
 	    my @zones = split ',', $self{zones};
