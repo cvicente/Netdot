@@ -103,7 +103,7 @@ foreach my $if ( $o->interfaces ){
         }
     }
 }
-
+my $connected = $o->get_connected_devices();
 
 my $refresh_url = "user_device.html?id=$id";
 
@@ -282,6 +282,31 @@ function showVlan(){
       if ( exists $intinfo{neighbor}{$if->id} && !$editints){
 	  $ac = $ui->form_field(object=>$if, column=>"neighbor", edit=>$editints, linkPage=>0, returnValOnly=>1);
 	  $ac .= "<br>";
+      }elsif( my $cd = $connected->{$if->id} ){
+	  my %seen_names;
+	  foreach my $mac_id (keys %$cd){
+	      my $mac_addr = $cd->{$mac_id}->{mac};
+	      if ( my $cdips = $cd->{$mac_id}->{ip} ){
+	          foreach my $ip_id (keys %$cdips){
+	              my $ip_addr = $cdips->{$ip_id}->{address};
+	              if ( my $rr_id = $cdips->{$ip_id}->{rrid} ){
+	                  my $fqdn = $cdips->{$ip_id}->{fqdn};
+	                  # When a MAC address is associated with an IPv4 and an IPv6 address 
+	                  # and when both addresses are associated with the same RR
+	                  # we would have duplicate entries.
+	                  next if exists $seen_names{$fqdn};
+	                  $seen_names{$fqdn} = 1;
+	                  $ac .= sprintf('<a href="host.html?id=%d">%s</a>', $rr_id, $fqdn);
+	              }else{
+	                  $ac .= sprintf('<a href="ip.html?id=%d">%s</a>', $ip_id, $ip_addr);
+	              }
+	              $ac .= "<br>";
+	          }
+	      }else{
+	          $ac .= sprintf('<a href="../management/mac.html?id=%d">%s</a>', $mac_id, $mac_addr);
+	          $ac .= "<br>";
+	      }
+	  }
       }
 
       push @row, $ac;
