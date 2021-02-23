@@ -4,7 +4,7 @@
 #
 use lib "<<Make:LIB>>";
 use Netdot::Model;
-use Net::DNS::ZoneFile::Fast;
+use Net::DNS::ZoneFile;
 use Getopt::Long qw(:config no_ignore_case bundling);
 use BIND::Config::Parser;
 use strict;
@@ -146,11 +146,12 @@ sub import_zone {
     (-e $file && -f $file) || die "File $file does not exist or is not a regular file\n";
     print "Importing zone file: $file\n";
 
-    my $rrs = Net::DNS::ZoneFile::Fast::parse(file=>"$file",origin=>$domain);
+    my $zonefile = new Net::DNS::ZoneFile($file, $domain);
+    my @rrs = $zonefile->read;
 
     my $nzone;
 
-    foreach my $rr ( @$rrs ){
+    foreach my $rr ( @rrs ){
 	if ( $rr->type eq 'SOA' ){
 	    my $name = $rr->name;
 	    $name =~ s/\.$//;
@@ -181,7 +182,7 @@ sub import_zone {
 	}
     }
     
-    $nzone->import_records(rrs         => $rrs, 
+    $nzone->import_records(rrs         => \@rrs,
 			   update_ptrs => $self{update_ptrs},
 	);
 }
