@@ -4332,7 +4332,8 @@ sub _fork_init {
 
     # Tell DBI that we don't want to disconnect the server's DB handle
     my $dbh = $class->db_Main;
-    unless ( $dbh->{InactiveDestroy} = 1 ) {
+    $dbh->{InactiveDestroy} = 1;
+    unless ( $dbh->{InactiveDestroy} == 1 ) {
 	$class->throw_fatal("Model::Device::_fork_init: Cannot set InactiveDestroy: ", $dbh->errstr);
     }
 
@@ -5337,7 +5338,8 @@ sub _launch_child {
 
     # Tell DBI that we don't want to disconnect the server's DB handle
     my $dbh = $class->db_Main;
-    unless ( $dbh->{InactiveDestroy} = 1 ) {
+    $dbh->{InactiveDestroy} = 1;
+    unless ( $dbh->{InactiveDestroy} == 1 ) {
 	$class->throw_fatal("Model::Device::_launch_child: Cannot set InactiveDestroy: ", $dbh->errstr);
     }
     # Run given code
