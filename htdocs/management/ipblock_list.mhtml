@@ -33,14 +33,16 @@ my $i;
 
 my (@headers, @rows);
 if ( $type ){
-    unless ( $type =~ /^address|block$/ ){
+    unless ( $type =~ /^(?:address|block)$/ ){
 	$m->comp('error.mhtml', error => "Unknown type: $type");
     }
 }else{
-    if ( ($objects->[0])->is_address ){ # We're dealing with addresses
-	$type = "address";
-    }else{
-	$type = "block";
+    $type = 'address';
+    for my $object (@$objects) {
+        if (! $object->is_address) {
+            $type = 'block';
+            last;
+        }
     }
 }
 </%init>
