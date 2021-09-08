@@ -37,6 +37,7 @@ if ( $schema_version eq '1.0.1' ){
     &upg_104_105();
     &upg_105_106();
     &upg_106_107();
+    &upg_107_108();
     
 }elsif ( $schema_version eq '1.0.2' ){
     
@@ -45,6 +46,7 @@ if ( $schema_version eq '1.0.1' ){
     &upg_104_105();
     &upg_105_106();
     &upg_106_107();
+    &upg_107_108();
     
 }elsif ( $schema_version eq '1.0.3' ){
     
@@ -52,22 +54,30 @@ if ( $schema_version eq '1.0.1' ){
     &upg_104_105();
     &upg_105_106();
     &upg_106_107();
+    &upg_107_108();
 
 }elsif ( $schema_version eq '1.0.4' ){
     
     &upg_104_105();
     &upg_105_106();
     &upg_106_107();
+    &upg_107_108();
     
 }elsif ( $schema_version eq '1.0.5' ){
     
     &upg_105_106();
     &upg_106_107();
+    &upg_107_108();
     
 }elsif ( $schema_version eq '1.0.6' ){
     
     &upg_106_107();
+    &upg_107_108();
     
+}elsif ( $schema_version eq '1.0.7' ){
+
+    &upg_107_108();
+
 }else{
     die "Unsupported version for this upgrade: $schema_version\n";
 }
@@ -339,4 +349,10 @@ sub upg_105_106 {
 #########################################################################
 sub upg_106_107 {
     push @statements, "UPDATE schemainfo SET version='1.0.7' WHERE id=1;",
+}
+
+#########################################################################
+sub upg_107_108 {
+    push @statements, "ALTER TABLE zone ADD COLUMN sort INTEGER NOT NULL DEFAULT 100;";
+    push @statements, "UPDATE schemainfo SET version='1.0.8' WHERE id=1;",
 }

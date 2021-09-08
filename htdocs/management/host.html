@@ -222,7 +222,7 @@ if ($action eq 'new') {
 	@select_list = ( $zone );
 	$ffargs{default} = $zone->id;
     }
-    foreach my $z ( sort { $a->name cmp $b->name } Zone->retrieve_all ){
+    foreach my $z ( Zone->retrieve_all ){
 	next if $z->is_dot_arpa;
 	next if $zone && ($z->id == $zone->id);
 	if ( $manager && $manager->can($user, 'edit', $z) ){
@@ -783,7 +783,7 @@ foreach my $o ( values %rrs ) {
 		push( @cell_data, '<input name="RR__NEW__name" value="" type="text">' );
 	    }
 	    my $zone_select = '<select name="RR__NEW__zone">';
-	    foreach my $z ( sort { $a->name cmp $b->name } Zone->retrieve_all ){
+	    foreach my $z ( Zone->retrieve_all ){
 		next unless $z->is_dot_arpa;
 		if ( $rzone && $rzone->id == $z->id ){
 		    $zone_select .= '<option value="'.$z.'" SELECTED>'.$z->get_label.'</option>';
