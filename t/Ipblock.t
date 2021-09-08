@@ -37,6 +37,8 @@ is($address->status->name, 'Static', 'insert address');
 
 is($address->is_address, 1, 'is_address');
 
+is($address->dns_address_record_label, 'A', 'DNS IPv4 address record label');
+
 is($address->parent, $subnet, 'address/subnet hierarchy');
 is($subnet->parent, $container, 'subnet/container hierarchy');
 
@@ -154,6 +156,14 @@ my $v6subnet = Ipblock->insert({
     version => 6,
     status  => 'Subnet',
 });
+
+my $v6address = Ipblock->insert({
+    address => "2001:db8::beef:cafe",
+    prefix  => '128',
+    version => 6,
+    status  => 'Static',
+});
+is($v6address->dns_address_record_label, 'AAAA', 'DNS IPv6 address record label');
 
 is($v6subnet->parent, $v6container, 'v6_parent');
 
