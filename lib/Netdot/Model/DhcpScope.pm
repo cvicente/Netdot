@@ -704,8 +704,25 @@ sub _print {
     unless ( $type = $data->{$id}->{type} ){
 	$class->throw_fatal("Scope id $id missing type");
     }
-
-    if ( $type ne 'global' && $type ne 'template' ){
+    # generate subnet scope name and directive
+    if ( $type eq 'subnet'){
+      my $name = $data->{$id}->{name};
+      my $ipblock   = DhcpScope->retrieve($id)->ipblock;
+      my $netaddr  = $ipblock->full_address;
+      my $mask  = $ipblock->netaddr->mask;
+      print $fh "# $name\n";
+      print $fh "subnet $netaddr netmask $mask {\n";
+      $indent .= " " x 4;
+    }
+    # pring global scope group
+    elsif ( $type eq 'global'){
+    my $name = $data->{$id}->{name};
+      print $fh $indent."#$name\n";
+      print $fh $indent."group {\n";
+      $indent .= " " x 4;
+    }
+    # print scope name
+    elsif ( $type ne 'template' ){
 	my $st   = $data->{$id}->{statement};
 	my $name = $data->{$id}->{name};
 	if ( $type eq 'class' ){
@@ -803,7 +820,7 @@ sub _print {
     }
     
     # Close scope definition
-    if ( $type ne 'global' && $type ne 'template' ){
+    if ( $type ne 'template' ){
 	$indent = $pindent;
 	print $fh $indent."}\n";
     }
