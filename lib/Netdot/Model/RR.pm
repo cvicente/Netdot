@@ -208,8 +208,11 @@ sub insert {
 		     expiration  => $argv->{expiration},
 		     info        => $argv->{info},
 	    );
+        my $extra_arguments = {
+            allow_underscore_override => $argv->{allow_underscore_override},
+        };
 
-	$class->_validate_args(\%state);
+	$class->_validate_args(\%state, $extra_arguments);
 	
 	$rr = $class->SUPER::insert(\%state);
 	
@@ -718,76 +721,99 @@ sub add_alias {
 ############################################################################
 # _validate_args - Validate arguments to insert and update
 #
-#  Args: 
-#    hashref
-#  Returns: 
+#  Args:
+#    argv - hashref containing database field and values
+#    extra_argv - (optional) hashref containing extra parameters
+#  Returns:
 #    True, or throws exception if validation fails
 #  Examples:
 #    $class->_validate_args($argv);
 #
 sub _validate_args {
-    my ($self, $argv) = @_;
-    
+    my ($self, $argv, $extra_argv) = @_;
+
+    if (! defined $extra_argv) {
+        $extra_argv = {};
+    }
+
     my $zone;
-    if (ref($self)){
-	$zone = $self->zone;
+    if (ref($self)) {
+        $zone = $self->zone;
     }
-    if ( defined $argv->{zone} ){
-	if ( ref($argv->{zone}) ){
-	    # We're being passed an object
-	    $zone = $argv->{zone}
-	}else{
-	    if ( $argv->{zone} =~ /\D+/ ){
-		$zone = Zone->search(name=>$argv->{zone})->first;
-	    }else{
-		$zone = Zone->retrieve($argv->{zone});
-	    }
-	}
+    if (defined $argv->{zone}) {
+        if (ref($argv->{zone})) {
+            # We're being passed an object
+            $zone = $argv->{zone};
+        }
+        else {
+            if ($argv->{zone} =~ /\D+/){
+                $zone = Zone->search(name=>$argv->{zone})->first;
+            }
+            else {
+                $zone = Zone->retrieve($argv->{zone});
+            }
+        }
     }
-    if ( defined $argv->{name} ){
-	# Convert to lowercase
-	my $name = lc($argv->{name});
+    if (defined $argv->{name}) {
+        # Convert to lowercase
+        my $name = lc($argv->{name});
 
-	# Remove whitespace
-	$name =~ s/\s+//g;
-	
-	# Remove trailing dots, if any
-	$name =~ s/\.$//;
+        # Remove whitespace
+        $name =~ s/\s+//g;
 
-	# Remove commas
-	$name =~ s/,//;
+        # Remove trailing dots, if any
+        $name =~ s/\.$//;
 
-	# Valid characters
-	if ( $name =~ /[^A-Za-z0-9\.\-_@\*]/ ){
-	    $self->throw_user("Invalid name: $name. Contains invalid characters");
-	}
+        # Remove commas
+        $name =~ s/,//;
 
-        if ( $self->config->get('ALLOW_UNDERSCORES_IN_DEVICE_NAMES') eq '0' ){
-	    # Underscore only allowed at beginning of string or dotted section
-	    if ( $name =~ /[^^.]_/ || $name =~ /_$/ ){
-		$self->throw_user("Invalid name: $name. Invalid underscores");
-	    }
-	}
+        # Valid characters
+        if ($name =~ /[^A-Za-z0-9\.\-_@\*]/) {
+            $self->throw_user("Invalid name: $name. Contains invalid characters");
+        }
 
-	# Name must not start or end with a dash
-	if ( $name =~ /^\-/ || $name =~ /\-$/ ){
-	    $self->throw_user("Invalid name: $name. Name must not start or end with a dash");
-	}
+        if (
+            $self->config->get('ALLOW_UNDERSCORES_IN_DEVICE_NAMES') eq '1'
+            ||
+            (
+                $self->config->get('UNDERSCORES_IN_DEVICE_NAMES_OVERRIDE_ALLOWED') eq '1'
+                &&
+                $extra_argv->{allow_underscore_override}
+            )
+        ) {
+            $logger->debug('Allow underscores in device name. No underscore validation check.');
+        }
+        else {
+            # Underscore only allowed at beginning of string or dotted section
+            if ($name =~ /[^^.]_/ || $name =~ /_$/){
+                $self->throw_user("Invalid name: $name. Invalid underscores");
+            }
+        }
 
-	# Length restrictions (RFC 1035)
-	my $fqdn = $name.".".$zone->name;
-	if ( length($fqdn) > 255 ){
-	    $self->throw_user("Invalid FQDN: $fqdn. Length exceeds 255 characters");
-	}
-	# labels (sections between dots) must not exceed 63 chars
-	foreach my $label ( split(/\./, $fqdn) ){
-	    unless ( length($label) >= 1 && length($label) < 64 ){
-		$self->throw_user(sprintf("RR::validate_args(): '%s' has Invalid label: '%s'. ".
-					  "Each label must be between 1 and 63 characters long", 
-					  $fqdn, $label));
-	    }
-	}
-	$argv->{name} = $name;
+        # Name must not start or end with a dash
+        if ($name =~ /^\-/ || $name =~ /\-$/) {
+            $self->throw_user("Invalid name: $name. Name must not start or end with a dash");
+        }
+
+        # Length restrictions (RFC 1035)
+        my $fqdn = $name.".".$zone->name;
+        if (length($fqdn) > 255) {
+            $self->throw_user("Invalid FQDN: $fqdn. Length exceeds 255 characters");
+        }
+        # labels (sections between dots) must not exceed 63 chars
+        for my $label (split(/\./, $fqdn)){
+            unless (length($label) >= 1 && length($label) < 64) {
+                $self->throw_user(
+                    sprintf(
+                        "RR::validate_args(): '%s' has Invalid label: '%s'. ".
+                        "Each label must be between 1 and 63 characters long",
+                        $fqdn,
+                        $label,
+                    )
+                );
+            }
+        }
+        $argv->{name} = $name;
     }
     1;
 }
