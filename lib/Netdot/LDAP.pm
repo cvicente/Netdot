@@ -126,7 +126,7 @@ sub check_credentials {
     
     my $base_dn = $r->dir_config("NetdotLDAPSearchBase");
     if ( $base_dn ){
-	$user_dn .= ",$base_dn";
+	# $user_dn .= ",$base_dn";
     }
 
     my $ldap;
@@ -149,12 +149,12 @@ sub check_credentials {
            my $result = $ldap->search(
                                         base => $proxy_base,
                                         scope => 'subtree',
-                                        filter => '(cn='.$username.')',
+                                        filter => '('.$user_dn.')',
                                         attrs => ['dn']
                                 );
            if ($result->count() == 1) {
                 $user_dn = $result->entry(0)->dn();
-                $r->log_error("User Found base_dn=".$proxy_base." filter=(cn=".$username.") user_dn=".$user_dn);
+                $r->log_error("User Found base_dn=".$proxy_base." filter=(".$user_dn.") user_dn=".$user_dn);
            } else {
                 $r->log_error("ERROR LDAP proxy search: ".$result->count()." results filter (cn=".$username.") base='".$proxy_base."'");
                         if  ( $fail_to_local ){
