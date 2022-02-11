@@ -84,18 +84,29 @@ sub _cli_cmd {
     
     $personality ||= 'ios';
 
-    my %sess_args = (
-	host              => $host,
-	transport         => $transport,
-	personality       => $personality,
-	connect_options   => {
-	    shkc => 0,
-	    opts => [
-		'-o', "ConnectTimeout=$timeout",
-		'-o', 'CheckHostIP=no',
-		],
-	},
-	);
+    my %sess_args;
+
+    if ( $transport eq 'SSH' ) {
+        %sess_args = (
+        host              => $host,
+        transport         => $transport,
+        personality       => $personality,
+        connect_options   => {
+            shkc => 0,
+            opts => [ 
+                '-o', "ConnectTimeout=$timeout",
+                '-o', 'CheckHostIP=no',
+                ],
+            },
+        ); 
+    } else { #This must be Telnet
+        %sess_args = (
+        host              => $host,
+        transport         => $transport,
+        personality       => $personality,
+        timeout           => $timeout
+        );
+    }
 
     # this is broken for some reason. Need to debug
     # $sess_args{privileged_paging} = 1 if ($personality eq 'pixos');
